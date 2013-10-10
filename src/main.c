@@ -1,12 +1,17 @@
 #include <stdio.h>
 
+#include "picrin.h"
+
 #define LINE_MAX_LENGTH 256
 
 int
 main()
 {
+  pic_state *pic;
   char line[LINE_MAX_LENGTH], last_char;
   int char_index;
+
+  pic = pic_open();
 
   while (1) {
     printf("> ");
@@ -36,5 +41,7 @@ main()
   goto exit;
 
  exit:
+  pic_close(pic);
+
   return 0;
 }
