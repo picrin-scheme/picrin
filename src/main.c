@@ -2,6 +2,28 @@
 
 #include "picrin.h"
 
+void
+test_object_creation(pic_state *pic)
+{
+  pic_value v;
+
+  {
+    v = pic_intern_cstr(pic, "symbol");
+    pic_debug(pic, v);
+    puts(" [should be `symbol`]");
+  }
+  {
+    v = pic_nil_value();
+    pic_debug(pic, v);
+    puts(" [should be `()`]");
+  }
+  {
+    v = pic_cons(pic, pic_intern_cstr(pic, "foo"), pic_intern_cstr(pic, "bar"));
+    pic_debug(pic, v);
+    puts(" [should be `(foo . bar)`]");
+  }
+}
+
 #define LINE_MAX_LENGTH 256
 
 int
@@ -12,6 +34,8 @@ main()
   int char_index;
 
   pic = pic_open();
+
+  test_object_creation(pic);
 
   while (1) {
     printf("> ");
