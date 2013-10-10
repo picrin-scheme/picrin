@@ -1,6 +1,8 @@
 #ifndef PICRIN_H__
 #define PICRIN_H__
 
+#include <stddef.h>
+
 #include "picrin/value.h"
 
 typedef struct {

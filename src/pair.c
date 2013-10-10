@@ -17,7 +17,7 @@ pic_car(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
 
-  pair = (struct pic_pair *)obj->u->data;
+  pair = (struct pic_pair *)obj.u.data;
 
   return pair->car;
 }
@@ -27,7 +27,7 @@ pic_cdr(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
 
-  pair = (struct pic_pair *)obj->u->data;
+  pair = (struct pic_pair *)obj.u.data;
 
   return pair->cdr;
 }

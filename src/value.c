@@ -3,11 +3,11 @@
 enum pic_tt
 pic_type(pic_value v)
 {
-  switch (v->type) {
+  switch (v.type) {
   case PIC_VTYPE_NIL:
     return PIC_TT_NIL;
   case PIC_VTYPE_HEAP:
-    return v->u->data->tt;
+    return ((struct pic_object *)v.u.data)->tt;
   }
 }
 
@@ -16,17 +16,17 @@ pic_nil_value()
 {
   pic_value v;
 
-  v.vtype = PIC_VTYPE_NIL;
+  v.type = PIC_VTYPE_NIL;
   v.u.data = NULL;
   return v;
 }
 
 pic_value
-pic_obj_value(struct pic_object *obj)
+pic_obj_value(void *ptr)
 {
   pic_value v;
 
-  v.vtype = PIC_VTYPE_HEAP;
-  v.u.data = obj;
+  v.type = PIC_VTYPE_HEAP;
+  v.u.data = ptr;
   return v;
 }

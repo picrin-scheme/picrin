@@ -3,7 +3,7 @@
 #include "picrin.h"
 
 pic_value
-pic_intern_cstr(pic_state *pic, char *name)
+pic_intern_cstr(pic_state *pic, const char *name)
 {
   struct pic_symbol *sym;
   size_t len;
