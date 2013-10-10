@@ -2,6 +2,7 @@
 #define VALUE_H__
 
 enum pic_vtype {
+  PIC_VTYPE_NIL,
   PIC_VTYPE_HEAP
 };
 
@@ -35,6 +36,7 @@ struct pic_symbol {
   char *name;
 };
 
+pic_value pic_nil_value();
 pic_value pic_obj_value(struct pic_object *obj);
 
 #endif
