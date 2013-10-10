@@ -35,4 +35,6 @@ struct pic_symbol {
   char *name;
 };
 
+pic_value pic_obj_value(struct pic_object *obj);
+
 #endif
