@@ -13,8 +13,10 @@ void pic_free(pic_state *, void *);
 pic_state *pic_open();
 void pic_close(pic_state *);
 
-pic_value pic_cons(pic_state *pic, pic_value, pic_value);
-pic_value pic_car(pic_state *pic, pic_value);
-pic_value pic_cdr(pic_state *pic, pic_value);
+pic_value pic_cons(pic_state *, pic_value, pic_value);
+pic_value pic_car(pic_state *, pic_value);
+pic_value pic_cdr(pic_state *, pic_value);
+
+pic_value pic_intern_cstr(pic_state *, const char *);
 
 #endif
