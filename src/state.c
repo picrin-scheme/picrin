@@ -7,7 +7,7 @@ pic_open()
 {
   pic_state *pic;
 
-  pic = (pic_state *)calloc(sizeof(pic_state));
+  pic = (pic_state *)calloc(1, sizeof(pic_state));
 
   return pic;
 }
