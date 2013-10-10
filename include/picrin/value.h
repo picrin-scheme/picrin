@@ -14,6 +14,9 @@ typedef struct {
 } pic_value;
 
 enum pic_tt {
+  /* immediate */
+  PIC_TT_NIL,
+  /* heap */
   PIC_TT_PAIR,
   PIC_TT_SYMBOL
 };
@@ -35,6 +38,11 @@ struct pic_symbol {
   PIC_OBJECT_HEADER
   char *name;
 };
+
+#define pic_pair_ptr(o) ((struct pic_pair *)o->u->data)
+#define pic_symbol_ptr(o) ((struct pic_symbol *)o->u->data)
+
+enum pic_tt pic_type(pic_value v);
 
 pic_value pic_nil_value();
 pic_value pic_obj_value(struct pic_object *obj);
