@@ -20,6 +20,7 @@ pic_open()
   pic_state *pic;
 
   pic = (pic_state *)malloc(sizeof(pic_state));
+  pic->sp = (pic_value *)malloc(sizeof(pic_value) * 1024);
   pic->global_env = pic_new_empty_env();
 
   return pic;
