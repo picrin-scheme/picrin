@@ -20,7 +20,8 @@ pic_debug(pic_state *pic, pic_value obj)
   case PIC_TT_SYMBOL:
     printf("%s", pic_symbol_ptr(obj)->name);
     break;
-  default:
-    abort();
+  case PIC_TT_INT:
+    printf("%d", pic_int(obj));
+    break;
   }
 }
