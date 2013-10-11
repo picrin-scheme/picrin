@@ -2,10 +2,17 @@
 #define PICRIN_H__
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "picrin/value.h"
 
+struct pic_env {
+  pic_value assoc;
+  struct pic_env *parent;
+};
+
 typedef struct {
+  struct pic_env *global_env;
 } pic_state;
 
 void *pic_alloc(pic_state *, size_t);
@@ -19,9 +26,13 @@ pic_value pic_cons(pic_state *, pic_value, pic_value);
 pic_value pic_car(pic_state *, pic_value);
 pic_value pic_cdr(pic_state *, pic_value);
 
+bool pic_eq_p(pic_state *, pic_value, pic_value);
+
 pic_value pic_intern_cstr(pic_state *, const char *);
 
 pic_value pic_parse(pic_state *, const char *);
+
+pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
 
 void pic_debug(pic_state *, pic_value);
 

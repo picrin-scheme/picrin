@@ -2,12 +2,25 @@
 
 #include "picrin.h"
 
+static struct pic_env *
+pic_new_empty_env()
+{
+  struct pic_env *env;
+
+  env = (struct pic_env *)malloc(sizeof(struct pic_env));
+  env->assoc = pic_nil_value();
+  env->parent = NULL;
+
+  return env;
+}
+
 pic_state *
 pic_open()
 {
   pic_state *pic;
 
-  pic = (pic_state *)calloc(1, sizeof(pic_state));
+  pic = (pic_state *)malloc(sizeof(pic_state));
+  pic->global_env = pic_new_empty_env();
 
   return pic;
 }

@@ -47,4 +47,6 @@ enum pic_tt pic_type(pic_value);
 pic_value pic_nil_value();
 pic_value pic_obj_value(void *);
 
+#define pic_nil_p(v) (pic_type(v) == PIC_TT_NIL)
+
 #endif

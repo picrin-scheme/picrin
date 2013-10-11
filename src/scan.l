@@ -14,7 +14,8 @@ struct parser_control {
 
 "("	return tLPAREN;
 ")"	return tRPAREN;
-[a-z]+	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
+[a-z0-9A-Z]+	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
+"'"	return tQUOTE;
 
 %%
 

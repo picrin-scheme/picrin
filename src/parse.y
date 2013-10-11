@@ -86,7 +86,6 @@ list_tail
 int
 yyerror(struct parser_control *p, const char *msg)
 {
-  pic_debug(p->pic, yylval.datum);
   puts(msg);
   abort();
 }

@@ -54,7 +54,7 @@ main()
     /* echo */
     v = pic_parse(pic, line);
 
-    pic_debug(pic, v);
+    pic_debug(pic, pic_eval(pic, v, pic->global_env));
     printf("\n");
   }
 
