@@ -1,10 +1,14 @@
 all: build run
 
 build:
-	gcc -o bin/picrin -I./include src/main.c src/state.c src/gc.c src/pair.c src/write.c src/symbol.c src/value.c
+	cd src; \
+	yacc -d parse.y; \
+	lex scan.l
+	gcc -o bin/picrin -I./include src/main.c src/state.c src/gc.c src/pair.c src/write.c src/symbol.c src/value.c src/y.tab.c src/lex.yy.c
 
 clean:
-	rm bin/picrin
+	rm -f src/y.tab.c src/y.tab.h src/lex.yy.c
+	rm -f bin/picrin
 
 run:
 	bin/picrin

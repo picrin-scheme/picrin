@@ -32,6 +32,7 @@ main()
   pic_state *pic;
   char line[LINE_MAX_LENGTH], last_char;
   int char_index;
+  pic_value v;
 
   pic = pic_open();
 
@@ -51,8 +52,9 @@ main()
     line[char_index] = '\0';
 
     /* echo */
-    printf("%s", line);
+    v = pic_parse(pic, line);
 
+    pic_debug(pic, v);
     printf("\n");
   }
 
