@@ -20,7 +20,11 @@ pic_open()
   pic_state *pic;
 
   pic = (pic_state *)malloc(sizeof(pic_state));
-  pic->sp = (pic_value *)malloc(sizeof(pic_value) * 1024);
+
+  /* prepare VM stack */
+  pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * 1024);
+  pic->stend = pic->stbase + 1024;
+
   pic->global_env = pic_new_empty_env();
 
   return pic;

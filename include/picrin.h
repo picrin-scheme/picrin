@@ -13,6 +13,8 @@ struct pic_env {
 
 typedef struct {
   pic_value *sp;
+  pic_value *stbase, *stend;
+
   struct pic_env *global_env;
 } pic_state;
 
