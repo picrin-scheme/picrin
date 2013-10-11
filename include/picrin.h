@@ -21,6 +21,8 @@ pic_value pic_cdr(pic_state *, pic_value);
 
 pic_value pic_intern_cstr(pic_state *, const char *);
 
+pic_value pic_parse(pic_state *, const char *);
+
 void pic_debug(pic_state *, pic_value);
 
 #endif
