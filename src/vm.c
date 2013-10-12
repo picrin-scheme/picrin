@@ -142,3 +142,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
  STOP:
   return *sp;
 }
+
+void
+pic_raise(pic_state *pic, const char *str)
+{
+  puts(str);
+  abort();
+}

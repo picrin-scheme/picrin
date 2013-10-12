@@ -45,6 +45,8 @@ pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
 pic_value pic_run(pic_state *, struct pic_proc *, pic_value);
 struct pic_proc *pic_codegen(pic_state *, pic_value, struct pic_env*);
 
+void pic_raise(pic_state *, const char *);
+
 void pic_debug(pic_state *, pic_value);
 
 #endif
