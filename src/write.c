@@ -23,5 +23,8 @@ pic_debug(pic_state *pic, pic_value obj)
   case PIC_TT_INT:
     printf("%d", pic_int(obj));
     break;
+  case PIC_TT_UNDEF:
+    printf("#<undef>");
+    break;
   }
 }

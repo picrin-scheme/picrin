@@ -4,6 +4,7 @@
 enum pic_vtype {
   PIC_VTYPE_NIL,
   PIC_VTYPE_INT,
+  PIC_VTYPE_UNDEF,
   PIC_VTYPE_HEAP
 };
 
@@ -19,6 +20,7 @@ enum pic_tt {
   /* immediate */
   PIC_TT_NIL,
   PIC_TT_INT,
+  PIC_TT_UNDEF,
   /* heap */
   PIC_TT_PAIR,
   PIC_TT_SYMBOL
@@ -48,6 +50,7 @@ struct pic_symbol {
 enum pic_tt pic_type(pic_value);
 
 pic_value pic_nil_value();
+pic_value pic_undef_value();
 pic_value pic_obj_value(void *);
 pic_value pic_int_value(int);
 

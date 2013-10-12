@@ -5,6 +5,7 @@
 enum pic_instruction {
   OP_PUSHNIL,
   OP_PUSHI,
+  OP_PUSHUNDEF,
   OP_CONS,
   OP_ADD,
   OP_STOP
@@ -112,6 +113,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     case OP_PUSHI: {
       *++sp = pic_int_value(pc->u.i);
+      break;
+    }
+    case OP_PUSHUNDEF: {
+      *++sp = pic_undef_value();
       break;
     }
     case OP_CONS: {
