@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "picrin.h"
 
@@ -145,6 +146,11 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
     irep->clen++;
     break;
   }
+  case PIC_TT_UNDEF: {
+    irep->code[irep->clen].insn = OP_PUSHUNDEF;
+    irep->clen++;
+    break;
+  }
   }
 }
 
@@ -169,6 +175,12 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   return proc;
 }
 
+#define VM_LOOP for (;;) { switch (pc->insn) {
+#define CASE(x) case x:
+#define NEXT pc++; break
+#define JUMP break
+#define VM_LOOP_END } }
+
 pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
@@ -178,47 +190,45 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   pc = proc->u.irep->code;
   sp = pic->sp;
 
-  while (1) {
-    switch (pc->insn) {
-    case OP_PUSHNIL: {
+  VM_LOOP {
+    CASE(OP_PUSHNIL) {
       *++sp = pic_nil_value();
-      break;
+      NEXT;
     }
-    case OP_PUSHI: {
+    CASE(OP_PUSHI) {
       *++sp = pic_int_value(pc->u.i);
-      break;
+      NEXT;
     }
-    case OP_PUSHUNDEF: {
+    CASE(OP_PUSHUNDEF) {
       *++sp = pic_undef_value();
-      break;
+      NEXT;
     }
-    case OP_GREF: {
+    CASE(OP_GREF) {
       *++sp = pc->u.gvar->cdr;
-      break;
+      NEXT;
     }
-    case OP_GSET: {
+    CASE(OP_GSET) {
       pc->u.gvar->cdr = *sp--;
-      break;
+      NEXT;
     }
-    case OP_CONS: {
+    CASE(OP_CONS) {
       pic_value a, b;
       a = *sp--;
       b = *sp--;
       *++sp = pic_cons(pic, a, b);
-      break;
+      NEXT;
     }
-    case OP_ADD: {
+    CASE(OP_ADD) {
       pic_value a, b;
       a = *sp--;
       b = *sp--;
       *++sp = pic_int_value(pic_int(a) + pic_int(b));
-      break;
+      NEXT;
     }
-    case OP_STOP:
+    CASE(OP_STOP) {
       goto STOP;
     }
-    pc++;
-  }
+  } VM_LOOP_END;
 
  STOP:
   return *sp;
