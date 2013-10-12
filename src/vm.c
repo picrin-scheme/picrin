@@ -137,32 +137,3 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 
   return proc;
 }
-
-#if 0
-int
-main()
-{
-  pic_state *pic;
-  struct pic_proc proc;
-  struct pic_code *code;
-  pic_value v;
-
-  pic = pic_open();
-
-  proc.u.code = code = (struct pic_code *)malloc(sizeof(struct pic_code) * 256);
-  code[0].insn = OP_PUSHI;
-  code[0].u.i = 1;
-  code[1].insn = OP_PUSHI;
-  code[1].u.i = 2;
-  code[2].insn = OP_ADD;
-  code[3].insn = OP_STOP;
-
-  v = pic_run(pic, &proc, pic_nil_value());
-
-  pic_debug(pic, v);
-
-  pic_close(pic);
-
-  return 0;
-}
-#endif
