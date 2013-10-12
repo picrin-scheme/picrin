@@ -33,6 +33,7 @@ main()
   char line[LINE_MAX_LENGTH], last_char;
   int char_index;
   pic_value v;
+  struct pic_proc *proc;
 
   pic = pic_open();
 
@@ -54,7 +55,10 @@ main()
     /* echo */
     v = pic_parse(pic, line);
 
-    pic_debug(pic, pic_eval(pic, v, pic->global_env));
+    //pic_debug(pic, pic_eval(pic, v, pic->global_env));
+    proc = pic_codegen(pic, v, pic->global_env);
+    v = pic_run(pic, proc, pic_nil_value());
+    pic_debug(pic, v);
     printf("\n");
   }
 

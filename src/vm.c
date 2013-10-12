@@ -138,6 +138,7 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   return proc;
 }
 
+#if 0
 int
 main()
 {
@@ -164,3 +165,4 @@ main()
 
   return 0;
 }
+#endif
