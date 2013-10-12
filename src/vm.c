@@ -6,6 +6,8 @@ enum pic_instruction {
   OP_PUSHNIL,
   OP_PUSHI,
   OP_PUSHUNDEF,
+  OP_GREF,
+  OP_GSET,
   OP_CONS,
   OP_ADD,
   OP_STOP
@@ -15,6 +17,7 @@ struct pic_code {
   enum pic_instruction insn;
   union {
     int i;
+    struct pic_pair *gvar;
   } u;
 };
 
@@ -23,24 +26,94 @@ struct pic_irep {
   size_t clen, ccapa;
 };
 
+static pic_value
+pic_assq(pic_state *pic, pic_value key, pic_value assoc)
+{
+  pic_value cell;
+
+ enter:
+
+  if (pic_nil_p(assoc))
+    return assoc;
+
+  cell = pic_car(pic, assoc);
+  if (pic_eq_p(pic, key, pic_car(pic, cell)))
+    return cell;
+
+  assoc = pic_cdr(pic, assoc);
+  goto enter;
+}
+
+static struct pic_pair *
+pic_env_lookup(pic_state *pic, pic_value sym, struct pic_env *env)
+{
+  pic_value v;
+
+ enter:
+
+  v = pic_assq(pic, sym, env->assoc);
+  if (! pic_nil_p(v)) {
+    return pic_pair_ptr(v);
+  }
+  if (env->parent) {
+    env = env->parent;
+    goto enter;
+  }
+
+  return NULL;
+}
+
+static struct pic_pair *
+pic_env_define(pic_state *pic, pic_value sym, struct pic_env *env)
+{
+  pic_value cell;
+
+  cell = pic_cons(pic, sym, pic_undef_value());
+  env->assoc = pic_cons(pic, cell, env->assoc);
+
+  return pic_pair_ptr(cell);
+}
+
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
-  pic_value sCONS, sADD;
+  pic_value sDEFINE, sCONS, sADD;
 
+  sDEFINE = pic_intern_cstr(pic, "define");
   sCONS = pic_intern_cstr(pic, "cons");
   sADD = pic_intern_cstr(pic, "add");
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
-    /* not implemented */
+    struct pic_pair *gvar;
+
+    gvar = pic_env_lookup(pic, obj, env);
+    if (! gvar) {
+      pic_raise(pic, "unbound variable");
+    }
+    irep->code[irep->clen].insn = OP_GREF;
+    irep->code[irep->clen].u.gvar = gvar;
+    irep->clen++;
     break;
   }
   case PIC_TT_PAIR: {
     pic_value proc;
 
     proc = pic_car(pic, obj);
-    if (pic_eq_p(pic, proc, sCONS)) {
+    if (pic_eq_p(pic, proc, sDEFINE)) {
+      struct pic_pair *gvar;
+
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
+
+      gvar = pic_env_define(pic, pic_car(pic, pic_cdr(pic, obj)), env);
+      irep->code[irep->clen].insn = OP_GSET;
+      irep->code[irep->clen].u.gvar = gvar;
+      irep->clen++;
+      irep->code[irep->clen].insn = OP_PUSHUNDEF;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sCONS)) {
       /* generate args in reverse order*/
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
@@ -117,6 +190,14 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     case OP_PUSHUNDEF: {
       *++sp = pic_undef_value();
+      break;
+    }
+    case OP_GREF: {
+      *++sp = pc->u.gvar->cdr;
+      break;
+    }
+    case OP_GSET: {
+      pc->u.gvar->cdr = *sp--;
       break;
     }
     case OP_CONS: {
