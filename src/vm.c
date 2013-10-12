@@ -22,50 +22,7 @@ struct pic_irep {
   size_t clen, ccapa;
 };
 
-pic_value
-pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
-{
-  struct pic_code *pc;
-  pic_value *sp;
-
-  pc = proc->u.irep->code;
-  sp = pic->sp;
-
-  while (1) {
-    switch (pc->insn) {
-    case OP_PUSHNIL: {
-      *++sp = pic_nil_value();
-      break;
-    }
-    case OP_PUSHI: {
-      *++sp = pic_int_value(pc->u.i);
-      break;
-    }
-    case OP_CONS: {
-      pic_value a, b;
-      a = *sp--;
-      b = *sp--;
-      *++sp = pic_cons(pic, a, b);
-      break;
-    }
-    case OP_ADD: {
-      pic_value a, b;
-      a = *sp--;
-      b = *sp--;
-      *++sp = pic_int_value(pic_int(a) + pic_int(b));
-      break;
-    }
-    case OP_STOP:
-      goto STOP;
-    }
-    pc++;
-  }
-
- STOP:
-  return *sp;
-}
-
-void
+static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
   pic_value sCONS, sADD;
@@ -136,4 +93,47 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   irep->clen++;
 
   return proc;
+}
+
+pic_value
+pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
+{
+  struct pic_code *pc;
+  pic_value *sp;
+
+  pc = proc->u.irep->code;
+  sp = pic->sp;
+
+  while (1) {
+    switch (pc->insn) {
+    case OP_PUSHNIL: {
+      *++sp = pic_nil_value();
+      break;
+    }
+    case OP_PUSHI: {
+      *++sp = pic_int_value(pc->u.i);
+      break;
+    }
+    case OP_CONS: {
+      pic_value a, b;
+      a = *sp--;
+      b = *sp--;
+      *++sp = pic_cons(pic, a, b);
+      break;
+    }
+    case OP_ADD: {
+      pic_value a, b;
+      a = *sp--;
+      b = *sp--;
+      *++sp = pic_int_value(pic_int(a) + pic_int(b));
+      break;
+    }
+    case OP_STOP:
+      goto STOP;
+    }
+    pc++;
+  }
+
+ STOP:
+  return *sp;
 }

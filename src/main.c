@@ -37,7 +37,7 @@ main()
 
   pic = pic_open();
 
-  test_object_creation(pic);
+  //test_object_creation(pic);
 
   while (1) {
     printf("> ");
@@ -52,13 +52,16 @@ main()
     }
     line[char_index] = '\0';
 
-    /* echo */
+    /* read */
     v = pic_parse(pic, line);
 
-    //pic_debug(pic, pic_eval(pic, v, pic->global_env));
+    /* eval */
     proc = pic_codegen(pic, v, pic->global_env);
     v = pic_run(pic, proc, pic_nil_value());
+
+    /* print */
     pic_debug(pic, v);
+
     printf("\n");
   }
 
