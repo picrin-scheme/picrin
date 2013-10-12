@@ -9,8 +9,6 @@ struct parser_control {
   pic_value value;
 };
 
-#define YYDEBUG 1
-
 %}
 
 %parse-param {struct parser_control *p}

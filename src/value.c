@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "picrin.h"
 
 enum pic_tt

@@ -12,6 +12,8 @@ struct parser_control {
 #define YY_DECL int yylex (struct parser_control *p)
 %}
 
+%option nounput
+
 %%
 
 [ \t\n\r]	/* skip whitespace */
