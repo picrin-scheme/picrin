@@ -189,6 +189,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   struct pic_code *pc;
   pic_value *sp;
+  int ai = pic_gc_arena_preserve(pic);
 
   pc = proc->u.irep->code;
   sp = pic->sp;
@@ -216,9 +217,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_CONS) {
       pic_value a, b;
-      a = POP();
-      b = POP();
+      pic_gc_protect(pic, a = POP());
+      pic_gc_protect(pic, b = POP());
       PUSH(pic_cons(pic, a, b));
+      pic_gc_arena_restore(pic, ai);
       NEXT;
     }
     CASE(OP_ADD) {
