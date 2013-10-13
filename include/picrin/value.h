@@ -52,6 +52,7 @@ struct pic_proc {
   } u;
 };
 
+#define pic_object_ptr(o) ((struct pic_object *)o.u.data)
 #define pic_pair_ptr(o) ((struct pic_pair *)o.u.data)
 #define pic_symbol_ptr(o) ((struct pic_symbol *)o.u.data)
 #define pic_proc_ptr(o) ((struct pic_proc *)o.u.data)
