@@ -79,7 +79,7 @@ pic_free(pic_state *pic, void *ptr)
 }
 
 struct pic_object *
-pic_gc_alloc(pic_state *pic, size_t size, enum pic_tt tt)
+pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
 {
   struct pic_object *obj;
 
@@ -88,4 +88,3 @@ pic_gc_alloc(pic_state *pic, size_t size, enum pic_tt tt)
 
   return obj;
 }
-

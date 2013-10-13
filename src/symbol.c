@@ -9,7 +9,7 @@ pic_intern_cstr(pic_state *pic, const char *name)
   struct pic_symbol *sym;
   size_t len;
 
-  sym = (struct pic_symbol*)pic_gc_alloc(pic, sizeof(struct pic_symbol), PIC_TT_SYMBOL);
+  sym = (struct pic_symbol*)pic_obj_alloc(pic, sizeof(struct pic_symbol), PIC_TT_SYMBOL);
 
   /* clone name string */
   len = strlen(name);
