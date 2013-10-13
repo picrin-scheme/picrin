@@ -24,6 +24,24 @@ init_heap_page(struct heap_page *heap)
 void *
 pic_alloc(pic_state *pic, size_t size)
 {
+  void *ptr;
+
+  ptr = malloc(size);
+  if (ptr == NULL) {
+    pic_raise(pic, "memory exhausted");
+  }
+  return ptr;
+}
+
+void
+pic_free(pic_state *pic, void *ptr)
+{
+  free(ptr);
+}
+
+static void *
+pic_gc_alloc(pic_state *pic, size_t size)
+{
   union header *freep, *p, *prevp;
   size_t nunits;
 
@@ -51,8 +69,8 @@ pic_alloc(pic_state *pic, size_t size)
   return (void *)(p + 1);
 }
 
-void
-pic_free(pic_state *pic, void *ptr)
+static void
+pic_gc_free(pic_state *pic, void *ptr)
 {
   union header *bp, *p;
 
