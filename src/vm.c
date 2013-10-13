@@ -161,7 +161,7 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   struct pic_irep *irep;
   struct pic_code *code;
 
-  proc = pic_alloc(pic, sizeof(struct pic_proc));
+  proc = (struct pic_proc *)malloc(sizeof(struct pic_proc));
 
   proc->u.irep = irep = (struct pic_irep *)malloc(sizeof(struct pic_irep));
   irep->code = code = (struct pic_code *)malloc(sizeof(struct pic_code) * 1024);
