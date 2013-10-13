@@ -2,6 +2,7 @@
 
 #include "picrin.h"
 #include "picrin/gc.h"
+#include "picrin/irep.h"
 
 void
 init_heap_page(struct heap_page *heap)
@@ -181,6 +182,33 @@ gc_unmark(union header *p)
 }
 
 static void
+gc_finalize_object(pic_state *pic, struct pic_object *obj)
+{
+  switch (obj->tt) {
+  case PIC_TT_SYMBOL: {
+    char *name;
+    name = ((struct pic_symbol *)obj)->name;
+    free(name);
+    break;
+  }
+  case PIC_TT_PAIR: {
+    break;
+  }
+  case PIC_TT_PROC: {
+    struct pic_proc *proc;
+
+    proc = (struct pic_proc *)obj;
+
+    /* free irep */
+    free(proc->u.irep->code);
+    free(proc->u.irep);
+  }
+  default:
+    pic_raise(pic, "logic flaw");
+  }
+}
+
+static void
 gc_sweep_phase(pic_state *pic)
 {
   union header *freep, *bp, *p;
@@ -193,6 +221,7 @@ gc_sweep_phase(pic_state *pic)
 	continue;
       }
       /* free! */
+      gc_finalize_object(pic, (struct pic_object *)(bp + 1));
       if (bp + bp->s.size == p->s.ptr) {
 	bp->s.size += p->s.ptr->s.size;
 	bp->s.ptr = p->s.ptr->s.ptr;
