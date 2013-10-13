@@ -181,6 +181,9 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 #define JUMP break
 #define VM_LOOP_END } }
 
+#define PUSH(v) (*++sp = (v))
+#define POP() (*sp--)
+
 pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
@@ -192,37 +195,37 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
   VM_LOOP {
     CASE(OP_PUSHNIL) {
-      *++sp = pic_nil_value();
+      PUSH(pic_nil_value());
       NEXT;
     }
     CASE(OP_PUSHI) {
-      *++sp = pic_int_value(pc->u.i);
+      PUSH(pic_int_value(pc->u.i));
       NEXT;
     }
     CASE(OP_PUSHUNDEF) {
-      *++sp = pic_undef_value();
+      PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_GREF) {
-      *++sp = pc->u.gvar->cdr;
+      PUSH(pc->u.gvar->cdr);
       NEXT;
     }
     CASE(OP_GSET) {
-      pc->u.gvar->cdr = *sp--;
+      pc->u.gvar->cdr = POP();
       NEXT;
     }
     CASE(OP_CONS) {
       pic_value a, b;
-      a = *sp--;
-      b = *sp--;
-      *++sp = pic_cons(pic, a, b);
+      a = POP();
+      b = POP();
+      PUSH(pic_cons(pic, a, b));
       NEXT;
     }
     CASE(OP_ADD) {
       pic_value a, b;
-      a = *sp--;
-      b = *sp--;
-      *++sp = pic_int_value(pic_int(a) + pic_int(b));
+      a = POP();
+      b = POP();
+      PUSH(pic_int_value(pic_int(a) + pic_int(b)));
       NEXT;
     }
     CASE(OP_STOP) {
