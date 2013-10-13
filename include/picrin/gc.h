@@ -1,13 +1,16 @@
 #ifndef GC_H__
 #define GC_H__
 
-struct header {
-  struct header *ptr;
-  size_t size;
+union header {
+  struct {
+    union header *ptr;
+    size_t size;
+  } s;
+  long alignment;   /* force alignment for headers to be allocated at the size of long */
 };
 
 struct heap_page {
-  struct header *base, *freep;
+  union header *base, *freep;
   size_t heap_size;
 };
 

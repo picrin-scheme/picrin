@@ -6,44 +6,45 @@
 void
 init_heap_page(struct heap_page *heap)
 {
-  struct header *base, *freep;
+  union header *base, *freep;
   void *p;
 
-  p = (struct header *)malloc(PIC_HEAP_SIZE);
+  p = (union header *)malloc(PIC_HEAP_SIZE);
 
-  heap->base = base = (struct header *)
-    (((unsigned long)p + sizeof(struct header) -1) & ~(sizeof(struct header) - 1));
-  base->ptr = base + 1;
-  base->size = 0;
+  heap->base = base = (union header *)
+    (((unsigned long)p + sizeof(union header) -1) & ~(sizeof(union header) - 1));
+  base->s.ptr = base + 1;
+  base->s.size = 0;
 
-  heap->freep = freep = base->ptr;
-  freep->ptr = base;
-  freep->size = ((char *)p + PIC_HEAP_SIZE - (char *)freep) / sizeof(struct header);
+  heap->freep = freep = base->s.ptr;
+  freep->s.ptr = base;
+  freep->s.size = ((char *)p + PIC_HEAP_SIZE - (char *)freep) / sizeof(union header);
 }
 
 void *
 pic_alloc(pic_state *pic, size_t size)
 {
-  struct header *freep, *p, *prevp;
+  union header *freep, *p, *prevp;
   size_t nunits;
 
-  nunits = (size + sizeof(struct header) - 1) / sizeof(struct header) + 1;
+  nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
 
   freep = pic->heap->freep;
   prevp = freep;
-  for (p = prevp->ptr; ; prevp = p, p = p->ptr) {
-    if (p->size >= nunits)
+  for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
+    if (p->s.size >= nunits)
       break;
-    if (p == freep)
+    if (p == freep) {
       return 0;
+    }
   }
-  if (p->size == nunits) {
-    prevp->ptr = p->ptr;
+  if (p->s.size == nunits) {
+    prevp->s.ptr = p->s.ptr;
   }
   else {
-    p->size -= nunits;
-    p += p->size;
-    p->size = nunits;
+    p->s.size -= nunits;
+    p += p->s.size;
+    p->s.size = nunits;
   }
   pic->heap->freep = prevp;
 
@@ -53,26 +54,26 @@ pic_alloc(pic_state *pic, size_t size)
 void
 pic_free(pic_state *pic, void *ptr)
 {
-  struct header *bp, *p;
+  union header *bp, *p;
 
-  bp = (struct header *)ptr - 1;
+  bp = (union header *)ptr - 1;
 
-  for (p = pic->heap->freep; !(p < bp && bp < p->ptr); p = p->ptr) {
-    if (p >= p->ptr && (bp > p || bp < p->ptr))
+  for (p = pic->heap->freep; !(p < bp && bp < p->s.ptr); p = p->s.ptr) {
+    if (p >= p->s.ptr && (bp > p || bp < p->s.ptr))
 	break;
   }
-  if (bp + bp->size == p->ptr) {
-    bp->size += p->ptr->size;
-    bp->ptr = p->ptr->ptr;
+  if (bp + bp->s.size == p->s.ptr) {
+    bp->s.size += p->s.ptr->s.size;
+    bp->s.ptr = p->s.ptr->s.ptr;
   }
   else {
-    bp->ptr = p->ptr;
+    bp->s.ptr = p->s.ptr;
   }
-  if (p + p->size == bp) {
-    p->size += bp->size;
-    p->ptr = bp->ptr;
+  if (p + p->s.size == bp) {
+    p->s.size += bp->s.size;
+    p->s.ptr = bp->s.ptr;
   } else {
-    p->ptr  =  bp;
+    p->s.ptr  =  bp;
   }
   pic->heap->freep = p;
 }
