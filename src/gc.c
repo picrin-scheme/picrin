@@ -74,7 +74,7 @@ pic_gc_arena_restore(pic_state *pic, int state)
 }
 
 static void *
-pic_gc_alloc(pic_state *pic, size_t size)
+gc_alloc(pic_state *pic, size_t size)
 {
   union header *freep, *p, *prevp;
   size_t nunits;
@@ -100,34 +100,122 @@ pic_gc_alloc(pic_state *pic, size_t size)
   }
   pic->heap->freep = prevp;
 
+  p->s.mark = PIC_GC_UNMARK;
   return (void *)(p + 1);
 }
 
+static void gc_mark(pic_state *, pic_value);
+
 static void
-pic_gc_free(pic_state *pic, void *ptr)
+gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
-  union header *bp, *p;
+  union header *p;
 
-  bp = (union header *)ptr - 1;
+  p = (union header *)obj - 1;
+  p->s.mark = PIC_GC_MARK;
 
-  for (p = pic->heap->freep; !(p < bp && bp < p->s.ptr); p = p->s.ptr) {
-    if (p >= p->s.ptr && (bp > p || bp < p->s.ptr))
-	break;
+  switch (obj->tt) {
+  case PIC_TT_PAIR: {
+    gc_mark(pic, ((struct pic_pair *)obj)->car);
+    gc_mark(pic, ((struct pic_pair *)obj)->cdr);
+    break;
   }
-  if (bp + bp->s.size == p->s.ptr) {
-    bp->s.size += p->s.ptr->s.size;
-    bp->s.ptr = p->s.ptr->s.ptr;
+  case PIC_TT_SYMBOL: {
+    break;
   }
-  else {
-    bp->s.ptr = p->s.ptr;
+  case PIC_TT_PROC: {
+    break;
   }
-  if (p + p->s.size == bp) {
-    p->s.size += bp->s.size;
-    p->s.ptr = bp->s.ptr;
-  } else {
-    p->s.ptr  =  bp;
+  default:
+    pic_raise(pic, "logic flaw");
   }
-  pic->heap->freep = p;
+}
+
+static void
+gc_mark(pic_state *pic, pic_value v)
+{
+  struct pic_object *obj;
+
+  if (v.type != PIC_VTYPE_HEAP)
+    return;
+  obj = pic_object_ptr(v);
+
+  gc_mark_object(pic, obj);
+}
+
+static void
+gc_mark_phase(pic_state *pic)
+{
+  pic_value *stack;
+  struct pic_env *env;
+  int i;
+
+  /* stack */
+  for (stack = pic->stbase; stack != pic->sp; ++stack) {
+    gc_mark(pic, *stack);
+  }
+  gc_mark(pic, *stack);
+
+  /* arena */
+  for (i = 0; i < pic->arena_idx; ++i) {
+    gc_mark_object(pic, pic->arena[i]);
+  }
+
+  /* global env */
+  env = pic->global_env;
+  do {
+    gc_mark(pic, env->assoc);
+  } while ((env = env->parent) != NULL);
+}
+
+static bool
+is_marked(union header *p)
+{
+  return p->s.mark == PIC_GC_MARK;
+}
+
+static void
+gc_unmark(union header *p)
+{
+  p->s.mark = PIC_GC_UNMARK;
+}
+
+static void
+gc_sweep_phase(pic_state *pic)
+{
+  union header *freep, *bp, *p;
+
+  freep = pic->heap->freep;
+  for (p = freep; p != freep; p = p->s.ptr) {
+    for (bp = p + p->s.size; bp != p->s.ptr; bp += bp->s.size) {
+      if (is_marked(bp)) {
+	gc_unmark(bp);
+	continue;
+      }
+      /* free! */
+      if (bp + bp->s.size == p->s.ptr) {
+	bp->s.size += p->s.ptr->s.size;
+	bp->s.ptr = p->s.ptr->s.ptr;
+      }
+      else {
+	bp->s.ptr = p->s.ptr;
+      }
+      if (p + p->s.size == bp) {
+	p->s.size += bp->s.size;
+	p->s.ptr = bp->s.ptr;
+      }
+      else {
+	p->s.ptr = bp;
+      }
+    }
+  }
+}
+
+static void
+pic_gc_run(pic_state *pic)
+{
+  gc_mark_phase(pic);
+  gc_sweep_phase(pic);
 }
 
 struct pic_object *
@@ -135,7 +223,15 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
 {
   struct pic_object *obj;
 
-  obj = (struct pic_object *)malloc(size);
+  pic_gc_run(pic);
+  obj = (struct pic_object *)gc_alloc(pic, size);
+  if (obj == NULL) {
+    puts("gc run!");
+    pic_gc_run(pic);
+    obj = (struct pic_object *)gc_alloc(pic, size);
+    if (obj == NULL)
+      pic_raise(pic, "memory exhausted");
+  }
   obj->tt = tt;
 
   gc_protect(pic, obj);
