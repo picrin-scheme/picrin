@@ -30,6 +30,10 @@ pic_open()
   pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
   init_heap_page(pic->heap);
 
+  /* GC arena */
+  pic->arena = (struct pic_object *)calloc(PIC_ARENA_SIZE, sizeof(struct pic_object *));
+  pic->arena_idx = 0;
+
   pic->global_env = pic_new_empty_env();
 
   return pic;

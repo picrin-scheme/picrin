@@ -104,5 +104,27 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
   obj = (struct pic_object *)malloc(size);
   obj->tt = tt;
 
+  pic_gc_protect(pic, obj);
   return obj;
+}
+
+void
+pic_gc_protect(pic_state *pic, struct pic_object *obj)
+{
+  if (pic->arena_idx >= PIC_ARENA_SIZE) {
+    pic_raise(pic, "arena overflow");
+  }
+  pic->arena[pic->arena_idx++] = obj;
+}
+
+int
+pic_gc_arena_preserve(pic_state *pic)
+{
+  return pic->arena_idx;
+}
+
+void
+pic_gc_arena_restore(pic_state *pic, int state)
+{
+  pic->arena_idx = state;
 }

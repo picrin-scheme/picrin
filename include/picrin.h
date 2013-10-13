@@ -11,6 +11,7 @@ struct pic_env {
   struct pic_env *parent;
 };
 
+#define PIC_ARENA_SIZE 1024
 #define PIC_HEAP_SIZE 1024
 
 typedef struct {
@@ -20,6 +21,8 @@ typedef struct {
   struct pic_env *global_env;
 
   struct heap_page *heap;
+  struct pic_object *arena[PIC_ARENA_SIZE];
+  int arena_idx;
 } pic_state;
 
 void *pic_alloc(pic_state *, size_t);
