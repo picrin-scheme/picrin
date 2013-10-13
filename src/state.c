@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "picrin.h"
+#include "picrin/gc.h"
 
 static struct pic_env *
 pic_new_empty_env()
@@ -24,6 +25,10 @@ pic_open()
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * 1024);
   pic->stend = pic->stbase + 1024;
+
+  /* memory heap */
+  pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
+  init_heap_page(pic->heap);
 
   pic->global_env = pic_new_empty_env();
 

@@ -17,11 +17,15 @@ struct pic_proc {
   } u;
 };
 
+#define PIC_HEAP_SIZE 1024
+
 typedef struct {
   pic_value *sp;
   pic_value *stbase, *stend;
 
   struct pic_env *global_env;
+
+  struct heap_page *heap;
 } pic_state;
 
 void *pic_alloc(pic_state *, size_t);
