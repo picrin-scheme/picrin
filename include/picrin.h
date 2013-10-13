@@ -11,12 +11,6 @@ struct pic_env {
   struct pic_env *parent;
 };
 
-struct pic_proc {
-  union {
-    struct pic_irep *irep;
-  } u;
-};
-
 #define PIC_HEAP_SIZE 1024
 
 typedef struct {

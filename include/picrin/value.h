@@ -23,7 +23,8 @@ enum pic_tt {
   PIC_TT_UNDEF,
   /* heap */
   PIC_TT_PAIR,
-  PIC_TT_SYMBOL
+  PIC_TT_SYMBOL,
+  PIC_TT_PROC
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -44,8 +45,16 @@ struct pic_symbol {
   char *name;
 };
 
+struct pic_proc {
+  PIC_OBJECT_HEADER
+  union {
+    struct pic_irep *irep;
+  } u;
+};
+
 #define pic_pair_ptr(o) ((struct pic_pair *)o.u.data)
 #define pic_symbol_ptr(o) ((struct pic_symbol *)o.u.data)
+#define pic_proc_ptr(o) ((struct pic_proc *)o.u.data)
 
 enum pic_tt pic_type(pic_value);
 
