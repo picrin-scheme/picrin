@@ -188,7 +188,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_SYMBOL: {
     char *name;
     name = ((struct pic_symbol *)obj)->name;
-    free(name);
+    pic_free(pic, name);
     break;
   }
   case PIC_TT_PAIR: {
@@ -200,8 +200,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     proc = (struct pic_proc *)obj;
 
     /* free irep */
-    free(proc->u.irep->code);
-    free(proc->u.irep);
+    pic_free(pic, proc->u.irep->code);
+    pic_free(pic, proc->u.irep);
   }
   default:
     pic_raise(pic, "logic flaw");
