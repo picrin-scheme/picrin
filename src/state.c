@@ -35,6 +35,9 @@ pic_open()
   pic->arena_idx = 0;
 
   pic->global_env = pic_new_empty_env();
+  pic->sDEFINE = pic_intern_cstr(pic, "define");
+  pic->sCONS = pic_intern_cstr(pic, "cons");
+  pic->sADD = pic_intern_cstr(pic, "add");
 
   return pic;
 }

@@ -18,6 +18,7 @@ typedef struct {
   pic_value *sp;
   pic_value *stbase, *stend;
 
+  pic_value sDEFINE, sCONS, sADD;
   struct pic_env *global_env;
 
   struct heap_page *heap;

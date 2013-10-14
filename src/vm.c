@@ -57,9 +57,9 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 {
   pic_value sDEFINE, sCONS, sADD;
 
-  sDEFINE = pic_intern_cstr(pic, "define");
-  sCONS = pic_intern_cstr(pic, "cons");
-  sADD = pic_intern_cstr(pic, "add");
+  sDEFINE = pic->sDEFINE;
+  sCONS = pic->sCONS;
+  sADD = pic->sADD;
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
