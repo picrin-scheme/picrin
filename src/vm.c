@@ -213,7 +213,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   } VM_LOOP_END;
 
  STOP:
-  return *sp;
+  return POP();
 }
 
 void
