@@ -186,6 +186,10 @@ gc_unmark(union header *p)
 static void
 gc_finalize_object(pic_state *pic, struct pic_object *obj)
 {
+#if GC_DEBUG
+  printf("finalizing object type %d\n", obj->tt);
+#endif
+
   switch (obj->tt) {
   case PIC_TT_SYMBOL: {
     char *name;
@@ -216,15 +220,41 @@ gc_sweep_phase(pic_state *pic)
 {
   union header *base, *bp, *p;
 
+#if GC_DEBUG
+  puts("sweep started");
+#endif
+
   base = pic->heap->base;
   for (p = base->s.ptr; p != base; p = p->s.ptr) {
+
+#if GC_DEBUG
+    puts("sweeping block");
+#endif
+
     for (bp = p + p->s.size; bp != p->s.ptr; bp += bp->s.size) {
+
+#if GC_DEBUG
+      printf("  bp = %p\n  p  = %p\n  p->s.ptr = %p\n  endp = %p\n",bp, p, p->s.ptr, pic->heap->endp);
+#endif
+
       if (p >= p->s.ptr && bp == pic->heap->endp)
 	break;
       if (is_marked(bp)) {
+
+#if GC_DEBUG
+	printf("marked:\t\t\t");
+	pic_debug(pic, pic_obj_value((struct pic_object *)(bp + 1)));
+	printf("\n");
+#endif
+
 	gc_unmark(bp);
 	continue;
       }
+
+#if GC_DEBUG
+      puts("unmarked");
+#endif
+
       /* free! */
       gc_finalize_object(pic, (struct pic_object *)(bp + 1));
       if (bp + bp->s.size == p->s.ptr) {
@@ -249,7 +279,9 @@ gc_sweep_phase(pic_state *pic)
 void
 pic_gc_run(pic_state *pic)
 {
+#if GC_DEBUG
   puts("gc run!");
+#endif
   gc_mark_phase(pic);
   gc_sweep_phase(pic);
 }
@@ -267,6 +299,10 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
       pic_raise(pic, "GC memory exhausted");
   }
   obj->tt = tt;
+
+#if GC_DEBUG
+  printf("* alloced object type %d\n", tt);
+#endif
 
   gc_protect(pic, obj);
   return obj;
