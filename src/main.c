@@ -34,10 +34,13 @@ main()
   int char_index;
   pic_value v;
   struct pic_proc *proc;
+  int ai;
 
   pic = pic_open();
 
   //test_object_creation(pic);
+
+  ai = pic_gc_arena_preserve(pic);
 
   while (1) {
     printf("> ");
@@ -63,6 +66,8 @@ main()
     pic_debug(pic, v);
 
     printf("\n");
+
+    pic_gc_arena_restore(pic, ai);
   }
 
  eof:
