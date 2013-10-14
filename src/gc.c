@@ -212,10 +212,12 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
 static void
 gc_sweep_phase(pic_state *pic)
 {
-  union header *freep, *bp, *p;
+  union header *base, *bp, *p;
 
   freep = pic->heap->freep;
   for (p = freep; p != freep; p = p->s.ptr) {
+  base = pic->heap->base;
+  for (p = base->s.ptr; p != base; p = p->s.ptr) {
     for (bp = p + p->s.size; bp != p->s.ptr; bp += bp->s.size) {
       if (is_marked(bp)) {
 	gc_unmark(bp);
