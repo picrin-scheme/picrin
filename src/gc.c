@@ -202,6 +202,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     /* free irep */
     pic_free(pic, proc->u.irep->code);
     pic_free(pic, proc->u.irep);
+    break;
   }
   default:
     pic_raise(pic, "logic flaw");
