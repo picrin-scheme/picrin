@@ -20,6 +20,8 @@ init_heap_page(struct heap_page *heap)
   heap->freep = freep = base->s.ptr;
   freep->s.ptr = base;
   freep->s.size = ((char *)p + PIC_HEAP_SIZE - (char *)freep) / sizeof(union header);
+
+  heap->endp = freep + freep->s.size;
 }
 
 void *
@@ -217,6 +219,8 @@ gc_sweep_phase(pic_state *pic)
   base = pic->heap->base;
   for (p = base->s.ptr; p != base; p = p->s.ptr) {
     for (bp = p + p->s.size; bp != p->s.ptr; bp += bp->s.size) {
+      if (p >= p->s.ptr && bp == pic->heap->endp)
+	break;
       if (is_marked(bp)) {
 	gc_unmark(bp);
 	continue;
@@ -237,6 +241,7 @@ gc_sweep_phase(pic_state *pic)
       else {
 	p->s.ptr = bp;
       }
+      break;
     }
   }
 }
