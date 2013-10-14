@@ -26,5 +26,11 @@ pic_debug(pic_state *pic, pic_value obj)
   case PIC_TT_UNDEF:
     printf("#<undef>");
     break;
+  case PIC_TT_PROC:
+    printf("#<proc %p>", pic_proc_ptr(obj));
+    break;
+  default:
+    printf("#<unknown type>");
+    break;
   }
 }
