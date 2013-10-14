@@ -240,9 +240,10 @@ gc_sweep_phase(pic_state *pic)
   }
 }
 
-static void
+void
 pic_gc_run(pic_state *pic)
 {
+  puts("gc run!");
   gc_mark_phase(pic);
   gc_sweep_phase(pic);
 }
@@ -252,14 +253,12 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
 {
   struct pic_object *obj;
 
-  pic_gc_run(pic);
   obj = (struct pic_object *)gc_alloc(pic, size);
   if (obj == NULL) {
-    puts("gc run!");
     pic_gc_run(pic);
     obj = (struct pic_object *)gc_alloc(pic, size);
     if (obj == NULL)
-      pic_raise(pic, "memory exhausted");
+      pic_raise(pic, "GC memory exhausted");
   }
   obj->tt = tt;
 
