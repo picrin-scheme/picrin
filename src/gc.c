@@ -4,6 +4,10 @@
 #include "picrin/gc.h"
 #include "picrin/irep.h"
 
+#if GC_DEBUG
+# include <stdio.h>
+#endif
+
 void
 init_heap_page(struct heap_page *heap)
 {
