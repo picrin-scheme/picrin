@@ -3,6 +3,7 @@
 
 struct pic_proc {
   PIC_OBJECT_HEADER
+  bool cfunc_p;
   union {
     pic_value (*cfunc)(pic_state *);
     struct pic_irep *irep;

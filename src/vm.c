@@ -61,6 +61,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   struct pic_pair *cell;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
+  proc->cfunc_p = true;
   proc->u.cfunc = cfunc;
   cell = pic_env_define(pic, pic_intern_cstr(pic, name), pic->global_env);
   cell->cdr = pic_obj_value(proc);
@@ -281,6 +282,7 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
 
+  proc->cfunc_p = false;
   proc->u.irep = irep = (struct pic_irep *)pic_alloc(pic, sizeof(struct pic_irep));
   irep->code = code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
   irep->clen = 0;
