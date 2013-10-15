@@ -2,6 +2,7 @@
 
 #include "picrin.h"
 #include "picrin/gc.h"
+#include "picrin/proc.h"
 
 static struct pic_env *
 pic_new_empty_env()

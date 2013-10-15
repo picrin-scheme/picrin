@@ -7,11 +7,6 @@
 #include "picconf.h"
 #include "picrin/value.h"
 
-struct pic_env {
-  pic_value assoc;
-  struct pic_env *parent;
-};
-
 typedef struct {
   pic_value *sp;
   pic_value *stbase, *stend;
