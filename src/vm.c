@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "picrin.h"
 #include "picrin/irep.h"
@@ -51,6 +52,41 @@ pic_env_define(pic_state *pic, pic_value sym, struct pic_env *env)
   env->assoc = pic_cons(pic, cell, env->assoc);
 
   return pic_pair_ptr(cell);
+}
+
+void
+pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
+{
+  struct pic_proc *proc;
+  struct pic_pair *cell;
+
+  proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
+  proc->u.cfunc = cfunc;
+  cell = pic_env_define(pic, pic_intern_cstr(pic, name), pic->global_env);
+  cell->cdr = pic_obj_value(proc);
+}
+
+void
+pic_get_args(pic_state *pic, const char *format, ...)
+{
+  char c;
+  int i = 0;
+  va_list ap;
+
+  va_start(ap, format);
+  while ((c = *format++)) {
+    switch (c) {
+    case 'o':
+      {
+	pic_value *p;
+
+	p = va_arg(ap, pic_value*);
+	*p = *pic->sp--;
+	i++;
+      }
+      break;
+    }
+  }
 }
 
 static void
