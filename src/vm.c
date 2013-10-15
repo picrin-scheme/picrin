@@ -86,6 +86,15 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	i++;
       }
       break;
+    case 'f':
+      {
+	double *f;
+
+	f = va_arg(ap, double *);
+	*f = pic_float(*--pic->sp);
+	i++;
+      }
+      break;
     }
   }
 }
