@@ -1,6 +1,9 @@
 #ifndef PICCONF_H__
 #define PICCONF_H__
 
+#define PIC_ARENA_SIZE 1024
+#define PIC_HEAP_SIZE 1024
+
 #define DEBUG 1
 
 #if DEBUG

@@ -12,9 +12,6 @@ struct pic_env {
   struct pic_env *parent;
 };
 
-#define PIC_ARENA_SIZE 1024
-#define PIC_HEAP_SIZE 1024
-
 typedef struct {
   pic_value *sp;
   pic_value *stbase, *stend;
