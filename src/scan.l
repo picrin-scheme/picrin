@@ -17,9 +17,11 @@ struct parser_control {
 %%
 
 [ \t\n\r]	/* skip whitespace */
-"("	return tLPAREN;
-")"	return tRPAREN;
-[1-9][0-9]*	{ yylval.datum = pic_float_value(atoi(yytext)); return tNUMBER; }
+"("		return tLPAREN;
+")"		return tRPAREN;
+[0-9]+		{ yylval.datum = pic_float_value(atoi(yytext)); return tNUMBER; }
+\.[0-9]+ 	{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
+[0-9]+\.[0-9]* 	{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
 [a-z0-9A-Z+-/*]+	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
 
 %%
