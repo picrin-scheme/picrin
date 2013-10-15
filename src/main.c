@@ -38,7 +38,9 @@ main()
 
   pic = pic_open();
 
-  //test_object_creation(pic);
+#if OBJECT_CREATION_DEBUG
+  test_object_creation(pic);
+#endif
 
   ai = pic_gc_arena_preserve(pic);
 
