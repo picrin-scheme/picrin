@@ -3,6 +3,7 @@
 
 #include "picrin.h"
 #include "picrin/irep.h"
+#include "picrin/proc.h"
 
 static pic_value
 pic_assq(pic_state *pic, pic_value key, pic_value assoc)
@@ -73,7 +74,10 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       printf("OP_GREF\t%p\n", irep->code[i].u.gvar);
       break;
     case OP_GSET:
-      printf("OP_GSET%p\n", irep->code[i].u.gvar);
+      printf("OP_GSET\t%p\n", irep->code[i].u.gvar);
+      break;
+    case OP_CALL:
+      printf("OP_CALL\t%d\n", irep->code[i].u.i);
       break;
     case OP_CONS:
       puts("OP_CONS");
@@ -87,6 +91,8 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     }
   }
 }
+
+static void pic_gen_call(pic_state *, struct pic_irep *, pic_value, struct pic_env *);
 
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
@@ -144,7 +150,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else {
-      /* not implemented */
+      pic_gen_call(pic, irep, obj, env);
       break;
     }
   }
@@ -165,6 +171,33 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
     break;
   }
   }
+}
+
+static pic_value
+reverse(pic_state *pic, pic_value list, pic_value acc)
+{
+  if (pic_nil_p(list))
+    return acc;
+  return reverse(pic, pic_cdr(pic, list), pic_cons(pic, pic_car(pic, list), acc));
+}
+
+static void
+pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
+{
+  pic_value seq;
+  int i = 0;
+
+  seq = reverse(pic, obj, pic_nil_value());
+  for (; ! pic_nil_p(seq); seq = pic_cdr(pic, seq)) {
+    pic_value v;
+
+    v = pic_car(pic, seq);
+    pic_gen(pic, irep, v, env);
+    ++i;
+  }
+  irep->code[irep->clen].insn = OP_CALL;
+  irep->code[irep->clen].u.i = i - 1;
+  irep->clen++;
 }
 
 struct pic_proc *
@@ -228,6 +261,17 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_GSET) {
       pc->u.gvar->cdr = POP();
+      NEXT;
+    }
+    CASE(OP_CALL) {
+      pic_value c;
+      struct pic_proc *proc;
+      int ai = pic_gc_arena_preserve(pic);
+
+      pic_gc_protect(pic, c = POP());
+      proc = pic_proc_ptr(c);
+      PUSH(proc->u.cfunc(pic));
+      pic_gc_arena_restore(pic, ai);
       NEXT;
     }
     CASE(OP_CONS) {
