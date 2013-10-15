@@ -71,8 +71,8 @@ main()
     v = pic_run(pic, proc, pic_nil_value());
 
     /* print */
+    printf("=> ");
     pic_debug(pic, v);
-
     printf("\n");
 
     pic_gc_arena_restore(pic, ai);
