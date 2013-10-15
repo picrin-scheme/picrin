@@ -15,6 +15,8 @@ pic_new_empty_env()
   return env;
 }
 
+void pic_init_core(pic_state *);
+
 pic_state *
 pic_open()
 {
@@ -34,10 +36,13 @@ pic_open()
   /* GC arena */
   pic->arena_idx = 0;
 
-  pic->global_env = pic_new_empty_env();
   pic->sDEFINE = pic_intern_cstr(pic, "define");
   pic->sCONS = pic_intern_cstr(pic, "cons");
   pic->sADD = pic_intern_cstr(pic, "add");
+
+  /* global environment */
+  pic->global_env = pic_new_empty_env();
+  pic_init_core(pic);
 
   return pic;
 }

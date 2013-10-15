@@ -22,7 +22,7 @@ pic_debug(pic_state *pic, pic_value obj)
     printf("%s", pic_symbol_ptr(obj)->name);
     break;
   case PIC_TT_FLOAT:
-    printf("%f", pic_float(obj));
+    printf("%g", pic_float(obj));
     break;
   case PIC_TT_UNDEF:
     printf("#<undef>");
@@ -35,3 +35,28 @@ pic_debug(pic_state *pic, pic_value obj)
     break;
   }
 }
+
+static pic_value
+pic_port_write(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+  pic_debug(pic, v);
+  return pic_undef_value();
+}
+
+static pic_value
+pic_port_newline(pic_state *pic)
+{
+  puts("");
+  return pic_undef_value();
+}
+
+void
+pic_init_port(pic_state *pic)
+{
+  pic_defun(pic, "write", pic_port_write);
+  pic_defun(pic, "newline", pic_port_newline);
+}
+
