@@ -2,7 +2,7 @@
 #define PICCONF_H__
 
 #define PIC_ARENA_SIZE 100
-#define PIC_HEAP_SIZE 4096
+#define PIC_HEAP_SIZE 8192
 
 #define DEBUG 1
 
