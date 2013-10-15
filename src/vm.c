@@ -53,6 +53,42 @@ pic_env_define(pic_state *pic, pic_value sym, struct pic_env *env)
 }
 
 static void
+print_irep(pic_state *pic, struct pic_irep *irep)
+{
+  int i;
+
+  printf("## irep %p [clen = %zd, ccapa = %zd]\n", irep, irep->clen, irep->ccapa);
+  for (i = 0; i < irep->clen; ++i) {
+    switch (irep->code[i].insn) {
+    case OP_PUSHNIL:
+      puts("OP_PUSHNIL");
+      break;
+    case OP_PUSHI:
+      printf("OP_PUSHI\t%d\n", irep->code[i].u.i);
+      break;
+    case OP_PUSHUNDEF:
+      puts("OP_PUSHUNDEF");
+      break;
+    case OP_GREF:
+      printf("OP_GREF\t%p\n", irep->code[i].u.gvar);
+      break;
+    case OP_GSET:
+      printf("OP_GSET%p\n", irep->code[i].u.gvar);
+      break;
+    case OP_CONS:
+      puts("OP_CONS");
+      break;
+    case OP_ADD:
+      puts("OP_ADD");
+      break;
+    case OP_STOP:
+      puts("OP_STOP");
+      break;
+    }
+  }
+}
+
+static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
   pic_value sDEFINE, sCONS, sADD;
@@ -148,6 +184,10 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   pic_gen(pic, irep, obj, env);
   irep->code[irep->clen].insn = OP_STOP;
   irep->clen++;
+
+#if VM_DEBUG
+  print_irep(pic, irep);
+#endif
 
   return proc;
 }
