@@ -317,6 +317,9 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 #define PUSH(v) (*pic->sp++ = (v))
 #define POP() (*--pic->sp)
 
+#define PUSHCI() (++pic->ci)
+#define POPCI() (pic->ci--)
+
 pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
@@ -324,6 +327,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   int ai = pic_gc_arena_preserve(pic);
 
   pc = proc->u.irep->code;
+  pic->ci->proc = proc;
+  pic->ci->argc = 0;
 
   VM_LOOP {
     CASE(OP_PUSHNIL) {
@@ -349,12 +354,17 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     CASE(OP_CALL) {
       pic_value c;
       struct pic_proc *proc;
+      pic_callinfo *ci;
       int ai = pic_gc_arena_preserve(pic);
 
       pic_gc_protect(pic, c = POP());
       proc = pic_proc_ptr(c);
+      ci = PUSHCI();
+      ci->proc = proc;
+      ci->argc = pc->u.i;
       PUSH(proc->u.cfunc(pic));
       pic_gc_arena_restore(pic, ai);
+      POPCI();
       NEXT;
     }
     CASE(OP_CONS) {

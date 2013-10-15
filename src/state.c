@@ -29,6 +29,10 @@ pic_open()
   pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * PIC_STACK_SIZE);
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
+  /* callinfo */
+  pic->cibase = pic->ci = (pic_callinfo *)malloc(sizeof(pic_callinfo) * PIC_STACK_SIZE);
+  pic->ciend = pic->ciend + PIC_STACK_SIZE;
+
   /* memory heap */
   pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
   init_heap_page(pic->heap);

@@ -7,11 +7,19 @@
 #include "picconf.h"
 #include "picrin/value.h"
 
+typedef struct pic_callinfo {
+  struct pic_proc *proc;
+  int argc;
+} pic_callinfo;
+
 typedef struct {
   pic_value *sp;
   pic_value *stbase, *stend;
 
   pic_value sDEFINE, sCONS;
+  pic_callinfo *ci;
+  pic_callinfo *cibase, *ciend;
+
   pic_value sADD, sSUB, sMUL, sDIV;
   struct pic_env *global_env;
 
