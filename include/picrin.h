@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "picconf.h"
 #include "picrin/value.h"
 
 struct pic_env {
