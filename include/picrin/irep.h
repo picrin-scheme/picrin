@@ -3,7 +3,7 @@
 
 enum pic_instruction {
   OP_PUSHNIL,
-  OP_PUSHI,
+  OP_PUSHNUM,
   OP_PUSHUNDEF,
   OP_GREF,
   OP_GSET,
@@ -16,6 +16,7 @@ enum pic_instruction {
 struct pic_code {
   enum pic_instruction insn;
   union {
+    double f;
     int i;
     struct pic_pair *gvar;
   } u;

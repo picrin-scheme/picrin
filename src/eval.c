@@ -74,7 +74,7 @@ pic_eval(pic_state *pic, pic_value obj, struct pic_env *env)
 	/* not implemented */
       }
     }
-    case PIC_TT_INT:
+    case PIC_TT_FLOAT:
     case PIC_TT_NIL: {
       return obj;
     }

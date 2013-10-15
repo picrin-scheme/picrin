@@ -8,8 +8,8 @@ pic_type(pic_value v)
   switch (v.type) {
   case PIC_VTYPE_NIL:
     return PIC_TT_NIL;
-  case PIC_VTYPE_INT:
-    return PIC_TT_INT;
+  case PIC_VTYPE_FLOAT:
+    return PIC_TT_FLOAT;
   case PIC_VTYPE_UNDEF:
     return PIC_TT_UNDEF;
   case PIC_VTYPE_HEAP:
@@ -38,12 +38,12 @@ pic_obj_value(void *ptr)
 }
 
 pic_value
-pic_int_value(int i)
+pic_float_value(double f)
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_INT;
-  v.u.i = i;
+  v.type = PIC_VTYPE_FLOAT;
+  v.u.f = f;
   return v;
 }
 

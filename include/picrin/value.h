@@ -3,7 +3,7 @@
 
 enum pic_vtype {
   PIC_VTYPE_NIL,
-  PIC_VTYPE_INT,
+  PIC_VTYPE_FLOAT,
   PIC_VTYPE_UNDEF,
   PIC_VTYPE_HEAP
 };
@@ -12,14 +12,14 @@ typedef struct {
   enum pic_vtype type;
   union {
     void *data;
-    int i;
+    double f;
   } u;
 } pic_value;
 
 enum pic_tt {
   /* immediate */
   PIC_TT_NIL,
-  PIC_TT_INT,
+  PIC_TT_FLOAT,
   PIC_TT_UNDEF,
   /* heap */
   PIC_TT_PAIR,
@@ -56,9 +56,9 @@ enum pic_tt pic_type(pic_value);
 pic_value pic_nil_value();
 pic_value pic_undef_value();
 pic_value pic_obj_value(void *);
-pic_value pic_int_value(int);
+pic_value pic_float_value(double);
 
-#define pic_int(v) ((v).u.i)
+#define pic_float(v) ((v).u.f)
 
 #define pic_nil_p(v) (pic_type(v) == PIC_TT_NIL)
 

@@ -21,8 +21,8 @@ pic_debug(pic_state *pic, pic_value obj)
   case PIC_TT_SYMBOL:
     printf("%s", pic_symbol_ptr(obj)->name);
     break;
-  case PIC_TT_INT:
-    printf("%d", pic_int(obj));
+  case PIC_TT_FLOAT:
+    printf("%f", pic_float(obj));
     break;
   case PIC_TT_UNDEF:
     printf("#<undef>");

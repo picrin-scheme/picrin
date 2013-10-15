@@ -100,8 +100,8 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_PUSHNIL:
       puts("OP_PUSHNIL");
       break;
-    case OP_PUSHI:
-      printf("OP_PUSHI\t%d\n", irep->code[i].u.i);
+    case OP_PUSHNUM:
+      printf("OP_PUSHNUM\t%f\n", irep->code[i].u.f);
       break;
     case OP_PUSHUNDEF:
       puts("OP_PUSHUNDEF");
@@ -190,9 +190,9 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
   }
-  case PIC_TT_INT: {
-    irep->code[irep->clen].insn = OP_PUSHI;
-    irep->code[irep->clen].u.i = pic_int(obj);
+  case PIC_TT_FLOAT: {
+    irep->code[irep->clen].insn = OP_PUSHNUM;
+    irep->code[irep->clen].u.f = pic_float(obj);
     irep->clen++;
     break;
   }
@@ -283,8 +283,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       PUSH(pic_nil_value());
       NEXT;
     }
-    CASE(OP_PUSHI) {
-      PUSH(pic_int_value(pc->u.i));
+    CASE(OP_PUSHNUM) {
+      PUSH(pic_float_value(pc->u.f));
       NEXT;
     }
     CASE(OP_PUSHUNDEF) {
@@ -322,7 +322,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value a, b;
       a = POP();
       b = POP();
-      PUSH(pic_int_value(pic_int(a) + pic_int(b)));
+      PUSH(pic_float_value(pic_float(a) + pic_float(b)));
       NEXT;
     }
     CASE(OP_STOP) {

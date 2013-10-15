@@ -19,10 +19,10 @@ struct parser_control {
 }
 
 %token tLPAREN tRPAREN tDOT
-%token <datum> tSYMBOL tINT
+%token <datum> tSYMBOL tNUMBER
 
 %type <datum> datum simple_datum symbol compound_datum
-%type <datum> number integer list list_tail
+%type <datum> number list list_tail
 
 %%
 
@@ -55,14 +55,7 @@ symbol
 ;
 
 number
-	: integer
-;
-
-integer
-	: tINT
-	{
-	  $$ = $1;
-	}
+	: tNUMBER
 ;
 
 compound_datum
@@ -106,7 +99,6 @@ pic_parse(pic_state *pic, const char *str)
   struct parser_control p;
 
   p.pic = pic;
-  p.value = pic_int_value(42);
 
   yy_scan_string(str);
   yyparse(&p);
