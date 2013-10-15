@@ -10,6 +10,9 @@ enum pic_instruction {
   OP_CALL,
   OP_CONS,
   OP_ADD,
+  OP_SUB,
+  OP_MUL,
+  OP_DIV,
   OP_STOP
 };
 

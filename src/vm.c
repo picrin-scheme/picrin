@@ -101,7 +101,7 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       puts("OP_PUSHNIL");
       break;
     case OP_PUSHNUM:
-      printf("OP_PUSHNUM\t%f\n", irep->code[i].u.f);
+      printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
       break;
     case OP_PUSHUNDEF:
       puts("OP_PUSHUNDEF");
@@ -121,6 +121,15 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_ADD:
       puts("OP_ADD");
       break;
+    case OP_SUB:
+      puts("OP_SUB");
+      break;
+    case OP_MUL:
+      puts("OP_MUL");
+      break;
+    case OP_DIV:
+      puts("OP_DIV");
+      break;
     case OP_STOP:
       puts("OP_STOP");
       break;
@@ -133,11 +142,14 @@ static void pic_gen_call(pic_state *, struct pic_irep *, pic_value, struct pic_e
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
-  pic_value sDEFINE, sCONS, sADD;
+  pic_value sDEFINE, sCONS, sADD, sSUB, sMUL, sDIV;
 
   sDEFINE = pic->sDEFINE;
   sCONS = pic->sCONS;
   sADD = pic->sADD;
+  sSUB = pic->sSUB;
+  sMUL = pic->sMUL;
+  sDIV = pic->sDIV;
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
@@ -182,6 +194,30 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_ADD;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sSUB)) {
+      /* generate args in reverse order*/
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      irep->code[irep->clen].insn = OP_SUB;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sMUL)) {
+      /* generate args in reverse order*/
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      irep->code[irep->clen].insn = OP_MUL;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sDIV)) {
+      /* generate args in reverse order*/
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      irep->code[irep->clen].insn = OP_DIV;
       irep->clen++;
       break;
     }
@@ -323,6 +359,27 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       a = POP();
       b = POP();
       PUSH(pic_float_value(pic_float(a) + pic_float(b)));
+      NEXT;
+    }
+    CASE(OP_SUB) {
+      pic_value a, b;
+      a = POP();
+      b = POP();
+      PUSH(pic_float_value(pic_float(a) - pic_float(b)));
+      NEXT;
+    }
+    CASE(OP_MUL) {
+      pic_value a, b;
+      a = POP();
+      b = POP();
+      PUSH(pic_float_value(pic_float(a) * pic_float(b)));
+      NEXT;
+    }
+    CASE(OP_DIV) {
+      pic_value a, b;
+      a = POP();
+      b = POP();
+      PUSH(pic_float_value(pic_float(a) / pic_float(b)));
       NEXT;
     }
     CASE(OP_STOP) {

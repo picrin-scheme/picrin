@@ -38,7 +38,10 @@ pic_open()
 
   pic->sDEFINE = pic_intern_cstr(pic, "define");
   pic->sCONS = pic_intern_cstr(pic, "cons");
-  pic->sADD = pic_intern_cstr(pic, "add");
+  pic->sADD = pic_intern_cstr(pic, "+");
+  pic->sSUB = pic_intern_cstr(pic, "-");
+  pic->sMUL = pic_intern_cstr(pic, "*");
+  pic->sDIV = pic_intern_cstr(pic, "/");
 
   /* global environment */
   pic->global_env = pic_new_empty_env();

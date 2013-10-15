@@ -20,7 +20,7 @@ struct parser_control {
 "("	return tLPAREN;
 ")"	return tRPAREN;
 [1-9][0-9]*	{ yylval.datum = pic_float_value(atoi(yytext)); return tNUMBER; }
-[a-z0-9A-Z]+	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
+[a-z0-9A-Z+-/*]+	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
 
 %%
 
