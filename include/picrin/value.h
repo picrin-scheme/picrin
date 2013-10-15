@@ -45,17 +45,11 @@ struct pic_symbol {
   char *name;
 };
 
-struct pic_proc {
-  PIC_OBJECT_HEADER
-  union {
-    struct pic_irep *irep;
-  } u;
-};
+struct pic_proc;
 
 #define pic_object_ptr(o) ((struct pic_object *)o.u.data)
 #define pic_pair_ptr(o) ((struct pic_pair *)o.u.data)
 #define pic_symbol_ptr(o) ((struct pic_symbol *)o.u.data)
-#define pic_proc_ptr(o) ((struct pic_proc *)o.u.data)
 
 enum pic_tt pic_type(pic_value);
 

@@ -3,6 +3,7 @@
 #include "picrin.h"
 #include "picrin/gc.h"
 #include "picrin/irep.h"
+#include "picrin/proc.h"
 
 #if GC_DEBUG
 # include <stdio.h>
