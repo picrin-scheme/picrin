@@ -198,18 +198,16 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 #define JUMP break
 #define VM_LOOP_END } }
 
-#define PUSH(v) (*++sp = (v))
-#define POP() (*sp--)
+#define PUSH(v) do { pic_value v__ = (v); *++pic->sp = v__; } while (0)
+#define POP() (*pic->sp--)
 
 pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   struct pic_code *pc;
-  pic_value *sp;
   int ai = pic_gc_arena_preserve(pic);
 
   pc = proc->u.irep->code;
-  sp = pic->sp;
 
   VM_LOOP {
     CASE(OP_PUSHNIL) {
