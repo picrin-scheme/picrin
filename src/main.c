@@ -58,6 +58,12 @@ main()
     /* read */
     v = pic_parse(pic, line);
 
+#if DEBUG
+    printf("[read: ");
+    pic_debug(pic, v);
+    printf("]\n");
+#endif
+
     /* eval */
     proc = pic_codegen(pic, v, pic->global_env);
     v = pic_run(pic, proc, pic_nil_value());
