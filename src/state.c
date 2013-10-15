@@ -25,7 +25,7 @@ pic_open()
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * 1024);
   pic->stend = pic->stbase + 1024;
-  *pic->sp = pic_nil_value();	/* push dummy object */
+  *pic->sp = pic_undef_value();	/* push dummy object */
 
   /* memory heap */
   pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
