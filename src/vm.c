@@ -82,7 +82,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	pic_value *p;
 
 	p = va_arg(ap, pic_value*);
-	*p = *pic->sp--;
+	*p = *--pic->sp;
 	i++;
       }
       break;
@@ -305,8 +305,8 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 #define JUMP break
 #define VM_LOOP_END } }
 
-#define PUSH(v) do { pic_value v__ = (v); *++pic->sp = v__; } while (0)
-#define POP() (*pic->sp--)
+#define PUSH(v) (*pic->sp++ = (v))
+#define POP() (*--pic->sp)
 
 pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
