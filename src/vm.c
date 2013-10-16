@@ -409,7 +409,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_CALL) {
-      pic_value c;
+      pic_value c, v;
       struct pic_proc *proc;
 
       pic_gc_protect(pic, c = POP());
@@ -418,10 +418,11 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       ci->proc = proc;
       ci->argc = pc->u.i;
       if (pic_proc_cfunc_p(c)) {
-	PUSH(proc->u.cfunc(pic));
+	v = proc->u.cfunc(pic);
 	pic->sp -= ci->argc;
 	POPCI();
 	ci = pic->ci - 1;
+	PUSH(v);
       }
       else {
 	pic_raise(pic, "closure call not suppoted");
