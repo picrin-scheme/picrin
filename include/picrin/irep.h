@@ -8,6 +8,8 @@ enum pic_instruction {
   OP_GREF,
   OP_GSET,
   OP_CALL,
+  OP_RET,
+  OP_LAMBDA,
   OP_CONS,
   OP_ADD,
   OP_SUB,
@@ -28,6 +30,9 @@ struct pic_code {
 struct pic_irep {
   struct pic_code *code;
   size_t clen, ccapa;
+
+  struct pic_irep **proto;
+  size_t plen, pcapa;
 };
 
 #endif

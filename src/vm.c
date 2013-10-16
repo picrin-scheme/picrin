@@ -125,6 +125,12 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_CALL:
       printf("OP_CALL\t%d\n", irep->code[i].u.i);
       break;
+    case OP_RET:
+      puts("OP_RET");
+      break;
+    case OP_LAMBDA:
+      printf("OP_LAMBDA\t%d\n", irep->code[i].u.i);
+      break;
     case OP_CONS:
       puts("OP_CONS");
       break;
@@ -150,14 +156,31 @@ print_irep(pic_state *pic, struct pic_irep *irep)
   }
 }
 
+static struct pic_irep *
+new_irep(pic_state *pic)
+{
+  struct pic_irep *irep;
+
+  irep = (struct pic_irep *)pic_alloc(pic, sizeof(struct pic_irep));
+  irep->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
+  irep->clen = 0;
+  irep->ccapa = 1024;
+  irep->proto = NULL;
+  irep->plen = irep->pcapa = 0;
+
+  return irep;
+}
+
 static void pic_gen_call(pic_state *, struct pic_irep *, pic_value, struct pic_env *);
+static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_env *);
 
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
-  pic_value sDEFINE, sCONS, sADD, sSUB, sMUL, sDIV;
+  pic_value sDEFINE, sLAMBDA, sCONS, sADD, sSUB, sMUL, sDIV;
 
   sDEFINE = pic->sDEFINE;
+  sLAMBDA = pic->sLAMBDA;
   sCONS = pic->sCONS;
   sADD = pic->sADD;
   sSUB = pic->sSUB;
@@ -192,6 +215,22 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       irep->clen++;
       irep->code[irep->clen].insn = OP_PUSHUNDEF;
       irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sLAMBDA)) {
+      if (irep->proto == NULL) {
+	irep->proto = (struct pic_irep **)pic_alloc(pic, sizeof(struct pic_irep **) * 5);
+	irep->pcapa = 5;
+      }
+      if (irep->plen >= irep->pcapa) {
+	irep->proto = (struct pic_irep **)pic_realloc(pic, irep->proto, irep->pcapa * 2);
+	irep->pcapa *= 2;
+      }
+      irep->code[irep->clen].insn = OP_LAMBDA;
+      irep->code[irep->clen].u.i = irep->plen;
+      irep->clen++;
+
+      irep->proto[irep->plen++] = pic_gen_lambda(pic, obj, env);
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
@@ -280,20 +319,33 @@ pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_en
   irep->clen++;
 }
 
+static struct pic_irep *
+pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
+{
+  pic_value body, v;
+  struct pic_irep *irep;
+
+  irep = new_irep(pic);
+
+  body = pic_cdr(pic, pic_cdr(pic, obj));
+  for (v = body; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
+    pic_gen(pic, irep, pic_car(pic, v), env);
+  }
+  irep->code[irep->clen].insn = OP_RET;
+  irep->clen++;
+
+  return irep;
+}
+
 struct pic_proc *
 pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 {
   struct pic_proc *proc;
   struct pic_irep *irep;
-  struct pic_code *code;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-
   proc->cfunc_p = false;
-  proc->u.irep = irep = (struct pic_irep *)pic_alloc(pic, sizeof(struct pic_irep));
-  irep->code = code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
-  irep->clen = 0;
-  irep->ccapa = 1024;
+  proc->u.irep = irep = new_irep(pic);
 
   pic_gen(pic, irep, obj, env);
   irep->code[irep->clen].insn = OP_STOP;
@@ -370,6 +422,16 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       else {
 	pic_raise(pic, "closure call not suppoted");
       }
+      pic_gc_arena_restore(pic, ai);
+      NEXT;
+    }
+    CASE(OP_LAMBDA) {
+      struct pic_proc *proc;
+
+      proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc *), PIC_TT_PROC);
+      proc->cfunc_p = false;
+      proc->u.irep = ci->proc->u.irep->proto[pc->u.i];
+      PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;
     }

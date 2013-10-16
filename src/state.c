@@ -41,6 +41,7 @@ pic_open()
   pic->arena_idx = 0;
 
   pic->sDEFINE = pic_intern_cstr(pic, "define");
+  pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
   pic->sCONS = pic_intern_cstr(pic, "cons");
   pic->sADD = pic_intern_cstr(pic, "+");
   pic->sSUB = pic_intern_cstr(pic, "-");
