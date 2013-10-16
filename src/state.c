@@ -37,6 +37,11 @@ pic_open()
   pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
   init_heap_page(pic->heap);
 
+  /* irep */
+  pic->irep = (struct pic_irep **)malloc(sizeof(struct pic_irep *) * PIC_IREP_SIZE);
+  pic->ilen = 0;
+  pic->icapa = PIC_IREP_SIZE;
+
   /* GC arena */
   pic->arena_idx = 0;
 

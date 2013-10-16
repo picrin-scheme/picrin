@@ -30,9 +30,6 @@ struct pic_code {
 struct pic_irep {
   struct pic_code *code;
   size_t clen, ccapa;
-
-  struct pic_irep **proto;
-  size_t plen, pcapa;
 };
 
 #endif

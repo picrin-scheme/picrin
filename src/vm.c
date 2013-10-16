@@ -165,9 +165,6 @@ new_irep(pic_state *pic)
   irep->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
   irep->clen = 0;
   irep->ccapa = 1024;
-  irep->proto = NULL;
-  irep->plen = irep->pcapa = 0;
-
   return irep;
 }
 
@@ -218,19 +215,11 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else if (pic_eq_p(pic, proc, sLAMBDA)) {
-      if (irep->proto == NULL) {
-	irep->proto = (struct pic_irep **)pic_alloc(pic, sizeof(struct pic_irep **) * 5);
-	irep->pcapa = 5;
-      }
-      if (irep->plen >= irep->pcapa) {
-	irep->proto = (struct pic_irep **)pic_realloc(pic, irep->proto, irep->pcapa * 2);
-	irep->pcapa *= 2;
-      }
       irep->code[irep->clen].insn = OP_LAMBDA;
-      irep->code[irep->clen].u.i = irep->plen;
+      irep->code[irep->clen].u.i = pic->ilen;
       irep->clen++;
 
-      irep->proto[irep->plen++] = pic_gen_lambda(pic, obj, env);
+      pic->irep[pic->ilen++] = pic_gen_lambda(pic, obj, env);
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
@@ -334,6 +323,12 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
   irep->code[irep->clen].insn = OP_RET;
   irep->clen++;
 
+#if VM_DEBUG
+  printf("LAMBDA_%d:\n", pic->ilen);
+  print_irep(pic, irep);
+  puts("");
+#endif
+
   return irep;
 }
 
@@ -430,7 +425,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
       proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc *), PIC_TT_PROC);
       proc->cfunc_p = false;
-      proc->u.irep = ci->proc->u.irep->proto[pc->u.i];
+      proc->u.irep = pic->irep[pc->u.i];
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;

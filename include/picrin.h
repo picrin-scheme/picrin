@@ -23,6 +23,9 @@ typedef struct {
   pic_value sADD, sSUB, sMUL, sDIV;
   struct pic_env *global_env;
 
+  struct pic_irep **irep;
+  size_t ilen, icapa;
+
   struct heap_page *heap;
   struct pic_object *arena[PIC_ARENA_SIZE];
   int arena_idx;
