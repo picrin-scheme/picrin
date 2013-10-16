@@ -251,9 +251,10 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
     if (pic_eq_p(pic, proc, sDEFINE)) {
       struct pic_pair *gvar;
 
+      gvar = env_define(pic, pic_car(pic, pic_cdr(pic, obj)), env);
+
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
 
-      gvar = env_define(pic, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_GSET;
       irep->code[irep->clen].u.gvar = gvar;
       irep->clen++;
