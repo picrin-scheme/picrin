@@ -143,6 +143,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_STOP:
       puts("OP_STOP");
       break;
+    default:
+      puts("<<unknown>>");
+      break;
     }
   }
 }
@@ -192,7 +195,6 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
-      /* generate args in reverse order*/
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_CONS;
@@ -200,7 +202,6 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else if (pic_eq_p(pic, proc, sADD)) {
-      /* generate args in reverse order*/
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_ADD;
@@ -208,7 +209,6 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else if (pic_eq_p(pic, proc, sSUB)) {
-      /* generate args in reverse order*/
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_SUB;
@@ -216,7 +216,6 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else if (pic_eq_p(pic, proc, sMUL)) {
-      /* generate args in reverse order*/
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_MUL;
@@ -224,7 +223,6 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else if (pic_eq_p(pic, proc, sDIV)) {
-      /* generate args in reverse order*/
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_DIV;
