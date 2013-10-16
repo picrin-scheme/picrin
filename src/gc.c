@@ -228,6 +228,8 @@ gc_sweep_phase(pic_state *pic)
   union header *base, *bp, *p;
 
 #if GC_DEBUG
+  int freed = 0;
+
   puts("sweep started");
 #endif
 
@@ -284,12 +286,20 @@ gc_sweep_phase(pic_state *pic)
 	p = p->s.ptr;
       }
 
+#if GC_DEBUG
+      freed++;
+#endif
+
       goto retry;
     }
 
     if (p->s.ptr == base)
       break;
   }
+
+#if GC_DEBUG
+  printf("freed: %d counts\n", freed);
+#endif
 }
 
 void
