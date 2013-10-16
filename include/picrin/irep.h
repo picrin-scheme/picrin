@@ -9,6 +9,8 @@ enum pic_instruction {
   OP_GREF,
   OP_GSET,
   OP_LREF,
+  OP_JMP,
+  OP_JMPIF,
   OP_CALL,
   OP_RET,
   OP_LAMBDA,

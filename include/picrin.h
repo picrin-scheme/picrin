@@ -23,7 +23,7 @@ typedef struct {
   pic_callinfo *ci;
   pic_callinfo *cibase, *ciend;
 
-  pic_value sDEFINE, sLAMBDA, sCONS;
+  pic_value sDEFINE, sLAMBDA, sIF, sCONS;
   pic_value sADD, sSUB, sMUL, sDIV;
   struct pic_env *global_env;
 

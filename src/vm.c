@@ -210,10 +210,11 @@ static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_env *)
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
-  pic_value sDEFINE, sLAMBDA, sCONS, sADD, sSUB, sMUL, sDIV;
+  pic_value sDEFINE, sLAMBDA, sIF, sCONS, sADD, sSUB, sMUL, sDIV;
 
   sDEFINE = pic->sDEFINE;
   sLAMBDA = pic->sLAMBDA;
+  sIF = pic->sIF;
   sCONS = pic->sCONS;
   sADD = pic->sADD;
   sSUB = pic->sSUB;
@@ -266,6 +267,26 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       irep->clen++;
 
       pic->irep[pic->ilen++] = pic_gen_lambda(pic, obj, env);
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sIF)) {
+      int s,t;
+
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+
+      irep->code[irep->clen].insn = OP_JMPIF;
+      s = irep->clen++;
+
+      /* if false branch */
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj)))), env);
+      irep->code[irep->clen].insn = OP_JMP;
+      t = irep->clen++;
+
+      irep->code[s].u.i = irep->clen - s;
+
+      /* if true branch */
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
+      irep->code[t].u.i = irep->clen - t;
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
@@ -463,6 +484,20 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_LREF) {
       PUSH(pic->ci[-1].sp[pc->u.i]);
+      NEXT;
+    }
+    CASE(OP_JMP) {
+      pc += pc->u.i;
+      JUMP;
+    }
+    CASE(OP_JMPIF) {
+      pic_value v;
+
+      v = POP();
+      if (! pic_false_p(v)) {
+	pc += pc->u.i;
+	JUMP;
+      }
       NEXT;
     }
     CASE(OP_CALL) {
