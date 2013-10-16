@@ -4,6 +4,20 @@
 #include "picrin/value.h"
 
 static pic_value
+pic_number_lt(pic_state *pic)
+{
+  double f,g;
+
+  pic_get_args(pic, "ff", &f, &g);
+  if (f < g) {
+    return pic_true_value();
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+static pic_value
 pic_number_sqrt(pic_state *pic)
 {
   double f;
@@ -76,6 +90,7 @@ pic_number_atan(pic_state *pic)
 void
 pic_init_number(pic_state *pic)
 {
+  pic_defun(pic, "<", pic_number_lt);
   pic_defun(pic, "sqrt", pic_number_sqrt);
   pic_defun(pic, "sin", pic_number_sin);
   pic_defun(pic, "cos", pic_number_cos);
