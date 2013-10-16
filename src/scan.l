@@ -14,15 +14,23 @@ struct parser_control {
 
 %option nounput
 
+  /* symbol */
+identifier	[a-z0-9A-Z+-/*?<=>_]+
+
+  /* number */
+digit		[0-9]
+real		{sign}{ureal}|{infnan}
+ureal		{digit}+|\.{digit}+|{digit}+\.{digit}*
+sign		[+-]?
+infnan		(\+inf\.0|-inf\.0|\+nan\.0|-nan\.0)
+
 %%
 
 [ \t\n\r]	/* skip whitespace */
 "("		return tLPAREN;
 ")"		return tRPAREN;
-[0-9]+		{ yylval.datum = pic_float_value(atoi(yytext)); return tNUMBER; }
-\.[0-9]+ 	{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
-[0-9]+\.[0-9]* 	{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
-[a-z0-9A-Z+-/*]+	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
+{real} 		{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
+{identifier}	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
 
 %%
 
