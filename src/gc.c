@@ -27,6 +27,8 @@ init_heap_page(struct heap_page *heap)
   freep->s.size = ((char *)p + PIC_HEAP_SIZE - (char *)freep) / sizeof(union header);
 
   heap->endp = freep + freep->s.size;
+
+  printf("base = %p\nbase->s.ptr = %p\n", base, base->s.ptr);
 }
 
 void *
@@ -230,6 +232,7 @@ gc_sweep_phase(pic_state *pic)
 #endif
 
   base = pic->heap->base;
+  printf("base = %p\nbase->s.ptr = %p\n", base, base->s.ptr);
   for (p = base->s.ptr; ; p = p->s.ptr) {
 
 #if GC_DEBUG
@@ -314,7 +317,7 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
   obj->tt = tt;
 
 #if GC_DEBUG
-  printf("* alloced object type %d\n", tt);
+    printf("* alloced object type %d\n", tt);
 #endif
 
   gc_protect(pic, obj);
