@@ -17,4 +17,6 @@ struct pic_proc {
 
 #define pic_proc_ptr(o) ((struct pic_proc *)o.u.data)
 
+#define pic_proc_cfunc_p(o) (pic_proc_ptr(o)->cfunc_p)
+
 #endif

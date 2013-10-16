@@ -322,13 +322,14 @@ pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   struct pic_code *pc;
+  pic_callinfo *ci;
   int ai = pic_gc_arena_preserve(pic);
 
   pc = proc->u.irep->code;
 
-  PUSHCI();
-  pic->ci->proc = proc;
-  pic->ci->argc = 0;
+  ci = PUSHCI();
+  ci->proc = proc;
+  ci->argc = 0;
 
   VM_LOOP {
     CASE(OP_PUSHNIL) {
@@ -354,16 +355,21 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     CASE(OP_CALL) {
       pic_value c;
       struct pic_proc *proc;
-      pic_callinfo *ci;
 
       pic_gc_protect(pic, c = POP());
       proc = pic_proc_ptr(c);
       ci = PUSHCI();
       ci->proc = proc;
       ci->argc = pc->u.i;
-      PUSH(proc->u.cfunc(pic));
-      pic->sp -= ci->argc;
-      POPCI();
+      if (pic_proc_cfunc_p(c)) {
+	PUSH(proc->u.cfunc(pic));
+	pic->sp -= ci->argc;
+	POPCI();
+	ci = pic->ci - 1;
+      }
+      else {
+	pic_raise(pic, "closure call not suppoted");
+      }
       pic_gc_arena_restore(pic, ai);
       NEXT;
     }
