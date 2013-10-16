@@ -161,6 +161,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_GSET:
       printf("OP_GSET\t%p\n", irep->code[i].u.gvar);
       break;
+    case OP_LREF:
+      printf("OP_LREF\t%d\n", irep->code[i].u.i);
+      break;
     case OP_JMP:
       printf("OP_JMP\t%d\n", irep->code[i].u.i);
       break;
