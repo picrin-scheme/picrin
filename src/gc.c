@@ -20,7 +20,7 @@ init_heap_page(struct heap_page *heap)
   heap->base = base = (union header *)
     (((unsigned long)p + sizeof(union header) -1) & ~(sizeof(union header) - 1));
   base->s.ptr = base + 1;
-  base->s.size = 0;
+  base->s.size = 1;
 
   heap->freep = freep = base->s.ptr;
   freep->s.ptr = base;
