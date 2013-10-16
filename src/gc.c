@@ -349,10 +349,6 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
   }
   obj->tt = tt;
 
-#if GC_DEBUG
-    printf("* alloced object type %d\n", tt);
-#endif
-
   gc_protect(pic, obj);
   return obj;
 }
