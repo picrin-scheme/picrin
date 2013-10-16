@@ -46,14 +46,14 @@ pic_port_write(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
   pic_debug(pic, v);
-  return pic_undef_value();
+  return pic_false_value();
 }
 
 static pic_value
 pic_port_newline(pic_state *pic)
 {
   puts("");
-  return pic_undef_value();
+  return pic_false_value();
 }
 
 void

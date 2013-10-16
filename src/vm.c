@@ -119,9 +119,6 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_PUSHNUM:
       printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
       break;
-    case OP_PUSHUNDEF:
-      puts("OP_PUSHUNDEF");
-      break;
     case OP_GREF:
       printf("OP_GREF\t%p\n", irep->code[i].u.gvar);
       break;
@@ -213,7 +210,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       irep->code[irep->clen].insn = OP_GSET;
       irep->code[irep->clen].u.gvar = gvar;
       irep->clen++;
-      irep->code[irep->clen].insn = OP_PUSHUNDEF;
+      irep->code[irep->clen].insn = OP_PUSHFALSE;
       irep->clen++;
       break;
     }
@@ -283,11 +280,6 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   }
   case PIC_TT_NIL: {
     irep->code[irep->clen].insn = OP_PUSHNIL;
-    irep->clen++;
-    break;
-  }
-  case PIC_TT_UNDEF: {
-    irep->code[irep->clen].insn = OP_PUSHUNDEF;
     irep->clen++;
     break;
   }
@@ -406,10 +398,6 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_PUSHNUM) {
       PUSH(pic_float_value(pc->u.f));
-      NEXT;
-    }
-    CASE(OP_PUSHUNDEF) {
-      PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_GREF) {
