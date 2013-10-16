@@ -8,6 +8,7 @@ enum pic_instruction {
   OP_PUSHNUM,
   OP_GREF,
   OP_GSET,
+  OP_LREF,
   OP_CALL,
   OP_RET,
   OP_LAMBDA,

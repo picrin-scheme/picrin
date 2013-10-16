@@ -24,8 +24,13 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
   goto enter;
 }
 
-static struct pic_pair *
-pic_env_lookup(pic_state *pic, pic_value sym, struct pic_env *env)
+enum scope_type {
+  SCOPE_GLOBAL,
+  SCOPE_LOCAL,
+};
+
+static enum scope_type
+env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, struct pic_pair **p)
 {
   pic_value v;
 
@@ -33,18 +38,28 @@ pic_env_lookup(pic_state *pic, pic_value sym, struct pic_env *env)
 
   v = pic_assq(pic, sym, env->assoc);
   if (! pic_nil_p(v)) {
-    return pic_pair_ptr(v);
+    *p = pic_pair_ptr(v);
+    goto leave;
   }
   if (env->parent) {
     env = env->parent;
     goto enter;
   }
 
-  return NULL;
+  *p = NULL;
+
+ leave:
+
+  if (env->parent) {
+    return SCOPE_LOCAL;
+  }
+  else {
+    return SCOPE_GLOBAL;
+  }
 }
 
 static struct pic_pair *
-pic_env_define(pic_state *pic, pic_value sym, struct pic_env *env)
+env_define(pic_state *pic, pic_value sym, struct pic_env *env)
 {
   pic_value cell;
 
@@ -52,6 +67,27 @@ pic_env_define(pic_state *pic, pic_value sym, struct pic_env *env)
   env->assoc = pic_cons(pic, cell, env->assoc);
 
   return pic_pair_ptr(cell);
+}
+
+static struct pic_env *
+env_new(pic_state *pic, pic_value args, struct pic_env *env)
+{
+  struct pic_env *inner_env;
+  pic_value v;
+  struct pic_pair *cell;
+  int i;
+
+  inner_env = (struct pic_env *)malloc(sizeof(struct pic_env));
+  inner_env->assoc = pic_nil_value();
+  inner_env->parent = env;
+
+  i = -1;
+  for (v = args; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
+    cell = env_define(pic, pic_car(pic, v), inner_env);
+    cell->cdr = pic_float_value(i--);
+  }
+
+  return inner_env;
 }
 
 void
@@ -63,7 +99,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
   proc->cfunc_p = true;
   proc->u.cfunc = cfunc;
-  cell = pic_env_define(pic, pic_intern_cstr(pic, name), pic->global_env);
+  cell = env_define(pic, pic_intern_cstr(pic, name), pic->global_env);
   cell->cdr = pic_obj_value(proc);
 }
 
@@ -186,15 +222,25 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
+    enum scope_type s;
     struct pic_pair *gvar;
 
-    gvar = pic_env_lookup(pic, obj, env);
+    s = env_lookup(pic, obj, env, &gvar);
     if (! gvar) {
       pic_raise(pic, "unbound variable");
     }
-    irep->code[irep->clen].insn = OP_GREF;
-    irep->code[irep->clen].u.gvar = gvar;
-    irep->clen++;
+    switch (s) {
+    case SCOPE_LOCAL:
+      irep->code[irep->clen].insn = OP_LREF;
+      irep->code[irep->clen].u.i = (int)pic_float(gvar->cdr);
+      irep->clen++;
+      break;
+    case SCOPE_GLOBAL:
+      irep->code[irep->clen].insn = OP_GREF;
+      irep->code[irep->clen].u.gvar = gvar;
+      irep->clen++;
+      break;
+    }
     break;
   }
   case PIC_TT_PAIR: {
@@ -206,7 +252,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
 
-      gvar = pic_env_define(pic, pic_car(pic, pic_cdr(pic, obj)), env);
+      gvar = env_define(pic, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_GSET;
       irep->code[irep->clen].u.gvar = gvar;
       irep->clen++;
@@ -316,14 +362,20 @@ pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_en
 static struct pic_irep *
 pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
 {
-  pic_value body, v;
+  struct pic_env *inner_env;
+  pic_value args, body, v;
   struct pic_irep *irep;
 
   irep = new_irep(pic);
 
+  /* arguments */
+  args = pic_car(pic, pic_cdr(pic, obj));
+  inner_env = env_new(pic, args, env);
+
+  /* body */
   body = pic_cdr(pic, pic_cdr(pic, obj));
   for (v = body; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-    pic_gen(pic, irep, pic_car(pic, v), env);
+    pic_gen(pic, irep, pic_car(pic, v), inner_env);
   }
   irep->code[irep->clen].insn = OP_RET;
   irep->clen++;
@@ -409,6 +461,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pc->u.gvar->cdr = POP();
       NEXT;
     }
+    CASE(OP_LREF) {
+      PUSH(pic->ci[-1].sp[pc->u.i]);
+      NEXT;
+    }
     CASE(OP_CALL) {
       pic_value c, v;
       struct pic_proc *proc;
@@ -441,7 +497,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic->sp -= ci->argc;
       ci = POPCI();
       pc = ci->pc;
-      pic->sp = ci->sp;
+      pic->sp = ci->sp - ci->argc;
       PUSH(v);
       NEXT;
     }
