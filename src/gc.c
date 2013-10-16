@@ -175,6 +175,13 @@ gc_mark_phase(pic_state *pic)
   do {
     gc_mark(pic, env->assoc);
   } while ((env = env->parent) != NULL);
+
+  gc_mark(pic, pic->sDEFINE);
+  gc_mark(pic, pic->sCONS);
+  gc_mark(pic, pic->sADD);
+  gc_mark(pic, pic->sSUB);
+  gc_mark(pic, pic->sMUL);
+  gc_mark(pic, pic->sDIV);
 }
 
 static bool
