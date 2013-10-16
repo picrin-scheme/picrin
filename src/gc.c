@@ -230,7 +230,7 @@ gc_sweep_phase(pic_state *pic)
 #endif
 
   base = pic->heap->base;
-  for (p = base->s.ptr; p != base; p = p->s.ptr) {
+  for (p = base->s.ptr; ; p = p->s.ptr) {
 
 #if GC_DEBUG
     puts("sweeping block");
@@ -283,6 +283,9 @@ gc_sweep_phase(pic_state *pic)
 
       goto retry;
     }
+
+    if (p->s.ptr == base)
+      break;
   }
 }
 
