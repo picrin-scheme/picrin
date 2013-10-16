@@ -71,7 +71,7 @@ void
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  int i = 0;
+  int i = -1;
   va_list ap;
 
   va_start(ap, format);
@@ -82,8 +82,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	pic_value *p;
 
 	p = va_arg(ap, pic_value*);
-	*p = *--pic->sp;
-	i++;
+	*p = pic->sp[i];
+	i--;
       }
       break;
     case 'f':
@@ -91,8 +91,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	double *f;
 
 	f = va_arg(ap, double *);
-	*f = pic_float(*--pic->sp);
-	i++;
+	*f = pic_float(pic->sp[i]);
+	i--;
       }
       break;
     }
@@ -355,7 +355,6 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value c;
       struct pic_proc *proc;
       pic_callinfo *ci;
-      int ai = pic_gc_arena_preserve(pic);
 
       pic_gc_protect(pic, c = POP());
       proc = pic_proc_ptr(c);
@@ -363,8 +362,9 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       ci->proc = proc;
       ci->argc = pc->u.i;
       PUSH(proc->u.cfunc(pic));
-      pic_gc_arena_restore(pic, ai);
+      pic->sp -= ci->argc;
       POPCI();
+      pic_gc_arena_restore(pic, ai);
       NEXT;
     }
     CASE(OP_CONS) {
