@@ -3,6 +3,8 @@
 
 enum pic_instruction {
   OP_PUSHNIL,
+  OP_PUSHTRUE,
+  OP_PUSHFALSE,
   OP_PUSHNUM,
   OP_PUSHUNDEF,
   OP_GREF,

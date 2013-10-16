@@ -14,6 +14,9 @@ struct parser_control {
 
 %option nounput
 
+  /* boolean */
+boolean		#t|#f|#true|#false
+
   /* symbol */
 identifier	[a-z0-9A-Z+-/*?<=>_]+
 
@@ -22,13 +25,14 @@ digit		[0-9]
 real		{sign}{ureal}|{infnan}
 ureal		{digit}+|\.{digit}+|{digit}+\.{digit}*
 sign		[+-]?
-infnan		(\+inf\.0|-inf\.0|\+nan\.0|-nan\.0)
+infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 %%
 
 [ \t\n\r]	/* skip whitespace */
 "("		return tLPAREN;
 ")"		return tRPAREN;
+{boolean}	{ yylval.datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
 {real} 		{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
 {identifier}	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
 

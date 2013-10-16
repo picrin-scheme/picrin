@@ -110,6 +110,12 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_PUSHNIL:
       puts("OP_PUSHNIL");
       break;
+    case OP_PUSHTRUE:
+      puts("OP_PUSHTRUE");
+      break;
+    case OP_PUSHFALSE:
+      puts("OP_PUSHFALSE");
+      break;
     case OP_PUSHNUM:
       printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
       break;
@@ -259,6 +265,16 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
   }
+  case PIC_TT_BOOL: {
+    if (pic_true_p(obj)) {
+      irep->code[irep->clen].insn = OP_PUSHTRUE;
+    }
+    else {
+      irep->code[irep->clen].insn = OP_PUSHFALSE;
+    }
+    irep->clen++;
+    break;
+  }
   case PIC_TT_FLOAT: {
     irep->code[irep->clen].insn = OP_PUSHNUM;
     irep->code[irep->clen].u.f = pic_float(obj);
@@ -378,6 +394,14 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   VM_LOOP {
     CASE(OP_PUSHNIL) {
       PUSH(pic_nil_value());
+      NEXT;
+    }
+    CASE(OP_PUSHTRUE) {
+      PUSH(pic_true_value());
+      NEXT;
+    }
+    CASE(OP_PUSHFALSE) {
+      PUSH(pic_false_value());
       NEXT;
     }
     CASE(OP_PUSHNUM) {

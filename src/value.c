@@ -8,6 +8,9 @@ pic_type(pic_value v)
   switch (v.type) {
   case PIC_VTYPE_NIL:
     return PIC_TT_NIL;
+  case PIC_VTYPE_TRUE:
+  case PIC_VTYPE_FALSE:
+    return PIC_TT_BOOL;
   case PIC_VTYPE_FLOAT:
     return PIC_TT_FLOAT;
   case PIC_VTYPE_UNDEF:
@@ -23,6 +26,36 @@ pic_nil_value()
   pic_value v;
 
   v.type = PIC_VTYPE_NIL;
+  v.u.data = NULL;
+  return v;
+}
+
+pic_value
+pic_true_value()
+{
+  pic_value v;
+
+  v.type = PIC_VTYPE_TRUE;
+  v.u.data = NULL;
+  return v;
+}
+
+pic_value
+pic_false_value()
+{
+  pic_value v;
+
+  v.type = PIC_VTYPE_FALSE;
+  v.u.data = NULL;
+  return v;
+}
+
+pic_value
+pic_bool_value(bool b)
+{
+  pic_value v;
+
+  v.type = b ? PIC_VTYPE_TRUE : PIC_VTYPE_FALSE;
   v.u.data = NULL;
   return v;
 }

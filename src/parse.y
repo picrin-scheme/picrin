@@ -19,7 +19,7 @@ struct parser_control {
 }
 
 %token tLPAREN tRPAREN tDOT
-%token <datum> tSYMBOL tNUMBER
+%token <datum> tSYMBOL tNUMBER tBOOLEAN
 
 %type <datum> datum simple_datum symbol compound_datum
 %type <datum> number list list_tail
@@ -45,6 +45,7 @@ datum
 simple_datum
 	: symbol
 	| number
+	| boolean
 ;
 
 symbol
@@ -56,6 +57,10 @@ symbol
 
 number
 	: tNUMBER
+;
+
+boolean
+	: tBOOLEAN
 ;
 
 compound_datum

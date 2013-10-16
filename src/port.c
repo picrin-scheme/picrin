@@ -11,6 +11,12 @@ pic_debug(pic_state *pic, pic_value obj)
   case PIC_TT_NIL:
     printf("()");
     break;
+  case PIC_TT_BOOL:
+    if (pic_true_p(obj))
+      printf("#t");
+    else
+      printf("#f");
+    break;
   case PIC_TT_PAIR:
     printf("(");
     pic_debug(pic, pic_car(pic, obj));

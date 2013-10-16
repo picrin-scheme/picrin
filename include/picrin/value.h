@@ -3,8 +3,10 @@
 
 enum pic_vtype {
   PIC_VTYPE_NIL,
-  PIC_VTYPE_FLOAT,
+  PIC_VTYPE_TRUE,
+  PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
+  PIC_VTYPE_FLOAT,
   PIC_VTYPE_HEAP
 };
 
@@ -19,6 +21,7 @@ typedef struct {
 enum pic_tt {
   /* immediate */
   PIC_TT_NIL,
+  PIC_TT_BOOL,
   PIC_TT_FLOAT,
   PIC_TT_UNDEF,
   /* heap */
@@ -54,12 +57,17 @@ struct pic_proc;
 enum pic_tt pic_type(pic_value);
 
 pic_value pic_nil_value();
+pic_value pic_true_value();
+pic_value pic_false_value();
+pic_value pic_bool_value(bool);
 pic_value pic_undef_value();
 pic_value pic_obj_value(void *);
 pic_value pic_float_value(double);
 
 #define pic_float(v) ((v).u.f)
 
-#define pic_nil_p(v) (pic_type(v) == PIC_TT_NIL)
+#define pic_nil_p(v) ((v).type == PIC_VTYPE_NIL)
+#define pic_true_p(v) ((v).type == PIC_VTYPE_TRUE)
+#define pic_false_p(v) ((v).type == PIC_VTYPE_FALSE)
 
 #endif
