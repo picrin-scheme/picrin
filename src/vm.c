@@ -149,9 +149,6 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_STOP:
       puts("OP_STOP");
       break;
-    default:
-      puts("<<unknown>>");
-      break;
     }
   }
 }
