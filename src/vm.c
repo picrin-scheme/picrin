@@ -375,6 +375,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   struct pic_code *pc;
   pic_callinfo *ci;
+  pic_value val;
   int ai = pic_gc_arena_preserve(pic);
 
   pc = proc->u.irep->code;
@@ -417,17 +418,31 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       ci = PUSHCI();
       ci->proc = proc;
       ci->argc = pc->u.i;
+      ci->pc = pc;
+      ci->sp = pic->sp;
       if (pic_proc_cfunc_p(c)) {
 	v = proc->u.cfunc(pic);
 	pic->sp -= ci->argc;
 	POPCI();
-	ci = pic->ci - 1;
 	PUSH(v);
+	pic_gc_arena_restore(pic, ai);
+	NEXT;
       }
       else {
-	pic_raise(pic, "closure call not suppoted");
+	pc = proc->u.irep->code;
+	pic_gc_arena_restore(pic, ai);
+	JUMP;
       }
-      pic_gc_arena_restore(pic, ai);
+    }
+    CASE(OP_RET) {
+      pic_value v;
+
+      v = POP();
+      pic->sp -= ci->argc;
+      ci = POPCI();
+      pc = ci->pc;
+      pic->sp = ci->sp;
+      PUSH(v);
       NEXT;
     }
     CASE(OP_LAMBDA) {
@@ -483,7 +498,23 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
  STOP:
   POPCI();
-  return POP();
+  val = POP();
+
+#if GC_DEBUG
+  puts("**VM END STATE**");
+  printf("stbase = %p\nsp = %p\n", pic->stbase, pic->sp);
+  printf("cibase = %p\nci = %p\n", pic->cibase, pic->ci);
+  if (pic->stbase != pic->sp) {
+    pic_value *sp;
+    printf("* stack trace:");
+    for (sp = pic->stbase; pic->sp != sp; ++sp) {
+      pic_debug(pic, *sp);
+      puts("");
+    }
+  }
+#endif
+
+  return val;
 }
 
 void
