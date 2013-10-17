@@ -4,8 +4,8 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 
-void
-pic_debug(pic_state *pic, pic_value obj)
+static void
+write(pic_state *pic, pic_value obj)
 {
   switch (pic_type(obj)) {
   case PIC_TT_NIL:
@@ -19,9 +19,9 @@ pic_debug(pic_state *pic, pic_value obj)
     break;
   case PIC_TT_PAIR:
     printf("(");
-    pic_debug(pic, pic_car(pic, obj));
+    write(pic, pic_car(pic, obj));
     printf(" . ");
-    pic_debug(pic, pic_cdr(pic, obj));
+    write(pic, pic_cdr(pic, obj));
     printf(")");
     break;
   case PIC_TT_SYMBOL:
@@ -39,13 +39,19 @@ pic_debug(pic_state *pic, pic_value obj)
   }
 }
 
+void
+pic_debug(pic_state *pic, pic_value obj)
+{
+  write(pic, obj);
+}
+
 static pic_value
 pic_port_write(pic_state *pic)
 {
   pic_value v;
 
   pic_get_args(pic, "o", &v);
-  pic_debug(pic, v);
+  write(pic, v);
   return pic_false_value();
 }
 
