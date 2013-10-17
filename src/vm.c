@@ -406,7 +406,7 @@ pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_en
     ++i;
   }
   irep->code[irep->clen].insn = OP_CALL;
-  irep->code[irep->clen].u.i = i - 1;
+  irep->code[irep->clen].u.i = i;
   irep->clen++;
 }
 
@@ -476,17 +476,16 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 # define VM_LOOP_END } }
 #endif
 
-#define PUSH(v) (*pic->sp++ = (v))
-#define POP() (*--pic->sp)
+#define PUSH(v) (*++pic->sp = (v))
+#define POP() (*pic->sp--)
 
-#define PUSHCI() (pic->ci++)
-#define POPCI() (--pic->ci)
+#define PUSHCI() (++pic->ci)
+#define POPCI() (pic->ci--)
 
 pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   struct pic_code *pc;
-  pic_callinfo *ci;
   pic_value val;
   int ai = pic_gc_arena_preserve(pic);
 
@@ -501,9 +500,11 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
   pc = proc->u.irep->code;
 
-  ci = PUSHCI();
-  ci->proc = proc;
-  ci->argc = 0;
+  /* adjust call frame */
+  pic->sp[0] = pic_obj_value(proc);
+  pic->ci->argc = 0;
+  pic->ci->pc = NULL;
+  pic->ci->sp = NULL;
 
   VM_LOOP {
     CASE(OP_PUSHNIL) {
@@ -531,7 +532,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_LREF) {
-      PUSH(pic->ci[-1].sp[pc->u.i]);
+      PUSH(pic->ci->sp[pc->u.i]);
       NEXT;
     }
     CASE(OP_JMP) {
@@ -550,12 +551,12 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_CALL) {
       pic_value c, v;
+      pic_callinfo *ci;
       struct pic_proc *proc;
 
-      pic_gc_protect(pic, c = POP());
+      c = pic->sp[0];
       proc = pic_proc_ptr(c);
       ci = PUSHCI();
-      ci->proc = proc;
       ci->argc = pc->u.i;
       ci->pc = pc;
       ci->sp = pic->sp;
@@ -575,6 +576,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_RET) {
       pic_value v;
+      pic_callinfo *ci;
 
       v = POP();
       pic->sp -= ci->argc;
@@ -636,7 +638,6 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   } VM_LOOP_END;
 
  STOP:
-  POPCI();
   val = POP();
 
 #if GC_DEBUG

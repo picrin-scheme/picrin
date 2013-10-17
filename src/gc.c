@@ -177,11 +177,7 @@ gc_mark_phase(pic_state *pic)
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
     gc_mark(pic, *stack);
   }
-
-  /* callinfo */
-  for (ci = pic->cibase; ci != pic->ci; ++ci) {
-    gc_mark_object(pic, (struct pic_object *)ci->proc);
-  }
+  gc_mark(pic, *stack);
 
   /* arena */
   for (i = 0; i < pic->arena_idx; ++i) {

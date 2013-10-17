@@ -10,7 +10,6 @@
 struct pic_code;
 
 typedef struct pic_callinfo {
-  struct pic_proc *proc;
   int argc;
   struct pic_code *pc;
   pic_value *sp;
