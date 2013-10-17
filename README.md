@@ -28,6 +28,16 @@
 	
 In the default option, when `make` command is called without arguments, it builds the binary and right after that dropped into the picrin interactive shell (REPL).
 
+## Requirement
+
+picrin scheme depends on some external libraries to build the binary:
+
+- bison
+- yacc
+- make
+- gcc
+- readline
+
 ## Authors
 
 Yuichi Nishiwaki (yuichi.nishiwaki at gmail.com)
