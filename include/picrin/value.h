@@ -27,7 +27,8 @@ enum pic_tt {
   /* heap */
   PIC_TT_PAIR,
   PIC_TT_SYMBOL,
-  PIC_TT_PROC
+  PIC_TT_PROC,
+  PIC_TT_PORT
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -49,6 +50,7 @@ struct pic_symbol {
 };
 
 struct pic_proc;
+struct pic_port;
 
 #define pic_obj_ptr(o) ((struct pic_object *)o.u.data)
 #define pic_pair_ptr(o) ((struct pic_pair *)o.u.data)
