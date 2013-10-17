@@ -28,7 +28,9 @@ init_heap_page(struct heap_page *heap)
 
   heap->endp = freep + freep->s.size;
 
+#if GC_DEBUG
   printf("base = %p\nbase->s.ptr = %p\n", base, base->s.ptr);
+#endif
 }
 
 void *
@@ -257,7 +259,9 @@ gc_sweep_phase(pic_state *pic)
 #endif
 
   base = pic->heap->base;
+#if GC_DEBUG
   printf("base = %p\nbase->s.ptr = %p\n", base, base->s.ptr);
+#endif
   for (p = base->s.ptr; ; p = p->s.ptr) {
 
 #if GC_DEBUG
