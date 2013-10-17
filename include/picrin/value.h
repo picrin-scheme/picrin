@@ -50,7 +50,7 @@ struct pic_symbol {
 
 struct pic_proc;
 
-#define pic_object_ptr(o) ((struct pic_object *)o.u.data)
+#define pic_obj_ptr(o) ((struct pic_object *)o.u.data)
 #define pic_pair_ptr(o) ((struct pic_pair *)o.u.data)
 #define pic_symbol_ptr(o) ((struct pic_symbol *)o.u.data)
 
@@ -70,5 +70,6 @@ pic_value pic_float_value(double);
 #define pic_true_p(v) ((v).type == PIC_VTYPE_TRUE)
 #define pic_false_p(v) ((v).type == PIC_VTYPE_FALSE)
 #define pic_undef_p(v) ((v).type == PIC_VTYPE_UNDEF)
+#define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 
 #endif

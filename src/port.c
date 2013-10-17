@@ -4,6 +4,8 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 
+static void write_pair(pic_state *pic, struct pic_pair *pair);
+
 static void
 write(pic_state *pic, pic_value obj)
 {
@@ -19,9 +21,7 @@ write(pic_state *pic, pic_value obj)
     break;
   case PIC_TT_PAIR:
     printf("(");
-    write(pic, pic_car(pic, obj));
-    printf(" . ");
-    write(pic, pic_cdr(pic, obj));
+    write_pair(pic, pic_pair_ptr(obj));
     printf(")");
     break;
   case PIC_TT_SYMBOL:
@@ -37,6 +37,23 @@ write(pic_state *pic, pic_value obj)
     printf("#<proc %p>", pic_proc_ptr(obj));
     break;
   }
+}
+
+static void
+write_pair(pic_state *pic, struct pic_pair *pair)
+{
+  write(pic, pair->car);
+
+  if (pic_nil_p(pair->cdr)) {
+    return;
+  }
+  if (pic_pair_p(pair->cdr)) {
+    printf(" ");
+    write_pair(pic, pic_pair_ptr(pair->cdr));
+    return;
+  }
+  printf(" . ");
+  write(pic, pair->cdr);
 }
 
 void
