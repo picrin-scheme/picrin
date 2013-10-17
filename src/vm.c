@@ -451,11 +451,19 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   return proc;
 }
 
-#define VM_LOOP for (;;) { switch (pc->insn) {
-#define CASE(x) case x:
-#define NEXT pc++; break
-#define JUMP break
-#define VM_LOOP_END } }
+#if PIC_DIRECT_THREADED_VM
+# define VM_LOOP JUMP;
+# define CASE(x) L_##x:
+# define NEXT ++pc; JUMP;
+# define JUMP goto *oplabels[pc->insn];
+# define VM_LOOP_END
+#else
+# define VM_LOOP for (;;) { switch (pc->insn) {
+# define CASE(x) case x:
+# define NEXT pc++; break
+# define JUMP break
+# define VM_LOOP_END } }
+#endif
 
 #define PUSH(v) (*pic->sp++ = (v))
 #define POP() (*--pic->sp)
@@ -470,6 +478,15 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   pic_callinfo *ci;
   pic_value val;
   int ai = pic_gc_arena_preserve(pic);
+
+#if PIC_DIRECT_THREADED_VM
+  static void *oplabels[] = {
+    &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHNUM,
+    &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_JMP, &&L_OP_JMPIF,
+    &&L_OP_CALL, &&L_OP_RET, &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_ADD,
+    &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_STOP
+  };
+#endif
 
   pc = proc->u.irep->code;
 
