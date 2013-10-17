@@ -494,7 +494,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
   /* adjust call frame */
   pic->sp[0] = pic_obj_value(proc);
-  pic->ci->argc = 0;
+  pic->ci->argc = 1;
   pic->ci->pc = NULL;
   pic->ci->sp = NULL;
 
