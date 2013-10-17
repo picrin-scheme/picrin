@@ -189,6 +189,11 @@ gc_mark_phase(pic_state *pic)
     gc_mark(pic, env->assoc);
   } while ((env = env->parent) != NULL);
 
+  /* globals */
+  for (i = 0; i < pic->glen; ++i) {
+    gc_mark(pic, pic->globals[i]);
+  }
+
   gc_mark(pic, pic->sDEFINE);
   gc_mark(pic, pic->sLAMBDA);
   gc_mark(pic, pic->sCONS);
