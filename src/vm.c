@@ -26,6 +26,7 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
 
 enum scope_type {
   SCOPE_GLOBAL,
+  SCOPE_NONLOCAL,
   SCOPE_LOCAL,
 };
 
@@ -33,6 +34,7 @@ static enum scope_type
 env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, struct pic_pair **p)
 {
   pic_value v;
+  bool f = true;
 
  enter:
 
@@ -41,6 +43,7 @@ env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, struct pic_pair *
     *p = pic_pair_ptr(v);
     goto leave;
   }
+  f = false;
   if (env->parent) {
     env = env->parent;
     goto enter;
@@ -51,7 +54,12 @@ env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, struct pic_pair *
  leave:
 
   if (env->parent) {
-    return SCOPE_LOCAL;
+    if (f) {
+      return SCOPE_LOCAL;
+    }
+    else {
+      return SCOPE_NONLOCAL;
+    }
   }
   else {
     return SCOPE_GLOBAL;
@@ -250,6 +258,8 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       irep->code[irep->clen].u.gvar = gvar;
       irep->clen++;
       break;
+    case SCOPE_NONLOCAL:
+      pic_raise(pic, "reference to closed variable not supported");
     }
     break;
   }
