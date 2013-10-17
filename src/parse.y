@@ -24,7 +24,7 @@ struct parser_control {
 %token <datum> tSYMBOL tNUMBER tBOOLEAN
 
 %type <datum> datum simple_datum symbol compound_datum
-%type <datum> number list list_tail
+%type <datum> number list list_data
 
 %%
 
@@ -70,22 +70,22 @@ compound_datum
 ;
 
 list
-	: tLPAREN list_tail
+	: tLPAREN list_data tRPAREN
 	{
 	  $$ = $2;
 	}
 ;
 
-list_tail
-	: tRPAREN
+list_data
+	: /* none */
 	{
 	  $$ = pic_nil_value();
 	}
-	| datum tDOT datum tRPAREN
+	| datum tDOT datum
 	{
 	  $$ = pic_cons(p->pic, $1, $3);
 	}
-	| datum list_tail
+	| datum list_data
 	{
 	  $$ = pic_cons(p->pic, $1, $2);
 	}

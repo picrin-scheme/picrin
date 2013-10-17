@@ -18,7 +18,7 @@ struct parser_control {
 boolean		#t|#f|#true|#false
 
   /* symbol */
-identifier	[a-z0-9A-Z+-/*?<=>_]+
+identifier	[a-z0-9A-Z+-/*?<=>_.]+
 
   /* number */
 digit		[0-9]
@@ -30,6 +30,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 %%
 
 [ \t\n\r]	/* skip whitespace */
+"."		return tDOT;
 "("		return tLPAREN;
 ")"		return tRPAREN;
 {boolean}	{ yylval.datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
