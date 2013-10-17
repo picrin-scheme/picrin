@@ -85,7 +85,7 @@ env_new(pic_state *pic, pic_value args, struct pic_env *env)
   struct pic_pair *cell;
   int i;
 
-  inner_env = (struct pic_env *)malloc(sizeof(struct pic_env));
+  inner_env = (struct pic_env *)pic_alloc(pic, sizeof(struct pic_env));
   inner_env->assoc = pic_nil_value();
   inner_env->parent = env;
 
@@ -420,6 +420,7 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
   }
   irep->code[irep->clen].insn = OP_RET;
   irep->clen++;
+  pic_free(pic, inner_env);
 
 #if VM_DEBUG
   printf("LAMBDA_%d:\n", pic->ilen);
