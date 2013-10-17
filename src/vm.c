@@ -308,7 +308,10 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       seq = pic_cdr(pic, obj);
       for (v = seq; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
 	pic_gen(pic, irep, pic_car(pic, v), env);
+	irep->code[irep->clen].insn = OP_POP;
+	irep->clen++;
       }
+      irep->clen--;
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
@@ -419,7 +422,10 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
   body = pic_cdr(pic, pic_cdr(pic, obj));
   for (v = body; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
     pic_gen(pic, irep, pic_car(pic, v), inner_env);
+    irep->code[irep->clen].insn = OP_POP;
+    irep->clen++;
   }
+  irep->clen--;
   irep->code[irep->clen].insn = OP_RET;
   irep->clen++;
   pic_free(pic, inner_env);
@@ -483,7 +489,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
-    &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHNUM,
+    &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHNUM,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_JMP, &&L_OP_JMPIF,
     &&L_OP_CALL, &&L_OP_RET, &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_ADD,
     &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_STOP
@@ -499,6 +505,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   pic->ci->sp = NULL;
 
   VM_LOOP {
+    CASE(OP_POP) {
+      POP();
+      NEXT;
+    }
     CASE(OP_PUSHNIL) {
       PUSH(pic_nil_value());
       NEXT;
@@ -571,10 +581,9 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_callinfo *ci;
 
       v = POP();
-      pic->sp -= ci->argc;
       ci = POPCI();
       pc = ci->pc;
-      pic->sp = ci->sp - ci->argc;
+      pic->sp -= ci->argc;
       PUSH(v);
       NEXT;
     }

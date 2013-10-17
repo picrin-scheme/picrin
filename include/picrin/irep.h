@@ -2,6 +2,7 @@
 #define IREP_H__
 
 enum pic_opcode {
+  OP_POP,
   OP_PUSHNIL,
   OP_PUSHTRUE,
   OP_PUSHFALSE,
