@@ -27,6 +27,8 @@ typedef struct {
   pic_value sADD, sSUB, sMUL, sDIV;
   struct pic_env *global_env;
 
+  pic_value *globals;
+  size_t glen, gcapa;
   struct pic_irep **irep;
   size_t ilen, icapa;
 

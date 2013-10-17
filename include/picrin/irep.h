@@ -27,7 +27,6 @@ struct pic_code {
   union {
     double f;
     int i;
-    struct pic_pair *gvar;
   } u;
 };
 

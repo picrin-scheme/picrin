@@ -24,65 +24,55 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
   goto enter;
 }
 
-enum scope_type {
-  SCOPE_GLOBAL,
-  SCOPE_NONLOCAL,
-  SCOPE_LOCAL,
-};
-
-static enum scope_type
-env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, struct pic_pair **p)
+static bool
+env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, int *depth, int *idx)
 {
   pic_value v;
-  bool f = true;
+  int d = 0;
 
  enter:
 
   v = pic_assq(pic, sym, env->assoc);
   if (! pic_nil_p(v)) {
-    *p = pic_pair_ptr(v);
-    goto leave;
+    if (env->parent == NULL) {		/* global */
+      *depth = -1;
+    }
+    else {			/* non-global */
+      *depth = d;
+    }
+    *idx = (int)pic_float(pic_pair_ptr(v)->cdr);
+    return true;
   }
-  f = false;
   if (env->parent) {
     env = env->parent;
+    ++d;
     goto enter;
   }
-
-  *p = NULL;
-
- leave:
-
-  if (env->parent) {
-    if (f) {
-      return SCOPE_LOCAL;
-    }
-    else {
-      return SCOPE_NONLOCAL;
-    }
-  }
-  else {
-    return SCOPE_GLOBAL;
-  }
+  return false;
 }
 
-static struct pic_pair *
-env_define(pic_state *pic, pic_value sym, struct pic_env *env)
+static int
+env_global_define(pic_state *pic, pic_value sym)
 {
   pic_value cell;
+  int d, idx;
 
-  cell = pic_cons(pic, sym, pic_undef_value());
-  env->assoc = pic_cons(pic, cell, env->assoc);
+  if (env_lookup(pic, sym, pic->global_env, &d, &idx)) {
+    return idx;
+  }
 
-  return pic_pair_ptr(cell);
+  idx = pic->glen++;
+  cell = pic_cons(pic, sym, pic_float_value(idx));
+  pic->global_env->assoc = pic_cons(pic, cell, pic->global_env->assoc);
+
+  return idx;
 }
 
 static struct pic_env *
 env_new(pic_state *pic, pic_value args, struct pic_env *env)
 {
   struct pic_env *inner_env;
-  pic_value v;
-  struct pic_pair *cell;
+  pic_value v, cell;
   int i;
 
   inner_env = (struct pic_env *)pic_alloc(pic, sizeof(struct pic_env));
@@ -91,8 +81,10 @@ env_new(pic_state *pic, pic_value args, struct pic_env *env)
 
   i = -1;
   for (v = args; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-    cell = env_define(pic, pic_car(pic, v), inner_env);
-    cell->cdr = pic_float_value(i--);
+    pic_value sym = pic_car(pic, v);
+
+    cell = pic_cons(pic, sym, pic_float_value(i--));
+    inner_env->assoc = pic_cons(pic, cell, inner_env->assoc);
   }
 
   return inner_env;
@@ -102,13 +94,13 @@ void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
   struct pic_proc *proc;
-  struct pic_pair *cell;
+  int idx;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
   proc->cfunc_p = true;
   proc->u.cfunc = cfunc;
-  cell = env_define(pic, pic_intern_cstr(pic, name), pic->global_env);
-  cell->cdr = pic_obj_value(proc);
+  idx = env_global_define(pic, pic_intern_cstr(pic, name));
+  pic->globals[idx] = pic_obj_value(proc);
 }
 
 void
@@ -164,10 +156,10 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
       break;
     case OP_GREF:
-      printf("OP_GREF\t%p\n", irep->code[i].u.gvar);
+      printf("OP_GREF\t%i\n", irep->code[i].u.i);
       break;
     case OP_GSET:
-      printf("OP_GSET\t%p\n", irep->code[i].u.gvar);
+      printf("OP_GSET\t%i\n", irep->code[i].u.i);
       break;
     case OP_LREF:
       printf("OP_LREF\t%d\n", irep->code[i].u.i);
@@ -241,25 +233,25 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
-    enum scope_type s;
-    struct pic_pair *gvar;
+    bool b;
+    int depth, idx;
 
-    s = env_lookup(pic, obj, env, &gvar);
-    if (! gvar) {
+    b = env_lookup(pic, obj, env, &depth, &idx);
+    if (! b) {
       pic_raise(pic, "unbound variable");
     }
-    switch (s) {
-    case SCOPE_LOCAL:
-      irep->code[irep->clen].insn = OP_LREF;
-      irep->code[irep->clen].u.i = (int)pic_float(gvar->cdr);
-      irep->clen++;
-      break;
-    case SCOPE_GLOBAL:
+
+    if (depth == -1) {		/* global */
       irep->code[irep->clen].insn = OP_GREF;
-      irep->code[irep->clen].u.gvar = gvar;
+      irep->code[irep->clen].u.i = idx;
       irep->clen++;
-      break;
-    case SCOPE_NONLOCAL:
+    }
+    else if (depth == 0) {	/* local */
+      irep->code[irep->clen].insn = OP_LREF;
+      irep->code[irep->clen].u.i = idx;
+      irep->clen++;
+    }
+    else {			/* nonlocal */
       pic_raise(pic, "reference to closed variable not supported");
     }
     break;
@@ -269,14 +261,14 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 
     proc = pic_car(pic, obj);
     if (pic_eq_p(pic, proc, sDEFINE)) {
-      struct pic_pair *gvar;
+      int idx;
 
-      gvar = env_define(pic, pic_car(pic, pic_cdr(pic, obj)), env);
+      idx = env_global_define(pic, pic_car(pic, pic_cdr(pic, obj)));
 
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
 
       irep->code[irep->clen].insn = OP_GSET;
-      irep->code[irep->clen].u.gvar = gvar;
+      irep->code[irep->clen].u.i = idx;
       irep->clen++;
       irep->code[irep->clen].insn = OP_PUSHFALSE;
       irep->clen++;
@@ -524,11 +516,11 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(pc->u.gvar->cdr);
+      PUSH(pic->globals[pc->u.i]);
       NEXT;
     }
     CASE(OP_GSET) {
-      pc->u.gvar->cdr = POP();
+      pic->globals[pc->u.i] = POP();
       NEXT;
     }
     CASE(OP_LREF) {
