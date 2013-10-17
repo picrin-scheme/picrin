@@ -48,6 +48,7 @@ pic_open()
   pic->sDEFINE = pic_intern_cstr(pic, "define");
   pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
   pic->sIF = pic_intern_cstr(pic, "if");
+  pic->sBEGIN = pic_intern_cstr(pic, "begin");
   pic->sCONS = pic_intern_cstr(pic, "cons");
   pic->sADD = pic_intern_cstr(pic, "+");
   pic->sSUB = pic_intern_cstr(pic, "-");

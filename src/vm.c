@@ -227,11 +227,12 @@ static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_env *)
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
-  pic_value sDEFINE, sLAMBDA, sIF, sCONS, sADD, sSUB, sMUL, sDIV;
+  pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sCONS, sADD, sSUB, sMUL, sDIV;
 
   sDEFINE = pic->sDEFINE;
   sLAMBDA = pic->sLAMBDA;
   sIF = pic->sIF;
+  sBEGIN = pic->sBEGIN;
   sCONS = pic->sCONS;
   sADD = pic->sADD;
   sSUB = pic->sSUB;
@@ -307,6 +308,15 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       /* if true branch */
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
       irep->code[t].u.i = irep->clen - t;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sBEGIN)) {
+      pic_value v, seq;
+
+      seq = pic_cdr(pic, obj);
+      for (v = seq; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
+	pic_gen(pic, irep, pic_car(pic, v), env);
+      }
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
