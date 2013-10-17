@@ -9,6 +9,7 @@
 struct parser_control {
   pic_state *pic;
   pic_value value;
+  bool incomp;
 };
 
 %}
@@ -31,11 +32,16 @@ struct parser_control {
 program
 	:
 	{
-	  p->value = pic_undef_value(p->pic);
+	  p->value = pic_undef_value();
 	}
 	| datum
 	{
 	  p->value = $1;
+	}
+	| incomplete_datum
+	{
+	  p->incomp = true;
+	  p->value = pic_undef_value();
 	}
 ;
 
@@ -91,6 +97,18 @@ list_data
 	}
 ;
 
+incomplete_datum
+	: tLPAREN incomplete_data
+;
+
+incomplete_data
+	:  /* none */
+	| datum tDOT
+	| datum incomplete_datum
+	| datum tDOT incomplete_datum
+	| datum incomplete_data
+;
+
 %%
 
 int
@@ -99,12 +117,13 @@ yyerror(struct parser_control *p, const char *msg)
   puts(msg);
 }
 
-pic_value
-pic_parse(pic_state *pic, const char *str)
+bool
+pic_parse(pic_state *pic, const char *str, pic_value *v)
 {
   struct parser_control p;
 
   p.pic = pic;
+  p.incomp = false;
 
   yy_scan_string(str);
   yyparse(&p);
@@ -114,5 +133,8 @@ pic_parse(pic_state *pic, const char *str)
     p.value = pic_undef_value();
   }
 
-  return p.value;
+  if (! p.incomp) {
+    *v = p.value;
+  }
+  return ! p.incomp;
 }

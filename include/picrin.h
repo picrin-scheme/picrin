@@ -61,7 +61,7 @@ bool pic_eq_p(pic_state *, pic_value, pic_value);
 
 pic_value pic_intern_cstr(pic_state *, const char *);
 
-pic_value pic_parse(pic_state *, const char *);
+bool pic_parse(pic_state *, const char *, pic_value *);
 
 pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
 pic_value pic_run(pic_state *, struct pic_proc *, pic_value);

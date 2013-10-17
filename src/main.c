@@ -31,17 +31,20 @@ test_object_creation(pic_state *pic)
   }
 }
 
+#define CODE_MAX_LENGTH 1024
 #define LINE_MAX_LENGTH 256
 
 int
 main()
 {
   pic_state *pic;
-  char line[LINE_MAX_LENGTH], last_char, *read_line;
+  char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
+  char last_char, *read_line, *prompt;
   int char_index;
   pic_value v;
   struct pic_proc *proc;
   int ai;
+  bool r;
 
   pic = pic_open();
 
@@ -52,9 +55,10 @@ main()
   ai = pic_gc_arena_preserve(pic);
 
   while (1) {
+    prompt = code[0] == '\0' ? "> " : "* ";
 
 #if PIC_ENABLE_READLINE
-    read_line = readline("> ");
+    read_line = readline(prompt);
     if (read_line == NULL) {
       line[0] = '\0';
     }
@@ -64,7 +68,7 @@ main()
       free(read_line);
     }
 #else
-    printf("> ");
+    printf(prompt);
 
     char_index = 0;
     while ((last_char = getchar()) != '\n') {
@@ -77,19 +81,27 @@ main()
     line[char_index] = '\0';
 #endif
 
+    if (strlen(code) + strlen(line) >= CODE_MAX_LENGTH)
+      goto overflow;
+    strcat(code, line);
+
     /* read */
-    v = pic_parse(pic, line);
+    r = pic_parse(pic, code, &v);
+    if (! r) {			/* wait for more input */
+      pic_gc_arena_restore(pic, ai);
+      continue;
+    }
+    code[0] = '\0';
+    if (pic_undef_p(v)) {	/* parse error */
+      pic_gc_arena_restore(pic, ai);
+      continue;
+    }
 
 #if DEBUG
     printf("[read: ");
     pic_debug(pic, v);
     printf("]\n");
 #endif
-
-    if (pic_undef_p(v)) {
-      pic_gc_arena_restore(pic, ai);
-      continue;
-    }
 
     /* eval */
     proc = pic_codegen(pic, v, pic->global_env);
