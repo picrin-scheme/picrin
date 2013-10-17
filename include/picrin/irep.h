@@ -1,7 +1,7 @@
 #ifndef IREP_H__
 #define IREP_H__
 
-enum pic_instruction {
+enum pic_opcode {
   OP_PUSHNIL,
   OP_PUSHTRUE,
   OP_PUSHFALSE,
@@ -23,7 +23,7 @@ enum pic_instruction {
 };
 
 struct pic_code {
-  enum pic_instruction insn;
+  enum pic_opcode insn;
   union {
     double f;
     int i;
