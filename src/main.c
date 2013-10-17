@@ -3,6 +3,8 @@
 #include "picrin.h"
 
 #if PIC_ENABLE_READLINE
+# include <string.h>
+# include <stdlib.h>
 # include <readline/readline.h>
 # include <readline/history.h>
 #endif
@@ -83,6 +85,11 @@ main()
     pic_debug(pic, v);
     printf("]\n");
 #endif
+
+    if (pic_undef_p(v)) {
+      pic_gc_arena_restore(pic, ai);
+      continue;
+    }
 
     /* eval */
     proc = pic_codegen(pic, v, pic->global_env);

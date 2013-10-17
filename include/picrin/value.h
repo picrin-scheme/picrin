@@ -69,5 +69,6 @@ pic_value pic_float_value(double);
 #define pic_nil_p(v) ((v).type == PIC_VTYPE_NIL)
 #define pic_true_p(v) ((v).type == PIC_VTYPE_TRUE)
 #define pic_false_p(v) ((v).type == PIC_VTYPE_FALSE)
+#define pic_undef_p(v) ((v).type == PIC_VTYPE_UNDEF)
 
 #endif

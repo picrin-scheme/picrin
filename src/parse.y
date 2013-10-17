@@ -4,6 +4,8 @@
 
 #include "picrin.h"
 
+#define YYERROR_VERBOSE 1
+
 struct parser_control {
   pic_state *pic;
   pic_value value;
@@ -29,7 +31,7 @@ struct parser_control {
 program
 	:
 	{
-	  p->value = pic_nil_value(p->pic);
+	  p->value = pic_undef_value(p->pic);
 	}
 	| datum
 	{
@@ -95,7 +97,6 @@ int
 yyerror(struct parser_control *p, const char *msg)
 {
   puts(msg);
-  abort();
 }
 
 pic_value
@@ -108,6 +109,10 @@ pic_parse(pic_state *pic, const char *str)
   yy_scan_string(str);
   yyparse(&p);
   yylex_destroy();
+
+  if (yynerrs > 0) {
+    p.value = pic_undef_value();
+  }
 
   return p.value;
 }
