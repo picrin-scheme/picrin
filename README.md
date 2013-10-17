@@ -10,6 +10,7 @@
 - bytecode interpreter (based on Stack VM technology)
 - direct threading VM
 - exact GC (simple mark and sweep strategy)
+- advanced REPL support (multi-line input, etc)
 
 ## How to use it
 
