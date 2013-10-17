@@ -2,6 +2,11 @@
 
 #include "picrin.h"
 
+#if PIC_ENABLE_READLINE
+# include <readline/readline.h>
+# include <readline/history.h>
+#endif
+
 void
 test_object_creation(pic_state *pic)
 {
@@ -30,7 +35,7 @@ int
 main()
 {
   pic_state *pic;
-  char line[LINE_MAX_LENGTH], last_char;
+  char line[LINE_MAX_LENGTH], last_char, *read_line;
   int char_index;
   pic_value v;
   struct pic_proc *proc;
@@ -45,6 +50,18 @@ main()
   ai = pic_gc_arena_preserve(pic);
 
   while (1) {
+
+#if PIC_ENABLE_READLINE
+    read_line = readline("> ");
+    if (read_line == NULL) {
+      line[0] = '\0';
+    }
+    else {
+      strncpy(line, read_line, LINE_MAX_LENGTH - 1);
+      add_history(read_line);
+      free(read_line);
+    }
+#else
     printf("> ");
 
     char_index = 0;
@@ -56,6 +73,7 @@ main()
       line[char_index++] = last_char;
     }
     line[char_index] = '\0';
+#endif
 
     /* read */
     v = pic_parse(pic, line);
