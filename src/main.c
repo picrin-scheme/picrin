@@ -9,28 +9,6 @@
 # include <readline/history.h>
 #endif
 
-void
-test_object_creation(pic_state *pic)
-{
-  pic_value v;
-
-  {
-    v = pic_intern_cstr(pic, "symbol");
-    pic_debug(pic, v);
-    puts(" [should be `symbol`]");
-  }
-  {
-    v = pic_nil_value();
-    pic_debug(pic, v);
-    puts(" [should be `()`]");
-  }
-  {
-    v = pic_cons(pic, pic_intern_cstr(pic, "foo"), pic_intern_cstr(pic, "bar"));
-    pic_debug(pic, v);
-    puts(" [should be `(foo . bar)`]");
-  }
-}
-
 #define CODE_MAX_LENGTH 1024
 #define LINE_MAX_LENGTH 256
 
@@ -47,10 +25,6 @@ main()
   bool r;
 
   pic = pic_open();
-
-#if OBJECT_CREATION_DEBUG
-  test_object_creation(pic);
-#endif
 
   ai = pic_gc_arena_preserve(pic);
 
