@@ -1,5 +1,6 @@
 
-	This product is developed at the second-grade course, Informatic Science Basic Experiment class at the University of Tokyo.
+	This product is developed at the second-grade course, Informatic Science
+	Basic Experiment class at the University of Tokyo.
 
 # Picrin - a lightweight scheme interpreter
 
@@ -11,6 +12,12 @@
 - direct threaded VM
 - exact GC (simple mark and sweep strategy)
 - advanced REPL support (multi-line input, etc)
+
+## Homepage
+
+Currently picrin is hosted on Github. You can freely send a bug report or pull-request, and fork the repository.
+
+https://github.com/wasabiz/picrin
 
 ## How to use it
 
