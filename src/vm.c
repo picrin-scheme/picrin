@@ -143,6 +143,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
   printf("## irep %p [clen = %zd, ccapa = %zd]\n", irep, irep->clen, irep->ccapa);
   for (i = 0; i < irep->clen; ++i) {
     switch (irep->code[i].insn) {
+    case OP_POP:
+      puts("OP_POP");
+      break;
     case OP_PUSHNIL:
       puts("OP_PUSHNIL");
       break;
@@ -375,6 +378,11 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
     irep->clen++;
     break;
   }
+  case PIC_TT_PROC:
+  case PIC_TT_UNDEF:
+  case PIC_TT_PORT: {
+    pic_raise(pic, "invalid expression given");
+  }
   }
 }
 
@@ -431,7 +439,7 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
   pic_free(pic, inner_env);
 
 #if VM_DEBUG
-  printf("LAMBDA_%d:\n", pic->ilen);
+  printf("LAMBDA_%zd:\n", pic->ilen);
   print_irep(pic, irep);
   puts("");
 #endif
@@ -476,6 +484,7 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
 
 #define PUSH(v) (*++pic->sp = (v))
 #define POP() (*pic->sp--)
+#define POPN(i) ((void)(pic->sp-=i))
 
 #define PUSHCI() (++pic->ci)
 #define POPCI() (pic->ci--)
@@ -506,7 +515,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
   VM_LOOP {
     CASE(OP_POP) {
-      POP();
+      POPN(1);
       NEXT;
     }
     CASE(OP_PUSHNIL) {

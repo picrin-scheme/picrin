@@ -1,6 +1,7 @@
 #include <stdlib.h>
+#include <stdbool.h>
 
-#include "picrin.h"
+#include "picrin/value.h"
 
 enum pic_tt
 pic_type(pic_value v)
@@ -9,15 +10,18 @@ pic_type(pic_value v)
   case PIC_VTYPE_NIL:
     return PIC_TT_NIL;
   case PIC_VTYPE_TRUE:
+    return PIC_TT_BOOL;
   case PIC_VTYPE_FALSE:
     return PIC_TT_BOOL;
-  case PIC_VTYPE_FLOAT:
-    return PIC_TT_FLOAT;
   case PIC_VTYPE_UNDEF:
     return PIC_TT_UNDEF;
+  case PIC_VTYPE_FLOAT:
+    return PIC_TT_FLOAT;
   case PIC_VTYPE_HEAP:
     return ((struct pic_object *)v.u.data)->tt;
   }
+  /* logic flaw (suppress warnings gcc will emit) */
+  abort();
 }
 
 pic_value

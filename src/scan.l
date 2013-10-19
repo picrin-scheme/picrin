@@ -7,11 +7,13 @@
 struct parser_control {
   pic_state *pic;
   pic_value value;
+  bool incomp;
 };
 
 #define YY_DECL int yylex (struct parser_control *p)
 %}
 
+%option noinput
 %option nounput
 
   /* boolean */

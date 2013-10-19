@@ -17,12 +17,16 @@ main()
 {
   pic_state *pic;
   char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
-  char last_char, *read_line, *prompt;
-  int char_index;
+  char *read_line, *prompt;
   pic_value v;
   struct pic_proc *proc;
   int ai;
   bool r;
+
+#if ! PIC_ENABLE_READLINE
+  char last_char;
+  int char_index;
+#endif
 
   pic = pic_open();
 
@@ -89,9 +93,11 @@ main()
     pic_gc_arena_restore(pic, ai);
   }
 
+#if ! PIC_ENABLE_READLINE
  eof:
   puts("");
   goto exit;
+#endif
 
  overflow:
   puts("** [fatal] line input overflow");

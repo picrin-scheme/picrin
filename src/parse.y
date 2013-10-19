@@ -25,7 +25,7 @@ struct parser_control {
 %token <datum> tSYMBOL tNUMBER tBOOLEAN
 
 %type <datum> datum simple_datum symbol compound_datum
-%type <datum> number list list_data
+%type <datum> number boolean list list_data
 
 %%
 
@@ -111,7 +111,7 @@ incomplete_data
 
 %%
 
-int
+void
 yyerror(struct parser_control *p, const char *msg)
 {
   puts(msg);

@@ -43,7 +43,7 @@ pic_open()
   pic->icapa = PIC_IREP_SIZE;
 
   /* globals */
-  pic->globals = (struct pic_value *)malloc(sizeof(pic_value) * PIC_GLOBALS_SIZE);
+  pic->globals = (pic_value *)malloc(sizeof(pic_value) * PIC_GLOBALS_SIZE);
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
 
