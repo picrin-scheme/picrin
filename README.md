@@ -45,6 +45,8 @@ picrin scheme depends on some external libraries to build the binary:
 - gcc
 - readline
 
+The compilation is tested only on Mac OSX. I think (or hope) it'll be ok to compile and run on other operating systems such as Linux or Windows, but there's no guarantee :(
+
 ## Authors
 
 Yuichi Nishiwaki (yuichi.nishiwaki at gmail.com)
