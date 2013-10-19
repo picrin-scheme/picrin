@@ -46,3 +46,15 @@ yywrap()
 {
   return 1;
 }
+
+void
+init_scanner(const char *str)
+{
+  yy_scan_string(str);
+}
+
+void
+final_scanner()
+{
+  yylex_destroy();
+}
