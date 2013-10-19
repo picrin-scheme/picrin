@@ -16,6 +16,8 @@ enum pic_opcode {
   OP_RET,
   OP_LAMBDA,
   OP_CONS,
+  OP_CAR,
+  OP_CDR,
   OP_ADD,
   OP_SUB,
   OP_MUL,
