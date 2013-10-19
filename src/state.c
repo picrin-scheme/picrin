@@ -57,6 +57,7 @@ pic_open()
   pic->sCONS = pic_intern_cstr(pic, "cons");
   pic->sCAR = pic_intern_cstr(pic, "car");
   pic->sCDR = pic_intern_cstr(pic, "cdr");
+  pic->sNILP = pic_intern_cstr(pic, "null?");
   pic->sADD = pic_intern_cstr(pic, "+");
   pic->sSUB = pic_intern_cstr(pic, "-");
   pic->sMUL = pic_intern_cstr(pic, "*");

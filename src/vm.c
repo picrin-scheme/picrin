@@ -188,6 +188,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_CAR:
       puts("OP_CAR");
       break;
+    case OP_NILP:
+      puts("OP_NILP");
+      break;
     case OP_CDR:
       puts("OP_CDR");
       break;
@@ -228,7 +231,9 @@ static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_env *)
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
-  pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sCONS, sCAR, sCDR, sADD, sSUB, sMUL, sDIV;
+  pic_value sDEFINE, sLAMBDA, sIF, sBEGIN;
+  pic_value sCONS, sCAR, sCDR, sNILP;
+  pic_value sADD, sSUB, sMUL, sDIV;
 
   sDEFINE = pic->sDEFINE;
   sLAMBDA = pic->sLAMBDA;
@@ -237,6 +242,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   sCONS = pic->sCONS;
   sCAR = pic->sCAR;
   sCDR = pic->sCDR;
+  sNILP = pic->sNILP;
   sADD = pic->sADD;
   sSUB = pic->sSUB;
   sMUL = pic->sMUL;
@@ -341,6 +347,12 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
     else if (pic_eq_p(pic, proc, sCDR)) {
       pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
       irep->code[irep->clen].insn = OP_CDR;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sNILP)) {
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      irep->code[irep->clen].insn = OP_NILP;
       irep->clen++;
       break;
     }
@@ -521,7 +533,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHNUM,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_JMP, &&L_OP_JMPIF,
     &&L_OP_CALL, &&L_OP_RET, &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR,
-    &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_STOP
+    &&L_OP_NILP, &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_STOP
   };
 #endif
 
@@ -644,6 +656,12 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value p;
       p = POP();
       PUSH(pic_cdr(pic, p));
+      NEXT;
+    }
+    CASE(OP_NILP) {
+      pic_value p;
+      p = POP();
+      PUSH(pic_bool_value(pic_nil_p(p)));
       NEXT;
     }
     CASE(OP_ADD) {
