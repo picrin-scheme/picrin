@@ -66,13 +66,11 @@ main()
     /* read */
     r = pic_parse(pic, code, &v);
     if (! r) {			/* wait for more input */
-      pic_gc_arena_restore(pic, ai);
-      continue;
+      goto next;
     }
     code[0] = '\0';
     if (pic_undef_p(v)) {	/* parse error */
-      pic_gc_arena_restore(pic, ai);
-      continue;
+      goto next;
     }
 
 #if DEBUG
@@ -83,6 +81,11 @@ main()
 
     /* eval */
     proc = pic_codegen(pic, v, pic->global_env);
+    if (proc == NULL) {
+      printf("compilation error: %s\n", pic->errmsg);
+      pic->errmsg = NULL;
+      goto next;
+    }
     v = pic_run(pic, proc, pic_nil_value());
 
     /* print */
@@ -90,6 +93,7 @@ main()
     pic_debug(pic, v);
     printf("\n");
 
+  next:
     pic_gc_arena_restore(pic, ai);
   }
 

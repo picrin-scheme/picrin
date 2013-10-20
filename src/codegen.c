@@ -204,7 +204,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 
     b = env_lookup(pic, obj, env, &depth, &idx);
     if (! b) {
-      pic_abort(pic, "unbound variable");
+      pic_error(pic, "unbound variable");
     }
 
     if (depth == -1) {		/* global */
@@ -218,7 +218,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       irep->clen++;
     }
     else {			/* nonlocal */
-      pic_abort(pic, "reference to closed variable not supported");
+      pic_error(pic, "reference to closed variable not supported");
     }
     break;
   }
@@ -362,7 +362,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   case PIC_TT_PROC:
   case PIC_TT_UNDEF:
   case PIC_TT_PORT: {
-    pic_abort(pic, "invalid expression given");
+    pic_error(pic, "invalid expression given");
   }
   }
 }
@@ -438,6 +438,17 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   proc->cfunc_p = false;
   proc->u.irep = irep = new_irep(pic);
 
+  if (! pic->jmp) {
+    jmp_buf jmp;
+
+    pic->jmp = &jmp;
+    if (setjmp(*pic->jmp) != 0) {
+      /* error occured */
+
+      pic->jmp = NULL;
+      return NULL;
+    }
+  }
   pic_gen(pic, irep, obj, env);
   irep->code[irep->clen].insn = OP_STOP;
   irep->clen++;

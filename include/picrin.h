@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <setjmp.h>
 
 #include "picconf.h"
 #include "picrin/value.h"
@@ -33,6 +34,9 @@ typedef struct {
   size_t glen, gcapa;
   struct pic_irep **irep;
   size_t ilen, icapa;
+
+  jmp_buf *jmp;
+  const char *errmsg;
 
   struct heap_page *heap;
   struct pic_object *arena[PIC_ARENA_SIZE];
@@ -68,7 +72,7 @@ struct pic_proc *pic_codegen(pic_state *, pic_value, struct pic_env *);
 
 void pic_abort(pic_state *, const char *);
 void pic_raise(pic_state *, pic_value);
-void pic_error(pic_state *, const char *, ...);
+void pic_error(pic_state *, const char *);
 
 void pic_debug(pic_state *, pic_value);
 

@@ -51,6 +51,10 @@ pic_open()
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
 
+  /* error handling */
+  pic->jmp = NULL;
+  pic->errmsg = NULL;
+
   /* GC arena */
   pic->arena_idx = 0;
 
