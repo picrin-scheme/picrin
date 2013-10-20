@@ -1,5 +1,4 @@
 CC=gcc
-SRCS = $(wildcard src/*.c)
 
 all: build run
 
@@ -12,7 +11,7 @@ build-lib:
 	cd src; \
 	yacc -d parse.y; \
 	lex scan.l
-	 $(CC) -Wall -shared -o lib/libpicrin.so -I./include -lreadline $(SRCS)
+	 $(CC) -Wall -shared -o lib/libpicrin.so -I./include -lreadline src/*.c
 
 clean:
 	rm -f src/y.tab.c src/y.tab.h src/lex.yy.c
