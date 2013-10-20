@@ -13,6 +13,7 @@
 #define PIC_STACK_SIZE 1024
 #define PIC_IREP_SIZE 256
 #define PIC_GLOBALS_SIZE 1024
+#define PIC_SYM_TBL_SIZE 128
 
 /* enable all debug flags */
 #define DEBUG 1

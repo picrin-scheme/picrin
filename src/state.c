@@ -3,9 +3,10 @@
 #include "picrin.h"
 #include "picrin/gc.h"
 #include "picrin/proc.h"
+#include "picrin/symbol.h"
 
 static struct pic_env *
-pic_new_empty_env()
+new_empty_env()
 {
   struct pic_env *env;
 
@@ -37,6 +38,9 @@ pic_open()
   pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
   init_heap_page(pic->heap);
 
+  /* symbol table */
+  pic->sym_tbl = sym_tbl_new();
+
   /* irep */
   pic->irep = (struct pic_irep **)malloc(sizeof(struct pic_irep *) * PIC_IREP_SIZE);
   pic->ilen = 0;
@@ -64,7 +68,7 @@ pic_open()
   pic->sDIV = pic_intern_cstr(pic, "/");
 
   /* global environment */
-  pic->global_env = pic_new_empty_env();
+  pic->global_env = new_empty_env();
   pic_init_core(pic);
 
   return pic;
