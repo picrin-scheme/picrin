@@ -5,7 +5,7 @@ all: build run
 build: build-lib build-main
 
 build-main:
-	$(CC) -Wall -o bin/picrin -I./include -L./lib -lpicrin -lreadline etc/main.c
+	$(CC) -Wall -o bin/picrin -I./include -L./lib -lpicrin -lreadline tools/main.c
 
 build-lib:
 	cd src; \
