@@ -38,7 +38,7 @@ main()
 #if PIC_ENABLE_READLINE
     read_line = readline(prompt);
     if (read_line == NULL) {
-      line[0] = '\0';
+      goto eof;
     }
     else {
       strncpy(line, read_line, LINE_MAX_LENGTH - 1);
@@ -93,11 +93,9 @@ main()
     pic_gc_arena_restore(pic, ai);
   }
 
-#if ! PIC_ENABLE_READLINE
  eof:
   puts("");
   goto exit;
-#endif
 
  overflow:
   puts("** [fatal] line input overflow");
