@@ -37,7 +37,7 @@ env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, int *depth, int *
 static int
 env_global_define(pic_state *pic, pic_value sym)
 {
-  pic_value cell;
+  pic_value f;
   int d, idx;
 
   if (env_lookup(pic, sym, pic->global_env, &d, &idx)) {
@@ -45,8 +45,8 @@ env_global_define(pic_state *pic, pic_value sym)
   }
 
   idx = pic->glen++;
-  cell = pic_cons(pic, sym, pic_float_value(idx));
-  pic->global_env->assoc = pic_cons(pic, cell, pic->global_env->assoc);
+  f = pic_float_value(idx);
+  pic->global_env->assoc = pic_acons(pic, sym, f, pic->global_env->assoc);
 
   return idx;
 }
@@ -55,7 +55,7 @@ static struct pic_env *
 env_new(pic_state *pic, pic_value args, struct pic_env *env)
 {
   struct pic_env *inner_env;
-  pic_value v, cell;
+  pic_value v, f;
   int i;
 
   inner_env = (struct pic_env *)pic_alloc(pic, sizeof(struct pic_env));
@@ -66,8 +66,8 @@ env_new(pic_state *pic, pic_value args, struct pic_env *env)
   for (v = args; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
     pic_value sym = pic_car(pic, v);
 
-    cell = pic_cons(pic, sym, pic_float_value(i--));
-    inner_env->assoc = pic_cons(pic, cell, inner_env->assoc);
+    f = pic_float_value(i--);
+    inner_env->assoc = pic_acons(pic, sym, f, inner_env->assoc);
   }
 
   return inner_env;

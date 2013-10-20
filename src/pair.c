@@ -50,3 +50,9 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
   assoc = pic_cdr(pic, assoc);
   goto enter;
 }
+
+pic_value
+pic_acons(pic_state *pic, pic_value key, pic_value val, pic_value assoc)
+{
+  return pic_cons(pic, pic_cons(pic, key, val), assoc);
+}
