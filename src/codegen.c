@@ -441,10 +441,11 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   if (! pic->jmp) {
     jmp_buf jmp;
 
-    pic->jmp = &jmp;
-    if (setjmp(*pic->jmp) != 0) {
+    if (setjmp(jmp) == 0) {
+      pic->jmp = &jmp;
+    }
+    else {
       /* error occured */
-
       pic->jmp = NULL;
       return NULL;
     }

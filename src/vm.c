@@ -64,6 +64,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   struct pic_code *pc;
   int ai = pic_gc_arena_preserve(pic);
+  jmp_buf jmp;
 
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
@@ -75,6 +76,13 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 #endif
 
   pc = proc->u.irep->code;
+
+  if (setjmp(jmp) == 0) {
+    pic->jmp = &jmp;
+  }
+  else {
+    goto L_RAISE;
+  }
 
   /* adjust call frame */
   pic->sp[0] = pic_obj_value(proc);
@@ -158,11 +166,17 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value v;
       pic_callinfo *ci;
 
-      v = POP();
-      ci = POPCI();
-      pc = ci->pc;
-      pic->sp -= ci->argc;
-      PUSH(v);
+    L_RAISE:
+      if (pic->errmsg) {
+	goto L_STOP;
+      }
+      else {
+	v = POP();
+	ci = POPCI();
+	pc = ci->pc;
+	pic->sp -= ci->argc;
+	PUSH(v);
+      }
       NEXT;
     }
     CASE(OP_LAMBDA) {
@@ -232,7 +246,13 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     CASE(OP_STOP) {
       pic_value val;
 
+    L_STOP:
       val = POP();
+
+      pic->jmp = NULL;
+      if (pic->errmsg) {
+	return pic_undef_value();
+      }
 
 #if VM_DEBUG
       puts("**VM END STATE**");
