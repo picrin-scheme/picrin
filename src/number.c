@@ -1,7 +1,6 @@
 #include <math.h>
 
 #include "picrin.h"
-#include "picrin/value.h"
 
 static pic_value
 pic_number_lt(pic_state *pic)

@@ -29,7 +29,7 @@ write(pic_state *pic, pic_value obj)
     printf("%s", pic_symbol_ptr(obj)->name);
     break;
   case PIC_TT_FLOAT:
-    printf("%g", pic_float(obj));
+    printf("%.10g", pic_float(obj));
     break;
   case PIC_TT_UNDEF:
     printf("#<undef>");
