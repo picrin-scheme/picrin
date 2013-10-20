@@ -12,6 +12,7 @@
 - direct threaded VM
 - exact GC (simple mark and sweep strategy)
 - advanced REPL support (multi-line input, etc)
+- tiny & portable library (all functions will be in `libpicrin.so`)
 
 ## Homepage
 
@@ -34,6 +35,10 @@ https://github.com/wasabiz/picrin
 		$ make run
 	
 In the default option, when `make` command is called without arguments, it builds the binary and right after that dropped into the picrin interactive shell (REPL).
+
+- install
+
+	As of now picrin does not provide a command automatically installs the binary. If you want to place picrin library and binary in a parmanent directory, please do it by hand.
 
 ## Requirement
 
