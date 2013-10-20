@@ -1,5 +1,4 @@
 #include <time.h>
-#include <stdio.h>
 
 #include "picrin.h"
 

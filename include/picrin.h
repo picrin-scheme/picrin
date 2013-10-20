@@ -54,10 +54,6 @@ void pic_close(pic_state *);
 void pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
 
-pic_value pic_cons(pic_state *, pic_value, pic_value);
-pic_value pic_car(pic_state *, pic_value);
-pic_value pic_cdr(pic_state *, pic_value);
-
 bool pic_eq_p(pic_state *, pic_value, pic_value);
 
 pic_value pic_intern_cstr(pic_state *, const char *);

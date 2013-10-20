@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "picrin.h"
+#include "picrin/pair.h"
 
 #define YYERROR_VERBOSE 1
 

@@ -5,24 +5,7 @@
 #include "picrin.h"
 #include "picrin/irep.h"
 #include "picrin/proc.h"
-
-static pic_value
-pic_assq(pic_state *pic, pic_value key, pic_value assoc)
-{
-  pic_value cell;
-
- enter:
-
-  if (pic_nil_p(assoc))
-    return assoc;
-
-  cell = pic_car(pic, assoc);
-  if (pic_eq_p(pic, key, pic_car(pic, cell)))
-    return cell;
-
-  assoc = pic_cdr(pic, assoc);
-  goto enter;
-}
+#include "picrin/pair.h"
 
 static bool
 env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, int *depth, int *idx)
