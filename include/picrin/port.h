@@ -1,8 +1,6 @@
 #ifndef PORT_H__
 #define PORT_H__
 
-#include "picrin.h"
-
 enum pic_port_flag {
   PIC_PORT_IN,
   PIC_PORT_OUT,

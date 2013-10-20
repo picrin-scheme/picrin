@@ -4,6 +4,7 @@
 #include "picrin/gc.h"
 #include "picrin/irep.h"
 #include "picrin/proc.h"
+#include "picrin/string.h"
 
 #if GC_DEBUG
 # include <stdio.h>
@@ -148,7 +149,15 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_PROC: {
     break;
   }
-  default:
+  case PIC_TT_PORT: {
+    break;
+  }
+  case PIC_TT_STRING: {
+  }
+  case PIC_TT_NIL:
+  case PIC_TT_BOOL:
+  case PIC_TT_FLOAT:
+  case PIC_TT_UNDEF:
     pic_abort(pic, "logic flaw");
   }
 }
@@ -233,16 +242,16 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_PROC: {
-    struct pic_proc *proc;
-
-    proc = (struct pic_proc *)obj;
-
-    /* free irep */
-    pic_free(pic, proc->u.irep->code);
-    pic_free(pic, proc->u.irep);
     break;
   }
-  default:
+  case PIC_TT_STRING: {
+    pic_free(pic, (void*)((struct pic_string *)obj)->str);
+    break;
+  }
+  case PIC_TT_NIL:
+  case PIC_TT_BOOL:
+  case PIC_TT_FLOAT:
+  case PIC_TT_UNDEF:
     pic_abort(pic, "logic flaw");
   }
 }

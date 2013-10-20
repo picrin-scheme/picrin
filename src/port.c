@@ -4,6 +4,7 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
+#include "picrin/string.h"
 
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 
@@ -39,6 +40,9 @@ write(pic_state *pic, pic_value obj)
     break;
   case PIC_TT_PORT:
     printf("#<port %p>", pic_port_ptr(obj));
+    break;
+  case PIC_TT_STRING:
+    printf("\"%s\"", pic_str_ptr(obj)->str);
     break;
   }
 }
