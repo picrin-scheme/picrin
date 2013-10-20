@@ -25,7 +25,7 @@ https://github.com/wasabiz/picrin
 
 		$ make build
 
-	built executable binary will be under bin/ directory.
+	built executable binary will be under bin/ directory and shared library `libpicrin.so` under lib/.
 
 - run
 

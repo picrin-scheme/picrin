@@ -1,6 +1,8 @@
 CC=gcc
 
-all: build-lib build-main run
+all: build run
+
+build: build-lib build-main
 
 build-main:
 	$(CC) -Wall -o bin/picrin -I./include -L./lib -lpicrin -lreadline etc/main.c
