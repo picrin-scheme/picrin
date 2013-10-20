@@ -204,7 +204,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 
     b = env_lookup(pic, obj, env, &depth, &idx);
     if (! b) {
-      pic_raise(pic, "unbound variable");
+      pic_abort(pic, "unbound variable");
     }
 
     if (depth == -1) {		/* global */
@@ -218,7 +218,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       irep->clen++;
     }
     else {			/* nonlocal */
-      pic_raise(pic, "reference to closed variable not supported");
+      pic_abort(pic, "reference to closed variable not supported");
     }
     break;
   }
@@ -362,7 +362,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   case PIC_TT_PROC:
   case PIC_TT_UNDEF:
   case PIC_TT_PORT: {
-    pic_raise(pic, "invalid expression given");
+    pic_abort(pic, "invalid expression given");
   }
   }
 }

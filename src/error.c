@@ -4,8 +4,8 @@
 #include "picrin.h"
 
 void
-pic_raise(pic_state *pic, const char *str)
+pic_abort(pic_state *pic, const char *msg)
 {
-  puts(str);
+  puts(msg);
   abort();
 }

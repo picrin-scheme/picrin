@@ -40,7 +40,7 @@ pic_alloc(pic_state *pic, size_t size)
 
   ptr = malloc(size);
   if (ptr == NULL) {
-    pic_raise(pic, "memory exhausted");
+    pic_abort(pic, "memory exhausted");
   }
   return ptr;
 }
@@ -50,7 +50,7 @@ pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
   ptr = realloc(ptr, size);
   if (ptr == NULL) {
-    pic_raise(pic, "memory exhausted");
+    pic_abort(pic, "memory exhausted");
   }
   return ptr;
 }
@@ -65,7 +65,7 @@ static void
 gc_protect(pic_state *pic, struct pic_object *obj)
 {
   if (pic->arena_idx >= PIC_ARENA_SIZE) {
-    pic_raise(pic, "arena overflow");
+    pic_abort(pic, "arena overflow");
   }
   pic->arena[pic->arena_idx++] = obj;
 }
@@ -149,7 +149,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   default:
-    pic_raise(pic, "logic flaw");
+    pic_abort(pic, "logic flaw");
   }
 }
 
@@ -243,7 +243,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   default:
-    pic_raise(pic, "logic flaw");
+    pic_abort(pic, "logic flaw");
   }
 }
 
@@ -349,7 +349,7 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
     pic_gc_run(pic);
     obj = (struct pic_object *)gc_alloc(pic, size);
     if (obj == NULL)
-      pic_raise(pic, "GC memory exhausted");
+      pic_abort(pic, "GC memory exhausted");
   }
   obj->tt = tt;
 
