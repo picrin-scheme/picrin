@@ -683,7 +683,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
  STOP:
   val = POP();
 
-#if GC_DEBUG
+#if VM_DEBUG
   puts("**VM END STATE**");
   printf("stbase = %p\nsp = %p\n", pic->stbase, pic->sp);
   printf("cibase = %p\nci = %p\n", pic->cibase, pic->ci);
