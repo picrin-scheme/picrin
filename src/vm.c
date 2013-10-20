@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -64,7 +63,6 @@ pic_value
 pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   struct pic_code *pc;
-  pic_value val;
   int ai = pic_gc_arena_preserve(pic);
 
 #if PIC_DIRECT_THREADED_VM
@@ -232,33 +230,25 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_STOP) {
-      goto STOP;
-    }
-  } VM_LOOP_END;
+      pic_value val;
 
- STOP:
-  val = POP();
+      val = POP();
 
 #if VM_DEBUG
-  puts("**VM END STATE**");
-  printf("stbase = %p\nsp = %p\n", pic->stbase, pic->sp);
-  printf("cibase = %p\nci = %p\n", pic->cibase, pic->ci);
-  if (pic->stbase != pic->sp) {
-    pic_value *sp;
-    printf("* stack trace:");
-    for (sp = pic->stbase; pic->sp != sp; ++sp) {
-      pic_debug(pic, *sp);
-      puts("");
-    }
-  }
+      puts("**VM END STATE**");
+      printf("stbase = %p\nsp = %p\n", pic->stbase, pic->sp);
+      printf("cibase = %p\nci = %p\n", pic->cibase, pic->ci);
+      if (pic->stbase != pic->sp) {
+	pic_value *sp;
+	printf("* stack trace:");
+	for (sp = pic->stbase; pic->sp != sp; ++sp) {
+	  pic_debug(pic, *sp);
+	  puts("");
+	}
+      }
 #endif
 
-  return val;
-}
-
-void
-pic_raise(pic_state *pic, const char *str)
-{
-  puts(str);
-  abort();
+      return val;
+    }
+  } VM_LOOP_END;
 }
