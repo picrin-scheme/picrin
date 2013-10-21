@@ -4,7 +4,6 @@
 #include "picrin/gc.h"
 #include "picrin/irep.h"
 #include "picrin/proc.h"
-#include "picrin/string.h"
 #include "picrin/symbol.h"
 
 #if GC_DEBUG

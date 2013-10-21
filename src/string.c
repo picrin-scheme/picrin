@@ -1,7 +1,6 @@
 #include <string.h>
 
 #include "picrin.h"
-#include "picrin/string.h"
 
 pic_value
 pic_str_new(pic_state *pic, const char *cstr, size_t len)

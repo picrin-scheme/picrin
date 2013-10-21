@@ -5,7 +5,6 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/irep.h"
-#include "picrin/string.h"
 
 #define GET_OPERAND(pic,n) ((pic)->sp[-1-(n)])
 

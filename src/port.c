@@ -4,7 +4,6 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
-#include "picrin/string.h"
 
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);

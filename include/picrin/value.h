@@ -50,12 +50,19 @@ struct pic_symbol {
   char *name;
 };
 
+struct pic_string {
+  PIC_OBJECT_HEADER
+  char *str;
+  size_t len;
+};
+
 struct pic_proc;
 struct pic_port;
 
 #define pic_obj_ptr(o) ((struct pic_object *)o.u.data)
 #define pic_pair_ptr(o) ((struct pic_pair *)o.u.data)
 #define pic_symbol_ptr(o) ((struct pic_symbol *)o.u.data)
+#define pic_str_ptr(v) ((struct pic_string *)v.u.data)
 
 enum pic_tt pic_type(pic_value);
 
