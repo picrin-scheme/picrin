@@ -110,4 +110,3 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "write", pic_port_write);
   pic_defun(pic, "newline", pic_port_newline);
 }
-

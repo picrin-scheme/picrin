@@ -62,7 +62,7 @@ void pic_gc_arena_restore(pic_state *, int);
 pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
 
-void pic_get_args(pic_state *, const char *, ...);
+int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
 
 bool pic_eq_p(pic_state *, pic_value, pic_value);

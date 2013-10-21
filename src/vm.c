@@ -7,22 +7,38 @@
 #include "picrin/irep.h"
 #include "picrin/string.h"
 
-void
+#define GET_OPERAND(pic,n) ((pic)->sp[-1-(n)])
+
+int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  int i = -1;
+  int i = 0, argc = pic->ci->argc - 1;
   va_list ap;
+  bool opt = false;
 
   va_start(ap, format);
   while ((c = *format++)) {
     switch (c) {
+    default:
+      if (argc <= i && ! opt) {
+	pic_error(pic, "wrong number of arguments");
+      }
+      break;
+    case '|':
+      break;
+    }
+    switch (c) {
+    case '|':
+      opt = true;
+      break;
     case 'o':
       {
 	pic_value *p;
 
 	p = va_arg(ap, pic_value*);
-	*p = pic->sp[i--];
+	*p = GET_OPERAND(pic,i);
+	i++;
       }
       break;
     case 'f':
@@ -30,7 +46,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	double *f;
 
 	f = va_arg(ap, double *);
-	*f = pic_float(pic->sp[i--]);
+	*f = pic_float(GET_OPERAND(pic,i));
+	i++;
       }
       break;
     case 's':
@@ -41,13 +58,19 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
 	cstr = va_arg(ap, char **);
 	len = va_arg(ap, size_t *);
-	str = pic->sp[i--];
+	str = GET_OPERAND(pic,i);
 	*cstr = pic_str_ptr(str)->str;
 	*len = pic_str_ptr(str)->len;
+	i++;
       }
       break;
     }
   }
+  if (argc > i) {
+    pic_error(pic, "wrong number of arguments");
+  }
+  va_end(ap);
+  return i;
 }
 
 #if PIC_DIRECT_THREADED_VM
