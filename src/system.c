@@ -31,7 +31,10 @@ pic_system_getenv(pic_state *pic)
 
   val = getenv(str);
 
-  return pic_str_new_cstr(pic, val);
+  if (val == NULL)
+    return pic_nil_value();
+  else
+    return pic_str_new_cstr(pic, val);
 }
 
 static pic_value
