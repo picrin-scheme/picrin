@@ -5,6 +5,7 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/irep.h"
+#include "picrin/string.h"
 
 void
 pic_get_args(pic_state *pic, const char *format, ...)
@@ -21,8 +22,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	pic_value *p;
 
 	p = va_arg(ap, pic_value*);
-	*p = pic->sp[i];
-	i--;
+	*p = pic->sp[i--];
       }
       break;
     case 'f':
@@ -30,8 +30,20 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	double *f;
 
 	f = va_arg(ap, double *);
-	*f = pic_float(pic->sp[i]);
-	i--;
+	*f = pic_float(pic->sp[i--]);
+      }
+      break;
+    case 's':
+      {
+	pic_value str;
+	char **cstr;
+	size_t *len;
+
+	cstr = va_arg(ap, char **);
+	len = va_arg(ap, size_t *);
+	str = pic->sp[i--];
+	*cstr = pic_str_ptr(str)->str;
+	*len = pic_str_ptr(str)->len;
       }
       break;
     }
