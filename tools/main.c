@@ -13,7 +13,7 @@
 #define LINE_MAX_LENGTH 256
 
 int
-main()
+main(int argc, char *argv[], char **envp)
 {
   pic_state *pic;
   char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
@@ -28,7 +28,7 @@ main()
   int char_index;
 #endif
 
-  pic = pic_open();
+  pic = pic_open(argc, argv, envp);
 
   ai = pic_gc_arena_preserve(pic);
 

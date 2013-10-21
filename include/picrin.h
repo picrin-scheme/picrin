@@ -17,6 +17,9 @@ typedef struct pic_callinfo {
 } pic_callinfo;
 
 typedef struct {
+  int argc;
+  char **argv, **envp;
+
   pic_value *sp;
   pic_value *stbase, *stend;
 
@@ -56,7 +59,7 @@ void pic_gc_protect(pic_state *, pic_value);
 int pic_gc_arena_preserve(pic_state *);
 void pic_gc_arena_restore(pic_state *, int);
 
-pic_state *pic_open();
+pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
 
 void pic_get_args(pic_state *, const char *, ...);

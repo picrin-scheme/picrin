@@ -1,0 +1,72 @@
+#include <stdlib.h>
+
+#include "picrin.h"
+#include "picrin/pair.h"
+
+static pic_value
+pic_system_cmdline(pic_state *pic)
+{
+  pic_value v = pic_nil_value();
+  int i;
+
+  pic_get_args(pic, "");
+
+  for (i = 0; i < pic->argc; ++i) {
+    int ai = pic_gc_arena_preserve(pic);
+
+    v = pic_cons(pic, pic_str_new_cstr(pic, pic->argv[i]), v);
+    pic_gc_arena_restore(pic, ai);
+  }
+
+  return v;
+}
+
+static pic_value
+pic_system_getenv(pic_state *pic)
+{
+  char *str, *val;
+  size_t len;
+
+  pic_get_args(pic, "s", &str, &len);
+
+  val = getenv(str);
+
+  return pic_str_new_cstr(pic, val);
+}
+
+static pic_value
+pic_system_getenvs(pic_state *pic)
+{
+  char **envp;
+  pic_value data = pic_nil_value();
+  int ai = pic_gc_arena_preserve(pic);
+
+  pic_get_args(pic, "");
+
+  for (envp = pic->envp; *envp; ++envp) {
+    pic_value key, val;
+    int i;
+
+    for (i = 0; (*envp)[i] != '='; ++i)
+      ;
+
+    key = pic_str_new(pic, *envp, i);
+    val = pic_str_new_cstr(pic, getenv(*envp));
+
+    /* push */
+    data = pic_acons(pic, key, val, data);
+
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, data);
+  }
+
+  return data;
+}
+
+void
+pic_init_system(pic_state *pic)
+{
+  pic_defun(pic, "command-line", pic_system_cmdline);
+  pic_defun(pic, "get-environment-variable", pic_system_getenv);
+  pic_defun(pic, "get-environment-variables", pic_system_getenvs);
+}

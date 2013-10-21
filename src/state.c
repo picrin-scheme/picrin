@@ -35,12 +35,17 @@ sym_tbl_new()
 void pic_init_core(pic_state *);
 
 pic_state *
-pic_open()
+pic_open(int argc, char *argv[], char **envp)
 {
   pic_state *pic;
   int ai;
 
   pic = (pic_state *)malloc(sizeof(pic_state));
+
+  /* command line */
+  pic->argc = argc;
+  pic->argv = argv;
+  pic->envp = envp;
 
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * PIC_STACK_SIZE);
