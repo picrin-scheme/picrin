@@ -22,6 +22,22 @@ pic_system_cmdline(pic_state *pic)
 }
 
 static pic_value
+pic_system_exit(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  exit(EXIT_SUCCESS);
+}
+
+static pic_value
+pic_system_emergency_exit(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  _Exit(EXIT_FAILURE);
+}
+
+static pic_value
 pic_system_getenv(pic_state *pic)
 {
   char *str, *val;
@@ -70,6 +86,8 @@ void
 pic_init_system(pic_state *pic)
 {
   pic_defun(pic, "command-line", pic_system_cmdline);
+  pic_defun(pic, "exit", pic_system_exit);
+  pic_defun(pic, "emergency-exit", pic_system_emergency_exit);
   pic_defun(pic, "get-environment-variable", pic_system_getenv);
   pic_defun(pic, "get-environment-variables", pic_system_getenvs);
 }
