@@ -389,21 +389,13 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   }
 }
 
-static pic_value
-reverse(pic_state *pic, pic_value list, pic_value acc)
-{
-  if (pic_nil_p(list))
-    return acc;
-  return reverse(pic, pic_cdr(pic, list), pic_cons(pic, pic_car(pic, list), acc));
-}
-
 static void
 pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
   pic_value seq;
   int i = 0;
 
-  seq = reverse(pic, obj, pic_nil_value());
+  seq = pic_reverse(pic, obj);
   for (; ! pic_nil_p(seq); seq = pic_cdr(pic, seq)) {
     pic_value v;
 

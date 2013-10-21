@@ -49,6 +49,17 @@ pic_list_p(pic_state *pic, pic_value obj)
 }
 
 pic_value
+pic_reverse(pic_state *pic, pic_value list)
+{
+  pic_value v, acc = pic_nil_value();
+
+  for (v = list; ! pic_nil_p(v); v = pic_cdr(pic ,v)) {
+    acc = pic_cons(pic, pic_car(pic, v), acc);
+  }
+  return acc;
+}
+
+pic_value
 pic_assq(pic_state *pic, pic_value key, pic_value assoc)
 {
   pic_value cell;
