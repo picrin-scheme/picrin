@@ -29,10 +29,10 @@ int yylex(struct parser_control *);
 
 %token tLPAREN tRPAREN tDOT
 %token tQUOTE
-%token <datum> tSYMBOL tNUMBER tBOOLEAN
+%token <datum> tSYMBOL tNUMBER tBOOLEAN tSTRING
 
-%type <datum> datum simple_datum symbol compound_datum abbrev
-%type <datum> number boolean list list_data
+%type <datum> datum simple_datum compound_datum abbrev
+%type <datum> list list_data
 
 %%
 
@@ -58,24 +58,10 @@ datum
 ;
 
 simple_datum
-	: symbol
-	| number
-	| boolean
-;
-
-symbol
 	: tSYMBOL
-	{
-	  $$ = $1;
-	}
-;
-
-number
-	: tNUMBER
-;
-
-boolean
-	: tBOOLEAN
+	| tNUMBER
+	| tBOOLEAN
+	| tSTRING
 ;
 
 compound_datum

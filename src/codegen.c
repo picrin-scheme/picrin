@@ -374,6 +374,15 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
     irep->clen++;
     break;
   }
+  case PIC_TT_STRING: {
+    int pidx;
+    pidx = pic->plen++;
+    pic->pool[pidx] = obj;
+    irep->code[irep->clen].insn = OP_PUSHCONST;
+    irep->code[irep->clen].u.i = pidx;
+    irep->clen++;
+    break;
+  }
   case PIC_TT_PROC:
   case PIC_TT_UNDEF:
   case PIC_TT_PORT: {
