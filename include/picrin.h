@@ -66,6 +66,7 @@ bool pic_eq_p(pic_state *, pic_value, pic_value);
 
 pic_value pic_intern_cstr(pic_state *, const char *);
 
+pic_value pic_str_new(pic_state *, const char *, size_t);
 pic_value pic_str_new_cstr(pic_state *, const char *);
 
 bool pic_parse(pic_state *, const char *, pic_value *);

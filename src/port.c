@@ -7,6 +7,7 @@
 #include "picrin/string.h"
 
 static void write_pair(pic_state *pic, struct pic_pair *pair);
+static void write_str(pic_state *pic, struct pic_string *str);
 
 static void
 write(pic_state *pic, pic_value obj)
@@ -42,7 +43,9 @@ write(pic_state *pic, pic_value obj)
     printf("#<port %p>", pic_port_ptr(obj));
     break;
   case PIC_TT_STRING:
-    printf("\"%s\"", pic_str_ptr(obj)->str);
+    printf("\"");
+    write_str(pic, pic_str_ptr(obj));
+    printf("\"");
     break;
   }
 }
@@ -62,6 +65,20 @@ write_pair(pic_state *pic, struct pic_pair *pair)
   }
   printf(" . ");
   write(pic, pair->cdr);
+}
+
+static void
+write_str(pic_state *pic, struct pic_string *str)
+{
+  int i;
+  const char *cstr = str->str;
+
+  for (i = 0; i < str->len; ++i) {
+    if (cstr[i] == '"' || cstr[i] == '\\') {
+      putchar('\\');
+    }
+    putchar(cstr[i]);
+  }
 }
 
 void

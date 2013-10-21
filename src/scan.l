@@ -11,7 +11,7 @@ struct parser_control {
   bool incomp;
 };
 
-static pic_value escape_string(pic_state *, const char *);
+static pic_value new_escaped_string(pic_state *, const char *);
 
 #define YY_DECL int yylex (struct parser_control *p)
 %}
@@ -47,7 +47,7 @@ string_elem	[^\"\\]|"\\\""|"\\\\"
 {real} 		{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
 {identifier}	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
 {string}	{
-		  yylval.datum = escape_string(p->pic, yytext);
+		  yylval.datum = new_escaped_string(p->pic, yytext);
 		  return tSTRING;
 		}
 
@@ -60,19 +60,24 @@ yywrap()
 }
 
 static pic_value
-escape_string(pic_state *pic, const char *str)
+new_escaped_string(pic_state *pic, const char *str)
 {
   size_t len;
   char *new_str;
-  int i;
+  int i,j;
   pic_value v;
 
   len = strlen(str);
   new_str = (char *)pic_alloc(pic, len + 1);
-  for (i = 1; i < len - 1; ++i) {
-    new_str[i-1] = str[i];
+  for (j = 0, i = 1; i < len - 1; ++i, ++j) {
+    if (str[i] == '\\') {
+      ++i;
+      new_str[j] = str[i];
+      continue;
+    }
+    new_str[j] = str[i];
   }
-  new_str[i] = '\0';
+  new_str[j] = '\0';
 
   v = pic_str_new_cstr(pic, new_str);
   pic_free(pic, new_str);
