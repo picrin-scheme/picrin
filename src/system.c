@@ -24,17 +24,41 @@ pic_system_cmdline(pic_state *pic)
 static pic_value
 pic_system_exit(pic_state *pic)
 {
-  pic_get_args(pic, "");
+  pic_value v;
+  int argc, status = EXIT_SUCCESS;
 
-  exit(EXIT_SUCCESS);
+  argc = pic_get_args(pic, "|o", &v);
+  if (argc == 1) {
+    switch (pic_type(v)) {
+    case PIC_TT_FLOAT:
+      status = (int)pic_float(v);
+      break;
+    default:
+      break;
+    }
+  }
+
+  exit(status);
 }
 
 static pic_value
 pic_system_emergency_exit(pic_state *pic)
 {
-  pic_get_args(pic, "");
+  pic_value v;
+  int argc, status = EXIT_FAILURE;
 
-  _Exit(EXIT_FAILURE);
+  argc = pic_get_args(pic, "|o", &v);
+  if (argc == 1) {
+    switch (pic_type(v)) {
+    case PIC_TT_FLOAT:
+      status = (int)pic_float(v);
+      break;
+    default:
+      break;
+    }
+  }
+
+  _Exit(status);
 }
 
 static pic_value
