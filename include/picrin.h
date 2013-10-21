@@ -34,6 +34,8 @@ typedef struct {
   size_t glen, gcapa;
   struct pic_irep **irep;
   size_t ilen, icapa;
+  pic_value *pool;
+  size_t plen, pcapa;
 
   jmp_buf *jmp;
   const char *errmsg;

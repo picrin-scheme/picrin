@@ -5,6 +5,7 @@
 #include "picrin/irep.h"
 #include "picrin/proc.h"
 #include "picrin/string.h"
+#include "picrin/symbol.h"
 
 #if GC_DEBUG
 # include <stdio.h>
@@ -203,9 +204,25 @@ gc_mark_phase(pic_state *pic)
     gc_mark(pic, pic->globals[i]);
   }
 
+  /* pool */
+  for (i = 0; i < pic->plen; ++i) {
+    gc_mark(pic, pic->pool[i]);
+  }
+
+  /* symbol table */
+  for (i = 0; i < pic->sym_tbl->size; ++i) {
+    gc_mark(pic, pic->sym_tbl->tbl[i]);
+  }
+
   gc_mark(pic, pic->sDEFINE);
   gc_mark(pic, pic->sLAMBDA);
+  gc_mark(pic, pic->sIF);
+  gc_mark(pic, pic->sBEGIN);
+  gc_mark(pic, pic->sQUOTE);
   gc_mark(pic, pic->sCONS);
+  gc_mark(pic, pic->sCAR);
+  gc_mark(pic, pic->sCDR);
+  gc_mark(pic, pic->sNILP);
   gc_mark(pic, pic->sADD);
   gc_mark(pic, pic->sSUB);
   gc_mark(pic, pic->sMUL);

@@ -28,9 +28,10 @@ int yylex(struct parser_control *);
 }
 
 %token tLPAREN tRPAREN tDOT
+%token tQUOTE
 %token <datum> tSYMBOL tNUMBER tBOOLEAN
 
-%type <datum> datum simple_datum symbol compound_datum
+%type <datum> datum simple_datum symbol compound_datum abbrev
 %type <datum> number boolean list list_data
 
 %%
@@ -79,6 +80,7 @@ boolean
 
 compound_datum
 	: list
+	| abbrev
 ;
 
 list
@@ -103,8 +105,17 @@ list_data
 	}
 ;
 
+abbrev
+	: tQUOTE datum
+	{
+	  $$ = pic_cons(p->pic, p->pic->sQUOTE, pic_cons(p->pic, $2, pic_nil_value()));
+	}
+;
+
 incomplete_datum
 	: tLPAREN incomplete_data
+	| tQUOTE
+	| tQUOTE incomplete_datum
 ;
 
 incomplete_data

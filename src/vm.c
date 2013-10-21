@@ -69,7 +69,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
     &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHNUM,
-    &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_JMP, &&L_OP_JMPIF,
+    &&L_OP_PUSHCONST, &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_JMP, &&L_OP_JMPIF,
     &&L_OP_CALL, &&L_OP_RET, &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR,
     &&L_OP_NILP, &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_STOP
   };
@@ -109,6 +109,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_PUSHNUM) {
       PUSH(pic_float_value(pc->u.f));
+      NEXT;
+    }
+    CASE(OP_PUSHCONST) {
+      PUSH(pic->pool[pc->u.i]);
       NEXT;
     }
     CASE(OP_GREF) {
@@ -166,8 +170,9 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value v;
       pic_callinfo *ci;
 
-    L_RAISE:
       if (pic->errmsg) {
+
+      L_RAISE:
 	goto L_STOP;
       }
       else {

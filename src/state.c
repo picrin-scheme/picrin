@@ -51,6 +51,11 @@ pic_open()
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
 
+  /* pool */
+  pic->pool = (pic_value *)malloc(sizeof(pic_value) * PIC_POOL_SIZE);
+  pic->plen = 0;
+  pic->pcapa = PIC_POOL_SIZE;
+
   /* error handling */
   pic->jmp = NULL;
   pic->errmsg = NULL;
@@ -62,6 +67,7 @@ pic_open()
   pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
   pic->sIF = pic_intern_cstr(pic, "if");
   pic->sBEGIN = pic_intern_cstr(pic, "begin");
+  pic->sQUOTE = pic_intern_cstr(pic, "quote");
   pic->sCONS = pic_intern_cstr(pic, "cons");
   pic->sCAR = pic_intern_cstr(pic, "car");
   pic->sCDR = pic_intern_cstr(pic, "cdr");

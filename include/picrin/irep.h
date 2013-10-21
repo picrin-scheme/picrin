@@ -7,6 +7,7 @@ enum pic_opcode {
   OP_PUSHTRUE,
   OP_PUSHFALSE,
   OP_PUSHNUM,
+  OP_PUSHCONST,
   OP_GREF,
   OP_GSET,
   OP_LREF,

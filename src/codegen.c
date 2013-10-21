@@ -107,6 +107,11 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_PUSHNUM:
       printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
       break;
+    case OP_PUSHCONST:
+      printf("OP_PUSHCONST\t");
+      pic_debug(pic, pic->pool[irep->code[i].u.i]);
+      puts("");
+      break;
     case OP_GREF:
       printf("OP_GREF\t%i\n", irep->code[i].u.i);
       break;
@@ -180,7 +185,7 @@ static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_env *)
 static void
 pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
 {
-  pic_value sDEFINE, sLAMBDA, sIF, sBEGIN;
+  pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE;
   pic_value sCONS, sCAR, sCDR, sNILP;
   pic_value sADD, sSUB, sMUL, sDIV;
 
@@ -188,6 +193,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   sLAMBDA = pic->sLAMBDA;
   sIF = pic->sIF;
   sBEGIN = pic->sBEGIN;
+  sQUOTE = pic->sQUOTE;
   sCONS = pic->sCONS;
   sCAR = pic->sCAR;
   sCDR = pic->sCDR;
@@ -278,6 +284,15 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 	irep->clen++;
       }
       irep->clen--;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, sQUOTE)) {
+      int pidx;
+      pidx = pic->plen++;
+      pic->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
+      irep->code[irep->clen].insn = OP_PUSHCONST;
+      irep->code[irep->clen].u.i = pidx;
+      irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
