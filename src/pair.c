@@ -39,6 +39,15 @@ pic_cdr(pic_state *pic, pic_value obj)
   return pair->cdr;
 }
 
+bool
+pic_list_p(pic_state *pic, pic_value obj)
+{
+  while (pic_pair_p(obj))
+    obj = pic_pair_ptr(obj)->cdr;
+
+  return pic_nil_p(obj);
+}
+
 pic_value
 pic_assq(pic_state *pic, pic_value key, pic_value assoc)
 {
