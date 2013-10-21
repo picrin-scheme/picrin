@@ -77,9 +77,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   struct pic_proc *proc;
   int idx;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->cfunc_p = true;
-  proc->u.cfunc = cfunc;
+  proc = pic_proc_new_cfunc(pic, cfunc, pic_undef_value());
   idx = env_global_define(pic, pic_intern_cstr(pic, name));
   pic->globals[idx] = pic_obj_value(proc);
 }
@@ -458,9 +456,8 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
   struct pic_proc *proc;
   struct pic_irep *irep;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->cfunc_p = false;
-  proc->u.irep = irep = new_irep(pic);
+  irep = new_irep(pic);
+  proc = pic_proc_new(pic, irep);
 
   if (! pic->jmp) {
     jmp_buf jmp;

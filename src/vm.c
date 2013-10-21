@@ -222,9 +222,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     CASE(OP_LAMBDA) {
       struct pic_proc *proc;
 
-      proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc *), PIC_TT_PROC);
-      proc->cfunc_p = false;
-      proc->u.irep = pic->irep[pc->u.i];
+      proc = pic_proc_new(pic, pic->irep[pc->u.i]);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;

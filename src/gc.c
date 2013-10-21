@@ -148,6 +148,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_PROC: {
+    gc_mark(pic, ((struct pic_proc *)obj)->aux);
     break;
   }
   case PIC_TT_PORT: {
