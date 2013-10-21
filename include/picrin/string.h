@@ -3,7 +3,7 @@
 
 struct pic_string {
   PIC_OBJECT_HEADER
-  const char *str;
+  char *str;
   size_t len;
 };
 

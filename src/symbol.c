@@ -17,21 +17,6 @@ str_hash(const char *str)
   return hash;
 }
 
-struct sym_tbl *
-sym_tbl_new()
-{
-  struct sym_tbl *s_tbl;
-  int i;
-
-  s_tbl = (struct sym_tbl *)malloc(sizeof(struct sym_tbl));
-  s_tbl->size = PIC_SYM_TBL_SIZE;
-
-  for (i = 0; i < PIC_SYM_TBL_SIZE; ++i) {
-    s_tbl->tbl[i] = pic_nil_value();
-  }
-  return s_tbl;
-}
-
 pic_value
 sym_tbl_get(struct sym_tbl *s_tbl, const char *key)
 {

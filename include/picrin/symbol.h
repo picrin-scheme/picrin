@@ -6,7 +6,6 @@ struct sym_tbl {
   size_t size;
 };
 
-struct sym_tbl * sym_tbl_new();
 pic_value sym_tbl_get(struct sym_tbl *, const char *);
 
 #endif

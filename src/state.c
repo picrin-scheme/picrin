@@ -17,12 +17,28 @@ new_empty_env()
   return env;
 }
 
+struct sym_tbl *
+sym_tbl_new()
+{
+  struct sym_tbl *s_tbl;
+  int i;
+
+  s_tbl = (struct sym_tbl *)malloc(sizeof(struct sym_tbl));
+  s_tbl->size = PIC_SYM_TBL_SIZE;
+
+  for (i = 0; i < PIC_SYM_TBL_SIZE; ++i) {
+    s_tbl->tbl[i] = pic_nil_value();
+  }
+  return s_tbl;
+}
+
 void pic_init_core(pic_state *);
 
 pic_state *
 pic_open()
 {
   pic_state *pic;
+  int ai;
 
   pic = (pic_state *)malloc(sizeof(pic_state));
 
@@ -63,6 +79,11 @@ pic_open()
   /* GC arena */
   pic->arena_idx = 0;
 
+  /* global environment */
+  pic->global_env = new_empty_env();
+  pic_init_core(pic);
+
+  ai = pic_gc_arena_preserve(pic);
   pic->sDEFINE = pic_intern_cstr(pic, "define");
   pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
   pic->sIF = pic_intern_cstr(pic, "if");
@@ -76,10 +97,7 @@ pic_open()
   pic->sSUB = pic_intern_cstr(pic, "-");
   pic->sMUL = pic_intern_cstr(pic, "*");
   pic->sDIV = pic_intern_cstr(pic, "/");
-
-  /* global environment */
-  pic->global_env = new_empty_env();
-  pic_init_core(pic);
+  pic_gc_arena_restore(pic, ai);
 
   return pic;
 }
