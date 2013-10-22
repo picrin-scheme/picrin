@@ -74,6 +74,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	}
       }
       break;
+    default:
+      {
+	pic_error(pic, "pic_get_args: invalid argument specifier given");
+      }
     }
   }
   if (argc > i) {

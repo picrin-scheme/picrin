@@ -198,7 +198,7 @@ pic_number_atan(pic_state *pic)
   double f,g;
   int argc;
 
-  argc = pic_get_args(pic, "f|g", &f, &g);
+  argc = pic_get_args(pic, "f|f", &f, &g);
   if (argc == 1) {
     f = atan(f);
     return pic_float_value(f);
