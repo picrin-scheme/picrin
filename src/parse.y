@@ -9,15 +9,20 @@
 
 struct parser_control {
   pic_state *pic;
+  void *yyscanner;
   pic_value value;
   bool incomp;
   int yynerrs;
 };
 
-void init_scanner(const char *);
-void final_scanner(void);
-
 void yyerror(struct parser_control *, const char *);
+
+/* just for supressing warnings. a little bit evil */
+int yylex();
+int yylex_();
+void yylex_init();
+void yy_scan_string();
+void yylex_destroy();
 %}
 
 %pure_parser
@@ -122,6 +127,12 @@ yyerror(struct parser_control *p, const char *msg)
   p->yynerrs++;
 }
 
+int
+yylex(YYSTYPE *yylvalp, struct parser_control *p)
+{
+  return yylex_(yylvalp, p->yyscanner, p);
+}
+
 bool
 pic_parse(pic_state *pic, const char *str, pic_value *v)
 {
@@ -131,9 +142,10 @@ pic_parse(pic_state *pic, const char *str, pic_value *v)
   p.incomp = false;
   p.yynerrs = 0;
 
-  init_scanner(str);
+  yylex_init(&p.yyscanner);
+  yy_scan_string(str, p.yyscanner);
   yyparse(&p);
-  final_scanner();
+  yylex_destroy(p.yyscanner);
 
   if (p.yynerrs > 0) {
     p.value = pic_undef_value();

@@ -7,6 +7,7 @@
 
 struct parser_control {
   pic_state *pic;
+  void *yyscanner;
   pic_value value;
   bool incomp;
   int yynerrs;
@@ -14,9 +15,10 @@ struct parser_control {
 
 static pic_value new_escaped_string(pic_state *, const char *);
 
-#define YY_DECL int yylex (YYSTYPE *yylvalp, struct parser_control *p)
+#define YY_DECL int yylex_ (YYSTYPE *yylvalp, yyscan_t yyscanner, struct parser_control *p)
 %}
 
+%option reentrant
 %option noinput
 %option nounput
 
@@ -55,7 +57,7 @@ string_elem	[^\"\\]|"\\\""|"\\\\"
 %%
 
 int
-yywrap()
+yywrap(yyscan_t yyscanner)
 {
   return 1;
 }
@@ -83,16 +85,4 @@ new_escaped_string(pic_state *pic, const char *str)
   v = pic_str_new_cstr(pic, new_str);
   pic_free(pic, new_str);
   return v;
-}
-
-void
-init_scanner(const char *str)
-{
-  yy_scan_string(str);
-}
-
-void
-final_scanner()
-{
-  yylex_destroy();
 }
