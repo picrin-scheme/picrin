@@ -11,15 +11,16 @@ struct parser_control {
   pic_state *pic;
   pic_value value;
   bool incomp;
+  int yynerrs;
 };
 
 void init_scanner(const char *);
 void final_scanner(void);
 
 void yyerror(struct parser_control *, const char *);
-int yylex(struct parser_control *);
 %}
 
+%pure_parser
 %parse-param {struct parser_control *p}
 %lex-param {struct parser_control *p}
 
@@ -118,6 +119,7 @@ void
 yyerror(struct parser_control *p, const char *msg)
 {
   puts(msg);
+  p->yynerrs++;
 }
 
 bool
@@ -127,12 +129,13 @@ pic_parse(pic_state *pic, const char *str, pic_value *v)
 
   p.pic = pic;
   p.incomp = false;
+  p.yynerrs = 0;
 
   init_scanner(str);
   yyparse(&p);
   final_scanner();
 
-  if (yynerrs > 0) {
+  if (p.yynerrs > 0) {
     p.value = pic_undef_value();
   }
 

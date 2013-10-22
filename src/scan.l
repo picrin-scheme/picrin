@@ -9,11 +9,12 @@ struct parser_control {
   pic_state *pic;
   pic_value value;
   bool incomp;
+  int yynerrs;
 };
 
 static pic_value new_escaped_string(pic_state *, const char *);
 
-#define YY_DECL int yylex (struct parser_control *p)
+#define YY_DECL int yylex (YYSTYPE *yylvalp, struct parser_control *p)
 %}
 
 %option noinput
@@ -43,11 +44,11 @@ string_elem	[^\"\\]|"\\\""|"\\\\"
 "("		return tLPAREN;
 ")"		return tRPAREN;
 "'"		return tQUOTE;
-{boolean}	{ yylval.datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
-{real} 		{ yylval.datum = pic_float_value(atof(yytext)); return tNUMBER; }
-{identifier}	{ yylval.datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
+{boolean}	{ yylvalp->datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
+{real} 		{ yylvalp->datum = pic_float_value(atof(yytext)); return tNUMBER; }
+{identifier}	{ yylvalp->datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
 {string}	{
-		  yylval.datum = new_escaped_string(p->pic, yytext);
+		  yylvalp->datum = new_escaped_string(p->pic, yytext);
 		  return tSTRING;
 		}
 
