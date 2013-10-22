@@ -4,18 +4,7 @@
 #include "picrin/gc.h"
 #include "picrin/proc.h"
 #include "picrin/symbol.h"
-
-static struct pic_env *
-new_empty_env()
-{
-  struct pic_env *env;
-
-  env = (struct pic_env *)malloc(sizeof(struct pic_env));
-  env->assoc = pic_nil_value();
-  env->parent = NULL;
-
-  return env;
-}
+#include "xhash/xhash.h"
 
 struct sym_tbl *
 sym_tbl_new()
@@ -68,6 +57,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->icapa = PIC_IREP_SIZE;
 
   /* globals */
+  pic->global_tbl = xh_new();
   pic->globals = (pic_value *)malloc(sizeof(pic_value) * PIC_GLOBALS_SIZE);
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
@@ -84,10 +74,6 @@ pic_open(int argc, char *argv[], char **envp)
   /* GC arena */
   pic->arena_idx = 0;
 
-  /* global environment */
-  pic->global_env = new_empty_env();
-  pic_init_core(pic);
-
   ai = pic_gc_arena_preserve(pic);
   pic->sDEFINE = pic_intern_cstr(pic, "define");
   pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
@@ -103,6 +89,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic->sMUL = pic_intern_cstr(pic, "*");
   pic->sDIV = pic_intern_cstr(pic, "/");
   pic_gc_arena_restore(pic, ai);
+
+  pic_init_core(pic);
 
   return pic;
 }

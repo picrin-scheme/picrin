@@ -11,7 +11,7 @@ build-lib:
 	cd src; \
 	yacc -d parse.y; \
 	lex scan.l
-	 $(CC) -Wall -shared -o lib/libpicrin.so -I./include src/*.c
+	 $(CC) -Wall -shared -o lib/libpicrin.so -I./include -I./extlib src/*.c
 
 clean:
 	rm -f src/y.tab.c src/y.tab.h src/lex.yy.c

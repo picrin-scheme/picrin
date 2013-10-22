@@ -1,11 +1,6 @@
 #ifndef PROC_H__
 #define PROC_H__
 
-struct pic_env {
-  pic_value assoc;
-  struct pic_env *parent;
-};
-
 struct pic_proc {
   PIC_OBJECT_HEADER
   bool cfunc_p;

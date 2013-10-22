@@ -181,7 +181,6 @@ static void
 gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
-  struct pic_env *env;
   int i;
 
   /* stack */
@@ -194,12 +193,6 @@ gc_mark_phase(pic_state *pic)
   for (i = 0; i < pic->arena_idx; ++i) {
     gc_mark_object(pic, pic->arena[i]);
   }
-
-  /* global env */
-  env = pic->global_env;
-  do {
-    gc_mark(pic, env->assoc);
-  } while ((env = env->parent) != NULL);
 
   /* globals */
   for (i = 0; i < pic->glen; ++i) {

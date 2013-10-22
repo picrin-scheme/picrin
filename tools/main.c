@@ -80,7 +80,7 @@ main(int argc, char *argv[], char **envp)
 #endif
 
     /* eval */
-    proc = pic_codegen(pic, v, pic->global_env);
+    proc = pic_codegen(pic, v);
     if (proc == NULL) {
       printf("compilation error: %s\n", pic->errmsg);
       pic->errmsg = NULL;

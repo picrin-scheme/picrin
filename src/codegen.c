@@ -4,28 +4,81 @@
 #include "picrin/pair.h"
 #include "picrin/irep.h"
 #include "picrin/proc.h"
+#include "xhash/xhash.h"
+
+struct pic_scope {
+  struct pic_scope *up;
+
+  struct xhash *local_tbl;
+  size_t localc;
+};
+
+static struct pic_scope *
+new_global_scope(pic_state *pic)
+{
+  struct pic_scope *scope;
+
+  scope = (struct pic_scope *)pic_alloc(pic, sizeof(struct pic_scope));
+  scope->up = NULL;
+  scope->local_tbl = pic->global_tbl;
+  scope->localc = -1;
+  return scope;
+}
+
+static struct pic_scope *
+new_local_scope(pic_state *pic, pic_value args, struct pic_scope *scope)
+{
+  struct pic_scope *new_scope;
+  pic_value v;
+  int i;
+  struct xhash *x;
+
+  new_scope = (struct pic_scope *)pic_alloc(pic, sizeof(struct pic_scope));
+  new_scope->up = scope;
+  new_scope->local_tbl = x = xh_new();
+
+  i = -1;
+  for (v = args; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
+    pic_value sym;
+
+    sym = pic_car(pic, v);
+    xh_put(x, pic_symbol_ptr(sym)->name, i--);
+  }
+  new_scope->localc = -1-i;
+
+  return new_scope;
+}
+
+static void
+destory_scope(pic_state *pic, struct pic_scope *scope)
+{
+  if (scope->up) {
+    xh_destory(scope->local_tbl);
+  }
+  pic_free(pic, scope);
+}
 
 static bool
-env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, int *depth, int *idx)
+scope_lookup(pic_state *pic, const char *key, struct pic_scope *scope, int *depth, int *idx)
 {
-  pic_value v;
+  struct xh_entry *e;
   int d = 0;
 
  enter:
 
-  v = pic_assq(pic, sym, env->assoc);
-  if (! pic_nil_p(v)) {
-    if (env->parent == NULL) {		/* global */
+  e = xh_get(scope->local_tbl, key);
+  if (e) {
+    if (scope->up == NULL) {	/* global */
       *depth = -1;
     }
     else {			/* non-global */
       *depth = d;
     }
-    *idx = (int)pic_float(pic_pair_ptr(v)->cdr);
+    *idx = e->val;
     return true;
   }
-  if (env->parent) {
-    env = env->parent;
+  if (scope->up) {
+    scope = scope->up;
     ++d;
     goto enter;
   }
@@ -33,42 +86,18 @@ env_lookup(pic_state *pic, pic_value sym, struct pic_env *env, int *depth, int *
 }
 
 static int
-env_global_define(pic_state *pic, pic_value sym)
+scope_global_define(pic_state *pic, const char *name)
 {
-  pic_value f;
-  int d, idx;
+  struct xh_entry *e;
 
-  if (env_lookup(pic, sym, pic->global_env, &d, &idx)) {
-    return idx;
+  if ((e = xh_get(pic->global_tbl, name))) {
+    return e->val;
   }
-
-  idx = pic->glen++;
-  f = pic_float_value(idx);
-  pic->global_env->assoc = pic_acons(pic, sym, f, pic->global_env->assoc);
-
-  return idx;
-}
-
-static struct pic_env *
-env_new(pic_state *pic, pic_value args, struct pic_env *env)
-{
-  struct pic_env *inner_env;
-  pic_value v, f;
-  int i;
-
-  inner_env = (struct pic_env *)pic_alloc(pic, sizeof(struct pic_env));
-  inner_env->assoc = pic_nil_value();
-  inner_env->parent = env;
-
-  i = -1;
-  for (v = args; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-    pic_value sym = pic_car(pic, v);
-
-    f = pic_float_value(i--);
-    inner_env->assoc = pic_acons(pic, sym, f, inner_env->assoc);
+  e = xh_put(pic->global_tbl, name, pic->glen++);
+  if (pic->glen >= pic->gcapa) {
+    pic_error(pic, "global table overflow");
   }
-
-  return inner_env;
+  return e->val;
 }
 
 void
@@ -78,7 +107,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   int idx;
 
   proc = pic_proc_new_cfunc(pic, cfunc, pic_undef_value());
-  idx = env_global_define(pic, pic_intern_cstr(pic, name));
+  idx = scope_global_define(pic, name);
   pic->globals[idx] = pic_obj_value(proc);
 }
 
@@ -177,11 +206,11 @@ new_irep(pic_state *pic)
   return irep;
 }
 
-static void pic_gen_call(pic_state *, struct pic_irep *, pic_value, struct pic_env *);
-static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_env *);
+static void pic_gen_call(pic_state *, struct pic_irep *, pic_value, struct pic_scope *);
+static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_scope *);
 
 static void
-pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
+pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_scope *scope)
 {
   pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE;
   pic_value sCONS, sCAR, sCDR, sNILP;
@@ -205,8 +234,10 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   case PIC_TT_SYMBOL: {
     bool b;
     int depth, idx;
+    const char *name;
 
-    b = env_lookup(pic, obj, env, &depth, &idx);
+    name = pic_symbol_ptr(obj)->name;
+    b = scope_lookup(pic, name, scope, &depth, &idx);
     if (! b) {
       pic_error(pic, "unbound variable");
     }
@@ -232,10 +263,12 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
     proc = pic_car(pic, obj);
     if (pic_eq_p(pic, proc, sDEFINE)) {
       int idx;
+      const char *name;
 
-      idx = env_global_define(pic, pic_car(pic, pic_cdr(pic, obj)));
+      name = pic_symbol_ptr(pic_car(pic, pic_cdr(pic, obj)))->name;
+      idx = scope_global_define(pic, name);
 
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), scope);
 
       irep->code[irep->clen].insn = OP_GSET;
       irep->code[irep->clen].u.i = idx;
@@ -249,26 +282,26 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       irep->code[irep->clen].u.i = pic->ilen;
       irep->clen++;
 
-      pic->irep[pic->ilen++] = pic_gen_lambda(pic, obj, env);
+      pic->irep[pic->ilen++] = pic_gen_lambda(pic, obj, scope);
       break;
     }
     else if (pic_eq_p(pic, proc, sIF)) {
       int s,t;
 
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
 
       irep->code[irep->clen].insn = OP_JMPIF;
       s = irep->clen++;
 
       /* if false branch */
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj)))), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj)))), scope);
       irep->code[irep->clen].insn = OP_JMP;
       t = irep->clen++;
 
       irep->code[s].u.i = irep->clen - s;
 
       /* if true branch */
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), scope);
       irep->code[t].u.i = irep->clen - t;
       break;
     }
@@ -277,7 +310,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 
       seq = pic_cdr(pic, obj);
       for (v = seq; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-	pic_gen(pic, irep, pic_car(pic, v), env);
+	pic_gen(pic, irep, pic_car(pic, v), scope);
 	irep->code[irep->clen].insn = OP_POP;
 	irep->clen++;
       }
@@ -294,60 +327,60 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
       break;
     }
     else if (pic_eq_p(pic, proc, sCONS)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), scope);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_CONS;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sCAR)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_CAR;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sCDR)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_CDR;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sNILP)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_NILP;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sADD)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), scope);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_ADD;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sSUB)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), scope);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_SUB;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sMUL)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), scope);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_MUL;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, sDIV)) {
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), env);
-      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), env);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), scope);
+      pic_gen(pic, irep, pic_car(pic, pic_cdr(pic, obj)), scope);
       irep->code[irep->clen].insn = OP_DIV;
       irep->clen++;
       break;
     }
     else {
-      pic_gen_call(pic, irep, obj, env);
+      pic_gen_call(pic, irep, obj, scope);
       break;
     }
   }
@@ -391,7 +424,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
 }
 
 static void
-pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *env)
+pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_scope *scope)
 {
   pic_value seq;
   int i = 0;
@@ -401,7 +434,7 @@ pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_en
     pic_value v;
 
     v = pic_car(pic, seq);
-    pic_gen(pic, irep, v, env);
+    pic_gen(pic, irep, v, scope);
     ++i;
   }
   irep->code[irep->clen].insn = OP_CALL;
@@ -410,9 +443,9 @@ pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_en
 }
 
 static struct pic_irep *
-pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
+pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_scope *scope)
 {
-  struct pic_env *inner_env;
+  struct pic_scope *new_scope;
   pic_value args, body, v;
   struct pic_irep *irep;
 
@@ -420,19 +453,20 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
 
   /* arguments */
   args = pic_car(pic, pic_cdr(pic, obj));
-  inner_env = env_new(pic, args, env);
+  new_scope = new_local_scope(pic, args, scope);
 
   /* body */
   body = pic_cdr(pic, pic_cdr(pic, obj));
   for (v = body; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-    pic_gen(pic, irep, pic_car(pic, v), inner_env);
+    pic_gen(pic, irep, pic_car(pic, v), scope);
     irep->code[irep->clen].insn = OP_POP;
     irep->clen++;
   }
   irep->clen--;
   irep->code[irep->clen].insn = OP_RET;
   irep->clen++;
-  pic_free(pic, inner_env);
+
+  destory_scope(pic, new_scope);
 
 #if VM_DEBUG
   printf("LAMBDA_%zd:\n", pic->ilen);
@@ -444,10 +478,13 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_env *env)
 }
 
 struct pic_proc *
-pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
+pic_codegen(pic_state *pic, pic_value obj)
 {
+  struct pic_scope *global_scope;
   struct pic_proc *proc;
   struct pic_irep *irep;
+
+  global_scope = new_global_scope(pic);
 
   irep = new_irep(pic);
   proc = pic_proc_new(pic, irep);
@@ -464,9 +501,11 @@ pic_codegen(pic_state *pic, pic_value obj, struct pic_env *env)
       return NULL;
     }
   }
-  pic_gen(pic, irep, obj, env);
+  pic_gen(pic, irep, obj, global_scope);
   irep->code[irep->clen].insn = OP_STOP;
   irep->clen++;
+
+  destory_scope(pic, global_scope);
 
 #if VM_DEBUG
   print_irep(pic, irep);

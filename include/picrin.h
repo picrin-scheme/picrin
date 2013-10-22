@@ -29,12 +29,13 @@ typedef struct {
   pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE;
   pic_value sCONS, sCAR, sCDR, sNILP;
   pic_value sADD, sSUB, sMUL, sDIV;
-  struct pic_env *global_env;
 
   struct sym_tbl *sym_tbl;
 
+  struct xhash *global_tbl;
   pic_value *globals;
   size_t glen, gcapa;
+
   struct pic_irep **irep;
   size_t ilen, icapa;
   pic_value *pool;
@@ -74,9 +75,8 @@ pic_value pic_str_new_cstr(pic_state *, const char *);
 
 bool pic_parse(pic_state *, const char *, pic_value *);
 
-pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
 pic_value pic_run(pic_state *, struct pic_proc *, pic_value);
-struct pic_proc *pic_codegen(pic_state *, pic_value, struct pic_env *);
+struct pic_proc *pic_codegen(pic_state *, pic_value);
 
 void pic_abort(pic_state *, const char *);
 void pic_raise(pic_state *, pic_value);
