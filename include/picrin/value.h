@@ -7,6 +7,7 @@ enum pic_vtype {
   PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
   PIC_VTYPE_FLOAT,
+  PIC_VTYPE_EOF,
   PIC_VTYPE_HEAP
 };
 
@@ -23,6 +24,7 @@ enum pic_tt {
   PIC_TT_NIL,
   PIC_TT_BOOL,
   PIC_TT_FLOAT,
+  PIC_TT_EOF,
   PIC_TT_UNDEF,
   /* heap */
   PIC_TT_PAIR,

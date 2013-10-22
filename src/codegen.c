@@ -383,6 +383,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_env *en
   }
   case PIC_TT_PROC:
   case PIC_TT_UNDEF:
+  case PIC_TT_EOF:
   case PIC_TT_PORT: {
     pic_error(pic, "invalid expression given");
   }

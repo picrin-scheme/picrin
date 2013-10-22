@@ -32,6 +32,9 @@ write(pic_state *pic, pic_value obj)
   case PIC_TT_FLOAT:
     printf("%.10g", pic_float(obj));
     break;
+  case PIC_TT_EOF:
+    printf("#<eof-object>");
+    break;
   case PIC_TT_UNDEF:
     printf("#<undef>");
     break;
@@ -103,9 +106,39 @@ pic_port_newline(pic_state *pic)
   return pic_false_value();
 }
 
+static pic_value
+pic_port_eof_object_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (v.type == PIC_VTYPE_EOF) {
+    return pic_true_value();
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+static pic_value
+pic_port_eof_object(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "");
+
+  v.type = PIC_VTYPE_EOF;
+  v.u.data = NULL;
+
+  return v;
+}
+
 void
 pic_init_port(pic_state *pic)
 {
   pic_defun(pic, "write", pic_port_write);
   pic_defun(pic, "newline", pic_port_newline);
+  pic_defun(pic, "eof-object?", pic_port_eof_object_p);
+  pic_defun(pic, "eof-object", pic_port_eof_object);
 }

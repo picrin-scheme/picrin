@@ -17,6 +17,8 @@ pic_type(pic_value v)
     return PIC_TT_UNDEF;
   case PIC_VTYPE_FLOAT:
     return PIC_TT_FLOAT;
+  case PIC_VTYPE_EOF:
+    return PIC_TT_EOF;
   case PIC_VTYPE_HEAP:
     return ((struct pic_object *)v.u.data)->tt;
   }
