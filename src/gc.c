@@ -5,6 +5,7 @@
 #include "picrin/irep.h"
 #include "picrin/proc.h"
 #include "picrin/symbol.h"
+#include "picrin/port.h"
 
 #if GC_DEBUG
 # include <stdio.h>
@@ -263,6 +264,13 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_STRING: {
     pic_free(pic, (void*)((struct pic_string *)obj)->str);
+    break;
+  }
+  case PIC_TT_PORT: {
+    struct pic_port *port = (struct pic_port *)obj;
+    if (port->status == PIC_OPEN) {
+      fclose(port->file);
+    }
     break;
   }
   case PIC_TT_NIL:

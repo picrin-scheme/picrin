@@ -17,7 +17,7 @@ struct pic_port {
   PIC_OBJECT_HEADER
   FILE *file;
   short flags;
-  char status;
+  enum pic_port_status status;
 };
 
 #define pic_port_ptr(v) ((struct pic_port_t *)v.u.data)
