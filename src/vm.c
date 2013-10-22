@@ -27,6 +27,11 @@ pic_get_args(pic_state *pic, const char *format, ...)
     case '|':
       break;
     }
+
+    /* in order to run out of all arguments passed to this function
+       (i.e. do va_arg for each argument), optional argument existence
+       check is done in every case closure */
+
     switch (c) {
     case '|':
       opt = true;
@@ -36,8 +41,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	pic_value *p;
 
 	p = va_arg(ap, pic_value*);
-	*p = GET_OPERAND(pic,i);
-	i++;
+	if (i < argc) {
+	  *p = GET_OPERAND(pic,i);
+	  i++;
+	}
       }
       break;
     case 'f':
@@ -45,8 +52,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	double *f;
 
 	f = va_arg(ap, double *);
-	*f = pic_float(GET_OPERAND(pic,i));
-	i++;
+	if (i < argc) {
+	  *f = pic_float(GET_OPERAND(pic,i));
+	  i++;
+	}
       }
       break;
     case 's':
@@ -57,10 +66,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
 	cstr = va_arg(ap, char **);
 	len = va_arg(ap, size_t *);
-	str = GET_OPERAND(pic,i);
-	*cstr = pic_str_ptr(str)->str;
-	*len = pic_str_ptr(str)->len;
-	i++;
+	if (i < argc) {
+	  str = GET_OPERAND(pic,i);
+	  *cstr = pic_str_ptr(str)->str;
+	  *len = pic_str_ptr(str)->len;
+	  i++;
+	}
       }
       break;
     }
