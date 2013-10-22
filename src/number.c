@@ -79,6 +79,46 @@ pic_number_abs(pic_state *pic)
 }
 
 static pic_value
+pic_number_floor_quotient(pic_state *pic)
+{
+  double f,g;
+
+  pic_get_args(pic, "ff", &f, &g);
+  return pic_float_value(floor(f/g));
+}
+
+static pic_value
+pic_number_floor_remainder(pic_state *pic)
+{
+  double f,g,q;
+
+  pic_get_args(pic, "ff", &f, &g);
+
+  q = floor(f/g);
+  return pic_float_value(f - g * q);
+}
+
+static pic_value
+pic_number_truncate_quotient(pic_state *pic)
+{
+  double f,g;
+
+  pic_get_args(pic, "ff", &f, &g);
+  return pic_float_value(trunc(f/g));
+}
+
+static pic_value
+pic_number_truncate_remainder(pic_state *pic)
+{
+  double f,g,q;
+
+  pic_get_args(pic, "ff", &f, &g);
+
+  q = trunc(f/g);
+  return pic_float_value(f - g * q);
+}
+
+static pic_value
 pic_number_floor(pic_state *pic)
 {
   double f;
@@ -256,6 +296,12 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "<", pic_number_lt);
 
   pic_defun(pic, "abs", pic_number_abs);
+
+  pic_defun(pic, "floor-quotient", pic_number_floor_quotient);
+  pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
+  pic_defun(pic, "truncate-quotient", pic_number_truncate_quotient);
+  pic_defun(pic, "truncate-remainder", pic_number_truncate_remainder);
+  pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "floor", pic_number_floor);
   pic_defun(pic, "ceiling", pic_number_ceiling);
