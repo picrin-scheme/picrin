@@ -1,11 +1,13 @@
 #ifndef PORT_H__
 #define PORT_H__
 
+#include <stdio.h>
+
 enum pic_port_flag {
-  PIC_PORT_IN,
-  PIC_PORT_OUT,
-  PIC_PORT_TEXT,
-  PIC_PORT_BINARY
+  PIC_PORT_IN = 1,
+  PIC_PORT_OUT = 2,
+  PIC_PORT_TEXT = 4,
+  PIC_PORT_BINARY = 8
 };
 
 enum pic_port_status {
