@@ -506,6 +506,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_LREF:
       printf("OP_LREF\t%d\n", irep->code[i].u.i);
       break;
+    case OP_CREF:
+      printf("OP_CREF\t%d\t%d\n", irep->code[i].u.c.depth, irep->code[i].u.c.idx);
+      break;
     case OP_JMP:
       printf("OP_JMP\t%d\n", irep->code[i].u.i);
       break;

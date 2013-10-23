@@ -11,6 +11,7 @@ enum pic_opcode {
   OP_GREF,
   OP_GSET,
   OP_LREF,
+  OP_CREF,
   OP_JMP,
   OP_JMPIF,
   OP_CALL,
@@ -32,6 +33,10 @@ struct pic_code {
   union {
     double f;
     int i;
+    struct {
+      short depth;
+      short idx;
+    } c;
   } u;
 };
 
