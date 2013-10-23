@@ -11,7 +11,7 @@ typedef struct codegen_scope {
 
   /* local variables are 1-indexed */
   struct xhash *local_tbl;
-  size_t localc;
+  size_t argc;
 } codegen_scope;
 
 static codegen_scope *
@@ -22,7 +22,7 @@ new_global_scope(pic_state *pic)
   scope = (codegen_scope *)pic_alloc(pic, sizeof(codegen_scope));
   scope->up = NULL;
   scope->local_tbl = pic->global_tbl;
-  scope->localc = -1;
+  scope->argc = -1;
   return scope;
 }
 
@@ -45,7 +45,7 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
     sym = pic_car(pic, v);
     xh_put(x, pic_symbol_ptr(sym)->name, i++);
   }
-  new_scope->localc = i-1;
+  new_scope->argc = i;
 
   return new_scope;
 }
@@ -68,6 +68,7 @@ new_irep(pic_state *pic)
   irep->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
   irep->clen = 0;
   irep->ccapa = 1024;
+  irep->argc = -1;
   return irep;
 }
 
@@ -87,7 +88,6 @@ new_codegen_state(pic_state *pic)
   state = (codegen_state *)pic_alloc(pic, sizeof(codegen_state));
   state->pic = pic;
   state->scope = new_global_scope(pic);
-  state->irep = new_irep(pic);
 
   return state;
 }
@@ -376,8 +376,9 @@ codegen_lambda(codegen_state *state, pic_value obj)
   prev_irep = state->irep;
   prev_scope = state->scope;
 
-  state->irep = irep = new_irep(pic);
   state->scope = new_local_scope(pic, pic_car(pic, pic_cdr(pic, obj)), state->scope);
+  state->irep = irep = new_irep(pic);
+  irep->argc = state->scope->argc;
   {
     /* body */
     body = pic_cdr(pic, pic_cdr(pic, obj));
@@ -424,6 +425,7 @@ pic_codegen(pic_state *pic, pic_value obj)
       return NULL;
     }
   }
+  state->irep = new_irep(pic);
   codegen(state, obj);
   state->irep->code[state->irep->clen].insn = OP_STOP;
   state->irep->clen++;

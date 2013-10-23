@@ -212,6 +212,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 	NEXT;
       }
       else {
+	if (ci->argc != proc->u.irep->argc) {
+	  pic->errmsg = "wrong number of arguments";
+	  goto L_RAISE;
+	}
 	pc = proc->u.irep->code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
