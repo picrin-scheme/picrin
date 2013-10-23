@@ -142,31 +142,14 @@ scope_global_define(pic_state *pic, const char *name)
   return e->val;
 }
 
-static void pic_gen_call(codegen_state *, pic_value);
-static struct pic_irep *pic_gen_lambda(codegen_state *, pic_value);
+static void codegen_call(codegen_state *, pic_value);
+static struct pic_irep *codegen_lambda(codegen_state *, pic_value);
 
 static void
-pic_gen(codegen_state *state, pic_value obj)
+codegen(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   struct pic_irep *irep = state->irep;
-  pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE;
-  pic_value sCONS, sCAR, sCDR, sNILP;
-  pic_value sADD, sSUB, sMUL, sDIV;
-
-  sDEFINE = pic->sDEFINE;
-  sLAMBDA = pic->sLAMBDA;
-  sIF = pic->sIF;
-  sBEGIN = pic->sBEGIN;
-  sQUOTE = pic->sQUOTE;
-  sCONS = pic->sCONS;
-  sCAR = pic->sCAR;
-  sCDR = pic->sCDR;
-  sNILP = pic->sNILP;
-  sADD = pic->sADD;
-  sSUB = pic->sSUB;
-  sMUL = pic->sMUL;
-  sDIV = pic->sDIV;
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
@@ -199,14 +182,14 @@ pic_gen(codegen_state *state, pic_value obj)
     pic_value proc;
 
     proc = pic_car(pic, obj);
-    if (pic_eq_p(pic, proc, sDEFINE)) {
+    if (pic_eq_p(pic, proc, pic->sDEFINE)) {
       int idx;
       const char *name;
 
       name = pic_symbol_ptr(pic_car(pic, pic_cdr(pic, obj)))->name;
       idx = scope_global_define(pic, name);
 
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
 
       irep->code[irep->clen].insn = OP_GSET;
       irep->code[irep->clen].u.i = idx;
@@ -215,47 +198,47 @@ pic_gen(codegen_state *state, pic_value obj)
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sLAMBDA)) {
+    else if (pic_eq_p(pic, proc, pic->sLAMBDA)) {
       irep->code[irep->clen].insn = OP_LAMBDA;
       irep->code[irep->clen].u.i = pic->ilen;
       irep->clen++;
 
-      pic->irep[pic->ilen++] = pic_gen_lambda(state, obj);
+      pic->irep[pic->ilen++] = codegen_lambda(state, obj);
       break;
     }
-    else if (pic_eq_p(pic, proc, sIF)) {
+    else if (pic_eq_p(pic, proc, pic->sIF)) {
       int s,t;
 
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
 
       irep->code[irep->clen].insn = OP_JMPIF;
       s = irep->clen++;
 
       /* if false branch */
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj)))));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj)))));
       irep->code[irep->clen].insn = OP_JMP;
       t = irep->clen++;
 
       irep->code[s].u.i = irep->clen - s;
 
       /* if true branch */
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[t].u.i = irep->clen - t;
       break;
     }
-    else if (pic_eq_p(pic, proc, sBEGIN)) {
+    else if (pic_eq_p(pic, proc, pic->sBEGIN)) {
       pic_value v, seq;
 
       seq = pic_cdr(pic, obj);
       for (v = seq; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-	pic_gen(state, pic_car(pic, v));
+	codegen(state, pic_car(pic, v));
 	irep->code[irep->clen].insn = OP_POP;
 	irep->clen++;
       }
       irep->clen--;
       break;
     }
-    else if (pic_eq_p(pic, proc, sQUOTE)) {
+    else if (pic_eq_p(pic, proc, pic->sQUOTE)) {
       int pidx;
       pidx = pic->plen++;
       pic->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
@@ -264,61 +247,61 @@ pic_gen(codegen_state *state, pic_value obj)
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sCONS)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+    else if (pic_eq_p(pic, proc, pic->sCONS)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_CONS;
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sCAR)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
+    else if (pic_eq_p(pic, proc, pic->sCAR)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_CAR;
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sCDR)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
+    else if (pic_eq_p(pic, proc, pic->sCDR)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_CDR;
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sNILP)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
+    else if (pic_eq_p(pic, proc, pic->sNILP)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_NILP;
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sADD)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+    else if (pic_eq_p(pic, proc, pic->sADD)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_ADD;
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sSUB)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+    else if (pic_eq_p(pic, proc, pic->sSUB)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_SUB;
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sMUL)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+    else if (pic_eq_p(pic, proc, pic->sMUL)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_MUL;
       irep->clen++;
       break;
     }
-    else if (pic_eq_p(pic, proc, sDIV)) {
-      pic_gen(state, pic_car(pic, pic_cdr(pic, obj)));
-      pic_gen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+    else if (pic_eq_p(pic, proc, pic->sDIV)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_DIV;
       irep->clen++;
       break;
     }
     else {
-      pic_gen_call(state, obj);
+      codegen_call(state, obj);
       break;
     }
   }
@@ -362,7 +345,7 @@ pic_gen(codegen_state *state, pic_value obj)
 }
 
 static void
-pic_gen_call(codegen_state *state, pic_value obj)
+codegen_call(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   struct pic_irep *irep = state->irep;
@@ -373,7 +356,7 @@ pic_gen_call(codegen_state *state, pic_value obj)
     pic_value v;
 
     v = pic_car(pic, seq);
-    pic_gen(state, v);
+    codegen(state, v);
     ++i;
   }
   irep->code[irep->clen].insn = OP_CALL;
@@ -382,7 +365,7 @@ pic_gen_call(codegen_state *state, pic_value obj)
 }
 
 static struct pic_irep *
-pic_gen_lambda(codegen_state *state, pic_value obj)
+codegen_lambda(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   codegen_scope *prev_scope;
@@ -399,7 +382,7 @@ pic_gen_lambda(codegen_state *state, pic_value obj)
     /* body */
     body = pic_cdr(pic, pic_cdr(pic, obj));
     for (v = body; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-      pic_gen(state, pic_car(pic, v));
+      codegen(state, pic_car(pic, v));
       irep->code[irep->clen].insn = OP_POP;
       irep->clen++;
     }
@@ -441,7 +424,7 @@ pic_codegen(pic_state *pic, pic_value obj)
       return NULL;
     }
   }
-  pic_gen(state, obj);
+  codegen(state, obj);
   state->irep->code[state->irep->clen].insn = OP_STOP;
   state->irep->clen++;
   proc = pic_proc_new(pic, state->irep);
