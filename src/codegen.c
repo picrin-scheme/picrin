@@ -458,7 +458,7 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_scope *scope)
   /* body */
   body = pic_cdr(pic, pic_cdr(pic, obj));
   for (v = body; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-    pic_gen(pic, irep, pic_car(pic, v), scope);
+    pic_gen(pic, irep, pic_car(pic, v), new_scope);
     irep->code[irep->clen].insn = OP_POP;
     irep->clen++;
   }
