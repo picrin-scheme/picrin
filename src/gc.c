@@ -57,6 +57,18 @@ pic_realloc(pic_state *pic, void *ptr, size_t size)
   return ptr;
 }
 
+void *
+pic_calloc(pic_state *pic, unsigned count, size_t size)
+{
+  void *ptr;
+
+  ptr = calloc(count ,size);
+  if (ptr == NULL) {
+    pic_abort(pic, "memory exhausted");
+  }
+  return ptr;
+}
+
 void
 pic_free(pic_state *pic, void *ptr)
 {
