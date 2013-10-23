@@ -27,6 +27,7 @@ typedef struct {
   pic_callinfo *cibase, *ciend;
 
   pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE;
+  pic_value sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_value sCONS, sCAR, sCDR, sNILP;
   pic_value sADD, sSUB, sMUL, sDIV;
 

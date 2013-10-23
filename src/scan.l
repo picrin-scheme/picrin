@@ -26,7 +26,7 @@ static pic_value new_escaped_string(pic_state *, const char *);
 boolean		#t|#f|#true|#false
 
   /* symbol */
-identifier	[a-z0-9A-Z+-/*!$%&:@^~?<=>_.]+
+identifier	[a-z0-9A-Z+/*!$%&:@^~?<=>_.-]+
 
   /* number */
 digit		[0-9]
@@ -46,6 +46,9 @@ string_elem	[^\"\\]|"\\\""|"\\\\"
 "("		return tLPAREN;
 ")"		return tRPAREN;
 "'"		return tQUOTE;
+"`"		return tQUASIQUOTE;
+","		return tUNQUOTE;
+",@"		return tUNQUOTE_SPLICING;
 {boolean}	{ yylvalp->datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
 {real} 		{ yylvalp->datum = pic_float_value(atof(yytext)); return tNUMBER; }
 {identifier}	{ yylvalp->datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }

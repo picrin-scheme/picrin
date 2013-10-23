@@ -214,6 +214,9 @@ gc_mark_phase(pic_state *pic)
   gc_mark(pic, pic->sIF);
   gc_mark(pic, pic->sBEGIN);
   gc_mark(pic, pic->sQUOTE);
+  gc_mark(pic, pic->sQUASIQUOTE);
+  gc_mark(pic, pic->sUNQUOTE);
+  gc_mark(pic, pic->sUNQUOTE_SPLICING);
   gc_mark(pic, pic->sCONS);
   gc_mark(pic, pic->sCAR);
   gc_mark(pic, pic->sCDR);

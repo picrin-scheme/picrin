@@ -80,6 +80,9 @@ pic_open(int argc, char *argv[], char **envp)
   pic->sIF = pic_intern_cstr(pic, "if");
   pic->sBEGIN = pic_intern_cstr(pic, "begin");
   pic->sQUOTE = pic_intern_cstr(pic, "quote");
+  pic->sQUASIQUOTE = pic_intern_cstr(pic, "quasiquote");
+  pic->sUNQUOTE = pic_intern_cstr(pic, "unquote");
+  pic->sUNQUOTE_SPLICING = pic_intern_cstr(pic, "unquote-splicing");
   pic->sCONS = pic_intern_cstr(pic, "cons");
   pic->sCAR = pic_intern_cstr(pic, "car");
   pic->sCDR = pic_intern_cstr(pic, "cdr");

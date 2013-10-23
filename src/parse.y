@@ -34,7 +34,7 @@ void yylex_destroy();
 }
 
 %token tLPAREN tRPAREN tDOT
-%token tQUOTE
+%token tQUOTE tQUASIQUOTE tUNQUOTE tUNQUOTE_SPLICING
 %token <datum> tSYMBOL tNUMBER tBOOLEAN tSTRING
 
 %type <datum> datum simple_datum compound_datum abbrev
@@ -43,11 +43,7 @@ void yylex_destroy();
 %%
 
 program
-	:
-	{
-	  p->value = pic_undef_value();
-	}
-	| datum
+	: datum
 	{
 	  p->value = $1;
 	}
@@ -100,22 +96,39 @@ list_data
 abbrev
 	: tQUOTE datum
 	{
-	  $$ = pic_cons(p->pic, p->pic->sQUOTE, pic_cons(p->pic, $2, pic_nil_value()));
+	  $$ = pic_list(p->pic, 2, p->pic->sQUOTE, $2);
+	}
+	| tQUASIQUOTE datum
+	{
+	  $$ = pic_list(p->pic, 2, p->pic->sQUASIQUOTE, $2);
+	}
+	| tUNQUOTE datum
+	{
+	  $$ = pic_list(p->pic, 2, p->pic->sUNQUOTE, $2);
+	}
+	| tUNQUOTE_SPLICING datum
+	{
+	  $$ = pic_list(p->pic, 2, p->pic->sUNQUOTE_SPLICING, $2);
 	}
 ;
 
 incomplete_datum
-	: tLPAREN incomplete_data
-	| tQUOTE
-	| tQUOTE incomplete_datum
+	: /* none */
+	| tLPAREN incomplete_data
+	| incomplete_abbrev
 ;
 
 incomplete_data
-	:  /* none */
-	| datum tDOT
-	| datum incomplete_datum
+	: incomplete_datum
 	| datum tDOT incomplete_datum
 	| datum incomplete_data
+;
+
+incomplete_abbrev
+	: tQUOTE incomplete_datum
+	| tQUASIQUOTE incomplete_datum
+	| tUNQUOTE incomplete_datum
+	| tUNQUOTE_SPLICING incomplete_datum
 ;
 
 %%

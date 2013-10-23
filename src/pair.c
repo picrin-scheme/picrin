@@ -1,3 +1,5 @@
+#include <stdarg.h>
+
 #include "picrin.h"
 #include "picrin/pair.h"
 
@@ -46,6 +48,23 @@ pic_list_p(pic_state *pic, pic_value obj)
     obj = pic_pair_ptr(obj)->cdr;
 
   return pic_nil_p(obj);
+}
+
+pic_value
+pic_list(pic_state *pic, size_t c, ...)
+{
+  va_list ap;
+  pic_value v;
+
+  va_start(ap, c);
+
+  v = pic_nil_value();
+  while (c--) {
+    v = pic_cons(pic, va_arg(ap, pic_value), v);
+  }
+
+  va_end(ap);
+  return pic_reverse(pic, v);
 }
 
 pic_value
