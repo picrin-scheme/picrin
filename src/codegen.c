@@ -6,34 +6,34 @@
 #include "picrin/proc.h"
 #include "xhash/xhash.h"
 
-struct pic_scope {
-  struct pic_scope *up;
+typedef struct codegen_scope {
+  struct codegen_scope *up;
 
   struct xhash *local_tbl;
   size_t localc;
-};
+} codegen_scope;
 
-static struct pic_scope *
+static codegen_scope *
 new_global_scope(pic_state *pic)
 {
-  struct pic_scope *scope;
+  codegen_scope *scope;
 
-  scope = (struct pic_scope *)pic_alloc(pic, sizeof(struct pic_scope));
+  scope = (codegen_scope *)pic_alloc(pic, sizeof(codegen_scope));
   scope->up = NULL;
   scope->local_tbl = pic->global_tbl;
   scope->localc = -1;
   return scope;
 }
 
-static struct pic_scope *
-new_local_scope(pic_state *pic, pic_value args, struct pic_scope *scope)
+static codegen_scope *
+new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
 {
-  struct pic_scope *new_scope;
+  codegen_scope *new_scope;
   pic_value v;
   int i;
   struct xhash *x;
 
-  new_scope = (struct pic_scope *)pic_alloc(pic, sizeof(struct pic_scope));
+  new_scope = (codegen_scope *)pic_alloc(pic, sizeof(codegen_scope));
   new_scope->up = scope;
   new_scope->local_tbl = x = xh_new();
 
@@ -50,7 +50,7 @@ new_local_scope(pic_state *pic, pic_value args, struct pic_scope *scope)
 }
 
 static void
-destory_scope(pic_state *pic, struct pic_scope *scope)
+destory_scope(pic_state *pic, codegen_scope *scope)
 {
   if (scope->up) {
     xh_destory(scope->local_tbl);
@@ -59,7 +59,7 @@ destory_scope(pic_state *pic, struct pic_scope *scope)
 }
 
 static bool
-scope_lookup(pic_state *pic, const char *key, struct pic_scope *scope, int *depth, int *idx)
+scope_lookup(pic_state *pic, codegen_scope *scope, const char *key, int *depth, int *idx)
 {
   struct xh_entry *e;
   int d = 0;
@@ -100,100 +100,6 @@ scope_global_define(pic_state *pic, const char *name)
   return e->val;
 }
 
-void
-pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
-{
-  struct pic_proc *proc;
-  int idx;
-
-  proc = pic_proc_new_cfunc(pic, cfunc, pic_undef_value());
-  idx = scope_global_define(pic, name);
-  pic->globals[idx] = pic_obj_value(proc);
-}
-
-static void
-print_irep(pic_state *pic, struct pic_irep *irep)
-{
-  int i;
-
-  printf("## irep %p [clen = %zd, ccapa = %zd]\n", irep, irep->clen, irep->ccapa);
-  for (i = 0; i < irep->clen; ++i) {
-    switch (irep->code[i].insn) {
-    case OP_POP:
-      puts("OP_POP");
-      break;
-    case OP_PUSHNIL:
-      puts("OP_PUSHNIL");
-      break;
-    case OP_PUSHTRUE:
-      puts("OP_PUSHTRUE");
-      break;
-    case OP_PUSHFALSE:
-      puts("OP_PUSHFALSE");
-      break;
-    case OP_PUSHNUM:
-      printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
-      break;
-    case OP_PUSHCONST:
-      printf("OP_PUSHCONST\t");
-      pic_debug(pic, pic->pool[irep->code[i].u.i]);
-      puts("");
-      break;
-    case OP_GREF:
-      printf("OP_GREF\t%i\n", irep->code[i].u.i);
-      break;
-    case OP_GSET:
-      printf("OP_GSET\t%i\n", irep->code[i].u.i);
-      break;
-    case OP_LREF:
-      printf("OP_LREF\t%d\n", irep->code[i].u.i);
-      break;
-    case OP_JMP:
-      printf("OP_JMP\t%d\n", irep->code[i].u.i);
-      break;
-    case OP_JMPIF:
-      printf("OP_JMPIF\t%d\n", irep->code[i].u.i);
-      break;
-    case OP_CALL:
-      printf("OP_CALL\t%d\n", irep->code[i].u.i);
-      break;
-    case OP_RET:
-      puts("OP_RET");
-      break;
-    case OP_LAMBDA:
-      printf("OP_LAMBDA\t%d\n", irep->code[i].u.i);
-      break;
-    case OP_CONS:
-      puts("OP_CONS");
-      break;
-    case OP_CAR:
-      puts("OP_CAR");
-      break;
-    case OP_NILP:
-      puts("OP_NILP");
-      break;
-    case OP_CDR:
-      puts("OP_CDR");
-      break;
-    case OP_ADD:
-      puts("OP_ADD");
-      break;
-    case OP_SUB:
-      puts("OP_SUB");
-      break;
-    case OP_MUL:
-      puts("OP_MUL");
-      break;
-    case OP_DIV:
-      puts("OP_DIV");
-      break;
-    case OP_STOP:
-      puts("OP_STOP");
-      break;
-    }
-  }
-}
-
 static struct pic_irep *
 new_irep(pic_state *pic)
 {
@@ -206,11 +112,13 @@ new_irep(pic_state *pic)
   return irep;
 }
 
-static void pic_gen_call(pic_state *, struct pic_irep *, pic_value, struct pic_scope *);
-static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, struct pic_scope *);
+static void print_irep(pic_state *, struct pic_irep *);
+
+static void pic_gen_call(pic_state *, struct pic_irep *, pic_value, codegen_scope *);
+static struct pic_irep *pic_gen_lambda(pic_state *, pic_value, codegen_scope *);
 
 static void
-pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_scope *scope)
+pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, codegen_scope *scope)
 {
   pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE;
   pic_value sCONS, sCAR, sCDR, sNILP;
@@ -237,7 +145,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_scope *
     const char *name;
 
     name = pic_symbol_ptr(obj)->name;
-    b = scope_lookup(pic, name, scope, &depth, &idx);
+    b = scope_lookup(pic, scope, name, &depth, &idx);
     if (! b) {
       pic_error(pic, "unbound variable");
     }
@@ -424,7 +332,7 @@ pic_gen(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_scope *
 }
 
 static void
-pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_scope *scope)
+pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, codegen_scope *scope)
 {
   pic_value seq;
   int i = 0;
@@ -443,9 +351,9 @@ pic_gen_call(pic_state *pic, struct pic_irep *irep, pic_value obj, struct pic_sc
 }
 
 static struct pic_irep *
-pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_scope *scope)
+pic_gen_lambda(pic_state *pic, pic_value obj, codegen_scope *scope)
 {
-  struct pic_scope *new_scope;
+  codegen_scope *new_scope;
   pic_value args, body, v;
   struct pic_irep *irep;
 
@@ -480,7 +388,7 @@ pic_gen_lambda(pic_state *pic, pic_value obj, struct pic_scope *scope)
 struct pic_proc *
 pic_codegen(pic_state *pic, pic_value obj)
 {
-  struct pic_scope *global_scope;
+  codegen_scope *global_scope;
   struct pic_proc *proc;
   struct pic_irep *irep;
 
@@ -512,4 +420,98 @@ pic_codegen(pic_state *pic, pic_value obj)
 #endif
 
   return proc;
+}
+
+void
+pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
+{
+  struct pic_proc *proc;
+  int idx;
+
+  proc = pic_proc_new_cfunc(pic, cfunc, pic_undef_value());
+  idx = scope_global_define(pic, name);
+  pic->globals[idx] = pic_obj_value(proc);
+}
+
+static void
+print_irep(pic_state *pic, struct pic_irep *irep)
+{
+  int i;
+
+  printf("## irep %p [clen = %zd, ccapa = %zd]\n", irep, irep->clen, irep->ccapa);
+  for (i = 0; i < irep->clen; ++i) {
+    switch (irep->code[i].insn) {
+    case OP_POP:
+      puts("OP_POP");
+      break;
+    case OP_PUSHNIL:
+      puts("OP_PUSHNIL");
+      break;
+    case OP_PUSHTRUE:
+      puts("OP_PUSHTRUE");
+      break;
+    case OP_PUSHFALSE:
+      puts("OP_PUSHFALSE");
+      break;
+    case OP_PUSHNUM:
+      printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
+      break;
+    case OP_PUSHCONST:
+      printf("OP_PUSHCONST\t");
+      pic_debug(pic, pic->pool[irep->code[i].u.i]);
+      puts("");
+      break;
+    case OP_GREF:
+      printf("OP_GREF\t%i\n", irep->code[i].u.i);
+      break;
+    case OP_GSET:
+      printf("OP_GSET\t%i\n", irep->code[i].u.i);
+      break;
+    case OP_LREF:
+      printf("OP_LREF\t%d\n", irep->code[i].u.i);
+      break;
+    case OP_JMP:
+      printf("OP_JMP\t%d\n", irep->code[i].u.i);
+      break;
+    case OP_JMPIF:
+      printf("OP_JMPIF\t%d\n", irep->code[i].u.i);
+      break;
+    case OP_CALL:
+      printf("OP_CALL\t%d\n", irep->code[i].u.i);
+      break;
+    case OP_RET:
+      puts("OP_RET");
+      break;
+    case OP_LAMBDA:
+      printf("OP_LAMBDA\t%d\n", irep->code[i].u.i);
+      break;
+    case OP_CONS:
+      puts("OP_CONS");
+      break;
+    case OP_CAR:
+      puts("OP_CAR");
+      break;
+    case OP_NILP:
+      puts("OP_NILP");
+      break;
+    case OP_CDR:
+      puts("OP_CDR");
+      break;
+    case OP_ADD:
+      puts("OP_ADD");
+      break;
+    case OP_SUB:
+      puts("OP_SUB");
+      break;
+    case OP_MUL:
+      puts("OP_MUL");
+      break;
+    case OP_DIV:
+      puts("OP_DIV");
+      break;
+    case OP_STOP:
+      puts("OP_STOP");
+      break;
+    }
+  }
 }

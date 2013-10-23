@@ -308,8 +308,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
 #if VM_DEBUG
       puts("**VM END STATE**");
-      printf("stbase = %p\nsp = %p\n", pic->stbase, pic->sp);
-      printf("cibase = %p\nci = %p\n", pic->cibase, pic->ci);
+      printf("stbase\t= %p\nsp\t= %p\n", pic->stbase, pic->sp);
+      printf("cibase\t= %p\nci\t= %p\n", pic->cibase, pic->ci);
       if (pic->stbase != pic->sp) {
 	pic_value *sp;
 	printf("* stack trace:");
