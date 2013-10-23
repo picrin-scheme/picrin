@@ -1,5 +1,6 @@
 #include "picrin.h"
 
+void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
 void pic_init_number(pic_state *);
 void pic_init_time(pic_state *);
@@ -14,6 +15,7 @@ pic_init_core(pic_state *pic)
   int ai;
 
   ai = pic_gc_arena_preserve(pic);
+  pic_init_pair(pic); DONE;
   pic_init_port(pic); DONE;
   pic_init_number(pic); DONE;
   pic_init_time(pic); DONE;

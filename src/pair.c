@@ -82,3 +82,38 @@ pic_acons(pic_state *pic, pic_value key, pic_value val, pic_value assoc)
 {
   return pic_cons(pic, pic_cons(pic, key, val), assoc);
 }
+
+static pic_value
+pic_pair_set_car(pic_state *pic)
+{
+  pic_value v,w;
+
+  pic_get_args(pic, "oo", &v, &w);
+
+  if (! pic_pair_p(v))
+    pic_error(pic, "pair expected");
+
+  pic_pair_ptr(v)->car = w;
+  return pic_true_value();
+}
+
+static pic_value
+pic_pair_set_cdr(pic_state *pic)
+{
+  pic_value v,w;
+
+  pic_get_args(pic, "oo", &v, &w);
+
+  if (! pic_pair_p(v))
+    pic_error(pic, "pair expected");
+
+  pic_pair_ptr(v)->cdr = w;
+  return pic_true_value();
+}
+
+void
+pic_init_pair(pic_state *pic)
+{
+  pic_defun(pic, "set-car!", pic_pair_set_car);
+  pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
+}
