@@ -118,10 +118,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
     &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHNUM,
-    &&L_OP_PUSHCONST, &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_CREF,
-    &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_CALL, &&L_OP_RET, &&L_OP_LAMBDA, &&L_OP_CONS,
-    &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP, &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL,
-    &&L_OP_DIV, &&L_OP_STOP
+    &&L_OP_PUSHCONST, &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET,
+    &&L_OP_CREF, &&L_OP_CSET, &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_CALL, &&L_OP_RET,
+    &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
+    &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_STOP
   };
 #endif
 
@@ -178,6 +178,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       PUSH(pic->ci->fp[pc->u.i]);
       NEXT;
     }
+    CASE(OP_LSET) {
+      pic->ci->fp[pc->u.i] = POP();
+      NEXT;
+    }
     CASE(OP_CREF) {
       int depth = pc->u.c.depth;
       struct pic_env *env;
@@ -187,6 +191,17 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 	env = env->up;
       }
       PUSH(env->values[pc->u.c.idx]);
+      NEXT;
+    }
+    CASE(OP_CSET) {
+      int depth = pc->u.c.depth;
+      struct pic_env *env;
+
+      env = pic_proc_ptr(*pic->ci->fp)->env;
+      while (depth--) {
+	env = env->up;
+      }
+      env->values[pc->u.c.idx] = POP();
       NEXT;
     }
     CASE(OP_JMP) {

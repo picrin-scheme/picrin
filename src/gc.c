@@ -239,6 +239,7 @@ gc_mark_phase(pic_state *pic)
   gc_mark(pic, pic->sLAMBDA);
   gc_mark(pic, pic->sIF);
   gc_mark(pic, pic->sBEGIN);
+  gc_mark(pic, pic->sSETBANG);
   gc_mark(pic, pic->sQUOTE);
   gc_mark(pic, pic->sQUASIQUOTE);
   gc_mark(pic, pic->sUNQUOTE);

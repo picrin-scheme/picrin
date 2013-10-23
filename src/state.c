@@ -79,6 +79,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
   pic->sIF = pic_intern_cstr(pic, "if");
   pic->sBEGIN = pic_intern_cstr(pic, "begin");
+  pic->sSETBANG = pic_intern_cstr(pic, "set!");
   pic->sQUOTE = pic_intern_cstr(pic, "quote");
   pic->sQUASIQUOTE = pic_intern_cstr(pic, "quasiquote");
   pic->sUNQUOTE = pic_intern_cstr(pic, "unquote");

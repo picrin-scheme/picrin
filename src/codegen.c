@@ -250,6 +250,42 @@ codegen(codegen_state *state, pic_value obj)
       irep->clen--;
       break;
     }
+    else if (pic_eq_p(pic, proc, pic->sSETBANG)) {
+      codegen_scope *s;
+      int depth, idx;
+      const char *name;
+
+      name = pic_symbol_ptr(pic_car(pic, pic_cdr(pic, obj)))->name;
+      s = scope_lookup(state, name, &depth, &idx);
+      if (! s) {
+	pic_error(pic, "unbound variable");
+      }
+
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+
+      switch (depth) {
+      case -1:			/* global */
+	irep->code[irep->clen].insn = OP_GSET;
+	irep->code[irep->clen].u.i = idx;
+	irep->clen++;
+	break;
+      default:			/* nonlocal */
+	/* dirty flag */
+	s->cv_tbl[idx] = 1;
+	/* at this stage, lset and cset are not distinguished */
+	FALLTHROUGH;
+      case 0:			/* local */
+	irep->code[irep->clen].insn = OP_CSET;
+	irep->code[irep->clen].u.c.depth = depth;
+	irep->code[irep->clen].u.c.idx = idx;
+	irep->clen++;
+	break;
+      }
+
+      irep->code[irep->clen].insn = OP_PUSHFALSE;
+      irep->clen++;
+      break;
+    }
     else if (pic_eq_p(pic, proc, pic->sQUOTE)) {
       int pidx;
       pidx = pic->plen++;
@@ -412,6 +448,10 @@ codegen_lambda(codegen_state *state, pic_value obj)
 	irep->code[i].insn = OP_LREF;
 	irep->code[i].u.i = irep->code[i].u.c.idx;
       }
+      if (c.insn == OP_CSET && c.u.c.depth == 0 && ! state->scope->cv_tbl[c.u.c.idx]) {
+	irep->code[i].insn = OP_LSET;
+	irep->code[i].u.i = irep->code[i].u.c.idx;
+      }
     }
   }
   destroy_scope(pic, state->scope);
@@ -511,8 +551,14 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_LREF:
       printf("OP_LREF\t%d\n", irep->code[i].u.i);
       break;
+    case OP_LSET:
+      printf("OP_LSET\t%d\n", irep->code[i].u.i);
+      break;
     case OP_CREF:
       printf("OP_CREF\t%d\t%d\n", irep->code[i].u.c.depth, irep->code[i].u.c.idx);
+      break;
+    case OP_CSET:
+      printf("OP_CSET\t%d\t%d\n", irep->code[i].u.c.depth, irep->code[i].u.c.idx);
       break;
     case OP_JMP:
       printf("OP_JMP\t%d\n", irep->code[i].u.i);
