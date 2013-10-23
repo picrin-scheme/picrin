@@ -6,13 +6,13 @@
 #include "picrin/proc.h"
 #include "picrin/irep.h"
 
-#define GET_OPERAND(pic,n) ((pic)->sp[-1-(n)])
+#define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
 int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  int i = 0, argc = pic->ci->argc - 1;
+  int i = 1, argc = pic->ci->argc;
   va_list ap;
   bool opt = false;
 
@@ -101,9 +101,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
 # define VM_LOOP_END } }
 #endif
 
-#define PUSH(v) (*++pic->sp = (v))
-#define POP() (*pic->sp--)
-#define POPN(i) ((void)(pic->sp-=i))
+#define PUSH(v) (*pic->sp++ = (v))
+#define POP() (*--pic->sp)
+#define POPN(i) (pic->sp -= (i))
 
 #define PUSHCI() (++pic->ci)
 #define POPCI() (pic->ci--)
@@ -137,7 +137,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   pic->sp[0] = pic_obj_value(proc);
   pic->ci->argc = 1;
   pic->ci->pc = NULL;
-  pic->ci->sp = NULL;
+  pic->ci->fp = pic->sp;
+  pic->sp++;
 
   VM_LOOP {
     CASE(OP_POP) {
@@ -173,7 +174,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_LREF) {
-      PUSH(pic->ci->sp[pc->u.i]);
+      PUSH(pic->ci->fp[pc->u.i]);
       NEXT;
     }
     CASE(OP_JMP) {
@@ -195,15 +196,16 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_callinfo *ci;
       struct pic_proc *proc;
 
-      c = pic->sp[0];
+      c = pic->sp[-pc->u.i];
       proc = pic_proc_ptr(c);
+
       ci = PUSHCI();
       ci->argc = pc->u.i;
       ci->pc = pc;
-      ci->sp = pic->sp;
+      ci->fp = pic->sp - pc->u.i;
       if (pic_proc_cfunc_p(c)) {
 	v = proc->u.cfunc(pic);
-	pic->sp -= ci->argc;
+	pic->sp = ci->fp;
 	POPCI();
 	PUSH(v);
 	pic_gc_arena_restore(pic, ai);
@@ -228,7 +230,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 	v = POP();
 	ci = POPCI();
 	pc = ci->pc;
-	pic->sp -= ci->argc;
+	pic->sp = ci->fp;
 	PUSH(v);
       }
       NEXT;
@@ -243,8 +245,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_CONS) {
       pic_value a, b;
-      pic_gc_protect(pic, a = POP());
       pic_gc_protect(pic, b = POP());
+      pic_gc_protect(pic, a = POP());
       PUSH(pic_cons(pic, a, b));
       pic_gc_arena_restore(pic, ai);
       NEXT;
@@ -269,29 +271,29 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_ADD) {
       pic_value a, b;
-      a = POP();
       b = POP();
+      a = POP();
       PUSH(pic_float_value(pic_float(a) + pic_float(b)));
       NEXT;
     }
     CASE(OP_SUB) {
       pic_value a, b;
-      a = POP();
       b = POP();
+      a = POP();
       PUSH(pic_float_value(pic_float(a) - pic_float(b)));
       NEXT;
     }
     CASE(OP_MUL) {
       pic_value a, b;
-      a = POP();
       b = POP();
+      a = POP();
       PUSH(pic_float_value(pic_float(a) * pic_float(b)));
       NEXT;
     }
     CASE(OP_DIV) {
       pic_value a, b;
-      a = POP();
       b = POP();
+      a = POP();
       PUSH(pic_float_value(pic_float(a) / pic_float(b)));
       NEXT;
     }
@@ -300,6 +302,9 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
     L_STOP:
       val = POP();
+
+      /* pop the first procedure */
+      POPN(1);
 
       pic->jmp = NULL;
       if (pic->errmsg) {

@@ -13,7 +13,7 @@ struct pic_code;
 typedef struct pic_callinfo {
   int argc;
   struct pic_code *pc;
-  pic_value *sp;
+  pic_value *fp;
 } pic_callinfo;
 
 typedef struct {
