@@ -88,14 +88,15 @@ static inline void
 xh_destory(struct xhash *x)
 {
   int i;
-  struct xh_entry *e;
+  struct xh_entry *e, *d;
 
   for (i = 0; i < x->size; ++i) {
     e = x->buckets[i];
     while (e) {
+      d = e->next;
       free((void*)e->key);
-      e = e->next;
       free(e);
+      e = d;
     }
   }
   free(x);
