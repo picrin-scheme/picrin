@@ -224,9 +224,14 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 	NEXT;
       }
       else {
+	int i;
+
 	if (ci->argc != proc->u.irep->argc) {
 	  pic->errmsg = "wrong number of arguments";
 	  goto L_RAISE;
+	}
+	for (i = 0; i < proc->u.irep->argc; ++i) {
+	  proc->env->values[i] = ci->fp[i];
 	}
 	pc = proc->u.irep->code;
 	pic_gc_arena_restore(pic, ai);
@@ -256,6 +261,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       struct pic_env *env;
 
       env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+      env->numcv = pic->irep[pc->u.i]->argc;
+      env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * env->numcv);
       env->up = pic_proc_ptr(*pic->ci->fp)->env;
 
       proc = pic_proc_new(pic, pic->irep[pc->u.i], env);

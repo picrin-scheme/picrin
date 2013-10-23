@@ -6,6 +6,8 @@
 #include "picrin/proc.h"
 #include "xhash/xhash.h"
 
+#define FALLTHROUGH ((void)0)
+
 typedef struct codegen_scope {
   struct codegen_scope *up;
 
@@ -167,22 +169,23 @@ codegen(codegen_state *state, pic_value obj)
       pic_error(pic, "unbound variable");
     }
 
-    if (depth == -1) {		/* global */
+    switch (depth) {
+    case -1:			/* global */
       irep->code[irep->clen].insn = OP_GREF;
       irep->code[irep->clen].u.i = idx;
       irep->clen++;
-    }
-    else if (depth == 0) {	/* local */
-      irep->code[irep->clen].insn = OP_LREF;
-      irep->code[irep->clen].u.i = idx;
-      irep->clen++;
-    }
-    else {			/* nonlocal */
+      break;
+    default:			/* nonlocal */
       /* dirty flag */
       s->cv_tbl[idx] = 1;
-      /* dummy code */
-      irep->code[irep->clen].insn = OP_PUSHNIL;
+      /* at this stage, lref and cref are not distinguished */
+      FALLTHROUGH;
+    case 0:			/* local */
+      irep->code[irep->clen].insn = OP_CREF;
+      irep->code[irep->clen].u.c.depth = depth;
+      irep->code[irep->clen].u.c.idx = idx;
       irep->clen++;
+      break;
     }
     break;
   }
@@ -207,11 +210,12 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sLAMBDA)) {
+      int k = pic->ilen++;
       irep->code[irep->clen].insn = OP_LAMBDA;
-      irep->code[irep->clen].u.i = pic->ilen;
+      irep->code[irep->clen].u.i = k;
       irep->clen++;
 
-      pic->irep[pic->ilen++] = codegen_lambda(state, obj);
+      pic->irep[k] = codegen_lambda(state, obj);
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sIF)) {
@@ -401,12 +405,14 @@ codegen_lambda(codegen_state *state, pic_value obj)
     irep->code[irep->clen].insn = OP_RET;
     irep->clen++;
 
-    printf("** dirty **\n");
-    for (i = 1; i < state->scope->argc; ++i) {
-      if (state->scope->cv_tbl[i])
-	printf("%d ", i);
+    /* fixup */
+    for (i = 0; i < irep->clen; ++i) {
+      struct pic_code c = irep->code[i];
+      if (c.insn == OP_CREF && c.u.c.depth == 0 && ! state->scope->cv_tbl[c.u.c.idx]) {
+	irep->code[i].insn = OP_LREF;
+	irep->code[i].u.i = irep->code[i].u.c.idx;
+      }
     }
-    puts("");
   }
   destroy_scope(pic, state->scope);
 
@@ -414,7 +420,6 @@ codegen_lambda(codegen_state *state, pic_value obj)
   state->scope = prev_scope;
 
 #if VM_DEBUG
-  printf("LAMBDA_%zd:\n", pic->ilen);
   print_irep(pic, irep);
   puts("");
 #endif
