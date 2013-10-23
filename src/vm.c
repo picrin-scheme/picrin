@@ -224,6 +224,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       struct pic_proc *proc;
 
       c = pic->sp[-pc->u.i];
+      if (! pic_proc_p(c)) {
+	pic->errmsg = "invalid application";
+	goto L_RAISE;
+      }
       proc = pic_proc_ptr(c);
 
       ci = PUSHCI();
