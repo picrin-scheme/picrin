@@ -13,7 +13,7 @@ struct parser_control {
   int yynerrs;
 };
 
-static pic_value new_escaped_string(pic_state *, const char *);
+void yyerror(struct parser_control *p, const char *msg);
 
 #define YY_DECL int yylex_ (YYSTYPE *yylvalp, yyscan_t yyscanner, struct parser_control *p)
 %}
@@ -36,8 +36,7 @@ sign		[+-]?
 infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
   /* string */
-string		\"{string_elem}*\"
-string_elem	[^\"\\]|"\\\""|"\\\\"
+%x STRING
 
 %%
 
@@ -52,10 +51,17 @@ string_elem	[^\"\\]|"\\\""|"\\\\"
 {boolean}	{ yylvalp->datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
 {real} 		{ yylvalp->datum = pic_float_value(atof(yytext)); return tNUMBER; }
 {identifier}	{ yylvalp->datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
-{string}	{
-		  yylvalp->datum = new_escaped_string(p->pic, yytext);
-		  return tSTRING;
-		}
+"\""		BEGIN(STRING);
+<STRING>{
+	[^\\"]*		yymore();
+	<<EOF>>		{ yyerror(p, "eof in string"); BEGIN(INITIAL); }
+	"\""		{
+			  yytext[yyleng-1] = '\0';
+			  yylvalp->datum = pic_str_new_cstr(p->pic, yytext);
+			  BEGIN(INITIAL);
+			  return tSTRING;
+			}
+}
 
 %%
 
@@ -63,29 +69,4 @@ int
 yywrap(yyscan_t yyscanner)
 {
   return 1;
-}
-
-static pic_value
-new_escaped_string(pic_state *pic, const char *str)
-{
-  size_t len;
-  char *new_str;
-  int i,j;
-  pic_value v;
-
-  len = strlen(str);
-  new_str = (char *)pic_alloc(pic, len + 1);
-  for (j = 0, i = 1; i < len - 1; ++i, ++j) {
-    if (str[i] == '\\') {
-      ++i;
-      new_str[j] = str[i];
-      continue;
-    }
-    new_str[j] = str[i];
-  }
-  new_str[j] = '\0';
-
-  v = pic_str_new_cstr(pic, new_str);
-  pic_free(pic, new_str);
-  return v;
 }
