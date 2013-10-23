@@ -93,8 +93,8 @@ xh_destory(struct xhash *x)
   for (i = 0; i < x->size; ++i) {
     e = x->buckets[i];
     while (e) {
-      e = e->next;
       free((void*)e->key);
+      e = e->next;
       free(e);
     }
   }
