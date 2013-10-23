@@ -12,6 +12,7 @@ typedef struct codegen_scope {
   /* local variables are 1-indexed */
   struct xhash *local_tbl;
   size_t argc;
+  int *cv_tbl;
 } codegen_scope;
 
 static codegen_scope *
@@ -23,6 +24,7 @@ new_global_scope(pic_state *pic)
   scope->up = NULL;
   scope->local_tbl = pic->global_tbl;
   scope->argc = -1;
+  scope->cv_tbl = NULL;
   return scope;
 }
 
@@ -46,6 +48,7 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
     xh_put(x, pic_symbol_ptr(sym)->name, i++);
   }
   new_scope->argc = i;
+  new_scope->cv_tbl = (int *)pic_calloc(pic, i, sizeof(int));
 
   return new_scope;
 }
@@ -55,6 +58,7 @@ destroy_scope(pic_state *pic, codegen_scope *scope)
 {
   if (scope->up) {
     xh_destory(scope->local_tbl);
+    pic_free(pic, scope->cv_tbl);
   }
   pic_free(pic, scope);
 }
@@ -99,7 +103,7 @@ destroy_codegen_state(pic_state *pic, codegen_state *state)
   pic_free(pic, state);
 }
 
-static bool
+static codegen_scope *
 scope_lookup(codegen_state *state, const char *key, int *depth, int *idx)
 {
   codegen_scope *scope = state->scope;
@@ -117,14 +121,14 @@ scope_lookup(codegen_state *state, const char *key, int *depth, int *idx)
       *depth = d;
     }
     *idx = e->val;
-    return true;
+    return scope;
   }
   if (scope->up) {
     scope = scope->up;
     ++d;
     goto enter;
   }
-  return false;
+  return NULL;
 }
 
 static int
@@ -153,13 +157,13 @@ codegen(codegen_state *state, pic_value obj)
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
-    bool b;
+    codegen_scope *s;
     int depth, idx;
     const char *name;
 
     name = pic_symbol_ptr(obj)->name;
-    b = scope_lookup(state, name, &depth, &idx);
-    if (! b) {
+    s = scope_lookup(state, name, &depth, &idx);
+    if (! s) {
       pic_error(pic, "unbound variable");
     }
 
@@ -174,7 +178,11 @@ codegen(codegen_state *state, pic_value obj)
       irep->clen++;
     }
     else {			/* nonlocal */
-      pic_error(pic, "reference to closed variable not supported");
+      /* dirty flag */
+      s->cv_tbl[idx] = 1;
+      /* dummy code */
+      irep->code[irep->clen].insn = OP_PUSHNIL;
+      irep->clen++;
     }
     break;
   }
@@ -371,6 +379,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   codegen_scope *prev_scope;
   struct pic_irep *prev_irep, *irep;
   pic_value body, v;
+  int i;
 
   /* inner environment */
   prev_irep = state->irep;
@@ -390,6 +399,13 @@ codegen_lambda(codegen_state *state, pic_value obj)
     irep->clen--;
     irep->code[irep->clen].insn = OP_RET;
     irep->clen++;
+
+    printf("** dirty **\n");
+    for (i = 1; i < state->scope->argc; ++i) {
+      if (state->scope->cv_tbl[i])
+	printf("%d ", i);
+    }
+    puts("");
   }
   destroy_scope(pic, state->scope);
 
@@ -456,7 +472,8 @@ print_irep(pic_state *pic, struct pic_irep *irep)
 {
   int i;
 
-  printf("## irep %p [clen = %zd, ccapa = %zd]\n", irep, irep->clen, irep->ccapa);
+  printf("## irep %p\n", irep);
+  printf("[clen = %zd, ccapa = %zd, argc = %d]\n", irep->clen, irep->ccapa, irep->argc);
   for (i = 0; i < irep->clen; ++i) {
     switch (irep->code[i].insn) {
     case OP_POP:
