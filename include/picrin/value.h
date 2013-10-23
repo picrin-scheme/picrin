@@ -31,7 +31,8 @@ enum pic_tt {
   PIC_TT_SYMBOL,
   PIC_TT_PROC,
   PIC_TT_PORT,
-  PIC_TT_STRING
+  PIC_TT_STRING,
+  PIC_TT_ENV
 };
 
 #define PIC_OBJECT_HEADER			\

@@ -159,8 +159,22 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_SYMBOL: {
     break;
   }
+  case PIC_TT_ENV: {
+    struct pic_env *env = (struct pic_env *)obj;
+    int i;
+
+    for (i = 0; i < env->numcv; ++i) {
+      gc_mark(pic, env->values[i]);
+    }
+    gc_mark_object(pic, (struct pic_object *)env->up);
+    break;
+  }
   case PIC_TT_PROC: {
-    gc_mark(pic, ((struct pic_proc *)obj)->aux);
+    struct pic_proc *proc = (struct pic_proc *)obj;
+    if (proc->env) {
+      gc_mark_object(pic, (struct pic_object *)proc->env);
+    }
+    gc_mark(pic, proc->aux);
     break;
   }
   case PIC_TT_PORT: {
@@ -266,6 +280,10 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_PAIR: {
+    break;
+  }
+  case PIC_TT_ENV: {
+    pic_free(pic, ((struct pic_env *)obj)->values);
     break;
   }
   case PIC_TT_PROC: {

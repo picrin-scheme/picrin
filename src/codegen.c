@@ -343,6 +343,7 @@ codegen(codegen_state *state, pic_value obj)
     irep->clen++;
     break;
   }
+  case PIC_TT_ENV:
   case PIC_TT_PROC:
   case PIC_TT_UNDEF:
   case PIC_TT_EOF:
@@ -445,7 +446,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   codegen(state, obj);
   state->irep->code[state->irep->clen].insn = OP_STOP;
   state->irep->clen++;
-  proc = pic_proc_new(pic, state->irep);
+  proc = pic_proc_new(pic, state->irep, NULL);
 
   destroy_codegen_state(pic, state);
 

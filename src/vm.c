@@ -241,8 +241,12 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_LAMBDA) {
       struct pic_proc *proc;
+      struct pic_env *env;
 
-      proc = pic_proc_new(pic, pic->irep[pc->u.i]);
+      env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+      env->up = pic_proc_ptr(*pic->ci->fp)->env;
+
+      proc = pic_proc_new(pic, pic->irep[pc->u.i], env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;
