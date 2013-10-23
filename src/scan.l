@@ -26,7 +26,7 @@ static pic_value new_escaped_string(pic_state *, const char *);
 boolean		#t|#f|#true|#false
 
   /* symbol */
-identifier	[a-z0-9A-Z+-/*?<=>_.]+
+identifier	[a-z0-9A-Z+-/*!$%&:@^~?<=>_.]+
 
   /* number */
 digit		[0-9]
