@@ -4,7 +4,7 @@
 struct pic_env {
   PIC_OBJECT_HEADER
   pic_value *values;
-  int numcv;
+  int num_val;
   struct pic_env *up;
 };
 

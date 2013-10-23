@@ -280,8 +280,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       struct pic_env *env;
 
       env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-      env->numcv = pic->irep[pc->u.i]->argc;
-      env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * env->numcv);
+      env->num_val = pic->irep[pc->u.i]->argc;
+      env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * env->num_val);
       env->up = pic_proc_ptr(*pic->ci->fp)->env;
 
       proc = pic_proc_new(pic, pic->irep[pc->u.i], env);
