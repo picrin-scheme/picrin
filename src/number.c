@@ -56,20 +56,6 @@ pic_number_nan_p(pic_state *pic)
 }
 
 static pic_value
-pic_number_lt(pic_state *pic)
-{
-  double f,g;
-
-  pic_get_args(pic, "ff", &f, &g);
-  if (f < g) {
-    return pic_true_value();
-  }
-  else {
-    return pic_false_value();
-  }
-}
-
-static pic_value
 pic_number_abs(pic_state *pic)
 {
   double f;
@@ -292,8 +278,6 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "infinite?", pic_number_infinite_p);
   pic_defun(pic, "nan?", pic_number_nan_p);
   pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "<", pic_number_lt);
 
   pic_defun(pic, "abs", pic_number_abs);
 

@@ -30,6 +30,7 @@ typedef struct {
   pic_value sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_value sCONS, sCAR, sCDR, sNILP;
   pic_value sADD, sSUB, sMUL, sDIV;
+  pic_value sEQ, sLT, sLE, sGT, sGE;
 
   struct sym_tbl *sym_tbl;
 

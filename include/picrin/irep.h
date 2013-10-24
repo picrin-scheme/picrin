@@ -27,6 +27,9 @@ enum pic_opcode {
   OP_SUB,
   OP_MUL,
   OP_DIV,
+  OP_EQ,
+  OP_LT,
+  OP_LE,
   OP_STOP
 };
 

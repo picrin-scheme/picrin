@@ -348,6 +348,41 @@ codegen(codegen_state *state, pic_value obj)
       irep->clen++;
       break;
     }
+    else if (pic_eq_p(pic, proc, pic->sEQ)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      irep->code[irep->clen].insn = OP_EQ;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, pic->sLT)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      irep->code[irep->clen].insn = OP_LT;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, pic->sLE)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      irep->code[irep->clen].insn = OP_LE;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, pic->sGT)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      irep->code[irep->clen].insn = OP_LT;
+      irep->clen++;
+      break;
+    }
+    else if (pic_eq_p(pic, proc, pic->sGE)) {
+      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      codegen(state, pic_car(pic, pic_cdr(pic, obj)));
+      irep->code[irep->clen].insn = OP_LE;
+      irep->clen++;
+      break;
+    }
     else {
       codegen_call(state, obj);
       break;
@@ -598,6 +633,15 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       break;
     case OP_DIV:
       puts("OP_DIV");
+      break;
+    case OP_EQ:
+      puts("OP_EQ");
+      break;
+    case OP_LT:
+      puts("OP_LT");
+      break;
+    case OP_LE:
+      puts("OP_LE");
       break;
     case OP_STOP:
       puts("OP_STOP");

@@ -251,6 +251,11 @@ gc_mark_phase(pic_state *pic)
   gc_mark(pic, pic->sADD);
   gc_mark(pic, pic->sSUB);
   gc_mark(pic, pic->sMUL);
+  gc_mark(pic, pic->sEQ);
+  gc_mark(pic, pic->sLT);
+  gc_mark(pic, pic->sLE);
+  gc_mark(pic, pic->sGT);
+  gc_mark(pic, pic->sGE);
   gc_mark(pic, pic->sDIV);
 }
 

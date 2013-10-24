@@ -121,7 +121,8 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     &&L_OP_PUSHCONST, &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET,
     &&L_OP_CREF, &&L_OP_CSET, &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_CALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
-    &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_STOP
+    &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV,
+    &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
 #endif
 
@@ -345,6 +346,27 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       b = POP();
       a = POP();
       PUSH(pic_float_value(pic_float(a) / pic_float(b)));
+      NEXT;
+    }
+    CASE(OP_EQ) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      PUSH(pic_bool_value(pic_float(a) == pic_float(b)));
+      NEXT;
+    }
+    CASE(OP_LT) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      PUSH(pic_bool_value(pic_float(a) < pic_float(b)));
+      NEXT;
+    }
+    CASE(OP_LE) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      PUSH(pic_bool_value(pic_float(a) <= pic_float(b)));
       NEXT;
     }
     CASE(OP_STOP) {
