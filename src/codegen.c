@@ -139,6 +139,7 @@ scope_global_define(pic_state *pic, const char *name)
   struct xh_entry *e;
 
   if ((e = xh_get(pic->global_tbl, name))) {
+    pic_warn(pic, "redefining global");
     return e->val;
   }
   e = xh_put(pic->global_tbl, name, pic->glen++);

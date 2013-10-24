@@ -84,6 +84,7 @@ struct pic_proc *pic_codegen(pic_state *, pic_value);
 void pic_abort(pic_state *, const char *);
 void pic_raise(pic_state *, pic_value);
 void pic_error(pic_state *, const char *);
+void pic_warn(pic_state *, const char *);
 
 void pic_debug(pic_state *, pic_value);
 

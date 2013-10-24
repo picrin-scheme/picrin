@@ -20,3 +20,9 @@ pic_abort(pic_state *pic, const char *msg)
   puts(msg);
   abort();
 }
+
+void
+pic_warn(pic_state *pic, const char *msg)
+{
+  fprintf(stderr, "warn: %s\n", msg);
+}
