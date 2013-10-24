@@ -8,6 +8,7 @@ pic_value pic_cdr(pic_state *, pic_value);
 bool pic_list_p(pic_state *, pic_value);
 pic_value pic_list(pic_state *, size_t, ...);
 
+int pic_length(pic_state *, pic_value);
 pic_value pic_reverse(pic_state *, pic_value);
 
 pic_value pic_assq(pic_state *, pic_value key, pic_value assoc);

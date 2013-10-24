@@ -85,5 +85,6 @@ pic_value pic_float_value(double);
 #define pic_undef_p(v) ((v).type == PIC_VTYPE_UNDEF)
 #define pic_float_p(v) ((v).type == PIC_VTYPE_FLOAT)
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
+#define pic_symbol_p(v) (pic_type(v) == PIC_TT_SYMBOL)
 
 #endif

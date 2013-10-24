@@ -192,16 +192,27 @@ codegen(codegen_state *state, pic_value obj)
   case PIC_TT_PAIR: {
     pic_value proc;
 
+    if (! pic_list_p(pic, obj)) {
+      pic_error(pic, "invalid expression given");
+    }
+
     proc = pic_car(pic, obj);
     if (pic_eq_p(pic, proc, pic->sDEFINE)) {
       int idx;
-      const char *name;
+      pic_value var;
 
-      name = pic_symbol_ptr(pic_car(pic, pic_cdr(pic, obj)))->name;
-      idx = scope_global_define(pic, name);
+      if (pic_length(pic, obj) != 3) {
+	pic_error(pic, "syntax error");
+      }
+
+      var = pic_car(pic, pic_cdr(pic, obj));
+      if (! pic_symbol_p(var)) {
+	pic_error(pic, "syntax error");
+      }
+
+      idx = scope_global_define(pic, pic_symbol_ptr(var)->name);
 
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
-
       irep->code[irep->clen].insn = OP_GSET;
       irep->code[irep->clen].u.i = idx;
       irep->clen++;
@@ -220,6 +231,10 @@ codegen(codegen_state *state, pic_value obj)
     }
     else if (pic_eq_p(pic, proc, pic->sIF)) {
       int s,t;
+
+      if (pic_length(pic, obj) != 4) {
+	pic_error(pic, "syntax error");
+      }
 
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
 
@@ -252,11 +267,19 @@ codegen(codegen_state *state, pic_value obj)
     }
     else if (pic_eq_p(pic, proc, pic->sSETBANG)) {
       codegen_scope *s;
+      pic_value var;
       int depth, idx;
-      const char *name;
 
-      name = pic_symbol_ptr(pic_car(pic, pic_cdr(pic, obj)))->name;
-      s = scope_lookup(state, name, &depth, &idx);
+      if (pic_length(pic, obj) != 3) {
+	pic_error(pic, "syntax error");
+      }
+
+      var = pic_car(pic, pic_cdr(pic, obj));
+      if (! pic_symbol_p(var)) {
+	pic_error(pic, "syntax error");
+      }
+
+      s = scope_lookup(state, pic_symbol_ptr(var)->name, &depth, &idx);
       if (! s) {
 	pic_error(pic, "unbound variable");
       }
@@ -288,6 +311,11 @@ codegen(codegen_state *state, pic_value obj)
     }
     else if (pic_eq_p(pic, proc, pic->sQUOTE)) {
       int pidx;
+
+      if (pic_length(pic, obj) != 2) {
+	pic_error(pic, "syntax error");
+      }
+
       pidx = pic->plen++;
       pic->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
       irep->code[irep->clen].insn = OP_PUSHCONST;
@@ -295,7 +323,15 @@ codegen(codegen_state *state, pic_value obj)
       irep->clen++;
       break;
     }
+
+#define ARGC_ASSERT(n) do {				\
+      if (pic_length(pic, obj) != (n) + 1) {		\
+	pic_error(pic, "wrong number of arguments");	\
+      }							\
+  } while (0)
+
     else if (pic_eq_p(pic, proc, pic->sCONS)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_CONS;
@@ -303,24 +339,28 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sCAR)) {
+      ARGC_ASSERT(1);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_CAR;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sCDR)) {
+      ARGC_ASSERT(1);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_CDR;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sNILP)) {
+      ARGC_ASSERT(1);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_NILP;
       irep->clen++;
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sADD)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_ADD;
@@ -328,6 +368,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sSUB)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_SUB;
@@ -335,6 +376,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sMUL)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_MUL;
@@ -342,6 +384,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sDIV)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_DIV;
@@ -349,6 +392,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sEQ)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_EQ;
@@ -356,6 +400,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sLT)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_LT;
@@ -363,6 +408,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sLE)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       irep->code[irep->clen].insn = OP_LE;
@@ -370,6 +416,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sGT)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_LT;
@@ -377,6 +424,7 @@ codegen(codegen_state *state, pic_value obj)
       break;
     }
     else if (pic_eq_p(pic, proc, pic->sGE)) {
+      ARGC_ASSERT(2);
       codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
       codegen(state, pic_car(pic, pic_cdr(pic, obj)));
       irep->code[irep->clen].insn = OP_LE;
@@ -448,20 +496,52 @@ codegen_call(codegen_state *state, pic_value obj)
   irep->clen++;
 }
 
+static bool
+valid_formal(pic_state *pic, pic_value formal)
+{
+  if (pic_symbol_p(formal))
+    return true;
+
+  while (! pic_pair_p(formal)) {
+    if (! pic_symbol_p(pic_car(pic, formal))) {
+      return false;
+    }
+    formal = pic_cdr(pic, formal);
+  }
+  if (pic_nil_p(formal))
+    return true;
+  if (pic_symbol_p(formal))
+    return true;
+
+  return false;
+}
+
 static struct pic_irep *
 codegen_lambda(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   codegen_scope *prev_scope;
   struct pic_irep *prev_irep, *irep;
-  pic_value body, v;
+  pic_value args, body, v;
   int i;
+
+  if (pic_length(pic, obj) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  args = pic_car(pic, pic_cdr(pic, obj));
+  if (! valid_formal(pic, args)) {
+    pic_error(pic, "syntax error");
+  }
+  if (! pic_list_p(pic, args)) {
+    pic_error(pic, "variable-length argument not supported (for now)");
+  }
 
   /* inner environment */
   prev_irep = state->irep;
   prev_scope = state->scope;
 
-  state->scope = new_local_scope(pic, pic_car(pic, pic_cdr(pic, obj)), state->scope);
+  state->scope = new_local_scope(pic, args, state->scope);
   state->irep = irep = new_irep(pic);
   irep->argc = state->scope->argc;
   {
