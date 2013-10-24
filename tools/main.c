@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 #include "picrin.h"
 
@@ -11,6 +12,34 @@
 
 #define CODE_MAX_LENGTH 1024
 #define LINE_MAX_LENGTH 256
+
+void
+print_help(void)
+{
+  const char *help =
+    "picrin scheme\n"
+    "\n"
+    "Usage: picrin [options]\n"
+    "\n"
+    "Options:\n"
+    "  -h			show this help";
+
+  puts(help);
+}
+
+void
+parse_opt(int argc, char *argv[])
+{
+  int r;
+
+  while (~(r = getopt(argc, argv, "h"))) {
+    switch (r) {
+    case 'h':
+      print_help();
+      exit(0);
+    }
+  }
+}
 
 int
 main(int argc, char *argv[], char **envp)
@@ -27,6 +56,8 @@ main(int argc, char *argv[], char **envp)
   char last_char;
   int char_index;
 #endif
+
+  parse_opt(argc, argv);
 
   pic = pic_open(argc, argv, envp);
 
