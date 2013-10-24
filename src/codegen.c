@@ -503,7 +503,7 @@ valid_formal(pic_state *pic, pic_value formal)
   if (pic_symbol_p(formal))
     return true;
 
-  while (! pic_pair_p(formal)) {
+  while (pic_pair_p(formal)) {
     if (! pic_symbol_p(pic_car(pic, formal))) {
       return false;
     }
