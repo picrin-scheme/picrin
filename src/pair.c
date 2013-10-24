@@ -116,6 +116,16 @@ pic_acons(pic_state *pic, pic_value key, pic_value val, pic_value assoc)
 }
 
 static pic_value
+pic_pair_pair_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_pair_p(v));
+}
+
+static pic_value
 pic_pair_set_car(pic_state *pic)
 {
   pic_value v,w;
@@ -146,6 +156,7 @@ pic_pair_set_cdr(pic_state *pic)
 void
 pic_init_pair(pic_state *pic)
 {
+  pic_defun(pic, "pair?", pic_pair_pair_p);
   pic_defun(pic, "set-car!", pic_pair_set_car);
   pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
 }
