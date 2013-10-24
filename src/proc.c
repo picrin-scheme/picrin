@@ -27,3 +27,19 @@ pic_proc_new_cfunc(pic_state *pic, pic_func_t cfunc, pic_value aux)
   proc->aux = aux;
   return proc;
 }
+
+static pic_value
+pic_proc_proc_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_proc_p(v));
+}
+
+void
+pic_init_proc(pic_state *pic)
+{
+  pic_defun(pic, "procedure?", pic_proc_proc_p);
+}
