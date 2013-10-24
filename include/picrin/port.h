@@ -22,6 +22,7 @@ struct pic_port {
   enum pic_port_status status;
 };
 
-#define pic_port_ptr(v) ((struct pic_port_t *)v.u.data)
+#define pic_port_p(v) (pic_type(v) == PIC_TT_PORT)
+#define pic_port_ptr(v) ((struct pic_port *)(v).u.data)
 
 #endif

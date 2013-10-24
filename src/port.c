@@ -92,6 +92,110 @@ pic_debug(pic_state *pic, pic_value obj)
 }
 
 static pic_value
+pic_port_input_port_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_IN) != 0) {
+    return pic_true_value();
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+static pic_value
+pic_port_output_port_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_OUT) != 0) {
+    return pic_true_value();
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+static pic_value
+pic_port_textual_port_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_TEXT) != 0) {
+    return pic_true_value();
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+static pic_value
+pic_port_binary_port_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_BINARY) != 0) {
+    return pic_true_value();
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+static pic_value
+pic_port_port_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_port_p(v));
+}
+
+static pic_value
+pic_port_input_port_open_p(pic_state *pic)
+{
+  pic_value v;
+  struct pic_port *port;
+
+  pic_get_args(pic, "o", &v);
+
+  if (! pic_port_p(v))
+    return pic_false_value();
+  port = pic_port_ptr(v);
+  if ((port->flags & PIC_PORT_IN) == 0)
+    return pic_false_value();
+
+  return pic_bool_value(port->status == PIC_PORT_OPEN);
+}
+
+static pic_value
+pic_port_output_port_open_p(pic_state *pic)
+{
+  pic_value v;
+  struct pic_port *port;
+
+  pic_get_args(pic, "o", &v);
+
+  if (! pic_port_p(v))
+    return pic_false_value();
+  port = pic_port_ptr(v);
+  if ((port->flags & PIC_PORT_OUT) == 0)
+    return pic_false_value();
+
+  return pic_bool_value(port->status == PIC_PORT_OPEN);
+}
+
+static pic_value
 pic_port_write(pic_state *pic)
 {
   pic_value v;
@@ -139,6 +243,13 @@ pic_port_eof_object(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
+  pic_defun(pic, "input-port?", pic_port_input_port_p);
+  pic_defun(pic, "output-port?", pic_port_output_port_p);
+  pic_defun(pic, "textual-port?", pic_port_textual_port_p);
+  pic_defun(pic, "binary-port?", pic_port_binary_port_p);
+  pic_defun(pic, "port?", pic_port_port_p);
+  pic_defun(pic, "input-port-open?", pic_port_input_port_open_p);
+  pic_defun(pic, "output-port-open?", pic_port_output_port_open_p);
   pic_defun(pic, "write", pic_port_write);
   pic_defun(pic, "newline", pic_port_newline);
   pic_defun(pic, "eof-object?", pic_port_eof_object_p);
