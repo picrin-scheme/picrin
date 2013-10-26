@@ -113,22 +113,26 @@ abbrev
 ;
 
 incomplete_datum
-	: /* none */
-	| tLPAREN incomplete_data
+	: tLPAREN incomplete_data
 	| incomplete_abbrev
 ;
 
+incomplete_tail
+	: /* none */
+	| incomplete_datum
+;
+
 incomplete_data
-	: incomplete_datum
-	| datum tDOT incomplete_datum
+	: incomplete_tail
+	| datum tDOT incomplete_tail
 	| datum incomplete_data
 ;
 
 incomplete_abbrev
-	: tQUOTE incomplete_datum
-	| tQUASIQUOTE incomplete_datum
-	| tUNQUOTE incomplete_datum
-	| tUNQUOTE_SPLICING incomplete_datum
+	: tQUOTE incomplete_tail
+	| tQUASIQUOTE incomplete_tail
+	| tUNQUOTE incomplete_tail
+	| tUNQUOTE_SPLICING incomplete_tail
 ;
 
 %%
