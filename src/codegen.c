@@ -200,20 +200,32 @@ codegen(codegen_state *state, pic_value obj)
     proc = pic_car(pic, obj);
     if (pic_eq_p(pic, proc, pic->sDEFINE)) {
       int idx;
-      pic_value var;
+      pic_value var, val;
 
-      if (pic_length(pic, obj) != 3) {
+      if (pic_length(pic, obj) < 3) {
 	pic_error(pic, "syntax error");
       }
 
       var = pic_car(pic, pic_cdr(pic, obj));
+      if (pic_pair_p(var)) {
+	val = pic_cons(pic, pic->sLAMBDA,
+		       pic_cons(pic, pic_cdr(pic, var),
+				pic_cdr(pic, pic_cdr(pic, obj))));
+	var = pic_car(pic, var);
+      }
+      else {
+	if (pic_length(pic, obj) != 3) {
+	  pic_error(pic, "syntax error");
+	}
+	val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+      }
       if (! pic_symbol_p(var)) {
 	pic_error(pic, "syntax error");
       }
 
       idx = scope_global_define(pic, pic_symbol_ptr(var)->name);
 
-      codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+      codegen(state, val);
       irep->code[irep->clen].insn = OP_GSET;
       irep->code[irep->clen].u.i = idx;
       irep->clen++;
