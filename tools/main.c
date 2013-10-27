@@ -95,7 +95,7 @@ main(int argc, char *argv[], char **envp)
     strcat(code, line);
 
     /* read */
-    r = pic_parse(pic, code, &v);
+    r = pic_parse_cstr(pic, code, &v);
     if (! r) {			/* wait for more input */
       goto next;
     }

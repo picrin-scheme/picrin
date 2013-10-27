@@ -21,6 +21,7 @@ void yyerror(struct parser_control *, const char *);
 int yylex();
 int yylex_();
 void yylex_init();
+void yyset_in();
 void yy_scan_string();
 void yylex_destroy();
 %}
@@ -175,7 +176,31 @@ yylex(YYSTYPE *yylvalp, struct parser_control *p)
 }
 
 bool
-pic_parse(pic_state *pic, const char *str, pic_value *v)
+pic_parse_file(pic_state *pic, FILE *file, pic_value *v)
+{
+  struct parser_control p;
+
+  p.pic = pic;
+  p.incomp = false;
+  p.yynerrs = 0;
+
+  yylex_init(&p.yyscanner);
+  yyset_in(file, p.yyscanner);
+  yyparse(&p);
+  yylex_destroy(p.yyscanner);
+
+  if (p.yynerrs > 0) {
+    p.value = pic_undef_value();
+  }
+
+  if (! p.incomp) {
+    *v = p.value;
+  }
+  return ! p.incomp;
+}
+
+bool
+pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
 {
   struct parser_control p;
 

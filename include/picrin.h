@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <setjmp.h>
+#include <stdio.h>
 
 #include "picconf.h"
 #include "picrin/value.h"
@@ -76,7 +77,8 @@ pic_value pic_intern_cstr(pic_state *, const char *);
 pic_value pic_str_new(pic_state *, const char *, size_t);
 pic_value pic_str_new_cstr(pic_state *, const char *);
 
-bool pic_parse(pic_state *, const char *, pic_value *);
+bool pic_parse_file(pic_state *, FILE *file, pic_value *);
+bool pic_parse_cstr(pic_state *, const char *, pic_value *);
 
 pic_value pic_run(pic_state *, struct pic_proc *, pic_value);
 struct pic_proc *pic_codegen(pic_state *, pic_value);
