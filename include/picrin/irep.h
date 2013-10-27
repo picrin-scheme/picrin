@@ -49,6 +49,7 @@ struct pic_irep {
   struct pic_code *code;
   size_t clen, ccapa;
   int argc;
+  bool varg;
 };
 
 #endif

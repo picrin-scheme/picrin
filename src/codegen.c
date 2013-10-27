@@ -13,8 +13,10 @@ typedef struct codegen_scope {
 
   /* local variables are 1-indexed */
   struct xhash *local_tbl;
+  /* does not count rest argument variable */
   size_t argc;
   int *cv_tbl;
+  bool varg;
 } codegen_scope;
 
 static codegen_scope *
@@ -27,6 +29,7 @@ new_global_scope(pic_state *pic)
   scope->local_tbl = pic->global_tbl;
   scope->argc = -1;
   scope->cv_tbl = NULL;
+  scope->varg = false;
   return scope;
 }
 
@@ -41,13 +44,24 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   new_scope = (codegen_scope *)pic_alloc(pic, sizeof(codegen_scope));
   new_scope->up = scope;
   new_scope->local_tbl = x = xh_new();
+  new_scope->varg = false;
 
   i = 1;
-  for (v = args; ! pic_nil_p(v); v = pic_cdr(pic, v)) {
+  for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
     pic_value sym;
 
     sym = pic_car(pic, v);
     xh_put(x, pic_symbol_ptr(sym)->name, i++);
+  }
+  if (pic_nil_p(v)) {
+    /* pass */
+  }
+  else if (pic_symbol_p(v)) {
+    new_scope->varg = true;
+    xh_put(x, pic_symbol_ptr(v)->name, i);
+  }
+  else {
+    pic_error(pic, "logic flaw");
   }
   new_scope->argc = i;
   new_scope->cv_tbl = (int *)pic_calloc(pic, i, sizeof(int));
@@ -75,6 +89,7 @@ new_irep(pic_state *pic)
   irep->clen = 0;
   irep->ccapa = 1024;
   irep->argc = -1;
+  irep->varg = false;
   return irep;
 }
 
@@ -546,9 +561,6 @@ codegen_lambda(codegen_state *state, pic_value obj)
   if (! valid_formal(pic, args)) {
     pic_error(pic, "syntax error");
   }
-  if (! pic_list_p(pic, args)) {
-    pic_error(pic, "variable-length argument not supported (for now)");
-  }
 
   /* inner environment */
   prev_irep = state->irep;
@@ -557,6 +569,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   state->scope = new_local_scope(pic, args, state->scope);
   state->irep = irep = new_irep(pic);
   irep->argc = state->scope->argc;
+  irep->varg = state->scope->varg;
   {
     /* body */
     body = pic_cdr(pic, pic_cdr(pic, obj));

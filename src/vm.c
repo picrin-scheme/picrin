@@ -245,10 +245,20 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       }
       else {
 	int i;
+	pic_value rest;
 
 	if (ci->argc != proc->u.irep->argc) {
-	  pic->errmsg = "wrong number of arguments";
-	  goto L_RAISE;
+	  if (! (proc->u.irep->varg && ci->argc >= proc->u.irep->argc)) {
+	    pic->errmsg = "wrong number of arguments";
+	    goto L_RAISE;
+	  }
+	  /* prepare rest args */
+	  rest = pic_nil_value();
+	  for (i = 0; i < ci->argc - proc->u.irep->argc; ++i) {
+	    pic_gc_protect(pic, v = POP());
+	    rest = pic_cons(pic, v, rest);
+	  }
+	  PUSH(rest);
 	}
 	for (i = 0; i < proc->u.irep->argc; ++i) {
 	  proc->env->values[i] = ci->fp[i];
