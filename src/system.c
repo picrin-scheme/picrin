@@ -33,6 +33,9 @@ pic_system_exit(pic_state *pic)
     case PIC_TT_FLOAT:
       status = (int)pic_float(v);
       break;
+    case PIC_TT_INT:
+      status = pic_int(v);
+      break;
     default:
       break;
     }
@@ -52,6 +55,9 @@ pic_system_emergency_exit(pic_state *pic)
     switch (pic_type(v)) {
     case PIC_TT_FLOAT:
       status = (int)pic_float(v);
+      break;
+    case PIC_TT_INT:
+      status = pic_int(v);
       break;
     default:
       break;

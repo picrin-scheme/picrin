@@ -31,7 +31,9 @@ identifier	[a-z0-9A-Z+/*!$%&:@^~?<=>_.-]+
   /* number */
 digit		[0-9]
 real		{sign}{ureal}|{infnan}
-ureal		{digit}+|\.{digit}+|{digit}+\.{digit}*
+ureal		{uinteger}|\.{digit}+|{digit}+\.{digit}*
+integer		{sign}{uinteger}
+uinteger	{digit}+
 sign		[+-]?
 infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
@@ -49,6 +51,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 ","		return tUNQUOTE;
 ",@"		return tUNQUOTE_SPLICING;
 {boolean}	{ yylvalp->datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
+{integer}	{ yylvalp->datum = pic_int_value(atoi(yytext)); return tNUMBER; }
 {real} 		{ yylvalp->datum = pic_float_value(atof(yytext)); return tNUMBER; }
 {identifier}	{ yylvalp->datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
 "\""		BEGIN(STRING);

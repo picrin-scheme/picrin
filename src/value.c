@@ -17,6 +17,8 @@ pic_type(pic_value v)
     return PIC_TT_UNDEF;
   case PIC_VTYPE_FLOAT:
     return PIC_TT_FLOAT;
+  case PIC_VTYPE_INT:
+    return PIC_TT_INT;
   case PIC_VTYPE_EOF:
     return PIC_TT_EOF;
   case PIC_VTYPE_HEAP:
@@ -83,6 +85,16 @@ pic_float_value(double f)
 
   v.type = PIC_VTYPE_FLOAT;
   v.u.f = f;
+  return v;
+}
+
+pic_value
+pic_int_value(int i)
+{
+  pic_value v;
+
+  v.type = PIC_VTYPE_INT;
+  v.u.i = i;
   return v;
 }
 

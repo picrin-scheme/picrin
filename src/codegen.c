@@ -475,8 +475,14 @@ codegen(codegen_state *state, pic_value obj)
     break;
   }
   case PIC_TT_FLOAT: {
-    irep->code[irep->clen].insn = OP_PUSHNUM;
+    irep->code[irep->clen].insn = OP_PUSHFLOAT;
     irep->code[irep->clen].u.f = pic_float(obj);
+    irep->clen++;
+    break;
+  }
+  case PIC_TT_INT: {
+    irep->code[irep->clen].insn = OP_PUSHINT;
+    irep->code[irep->clen].u.i = pic_int(obj);
     irep->clen++;
     break;
   }
@@ -675,8 +681,11 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_PUSHFALSE:
       puts("OP_PUSHFALSE");
       break;
-    case OP_PUSHNUM:
-      printf("OP_PUSHNUM\t%g\n", irep->code[i].u.f);
+    case OP_PUSHFLOAT:
+      printf("OP_PUSHFLOAT\t%f\n", irep->code[i].u.f);
+      break;
+    case OP_PUSHINT:
+      printf("OP_PUSHINT\t%d\n", irep->code[i].u.i);
       break;
     case OP_PUSHCONST:
       printf("OP_PUSHCONST\t");

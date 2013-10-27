@@ -58,6 +58,29 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	}
       }
       break;
+    case 'F':
+      {
+	double *f;
+	bool *e;
+
+	f = va_arg(ap, double *);
+	e = va_arg(ap, bool *);
+	if (i < argc) {
+	  pic_value v;
+
+	  v = GET_OPERAND(pic, i);
+	  if (pic_type(v) == PIC_TT_FLOAT) {
+	    *f = pic_float(v);
+	    *e = false;
+	  }
+	  else {
+	    *f = pic_int(v);
+	    *e = true;
+	  }
+	  i++;
+	}
+      }
+      break;
     case 's':
       {
 	pic_value str;
@@ -117,10 +140,10 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
 
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
-    &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHNUM,
-    &&L_OP_PUSHCONST, &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET,
-    &&L_OP_CREF, &&L_OP_CSET, &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_CALL, &&L_OP_RET,
-    &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
+    &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHFLOAT,
+    &&L_OP_PUSHINT, &&L_OP_PUSHCONST, &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF,
+    &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET, &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_CALL,
+    &&L_OP_RET, &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
     &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV,
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
@@ -159,8 +182,12 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       PUSH(pic_false_value());
       NEXT;
     }
-    CASE(OP_PUSHNUM) {
+    CASE(OP_PUSHFLOAT) {
       PUSH(pic_float_value(pc->u.f));
+      NEXT;
+    }
+    CASE(OP_PUSHINT) {
+      PUSH(pic_int_value(pc->u.i));
       NEXT;
     }
     CASE(OP_PUSHCONST) {
@@ -330,55 +357,87 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       PUSH(pic_bool_value(pic_nil_p(p)));
       NEXT;
     }
-    CASE(OP_ADD) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_float_value(pic_float(a) + pic_float(b)));
-      NEXT;
+
+#define DEFINE_ARITH_OP(opcode, op)				\
+    CASE(opcode) {						\
+      pic_value a, b;						\
+      b = POP();						\
+      a = POP();						\
+      if (pic_int_p(a) && pic_int_p(b)) {			\
+	PUSH(pic_int_value(pic_int(a) op pic_int(b)));		\
+      }								\
+      else if (pic_float_p(a) && pic_float_p(b)) {		\
+	PUSH(pic_float_value(pic_float(a) op pic_float(b)));	\
+      }								\
+      else if (pic_int_p(a) && pic_float_p(b)) {		\
+	PUSH(pic_float_value(pic_int(a) op pic_float(b)));	\
+      }								\
+      else if (pic_float_p(a) && pic_int_p(b)) {		\
+	PUSH(pic_float_value(pic_float(a) op pic_int(b)));	\
+      }								\
+      else {							\
+	pic->errmsg = #op " got non-number operands";		\
+	goto L_RAISE;						\
+      }								\
+      NEXT;							\
     }
-    CASE(OP_SUB) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_float_value(pic_float(a) - pic_float(b)));
-      NEXT;
-    }
-    CASE(OP_MUL) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_float_value(pic_float(a) * pic_float(b)));
-      NEXT;
-    }
+
+    DEFINE_ARITH_OP(OP_ADD, +);
+    DEFINE_ARITH_OP(OP_SUB, -);
+    DEFINE_ARITH_OP(OP_MUL, *);
+
+    /* special care for (int / int) division */
     CASE(OP_DIV) {
       pic_value a, b;
       b = POP();
       a = POP();
-      PUSH(pic_float_value(pic_float(a) / pic_float(b)));
+      if (pic_int_p(a) && pic_int_p(b)) {
+	PUSH(pic_float_value((double)pic_int(a) / pic_int(b)));
+      }
+      else if (pic_float_p(a) && pic_float_p(b)) {
+	PUSH(pic_float_value(pic_float(a) / pic_float(b)));
+      }
+      else if (pic_int_p(a) && pic_float_p(b)) {
+	PUSH(pic_float_value(pic_int(a) / pic_float(b)));
+      }
+      else if (pic_float_p(a) && pic_int_p(b)) {
+	PUSH(pic_float_value(pic_float(a) / pic_int(b)));
+      }
+      else {
+	pic->errmsg = "/ got non-number operands";
+	goto L_RAISE;
+      }
       NEXT;
     }
-    CASE(OP_EQ) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic_float(a) == pic_float(b)));
-      NEXT;
+
+#define DEFINE_COMP_OP(opcode, op)				\
+    CASE(opcode) {						\
+      pic_value a, b;						\
+      b = POP();						\
+      a = POP();						\
+      if (pic_int_p(a) && pic_int_p(b)) {			\
+	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
+      }								\
+      else if (pic_float_p(a) && pic_float_p(b)) {		\
+	PUSH(pic_bool_value(pic_float(a) op pic_float(b)));	\
+      }								\
+      else if (pic_int_p(a) && pic_int_p(b)) {			\
+	PUSH(pic_bool_value(pic_int(a) op pic_float(b)));	\
+      }								\
+      else if (pic_float_p(a) && pic_int_p(b)) {		\
+	PUSH(pic_bool_value(pic_float(a) op pic_int(b)));	\
+      }								\
+      else {							\
+	pic->errmsg = #op " got non-number operands";		\
+	goto L_RAISE;						\
+      }								\
+      NEXT;							\
     }
-    CASE(OP_LT) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic_float(a) < pic_float(b)));
-      NEXT;
-    }
-    CASE(OP_LE) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic_float(a) <= pic_float(b)));
-      NEXT;
-    }
+
+    DEFINE_COMP_OP(OP_EQ, ==);
+    DEFINE_COMP_OP(OP_LT, <);
+    DEFINE_COMP_OP(OP_LE, <=);
+
     CASE(OP_STOP) {
       pic_value val;
 

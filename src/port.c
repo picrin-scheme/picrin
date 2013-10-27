@@ -30,7 +30,10 @@ write(pic_state *pic, pic_value obj)
     printf("%s", pic_symbol_ptr(obj)->name);
     break;
   case PIC_TT_FLOAT:
-    printf("%.10g", pic_float(obj));
+    printf("%f", pic_float(obj));
+    break;
+  case PIC_TT_INT:
+    printf("%d", pic_int(obj));
     break;
   case PIC_TT_EOF:
     printf("#<eof-object>");

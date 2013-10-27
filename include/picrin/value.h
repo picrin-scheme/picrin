@@ -7,6 +7,7 @@ enum pic_vtype {
   PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
   PIC_VTYPE_FLOAT,
+  PIC_VTYPE_INT,
   PIC_VTYPE_EOF,
   PIC_VTYPE_HEAP
 };
@@ -16,6 +17,7 @@ typedef struct {
   union {
     void *data;
     double f;
+    int i;
   } u;
 } pic_value;
 
@@ -24,6 +26,7 @@ enum pic_tt {
   PIC_TT_NIL,
   PIC_TT_BOOL,
   PIC_TT_FLOAT,
+  PIC_TT_INT,
   PIC_TT_EOF,
   PIC_TT_UNDEF,
   /* heap */
@@ -76,14 +79,17 @@ pic_value pic_bool_value(bool);
 pic_value pic_undef_value();
 pic_value pic_obj_value(void *);
 pic_value pic_float_value(double);
+pic_value pic_int_value(int);
 
 #define pic_float(v) ((v).u.f)
+#define pic_int(v) ((v).u.i)
 
 #define pic_nil_p(v) ((v).type == PIC_VTYPE_NIL)
 #define pic_true_p(v) ((v).type == PIC_VTYPE_TRUE)
 #define pic_false_p(v) ((v).type == PIC_VTYPE_FALSE)
 #define pic_undef_p(v) ((v).type == PIC_VTYPE_UNDEF)
 #define pic_float_p(v) ((v).type == PIC_VTYPE_FLOAT)
+#define pic_int_p(v) ((v).type == PIC_VTYPE_INT)
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_symbol_p(v) (pic_type(v) == PIC_TT_SYMBOL)
 

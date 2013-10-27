@@ -23,7 +23,7 @@ pic_current_jiffy(pic_state *pic)
   pic_get_args(pic, "");
 
   c = clock();
-  return pic_float_value((double)c);
+  return pic_int_value(c);
 }
 
 static pic_value
@@ -31,7 +31,7 @@ pic_jiffies_per_second(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_float_value((double)CLOCKS_PER_SEC);
+  return pic_int_value(CLOCKS_PER_SEC);
 }
 
 void
