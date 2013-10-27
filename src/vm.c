@@ -81,6 +81,29 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	}
       }
       break;
+    case 'I':
+      {
+	int *k;
+	bool *e;
+
+	k = va_arg(ap, int *);
+	e = va_arg(ap, bool *);
+	if (i < argc) {
+	  pic_value v;
+
+	  v = GET_OPERAND(pic, i);
+	  if (pic_type(v) == PIC_TT_FLOAT) {
+	    *k = (int)pic_float(v);
+	    *e = false;
+	  }
+	  else {
+	    *k = pic_int(v);
+	    *e = true;
+	  }
+	  i++;
+	}
+      }
+      break;
     case 's':
       {
 	pic_value str;
