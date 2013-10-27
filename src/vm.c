@@ -53,8 +53,17 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
 	f = va_arg(ap, double *);
 	if (i < argc) {
-	  *f = pic_float(GET_OPERAND(pic,i));
-	  i++;
+	  pic_value v;
+
+	  v = GET_OPERAND(pic, i);
+	  if (pic_type(v) == PIC_TT_FLOAT) {
+	    *f = pic_float(v);
+	    i++;
+	  }
+	  else {
+	    *f = pic_int(v);
+	    i++;
+	  }
 	}
       }
       break;
