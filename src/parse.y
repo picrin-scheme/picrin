@@ -37,21 +37,38 @@ void yylex_destroy();
 %token tQUOTE tQUASIQUOTE tUNQUOTE tUNQUOTE_SPLICING
 %token <datum> tSYMBOL tNUMBER tBOOLEAN tSTRING
 
+%type <datum> program_data
 %type <datum> datum simple_datum compound_datum abbrev
 %type <datum> list list_data
 
 %%
 
 program
-	: datum
+	: program_data
 	{
-	  p->value = $1;
+	  p->value = pic_cons(p->pic, p->pic->sBEGIN, $1);
 	}
-	| incomplete_datum
+	| incomplete_program_data
 	{
 	  p->incomp = true;
 	  p->value = pic_undef_value();
 	}
+;
+
+program_data
+	: datum
+	{
+	  $$ = pic_cons(p->pic, $1, pic_nil_value());
+	}
+	| datum program_data
+	{
+	  $$ = pic_cons(p->pic, $1, $2);
+	}
+;
+
+incomplete_program_data
+	: incomplete_datum
+	| datum incomplete_program_data
 ;
 
 datum
