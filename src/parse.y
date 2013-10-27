@@ -46,7 +46,14 @@ void yylex_destroy();
 program
 	: program_data
 	{
-	  p->value = pic_cons(p->pic, p->pic->sBEGIN, $1);
+	  /* if single? */
+	  if (pic_eq_p(p->pic, pic_cdr(p->pic, $1), pic_nil_value())) {
+	    p->value = pic_car(p->pic, $1);
+	  }
+	  /* if multiple? */
+	  else {
+	    p->value = pic_cons(p->pic, p->pic->sBEGIN, $1);
+	  }
 	}
 	| incomplete_program_data
 	{
