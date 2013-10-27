@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "picrin.h"
 
 void pic_init_pair(pic_state *);
@@ -7,6 +10,44 @@ void pic_init_time(pic_state *);
 void pic_init_system(pic_state *);
 void pic_init_file(pic_state *);
 void pic_init_proc(pic_state *);
+
+void
+pic_load_stdlib(pic_state *pic)
+{
+  static const char *fn = "piclib/built-in.scm";
+  FILE *file;
+  bool r;
+  pic_value v;
+  struct pic_proc *proc;
+
+  file = fopen(fn, "r");
+  if (file == NULL) {
+    fputs("fatal error: could not read built-in.scm", stderr);
+    abort();
+  }
+
+  r = pic_parse_file(pic, file, &v);
+  if (! r) {
+    fputs("fatal error: built-in.scm broken", stderr);
+    abort();
+  }
+
+  proc = pic_codegen(pic, v);
+  if (proc == NULL) {
+    fputs("fatal error: built-in.scm compilation failure", stderr);
+    abort();
+  }
+
+  v = pic_run(pic, proc, pic_nil_value());
+  if (pic_undef_p(v)) {
+    fputs("fatal error: built-in.scm evaluation failure", stderr);
+    abort();
+  }
+
+#if DEBUG
+  puts("successfully loaded stdlib");
+#endif
+}
 
 #define DONE pic_gc_arena_restore(pic, ai);
 
@@ -23,4 +64,6 @@ pic_init_core(pic_state *pic)
   pic_init_system(pic); DONE;
   pic_init_file(pic); DONE;
   pic_init_proc(pic); DONE;
+
+  pic_load_stdlib(pic); DONE;
 }
