@@ -360,6 +360,26 @@ pic_number_expt(pic_state *pic)
   return pic_float_value(h);
 }
 
+static pic_value
+pic_number_inexact(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_float_value(f);
+}
+
+static pic_value
+pic_number_exact(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_int_value((int)round(f));
+}
+
 void
 pic_init_number(pic_state *pic)
 {
@@ -406,5 +426,9 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "square", pic_number_square);
   pic_defun(pic, "sqrt", pic_number_sqrt);
   pic_defun(pic, "expt", pic_number_expt);
+  pic_gc_arena_restore(pic, ai);
+
+  pic_defun(pic, "inexact", pic_number_inexact);
+  pic_defun(pic, "exact", pic_number_exact);
   pic_gc_arena_restore(pic, ai);
 }
