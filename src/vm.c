@@ -56,14 +56,17 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	  pic_value v;
 
 	  v = GET_OPERAND(pic, i);
-	  if (pic_type(v) == PIC_TT_FLOAT) {
+	  switch (pic_type(v)) {
+	  case PIC_TT_FLOAT:
 	    *f = pic_float(v);
-	    i++;
-	  }
-	  else {
+	    break;
+	  case PIC_TT_INT:
 	    *f = pic_int(v);
-	    i++;
+	    break;
+	  default:
+	    pic_error(pic, "pic_get_args: expected float or int");
 	  }
+	  i++;
 	}
       }
       break;
@@ -78,13 +81,17 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	  pic_value v;
 
 	  v = GET_OPERAND(pic, i);
-	  if (pic_type(v) == PIC_TT_FLOAT) {
+	  switch (pic_type(v)) {
+	  case PIC_TT_FLOAT:
 	    *f = pic_float(v);
 	    *e = false;
-	  }
-	  else {
+	    break;
+	  case PIC_TT_INT:
 	    *f = pic_int(v);
 	    *e = true;
+	    break;
+	  default:
+	    pic_error(pic, "pic_get_args: expected float or int");
 	  }
 	  i++;
 	}
@@ -101,13 +108,17 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	  pic_value v;
 
 	  v = GET_OPERAND(pic, i);
-	  if (pic_type(v) == PIC_TT_FLOAT) {
+	  switch (pic_type(v)) {
+	  case PIC_TT_FLOAT:
 	    *k = (int)pic_float(v);
 	    *e = false;
-	  }
-	  else {
+	    break;
+	  case PIC_TT_INT:
 	    *k = pic_int(v);
 	    *e = true;
+	    break;
+	  default:
+	    pic_error(pic, "pic_get_args: expected float or int");
 	  }
 	  i++;
 	}
@@ -123,6 +134,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	len = va_arg(ap, size_t *);
 	if (i < argc) {
 	  str = GET_OPERAND(pic,i);
+	  if (! pic_str_p(str)) {
+	    pic_error(pic, "pic_get_args: expected string");
+	  }
 	  *cstr = pic_str_ptr(str)->str;
 	  *len = pic_str_ptr(str)->len;
 	  i++;

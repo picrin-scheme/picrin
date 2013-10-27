@@ -92,5 +92,6 @@ pic_value pic_int_value(int);
 #define pic_int_p(v) ((v).type == PIC_VTYPE_INT)
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_symbol_p(v) (pic_type(v) == PIC_TT_SYMBOL)
+#define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 
 #endif
