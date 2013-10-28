@@ -144,19 +144,19 @@ list_data
 abbrev
 	: tQUOTE datum
 	{
-	  $$ = pic_list(p->pic, 2, p->pic->sQUOTE, $2);
+	  $$ = pic_list(p->pic, 2, pic_symbol_value(p->pic->sQUOTE), $2);
 	}
 	| tQUASIQUOTE datum
 	{
-	  $$ = pic_list(p->pic, 2, p->pic->sQUASIQUOTE, $2);
+	  $$ = pic_list(p->pic, 2, pic_symbol_value(p->pic->sQUASIQUOTE), $2);
 	}
 	| tUNQUOTE datum
 	{
-	  $$ = pic_list(p->pic, 2, p->pic->sUNQUOTE, $2);
+	  $$ = pic_list(p->pic, 2, pic_symbol_value(p->pic->sUNQUOTE), $2);
 	}
 	| tUNQUOTE_SPLICING datum
 	{
-	  $$ = pic_list(p->pic, 2, p->pic->sUNQUOTE_SPLICING, $2);
+	  $$ = pic_list(p->pic, 2, pic_symbol_value(p->pic->sUNQUOTE_SPLICING), $2);
 	}
 ;
 
