@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include "picrin.h"
 #include "picrin/pair.h"
@@ -418,7 +419,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       b = POP();						\
       a = POP();						\
       if (pic_int_p(a) && pic_int_p(b)) {			\
-	PUSH(pic_int_value(pic_int(a) op pic_int(b)));		\
+	double f = (double)pic_int(a) op (double)pic_int(b);	\
+	if (INT_MIN <= f && f <= INT_MAX) {			\
+	  PUSH(pic_int_value((int)f));				\
+	}							\
+	else {							\
+	  PUSH(pic_float_value(f));				\
+	}							\
       }								\
       else if (pic_float_p(a) && pic_float_p(b)) {		\
 	PUSH(pic_float_value(pic_float(a) op pic_float(b)));	\
