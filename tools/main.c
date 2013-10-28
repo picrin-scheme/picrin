@@ -13,13 +13,15 @@
 #define CODE_MAX_LENGTH 1024
 #define LINE_MAX_LENGTH 256
 
+static char *fname;
+
 void
 print_help(void)
 {
   const char *help =
     "picrin scheme\n"
     "\n"
-    "Usage: picrin [options]\n"
+    "Usage: picrin [options] [file]\n"
     "\n"
     "Options:\n"
     "  -h			show this help";
@@ -27,7 +29,7 @@ print_help(void)
   puts(help);
 }
 
-void
+bool
 parse_opt(int argc, char *argv[])
 {
   int r;
@@ -39,12 +41,21 @@ parse_opt(int argc, char *argv[])
       exit(0);
     }
   }
+  argc -= optind;
+  argv += optind;
+
+  if (argc == 0) {
+    return 1;
+  }
+  else {
+    fname = argv[0];
+    return 0;
+  }
 }
 
 int
-main(int argc, char *argv[], char **envp)
+repl(pic_state *pic)
 {
-  pic_state *pic;
   char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
   char *read_line, *prompt;
   pic_value v;
@@ -56,10 +67,6 @@ main(int argc, char *argv[], char **envp)
   char last_char;
   int char_index;
 #endif
-
-  parse_opt(argc, argv);
-
-  pic = pic_open(argc, argv, envp);
 
   ai = pic_gc_arena_preserve(pic);
 
@@ -135,14 +142,65 @@ main(int argc, char *argv[], char **envp)
 
  eof:
   puts("");
-  goto exit;
+  return 0;
 
  overflow:
   puts("** [fatal] line input overflow");
-  goto exit;
+  return 1;
+}
 
- exit:
-  pic_close(pic);
+int
+exec_file(pic_state *pic, const char *fname)
+{
+  FILE *file;
+  bool r;
+  pic_value v;
+  struct pic_proc *proc;
+
+  file = fopen(fname, "r");
+  if (file == NULL) {
+    fprintf(stderr, "fatal error: could not read %s\n", fname);
+    return 1;
+  }
+
+  r = pic_parse_file(pic, file, &v);
+  if (! r) {
+    fprintf(stderr, "fatal error: %s broken\n", fname);
+    return 1;
+  }
+
+  proc = pic_codegen(pic, v);
+  if (proc == NULL) {
+    fprintf(stderr, "fatal error: %s compilation failure\n", fname);
+    return 1;
+  }
+
+  v = pic_apply(pic, proc, pic_nil_value());
+  if (pic_undef_p(v)) {
+    fputs(pic->errmsg, stderr);
+    fprintf(stderr, "fatal error: %s evaluation failure\n", fname);
+    return 1;
+  }
 
   return 0;
+}
+
+int
+main(int argc, char *argv[], char **envp)
+{
+  pic_state *pic;
+  int res;
+
+  pic = pic_open(argc, argv, envp);
+
+  if (parse_opt(argc, argv)) {
+    res = repl(pic);
+  }
+  else {
+    res = exec_file(pic, fname);
+  }
+
+  pic_close(pic);
+
+  return res;
 }
