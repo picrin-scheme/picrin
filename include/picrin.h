@@ -74,7 +74,7 @@ void pic_defun(pic_state *, const char *, pic_func_t);
 
 bool pic_eq_p(pic_state *, pic_value, pic_value);
 bool pic_eqv_p(pic_state *, pic_value, pic_value);
-bool pic_equql_p(pic_state *, pic_value, pic_value);
+bool pic_equal_p(pic_state *, pic_value, pic_value);
 
 pic_sym pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym);
