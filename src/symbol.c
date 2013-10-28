@@ -15,6 +15,10 @@ pic_intern_cstr(pic_state *pic, const char *str)
     return e->val;
   }
 
+  if (pic->slen >= pic->scapa) {
+    pic->scapa *= 2;
+    pic->sym_pool = pic_realloc(pic, pic->sym_pool, sizeof(const char *) * pic->scapa);
+  }
   id = pic->slen++;
   pic->sym_pool[id] = strdup(str);
   xh_put(pic->sym_tbl, str, id);
