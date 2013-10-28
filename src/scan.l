@@ -5,17 +5,7 @@
 #include "picrin.h"
 #include "y.tab.h"
 
-struct parser_control {
-  pic_state *pic;
-  void *yyscanner;
-  pic_value value;
-  bool incomp;
-  int yynerrs;
-};
-
-void yyerror(struct parser_control *p, const char *msg);
-
-#define YY_DECL int yylex_ (YYSTYPE *yylvalp, yyscan_t yyscanner, struct parser_control *p)
+#define YY_DECL int yylex_(YYSTYPE *yylvalp, yyscan_t yyscanner)
 %}
 
 %option reentrant
@@ -79,7 +69,6 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 "\""		BEGIN(STRING);
 <STRING>{
 	[^\\"]*		yymore();
-	<<EOF>>		{ yyerror(p, "eof in string"); BEGIN(INITIAL); }
 	"\""		{
 			  yytext[yyleng-1] = '\0';
 			  yylvalp->cstr = strdup(yytext);

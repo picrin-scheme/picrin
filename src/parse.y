@@ -195,7 +195,7 @@ yyerror(struct parser_control *p, const char *msg)
 int
 yylex(YYSTYPE *yylvalp, struct parser_control *p)
 {
-  return yylex_(yylvalp, p->yyscanner, p);
+  return yylex_(yylvalp, p->yyscanner);
 }
 
 bool
