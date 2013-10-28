@@ -22,6 +22,9 @@ void yyerror(struct parser_control *p, const char *msg);
 %option noinput
 %option nounput
 
+  /* comment */
+comment		;.*$
+
   /* boolean */
 boolean		#t|#f|#true|#false
 
@@ -43,6 +46,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 %%
 
 [ \t\n\r]	/* skip whitespace */
+{comment}	/* skip comment */
 "."		return tDOT;
 "("		return tLPAREN;
 ")"		return tRPAREN;
