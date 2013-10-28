@@ -47,6 +47,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 [ \t\n\r]	/* skip whitespace */
 {comment}	/* skip comment */
+
 "."		return tDOT;
 "("		return tLPAREN;
 ")"		return tRPAREN;
@@ -54,17 +55,34 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 "`"		return tQUASIQUOTE;
 ","		return tUNQUOTE;
 ",@"		return tUNQUOTE_SPLICING;
-{boolean}	{ yylvalp->datum = pic_bool_value(strcmp(yytext, "#t") == 0 || strcmp(yytext, "#true") == 0); return tBOOLEAN; }
-{integer}	{ yylvalp->datum = pic_int_value(atoi(yytext)); return tNUMBER; }
-{real} 		{ yylvalp->datum = pic_float_value(atof(yytext)); return tNUMBER; }
-{identifier}	{ yylvalp->datum = pic_intern_cstr(p->pic, yytext); return tSYMBOL; }
+
+{boolean}	{
+  yylvalp->i = (yytext[1] == 't');
+  return tBOOLEAN;
+}
+
+{integer}	{
+  yylvalp->i = atoi(yytext);
+  return tINT;
+}
+
+{real} 		{
+  yylvalp->f = atof(yytext);
+  return tFLOAT;
+}
+
+{identifier}	{
+  yylvalp->cstr = strdup(yytext);
+  return tSYMBOL;
+}
+
 "\""		BEGIN(STRING);
 <STRING>{
 	[^\\"]*		yymore();
 	<<EOF>>		{ yyerror(p, "eof in string"); BEGIN(INITIAL); }
 	"\""		{
 			  yytext[yyleng-1] = '\0';
-			  yylvalp->datum = pic_str_new_cstr(p->pic, yytext);
+			  yylvalp->cstr = strdup(yytext);
 			  BEGIN(INITIAL);
 			  return tSTRING;
 			}

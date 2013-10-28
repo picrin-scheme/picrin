@@ -31,12 +31,17 @@ void yylex_destroy();
 %lex-param {struct parser_control *p}
 
 %union {
+  int i;
+  double f;
+  char *cstr;
   pic_value datum;
 }
 
 %token tLPAREN tRPAREN tDOT
 %token tQUOTE tQUASIQUOTE tUNQUOTE tUNQUOTE_SPLICING
-%token <datum> tSYMBOL tNUMBER tBOOLEAN tSTRING
+%token <i> tINT tBOOLEAN
+%token <f> tFLOAT
+%token <cstr> tSYMBOL tSTRING
 
 %type <datum> program_data
 %type <datum> datum simple_datum compound_datum abbrev
@@ -86,9 +91,27 @@ datum
 
 simple_datum
 	: tSYMBOL
-	| tNUMBER
-	| tBOOLEAN
+	{
+	  $$ = pic_intern_cstr(p->pic, $1);
+	  free($1);
+	}
 	| tSTRING
+	{
+	  $$ = pic_str_new_cstr(p->pic, $1);
+	  free($1);
+	}
+	| tINT
+	{
+	  $$ = pic_int_value($1);
+	}
+	| tFLOAT
+	{
+	  $$ = pic_float_value($1);
+	}
+	| tBOOLEAN
+	{
+	  $$ = pic_bool_value($1);
+	}
 ;
 
 compound_datum
