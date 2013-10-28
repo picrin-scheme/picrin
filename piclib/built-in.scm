@@ -1,3 +1,12 @@
+(define (zero? n)
+  (= n 0))
+
+(define (positive? x)
+  (> x 0))
+
+(define (negative? x)
+  (< x 0))
+
 (define (caar p)
   (car (car p)))
 
