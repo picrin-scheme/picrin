@@ -64,9 +64,9 @@ struct pic_string {
 struct pic_proc;
 struct pic_port;
 
-#define pic_obj_ptr(o) ((struct pic_object *)o.u.data)
-#define pic_pair_ptr(o) ((struct pic_pair *)o.u.data)
-#define pic_str_ptr(v) ((struct pic_string *)v.u.data)
+#define pic_obj_ptr(o) ((struct pic_object *)(o).u.data)
+#define pic_pair_ptr(o) ((struct pic_pair *)(o).u.data)
+#define pic_str_ptr(o) ((struct pic_string *)(o).u.data)
 
 enum pic_tt pic_type(pic_value);
 
