@@ -619,6 +619,8 @@ pic_codegen(pic_state *pic, pic_value obj)
 {
   struct pic_proc *proc;
   codegen_state *state;
+  struct pic_env *env;
+  int i;
 
   state = new_codegen_state(pic);
 
@@ -635,10 +637,20 @@ pic_codegen(pic_state *pic, pic_value obj)
     }
   }
   state->irep = new_irep(pic);
+  state->irep->argc = 1;
   codegen(state, obj);
   state->irep->code[state->irep->clen].insn = OP_STOP;
   state->irep->clen++;
-  proc = pic_proc_new(pic, state->irep, NULL);
+
+  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+  env->num_val = state->irep->argc;
+  env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * env->num_val);
+  for (i = 0; i < env->num_val; ++i) {
+    env->values[i] = pic_undef_value();
+  }
+  env->up = NULL;
+
+  proc = pic_proc_new(pic, state->irep, env);
 
   destroy_codegen_state(pic, state);
 

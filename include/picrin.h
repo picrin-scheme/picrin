@@ -80,7 +80,8 @@ pic_value pic_str_new_cstr(pic_state *, const char *);
 bool pic_parse_file(pic_state *, FILE *file, pic_value *);
 bool pic_parse_cstr(pic_state *, const char *, pic_value *);
 
-pic_value pic_run(pic_state *, struct pic_proc *, pic_value);
+pic_value pic_apply(pic_state *pic, struct pic_proc *, pic_value);
+pic_value pic_apply_argv(pic_state *pic, struct pic_proc *, size_t, ...);
 struct pic_proc *pic_codegen(pic_state *, pic_value);
 
 void pic_abort(pic_state *, const char *);

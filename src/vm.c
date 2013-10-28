@@ -178,11 +178,13 @@ pic_get_args(pic_state *pic, const char *format, ...)
 #define POPCI() (pic->ci--)
 
 pic_value
-pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
+pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
   struct pic_code *pc;
   int ai = pic_gc_arena_preserve(pic);
   jmp_buf jmp;
+  size_t argc, i;
+  struct pic_code boot;
 
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
@@ -195,8 +197,6 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
   };
 #endif
 
-  pc = proc->u.irep->code;
-
   if (setjmp(jmp) == 0) {
     pic->jmp = &jmp;
   }
@@ -204,12 +204,19 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
     goto L_RAISE;
   }
 
-  /* adjust call frame */
-  pic->sp[0] = pic_obj_value(proc);
-  pic->ci->argc = 1;
-  pic->ci->pc = NULL;
-  pic->ci->fp = pic->sp;
-  pic->sp++;
+  argc = pic_length(pic, argv) + 1;
+
+  PUSH(pic_obj_value(proc));
+  for (i = 1; i < argc; ++i) {
+    PUSH(pic_car(pic, argv));
+    argv = pic_cdr(pic, argv);
+  }
+
+  /* boot! */
+  boot.insn = OP_CALL;
+  boot.u.i = argc;
+  pc = &boot;
+  goto L_CALL;
 
   VM_LOOP {
     CASE(OP_POP) {
@@ -297,6 +304,7 @@ pic_run(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_callinfo *ci;
       struct pic_proc *proc;
 
+    L_CALL:
       c = pic->sp[-pc->u.i];
       if (! pic_proc_p(c)) {
 	pic->errmsg = "invalid application";

@@ -38,8 +38,9 @@ pic_load_stdlib(pic_state *pic)
     abort();
   }
 
-  v = pic_run(pic, proc, pic_nil_value());
+  v = pic_apply(pic, proc, pic_nil_value());
   if (pic_undef_p(v)) {
+    fputs(pic->errmsg, stderr);
     fputs("fatal error: built-in.scm evaluation failure", stderr);
     abort();
   }

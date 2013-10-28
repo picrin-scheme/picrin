@@ -117,7 +117,7 @@ main(int argc, char *argv[], char **envp)
       pic->errmsg = NULL;
       goto next;
     }
-    v = pic_run(pic, proc, pic_nil_value());
+    v = pic_apply(pic, proc, pic_nil_value());
     if (pic_undef_p(v)) {
       printf("runtime error: %s\n", pic->errmsg);
       pic->errmsg = NULL;
