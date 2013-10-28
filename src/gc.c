@@ -170,7 +170,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (proc->env) {
       gc_mark_object(pic, (struct pic_object *)proc->env);
     }
-    gc_mark(pic, proc->aux);
     break;
   }
   case PIC_TT_PORT: {

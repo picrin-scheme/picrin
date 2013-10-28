@@ -670,7 +670,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   struct pic_proc *proc;
   int idx;
 
-  proc = pic_proc_new_cfunc(pic, cfunc, pic_undef_value());
+  proc = pic_proc_new_cfunc(pic, cfunc);
   idx = scope_global_define(pic, name);
   pic->globals[idx] = pic_obj_value(proc);
 }

@@ -16,7 +16,6 @@ struct pic_proc {
     struct pic_irep *irep;
   } u;
   struct pic_env *env;
-  pic_value aux;
 };
 
 #define pic_proc_p(o) (pic_type(o) == PIC_TT_PROC)
@@ -26,6 +25,6 @@ struct pic_proc {
 #define pic_proc_cfunc_p(o) (pic_proc_ptr(o)->cfunc_p)
 
 struct pic_proc *pic_proc_new(pic_state *, struct pic_irep *, struct pic_env *);
-struct pic_proc *pic_proc_new_cfunc(pic_state *, pic_func_t, pic_value);
+struct pic_proc *pic_proc_new_cfunc(pic_state *, pic_func_t);
 
 #endif
