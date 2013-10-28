@@ -34,6 +34,7 @@ pic_load_stdlib(pic_state *pic)
 
   proc = pic_codegen(pic, v);
   if (proc == NULL) {
+    fputs(pic->errmsg, stderr);
     fputs("fatal error: built-in.scm compilation failure", stderr);
     abort();
   }

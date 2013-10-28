@@ -171,6 +171,7 @@ exec_file(pic_state *pic, const char *fname)
 
   proc = pic_codegen(pic, v);
   if (proc == NULL) {
+    fputs(pic->errmsg, stderr);
     fprintf(stderr, "fatal error: %s compilation failure\n", fname);
     return 1;
   }
