@@ -27,13 +27,15 @@ typedef struct {
   pic_callinfo *ci;
   pic_callinfo *cibase, *ciend;
 
-  pic_value sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
-  pic_value sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
-  pic_value sCONS, sCAR, sCDR, sNILP;
-  pic_value sADD, sSUB, sMUL, sDIV;
-  pic_value sEQ, sLT, sLE, sGT, sGE;
+  pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
+  pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
+  pic_sym sCONS, sCAR, sCDR, sNILP;
+  pic_sym sADD, sSUB, sMUL, sDIV;
+  pic_sym sEQ, sLT, sLE, sGT, sGE;
 
-  struct sym_tbl *sym_tbl;
+  struct xhash *sym_tbl;
+  const char **sym_pool;
+  size_t slen, scapa;
 
   struct xhash *global_tbl;
   pic_value *globals;
@@ -71,8 +73,11 @@ int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
 
 bool pic_eq_p(pic_state *, pic_value, pic_value);
+bool pic_eqv_p(pic_state *, pic_value, pic_value);
+bool pic_equql_p(pic_state *, pic_value, pic_value);
 
-pic_value pic_intern_cstr(pic_state *, const char *);
+pic_sym pic_intern_cstr(pic_state *, const char *);
+const char *pic_symbol_name(pic_state *, pic_sym);
 
 pic_value pic_str_new(pic_state *, const char *, size_t);
 pic_value pic_str_new_cstr(pic_state *, const char *);

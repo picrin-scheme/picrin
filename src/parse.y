@@ -58,7 +58,7 @@ program
 	  }
 	  /* if multiple? */
 	  else {
-	    p->value = pic_cons(p->pic, p->pic->sBEGIN, $1);
+	    p->value = pic_cons(p->pic, pic_symbol_value(p->pic->sBEGIN), $1);
 	  }
 	}
 	| incomplete_program_data
@@ -92,7 +92,7 @@ datum
 simple_datum
 	: tSYMBOL
 	{
-	  $$ = pic_intern_cstr(p->pic, $1);
+	  $$ = pic_symbol_value(pic_intern_cstr(p->pic, $1));
 	  free($1);
 	}
 	| tSTRING

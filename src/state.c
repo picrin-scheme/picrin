@@ -3,23 +3,7 @@
 #include "picrin.h"
 #include "picrin/gc.h"
 #include "picrin/proc.h"
-#include "picrin/symbol.h"
 #include "xhash/xhash.h"
-
-struct sym_tbl *
-sym_tbl_new()
-{
-  struct sym_tbl *s_tbl;
-  int i;
-
-  s_tbl = (struct sym_tbl *)malloc(sizeof(struct sym_tbl));
-  s_tbl->size = PIC_SYM_TBL_SIZE;
-
-  for (i = 0; i < PIC_SYM_TBL_SIZE; ++i) {
-    s_tbl->tbl[i] = pic_nil_value();
-  }
-  return s_tbl;
-}
 
 void pic_init_core(pic_state *);
 
@@ -49,7 +33,10 @@ pic_open(int argc, char *argv[], char **envp)
   init_heap_page(pic->heap);
 
   /* symbol table */
-  pic->sym_tbl = sym_tbl_new();
+  pic->sym_tbl = xh_new();
+  pic->sym_pool = (const char **)malloc(sizeof(const char *) * PIC_SYM_POOL_SIZE);
+  pic->slen = 0;
+  pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
 
   /* irep */
   pic->irep = (struct pic_irep **)malloc(sizeof(struct pic_irep *) * PIC_IREP_SIZE);

@@ -4,7 +4,6 @@
 #include "picrin/gc.h"
 #include "picrin/irep.h"
 #include "picrin/proc.h"
-#include "picrin/symbol.h"
 #include "picrin/port.h"
 
 #if GC_DEBUG
@@ -156,9 +155,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, ((struct pic_pair *)obj)->cdr);
     break;
   }
-  case PIC_TT_SYMBOL: {
-    break;
-  }
   case PIC_TT_ENV: {
     struct pic_env *env = (struct pic_env *)obj;
     int i;
@@ -186,6 +182,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
+  case PIC_TT_SYMBOL:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
     pic_abort(pic, "logic flaw");
@@ -214,7 +211,6 @@ gc_mark_phase(pic_state *pic)
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
     gc_mark(pic, *stack);
   }
-  gc_mark(pic, *stack);
 
   /* arena */
   for (i = 0; i < pic->arena_idx; ++i) {
@@ -230,34 +226,6 @@ gc_mark_phase(pic_state *pic)
   for (i = 0; i < pic->plen; ++i) {
     gc_mark(pic, pic->pool[i]);
   }
-
-  /* symbol table */
-  for (i = 0; i < pic->sym_tbl->size; ++i) {
-    gc_mark(pic, pic->sym_tbl->tbl[i]);
-  }
-
-  gc_mark(pic, pic->sDEFINE);
-  gc_mark(pic, pic->sLAMBDA);
-  gc_mark(pic, pic->sIF);
-  gc_mark(pic, pic->sBEGIN);
-  gc_mark(pic, pic->sSETBANG);
-  gc_mark(pic, pic->sQUOTE);
-  gc_mark(pic, pic->sQUASIQUOTE);
-  gc_mark(pic, pic->sUNQUOTE);
-  gc_mark(pic, pic->sUNQUOTE_SPLICING);
-  gc_mark(pic, pic->sCONS);
-  gc_mark(pic, pic->sCAR);
-  gc_mark(pic, pic->sCDR);
-  gc_mark(pic, pic->sNILP);
-  gc_mark(pic, pic->sADD);
-  gc_mark(pic, pic->sSUB);
-  gc_mark(pic, pic->sMUL);
-  gc_mark(pic, pic->sEQ);
-  gc_mark(pic, pic->sLT);
-  gc_mark(pic, pic->sLE);
-  gc_mark(pic, pic->sGT);
-  gc_mark(pic, pic->sGE);
-  gc_mark(pic, pic->sDIV);
 }
 
 static bool
@@ -280,12 +248,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
 #endif
 
   switch (obj->tt) {
-  case PIC_TT_SYMBOL: {
-    char *name;
-    name = ((struct pic_symbol *)obj)->name;
-    pic_free(pic, name);
-    break;
-  }
   case PIC_TT_PAIR: {
     break;
   }
@@ -311,6 +273,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
+  case PIC_TT_SYMBOL:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
     pic_abort(pic, "logic flaw");

@@ -19,6 +19,8 @@ pic_type(pic_value v)
     return PIC_TT_FLOAT;
   case PIC_VTYPE_INT:
     return PIC_TT_INT;
+  case PIC_VTYPE_SYMBOL:
+    return PIC_TT_SYMBOL;
   case PIC_VTYPE_EOF:
     return PIC_TT_EOF;
   case PIC_VTYPE_HEAP:
@@ -95,6 +97,16 @@ pic_int_value(int i)
 
   v.type = PIC_VTYPE_INT;
   v.u.i = i;
+  return v;
+}
+
+pic_value
+pic_symbol_value(pic_sym sym)
+{
+  pic_value v;
+
+  v.type = PIC_VTYPE_SYMBOL;
+  v.u.sym = sym;
   return v;
 }
 
