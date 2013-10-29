@@ -176,6 +176,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_STRING: {
+    break;
+  }
+  case PIC_TT_VECTOR: {
+    int i;
+    for (i = 0; i < ((struct pic_vector *)obj)->len; ++i) {
+      gc_mark(pic, ((struct pic_vector *)obj)->data[i]);
+    }
+    break;
   }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
@@ -261,6 +269,10 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_PROC: {
+    break;
+  }
+  case PIC_TT_VECTOR: {
+    pic_free(pic, ((struct pic_vector *)obj)->data);
     break;
   }
   case PIC_TT_STRING: {

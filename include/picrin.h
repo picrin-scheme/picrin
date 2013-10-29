@@ -83,6 +83,9 @@ const char *pic_symbol_name(pic_state *, pic_sym);
 pic_value pic_str_new(pic_state *, const char *, size_t);
 pic_value pic_str_new_cstr(pic_state *, const char *);
 
+struct pic_vector *pic_vec_new(pic_state *, size_t);
+struct pic_vector *pic_vec_new_from_list(pic_state *, pic_value);
+
 bool pic_parse_file(pic_state *, FILE *file, pic_value *);
 bool pic_parse_cstr(pic_state *, const char *, pic_value *);
 

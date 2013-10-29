@@ -36,9 +36,10 @@ enum pic_tt {
   PIC_TT_UNDEF,
   /* heap */
   PIC_TT_PAIR,
+  PIC_TT_STRING,
+  PIC_TT_VECTOR,
   PIC_TT_PROC,
   PIC_TT_PORT,
-  PIC_TT_STRING,
   PIC_TT_ENV
 };
 
@@ -61,12 +62,19 @@ struct pic_string {
   size_t len;
 };
 
+struct pic_vector {
+  PIC_OBJECT_HEADER
+  pic_value *data;
+  size_t len;
+};
+
 struct pic_proc;
 struct pic_port;
 
 #define pic_obj_ptr(o) ((struct pic_object *)(o).u.data)
 #define pic_pair_ptr(o) ((struct pic_pair *)(o).u.data)
 #define pic_str_ptr(o) ((struct pic_string *)(o).u.data)
+#define pic_vec_ptr(o) ((struct pic_vector *)(o).u.data)
 
 enum pic_tt pic_type(pic_value);
 
@@ -93,5 +101,6 @@ pic_value pic_symbol_value(pic_sym);
 #define pic_symbol_p(v) ((v).type == PIC_VTYPE_SYMBOL)
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
+#define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
 
 #endif

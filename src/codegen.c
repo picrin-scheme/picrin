@@ -494,7 +494,8 @@ codegen(codegen_state *state, pic_value obj)
     irep->clen++;
     break;
   }
-  case PIC_TT_STRING: {
+  case PIC_TT_STRING:
+  case PIC_TT_VECTOR: {
     int pidx;
     pidx = pic->plen++;
     pic->pool[pidx] = obj;

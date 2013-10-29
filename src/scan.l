@@ -41,6 +41,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 "."		return tDOT;
 "("		return tLPAREN;
 ")"		return tRPAREN;
+"#("		return tVPAREN;
 "'"		return tQUOTE;
 "`"		return tQUASIQUOTE;
 ","		return tUNQUOTE;

@@ -11,6 +11,8 @@ static void write_str(pic_state *pic, struct pic_string *str);
 static void
 write(pic_state *pic, pic_value obj)
 {
+  int i;
+
   switch (pic_type(obj)) {
   case PIC_TT_NIL:
     printf("()");
@@ -51,6 +53,16 @@ write(pic_state *pic, pic_value obj)
     printf("\"");
     write_str(pic, pic_str_ptr(obj));
     printf("\"");
+    break;
+  case PIC_TT_VECTOR:
+    printf("#(");
+    for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
+      write(pic, pic_vec_ptr(obj)->data[i]);
+      if (i + 1 < pic_vec_ptr(obj)->len) {
+	printf(" ");
+      }
+    }
+    printf(")");
     break;
   case PIC_TT_ENV:
     pic_abort(pic, "logic flaw");

@@ -37,7 +37,7 @@ void yylex_destroy();
   pic_value datum;
 }
 
-%token tLPAREN tRPAREN tDOT
+%token tLPAREN tRPAREN tDOT tVPAREN
 %token tQUOTE tQUASIQUOTE tUNQUOTE tUNQUOTE_SPLICING
 %token <i> tINT tBOOLEAN
 %token <f> tFLOAT
@@ -45,7 +45,7 @@ void yylex_destroy();
 
 %type <datum> program_data
 %type <datum> datum simple_datum compound_datum abbrev
-%type <datum> list list_data
+%type <datum> list list_data vector vector_data
 
 %%
 
@@ -116,6 +116,7 @@ simple_datum
 
 compound_datum
 	: list
+	| vector
 	| abbrev
 ;
 
@@ -136,6 +137,24 @@ list_data
 	  $$ = pic_cons(p->pic, $1, $3);
 	}
 	| datum list_data
+	{
+	  $$ = pic_cons(p->pic, $1, $2);
+	}
+;
+
+vector
+	: tVPAREN vector_data tRPAREN
+	{
+	  $$ = pic_obj_value(pic_vec_new_from_list(p->pic, $2));
+	}
+;
+
+vector_data
+	: /* none */
+	{
+	  $$ = pic_nil_value();
+	}
+	| datum vector_data
 	{
 	  $$ = pic_cons(p->pic, $1, $2);
 	}
@@ -162,6 +181,7 @@ abbrev
 
 incomplete_datum
 	: tLPAREN incomplete_data
+	| tVPAREN incomplete_data
 	| incomplete_abbrev
 ;
 
