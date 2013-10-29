@@ -65,7 +65,8 @@ write(pic_state *pic, pic_value obj)
     printf(")");
     break;
   case PIC_TT_ENV:
-    pic_abort(pic, "logic flaw");
+    printf("#<env %p>", pic_env_ptr(obj));
+    break;
   }
 }
 
