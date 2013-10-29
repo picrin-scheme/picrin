@@ -220,7 +220,7 @@ codegen(codegen_state *state, pic_value obj)
 	int idx;
 	pic_value var, val;
 
-	if (pic_length(pic, obj) < 3) {
+	if (pic_length(pic, obj) < 2) {
 	  pic_error(pic, "syntax error");
 	}
 
