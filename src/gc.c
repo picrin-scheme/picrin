@@ -204,11 +204,17 @@ static void
 gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
+  pic_callinfo *ci;
   int i;
 
   /* stack */
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
     gc_mark(pic, *stack);
+  }
+
+  /* callinfo */
+  for (ci = pic->ci; ci != pic->cibase; --ci) {
+    gc_mark_object(pic, (struct pic_object *)ci->env);
   }
 
   /* arena */

@@ -268,7 +268,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       int depth = pc->u.c.depth;
       struct pic_env *env;
 
-      env = pic_proc_ptr(*pic->ci->fp)->env;
+      env = pic->ci->env;
       while (depth--) {
 	env = env->up;
       }
@@ -279,7 +279,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       int depth = pc->u.c.depth;
       struct pic_env *env;
 
-      env = pic_proc_ptr(*pic->ci->fp)->env;
+      env = pic->ci->env;
       while (depth--) {
 	env = env->up;
       }
@@ -342,9 +342,16 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	  }
 	  PUSH(rest);
 	}
-	for (i = 0; i < proc->u.irep->argc; ++i) {
-	  proc->env->values[i] = ci->fp[i];
+
+	/* prepare env */
+	ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+	ci->env->up = proc->env;
+	ci->env->num_val = proc->u.irep->argc;
+	ci->env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * ci->env->num_val);
+	for (i = 0; i < ci->env->num_val; ++i) {
+	  ci->env->values[i] = ci->fp[i];
 	}
+
 	pc = proc->u.irep->code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
@@ -370,18 +377,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     }
     CASE(OP_LAMBDA) {
       struct pic_proc *proc;
-      struct pic_env *env;
-      int i;
 
-      env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-      env->num_val = pic->irep[pc->u.i]->argc;
-      env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * env->num_val);
-      for (i = 0; i < env->num_val; ++i) {
-	env->values[i] = pic_undef_value();
-      }
-      env->up = pic_proc_ptr(*pic->ci->fp)->env;
-
-      proc = pic_proc_new(pic, pic->irep[pc->u.i], env);
+      proc = pic_proc_new(pic, pic->irep[pc->u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;

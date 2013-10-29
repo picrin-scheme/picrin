@@ -15,6 +15,7 @@ typedef struct pic_callinfo {
   int argc;
   struct pic_code *pc;
   pic_value *fp;
+  struct pic_env *env;
 } pic_callinfo;
 
 typedef struct {
