@@ -162,7 +162,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     for (i = 0; i < env->num_val; ++i) {
       gc_mark(pic, env->values[i]);
     }
-    gc_mark_object(pic, (struct pic_object *)env->up);
+    if (env->up) {
+      gc_mark_object(pic, (struct pic_object *)env->up);
+    }
     break;
   }
   case PIC_TT_PROC: {
@@ -222,7 +224,9 @@ gc_mark_phase(pic_state *pic)
 
   /* callinfo */
   for (ci = pic->ci; ci != pic->cibase; --ci) {
-    gc_mark_object(pic, (struct pic_object *)ci->env);
+    if (ci->env) {
+      gc_mark_object(pic, (struct pic_object *)ci->env);
+    }
   }
 
   /* arena */

@@ -317,6 +317,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       ci->argc = pc->u.i;
       ci->pc = pc;
       ci->fp = pic->sp - pc->u.i;
+      ci->env = NULL;
       if (pic_proc_cfunc_p(c)) {
 	v = proc->u.cfunc(pic);
 	pic->sp = ci->fp;
