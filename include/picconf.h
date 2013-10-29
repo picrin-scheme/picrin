@@ -19,6 +19,7 @@
 /* enable all debug flags */
 #define DEBUG 1
 
+#define GC_STRESS 1
 
 #if DEBUG
 # define GC_DEBUG 1

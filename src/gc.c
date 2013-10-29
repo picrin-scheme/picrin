@@ -398,6 +398,10 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
 {
   struct pic_object *obj;
 
+#if GC_STRESS
+  pic_gc_run(pic);
+#endif
+
   obj = (struct pic_object *)gc_alloc(pic, size);
   if (obj == NULL) {
     pic_gc_run(pic);
