@@ -19,8 +19,10 @@ struct pic_proc {
 };
 
 #define pic_proc_p(o) (pic_type(o) == PIC_TT_PROC)
+#define pic_env_p(o) (pic_type(o) == PIC_TT_ENV)
 
 #define pic_proc_ptr(o) ((struct pic_proc *)(o).u.data)
+#define pic_env_ptr(o) ((struct pic_env *)(o).u.data)
 
 #define pic_proc_cfunc_p(o) (pic_proc_ptr(o)->cfunc_p)
 
