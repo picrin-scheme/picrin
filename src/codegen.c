@@ -262,9 +262,18 @@ codegen(codegen_state *state, pic_value obj)
       }
       else if (sym == pic->sIF) {
 	int s,t;
+	pic_value if_true, if_false;
 
-	if (pic_length(pic, obj) != 4) {
+	if_false = pic_false_value();
+	switch (pic_length(pic, obj)) {
+	default:
 	  pic_error(pic, "syntax error");
+	  break;
+	case 4:
+	  if_false = pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+	  FALLTHROUGH;
+	case 3:
+	  if_true = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
 	}
 
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)));
@@ -273,14 +282,14 @@ codegen(codegen_state *state, pic_value obj)
 	s = irep->clen++;
 
 	/* if false branch */
-	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj)))));
+	codegen(state, if_false);
 	irep->code[irep->clen].insn = OP_JMP;
 	t = irep->clen++;
 
 	irep->code[s].u.i = irep->clen - s;
 
 	/* if true branch */
-	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+	codegen(state, if_true);
 	irep->code[t].u.i = irep->clen - t;
 	break;
       }
