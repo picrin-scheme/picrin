@@ -516,9 +516,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
     L_STOP:
       val = POP();
-
-      /* pop the first procedure */
-      POPN(1);
+      pic->sp = POPCI()->fp;
 
       pic->jmp = NULL;
       if (pic->errmsg) {
