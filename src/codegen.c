@@ -664,8 +664,8 @@ pic_codegen(pic_state *pic, pic_value obj)
   }
   state->irep = new_irep(pic);
   state->irep->argc = 1;
-  codegen(state, obj, false);
-  state->irep->code[state->irep->clen].insn = OP_STOP;
+  codegen(state, pic_expand(pic, obj), false);
+  state->irep->code[state->irep->clen].insn = OP_RET;
   state->irep->clen++;
 
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
