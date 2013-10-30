@@ -4,6 +4,7 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 
+void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
 void pic_init_number(pic_state *);
@@ -65,6 +66,7 @@ pic_init_core(pic_state *pic)
   int ai;
 
   ai = pic_gc_arena_preserve(pic);
+  pic_init_bool(pic); DONE;
   pic_init_pair(pic); DONE;
   pic_init_port(pic); DONE;
   pic_init_number(pic); DONE;

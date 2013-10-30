@@ -115,9 +115,9 @@ repl(pic_state *pic)
       v = pic_car(pic, vs);
 
 #if DEBUG
-    printf("[read: ");
-    pic_debug(pic, v);
-    printf("]\n");
+      printf("[read: ");
+      pic_debug(pic, v);
+      printf("]\n");
 #endif
 
       /* eval */

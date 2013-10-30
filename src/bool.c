@@ -17,3 +17,19 @@ pic_eq_p(pic_state *pic, pic_value x, pic_value y)
     return false;
   }
 }
+
+static pic_value
+pic_bool_eq_p(pic_state *pic)
+{
+  pic_value x, y;
+
+  pic_get_args(pic, "oo", &x, &y);
+
+  return pic_bool_value(pic_eq_p(pic, x, y));
+}
+
+void
+pic_init_bool(pic_state *pic)
+{
+  pic_defun(pic, "eq?", pic_bool_eq_p);
+}
