@@ -18,6 +18,7 @@ enum pic_opcode {
   OP_JMP,
   OP_JMPIF,
   OP_CALL,
+  OP_TAILCALL,
   OP_RET,
   OP_LAMBDA,
   OP_CONS,

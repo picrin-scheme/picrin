@@ -744,6 +744,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
     case OP_CALL:
       printf("OP_CALL\t%d\n", irep->code[i].u.i);
       break;
+    case OP_TAILCALL:
+      printf("OP_TAILCALL\t%d\n", irep->code[i].u.i);
+      break;
     case OP_RET:
       puts("OP_RET");
       break;
