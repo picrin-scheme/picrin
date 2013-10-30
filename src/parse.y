@@ -52,14 +52,7 @@ void yylex_destroy();
 program
 	: program_data
 	{
-	  /* if single? */
-	  if (pic_eq_p(p->pic, pic_cdr(p->pic, $1), pic_nil_value())) {
-	    p->value = pic_car(p->pic, $1);
-	  }
-	  /* if multiple? */
-	  else {
-	    p->value = pic_cons(p->pic, pic_symbol_value(p->pic->sBEGIN), $1);
-	  }
+	  p->value = $1;
 	}
 	| incomplete_program_data
 	{
@@ -218,7 +211,7 @@ yylex(YYSTYPE *yylvalp, struct parser_control *p)
   return yylex_(yylvalp, p->yyscanner);
 }
 
-bool
+int
 pic_parse_file(pic_state *pic, FILE *file, pic_value *v)
 {
   struct parser_control p;
@@ -234,15 +227,17 @@ pic_parse_file(pic_state *pic, FILE *file, pic_value *v)
 
   if (p.yynerrs > 0) {
     p.value = pic_undef_value();
+    return -1;
+  }
+  if (p.incomp) {
+    return 0;
   }
 
-  if (! p.incomp) {
-    *v = p.value;
-  }
-  return ! p.incomp;
+  *v = p.value;
+  return pic_length(pic, p.value);
 }
 
-bool
+int
 pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
 {
   struct parser_control p;
@@ -257,11 +252,12 @@ pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
   yylex_destroy(p.yyscanner);
 
   if (p.yynerrs > 0) {
-    p.value = pic_undef_value();
+    return -1;
+  }
+  if (p.incomp) {
+    return 0;
   }
 
-  if (! p.incomp) {
-    *v = p.value;
-  }
-  return ! p.incomp;
+  *v = p.value;
+  return pic_length(pic, p.value);
 }
