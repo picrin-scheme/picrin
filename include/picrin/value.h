@@ -77,6 +77,7 @@ struct pic_port;
 #define pic_vec_ptr(o) ((struct pic_vector *)(o).u.data)
 
 enum pic_tt pic_type(pic_value);
+const char *pic_type_repr(enum pic_tt);
 
 pic_value pic_nil_value();
 pic_value pic_true_value();

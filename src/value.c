@@ -30,6 +30,28 @@ pic_type(pic_value v)
   abort();
 }
 
+const char *
+pic_type_repr(enum pic_tt tt)
+{
+  static const char *reprs[13] = {
+    "nil",
+    "boolean",
+    "float",
+    "int",
+    "symbol",
+    "eof",
+    "undef",
+    "pair",
+    "string",
+    "vector",
+    "proc",
+    "port",
+    "env"
+  };
+
+  return reprs[tt];
+}
+
 pic_value
 pic_nil_value()
 {
