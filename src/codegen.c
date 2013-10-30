@@ -94,8 +94,6 @@ new_irep(pic_state *pic)
   return irep;
 }
 
-static void print_irep(pic_state *, struct pic_irep *);
-
 typedef struct codegen_state {
   pic_state *pic;
   codegen_scope *scope;
@@ -698,7 +696,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   pic->globals[idx] = pic_obj_value(proc);
 }
 
-static void
+void
 print_irep(pic_state *pic, struct pic_irep *irep)
 {
   int i;

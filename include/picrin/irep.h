@@ -54,4 +54,6 @@ struct pic_irep {
   bool varg;
 };
 
+void print_irep(pic_state *, struct pic_irep *);
+
 #endif

@@ -386,7 +386,7 @@ gc_sweep_phase(pic_state *pic)
 void
 pic_gc_run(pic_state *pic)
 {
-#if GC_DEBUG
+#if DEBUG
   puts("gc run!");
 #endif
   gc_mark_phase(pic);
