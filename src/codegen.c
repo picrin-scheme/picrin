@@ -11,10 +11,11 @@
 typedef struct codegen_scope {
   struct codegen_scope *up;
 
-  /* local variables are 1-indexed */
+  /* local variables are 1-indexed, 0 is reserved for the callee */
   struct xhash *local_tbl;
   /* does not count rest argument variable */
   size_t argc;
+  /* dirty flags: if local var i is captured, then cv_tbl[i] == 1 */
   int *cv_tbl;
   bool varg;
 } codegen_scope;
