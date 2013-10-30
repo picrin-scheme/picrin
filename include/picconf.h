@@ -8,7 +8,7 @@
 #define PIC_ENABLE_READLINE 1
 
 /* initial memory size (to be dynamically extended if necessary) */
-#define PIC_ARENA_SIZE 100
+#define PIC_ARENA_SIZE 10000
 #define PIC_HEAP_SIZE 32768
 #define PIC_STACK_SIZE 1024
 #define PIC_IREP_SIZE 256
