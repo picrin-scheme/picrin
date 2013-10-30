@@ -17,7 +17,7 @@
 #define PIC_POOL_SIZE 1024
 
 /* enable all debug flags */
-#define DEBUG 1
+/* #define DEBUG 1 */
 
 #if DEBUG
 # define GC_DEBUG 1
