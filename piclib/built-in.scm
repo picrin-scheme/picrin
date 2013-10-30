@@ -1,3 +1,7 @@
+; Although looking like a magic, it works nice.
+(define (car x) (car x))
+(define (cdr x) (cdr x))
+
 (define (zero? n)
   (= n 0))
 
@@ -72,3 +76,13 @@
       obj
       (cons (car obj)
 	    (list-copy (cdr obj)))))
+
+(define (map f list)
+  (if (null? list)
+      '()
+      (cons (f (car list))
+	    (map f (cdr list)))))
+
+(define-macro let
+  (lambda (bindings . body)
+    (cons (cons 'lambda (cons (map car bindings) body)) (map cadr bindings))))
