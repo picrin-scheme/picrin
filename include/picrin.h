@@ -30,6 +30,7 @@ typedef struct {
 
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
+  pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;
   pic_sym sCONS, sCAR, sCDR, sNILP;
   pic_sym sADD, sSUB, sMUL, sDIV;
   pic_sym sEQ, sLT, sLE, sGT, sGE;
@@ -38,9 +39,12 @@ typedef struct {
   const char **sym_pool;
   size_t slen, scapa;
 
+  /* positive for variables, negative for macros (bitnot) */
   struct xhash *global_tbl;
   pic_value *globals;
   size_t glen, gcapa;
+  struct pic_proc **macros;
+  size_t mlen, mcapa;
 
   struct pic_irep **irep;
   size_t ilen, icapa;
@@ -92,6 +96,7 @@ bool pic_parse_cstr(pic_state *, const char *, pic_value *);
 pic_value pic_apply(pic_state *pic, struct pic_proc *, pic_value);
 pic_value pic_apply_argv(pic_state *pic, struct pic_proc *, size_t, ...);
 struct pic_proc *pic_codegen(pic_state *, pic_value);
+pic_value pic_expand(pic_state *, pic_value);
 
 void pic_abort(pic_state *, const char *);
 void pic_raise(pic_state *, pic_value);

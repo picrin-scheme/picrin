@@ -48,6 +48,9 @@ pic_open(int argc, char *argv[], char **envp)
   pic->globals = (pic_value *)malloc(sizeof(pic_value) * PIC_GLOBALS_SIZE);
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
+  pic->macros = (struct pic_proc **)malloc(sizeof(struct pic_proc *) * PIC_MACROS_SIZE);
+  pic->mlen = 0;
+  pic->mcapa = PIC_MACROS_SIZE;
 
   /* pool */
   pic->pool = (pic_value *)malloc(sizeof(pic_value) * PIC_POOL_SIZE);
@@ -71,6 +74,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic->sQUASIQUOTE = pic_intern_cstr(pic, "quasiquote");
   pic->sUNQUOTE = pic_intern_cstr(pic, "unquote");
   pic->sUNQUOTE_SPLICING = pic_intern_cstr(pic, "unquote-splicing");
+  pic->sDEFINE_SYNTAX = pic_intern_cstr(pic, "define-syntax");
+  pic->sDEFINE_MACRO = pic_intern_cstr(pic, "define-macro");
   pic->sCONS = pic_intern_cstr(pic, "cons");
   pic->sCAR = pic_intern_cstr(pic, "car");
   pic->sCDR = pic_intern_cstr(pic, "cdr");

@@ -131,7 +131,7 @@ scope_lookup(codegen_state *state, const char *key, int *depth, int *idx)
  enter:
 
   e = xh_get(scope->local_tbl, key);
-  if (e) {
+  if (e && e->val >= 0) {
     if (scope->up == NULL) {	/* global */
       *depth = -1;
     }
