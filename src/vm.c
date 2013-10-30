@@ -217,7 +217,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   boot[0].insn = OP_CALL;
   boot[0].u.i = argc;
   boot[1].insn = OP_STOP;
-  pc = &boot;
+  pc = boot;
   goto L_CALL;
 
   VM_LOOP {
