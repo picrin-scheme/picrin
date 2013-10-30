@@ -529,13 +529,16 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       puts("**VM END STATE**");
       printf("stbase\t= %p\nsp\t= %p\n", pic->stbase, pic->sp);
       printf("cibase\t= %p\nci\t= %p\n", pic->cibase, pic->ci);
-      if (pic->stbase != pic->sp) {
+      if (pic->stbase < pic->sp) {
 	pic_value *sp;
 	printf("* stack trace:");
 	for (sp = pic->stbase; pic->sp != sp; ++sp) {
 	  pic_debug(pic, *sp);
 	  puts("");
 	}
+      }
+      if (pic->stbase > pic->sp) {
+	puts("*** stack underflow!");
       }
 #endif
 
