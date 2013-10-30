@@ -60,9 +60,43 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 
       sym = pic_sym(pic_car(pic, obj));
       if (sym == pic->sDEFINE_MACRO) {
-	v = pic_apply(pic, pic_codegen(pic, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)))), pic_nil_value());
+	pic_value var, val;
+	struct pic_proc *proc;
+
+	if (pic_length(pic, obj) < 2) {
+	  pic_error(pic, "syntax error");
+	}
+
+	var = pic_car(pic, pic_cdr(pic, obj));
+	if (pic_pair_p(var)) {
+	  val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
+			 pic_cons(pic, pic_cdr(pic, var),
+				  pic_cdr(pic, pic_cdr(pic, obj))));
+	  var = pic_car(pic, var);
+	}
+	else {
+	  if (pic_length(pic, obj) != 3) {
+	    pic_error(pic, "syntax_error");
+	  }
+	  val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+	}
+	if (! pic_symbol_p(var)) {
+	  pic_error(pic, "syntax error");
+	}
+
+	proc = pic_codegen(pic, val);
+	if (pic->errmsg) {
+	  printf("macroexpand error: %s\n", pic->errmsg);
+	  abort();
+	}
+	v = pic_apply(pic, proc, pic_nil_value());
+	if (pic->errmsg) {
+	  printf("macroexpand error: %s\n", pic->errmsg);
+	  abort();
+	}
 	assert(pic_proc_p(v));
-	define_macro(pic, pic_symbol_name(pic, pic_sym(pic_car(pic, pic_cdr(pic, obj)))), pic_proc_ptr(v));
+	define_macro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
+
 	return pic_false_value();
       }
       macro = lookup_macro(pic, env, pic_symbol_name(pic, sym));
@@ -72,12 +106,12 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 	  printf("macroexpand error: %s\n", pic->errmsg);
 	  abort();
 	}
-	return v;
+	return expand(pic, v, env);
       }
     }
 
-    v = pic_cons(pic, pic_car(pic, obj), pic_nil_value());
-    for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
+    v = pic_nil_value();
+    for (; ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
       v = pic_cons(pic, expand(pic, pic_car(pic, obj), env), v);
     }
     v = pic_reverse(pic, v);

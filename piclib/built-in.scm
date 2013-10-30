@@ -83,6 +83,30 @@
       (cons (f (car list))
 	    (map f (cdr list)))))
 
-(define-macro let
-  (lambda (bindings . body)
-    (cons (cons 'lambda (cons (map car bindings) body)) (map cadr bindings))))
+(define-macro (let bindings . body)
+  (cons (cons 'lambda (cons (map car bindings) body))
+	(map cadr bindings)))
+
+(define-macro (cond . clauses)
+  (if (null? clauses)
+      #f
+      (let ((c (car clauses)))
+	(let ((test (car c))
+	      (if-true (cons 'begin (cdr c)))
+	      (if-false (cons 'cond (cdr clauses))))
+	  (list 'if test if-true if-false)))))
+
+(define-macro (and . exprs)
+  (if (null? exprs)
+      #t
+      (let ((test (car exprs))
+	    (if-true (cons 'and (cdr exprs))))
+	(list 'if test if-true #f))))
+
+(define-macro (or . exprs)
+  (if (null? exprs)
+      #f
+      (let ((test (car exprs))
+	    (if-false (cons 'or (cdr exprs))))
+	(list 'let (list (list 'it test))
+	      (list 'if 'it 'it if-false)))))
