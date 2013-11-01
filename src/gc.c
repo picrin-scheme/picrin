@@ -239,6 +239,11 @@ gc_mark_phase(pic_state *pic)
     gc_mark(pic, pic->globals[i]);
   }
 
+  /* macros */
+  for (i = 0; i < pic->mlen; ++i) {
+    gc_mark_object(pic, (struct pic_object *)pic->macros[i]);
+  }
+
   /* pool */
   for (i = 0; i < pic->plen; ++i) {
     gc_mark(pic, pic->pool[i]);
