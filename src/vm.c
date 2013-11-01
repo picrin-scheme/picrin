@@ -337,7 +337,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	    pic->errmsg = "wrong number of arguments";
 	    goto L_RAISE;
 	  }
-	  /* prepare rest args */
+	}
+	/* prepare rest args */
+	if (proc->u.irep->varg) {
 	  rest = pic_nil_value();
 	  for (i = 0; i < ci->argc - proc->u.irep->argc; ++i) {
 	    pic_gc_protect(pic, v = POP());
@@ -372,6 +374,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic->sp = pic->ci->fp + argc;
       pc = POPCI()->pc;
 
+      /* c is not changed */
       goto L_CALL;
     }
     CASE(OP_RET) {
