@@ -117,8 +117,9 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
     }
 
     v = pic_nil_value();
-    for (; ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
+    while (! pic_nil_p(obj)) {
       v = pic_cons(pic, expand(pic, pic_car(pic, obj), env), v);
+      obj = pic_cdr(pic, obj);
     }
     v = pic_reverse(pic, v);
 

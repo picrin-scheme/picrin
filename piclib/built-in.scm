@@ -1,6 +1,9 @@
-; Although looking like a magic, it works nice.
-(define (car x) (car x))
-(define (cdr x) (cdr x))
+; Although looking like a magic, it just works.
+(define (car x)
+  (car x))
+
+(define (cdr x)
+  (cdr x))
 
 (define (zero? n)
   (= n 0))
