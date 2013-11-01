@@ -351,8 +351,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	/* prepare env */
 	ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
 	ci->env->up = proc->env;
-	ci->env->num_val = proc->u.irep->argc;
-	ci->env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * ci->env->num_val);
+	ci->env->num_val = proc->u.irep->argc + proc->u.irep->localc;
+	ci->env->values = (pic_value *)pic_calloc(pic, ci->env->num_val, sizeof(pic_value));
 	for (i = 0; i < ci->env->num_val; ++i) {
 	  ci->env->values[i] = ci->fp[i];
 	}

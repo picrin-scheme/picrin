@@ -13,8 +13,8 @@ typedef struct codegen_scope {
 
   /* local variables are 1-indexed, 0 is reserved for the callee */
   struct xhash *local_tbl;
-  /* does not count rest argument variable */
-  size_t argc;
+  /* rest args variable is counted at localc */
+  size_t argc, localc;
   /* dirty flags: if local var i is captured, then cv_tbl[i] == 1 */
   int *cv_tbl;
   bool varg;
@@ -29,6 +29,7 @@ new_global_scope(pic_state *pic)
   scope->up = NULL;
   scope->local_tbl = pic->global_tbl;
   scope->argc = -1;
+  scope->localc = -1;
   scope->cv_tbl = NULL;
   scope->varg = false;
   return scope;
@@ -39,7 +40,7 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
 {
   codegen_scope *new_scope;
   pic_value v;
-  int i;
+  int i, l;
   struct xhash *x;
 
   new_scope = (codegen_scope *)pic_alloc(pic, sizeof(codegen_scope));
@@ -47,7 +48,7 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   new_scope->local_tbl = x = xh_new();
   new_scope->varg = false;
 
-  i = 1;
+  i = 1; l = 0;
   for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
     pic_value sym;
 
@@ -59,12 +60,13 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   }
   else if (pic_symbol_p(v)) {
     new_scope->varg = true;
-    xh_put(x, pic_symbol_name(pic, pic_sym(v)), i);
+    xh_put(x, pic_symbol_name(pic, pic_sym(v)), i + l++);
   }
   else {
     pic_error(pic, "logic flaw");
   }
   new_scope->argc = i;
+  new_scope->localc = l;
   new_scope->cv_tbl = (int *)pic_calloc(pic, i, sizeof(int));
 
   return new_scope;
@@ -90,6 +92,7 @@ new_irep(pic_state *pic)
   irep->clen = 0;
   irep->ccapa = 1024;
   irep->argc = -1;
+  irep->localc = -1;
   irep->varg = false;
   return irep;
 }
@@ -595,6 +598,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   state->scope = new_local_scope(pic, args, state->scope);
   state->irep = irep = new_irep(pic);
   irep->argc = state->scope->argc;
+  irep->localc = state->scope->localc;
   irep->varg = state->scope->varg;
   {
     /* body */
@@ -662,12 +666,13 @@ pic_codegen(pic_state *pic, pic_value obj)
   }
   state->irep = new_irep(pic);
   state->irep->argc = 1;
+  state->irep->localc = 0;
   codegen(state, pic_expand(pic, obj), false);
   state->irep->code[state->irep->clen].insn = OP_RET;
   state->irep->clen++;
 
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-  env->num_val = state->irep->argc;
+  env->num_val = state->irep->argc + state->irep->localc;
   env->values = (pic_value *)pic_alloc(pic, sizeof(pic_value) * env->num_val);
   for (i = 0; i < env->num_val; ++i) {
     env->values[i] = pic_undef_value();
@@ -702,7 +707,7 @@ print_irep(pic_state *pic, struct pic_irep *irep)
   int i;
 
   printf("## irep %p\n", irep);
-  printf("[clen = %zd, ccapa = %zd, argc = %d]\n", irep->clen, irep->ccapa, irep->argc);
+  printf("[clen = %zd, ccapa = %zd, argc = %d, localc = %d]\n", irep->clen, irep->ccapa, irep->argc, irep->localc);
   for (i = 0; i < irep->clen; ++i) {
     switch (irep->code[i].insn) {
     case OP_POP:
