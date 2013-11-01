@@ -110,3 +110,17 @@
 	    (if-false (cons 'or (cdr exprs))))
 	(list 'let (list (list 'it test))
 	      (list 'if 'it 'it if-false)))))
+
+(define-macro (quasiquote x)
+  (cond
+   ((symbol? x) (list 'quote x))
+   ((pair? x)
+    (cond
+     ((eq? 'unquote (car x)) (cadr x))
+     ((and (pair? (car x))
+	   (eq? 'unquote-splicing (caar x)))
+      (list 'append (cadr (car x)) (list 'quasiquote (cdr x))))
+     (#t (list 'cons
+	       (list 'quasiquote (car x))
+	       (list 'quasiquote (cdr x))))))
+   (#t x)))
