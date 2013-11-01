@@ -160,11 +160,11 @@ pic_get_args(pic_state *pic, const char *format, ...)
 #if PIC_DIRECT_THREADED_VM
 # define VM_LOOP JUMP;
 # define CASE(x) L_##x:
-# define NEXT ++pc; JUMP;
-# define JUMP goto *oplabels[pc->insn];
+# define NEXT c = *++pc; JUMP;
+# define JUMP c = *pc; goto *oplabels[pc->insn];
 # define VM_LOOP_END
 #else
-# define VM_LOOP for (;;) { switch (pc->insn) {
+# define VM_LOOP for (;;) { c = *pc; switch (c.insn) {
 # define CASE(x) case x:
 # define NEXT pc++; break
 # define JUMP break
@@ -181,7 +181,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 pic_value
 pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
-  struct pic_code *pc;
+  struct pic_code *pc, c;
   int ai = pic_gc_arena_preserve(pic);
   jmp_buf jmp;
   size_t argc, i;
@@ -218,6 +218,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   boot[0].u.i = argc;
   boot[1].insn = OP_STOP;
   pc = boot;
+  c = *pc;
   goto L_CALL;
 
   VM_LOOP {
@@ -238,57 +239,57 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_PUSHFLOAT) {
-      PUSH(pic_float_value(pc->u.f));
+      PUSH(pic_float_value(c.u.f));
       NEXT;
     }
     CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(pc->u.i));
+      PUSH(pic_int_value(c.u.i));
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      PUSH(pic->pool[pc->u.i]);
+      PUSH(pic->pool[c.u.i]);
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(pic->globals[pc->u.i]);
+      PUSH(pic->globals[c.u.i]);
       NEXT;
     }
     CASE(OP_GSET) {
-      pic->globals[pc->u.i] = POP();
+      pic->globals[c.u.i] = POP();
       NEXT;
     }
     CASE(OP_LREF) {
-      PUSH(pic->ci->fp[pc->u.i]);
+      PUSH(pic->ci->fp[c.u.i]);
       NEXT;
     }
     CASE(OP_LSET) {
-      pic->ci->fp[pc->u.i] = POP();
+      pic->ci->fp[c.u.i] = POP();
       NEXT;
     }
     CASE(OP_CREF) {
-      int depth = pc->u.c.depth;
+      int depth = c.u.c.depth;
       struct pic_env *env;
 
       env = pic->ci->env;
       while (depth--) {
 	env = env->up;
       }
-      PUSH(env->values[pc->u.c.idx]);
+      PUSH(env->values[c.u.c.idx]);
       NEXT;
     }
     CASE(OP_CSET) {
-      int depth = pc->u.c.depth;
+      int depth = c.u.c.depth;
       struct pic_env *env;
 
       env = pic->ci->env;
       while (depth--) {
 	env = env->up;
       }
-      env->values[pc->u.c.idx] = POP();
+      env->values[c.u.c.idx] = POP();
       NEXT;
     }
     CASE(OP_JMP) {
-      pc += pc->u.i;
+      pc += c.u.i;
       JUMP;
     }
     CASE(OP_JMPIF) {
@@ -296,30 +297,30 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       v = POP();
       if (! pic_false_p(v)) {
-	pc += pc->u.i;
+	pc += c.u.i;
 	JUMP;
       }
       NEXT;
     }
     CASE(OP_CALL) {
-      pic_value c, v;
+      pic_value x, v;
       pic_callinfo *ci;
       struct pic_proc *proc;
 
     L_CALL:
-      c = pic->sp[-pc->u.i];
-      if (! pic_proc_p(c)) {
+      x = pic->sp[-c.u.i];
+      if (! pic_proc_p(x)) {
 	pic->errmsg = "invalid application";
 	goto L_RAISE;
       }
-      proc = pic_proc_ptr(c);
+      proc = pic_proc_ptr(x);
 
       ci = PUSHCI();
-      ci->argc = pc->u.i;
+      ci->argc = c.u.i;
       ci->pc = pc;
-      ci->fp = pic->sp - pc->u.i;
+      ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
-      if (pic_proc_cfunc_p(c)) {
+      if (pic_proc_cfunc_p(x)) {
 	v = proc->u.cfunc(pic);
 	pic->sp = ci->fp;
 	POPCI();
@@ -363,7 +364,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       int argc;
       pic_value *argv;
 
-      argc = pc->u.i;
+      argc = c.u.i;
       argv = pic->sp - argc;
       for (i = 0; i < argc; ++i) {
 	pic->ci->fp[i] = argv[i];
@@ -394,7 +395,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_LAMBDA) {
       struct pic_proc *proc;
 
-      proc = pic_proc_new(pic, pic->irep[pc->u.i], pic->ci->env);
+      proc = pic_proc_new(pic, pic->irep[c.u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;
