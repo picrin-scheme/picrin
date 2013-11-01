@@ -544,6 +544,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
 #endif
 
+      pic_gc_protect(pic, val);
+
       return val;
     }
   } VM_LOOP_END;
