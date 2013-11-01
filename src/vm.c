@@ -157,9 +157,15 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return i;
 }
 
+#if VM_DEBUG
+# define OPCODE_EXEC_HOOK printf("OP = %d\n", c.insn)
+#else
+# define OPCODE_EXEC_HOOK ((void)0)
+#endif
+
 #if PIC_DIRECT_THREADED_VM
 # define VM_LOOP JUMP;
-# define CASE(x) L_##x:
+# define CASE(x) L_##x: OPCODE_EXEC_HOOK;
 # define NEXT c = *++pc; JUMP;
 # define JUMP c = *pc; goto *oplabels[pc->insn];
 # define VM_LOOP_END
@@ -206,6 +212,19 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   }
 
   argc = pic_length(pic, argv) + 1;
+
+#if VM_DEBUG
+  puts("== booting VM...");
+  printf("  proc = ");
+  pic_debug(pic, pic_obj_value(proc));
+  puts("");
+  printf("  argv = ");
+  pic_debug(pic, argv);
+  puts("");
+  printf("  irep = ");
+  print_irep(pic, proc->u.irep);
+  puts("\nLet's go!");
+#endif
 
   PUSH(pic_obj_value(proc));
   for (i = 1; i < argc; ++i) {

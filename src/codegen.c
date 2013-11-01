@@ -709,6 +709,7 @@ print_irep(pic_state *pic, struct pic_irep *irep)
   printf("## irep %p\n", irep);
   printf("[clen = %zd, ccapa = %zd, argc = %d, localc = %d]\n", irep->clen, irep->ccapa, irep->argc, irep->localc);
   for (i = 0; i < irep->clen; ++i) {
+    printf("[%2d] ", irep->code[i].insn);
     switch (irep->code[i].insn) {
     case OP_POP:
       puts("OP_POP");

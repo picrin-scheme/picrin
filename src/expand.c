@@ -44,6 +44,12 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 {
   int ai = pic_gc_arena_preserve(pic);
 
+#if DEBUG
+  printf("expanding...");
+  pic_debug(pic, obj);
+  puts("");
+#endif
+
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
     return obj;
@@ -147,14 +153,21 @@ pic_expand(pic_state *pic, pic_value obj)
 
   env.tbl = pic->global_tbl;
 
+#if DEBUG
+  puts("before expand:");
+  pic_debug(pic, obj);
+  puts("");
+#endif
+
   v = expand(pic, obj, &env);
 
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, v);
 
 #if DEBUG
-  puts("expanded:");
+  puts("after expand:");
   pic_debug(pic, v);
+  puts("");
 #endif
 
   return v;
