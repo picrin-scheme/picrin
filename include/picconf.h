@@ -9,7 +9,7 @@
 
 /* initial memory size (to be dynamically extended if necessary) */
 #define PIC_ARENA_SIZE 10000
-#define PIC_HEAP_SIZE 32768
+#define PIC_HEAP_SIZE (1<<17)
 #define PIC_STACK_SIZE 1024
 #define PIC_IREP_SIZE 256
 #define PIC_GLOBALS_SIZE 1024
