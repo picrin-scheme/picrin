@@ -39,7 +39,7 @@ typedef struct {
   const char **sym_pool;
   size_t slen, scapa;
 
-  /* positive for variables, negative for macros (bitnot) */
+  /* positive for variables, negative for macros (bitwise-not) */
   struct xhash *global_tbl;
   pic_value *globals;
   size_t glen, gcapa;
