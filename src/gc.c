@@ -159,7 +159,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_env *env = (struct pic_env *)obj;
     int i;
 
-    for (i = 0; i < env->num_val; ++i) {
+    for (i = 0; i < env->valuec; ++i) {
       gc_mark(pic, env->values[i]);
     }
     if (env->up) {
