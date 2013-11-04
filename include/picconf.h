@@ -22,7 +22,7 @@
 
 #if DEBUG
 # define GC_DEBUG 1
-# define GC_STRESS 1
+# define GC_STRESS 0
 # define VM_DEBUG 1
 #endif
 
