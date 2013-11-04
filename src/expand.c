@@ -150,7 +150,6 @@ pic_expand(pic_state *pic, pic_value obj)
 {
   struct syntactic_env env;
   pic_value v;
-  int ai = pic_gc_arena_preserve(pic);
 
   env.tbl = pic->global_tbl;
 
@@ -161,9 +160,6 @@ pic_expand(pic_state *pic, pic_value obj)
 #endif
 
   v = expand(pic, obj, &env);
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, v);
 
 #if DEBUG
   puts("after expand:");
