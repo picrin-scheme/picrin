@@ -67,7 +67,7 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   }
   new_scope->argc = i;
   new_scope->localc = l;
-  new_scope->cv_tbl = (int *)pic_calloc(pic, i, sizeof(int));
+  new_scope->cv_tbl = (int *)pic_calloc(pic, i + l, sizeof(int));
 
   return new_scope;
 }
