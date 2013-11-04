@@ -159,8 +159,8 @@ int
 exec_file(pic_state *pic, const char *fname)
 {
   FILE *file;
-  bool r;
-  pic_value v;
+  int n, i;
+  pic_value vs;
   struct pic_proc *proc;
 
   file = fopen(fname, "r");
@@ -169,24 +169,32 @@ exec_file(pic_state *pic, const char *fname)
     return 1;
   }
 
-  r = pic_parse_file(pic, file, &v);
-  if (! r) {
+  n = pic_parse_file(pic, file, &vs);
+  if (n <= 0) {
     fprintf(stderr, "fatal error: %s broken\n", fname);
     return 1;
   }
 
-  proc = pic_codegen(pic, v);
-  if (proc == NULL) {
-    fputs(pic->errmsg, stderr);
-    fprintf(stderr, "fatal error: %s compilation failure\n", fname);
-    return 1;
-  }
+  for (i = 0; i < n; ++i) {
+    pic_value v;
 
-  v = pic_apply(pic, proc, pic_nil_value());
-  if (pic_undef_p(v)) {
-    fputs(pic->errmsg, stderr);
-    fprintf(stderr, "fatal error: %s evaluation failure\n", fname);
-    return 1;
+    v = pic_car(pic, vs);
+
+    proc = pic_codegen(pic, v);
+    if (proc == NULL) {
+      fputs(pic->errmsg, stderr);
+      fprintf(stderr, "fatal error: %s compilation failure\n", fname);
+      return 1;
+    }
+
+    v = pic_apply(pic, proc, pic_nil_value());
+    if (pic_undef_p(v)) {
+      fputs(pic->errmsg, stderr);
+      fprintf(stderr, "fatal error: %s evaluation failure\n", fname);
+      return 1;
+    }
+
+    vs = pic_cdr(pic, vs);
   }
 
   return 0;
