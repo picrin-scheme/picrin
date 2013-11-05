@@ -10,6 +10,7 @@
 - reentrant design (all VM states are stored in single global state object)
 - bytecode interpreter (based on Stack VM technology)
 - direct threaded VM
+- Internal representation by Nan-Boxing
 - exact GC (simple mark and sweep strategy)
 - advanced REPL support (multi-line input, etc)
 - tiny & portable library (all functions will be in `libpicrin.so`)
