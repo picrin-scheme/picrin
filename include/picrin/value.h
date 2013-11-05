@@ -29,6 +29,7 @@ typedef struct {
 
 #define pic_ptr(v) ((v).u.data)
 #define pic_vtype(v) ((v).type)
+#define pic_init_value(v,vtype) ((v).type = (vtype), (v).u.data = NULL)
 
 enum pic_tt {
   /* immediate */

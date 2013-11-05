@@ -6,7 +6,7 @@
 enum pic_tt
 pic_type(pic_value v)
 {
-  switch (v.type) {
+  switch (pic_vtype(v)) {
   case PIC_VTYPE_NIL:
     return PIC_TT_NIL;
   case PIC_VTYPE_TRUE:
@@ -59,8 +59,7 @@ pic_nil_value()
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_NIL;
-  v.u.data = NULL;
+  pic_init_value(v, PIC_VTYPE_NIL);
   return v;
 }
 
@@ -69,8 +68,7 @@ pic_true_value()
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_TRUE;
-  v.u.data = NULL;
+  pic_init_value(v, PIC_VTYPE_TRUE);
   return v;
 }
 
@@ -79,7 +77,7 @@ pic_false_value()
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_FALSE;
+  pic_init_value(v, PIC_VTYPE_FALSE);
   v.u.data = NULL;
   return v;
 }
@@ -89,8 +87,7 @@ pic_bool_value(bool b)
 {
   pic_value v;
 
-  v.type = b ? PIC_VTYPE_TRUE : PIC_VTYPE_FALSE;
-  v.u.data = NULL;
+  pic_init_value(v, b ? PIC_VTYPE_TRUE : PIC_VTYPE_FALSE);
   return v;
 }
 
@@ -99,7 +96,7 @@ pic_obj_value(void *ptr)
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_HEAP;
+  pic_init_value(v, PIC_VTYPE_HEAP);
   v.u.data = ptr;
   return v;
 }
@@ -109,7 +106,7 @@ pic_float_value(double f)
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_FLOAT;
+  pic_init_value(v, PIC_VTYPE_FLOAT);
   v.u.f = f;
   return v;
 }
@@ -119,7 +116,7 @@ pic_int_value(int i)
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_INT;
+  pic_init_value(v, PIC_VTYPE_INT);
   v.u.i = i;
   return v;
 }
@@ -129,7 +126,7 @@ pic_symbol_value(pic_sym sym)
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_SYMBOL;
+  pic_init_value(v, PIC_VTYPE_SYMBOL);
   v.u.sym = sym;
   return v;
 }
@@ -139,7 +136,7 @@ pic_char_value(char c)
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_CHAR;
+  pic_init_value(v, PIC_VTYPE_CHAR);
   v.u.c = c;
   return v;
 }
@@ -149,7 +146,6 @@ pic_undef_value()
 {
   pic_value v;
 
-  v.type = PIC_VTYPE_UNDEF;
-  v.u.data = NULL;
+  pic_init_value(v, PIC_VTYPE_UNDEF);
   return v;
 }

@@ -264,8 +264,7 @@ pic_port_eof_object(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  v.type = PIC_VTYPE_EOF;
-  v.u.data = NULL;
+  pic_init_value(v, PIC_VTYPE_EOF);
 
   return v;
 }
