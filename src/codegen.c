@@ -571,6 +571,36 @@ valid_formal(pic_state *pic, pic_value formal)
   return false;
 }
 
+static void
+slide_cv(pic_state *pic, unsigned *cv_tbl, unsigned cv_num, struct pic_irep *irep, int d)
+{
+  int i, j;
+  struct pic_code c;
+
+  for (i = 0; i < irep->clen; ++i) {
+    c = irep->code[i];
+    switch (c.insn) {
+    default:
+      /* pass */
+      break;
+    case OP_LAMBDA:
+      slide_cv(pic, cv_tbl, cv_num, pic->irep[c.u.i], d + 1);
+      break;
+    case OP_CREF:
+    case OP_CSET:
+      if (d != c.u.c.depth)
+	break;
+      for (j = 0; j < cv_num; ++j) {
+	if (c.u.c.idx == cv_tbl[j]) {
+	  irep->code[i].u.c.idx = j;
+	  break;
+	}
+      }
+      break;
+    }
+  }
+}
+
 static struct pic_irep *
 codegen_lambda(codegen_state *state, pic_value obj)
 {
@@ -578,7 +608,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   codegen_scope *prev_scope;
   struct pic_irep *prev_irep, *irep;
   pic_value args, body, v;
-  int i;
+  int i, c, k;
 
   if (pic_length(pic, obj) < 2) {
     pic_error(pic, "syntax error");
@@ -614,7 +644,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
     irep->code[irep->clen].insn = OP_RET;
     irep->clen++;
 
-    /* fixup */
+    /* fixup local references */
     for (i = 0; i < irep->clen; ++i) {
       struct pic_code c = irep->code[i];
       switch (c.insn) {
@@ -634,8 +664,24 @@ codegen_lambda(codegen_state *state, pic_value obj)
 	}
 	break;
       }
+    }
+
+    /* fixup closed variables */
+    c = 0;
+    for (i = 0; i < irep->argc + irep->localc; ++i) {
+      if (state->scope->dirty_flags[i])
+	++c;
+    }
+    irep->cv_tbl = (unsigned *)pic_calloc(pic, c, sizeof(unsigned));
+    k = 0;
+    for (i = 0; i < irep->argc + irep->localc; ++i) {
+      if (state->scope->dirty_flags[i]) {
+	irep->cv_tbl[k] = i;
+	++k;
       }
     }
+    irep->cv_num = c;
+    slide_cv(pic, irep->cv_tbl, irep->cv_num, irep, 0);
   }
   destroy_scope(pic, state->scope);
 
@@ -676,6 +722,8 @@ pic_codegen(pic_state *pic, pic_value obj)
   codegen(state, pic_expand(pic, obj), false);
   state->irep->code[state->irep->clen].insn = OP_RET;
   state->irep->clen++;
+  state->irep->cv_num = 0;
+  state->irep->cv_tbl = NULL;
 
   proc = pic_proc_new(pic, state->irep, NULL);
 

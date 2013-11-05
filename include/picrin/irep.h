@@ -51,6 +51,7 @@ struct pic_irep {
   struct pic_code *code;
   size_t clen, ccapa;
   int argc, localc;
+  unsigned *cv_tbl, cv_num;
   bool varg;
 };
 
