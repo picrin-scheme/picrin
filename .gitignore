@@ -1,5 +1,7 @@
 bin/picrin
+bin/picrin.dSYM
 src/lex.yy.c
 src/y.tab.c
 src/y.tab.h
 lib/libpicrin.so
+lib/libpicrin.so.dSYM
