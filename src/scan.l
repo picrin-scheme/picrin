@@ -33,6 +33,9 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   /* string */
 %x STRING
 
+  /* bytevector */
+%x BYTEVECTOR
+
 %%
 
 [ \t\n\r]	/* skip whitespace */
@@ -81,6 +84,28 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 #\\.		{
   yylvalp->c = yytext[2];
   return tCHAR;
+}
+
+"#u8("		{
+  BEGIN(BYTEVECTOR);
+  yylvalp->blob.len = 0;
+  yylvalp->blob.capa = 10;
+  yylvalp->blob.dat = calloc(10, 1);
+}
+<BYTEVECTOR>[ \r\n\t]
+<BYTEVECTOR>{uinteger}	{
+  int i = atoi(yytext);
+  if (0 > i || i > 255)
+    REJECT;
+  yylvalp->blob.dat[yylvalp->blob.len++] = (char)i;
+  if (yylvalp->blob.len > yylvalp->blob.capa) {
+    yylvalp->blob.capa *= 2;
+    yylvalp->blob.dat = realloc(yylvalp->blob.dat, yylvalp->blob.capa);
+  }
+}
+<BYTEVECTOR>")"	{
+  BEGIN(INITIAL);
+  return tBYTEVECTOR;
 }
 
 %%

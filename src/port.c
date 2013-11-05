@@ -4,6 +4,7 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
+#include "picrin/blob.h"
 
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
@@ -62,6 +63,16 @@ write(pic_state *pic, pic_value obj)
     for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
       write(pic, pic_vec_ptr(obj)->data[i]);
       if (i + 1 < pic_vec_ptr(obj)->len) {
+	printf(" ");
+      }
+    }
+    printf(")");
+    break;
+  case PIC_TT_BLOB:
+    printf("#u8(");
+    for (i = 0; i < pic_blob_ptr(obj)->len; ++i) {
+      printf("%d", pic_blob_ptr(obj)->data[i]);
+      if (i + 1 < pic_blob_ptr(obj)->len) {
 	printf(" ");
       }
     }

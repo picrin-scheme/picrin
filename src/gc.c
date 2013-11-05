@@ -5,6 +5,7 @@
 #include "picrin/irep.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
+#include "picrin/blob.h"
 
 #if GC_DEBUG
 # include <stdio.h>
@@ -187,6 +188,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_BLOB: {
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -283,6 +287,10 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_VECTOR: {
     pic_free(pic, ((struct pic_vector *)obj)->data);
+    break;
+  }
+  case PIC_TT_BLOB: {
+    pic_free(pic, ((struct pic_blob *)obj)->data);
     break;
   }
   case PIC_TT_STRING: {

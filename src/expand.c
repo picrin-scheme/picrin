@@ -134,7 +134,8 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_STRING:
-  case PIC_TT_VECTOR: {
+  case PIC_TT_VECTOR:
+  case PIC_TT_BLOB: {
     return obj;
   }
   case PIC_TT_PROC:

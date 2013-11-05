@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/blob.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -35,6 +36,10 @@ void yylex_destroy();
   double f;
   char *cstr;
   char c;
+  struct {
+    char *dat;
+    int len, capa;
+  } blob;
   pic_value datum;
 }
 
@@ -44,6 +49,7 @@ void yylex_destroy();
 %token <f> tFLOAT
 %token <cstr> tSYMBOL tSTRING
 %token <c> tCHAR
+%token <blob> tBYTEVECTOR
 
 %type <datum> program_data
 %type <datum> datum simple_datum compound_datum abbrev
@@ -110,6 +116,11 @@ simple_datum
 	| tCHAR
 	{
 	  $$ = pic_char_value($1);
+	}
+	| tBYTEVECTOR
+	{
+	  $$ = pic_obj_value(pic_blob_new(p->pic, $1.dat, $1.len));
+	  free($1.dat);
 	}
 ;
 

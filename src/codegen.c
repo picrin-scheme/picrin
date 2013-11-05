@@ -518,7 +518,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
     break;
   }
   case PIC_TT_STRING:
-  case PIC_TT_VECTOR: {
+  case PIC_TT_VECTOR:
+  case PIC_TT_BLOB: {
     int pidx;
     pidx = pic->plen++;
     pic->pool[pidx] = obj;

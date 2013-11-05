@@ -41,6 +41,7 @@ enum pic_tt {
   PIC_TT_PAIR,
   PIC_TT_STRING,
   PIC_TT_VECTOR,
+  PIC_TT_BLOB,
   PIC_TT_PROC,
   PIC_TT_PORT,
   PIC_TT_ENV
@@ -73,6 +74,7 @@ struct pic_vector {
 
 struct pic_proc;
 struct pic_port;
+struct pic_blob;
 
 #define pic_obj_ptr(o) ((struct pic_object *)(o).u.data)
 #define pic_pair_ptr(o) ((struct pic_pair *)(o).u.data)
