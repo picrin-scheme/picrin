@@ -72,7 +72,7 @@ pic_vec_vector_ref(pic_state *pic)
   struct pic_vector *v;
   int k;
 
-  pic_get_args(pic, "vi", &v, k);
+  pic_get_args(pic, "vi", &v, &k);
 
   return v->data[k];
 }
