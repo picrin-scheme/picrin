@@ -125,6 +125,29 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	}
       }
       break;
+    case 'i':
+      {
+	int *k;
+
+	k = va_arg(ap, int *);
+	if (i < argc) {
+	  pic_value v;
+
+	  v = GET_OPERAND(pic, i);
+	  switch (pic_type(v)) {
+	  case PIC_TT_FLOAT:
+	    *k = (int)pic_float(v);
+	    break;
+	  case PIC_TT_INT:
+	    *k = pic_int(v);
+	    break;
+	  default:
+	    pic_error(pic, "pic_get_args: expected int");
+	  }
+	  i++;
+	}
+      }
+      break;
     case 's':
       {
 	pic_value str;
@@ -140,6 +163,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	  }
 	  *cstr = pic_str_ptr(str)->str;
 	  *len = pic_str_ptr(str)->len;
+	  i++;
+	}
+      }
+      break;
+    case 'v':
+      {
+	struct pic_vector **vec;
+	pic_value v;
+
+	vec = va_arg(ap, struct pic_vector **);
+	if (i < argc) {
+	  v = GET_OPERAND(pic,i);
+	  if (pic_vec_p(v)) {
+	    *vec = pic_vec_ptr(v);
+	  }
+	  else {
+	    pic_error(pic, "pic_get_args: expected vector");
+	  }
 	  i++;
 	}
       }

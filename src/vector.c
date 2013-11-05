@@ -27,3 +27,61 @@ pic_vec_new_from_list(pic_state *pic, pic_value data)
   }
   return vec;
 }
+
+static pic_value
+pic_vec_vector_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_vec_p(v));
+}
+
+static pic_value
+pic_vec_make_vector(pic_state *pic)
+{
+  pic_value v;
+  int k, n, i;
+  struct pic_vector *vec;
+
+  n = pic_get_args(pic, "i|o", &k, &v);
+
+  vec = pic_vec_new(pic, k);
+  if (n == 3) {
+    for (i = 0; i < k; ++i) {
+      vec->data[i] = v;
+    }
+  }
+  return pic_obj_value(vec);
+}
+
+static pic_value
+pic_vec_vector_length(pic_state *pic)
+{
+  struct pic_vector *v;
+
+  pic_get_args(pic, "v", &v);
+
+  return pic_int_value(v->len);
+}
+
+static pic_value
+pic_vec_vector_ref(pic_state *pic)
+{
+  struct pic_vector *v;
+  int k;
+
+  pic_get_args(pic, "vi", &v, k);
+
+  return v->data[k];
+}
+
+void
+pic_init_vector(pic_state *pic)
+{
+  pic_defun(pic, "vector?", pic_vec_vector_p);
+  pic_defun(pic, "make-vector", pic_vec_make_vector);
+  pic_defun(pic, "vector-length", pic_vec_vector_length);
+  pic_defun(pic, "vector-ref", pic_vec_vector_ref);
+}
