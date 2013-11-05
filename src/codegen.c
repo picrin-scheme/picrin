@@ -572,6 +572,29 @@ valid_formal(pic_state *pic, pic_value formal)
 }
 
 static void
+lift_cv(pic_state *pic, struct pic_irep *irep)
+{
+  int i;
+  struct pic_code c;
+
+  for (i = 0; i < irep->clen; ++i) {
+    c = irep->code[i];
+    switch (c.insn) {
+    default:
+      /* pass */
+      break;
+    case OP_LAMBDA:
+      lift_cv(pic, pic->irep[c.u.i]);
+      break;
+    case OP_CREF:
+    case OP_CSET:
+      irep->code[i].u.c.depth--;
+      break;
+    }
+  }
+}
+
+static void
 slide_cv(pic_state *pic, unsigned *cv_tbl, unsigned cv_num, struct pic_irep *irep, int d)
 {
   int i, j;
@@ -584,7 +607,12 @@ slide_cv(pic_state *pic, unsigned *cv_tbl, unsigned cv_num, struct pic_irep *ire
       /* pass */
       break;
     case OP_LAMBDA:
-      slide_cv(pic, cv_tbl, cv_num, pic->irep[c.u.i], d + 1);
+      if (pic->irep[c.u.i]->cv_num == 0) {
+	slide_cv(pic, cv_tbl, cv_num, pic->irep[c.u.i], d);
+      }
+      else {
+	slide_cv(pic, cv_tbl, cv_num, pic->irep[c.u.i], d + 1);
+      }
       break;
     case OP_CREF:
     case OP_CSET:
@@ -672,16 +700,23 @@ codegen_lambda(codegen_state *state, pic_value obj)
       if (state->scope->dirty_flags[i])
 	++c;
     }
-    irep->cv_tbl = (unsigned *)pic_calloc(pic, c, sizeof(unsigned));
-    k = 0;
-    for (i = 0; i < irep->argc + irep->localc; ++i) {
-      if (state->scope->dirty_flags[i]) {
-	irep->cv_tbl[k] = i;
-	++k;
-      }
+    if (c == 0) {
+      lift_cv(pic, irep);
+      irep->cv_tbl = NULL;
+      irep->cv_num = 0;
     }
-    irep->cv_num = c;
-    slide_cv(pic, irep->cv_tbl, irep->cv_num, irep, 0);
+    else {
+      irep->cv_tbl = (unsigned *)pic_calloc(pic, c, sizeof(unsigned));
+      k = 0;
+      for (i = 0; i < irep->argc + irep->localc; ++i) {
+	if (state->scope->dirty_flags[i]) {
+	  irep->cv_tbl[k] = i;
+	  ++k;
+	}
+      }
+      irep->cv_num = c;
+      slide_cv(pic, irep->cv_tbl, irep->cv_num, irep, 0);
+    }
   }
   destroy_scope(pic, state->scope);
 
