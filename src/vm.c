@@ -327,25 +327,25 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_CREF) {
-      int depth = c.u.c.depth;
+      int depth = c.u.r.depth;
       struct pic_env *env;
 
       env = pic->ci->env;
       while (depth--) {
 	env = env->up;
       }
-      PUSH(env->values[c.u.c.idx]);
+      PUSH(env->values[c.u.r.idx]);
       NEXT;
     }
     CASE(OP_CSET) {
-      int depth = c.u.c.depth;
+      int depth = c.u.r.depth;
       struct pic_env *env;
 
       env = pic->ci->env;
       while (depth--) {
 	env = env->up;
       }
-      env->values[c.u.c.idx] = POP();
+      env->values[c.u.r.idx] = POP();
       NEXT;
     }
     CASE(OP_JMP) {

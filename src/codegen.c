@@ -199,8 +199,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
       FALLTHROUGH;
     case 0:			/* local */
       irep->code[irep->clen].insn = OP_CREF;
-      irep->code[irep->clen].u.c.depth = depth;
-      irep->code[irep->clen].u.c.idx = idx;
+      irep->code[irep->clen].u.r.depth = depth;
+      irep->code[irep->clen].u.r.idx = idx;
       irep->clen++;
       break;
     }
@@ -347,8 +347,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  FALLTHROUGH;
 	case 0:			/* local */
 	  irep->code[irep->clen].insn = OP_CSET;
-	  irep->code[irep->clen].u.c.depth = depth;
-	  irep->code[irep->clen].u.c.idx = idx;
+	  irep->code[irep->clen].u.r.depth = depth;
+	  irep->code[irep->clen].u.r.idx = idx;
 	  irep->clen++;
 	  break;
 	}
@@ -588,7 +588,7 @@ lift_cv(pic_state *pic, struct pic_irep *irep)
       break;
     case OP_CREF:
     case OP_CSET:
-      irep->code[i].u.c.depth--;
+      irep->code[i].u.r.depth--;
       break;
     }
   }
@@ -616,11 +616,11 @@ slide_cv(pic_state *pic, unsigned *cv_tbl, unsigned cv_num, struct pic_irep *ire
       break;
     case OP_CREF:
     case OP_CSET:
-      if (d != c.u.c.depth)
+      if (d != c.u.r.depth)
 	break;
       for (j = 0; j < cv_num; ++j) {
-	if (c.u.c.idx == cv_tbl[j]) {
-	  irep->code[i].u.c.idx = j;
+	if (c.u.r.idx == cv_tbl[j]) {
+	  irep->code[i].u.r.idx = j;
 	  break;
 	}
       }
@@ -680,15 +680,15 @@ codegen_lambda(codegen_state *state, pic_value obj)
 	/* pass */
 	break;
       case OP_CREF:
-	if (c.u.c.depth == 0 && ! state->scope->dirty_flags[c.u.c.idx]) {
+	if (c.u.r.depth == 0 && ! state->scope->dirty_flags[c.u.r.idx]) {
 	  irep->code[i].insn = OP_LREF;
-	  irep->code[i].u.i = irep->code[i].u.c.idx;
+	  irep->code[i].u.i = irep->code[i].u.r.idx;
 	}
 	break;
       case OP_CSET:
-	if (c.u.c.depth == 0 && ! state->scope->dirty_flags[c.u.c.idx]) {
+	if (c.u.r.depth == 0 && ! state->scope->dirty_flags[c.u.r.idx]) {
 	  irep->code[i].insn = OP_LSET;
-	  irep->code[i].u.i = irep->code[i].u.c.idx;
+	  irep->code[i].u.i = irep->code[i].u.r.idx;
 	}
 	break;
       }
@@ -828,10 +828,10 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       printf("OP_LSET\t%d\n", irep->code[i].u.i);
       break;
     case OP_CREF:
-      printf("OP_CREF\t%d\t%d\n", irep->code[i].u.c.depth, irep->code[i].u.c.idx);
+      printf("OP_CREF\t%d\t%d\n", irep->code[i].u.r.depth, irep->code[i].u.r.idx);
       break;
     case OP_CSET:
-      printf("OP_CSET\t%d\t%d\n", irep->code[i].u.c.depth, irep->code[i].u.c.idx);
+      printf("OP_CSET\t%d\t%d\n", irep->code[i].u.r.depth, irep->code[i].u.r.idx);
       break;
     case OP_JMP:
       printf("OP_JMP\t%d\n", irep->code[i].u.i);

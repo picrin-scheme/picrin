@@ -43,7 +43,7 @@ struct pic_code {
     struct {
       short depth;
       short idx;
-    } c;
+    } r;
   } u;
 };
 
