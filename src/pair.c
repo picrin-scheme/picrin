@@ -23,7 +23,7 @@ pic_car(pic_state *pic, pic_value obj)
   if (! pic_pair_p(obj)) {
     pic_error(pic, "pair required");
   }
-  pair = (struct pic_pair *)obj.u.data;
+  pair = pic_pair_ptr(obj);
 
   return pair->car;
 }
@@ -36,7 +36,7 @@ pic_cdr(pic_state *pic, pic_value obj)
   if (! pic_pair_p(obj)) {
     pic_error(pic, "pair required");
   }
-  pair = (struct pic_pair *)obj.u.data;
+  pair = pic_pair_ptr(obj);
 
   return pair->cdr;
 }

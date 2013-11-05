@@ -8,7 +8,7 @@ struct pic_blob {
 };
 
 #define pic_blob_p(v) (pic_type(v) == PIC_TT_BLOB)
-#define pic_blob_ptr(v) ((struct pic_blob *)(v).u.data)
+#define pic_blob_ptr(v) ((struct pic_blob *)pic_ptr(v))
 
 struct pic_blob *pic_blob_new(pic_state *, char *, int len);
 

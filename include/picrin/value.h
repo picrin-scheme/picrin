@@ -4,7 +4,7 @@
 typedef int pic_sym;
 
 enum pic_vtype {
-  PIC_VTYPE_NIL,
+  PIC_VTYPE_NIL = 1,
   PIC_VTYPE_TRUE,
   PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
@@ -27,8 +27,8 @@ typedef struct {
   } u;
 } pic_value;
 
-#define pic_vtype(v)				\
-  ((v).type)
+#define pic_ptr(v) ((v).u.data)
+#define pic_vtype(v) ((v).type)
 
 enum pic_tt {
   /* immediate */
@@ -79,10 +79,10 @@ struct pic_proc;
 struct pic_port;
 struct pic_blob;
 
-#define pic_obj_ptr(o) ((struct pic_object *)(o).u.data)
-#define pic_pair_ptr(o) ((struct pic_pair *)(o).u.data)
-#define pic_str_ptr(o) ((struct pic_string *)(o).u.data)
-#define pic_vec_ptr(o) ((struct pic_vector *)(o).u.data)
+#define pic_obj_ptr(o) ((struct pic_object *)pic_ptr(o))
+#define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
+#define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))
+#define pic_vec_ptr(o) ((struct pic_vector *)pic_ptr(o))
 
 enum pic_tt pic_type(pic_value);
 const char *pic_type_repr(enum pic_tt);
