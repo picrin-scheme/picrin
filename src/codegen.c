@@ -15,8 +15,8 @@ typedef struct codegen_scope {
   struct xhash *local_tbl;
   /* rest args variable is counted at localc */
   size_t argc, localc;
-  /* dirty flags: if local var i is captured, then cv_tbl[i] == 1 */
-  int *cv_tbl;
+  /* if local var i is captured, then dirty_flags[i] == 1 */
+  int *dirty_flags;
   bool varg;
 } codegen_scope;
 
@@ -30,7 +30,7 @@ new_global_scope(pic_state *pic)
   scope->local_tbl = pic->global_tbl;
   scope->argc = -1;
   scope->localc = -1;
-  scope->cv_tbl = NULL;
+  scope->dirty_flags = NULL;
   scope->varg = false;
   return scope;
 }
@@ -67,7 +67,7 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   }
   new_scope->argc = i;
   new_scope->localc = l;
-  new_scope->cv_tbl = (int *)pic_calloc(pic, i + l, sizeof(int));
+  new_scope->dirty_flags = (int *)pic_calloc(pic, i + l, sizeof(int));
 
   return new_scope;
 }
@@ -77,7 +77,7 @@ destroy_scope(pic_state *pic, codegen_scope *scope)
 {
   if (scope->up) {
     xh_destory(scope->local_tbl);
-    pic_free(pic, scope->cv_tbl);
+    pic_free(pic, scope->dirty_flags);
   }
   pic_free(pic, scope);
 }
@@ -194,8 +194,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
       irep->clen++;
       break;
     default:			/* nonlocal */
-      /* dirty flag */
-      s->cv_tbl[idx] = 1;
+      s->dirty_flags[idx] = 1;
       /* at this stage, lref and cref are not distinguished */
       FALLTHROUGH;
     case 0:			/* local */
@@ -343,8 +342,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  irep->clen++;
 	  break;
 	default:			/* nonlocal */
-	  /* dirty flag */
-	  s->cv_tbl[idx] = 1;
+	  s->dirty_flags[idx] = 1;
 	  /* at this stage, lset and cset are not distinguished */
 	  FALLTHROUGH;
 	case 0:			/* local */
@@ -619,13 +617,23 @@ codegen_lambda(codegen_state *state, pic_value obj)
     /* fixup */
     for (i = 0; i < irep->clen; ++i) {
       struct pic_code c = irep->code[i];
-      if (c.insn == OP_CREF && c.u.c.depth == 0 && ! state->scope->cv_tbl[c.u.c.idx]) {
-	irep->code[i].insn = OP_LREF;
-	irep->code[i].u.i = irep->code[i].u.c.idx;
+      switch (c.insn) {
+      default:
+	/* pass */
+	break;
+      case OP_CREF:
+	if (c.u.c.depth == 0 && ! state->scope->dirty_flags[c.u.c.idx]) {
+	  irep->code[i].insn = OP_LREF;
+	  irep->code[i].u.i = irep->code[i].u.c.idx;
+	}
+	break;
+      case OP_CSET:
+	if (c.u.c.depth == 0 && ! state->scope->dirty_flags[c.u.c.idx]) {
+	  irep->code[i].insn = OP_LSET;
+	  irep->code[i].u.i = irep->code[i].u.c.idx;
+	}
+	break;
       }
-      if (c.insn == OP_CSET && c.u.c.depth == 0 && ! state->scope->cv_tbl[c.u.c.idx]) {
-	irep->code[i].insn = OP_LSET;
-	irep->code[i].u.i = irep->code[i].u.c.idx;
       }
     }
   }
