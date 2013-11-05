@@ -1,7 +1,43 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "picrin/value.h"
+#include "picrin.h"
+
+#if PIC_NAN_BOXING
+
+enum pic_tt
+pic_type(pic_value v)
+{
+  if ((int)0xfff00000 >= v.u.type_)
+    return PIC_TT_FLOAT;
+
+  switch (pic_vtype(v)) {
+  case PIC_VTYPE_NIL:
+    return PIC_TT_NIL;
+  case PIC_VTYPE_TRUE:
+    return PIC_TT_BOOL;
+  case PIC_VTYPE_FALSE:
+    return PIC_TT_BOOL;
+  case PIC_VTYPE_UNDEF:
+    return PIC_TT_UNDEF;
+  case PIC_VTYPE_FLOAT:
+    return PIC_TT_FLOAT;
+  case PIC_VTYPE_INT:
+    return PIC_TT_INT;
+  case PIC_VTYPE_SYMBOL:
+    return PIC_TT_SYMBOL;
+  case PIC_VTYPE_CHAR:
+    return PIC_TT_CHAR;
+  case PIC_VTYPE_EOF:
+    return PIC_TT_EOF;
+  case PIC_VTYPE_HEAP:
+    return ((struct pic_object *)pic_ptr(v))->tt;
+  }
+  /* logic flaw (suppress warnings gcc will emit) */
+  abort();
+}
+
+#else
 
 enum pic_tt
 pic_type(pic_value v)
@@ -31,6 +67,8 @@ pic_type(pic_value v)
   /* logic flaw (suppress warnings gcc will emit) */
   abort();
 }
+
+#endif
 
 const char *
 pic_type_repr(enum pic_tt tt)
@@ -91,6 +129,34 @@ pic_bool_value(bool b)
   return v;
 }
 
+#if PIC_NAN_BOXING
+
+pic_value
+pic_obj_value(void *ptr)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_HEAP);
+  v.u.data = (void*)((long long)v.u.data | ((long long)ptr));
+  return v;
+}
+
+pic_value
+pic_float_value(double f)
+{
+  pic_value v;
+
+  if (f != f) {
+    v.u.type_ = 0x7ff80000;
+    v.u.i = 0;
+  } else {
+    v.u.f = f;
+  }
+  return v;
+}
+
+#else
+
 pic_value
 pic_obj_value(void *ptr)
 {
@@ -110,6 +176,8 @@ pic_float_value(double f)
   v.u.f = f;
   return v;
 }
+
+#endif
 
 pic_value
 pic_int_value(int i)

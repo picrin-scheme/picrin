@@ -16,6 +16,37 @@ enum pic_vtype {
   PIC_VTYPE_HEAP
 };
 
+#if PIC_NAN_BOXING
+
+/**
+ * value representation by nan-boxing:
+ *   float : FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF
+ *   ptr   : 111111111111TTTT PPPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP
+ *   int   : 1111111111110110 0000000000000000 IIIIIIIIIIIIIIII IIIIIIIIIIIIIIII
+ *   sym   : 1111111111110111 0000000000000000 SSSSSSSSSSSSSSSS SSSSSSSSSSSSSSSS
+ *   char  : 1111111111111000 0000000000000000 CCCCCCCCCCCCCCCC ................
+ */
+typedef struct {
+  union {
+    void *data;
+    double f;
+    struct {
+      union {
+	int i;
+	pic_sym sym;
+	char c;
+      };
+      unsigned int type_;
+    };
+  } u;
+} pic_value;
+
+#define pic_ptr(v) ((void *)((long long)0xffffffffffff & (long long)(v).u.data))
+#define pic_vtype(v) (((v).u.type_ & 0xf0000)>>16)
+#define pic_init_value(v,vtype) (((v).u.type_ = ((unsigned int)0xfff00000|((vtype)<<16))), (v).u.i = 0)
+
+#else
+
 typedef struct {
   enum pic_vtype type;
   union {
@@ -30,6 +61,8 @@ typedef struct {
 #define pic_ptr(v) ((v).u.data)
 #define pic_vtype(v) ((v).type)
 #define pic_init_value(v,vtype) ((v).type = (vtype), (v).u.data = NULL)
+
+#endif
 
 enum pic_tt {
   /* immediate */
