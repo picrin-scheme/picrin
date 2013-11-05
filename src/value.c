@@ -21,6 +21,8 @@ pic_type(pic_value v)
     return PIC_TT_INT;
   case PIC_VTYPE_SYMBOL:
     return PIC_TT_SYMBOL;
+  case PIC_VTYPE_CHAR:
+    return PIC_TT_CHAR;
   case PIC_VTYPE_EOF:
     return PIC_TT_EOF;
   case PIC_VTYPE_HEAP:
@@ -129,6 +131,16 @@ pic_symbol_value(pic_sym sym)
 
   v.type = PIC_VTYPE_SYMBOL;
   v.u.sym = sym;
+  return v;
+}
+
+pic_value
+pic_char_value(char c)
+{
+  pic_value v;
+
+  v.type = PIC_VTYPE_CHAR;
+  v.u.c = c;
   return v;
 }
 

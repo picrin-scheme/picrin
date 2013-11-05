@@ -31,6 +31,9 @@ write(pic_state *pic, pic_value obj)
   case PIC_TT_SYMBOL:
     printf("%s", pic_symbol_name(pic, pic_sym(obj)));
     break;
+  case PIC_TT_CHAR:
+    printf("#\\%c", pic_char(obj));
+    break;
   case PIC_TT_FLOAT:
     printf("%f", pic_float(obj));
     break;

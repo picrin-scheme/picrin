@@ -511,6 +511,12 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
     irep->clen++;
     break;
   }
+  case PIC_TT_CHAR: {
+    irep->code[irep->clen].insn = OP_PUSHCHAR;
+    irep->code[irep->clen].u.c = pic_char(obj);
+    irep->clen++;
+    break;
+  }
   case PIC_TT_STRING:
   case PIC_TT_VECTOR: {
     int pidx;
@@ -809,6 +815,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       break;
     case OP_PUSHINT:
       printf("OP_PUSHINT\t%d\n", irep->code[i].u.i);
+      break;
+    case OP_PUSHCHAR:
+      printf("OP_PUSHCHAR\t%c\n", irep->code[i].u.c);
       break;
     case OP_PUSHCONST:
       printf("OP_PUSHCONST\t");

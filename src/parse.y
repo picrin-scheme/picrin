@@ -34,6 +34,7 @@ void yylex_destroy();
   int i;
   double f;
   char *cstr;
+  char c;
   pic_value datum;
 }
 
@@ -42,6 +43,7 @@ void yylex_destroy();
 %token <i> tINT tBOOLEAN
 %token <f> tFLOAT
 %token <cstr> tSYMBOL tSTRING
+%token <c> tCHAR
 
 %type <datum> program_data
 %type <datum> datum simple_datum compound_datum abbrev
@@ -104,6 +106,10 @@ simple_datum
 	| tBOOLEAN
 	{
 	  $$ = pic_bool_value($1);
+	}
+	| tCHAR
+	{
+	  $$ = pic_char_value($1);
 	}
 ;
 

@@ -192,6 +192,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
   case PIC_TT_SYMBOL:
+  case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
     pic_abort(pic, "logic flaw");
@@ -300,6 +301,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
   case PIC_TT_SYMBOL:
+  case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
     pic_abort(pic, "logic flaw");

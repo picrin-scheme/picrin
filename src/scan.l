@@ -78,6 +78,11 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 			}
 }
 
+#\\.		{
+  yylvalp->c = yytext[2];
+  return tCHAR;
+}
+
 %%
 
 int

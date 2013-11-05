@@ -8,6 +8,7 @@ enum pic_opcode {
   OP_PUSHFALSE,
   OP_PUSHFLOAT,
   OP_PUSHINT,
+  OP_PUSHCHAR,
   OP_PUSHCONST,
   OP_GREF,
   OP_GSET,
@@ -40,6 +41,7 @@ struct pic_code {
   union {
     double f;
     int i;
+    char c;
     struct {
       short depth;
       short idx;

@@ -11,6 +11,7 @@ enum pic_vtype {
   PIC_VTYPE_FLOAT,
   PIC_VTYPE_INT,
   PIC_VTYPE_SYMBOL,
+  PIC_VTYPE_CHAR,
   PIC_VTYPE_EOF,
   PIC_VTYPE_HEAP
 };
@@ -22,6 +23,7 @@ typedef struct {
     double f;
     int i;
     pic_sym sym;
+    char c;
   } u;
 } pic_value;
 
@@ -32,6 +34,7 @@ enum pic_tt {
   PIC_TT_FLOAT,
   PIC_TT_INT,
   PIC_TT_SYMBOL,
+  PIC_TT_CHAR,
   PIC_TT_EOF,
   PIC_TT_UNDEF,
   /* heap */
@@ -88,10 +91,12 @@ pic_value pic_obj_value(void *);
 pic_value pic_float_value(double);
 pic_value pic_int_value(int);
 pic_value pic_symbol_value(pic_sym);
+pic_value pic_char_value(char c);
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
 #define pic_sym(v) ((v).u.sym)
+#define pic_char(v) ((v).u.c)
 
 #define pic_nil_p(v) ((v).type == PIC_VTYPE_NIL)
 #define pic_true_p(v) ((v).type == PIC_VTYPE_TRUE)
@@ -100,6 +105,7 @@ pic_value pic_symbol_value(pic_sym);
 #define pic_float_p(v) ((v).type == PIC_VTYPE_FLOAT)
 #define pic_int_p(v) ((v).type == PIC_VTYPE_INT)
 #define pic_symbol_p(v) ((v).type == PIC_VTYPE_SYMBOL)
+#define pic_char_p(v) ((v).type == PIC_VTYPE_CHAR)
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
