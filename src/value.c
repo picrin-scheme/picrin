@@ -116,7 +116,6 @@ pic_false_value()
   pic_value v;
 
   pic_init_value(v, PIC_VTYPE_FALSE);
-  v.u.data = NULL;
   return v;
 }
 
