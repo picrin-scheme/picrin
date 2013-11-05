@@ -14,6 +14,7 @@ void pic_init_file(pic_state *);
 void pic_init_proc(pic_state *);
 void pic_init_symbol(pic_state *);
 void pic_init_vector(pic_state *);
+void pic_init_blob(pic_state *);
 
 void
 pic_load_stdlib(pic_state *pic)
@@ -77,6 +78,7 @@ pic_init_core(pic_state *pic)
   pic_init_proc(pic); DONE;
   pic_init_symbol(pic); DONE;
   pic_init_vector(pic); DONE;
+  pic_init_blob(pic); DONE;
 
   pic_load_stdlib(pic); DONE;
 }

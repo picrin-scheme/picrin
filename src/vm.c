@@ -6,6 +6,7 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/irep.h"
+#include "picrin/blob.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -180,6 +181,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	  }
 	  else {
 	    pic_error(pic, "pic_get_args: expected vector");
+	  }
+	  i++;
+	}
+      }
+      break;
+    case 'b':
+      {
+	struct pic_blob **b;
+	pic_value v;
+
+	b = va_arg(ap, struct pic_blob **);
+	if (i < argc) {
+	  v = GET_OPERAND(pic,i);
+	  if (pic_blob_p(v)) {
+	    *b = pic_blob_ptr(v);
+	  }
+	  else {
+	    pic_error(pic, "pic_get_args: expected bytevector");
 	  }
 	  i++;
 	}
