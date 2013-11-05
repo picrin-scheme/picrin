@@ -89,7 +89,7 @@ pic_gc_protect(pic_state *pic, pic_value v)
 {
   struct pic_object *obj;
 
-  if (v.type != PIC_VTYPE_HEAP) {
+  if (pic_vtype(v) != PIC_VTYPE_HEAP) {
     return;
   }
   obj = pic_obj_ptr(v);
@@ -208,7 +208,7 @@ gc_mark(pic_state *pic, pic_value v)
 {
   struct pic_object *obj;
 
-  if (v.type != PIC_VTYPE_HEAP)
+  if (pic_vtype(v) != PIC_VTYPE_HEAP)
     return;
   obj = pic_obj_ptr(v);
 

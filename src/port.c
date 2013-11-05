@@ -249,7 +249,7 @@ pic_port_eof_object_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (v.type == PIC_VTYPE_EOF) {
+  if (pic_vtype(v) == PIC_VTYPE_EOF) {
     return pic_true_value();
   }
   else {

@@ -27,6 +27,9 @@ typedef struct {
   } u;
 } pic_value;
 
+#define pic_vtype(v)				\
+  ((v).type)
+
 enum pic_tt {
   /* immediate */
   PIC_TT_NIL,
@@ -100,14 +103,14 @@ pic_value pic_char_value(char c);
 #define pic_sym(v) ((v).u.sym)
 #define pic_char(v) ((v).u.c)
 
-#define pic_nil_p(v) ((v).type == PIC_VTYPE_NIL)
-#define pic_true_p(v) ((v).type == PIC_VTYPE_TRUE)
-#define pic_false_p(v) ((v).type == PIC_VTYPE_FALSE)
-#define pic_undef_p(v) ((v).type == PIC_VTYPE_UNDEF)
-#define pic_float_p(v) ((v).type == PIC_VTYPE_FLOAT)
-#define pic_int_p(v) ((v).type == PIC_VTYPE_INT)
-#define pic_symbol_p(v) ((v).type == PIC_VTYPE_SYMBOL)
-#define pic_char_p(v) ((v).type == PIC_VTYPE_CHAR)
+#define pic_nil_p(v) (pic_vtype(v) == PIC_VTYPE_NIL)
+#define pic_true_p(v) (pic_vtype(v) == PIC_VTYPE_TRUE)
+#define pic_false_p(v) (pic_vtype(v) == PIC_VTYPE_FALSE)
+#define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
+#define pic_float_p(v) (pic_vtype(v) == PIC_VTYPE_FLOAT)
+#define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
+#define pic_symbol_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
+#define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
