@@ -74,6 +74,20 @@
 (define (list-set! list k obj)
   (set-car! (list-tail list k) obj))
 
+(define (memq obj list)
+  (if (null? list)
+      #f
+      (if (eq? obj (car list))
+	  list
+	  (memq obj (cdr list)))))
+
+(define (assq obj list)
+  (if (null? list)
+      #f
+      (if (eq? obj (caar list))
+	  (car list)
+	  (assq obj (cdr list)))))
+
 (define (list-copy obj)
   (if (null? obj)
       obj
