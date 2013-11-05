@@ -3,7 +3,7 @@ CFLAGS=-Wall -g
 
 all: build-debug run
 
-release: build run
+release: build
 
 build-debug: CFLAGS += -DDEBUG=1
 build-debug: build
@@ -26,3 +26,6 @@ clean:
 
 run:
 	bin/picrin
+
+tak: build
+	bin/picrin etc/tak.scm
