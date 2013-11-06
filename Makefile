@@ -1,11 +1,11 @@
 CC=gcc
-CFLAGS=-Wall -g -O3
+CFLAGS=-Wall -O3
 
 all: build-debug run
 
 release: build
 
-build-debug: CFLAGS += -DDEBUG=1
+build-debug: CFLAGS += -g -DDEBUG=1
 build-debug: build
 
 build: build-lib build-main
