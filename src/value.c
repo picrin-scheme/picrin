@@ -249,4 +249,24 @@ pic_eq_p(pic_value x, pic_value y)
   }
 }
 
+bool
+pic_eqv_p(pic_value x, pic_value y)
+{
+  if (pic_type(x) != pic_type(y))
+    return false;
+
+  switch (pic_type(x)) {
+  case PIC_TT_NIL:
+    return true;
+  case PIC_TT_SYMBOL:
+    return pic_sym(x) == pic_sym(y);
+  case PIC_TT_FLOAT:
+    return pic_float(x) == pic_float(y);
+  case PIC_TT_INT:
+    return pic_int(x) == pic_int(y);
+  default:
+    return false;
+  }
+}
+
 #endif
