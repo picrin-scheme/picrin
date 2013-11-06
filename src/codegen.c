@@ -407,12 +407,37 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	irep->clen++;
 	break;
       }
+
+#define ARGC_ASSERT_GE(n) do {				\
+	if (pic_length(pic, obj) < (n) + 1) {		\
+	  pic_error(pic, "wrong number of arguments");	\
+	}						\
+      } while (0)
+
       else if (sym == pic->sADD) {
-	ARGC_ASSERT(2);
-	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_ADD;
-	irep->clen++;
+	pic_value args;
+
+	ARGC_ASSERT_GE(0);
+	switch (pic_length(pic, obj)) {
+	case 1:
+	  irep->code[irep->clen].insn = OP_PUSHINT;
+	  irep->code[irep->clen].u.i = 0;
+	  irep->clen++;
+	  break;
+	case 2:
+	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
+	  break;
+	default:
+	  args = pic_cdr(pic, obj);
+	  codegen(state, pic_car(pic, args), false);
+	  while (pic_length(pic, args) >= 2) {
+	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
+	    irep->code[irep->clen].insn = OP_ADD;
+	    irep->clen++;
+	    args = pic_cdr(pic, args);
+	  }
+	  break;
+	}
 	break;
       }
       else if (sym == pic->sSUB) {
