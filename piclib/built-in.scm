@@ -113,6 +113,8 @@
 	      (if-false (cons 'cond (cdr clauses))))
 	  (list 'if test if-true if-false)))))
 
+(define else #t)
+
 (define-macro (and . exprs)
   (if (null? exprs)
       #t
@@ -141,3 +143,14 @@
 	       (list 'quasiquote (car x))
 	       (list 'quasiquote (cdr x))))))
    (#t x)))
+
+(define (equal? x y)
+  (cond
+   ((eqv? x y)
+    #t)
+   ((and (pair? x) (pair? y))
+    (and (equal? (car x) (car y))
+	 (equal? (cdr x) (cdr y))))
+   (else
+    #f)))
+

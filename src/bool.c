@@ -12,6 +12,16 @@ pic_bool_eq_p(pic_state *pic)
   return pic_bool_value(pic_eq_p(x, y));
 }
 
+static pic_value
+pic_bool_eqv_p(pic_state *pic)
+{
+  pic_value x, y;
+
+  pic_get_args(pic, "oo", &x, &y);
+
+  return pic_bool_value(pic_eqv_p(x, y));
+}
+
 /* TODO: replace it with native opcode */
 static pic_value
 pic_bool_not(pic_state *pic)
@@ -37,6 +47,7 @@ void
 pic_init_bool(pic_state *pic)
 {
   pic_defun(pic, "eq?", pic_bool_eq_p);
+  pic_defun(pic, "eqv?", pic_bool_eqv_p);
 
   pic_defun(pic, "not", pic_bool_not);
   pic_defun(pic, "boolean?", pic_bool_boolean_p);

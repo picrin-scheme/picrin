@@ -225,6 +225,12 @@ pic_eq_p(pic_value x, pic_value y)
   return x.u.data == y.u.data;
 }
 
+bool
+pic_eqv_p(pic_value x, pic_value y)
+{
+  return x.u.data == y.u.data;
+}
+
 #else
 
 bool
