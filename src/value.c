@@ -216,3 +216,31 @@ pic_undef_value()
   pic_init_value(v, PIC_VTYPE_UNDEF);
   return v;
 }
+
+#if PIC_NAN_BOXING
+
+bool
+pic_eq_p(pic_value x, pic_value y)
+{
+  return x.u.data == y.u.data;
+}
+
+#else
+
+bool
+pic_eq_p(pic_value x, pic_value y)
+{
+  if (pic_type(x) != pic_type(y))
+    return false;
+
+  switch (pic_type(x)) {
+  case PIC_TT_NIL:
+    return true;
+  case PIC_TT_SYMBOL:
+    return pic_sym(x) == pic_sym(y);
+  default:
+    return false;
+  }
+}
+
+#endif

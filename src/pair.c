@@ -102,7 +102,7 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
     return assoc;
 
   cell = pic_car(pic, assoc);
-  if (pic_eq_p(pic, key, pic_car(pic, cell)))
+  if (pic_eq_p(key, pic_car(pic, cell)))
     return cell;
 
   assoc = pic_cdr(pic, assoc);

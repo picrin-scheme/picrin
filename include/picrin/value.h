@@ -26,6 +26,7 @@ enum pic_vtype {
  *   sym   : 1111111111110111 0000000000000000 SSSSSSSSSSSSSSSS SSSSSSSSSSSSSSSS
  *   char  : 1111111111111000 0000000000000000 CCCCCCCCCCCCCCCC ................
  */
+
 typedef struct {
   union {
     void *data;
@@ -148,5 +149,8 @@ pic_value pic_char_value(char c);
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
+
+bool pic_eq_p(pic_value, pic_value);
+bool pic_eqv_p(pic_value, pic_value);
 
 #endif
