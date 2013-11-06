@@ -115,6 +115,12 @@
 
 (define else #t)
 
+(define-macro (when test . exprs)
+  (list 'if test (cons 'begin exprs) #f))
+
+(define-macro (unless test . exprs)
+  (list 'if test #f (cons 'begin exprs)))
+
 (define-macro (and . exprs)
   (if (null? exprs)
       #t
