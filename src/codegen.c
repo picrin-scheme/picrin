@@ -441,11 +441,26 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	break;
       }
       else if (sym == pic->sSUB) {
-	ARGC_ASSERT(2);
-	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_SUB;
-	irep->clen++;
+	pic_value args;
+
+	ARGC_ASSERT_GE(1);
+	switch (pic_length(pic, obj)) {
+	case 2:
+	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
+	  irep->code[irep->clen].insn = OP_MINUS;
+	  irep->clen++;
+	  break;
+	default:
+	  args = pic_cdr(pic, obj);
+	  codegen(state, pic_car(pic, args), false);
+	  while (pic_length(pic, args) >= 2) {
+	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
+	    irep->code[irep->clen].insn = OP_SUB;
+	    irep->clen++;
+	    args = pic_cdr(pic, args);
+	  }
+	  break;
+	}
 	break;
       }
       else if (sym == pic->sMUL) {
@@ -909,6 +924,9 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       break;
     case OP_DIV:
       puts("OP_DIV");
+      break;
+    case OP_MINUS:
+      puts("OP_MINUS");
       break;
     case OP_EQ:
       puts("OP_EQ");
