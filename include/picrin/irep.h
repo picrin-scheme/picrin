@@ -30,6 +30,7 @@ enum pic_opcode {
   OP_SUB,
   OP_MUL,
   OP_DIV,
+  OP_MINUS,
   OP_EQ,
   OP_LT,
   OP_LE,
