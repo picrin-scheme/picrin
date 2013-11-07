@@ -464,19 +464,55 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	break;
       }
       else if (sym == pic->sMUL) {
-	ARGC_ASSERT(2);
-	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_MUL;
-	irep->clen++;
+	pic_value args;
+
+	ARGC_ASSERT_GE(0);
+	switch (pic_length(pic, obj)) {
+	case 1:
+	  irep->code[irep->clen].insn = OP_PUSHINT;
+	  irep->code[irep->clen].u.i = 1;
+	  irep->clen++;
+	  break;
+	case 2:
+	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
+	  break;
+	default:
+	  args = pic_cdr(pic, obj);
+	  codegen(state, pic_car(pic, args), false);
+	  while (pic_length(pic, args) >= 2) {
+	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
+	    irep->code[irep->clen].insn = OP_MUL;
+	    irep->clen++;
+	    args = pic_cdr(pic, args);
+	  }
+	  break;
+	}
 	break;
       }
       else if (sym == pic->sDIV) {
-	ARGC_ASSERT(2);
-	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_DIV;
-	irep->clen++;
+	pic_value args;
+
+	ARGC_ASSERT_GE(1);
+	switch (pic_length(pic, obj)) {
+	case 2:
+	  irep->code[irep->clen].insn = OP_PUSHINT;
+	  irep->code[irep->clen].u.i = 1;
+	  irep->clen++;
+	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
+	  irep->code[irep->clen].insn = OP_DIV;
+	  irep->clen++;
+	  break;
+	default:
+	  args = pic_cdr(pic, obj);
+	  codegen(state, pic_car(pic, args), false);
+	  while (pic_length(pic, args) >= 2) {
+	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
+	    irep->code[irep->clen].insn = OP_DIV;
+	    irep->clen++;
+	    args = pic_cdr(pic, args);
+	  }
+	  break;
+	}
 	break;
       }
       else if (sym == pic->sEQ) {
