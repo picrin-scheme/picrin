@@ -3,14 +3,9 @@
 
 #include "picrin.h"
 
-#if PIC_NAN_BOXING
-
 enum pic_tt
 pic_type(pic_value v)
 {
-  if ((int)0xfff00000 >= v.u.type_)
-    return PIC_TT_FLOAT;
-
   switch (pic_vtype(v)) {
   case PIC_VTYPE_NIL:
     return PIC_TT_NIL;
@@ -36,39 +31,6 @@ pic_type(pic_value v)
   /* logic flaw (suppress warnings gcc will emit) */
   abort();
 }
-
-#else
-
-enum pic_tt
-pic_type(pic_value v)
-{
-  switch (pic_vtype(v)) {
-  case PIC_VTYPE_NIL:
-    return PIC_TT_NIL;
-  case PIC_VTYPE_TRUE:
-    return PIC_TT_BOOL;
-  case PIC_VTYPE_FALSE:
-    return PIC_TT_BOOL;
-  case PIC_VTYPE_UNDEF:
-    return PIC_TT_UNDEF;
-  case PIC_VTYPE_FLOAT:
-    return PIC_TT_FLOAT;
-  case PIC_VTYPE_INT:
-    return PIC_TT_INT;
-  case PIC_VTYPE_SYMBOL:
-    return PIC_TT_SYMBOL;
-  case PIC_VTYPE_CHAR:
-    return PIC_TT_CHAR;
-  case PIC_VTYPE_EOF:
-    return PIC_TT_EOF;
-  case PIC_VTYPE_HEAP:
-    return ((struct pic_object *)v.u.data)->tt;
-  }
-  /* logic flaw (suppress warnings gcc will emit) */
-  abort();
-}
-
-#endif
 
 const char *
 pic_type_repr(enum pic_tt tt)
