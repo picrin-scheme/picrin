@@ -4,7 +4,7 @@
 
 # Picrin - a lightweight scheme interpreter
 
-## Freatures
+## Features
 
 - R7RS compatibility (but partial support)
 - reentrant design (all VM states are stored in single global state object)
