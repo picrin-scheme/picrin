@@ -5,7 +5,54 @@
 #include "picrin/proc.h"
 #include "picrin/cont.h"
 
+static struct pic_cont *save_cont(pic_state *pic);
 static void restore_cont(pic_state *, struct pic_cont *);
+
+static size_t
+native_stack_length(pic_state *pic, pic_value **pos)
+{
+  pic_value t;
+
+  *pos = (pic->native_stack_start > &t)
+    ? &t
+    : pic->native_stack_start;
+
+  return (pic->native_stack_start > &t)
+    ? (size_t)(pic->native_stack_start - &t)
+    : (size_t)(&t - pic->native_stack_start + 1);
+}
+
+static struct pic_cont *
+save_cont(pic_state *pic)
+{
+  struct pic_cont *cont;
+  pic_value *pos;
+
+  cont = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
+
+  cont->stk_len = native_stack_length(pic, &pos);
+  cont->stk_pos = pos;
+  cont->stk_ptr = pic_alloc(pic, sizeof(pic_value) * cont->stk_len);
+  memcpy(cont->stk_ptr, cont->stk_pos, sizeof(pic_value) * cont->stk_len);
+
+  cont->stbase = (pic_value *)pic_alloc(pic, sizeof(pic_value) * (pic->stend - pic->stbase));
+  cont->stend = cont->stbase + (pic->stend - pic->stbase);
+  cont->sp = cont->stbase + (pic->sp - pic->stbase);
+  memcpy(cont->stbase, pic->stbase, sizeof(pic_value) * (pic->stend - pic->stbase));
+
+  cont->cibase = (pic_callinfo *)pic_alloc(pic, sizeof(pic_callinfo) * (pic->ciend - pic->cibase));
+  cont->ciend = cont->cibase + (pic->ciend - pic->cibase);
+  cont->ci = cont->cibase + (pic->ci - pic->cibase);
+  memcpy(cont->cibase, pic->cibase, sizeof(pic_callinfo) * (pic->ciend - pic->cibase));
+
+  cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
+  cont->arena_idx = pic->arena_idx;
+  memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
+
+  cont->result = pic_undef_value();
+
+  return cont;
+}
 
 static void
 native_stack_extend(pic_state *pic, struct pic_cont *cont)
@@ -60,52 +107,6 @@ cont_call(pic_state *pic)
 
   /* the function never returns */
   return pic_undef_value();
-}
-
-static size_t
-native_stack_length(pic_state *pic, pic_value **pos)
-{
-  pic_value t;
-
-  *pos = (pic->native_stack_start > &t)
-    ? &t
-    : pic->native_stack_start;
-
-  return (pic->native_stack_start > &t)
-    ? (size_t)(pic->native_stack_start - &t)
-    : (size_t)(&t - pic->native_stack_start + 1);
-}
-
-static struct pic_cont *
-save_cont(pic_state *pic)
-{
-  struct pic_cont *cont;
-  pic_value *pos;
-
-  cont = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
-
-  cont->stk_len = native_stack_length(pic, &pos);
-  cont->stk_pos = pos;
-  cont->stk_ptr = pic_alloc(pic, sizeof(pic_value) * cont->stk_len);
-  memcpy(cont->stk_ptr, cont->stk_pos, sizeof(pic_value) * cont->stk_len);
-
-  cont->stbase = (pic_value *)pic_alloc(pic, sizeof(pic_value) * (pic->stend - pic->stbase));
-  cont->stend = cont->stbase + (pic->stend - pic->stbase);
-  cont->sp = cont->stbase + (pic->sp - pic->stbase);
-  memcpy(cont->stbase, pic->stbase, sizeof(pic_value) * (pic->stend - pic->stbase));
-
-  cont->cibase = (pic_callinfo *)pic_alloc(pic, sizeof(pic_callinfo) * (pic->ciend - pic->cibase));
-  cont->ciend = cont->cibase + (pic->ciend - pic->cibase);
-  cont->ci = cont->cibase + (pic->ci - pic->cibase);
-  memcpy(cont->cibase, pic->cibase, sizeof(pic_callinfo) * (pic->ciend - pic->cibase));
-
-  cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
-  cont->arena_idx = pic->arena_idx;
-  memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
-
-  cont->result = pic_undef_value();
-
-  return cont;
 }
 
 static pic_value
