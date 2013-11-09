@@ -104,10 +104,24 @@
 	  list
 	  (memq obj (cdr list)))))
 
+(define (memv obj list)
+  (if (null? list)
+      #f
+      (if (eqv? obj (car list))
+	  list
+	  (memq obj (cdr list)))))
+
 (define (assq obj list)
   (if (null? list)
       #f
       (if (eq? obj (caar list))
+	  (car list)
+	  (assq obj (cdr list)))))
+
+(define (assv obj list)
+  (if (null? list)
+      #f
+      (if (eqv? obj (caar list))
 	  (car list)
 	  (assq obj (cdr list)))))
 
@@ -183,3 +197,18 @@
    (else
     #f)))
 
+(define (member obj list . opts)
+  (let ((compare (if (null? opts) equal? (car opts))))
+    (if (null? list)
+	#f
+	(if (compare obj (car list))
+	    list
+	    (member obj (cdr list) compare)))))
+
+(define (assoc obj list . opts)
+  (let ((compare (if (null? opts) equal? (car opts))))
+    (if (null? list)
+	#f
+	(if (compare obj (caar list))
+	    (car list)
+	    (assoc obj (cdr list) compare)))))
