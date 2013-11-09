@@ -44,7 +44,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 }
 
 static pic_value
-pic_cont_call(pic_state *pic)
+cont_call(pic_state *pic)
 {
   struct pic_proc *proc;
   pic_value v;
@@ -109,7 +109,7 @@ save_cont(pic_state *pic)
 }
 
 static pic_value
-pic_callcc(pic_state *pic)
+pic_cont_callcc(pic_state *pic)
 {
   struct pic_cont *cont;
   pic_value v;
@@ -129,7 +129,7 @@ pic_callcc(pic_state *pic)
   else {
     struct pic_proc *c;
 
-    c = pic_proc_new_cfunc(pic, pic_cont_call);
+    c = pic_proc_new_cfunc(pic, cont_call);
     /* save the continuation object in proc */
     c->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
     c->env->up = NULL;
@@ -144,6 +144,6 @@ pic_callcc(pic_state *pic)
 void
 pic_init_cont(pic_state *pic)
 {
-  pic_defun(pic, "call-with-current-continuation", pic_callcc);
-  pic_defun(pic, "call/cc", pic_callcc);
+  pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
+  pic_defun(pic, "call/cc", pic_cont_callcc);
 }
