@@ -207,7 +207,7 @@ pic_eq_p(pic_value x, pic_value y)
   case PIC_TT_SYMBOL:
     return pic_sym(x) == pic_sym(y);
   default:
-    return false;
+    return pic_ptr(x) == pic_ptr(y);
   }
 }
 
@@ -227,7 +227,7 @@ pic_eqv_p(pic_value x, pic_value y)
   case PIC_TT_INT:
     return pic_int(x) == pic_int(y);
   default:
-    return false;
+    return pic_ptr(x) == pic_ptr(y);
   }
 }
 
