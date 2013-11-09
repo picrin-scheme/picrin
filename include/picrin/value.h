@@ -3,6 +3,11 @@
 
 typedef int pic_sym;
 
+/**
+ * `undef` values never seen from user-end: that is,
+ *  it's used only for repsenting internal special state
+ */
+
 enum pic_vtype {
   PIC_VTYPE_NIL = 1,
   PIC_VTYPE_TRUE,
