@@ -36,8 +36,19 @@ pic_proc_proc_p(pic_state *pic)
   return pic_bool_value(pic_proc_p(v));
 }
 
+static pic_value
+pic_proc_apply(pic_state *pic)
+{
+  pic_value proc, args;
+
+  pic_get_args(pic, "oo", &proc, &args);
+
+  return pic_apply(pic, pic_proc_ptr(proc), args);
+}
+
 void
 pic_init_proc(pic_state *pic)
 {
   pic_defun(pic, "procedure?", pic_proc_proc_p);
+  pic_defun(pic, "apply", pic_proc_apply);
 }
