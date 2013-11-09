@@ -282,8 +282,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   printf("  argv = ");
   pic_debug(pic, argv);
   puts("");
-  printf("  irep = ");
-  print_irep(pic, proc->u.irep);
+  if (! proc->cfunc_p) {
+    printf("  irep = ");
+    print_irep(pic, proc->u.irep);
+  }
+  else {
+    printf("  cfunc = %p\n", proc->u.cfunc);
+  }
   puts("\nLet's go!");
 #endif
 
