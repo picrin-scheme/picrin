@@ -57,6 +57,8 @@ typedef struct {
   struct heap_page *heap;
   struct pic_object *arena[PIC_ARENA_SIZE];
   int arena_idx;
+
+  pic_value *native_stack_start;
 } pic_state;
 
 typedef pic_value (*pic_func_t)(pic_state *);

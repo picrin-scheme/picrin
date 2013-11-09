@@ -10,6 +10,8 @@ void pic_init_core(pic_state *);
 pic_state *
 pic_open(int argc, char *argv[], char **envp)
 {
+  pic_value t;
+
   pic_state *pic;
   int ai;
 
@@ -63,6 +65,9 @@ pic_open(int argc, char *argv[], char **envp)
 
   /* GC arena */
   pic->arena_idx = 0;
+
+  /* native stack marker */
+  pic->native_stack_start = &t;
 
   ai = pic_gc_arena_preserve(pic);
   pic->sDEFINE = pic_intern_cstr(pic, "define");

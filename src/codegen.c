@@ -604,6 +604,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
     irep->clen++;
     break;
   }
+  case PIC_TT_CONT:
   case PIC_TT_ENV:
   case PIC_TT_PROC:
   case PIC_TT_UNDEF:

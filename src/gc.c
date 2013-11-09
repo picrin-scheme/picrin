@@ -6,6 +6,7 @@
 #include "picrin/proc.h"
 #include "picrin/port.h"
 #include "picrin/blob.h"
+#include "picrin/cont.h"
 
 #if GC_DEBUG
 # include <stdio.h>
@@ -191,6 +192,32 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLOB: {
     break;
   }
+  case PIC_TT_CONT: {
+    struct pic_cont *cont = (struct pic_cont *)obj;
+    pic_value *stack;
+    pic_callinfo *ci;
+    int i;
+
+    /* stack */
+    for (stack = cont->stbase; stack != cont->sp; ++stack) {
+      gc_mark(pic, *stack);
+    }
+
+    /* callinfo */
+    for (ci = cont->ci; ci != cont->cibase; --ci) {
+      if (ci->env) {
+	gc_mark_object(pic, (struct pic_object *)ci->env);
+      }
+    }
+
+    /* arena */
+    for (i = 0; i < cont->arena_idx; ++i) {
+      gc_mark_object(pic, cont->arena[i]);
+    }
+
+    gc_mark(pic, cont->result);
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -302,6 +329,14 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     if (port->status == PIC_PORT_OPEN) {
       fclose(port->file);
     }
+    break;
+  }
+  case PIC_TT_CONT: {
+    struct pic_cont *cont = (struct pic_cont *)obj;
+    pic_free(pic, cont->stk_ptr);
+    pic_free(pic, cont->stbase);
+    pic_free(pic, cont->cibase);
+    pic_free(pic, cont->arena);
     break;
   }
   case PIC_TT_NIL:
