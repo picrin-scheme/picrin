@@ -74,6 +74,7 @@ void pic_gc_arena_restore(pic_state *, int);
 pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
 
+struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
 

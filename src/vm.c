@@ -10,6 +10,17 @@
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
+struct pic_proc *
+pic_get_proc(pic_state *pic)
+{
+  pic_value v = GET_OPERAND(pic,0);
+
+  if (! pic_proc_p(v)) {
+    pic_error(pic, "fatal error");
+  }
+  return pic_proc_ptr(v);
+}
+
 int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
