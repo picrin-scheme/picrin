@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <math.h>
 
 #include "picrin.h"
 #include "picrin/pair.h"
@@ -552,14 +553,14 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
 
-#define DEFINE_ARITH_OP(opcode, op)				\
+#define DEFINE_ARITH_OP(opcode, op, guard)			\
     CASE(opcode) {						\
       pic_value a, b;						\
       b = POP();						\
       a = POP();						\
       if (pic_int_p(a) && pic_int_p(b)) {			\
 	double f = (double)pic_int(a) op (double)pic_int(b);	\
-	if (INT_MIN <= f && f <= INT_MAX) {			\
+	if (INT_MIN <= f && f <= INT_MAX && (guard)) {		\
 	  PUSH(pic_int_value((int)f));				\
 	}							\
 	else {							\
@@ -582,33 +583,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;							\
     }
 
-    DEFINE_ARITH_OP(OP_ADD, +);
-    DEFINE_ARITH_OP(OP_SUB, -);
-    DEFINE_ARITH_OP(OP_MUL, *);
-
-    /* special care for (int / int) division */
-    CASE(OP_DIV) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      if (pic_int_p(a) && pic_int_p(b)) {
-	PUSH(pic_float_value((double)pic_int(a) / pic_int(b)));
-      }
-      else if (pic_float_p(a) && pic_float_p(b)) {
-	PUSH(pic_float_value(pic_float(a) / pic_float(b)));
-      }
-      else if (pic_int_p(a) && pic_float_p(b)) {
-	PUSH(pic_float_value(pic_int(a) / pic_float(b)));
-      }
-      else if (pic_float_p(a) && pic_int_p(b)) {
-	PUSH(pic_float_value(pic_float(a) / pic_int(b)));
-      }
-      else {
-	pic->errmsg = "/ got non-number operands";
-	goto L_RAISE;
-      }
-      NEXT;
-    }
+    DEFINE_ARITH_OP(OP_ADD, +, true);
+    DEFINE_ARITH_OP(OP_SUB, -, true);
+    DEFINE_ARITH_OP(OP_MUL, *, true);
+    DEFINE_ARITH_OP(OP_DIV, /, f == round(f));
 
     CASE(OP_MINUS) {
       pic_value n;
