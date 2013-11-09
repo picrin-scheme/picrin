@@ -228,6 +228,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return i;
 }
 
+pic_value
+pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
+{
+  va_list ap;
+  pic_value v;
+
+  va_start(ap, argc);
+
+  v = pic_nil_value();
+  while (argc--) {
+    v = pic_cons(pic, va_arg(ap, pic_value), v);
+  }
+
+  va_end(ap);
+  return pic_apply(pic, proc, v);
+}
+
 #if VM_DEBUG
 # define OPCODE_EXEC_HOOK printf("OP = %d\n", c.insn)
 #else
