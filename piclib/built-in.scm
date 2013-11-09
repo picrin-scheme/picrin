@@ -14,6 +14,29 @@
 (define (negative? x)
   (< x 0))
 
+(define (odd? n)
+  (= 0 (floor-remainder n 2)))
+
+(define (even? n)
+  (= 1 (floor-remainder n 2)))
+
+(define (gcd n m)
+  (if (negative? n)
+      (set! n (- n)))
+  (if (negative? m)
+      (set! m (- m)))
+  (if (> n m)
+      ((lambda (tmp)
+	 (set! n m)
+	 (set! m tmp))
+       n))
+  (if (zero? n)
+      m
+      (gcd (floor-remainder m n) n)))
+
+(define (lcm n m)
+  (/ (* n m) (gcd n m)))
+
 (define (caar p)
   (car (car p)))
 
