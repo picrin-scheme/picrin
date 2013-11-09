@@ -1,15 +1,10 @@
 CC=gcc
 CFLAGS=-Wall -O3
-UNAME_S := $(shell uname -s)
-SO_PREFIX=lib
-SO_EXT=.so
+PICRIN_LIB=libpicrin.so
 
-ifeq ($(findstring CYGWIN,$(UNAME_S)), CYGWIN)
-  SO_PREFIX=cyg
-  SO_EXT=.dll
+ifeq ($(findstring CYGWIN,$(shell uname -s)), CYGWIN)
+  PICRIN_LIB =cygpicrin.dll
 endif
-
-PICRIN_LIB=$(SO_PREFIX)picrin$(SO_EXT)
 
 all: build-debug run
 
@@ -33,7 +28,7 @@ build-lib:
 
 clean:
 	rm -f src/y.tab.c src/y.tab.h src/lex.yy.c
-	rm -f lib/$(PICRIN_LIB)
+	rm -f lib/$(PICRIN_LIB) bin/$(PICRIN_LIB)
 	rm -f bin/picrin
 
 run:
