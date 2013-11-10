@@ -225,3 +225,39 @@
 	     (eq? '*values-tag* (car res)))
         (apply consumer (cdr res))
         (consumer res))))
+
+(define original-cwcc call-with-current-continuation)
+
+(define *here* (list #f))
+
+(define (reroot! there)
+  (if (not (eq? *here* there))
+      (begin
+	(reroot! (cdr there))
+	(let ((before (caar there))
+	      (after (cdar there)))
+	  (set-car! *here* (cons after before))
+	  (set-cdr! *here* there)
+	  (set-car! there #f)
+	  (set-cdr! there '())
+	  (set! *here* there)
+	  (before)))))
+
+(define (call-with-current-continuation proc)
+  (let ((here *here*))
+    (original-cwcc
+     (lambda (cont)
+       (proc (lambda results
+	       (reroot! here)
+	       (apply cont results)))))))
+
+(define call/cc call-with-current-continuation)
+
+(define (dynamic-wind before during after)
+  (let ((here *here*))
+    (reroot! (cons (cons before after) here))
+    (call-with-values during
+      (lambda results
+	(reroot! here)
+	(apply values results)))))
+
