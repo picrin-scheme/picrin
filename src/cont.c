@@ -37,12 +37,12 @@ save_cont(pic_state *pic)
 
   cont->stbase = (pic_value *)pic_alloc(pic, sizeof(pic_value) * (pic->stend - pic->stbase));
   cont->stend = cont->stbase + (pic->stend - pic->stbase);
-  cont->sp = cont->stbase + (pic->sp - pic->stbase);
+  cont->sp = pic->sp;
   memcpy(cont->stbase, pic->stbase, sizeof(pic_value) * (pic->stend - pic->stbase));
 
   cont->cibase = (pic_callinfo *)pic_alloc(pic, sizeof(pic_callinfo) * (pic->ciend - pic->cibase));
   cont->ciend = cont->cibase + (pic->ciend - pic->cibase);
-  cont->ci = cont->cibase + (pic->ci - pic->cibase);
+  cont->ci = pic->ci;
   memcpy(cont->cibase, pic->cibase, sizeof(pic_callinfo) * (pic->ciend - pic->cibase));
 
   cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
@@ -77,11 +77,11 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   }
 
   pic->sp = cont->sp;
-  pic->stbase = cont->stbase;
-  pic->stend = cont->stend;
+  memcpy(pic->stbase, cont->stbase, sizeof(pic_value) * (cont->stend - cont->stbase));
+
   pic->ci = cont->ci;
-  pic->cibase = cont->cibase;
-  pic->ciend = cont->ciend;
+  memcpy(pic->cibase, cont->cibase, sizeof(pic_callinfo) * (cont->ciend - cont->cibase));
+
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
   pic->arena_idx = cont->arena_idx;
 
