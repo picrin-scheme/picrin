@@ -301,6 +301,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     goto L_RAISE;
   }
 
+  if (! pic_list_p(pic, argv)) {
+    pic_error(pic, "argv must be a proper list");
+  }
+
   argc = pic_length(pic, argv) + 1;
 
 #if VM_DEBUG
