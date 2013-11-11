@@ -43,7 +43,7 @@ void yylex_destroy();
   pic_value datum;
 }
 
-%token tLPAREN tRPAREN tDOT tVPAREN
+%token tLPAREN tRPAREN tLBRACKET tRBRACKET tDOT tVPAREN
 %token tQUOTE tQUASIQUOTE tUNQUOTE tUNQUOTE_SPLICING
 %token <i> tINT tBOOLEAN
 %token <f> tFLOAT
@@ -135,6 +135,10 @@ list
 	{
 	  $$ = $2;
 	}
+	| tLBRACKET list_data tRBRACKET
+	{
+	  $$ = $2;
+	}
 ;
 
 list_data
@@ -191,6 +195,7 @@ abbrev
 
 incomplete_datum
 	: tLPAREN incomplete_data
+	| tLBRACKET incomplete_data
 	| tVPAREN incomplete_data
 	| incomplete_abbrev
 ;
