@@ -18,9 +18,17 @@ typedef struct {
   struct pic_env *env;
 } pic_callinfo;
 
+struct pic_block {
+  struct pic_block *prev;
+  int depth;
+  struct pic_proc *in, *out;
+};
+
 typedef struct {
   int argc;
   char **argv, **envp;
+
+  struct pic_block *blk;
 
   pic_value *sp;
   pic_value *stbase, *stend;

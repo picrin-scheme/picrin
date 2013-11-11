@@ -5,6 +5,8 @@ struct pic_cont {
   PIC_OBJECT_HEADER
   jmp_buf jmp;
 
+  struct pic_block *blk;
+
   size_t stk_len;
   pic_value *stk_pos, *stk_ptr;
 

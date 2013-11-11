@@ -30,6 +30,8 @@ save_cont(pic_state *pic)
 
   cont = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
+  cont->blk = pic->blk;
+
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
   cont->stk_ptr = pic_alloc(pic, sizeof(pic_value) * cont->stk_len);
@@ -76,6 +78,8 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
+  pic->blk = cont->blk;
+
   pic->sp = cont->sp;
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
 
@@ -90,6 +94,22 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   longjmp(tmp->jmp, 1);
 }
 
+static void
+walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
+{
+  if (here == there)
+    return;
+
+  if (here->depth < there->depth) {
+    walk_to_block(pic, here, there->prev);
+    pic_apply_argv(pic, there->in, 0);
+  }
+  else {
+    pic_apply_argv(pic, there->out, 0);
+    walk_to_block(pic, here->prev, there);
+  }
+}
+
 static pic_value
 cont_call(pic_state *pic)
 {
@@ -102,6 +122,9 @@ cont_call(pic_state *pic)
 
   cont = (struct pic_cont *)pic_ptr(proc->env->values[0]);
   cont->result = v;
+
+  /* execute winded handlers */
+  walk_to_block(pic, pic->blk, cont->blk);
 
   restore_cont(pic, cont);
 
@@ -142,9 +165,53 @@ pic_cont_callcc(pic_state *pic)
   }
 }
 
+static pic_value
+pic_cont_dynamic_wind(pic_state *pic)
+{
+  pic_value a,b,c,v;
+  struct pic_proc *in, *thunk, *out;
+
+  pic_get_args(pic, "ooo", &a, &b, &c);
+
+  if (! pic_proc_p(a)) {
+    pic_error(pic, "procedure expected");
+  }
+  in = pic_proc_ptr(a);
+  if (! pic_proc_p(b)) {
+    pic_error(pic, "procedure expected");
+  }
+  thunk = pic_proc_ptr(b);
+  if (! pic_proc_p(c)) {
+    pic_error(pic, "procedure expected");
+  }
+  out = pic_proc_ptr(c);
+
+  /* enter */
+  pic_apply_argv(pic, in, 0);
+  {
+    struct pic_block *here;
+
+    here = pic->blk;
+    pic->blk = (struct pic_block *)pic_alloc(pic, sizeof(struct pic_block));
+    pic->blk->prev = here;
+    pic->blk->depth = here->depth + 1;
+    pic->blk->in = in;
+    pic->blk->out = out;
+
+    v = pic_apply_argv(pic, thunk, 0);
+
+    pic->blk = here;
+  }
+  /* exit */
+  pic_apply_argv(pic, out, 0);
+
+  return v;
+}
+
 void
 pic_init_cont(pic_state *pic)
 {
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
+  pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
 }

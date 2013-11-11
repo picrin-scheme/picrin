@@ -22,6 +22,12 @@ pic_open(int argc, char *argv[], char **envp)
   pic->argv = argv;
   pic->envp = envp;
 
+  /* root block */
+  pic->blk = (struct pic_block *)malloc(sizeof(struct pic_block));
+  pic->blk->prev = NULL;
+  pic->blk->depth = 0;
+  pic->blk->in = pic->blk->out = NULL;
+
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * PIC_STACK_SIZE);
   pic->stend = pic->stbase + PIC_STACK_SIZE;
