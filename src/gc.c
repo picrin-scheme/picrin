@@ -199,12 +199,12 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     int i;
 
     /* stack */
-    for (stack = cont->stbase; stack != cont->sp; ++stack) {
+    for (stack = cont->st_ptr; stack != cont->sp; ++stack) {
       gc_mark(pic, *stack);
     }
 
     /* callinfo */
-    for (ci = cont->ci; ci != cont->cibase; --ci) {
+    for (ci = cont->ci; ci != cont->ci_ptr; --ci) {
       if (ci->env) {
 	gc_mark_object(pic, (struct pic_object *)ci->env);
       }
@@ -334,8 +334,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_CONT: {
     struct pic_cont *cont = (struct pic_cont *)obj;
     pic_free(pic, cont->stk_ptr);
-    pic_free(pic, cont->stbase);
-    pic_free(pic, cont->cibase);
+    pic_free(pic, cont->st_ptr);
+    pic_free(pic, cont->ci_ptr);
     pic_free(pic, cont->arena);
     break;
   }
