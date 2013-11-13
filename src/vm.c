@@ -618,7 +618,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       else if (pic_float_p(a) && pic_float_p(b)) {		\
 	PUSH(pic_bool_value(pic_float(a) op pic_float(b)));	\
       }								\
-      else if (pic_int_p(a) && pic_int_p(b)) {			\
+      else if (pic_int_p(a) && pic_float_p(b)) {		\
 	PUSH(pic_bool_value(pic_int(a) op pic_float(b)));	\
       }								\
       else if (pic_float_p(a) && pic_int_p(b)) {		\
