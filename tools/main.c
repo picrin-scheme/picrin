@@ -103,11 +103,11 @@ repl(pic_state *pic)
 
     /* read */
     n = pic_parse_cstr(pic, code, &vs);
-    if (n == 0) {		/* wait for more input */
+    if (n == PIC_PARSER_INCOMPLETE) {		/* wait for more input */
       goto next;
     }
     code[0] = '\0';
-    if (n == -1) {		/* parse error */
+    if (n == PIC_PARSER_ERROR) {		/* parse error */
       goto next;
     }
 

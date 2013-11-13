@@ -67,6 +67,10 @@ program
 	  p->incomp = true;
 	  p->value = pic_undef_value();
 	}
+| /* empty line */
+	{
+	  p->value = pic_nil_value();
+	}
 ;
 
 program_data
@@ -249,17 +253,17 @@ pic_parse_file(pic_state *pic, FILE *file, pic_value *v)
 
   if (p.yynerrs > 0) {
     p.value = pic_undef_value();
-    return -1;
+    return PIC_PARSER_ERROR;
   }
   if (p.incomp) {
-    return 0;
+    return PIC_PARSER_INCOMPLETE;
   }
 
   *v = p.value;
   return pic_length(pic, p.value);
 }
 
-int
+enum pic_parser_res
 pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
 {
   struct parser_control p;
@@ -274,10 +278,10 @@ pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
   yylex_destroy(p.yyscanner);
 
   if (p.yynerrs > 0) {
-    return -1;
+    return PIC_PARSER_ERROR;
   }
   if (p.incomp) {
-    return 0;
+    return PIC_PARSER_INCOMPLETE;
   }
 
   *v = p.value;

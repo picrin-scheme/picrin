@@ -71,6 +71,12 @@ typedef struct {
 
 typedef pic_value (*pic_func_t)(pic_state *);
 
+enum pic_parser_res {
+  PIC_PARSER_INCOMPLETE = -1,
+  PIC_PARSER_ERROR = -2
+  /* if parser is successfully done, return the number of exprs (>= 0) */
+};
+
 void *pic_alloc(pic_state *, size_t);
 void *pic_realloc(pic_state *, void *, size_t);
 void *pic_calloc(pic_state *, unsigned, size_t);

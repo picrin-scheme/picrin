@@ -33,7 +33,7 @@ pic_load_stdlib(pic_state *pic)
   }
 
   n = pic_parse_file(pic, file, &vs);
-  if (n <= 0) {
+  if (n < 0) {
     fputs("fatal error: built-in.scm broken", stderr);
     abort();
   }
