@@ -225,3 +225,10 @@
 	     (eq? '*values-tag* (car res)))
         (apply consumer (cdr res))
         (consumer res))))
+
+(define-macro (letrec bindings . body)
+  (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
+	(initials (map (lambda (v) `(set! ,@v)) bindings)))
+    `(let (,@vars)
+       (begin ,@initials)
+       ,@body)))
