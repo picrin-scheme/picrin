@@ -166,6 +166,22 @@ scope_global_define(pic_state *pic, const char *name)
   return e->val;
 }
 
+static int
+scope_local_define(pic_state *pic, const char *name, codegen_scope *scope)
+{
+  struct xh_entry *e;
+
+  e = xh_put(scope->local_tbl, name, scope->argc + scope->localc++);
+  scope->dirty_flags = (int *)pic_realloc(pic, scope->dirty_flags, (e->val) * sizeof(int));
+  return e->val;
+}
+
+static bool
+scope_is_global(codegen_scope *scope)
+{
+  return scope->up == NULL;
+}
+
 static void codegen_call(codegen_state *, pic_value, bool);
 static struct pic_irep *codegen_lambda(codegen_state *, pic_value);
 
@@ -220,6 +236,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
       if (sym == pic->sDEFINE) {
 	int idx;
 	pic_value var, val;
+	codegen_scope *s;
 
 	if (pic_length(pic, obj) < 2) {
 	  pic_error(pic, "syntax error");
@@ -242,15 +259,27 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	idx = scope_global_define(pic, pic_symbol_name(pic, pic_sym(var)));
-
-	codegen(state, val, false);
-	irep->code[irep->clen].insn = OP_GSET;
-	irep->code[irep->clen].u.i = idx;
-	irep->clen++;
-	irep->code[irep->clen].insn = OP_PUSHFALSE;
-	irep->clen++;
-	break;
+	s = state->scope;
+	if (scope_is_global(s)) {
+	  idx = scope_global_define(pic, pic_symbol_name(pic, pic_sym(var)));
+	  codegen(state, val, false);
+	  irep->code[irep->clen].insn = OP_GSET;
+	  irep->code[irep->clen].u.i = idx;
+	  irep->clen++;
+	  irep->code[irep->clen].insn = OP_PUSHFALSE;
+	  irep->clen++;
+	  break;
+	}
+	else {
+	  idx = scope_local_define(pic, pic_symbol_name(pic, pic_sym(var)), s);
+	  codegen(state, val, false);
+	  irep->code[irep->clen].insn = OP_LSET;
+	  irep->code[irep->clen].u.i = idx;
+	  irep->clen++;
+	  irep->code[irep->clen].insn = OP_PUSHFALSE;
+	  irep->clen++;
+	  break;
+	}
       }
       else if (sym == pic->sLAMBDA) {
 	int k = pic->ilen++;
@@ -738,7 +767,6 @@ codegen_lambda(codegen_state *state, pic_value obj)
   state->scope = new_local_scope(pic, args, state->scope);
   state->irep = irep = new_irep(pic);
   irep->argc = state->scope->argc;
-  irep->localc = state->scope->localc;
   irep->varg = state->scope->varg;
   {
     /* body */
@@ -755,6 +783,8 @@ codegen_lambda(codegen_state *state, pic_value obj)
     }
     irep->code[irep->clen].insn = OP_RET;
     irep->clen++;
+
+    irep->localc = state->scope->localc;
 
     /* fixup local references */
     for (i = 0; i < irep->clen; ++i) {

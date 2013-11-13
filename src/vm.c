@@ -484,6 +484,15 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	  }
 	}
 
+	/* prepare local variable area */
+	if (proc->u.irep->localc > 0) {
+	  int l = proc->u.irep->localc;
+	  if (proc->u.irep->varg) {
+	    --l;
+	  }
+	  pic->sp += l;
+	}
+
 	pc = proc->u.irep->code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
