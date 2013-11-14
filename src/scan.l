@@ -30,6 +30,9 @@ uinteger	{digit}+
 sign		[+-]?
 infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
+  /* char */
+%x CHAR
+
   /* string */
 %x STRING
 
@@ -84,10 +87,19 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 			}
 }
 
-#\\.		{
-  yylvalp->c = yytext[2];
-  return tCHAR;
+#\\		{
+  BEGIN(CHAR);
 }
+<CHAR>alarm	{ yylvalp->c = '\a'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>backspace	{ yylvalp->c = '\b'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>delete	{ yylvalp->c = 0x7f; BEGIN(INITIAL); return tCHAR; }
+<CHAR>escape	{ yylvalp->c = '\e'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>newline	{ yylvalp->c = '\n'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>null	{ yylvalp->c = '\0'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>return	{ yylvalp->c = '\r'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>space	{ yylvalp->c = ' '; BEGIN(INITIAL); return tCHAR; }
+<CHAR>tab	{ yylvalp->c = '\t'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>.		{ yylvalp->c = yytext[0]; BEGIN(INITIAL); return tCHAR; }
 
 "#u8("		{
   BEGIN(BYTEVECTOR);

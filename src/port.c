@@ -33,7 +33,17 @@ write(pic_state *pic, pic_value obj)
     printf("%s", pic_symbol_name(pic, pic_sym(obj)));
     break;
   case PIC_TT_CHAR:
-    printf("#\\%c", pic_char(obj));
+    switch (pic_char(obj)) {
+    default: printf("#\\%c", pic_char(obj)); break;
+    case '\a': printf("#\\alarm"); break;
+    case '\b': printf("#\\backspace"); break;
+    case 0x7f: printf("#\\delete"); break;
+    case 0x1b: printf("#\\escape"); break;
+    case '\n': printf("#\\newline"); break;
+    case '\r': printf("#\\return"); break;
+    case ' ': printf("#\\space"); break;
+    case '\t': printf("#\\tab"); break;
+    }
     break;
   case PIC_TT_FLOAT:
     printf("%f", pic_float(obj));
