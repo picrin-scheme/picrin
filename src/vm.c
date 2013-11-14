@@ -216,6 +216,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	}
       }
       break;
+    case 'c':
+      {
+	char *c;
+	pic_value v;
+
+	c = va_arg(ap, char *);
+	if (i < argc) {
+	  v = GET_OPERAND(pic,i);
+	  if (pic_char_p(v)) {
+	    *c = pic_char(v);
+	  }
+	  else {
+	    pic_error(pic, "pic_get_args: expected char");
+	  }
+	  i++;
+	}
+      }
+      break;
     default:
       {
 	pic_error(pic, "pic_get_args: invalid argument specifier given");
