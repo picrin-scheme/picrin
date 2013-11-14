@@ -16,7 +16,7 @@
 - advanced REPL support (multi-line input, etc)
 - tiny & portable library (all functions will be in `libpicrin.so`)
 
-## Supported Range
+## Compliance with R7RS
 
 | section                     | status     | comments |
 | --- | --- | --- |
