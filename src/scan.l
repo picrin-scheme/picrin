@@ -41,6 +41,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 [ \t\n\r]	/* skip whitespace */
 {comment}	/* skip comment */
 
+"#;"		return tDATUM_COMMENT;
 "."		return tDOT;
 "("		return tLPAREN;
 ")"		return tRPAREN;

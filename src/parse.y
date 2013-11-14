@@ -43,6 +43,7 @@ void yylex_destroy();
   pic_value datum;
 }
 
+%token tDATUM_COMMENT
 %token tLPAREN tRPAREN tLBRACKET tRBRACKET tDOT tVPAREN
 %token tQUOTE tQUASIQUOTE tUNQUOTE tUNQUOTE_SPLICING
 %token <i> tINT tBOOLEAN
@@ -67,7 +68,7 @@ program
 	  p->incomp = true;
 	  p->value = pic_undef_value();
 	}
-| /* empty line */
+	| /* empty line */
 	{
 	  p->value = pic_nil_value();
 	}
@@ -82,6 +83,10 @@ program_data
 	{
 	  $$ = pic_cons(p->pic, $1, $2);
 	}
+	| tDATUM_COMMENT datum
+	{
+	  $$ = pic_nil_value();
+	}
 ;
 
 incomplete_program_data
@@ -92,6 +97,10 @@ incomplete_program_data
 datum
 	: simple_datum
 	| compound_datum
+	| tDATUM_COMMENT datum datum
+	{
+	  $$ = $3;
+	}
 ;
 
 simple_datum
@@ -150,6 +159,10 @@ list_data
 	{
 	  $$ = pic_nil_value();
 	}
+	| tDATUM_COMMENT datum
+	{
+	  $$ = pic_nil_value();
+	}
 	| datum tDOT datum
 	{
 	  $$ = pic_cons(p->pic, $1, $3);
@@ -169,6 +182,10 @@ vector
 
 vector_data
 	: /* none */
+	{
+	  $$ = pic_nil_value();
+	}
+	| tDATUM_COMMENT datum
 	{
 	  $$ = pic_nil_value();
 	}
@@ -202,6 +219,7 @@ incomplete_datum
 	| tLBRACKET incomplete_data
 	| tVPAREN incomplete_data
 	| incomplete_abbrev
+	| tDATUM_COMMENT
 ;
 
 incomplete_tail
