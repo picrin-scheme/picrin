@@ -264,13 +264,13 @@
 		     (list (car x) (cadr x)))
 		   bindings)
      (if ,(car finish)
-	 (begin ,@(cdr finish))
 	 (begin ,@body
 		(loop ,@(map (lambda (x)
 			       (if (null? (cddr x))
 				   (car x)
 				   (car (cddr x))))
-			     bindings))))))
+			     bindings)))
+	 (begin ,@(cdr finish)))))
 
 ;;; 6.2. Numbers
 
