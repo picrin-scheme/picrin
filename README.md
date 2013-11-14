@@ -63,7 +63,7 @@
 | 6.2.3 Implementation restrictions | yes | |
 | 6.2.4 Implementation extensions | yes | |
 | 6.2.5 Syntax of numerical constants | yes | |
-| 6.2.6 Numerical operations | yes | some functions that return multiple values are not supported for now. Also, picrin does not provide complex library procedures. |
+| 6.2.6 Numerical operations | yes | `denominator`, `numerator`, and `rationalize` are not supported for now. Also, picrin does not provide complex library procedures. |
 | 6.2.7 Numerical input and output | no | |
 | 6.3 Booleans | yes | |
 | 6.4 Pairs and lists | yes | |

@@ -272,6 +272,20 @@
 				   (car (cddr x))))
 			     bindings))))))
 
+;;; 6.2. Numbers
+
+(define (floor/ n m)
+  (values (floor-quotient n m)
+	  (floor-remainder n m)))
+
+(define (truncate/ n m)
+  (values (truncate-quotient n m)
+	  (truncate-remainder n m)))
+
+(define (exact-integer-sqrt k)
+  (let ((n (exact (sqrt k))))
+    (values n (- k (square n)))))
+
 (define (boolean=? . objs)
   (define (every pred list)
     (if (null? list)
