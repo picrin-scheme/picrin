@@ -259,6 +259,19 @@
         (apply consumer (cdr res))
         (consumer res))))
 
+(define-macro (do bindings finish . body)
+  `(let loop ,(map (lambda (x)
+		     (list (car x) (cadr x)))
+		   bindings)
+     (if ,(car finish)
+	 (begin ,@(cdr finish))
+	 (begin ,@body
+		(loop ,@(map (lambda (x)
+			       (if (null? (cddr x))
+				   (car x)
+				   (car (cddr x))))
+			     bindings))))))
+
 (define (boolean=? . objs)
   (define (every pred list)
     (if (null? list)
