@@ -286,6 +286,8 @@
   (let ((n (exact (sqrt k))))
     (values n (- k (square n)))))
 
+;;; 6.3 Booleans
+
 (define (boolean=? . objs)
   (define (every pred list)
     (if (null? list)
@@ -296,6 +298,7 @@
   (or (every (lambda (x) (eq? x #t)) objs)
       (every (lambda (x) (eq? x #f)) objs)))
 
+;;; 6.5. Symbols
 
 (define (symbol=? . objs)
   (define (every pred list)
@@ -311,3 +314,14 @@
 		      (eq? x sym)))
 	       (cdr objs))
 	#f)))
+
+;;; 6.8. Vector
+
+(define (vector . objs)
+  (let ((len (length objs)))
+    (let ((v (make-vector len)))
+      (do ((i 0 (+ i 1))
+	   (l objs (cdr l)))
+	  ((< i len)
+	   v)
+	(vector-set! v i (car l))))))
