@@ -273,8 +273,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	else {
 	  idx = scope_local_define(pic, pic_symbol_name(pic, pic_sym(var)), s);
 	  codegen(state, val, false);
-	  irep->code[irep->clen].insn = OP_LSET;
-	  irep->code[irep->clen].u.i = idx;
+	  irep->code[irep->clen].insn = OP_CSET;
+	  irep->code[irep->clen].u.r.depth = 0;
+	  irep->code[irep->clen].u.r.idx = idx;
 	  irep->clen++;
 	  irep->code[irep->clen].insn = OP_PUSHFALSE;
 	  irep->clen++;
