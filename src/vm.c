@@ -278,7 +278,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
   struct pic_code *pc, c;
   int ai = pic_gc_arena_preserve(pic);
-  jmp_buf jmp;
+  jmp_buf jmp, *prev_jmp = pic->jmp;
   size_t argc, i;
   struct pic_code boot[2];
 
@@ -653,7 +653,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     L_STOP:
       val = POP();
 
-      pic->jmp = NULL;
+      pic->jmp = prev_jmp;
       if (pic->errmsg) {
 	return pic_undef_value();
       }

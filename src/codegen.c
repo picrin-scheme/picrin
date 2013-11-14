@@ -851,21 +851,19 @@ pic_codegen(pic_state *pic, pic_value obj)
 {
   struct pic_proc *proc;
   codegen_state *state;
+  jmp_buf jmp, *prev_jmp = pic->jmp;
 
   state = new_codegen_state(pic);
 
-  if (! pic->jmp) {
-    jmp_buf jmp;
-
-    if (setjmp(jmp) == 0) {
-      pic->jmp = &jmp;
-    }
-    else {
-      /* error occured */
-      pic->jmp = NULL;
-      return NULL;
-    }
+  if (setjmp(jmp) == 0) {
+    pic->jmp = &jmp;
   }
+  else {
+    /* error occured */
+    proc = NULL;
+    goto exit;
+  }
+
   state->irep = new_irep(pic);
   state->irep->argc = 1;
   state->irep->localc = 0;
@@ -882,6 +880,9 @@ pic_codegen(pic_state *pic, pic_value obj)
 #if VM_DEBUG
   print_irep(pic, proc->u.irep);
 #endif
+
+ exit:
+  pic->jmp = prev_jmp;
 
   return proc;
 }
