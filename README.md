@@ -45,14 +45,14 @@
 | 4.2.8 Quasiquotation | incomplete | nested is unsupported |
 | 4.2.9  Case-lambda | N/A | |
 | 4.3.1 Bindings constructs for syntactic keywords | no | Instead, picrin provides so-called legacy macro facility (`define-macro`). |
-| 4.3.2 Pattern language | no | see above. |
-| 4.3.3 Signaling errors in macro transformers | no | see above. |
+| 4.3.2 Pattern language | -- | see above. |
+| 4.3.3 Signaling errors in macro transformers | -- | see above. |
 | 5.1 Programs | yes | |
 | 5.2 Import declarations | no | |
 | 5.3.1 Top level definitions | yes | |
-| 5.3.2 Internal definitions | no | |
+| 5.3.2 Internal definitions | yes | TODO: interreferential definitions |
 | 5.3.3 Multiple-value definitions | no | |
-| 5.4 Syntax definitions | no | see notes on section 4.3.1. |
+| 5.4 Syntax definitions | -- | see notes on section 4.3.1. |
 | 5.5 Recored-type definitions | no | |
 | 5.6.1 Library Syntax | no | |
 | 5.6.2 Library example | N/A | |
