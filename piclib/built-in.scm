@@ -254,3 +254,19 @@
 	    #f)))
   (or (every (lambda (x) (eq? x #t)) objs)
       (every (lambda (x) (eq? x #f)) objs)))
+
+
+(define (symbol=? . objs)
+  (define (every pred list)
+    (if (null? list)
+	#t
+	(if (pred (car list))
+	    (every pred (cdr list))
+	    #f)))
+  (let ((sym (car objs)))
+    (if (symbol? sym)
+	(every (lambda (x)
+		 (and (symbol? x)
+		      (eq? x sym)))
+	       (cdr objs))
+	#f)))

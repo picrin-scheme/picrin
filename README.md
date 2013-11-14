@@ -67,7 +67,7 @@
 | 6.2.7 Numerical input and output | no | |
 | 6.3 Booleans | yes | |
 | 6.4 Pairs and lists | yes | |
-| 6.5 Symbols | incomplete | TODO: `symbol=?`, `symbol->string`, `string->symbol` |
+| 6.5 Symbols | yes | |
 | 6.6 Characters | incomplete | TODO: almost all functions in the section :-( |
 | 6.7 Strings | incomplete | |
 | 6.8 Vectors | incomplete | TODO: `vector-copy`, ...etc |
