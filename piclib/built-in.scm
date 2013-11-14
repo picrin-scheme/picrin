@@ -325,3 +325,14 @@
 	  ((< i len)
 	   v)
 	(vector-set! v i (car l))))))
+
+;;; 6.9 bytevector
+
+(define (bytevector . objs)
+  (let ((len (length objs)))
+    (let ((v (make-bytevector len)))
+      (do ((i 0 (+ i 1))
+	   (l objs (cdr l)))
+	  ((< i len)
+	   v)
+	(bytevector-u8-set! v i (car l))))))
