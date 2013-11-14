@@ -137,6 +137,7 @@
       (cons (f (car list))
 	    (map f (cdr list)))))
 
+;;; bootstrap
 (define-macro (let bindings . body)
   (cons (cons 'lambda (cons (map car bindings) body))
 	(map cadr bindings)))
@@ -151,12 +152,6 @@
 	  (list 'if test if-true if-false)))))
 
 (define else #t)
-
-(define-macro (when test . exprs)
-  (list 'if test (cons 'begin exprs) #f))
-
-(define-macro (unless test . exprs)
-  (list 'if test #f (cons 'begin exprs)))
 
 (define-macro (and . exprs)
   (if (null? exprs)
@@ -186,6 +181,30 @@
 	       (list 'quasiquote (car x))
 	       (list 'quasiquote (cdr x))))))
    (#t x)))
+
+(define-macro (let* bindings . body)
+  (if (null? bindings)
+      `(let () ,@body)
+      `(let ((,(caar bindings)
+	      ,@(cdar bindings)))
+	 (let* (,@(cdr bindings))
+	   ,@body))))
+
+(define-macro (letrec bindings . body)
+  (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
+	(initials (map (lambda (v) `(set! ,@v)) bindings)))
+    `(let (,@vars)
+       (begin ,@initials)
+       ,@body)))
+
+(define-macro (letrec* . args)
+  `(letrec ,@args))
+
+(define-macro (when test . exprs)
+  (list 'if test (cons 'begin exprs) #f))
+
+(define-macro (unless test . exprs)
+  (list 'if test #f (cons 'begin exprs)))
 
 (define (equal? x y)
   (cond
@@ -225,10 +244,3 @@
 	     (eq? '*values-tag* (car res)))
         (apply consumer (cdr res))
         (consumer res))))
-
-(define-macro (letrec bindings . body)
-  (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
-	(initials (map (lambda (v) `(set! ,@v)) bindings)))
-    `(let (,@vars)
-       (begin ,@initials)
-       ,@body)))
