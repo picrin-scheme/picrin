@@ -244,3 +244,13 @@
 	     (eq? '*values-tag* (car res)))
         (apply consumer (cdr res))
         (consumer res))))
+
+(define (boolean=? . objs)
+  (define (every pred list)
+    (if (null? list)
+	#t
+	(if (pred (car list))
+	    (every pred (cdr list))
+	    #f)))
+  (or (every (lambda (x) (eq? x #t)) objs)
+      (every (lambda (x) (eq? x #f)) objs)))
