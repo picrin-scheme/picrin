@@ -57,7 +57,26 @@
 | 5.6.1 Library Syntax | no | |
 | 5.6.2 Library example | N/A | |
 | 5.7 The REPL | yes | |
-
+| 6.1 Equivalence predicates | yes | |
+| 6.2.1 Numerical types | yes | picrin has only two types of internal representation of numbers: fixnum and double float. It still comforms the R7RS spec. |
+| 6.2.2 Exactness | yes | |
+| 6.2.3 Implementation restrictions | yes | |
+| 6.2.4 Implementation extensions | yes | |
+| 6.2.5 Syntax of numerical constants | yes | |
+| 6.2.6 Numerical operations | yes | some functions that return multiple values are not supported for now. Also, picrin does not provide complex library procedures. |
+| 6.2.7 Numerical input and output | no | |
+| 6.3 Booleans | incomplete | TODO: `boolean=?` |
+| 6.4 Pairs and lists | yes | |
+| 6.5 Symbols | incomplete | TODO: `symbol=?`, `symbol->string`, `string->symbol` |
+| 6.6 Characters | incomplete | TODO: almost all functions in the section :-( |
+| 6.7 Strings | incomplete | |
+| 6.8 Vectors | incomplete | TODO: `vector-copy`, ...etc |
+| 6.9 Bytevectors | incomplete | TODO: string<->utf8 conversion, etc |
+| 6.10  Control features | incomplete | TODO: `string-map`, `vector-map`, ...etc |
+| 6.11 Exceptions | no | |
+| 6.12 Environments and evaluation | no | |
+| 6.13 Ports | incomplete | |
+| 6.14 System interface | incomplete | `exit` is unsafe when used with dynamic-wind |
 
 ## Homepage
 
