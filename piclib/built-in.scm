@@ -137,10 +137,24 @@
       (cons (f (car list))
 	    (map f (cdr list)))))
 
-;;; bootstrap
 (define-macro (let bindings . body)
-  (cons (cons 'lambda (cons (map car bindings) body))
-	(map cadr bindings)))
+  (if (symbol? bindings)
+      (begin
+	(define name bindings)
+	(set! bindings (car body))
+	(set! body (cdr body))
+	;; expanded form should be like below:
+	;; `(let ()
+	;;    (define ,loop
+	;;      (lambda (,@vars)
+	;;        ,@body))
+	;;    (,loop ,@vals))
+	(list 'let '()
+	      (list 'define name
+		    (cons 'lambda (cons (map car bindings) body)))
+	      (cons name (map cadr bindings))))
+      (cons (cons 'lambda (cons (map car bindings) body))
+	    (map cadr bindings))))
 
 (define-macro (cond . clauses)
   (if (null? clauses)
