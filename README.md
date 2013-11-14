@@ -29,11 +29,11 @@
 | 3.4 Storage model | yes | |
 | 3.5 Proper tail recursion | incomplete | apply, call/cc, call/values, eval are not yet |
 | 4.1.1 Variable references | yes | |
-| 4.1.2 Literal expressions | yes | `(quote <datum> )` |
+| 4.1.2 Literal expressions | yes | |
 | 4.1.3 Procedure calls | yes | In picrin `()` is self-evaluating |
-| 4.1.4 Procedures | yes | `(lambda <fomals> <body>)` |
-| 4.1.5 Conditionals | yes | `(if <test> <consequent> [ <alternate> ])`. In picrin `(if #f #f)` returns `#f` |
-| 4.1.6 Assignments | yes | `(set! <var> <expr>)` |
+| 4.1.4 Procedures | yes | |
+| 4.1.5 Conditionals | yes | In picrin `(if #f #f)` returns `#f` |
+| 4.1.6 Assignments | yes | |
 | 4.1.7 Inclusion | no | `include` and `include-ci` |
 | 4.2.1 Conditionals | incomplete | TODO: `cond-expand` |
 | 4.2.2 Binding constructs | incomplete | TODO: `let-values`, `let*-values` |
