@@ -77,6 +77,19 @@ pic_vec_vector_ref(pic_state *pic)
   return v->data[k];
 }
 
+static pic_value
+pic_vec_vector_set(pic_state *pic)
+{
+  struct pic_vector *v;
+  int k;
+  pic_value o;
+
+  pic_get_args(pic, "vio", &v, &k, &o);
+
+  v->data[k] = o;
+  return pic_false_value();
+}
+
 void
 pic_init_vector(pic_state *pic)
 {
@@ -84,4 +97,5 @@ pic_init_vector(pic_state *pic)
   pic_defun(pic, "make-vector", pic_vec_make_vector);
   pic_defun(pic, "vector-length", pic_vec_vector_length);
   pic_defun(pic, "vector-ref", pic_vec_vector_ref);
+  pic_defun(pic, "vector-set!", pic_vec_vector_set);
 }
