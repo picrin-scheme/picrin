@@ -35,6 +35,12 @@ https://github.com/wasabiz/picrin
 	Simply directly run the binary `bin/picrin` from terminal, or you can use `make` to execute it like this.
 
 		$ make run
+
+- debug-run
+
+	By default make command runs REPL with all debug flags enabled.
+
+		$ make
 	
 In the default option, when `make` command is called without arguments, it builds the binary and right after that dropped into the picrin interactive shell (REPL).
 
