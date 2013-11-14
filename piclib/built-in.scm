@@ -286,6 +286,18 @@
       ((pair? nums) acc)
     (set! acc (* acc (car nums)))))
 
+(define (min x . args)
+  (let loop ((pivot x) (rest args))
+    (if (null? rest)
+	pivot
+	(loop (if (< x (car rest)) x (car rest)) (cdr rest)))))
+
+(define (max x . args)
+  (let loop ((pivot x) (rest args))
+    (if (null? rest)
+	pivot
+	(loop (if (> x (car rest)) x (car rest)) (cdr rest)))))
+
 ;;; so ugly code, must rewrite everything as soon as possible...
 (define-macro (define-transitive-predicate op)
   `(define (,op . args)
