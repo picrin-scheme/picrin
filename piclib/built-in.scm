@@ -131,11 +131,27 @@
       (cons (car obj)
 	    (list-copy (cdr obj)))))
 
-(define (map f list)
+(define (every pred list)
   (if (null? list)
-      '()
-      (cons (f (car list))
-	    (map f (cdr list)))))
+      #t
+      (if (pred (car list))
+	  (every pred (cdr list))
+	  #f)))
+
+(define (map f list . lists)
+  (define (single-map f list)
+    (if (null? list)
+	'()
+	(cons (f (car list))
+	      (map f (cdr list)))))
+  (define (multiple-map f lists)
+    (if (every pair? lists)
+	(cons (apply f (single-map car lists))
+	      (multiple-map f (single-map cdr lists)))
+	'()))
+  (if (null? lists)
+      (single-map f list)
+      (multiple-map f (cons list lists))))
 
 (define-macro (let bindings . body)
   (if (symbol? bindings)
@@ -331,24 +347,12 @@
 ;;; 6.3 Booleans
 
 (define (boolean=? . objs)
-  (define (every pred list)
-    (if (null? list)
-	#t
-	(if (pred (car list))
-	    (every pred (cdr list))
-	    #f)))
   (or (every (lambda (x) (eq? x #t)) objs)
       (every (lambda (x) (eq? x #f)) objs)))
 
 ;;; 6.5. Symbols
 
 (define (symbol=? . objs)
-  (define (every pred list)
-    (if (null? list)
-	#t
-	(if (pred (car list))
-	    (every pred (cdr list))
-	    #f)))
   (let ((sym (car objs)))
     (if (symbol? sym)
 	(every (lambda (x)
