@@ -138,6 +138,18 @@
 	  (every pred (cdr list))
 	  #f)))
 
+(define (null? obj)
+  (null? obj))
+
+(define (any pred list)
+  (if (null? list)
+      #f
+      ((lambda (it)
+	 (if it
+	     it
+	     (any pred (cdr list))))
+       (pred (car list)))))
+
 (define (map f list . lists)
   (define (single-map f list)
     (if (null? list)
@@ -145,10 +157,10 @@
 	(cons (f (car list))
 	      (map f (cdr list)))))
   (define (multiple-map f lists)
-    (if (every pair? lists)
+    (if (any null? lists)
+	'()
 	(cons (apply f (single-map car lists))
-	      (multiple-map f (single-map cdr lists)))
-	'()))
+	      (multiple-map f (single-map cdr lists)))))
   (if (null? lists)
       (single-map f list)
       (multiple-map f (cons list lists))))
