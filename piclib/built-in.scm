@@ -274,6 +274,36 @@
 
 ;;; 6.2. Numbers
 
+(define (+ . args)
+  (do ((acc 0)
+       (nums args (cdr nums)))
+      ((pair? nums) acc)
+    (set! acc (+ acc (car nums)))))
+
+(define (* . args)
+  (do ((acc 1)
+       (nums args (cdr nums)))
+      ((pair? nums) acc)
+    (set! acc (* acc (car nums)))))
+
+;;; so ugly code, must rewrite everything as soon as possible...
+(define-macro (define-transitive-predicate op)
+  `(define (,op . args)
+     (call/cc
+      (lambda (exit)
+	(do ((val (car args))
+	     (nums (cdr args) (cdr nums)))
+	    ((pair? nums) #t)
+	  (if (,op val (car nums))
+	      (set! val (car nums))
+	      (exit #f)))))))
+
+(define-transitive-predicate =)
+(define-transitive-predicate <)
+(define-transitive-predicate >)
+(define-transitive-predicate <=)
+(define-transitive-predicate >=)
+
 (define (floor/ n m)
   (values (floor-quotient n m)
 	  (floor-remainder n m)))
@@ -314,6 +344,18 @@
 		      (eq? x sym)))
 	       (cdr objs))
 	#f)))
+
+;;; 6.6 Characters
+
+(define-macro (define-char-transitive-predicate name op)
+  `(define (,name . cs)
+     (apply ,op (map char->integer cs))))
+
+(define-char-transitive-predicate char=? =)
+(define-char-transitive-predicate char<? <)
+(define-char-transitive-predicate char>? >)
+(define-char-transitive-predicate char<=? <=)
+(define-char-transitive-predicate char>=? >=)
 
 ;;; 6.8. Vector
 

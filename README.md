@@ -68,8 +68,8 @@
 | 6.3 Booleans | yes | |
 | 6.4 Pairs and lists | yes | |
 | 6.5 Symbols | yes | |
-| 6.6 Characters | incomplete | TODO: almost all functions in the section :-( |
-| 6.7 Strings | incomplete | |
+| 6.6 Characters | yes | |
+| 6.7 Strings | incomplete | TODO: almost all functions in the section :-( |
 | 6.8 Vectors | incomplete | TODO: `vector-copy`, ...etc |
 | 6.9 Bytevectors | incomplete | TODO: string<->utf8 conversion, etc |
 | 6.10  Control features | incomplete | TODO: `string-map`, `vector-map`, ...etc |
