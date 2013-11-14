@@ -19,7 +19,7 @@
 ## Supported Range
 
 | section                     | status     | comments |
-| - | - | - |
+| --- | --- | --- |
 | 2.2 Whitespace and comments | incomplete | block comments are not implemented |
 | 2.3 Other notations         | incomplete | #e #i #b #o #d #x |
 | 2.4 Datum labels            | no         | unsupported |
