@@ -43,6 +43,10 @@ pic_proc_apply(pic_state *pic)
 
   pic_get_args(pic, "oo", &proc, &args);
 
+  if (! pic_proc_p(proc)) {
+    pic_error(pic, "apply: expected procedure");
+  }
+
   return pic_apply(pic, pic_proc_ptr(proc), args);
 }
 
