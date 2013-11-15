@@ -86,11 +86,19 @@ https://github.com/wasabiz/picrin
 
 ## How to use it
 
+- debug-run
+
+	By default make command runs REPL with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
+
+		$ make
+	
 - build
 
 		$ make build
 
 	built executable binary will be under bin/ directory and shared library `libpicrin.so` under lib/.
+	
+	If you want to build picrin on other systems than x86_64, make sure PIC_NAN_BOXING flag is turned off (see include/picconf.h for detail).
 
 - run
 
@@ -98,12 +106,6 @@ https://github.com/wasabiz/picrin
 
 		$ make run
 
-- debug-run
-
-	By default make command runs REPL with all debug flags enabled.
-
-		$ make
-	
 In the default option, when `make` command is called without arguments, it builds the binary and right after that dropped into the picrin interactive shell (REPL).
 
 - install
