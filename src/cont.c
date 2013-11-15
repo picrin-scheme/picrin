@@ -47,7 +47,6 @@ save_cont(pic_state *pic)
   cont->ci_ptr = (pic_callinfo *)pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
 
-  cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
   cont->arena_idx = pic->arena_idx;
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
 

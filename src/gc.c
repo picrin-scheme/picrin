@@ -336,7 +336,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->stk_ptr);
     pic_free(pic, cont->st_ptr);
     pic_free(pic, cont->ci_ptr);
-    pic_free(pic, cont->arena);
     break;
   }
   case PIC_TT_NIL:
