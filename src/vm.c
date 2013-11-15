@@ -40,11 +40,16 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     case '|':
       break;
+    case '*':
+      break;
     }
 
     /* in order to run out of all arguments passed to this function
        (i.e. do va_arg for each argument), optional argument existence
        check is done in every case closure */
+
+    if (c == '*')
+      break;
 
     switch (c) {
     case '|':
@@ -240,7 +245,19 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
     }
   }
-  if (argc > i) {
+  if ('*' == c) {
+    int *n;
+    pic_value **argv;
+
+    n = va_arg(ap, int *);
+    argv = va_arg(ap, pic_value **);
+    if (i <= argc) {
+      *n = argc - i;
+      *argv = &GET_OPERAND(pic, i);
+      i = argc;
+    }
+  }
+  else if (argc > i) {
     pic_error(pic, "wrong number of arguments");
   }
   va_end(ap);
