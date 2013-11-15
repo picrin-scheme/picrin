@@ -316,24 +316,6 @@
 	pivot
 	(loop (if (> x (car rest)) x (car rest)) (cdr rest)))))
 
-;;; so ugly code, must rewrite everything as soon as possible...
-(define-macro (define-transitive-predicate op)
-  `(define (,op . args)
-     (call/cc
-      (lambda (exit)
-	(do ((val (car args))
-	     (nums (cdr args) (cdr nums)))
-	    ((pair? nums) #t)
-	  (if (,op val (car nums))
-	      (set! val (car nums))
-	      (exit #f)))))))
-
-(define-transitive-predicate =)
-(define-transitive-predicate <)
-(define-transitive-predicate >)
-(define-transitive-predicate <=)
-(define-transitive-predicate >=)
-
 (define (floor/ n m)
   (values (floor-quotient n m)
 	  (floor-remainder n m)))

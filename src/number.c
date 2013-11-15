@@ -79,6 +79,40 @@ pic_number_nan_p(pic_state *pic)
     return pic_false_value();
 }
 
+#define DEFINE_MATH_PRED(op, name)			\
+  static pic_value					\
+  pic_number_##name(pic_state *pic)			\
+  {							\
+    int argc, i;					\
+    pic_value *argv;					\
+    double f,g;						\
+    							\
+    pic_get_args(pic, "ff*", &f, &g, &argc, &argv);	\
+    							\
+    if (! (f op g))					\
+      return pic_false_value();				\
+    							\
+    for (i = 0; i < argc; ++i) {			\
+      if (pic_float_p(argv[i]))				\
+	g = pic_float(argv[i]);				\
+      else if (pic_int_p(argv[i]))			\
+	g = pic_int(argv[i]);				\
+      else						\
+	pic_error(pic, #op ": number required");	\
+      							\
+      if (! (f op g))					\
+	return pic_false_value();			\
+    }							\
+    							\
+    return pic_true_value();				\
+  }
+
+DEFINE_MATH_PRED(=, eq)
+DEFINE_MATH_PRED(<, lt)
+DEFINE_MATH_PRED(>, gt)
+DEFINE_MATH_PRED(<=, le)
+DEFINE_MATH_PRED(>=, ge)
+
 static pic_value
 pic_number_abs(pic_state *pic)
 {
@@ -399,6 +433,11 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "nan?", pic_number_nan_p);
   pic_gc_arena_restore(pic, ai);
 
+  pic_defun(pic, "=", pic_number_eq);
+  pic_defun(pic, "<", pic_number_lt);
+  pic_defun(pic, ">", pic_number_gt);
+  pic_defun(pic, "<=", pic_number_le);
+  pic_defun(pic, ">=", pic_number_ge);
   pic_defun(pic, "abs", pic_number_abs);
 
   pic_defun(pic, "floor-quotient", pic_number_floor_quotient);
