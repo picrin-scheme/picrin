@@ -8,11 +8,11 @@
 
 - R7RS compatibility (but partial support)
 - reentrant design (all VM states are stored in single global state object)
-- bytecode interpreter (based on Stack VM technology)
+- bytecode interpreter (based on Stack VM)
 - direct threaded VM
 - Internal representation by Nan-Boxing
 - conservative call/cc implementation (users can freely interleave native stack with VM stack)
-- exact GC (simple mark and sweep strategy)
+- exact GC (simple mark and sweep, partially reference count is also used)
 - advanced REPL support (multi-line input, etc)
 - tiny & portable library (all functions will be in `libpicrin.so`)
 
@@ -44,7 +44,7 @@
 | 4.2.7 Exception handling | no | `guard` syntax. |
 | 4.2.8 Quasiquotation | incomplete | nested is unsupported |
 | 4.2.9  Case-lambda | N/A | |
-| 4.3.1 Bindings constructs for syntactic keywords | no | Instead, picrin provides so-called legacy macro facility (`define-macro`). |
+| 4.3.1 Bindings constructs for syntactic keywords | no | Instead, picrin provides so-called legacy macro (`define-macro`). |
 | 4.3.2 Pattern language | -- | see above. |
 | 4.3.3 Signaling errors in macro transformers | -- | see above. |
 | 5.1 Programs | yes | |
