@@ -852,6 +852,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   struct pic_proc *proc;
   codegen_state *state;
   jmp_buf jmp, *prev_jmp = pic->jmp;
+  int ai = pic_gc_arena_preserve(pic);
 
   state = new_codegen_state(pic);
 
@@ -883,6 +884,9 @@ pic_codegen(pic_state *pic, pic_value obj)
 
  exit:
   pic->jmp = prev_jmp;
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, pic_obj_value(proc));
 
   return proc;
 }

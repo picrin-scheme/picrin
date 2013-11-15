@@ -103,6 +103,8 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 	assert(pic_proc_p(v));
 	define_macro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
 
+	pic_gc_arena_restore(pic, ai);
+	pic_gc_protect(pic, v);
 	return pic_false_value();
       }
       macro = lookup_macro(pic, env, pic_symbol_name(pic, sym));
@@ -112,6 +114,8 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 	  printf("macroexpand error: %s\n", pic->errmsg);
 	  abort();
 	}
+	pic_gc_arena_restore(pic, ai);
+	pic_gc_protect(pic, v);
 	return expand(pic, v, env);
       }
     }
@@ -120,6 +124,9 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
     while (! pic_nil_p(obj)) {
       v = pic_cons(pic, expand(pic, pic_car(pic, obj), env), v);
       obj = pic_cdr(pic, obj);
+
+      pic_gc_arena_restore(pic, ai);
+      pic_gc_protect(pic, v);
     }
     v = pic_reverse(pic, v);
 
