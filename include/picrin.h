@@ -6,7 +6,7 @@
 #include <setjmp.h>
 #include <stdio.h>
 
-#include "picconf.h"
+#include "config.h"
 #include "picrin/value.h"
 
 struct pic_code;

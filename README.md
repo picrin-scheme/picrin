@@ -98,7 +98,7 @@ https://github.com/wasabiz/picrin
 
 	built executable binary will be under bin/ directory and shared library `libpicrin.so` under lib/.
 	
-	If you want to build picrin on other systems than x86_64, make sure PIC_NAN_BOXING flag is turned off (see include/picconf.h for detail).
+	If you want to build picrin on other systems than x86_64, make sure PIC_NAN_BOXING flag is turned off (see include/config.h for detail).
 
 - run
 
