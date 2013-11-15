@@ -1,10 +1,3 @@
-; Although looking like a magic, it just works.
-(define (car x)
-  (car x))
-
-(define (cdr x)
-  (cdr x))
-
 (define (zero? n)
   (= n 0))
 
@@ -137,9 +130,6 @@
       (if (pred (car list))
 	  (every pred (cdr list))
 	  #f)))
-
-(define (null? obj)
-  (null? obj))
 
 (define (any pred list)
   (if (null? list)
