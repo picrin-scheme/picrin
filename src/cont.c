@@ -31,6 +31,7 @@ save_cont(pic_state *pic)
   cont = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
   cont->blk = pic->blk;
+  PIC_BLK_INCREF(pic, cont->blk);
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
@@ -77,6 +78,8 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
+  PIC_BLK_DECREF(pic, pic->blk);
+  PIC_BLK_INCREF(pic, cont->blk);
   pic->blk = cont->blk;
 
   pic->sp = cont->sp;
@@ -122,7 +125,7 @@ cont_call(pic_state *pic)
   cont = (struct pic_cont *)pic_ptr(proc->env->values[0]);
   cont->result = v;
 
-  /* execute winded handlers */
+  /* execute guard handlers */
   walk_to_block(pic, pic->blk, cont->blk);
 
   restore_cont(pic, cont);
@@ -196,9 +199,12 @@ pic_cont_dynamic_wind(pic_state *pic)
     pic->blk->depth = here->depth + 1;
     pic->blk->in = in;
     pic->blk->out = out;
+    pic->blk->refcnt = 1;
+    PIC_BLK_INCREF(pic, here);
 
     v = pic_apply_argv(pic, thunk, 0);
 
+    PIC_BLK_DECREF(pic, pic->blk);
     pic->blk = here;
   }
   /* exit */

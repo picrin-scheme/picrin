@@ -22,4 +22,21 @@ struct pic_cont {
   pic_value result;
 };
 
+#define PIC_BLK_INCREF(pic,blk) do {		\
+    (blk)->refcnt++;				\
+  } while (0)
+
+#define PIC_BLK_DECREF(pic,blk) do {			\
+    struct pic_block *_a = (blk), *_b;			\
+    while (_a) {					\
+      if (! --_a->refcnt) {				\
+	_b = _a->prev;					\
+	pic_free((pic), _a);				\
+	_a = _b;					\
+      } else {						\
+	break;						\
+      }							\
+    }							\
+  } while (0)
+
 #endif

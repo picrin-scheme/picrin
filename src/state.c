@@ -27,6 +27,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->blk->prev = NULL;
   pic->blk->depth = 0;
   pic->blk->in = pic->blk->out = NULL;
+  pic->blk->refcnt = 1;
 
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * PIC_STACK_SIZE);

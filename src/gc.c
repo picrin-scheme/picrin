@@ -142,6 +142,19 @@ gc_alloc(pic_state *pic, size_t size)
 }
 
 static void gc_mark(pic_state *, pic_value);
+static void gc_mark_object(pic_state *pic, struct pic_object *obj);
+
+static void
+gc_mark_block(pic_state *pic, struct pic_block *blk)
+{
+  while (blk) {
+    if (blk->in)
+      gc_mark_object(pic, (struct pic_object *)blk->in);
+    if (blk->out)
+      gc_mark_object(pic, (struct pic_object *)blk->out);
+    blk = blk->prev;
+  }
+}
 
 static void
 gc_mark_object(pic_state *pic, struct pic_object *obj)
@@ -198,6 +211,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     pic_callinfo *ci;
     int i;
 
+    /* block */
+    gc_mark_block(pic, cont->blk);
+
     /* stack */
     for (stack = cont->st_ptr; stack != cont->sp; ++stack) {
       gc_mark(pic, *stack);
@@ -248,6 +264,9 @@ gc_mark_phase(pic_state *pic)
   pic_value *stack;
   pic_callinfo *ci;
   int i;
+
+  /* block */
+  gc_mark_block(pic, pic->blk);
 
   /* stack */
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
@@ -336,6 +355,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->stk_ptr);
     pic_free(pic, cont->st_ptr);
     pic_free(pic, cont->ci_ptr);
+    PIC_BLK_DECREF(pic, cont->blk);
     break;
   }
   case PIC_TT_NIL:
