@@ -12,7 +12,7 @@
 - direct threaded VM
 - Internal representation by Nan-Boxing
 - conservative call/cc implementation (users can freely interleave native stack with VM stack)
-- exact GC (simple mark and sweep, partially reference count is also used)
+- exact GC (simple mark and sweep, partially reference count is used as well)
 - advanced REPL support (multi-line input, etc)
 - tiny & portable library (all functions will be in `libpicrin.so`)
 
