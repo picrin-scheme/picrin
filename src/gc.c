@@ -157,7 +157,7 @@ gc_mark_block(pic_state *pic, struct pic_block *blk)
 }
 
 static bool
-is_marked(union header *p)
+gc_is_marked(union header *p)
 {
   return p->s.mark == PIC_GC_MARK;
 }
@@ -173,9 +173,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
   union header *p;
 
-  p = (union header *)obj - 1;
+  p = ((union header *)obj) - 1;
 
-  if (is_marked(p))
+  if (gc_is_marked(p))
     return;
   p->s.mark = PIC_GC_MARK;
 
@@ -404,7 +404,7 @@ gc_sweep_phase(pic_state *pic)
 
       if (p >= p->s.ptr && bp == pic->heap->endp)
 	break;
-      if (is_marked(bp)) {
+      if (gc_is_marked(bp)) {
 
 #if GC_DEBUG
 	printf("marked:\t\t\t");
