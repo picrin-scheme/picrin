@@ -156,12 +156,27 @@ gc_mark_block(pic_state *pic, struct pic_block *blk)
   }
 }
 
+static bool
+is_marked(union header *p)
+{
+  return p->s.mark == PIC_GC_MARK;
+}
+
+static void
+gc_unmark(union header *p)
+{
+  p->s.mark = PIC_GC_UNMARK;
+}
+
 static void
 gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
   union header *p;
 
   p = (union header *)obj - 1;
+
+  if (is_marked(p))
+    return;
   p->s.mark = PIC_GC_MARK;
 
   switch (obj->tt) {
@@ -299,18 +314,6 @@ gc_mark_phase(pic_state *pic)
   for (i = 0; i < pic->plen; ++i) {
     gc_mark(pic, pic->pool[i]);
   }
-}
-
-static bool
-is_marked(union header *p)
-{
-  return p->s.mark == PIC_GC_MARK;
-}
-
-static void
-gc_unmark(union header *p)
-{
-  p->s.mark = PIC_GC_UNMARK;
 }
 
 static void
