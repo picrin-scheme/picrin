@@ -6,13 +6,13 @@ ifeq ($(findstring CYGWIN,$(shell uname -s)), CYGWIN)
   PICRIN_LIB =cygpicrin.dll
 endif
 
-all: build-debug run
+all: debug-build run
 
 release: CFLAGS += -DDEBUG=0
 release: build
 
-build-debug: CFLAGS += -g -DDEBUG=1
-build-debug: build
+debug-build: CFLAGS += -g -DDEBUG=1
+debug-build: build
 
 build: build-lib build-main
 
