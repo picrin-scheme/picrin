@@ -466,7 +466,7 @@ pic_gc_run(pic_state *pic)
 }
 
 struct pic_object *
-pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
+pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
 {
   struct pic_object *obj;
 
@@ -482,6 +482,16 @@ pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
       pic_abort(pic, "GC memory exhausted");
   }
   obj->tt = tt;
+
+  return obj;
+}
+
+struct pic_object *
+pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
+{
+  struct pic_object *obj;
+
+  obj = pic_obj_alloc_unsafe(pic, size, tt);
 
   gc_protect(pic, obj);
   return obj;
