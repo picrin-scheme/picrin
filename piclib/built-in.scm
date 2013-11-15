@@ -155,6 +155,23 @@
       (single-map f list)
       (multiple-map f (cons list lists))))
 
+(define (for-each f list . lists)
+  (define (single-for-each f list)
+    (if (null? list)
+	#f
+	(begin
+	  (f (car list))
+	  (single-for-each f (cdr list)))))
+  (define (multiple-for-each f lists)
+    (if (any null? lists)
+	#f
+	(begin
+	  (apply f (map car lists))
+	  (multiple-for-each f (map cdr lists)))))
+  (if (null? lists)
+      (single-for-each f list)
+      (multiple-for-each f (cons list lists))))
+
 (define-macro (let bindings . body)
   (if (symbol? bindings)
       (begin
