@@ -5,10 +5,14 @@ struct pic_vector *
 pic_vec_new(pic_state *pic, size_t len)
 {
   struct pic_vector *vec;
+  int i;
 
   vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TT_VECTOR);
   vec->len = len;
   vec->data = (pic_value *)pic_alloc(pic, sizeof(pic_value) * len);
+  for (i = 0; i < len; ++i) {
+    vec->data[i] = pic_false_value();
+  }
   return vec;
 }
 
