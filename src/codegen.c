@@ -172,7 +172,7 @@ scope_local_define(pic_state *pic, const char *name, codegen_scope *scope)
   struct xh_entry *e;
 
   e = xh_put(scope->local_tbl, name, scope->argc + scope->localc++);
-  scope->dirty_flags = (int *)pic_realloc(pic, scope->dirty_flags, (e->val) * sizeof(int));
+  scope->dirty_flags = (int *)pic_realloc(pic, scope->dirty_flags, (e->val + 1) * sizeof(int));
   return e->val;
 }
 
@@ -839,6 +839,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   state->scope = prev_scope;
 
 #if VM_DEBUG
+  printf("* generated lambda:\n");
   print_irep(pic, irep);
   puts("");
 #endif
