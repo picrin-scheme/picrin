@@ -91,6 +91,9 @@ pic_vec_vector_ref(pic_state *pic)
 
   pic_get_args(pic, "vi", &v, &k);
 
+  if (k < 0 || v->len <= k) {
+    pic_error(pic, "vector-ref: index out of range");
+  }
   return v->data[k];
 }
 
@@ -103,6 +106,9 @@ pic_vec_vector_set(pic_state *pic)
 
   pic_get_args(pic, "vio", &v, &k, &o);
 
+  if (k < 0 || v->len <= k) {
+    pic_error(pic, "vector-set!: index out of range");
+  }
   v->data[k] = o;
   return pic_false_value();
 }
