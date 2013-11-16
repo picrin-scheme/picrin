@@ -385,6 +385,25 @@
 	   v)
 	(vector-set! v i (car l))))))
 
+(define (vector-copy! to at from . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (vector-length from))))
+    (do ((i at (+ i 1))
+	 (j start (+ j 1)))
+	((< j end))
+      (vector-set! to i (vector-ref from j)))))
+
+(define (vector-copy v . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (vector-length v))))
+    (let ((res (make-vector (vector-length v))))
+      (vector-copy! res 0 v start end)
+      res)))
+
 ;;; 6.9 bytevector
 
 (define (bytevector . objs)
