@@ -525,6 +525,16 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	  }
 	  PUSH(rest);
 	}
+	/* prepare local variable area */
+	if (proc->u.irep->localc > 0) {
+	  int l = proc->u.irep->localc;
+	  if (proc->u.irep->varg) {
+	    --l;
+	  }
+	  for (i = 0; i < l; ++i) {
+	    PUSH(pic_undef_value());
+	  }
+	}
 
 	/* prepare env */
 	if (proc->u.irep->cv_num == 0) {
@@ -538,15 +548,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	  for (i = 0; i < ci->env->valuec; ++i) {
 	    ci->env->values[i] = ci->fp[proc->u.irep->cv_tbl[i]];
 	  }
-	}
-
-	/* prepare local variable area */
-	if (proc->u.irep->localc > 0) {
-	  int l = proc->u.irep->localc;
-	  if (proc->u.irep->varg) {
-	    --l;
-	  }
-	  pic->sp += l;
 	}
 
 	pc = proc->u.irep->code;
