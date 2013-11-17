@@ -64,6 +64,23 @@ pic_load_stdlib(pic_state *pic)
 #endif
 }
 
+#define PUSH_SYM(pic, lst, name)		\
+  lst = pic_cons(pic, pic_symbol_value(pic_intern_cstr(pic, name)), lst)
+
+static pic_value
+pic_features(pic_state *pic)
+{
+  pic_value fs = pic_nil_value();
+
+  pic_get_args(pic, "");
+
+  PUSH_SYM(pic, fs, "r7rs");
+  PUSH_SYM(pic, fs, "ieee-float");
+  PUSH_SYM(pic, fs, "picrin");
+
+  return fs;
+}
+
 #define DONE pic_gc_arena_restore(pic, ai);
 
 void
@@ -89,4 +106,6 @@ pic_init_core(pic_state *pic)
   pic_init_str(pic); DONE;
 
   pic_load_stdlib(pic); DONE;
+
+  pic_defun(pic, "features", pic_features);
 }
