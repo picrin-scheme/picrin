@@ -2,7 +2,7 @@
 
 #include "picrin.h"
 
-pic_value
+struct pic_string *
 pic_str_new(pic_state *pic, const char *cstr, size_t len)
 {
   struct pic_string *str;
@@ -10,11 +10,10 @@ pic_str_new(pic_state *pic, const char *cstr, size_t len)
   str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TT_STRING);
   str->len = len;
   str->str = strdup(cstr);
-
-  return pic_obj_value(str);
+  return str;
 }
 
-pic_value
+struct pic_string *
 pic_str_new_cstr(pic_state *pic, const char *cstr)
 {
   size_t len;

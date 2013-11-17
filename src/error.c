@@ -154,7 +154,7 @@ pic_error_error_object_message(pic_state *pic)
 
   pic_get_args(pic, "e", &e);
 
-  return pic_str_new_cstr(pic, e->msg);
+  return pic_obj_value(pic_str_new_cstr(pic, e->msg));
 }
 
 static pic_value
