@@ -67,6 +67,19 @@ pic_list(pic_state *pic, size_t c, ...)
   return pic_reverse(pic, v);
 }
 
+pic_value
+pic_list_from_array(pic_state *pic, size_t c, pic_value *vs)
+{
+  pic_value v;
+  int i;
+
+  v = pic_nil_value();
+  for (i = 0; i < c; ++i) {
+    v = pic_cons(pic, vs[i], v);
+  }
+  return pic_reverse(pic, v);
+}
+
 int
 pic_length(pic_state *pic, pic_value obj)
 {

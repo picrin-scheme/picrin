@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "picrin.h"
+#include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/error.h"
 
@@ -25,7 +27,8 @@ pic_errorf(pic_state *pic, const char *msg, size_t n, ...)
 void
 pic_abort(pic_state *pic, const char *msg)
 {
-  puts(msg);
+  fprintf(stderr, "abort: %s\n", msg);
+  fflush(stderr);
   abort();
 }
 
@@ -115,6 +118,26 @@ pic_error_raise_continuable(pic_state *pic)
 }
 
 static pic_value
+pic_error_error(pic_state *pic)
+{
+  char *str;
+  int len, argc;
+  pic_value *argv;
+  struct pic_error *e;
+
+  pic_get_args(pic, "s*", &str, &len, &argc, &argv);
+
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e->type = PIC_ERROR_OTHER;
+  e->msg = strdup(str);
+  e->irrs = pic_list_from_array(pic, argc, argv);
+
+  pic_raise(pic, pic_obj_value(e));
+
+  /* never returns */
+  return pic_undef_value();
+}
+static pic_value
 pic_error_error_object_p(pic_state *pic)
 {
   pic_value v;
@@ -182,6 +205,7 @@ pic_init_error(pic_state *pic)
   pic_defun(pic, "with-exception-handler", pic_error_with_exception_handler);
   pic_defun(pic, "raise", pic_error_raise);
   pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
+  pic_defun(pic, "error", pic_error_error);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);
   pic_defun(pic, "error-object-irritants", pic_error_error_object_irritants);
