@@ -140,6 +140,11 @@
 	     (any pred (cdr list))))
        (pred (car list)))))
 
+(define (fold f s xs)
+  (if (null? xs)
+      s
+      (fold f (f (car xs) s) (cdr xs))))
+
 (define (map f list . lists)
   (define (single-map f list)
     (if (null? list)
@@ -403,6 +408,14 @@
     (let ((res (make-vector (vector-length v))))
       (vector-copy! res 0 v start end)
       res)))
+
+(define (vector-append . vs)
+  (define (vector-append-2-inv w v)
+    (let ((res (make-vector (+ (vector-length v) (vector-length w)))))
+      (vector-copy! res 0 v)
+      (vector-copy! res (vector-length v) w)
+      res))
+  (fold vector-append-2-inv #() vs))
 
 ;;; 6.9 bytevector
 
