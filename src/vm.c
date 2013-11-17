@@ -246,10 +246,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
     }
   }
   if ('*' == c) {
-    int *n;
+    size_t *n;
     pic_value **argv;
 
-    n = va_arg(ap, int *);
+    n = va_arg(ap, size_t *);
     argv = va_arg(ap, pic_value **);
     if (i <= argc) {
       *n = argc - i;

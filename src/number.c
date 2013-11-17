@@ -83,8 +83,9 @@ pic_number_nan_p(pic_state *pic)
   static pic_value					\
   pic_number_##name(pic_state *pic)			\
   {							\
-    int argc, i;					\
+    size_t argc;					\
     pic_value *argv;					\
+    int i;						\
     double f,g;						\
     							\
     pic_get_args(pic, "ff*", &f, &g, &argc, &argv);	\
