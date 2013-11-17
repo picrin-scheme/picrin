@@ -18,6 +18,7 @@ void pic_init_blob(pic_state *);
 void pic_init_cont(pic_state *);
 void pic_init_char(pic_state *);
 void pic_init_error(pic_state *);
+void pic_init_str(pic_state *);
 
 void
 pic_load_stdlib(pic_state *pic)
@@ -85,6 +86,7 @@ pic_init_core(pic_state *pic)
   pic_init_cont(pic); DONE;
   pic_init_char(pic); DONE;
   pic_init_error(pic); DONE;
+  pic_init_str(pic); DONE;
 
   pic_load_stdlib(pic); DONE;
 }

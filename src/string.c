@@ -22,3 +22,19 @@ pic_str_new_cstr(pic_state *pic, const char *cstr)
   len = strlen(cstr);
   return pic_str_new(pic, cstr, len);
 }
+
+static pic_value
+pic_str_string_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_str_p(v));
+}
+
+void
+pic_init_str(pic_state *pic)
+{
+  pic_defun(pic, "string?", pic_str_string_p);
+}
