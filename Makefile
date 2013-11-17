@@ -1,9 +1,10 @@
 CC=gcc
 CFLAGS=-Wall
-PICRIN_LIB=libpicrin.so
 
 ifeq ($(findstring CYGWIN,$(shell uname -s)), CYGWIN)
-  PICRIN_LIB =cygpicrin.dll
+  PICRIN_LIB=cygpicrin.dll
+else
+  PICRIN_LIB=libpicrin.so
 endif
 
 all: debug-build run
@@ -17,8 +18,7 @@ debug-build: build
 build: build-lib build-main
 
 build-main:
-	$(CC) $(CFLAGS) tools/main.c -o bin/picrin -I./include -L./lib -lpicrin -lreadline
-	cp lib/$(PICRIN_LIB) bin/
+	$(CC) $(CFLAGS) tools/main.c src/*.c -o bin/picrin -I./include -I./extlib -lreadline -lm
 
 build-lib:
 	cd src; \
@@ -28,11 +28,11 @@ build-lib:
 
 clean:
 	rm -f src/y.tab.c src/y.tab.h src/lex.yy.c
-	rm -f lib/$(PICRIN_LIB) bin/$(PICRIN_LIB)
+	rm -f lib/$(PICRIN_LIB)
 	rm -f bin/picrin
 
 run:
 	bin/picrin
 
-tak: build
+tak: release
 	bin/picrin etc/tak.scm
