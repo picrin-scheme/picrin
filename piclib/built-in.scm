@@ -390,6 +390,20 @@
 	   v)
 	(vector-set! v i (car l))))))
 
+(define (vector->list vector . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (vector-length vector))))
+    (do ((i start (+ i 1))
+	 (res '()))
+	((< i end)
+	 (reverse res))
+      (set! res (cons (vector-ref vector i) res)))))
+
+(define (list->vector list)
+  (apply vector list))
+
 (define (vector-copy! to at from . opts)
   (let ((start (if (pair? opts) (car opts) 0))
 	(end (if (>= (length opts) 2)
