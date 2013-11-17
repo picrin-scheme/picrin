@@ -38,6 +38,7 @@ parser_control_new(pic_state *pic)
   p->pic = pic;
   p->incomp = false;
   p->yynerrs = 0;
+  p->value = pic_undef_value();
   p->yy_arena = pic_vec_new(pic, YY_ARENA_SIZE);
   p->yy_arena_idx = 0;
   yylex_init(&p->yyscanner);
@@ -375,7 +376,6 @@ pic_parse_file(pic_state *pic, FILE *file, pic_value *v)
   yyparse(p);
 
   if (p->yynerrs > 0) {
-    p->value = pic_undef_value();
     r = PIC_PARSER_ERROR;
   }
   else if (p->incomp) {
@@ -384,6 +384,8 @@ pic_parse_file(pic_state *pic, FILE *file, pic_value *v)
   else {
     r = pic_length(pic, p->value);
   }
+
+  *v = p->value;
 
   parser_control_destroy(p);
 
@@ -395,8 +397,7 @@ pic_parse_file(pic_state *pic, FILE *file, pic_value *v)
 
   pic_gc_arena_restore(pic, ai);
 
-  *v = p->value;
-  pic_gc_protect(pic, p->value);
+  pic_gc_protect(pic, *v);
 
   return r;
 }
@@ -413,7 +414,6 @@ pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
   yyparse(p);
 
   if (p->yynerrs > 0) {
-    p->value = pic_undef_value();
     r = PIC_PARSER_ERROR;
   }
   else if (p->incomp) {
@@ -422,6 +422,8 @@ pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
   else {
     r = pic_length(pic, p->value);
   }
+
+  *v = p->value;
 
   parser_control_destroy(p);
 
@@ -434,8 +436,7 @@ pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
 
   pic_gc_arena_restore(pic, ai);
 
-  *v = p->value;
-  pic_gc_protect(pic, p->value);
+  pic_gc_protect(pic, *v);
 
   return r;
 }
