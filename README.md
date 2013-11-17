@@ -73,8 +73,8 @@
 | 6.8 Vectors | incomplete | string->vector, vector->string, ...etc |
 | 6.9 Bytevectors | incomplete | TODO: string<->utf8 conversion, etc |
 | 6.10  Control features | incomplete | TODO: `string-map`, `vector-map`, ...etc |
-| 6.11 Exceptions | no | |
-| 6.12 Environments and evaluation | no | |
+| 6.11 Exceptions | yes | TODO: native error handling |
+| 6.12 Environments and evaluation | N/A | |
 | 6.13 Ports | incomplete | |
 | 6.14 System interface | incomplete | `exit` is unsafe when used with dynamic-wind |
 
