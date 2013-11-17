@@ -230,12 +230,12 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark_block(pic, cont->blk);
 
     /* stack */
-    for (stack = cont->st_ptr; stack != cont->sp; ++stack) {
+    for (stack = cont->st_ptr; stack != cont->st_ptr + cont->sp_offset; ++stack) {
       gc_mark(pic, *stack);
     }
 
     /* callinfo */
-    for (ci = cont->ci; ci != cont->ci_ptr; --ci) {
+    for (ci = cont->ci_ptr + cont->ci_offset; ci != cont->ci_ptr; --ci) {
       if (ci->env) {
 	gc_mark_object(pic, (struct pic_object *)ci->env);
       }

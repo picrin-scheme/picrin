@@ -10,11 +10,11 @@ struct pic_cont {
   size_t stk_len;
   pic_value *stk_pos, *stk_ptr;
 
-  pic_value *sp, *st_ptr;
-  size_t st_len;
+  pic_value *st_ptr;
+  size_t sp_offset, st_len;
 
-  pic_callinfo *ci, *ci_ptr;
-  size_t ci_len;
+  pic_callinfo *ci_ptr;
+  size_t ci_offset, ci_len;
 
   struct pic_object *arena[PIC_ARENA_SIZE];
   int arena_idx;
