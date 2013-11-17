@@ -69,7 +69,7 @@
 | 6.4 Pairs and lists | yes | |
 | 6.5 Symbols | yes | |
 | 6.6 Characters | yes | |
-| 6.7 Strings | incomplete | TODO: almost all functions in the section :-( |
+| 6.7 Strings | yes | `substring` is not provided |
 | 6.8 Vectors | incomplete | string->vector, vector->string, ...etc |
 | 6.9 Bytevectors | incomplete | TODO: string<->utf8 conversion, etc |
 | 6.10  Control features | incomplete | TODO: `string-map`, `vector-map`, ...etc |

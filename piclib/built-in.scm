@@ -379,6 +379,68 @@
 (define-char-transitive-predicate char<=? <=)
 (define-char-transitive-predicate char>=? >=)
 
+;;; 6.7 String
+
+(define (string . objs)
+  (let ((len (length objs)))
+    (let ((v (make-string len)))
+      (do ((i 0 (+ i 1))
+	   (l objs (cdr l)))
+	  ((< i len)
+	   v)
+	(string-set! v i (car l))))))
+
+(define (string->list string . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (string-length string))))
+    (do ((i start (+ i 1))
+	 (res '()))
+	((< i end)
+	 (reverse res))
+      (set! res (cons (string-ref string i) res)))))
+
+(define (list->string list)
+  (apply string list))
+
+(define (string-copy! to at from . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (string-length from))))
+    (do ((i at (+ i 1))
+	 (j start (+ j 1)))
+	((< j end))
+      (string-set! to i (string-ref from j)))))
+
+(define (string-copy v . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (string-length v))))
+    (let ((res (make-string (string-length v))))
+      (string-copy! res 0 v start end)
+      res)))
+
+(define (string-append . vs)
+  (define (string-append-2-inv w v)
+    (let ((res (make-string (+ (string-length v) (string-length w)))))
+      (string-copy! res 0 v)
+      (string-copy! res (string-length v) w)
+      res))
+  (fold string-append-2-inv #() vs))
+
+(define (string-fill! v fill . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (string-length v))))
+    (do ((i start (+ i 1)))
+	((< i end)
+	 #f)
+      (string-set! v i fill))))
+
 ;;; 6.8. Vector
 
 (define (vector . objs)
