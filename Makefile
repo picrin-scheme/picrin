@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -O3
+CFLAGS=-Wall
 PICRIN_LIB=libpicrin.so
 
 ifeq ($(findstring CYGWIN,$(shell uname -s)), CYGWIN)
@@ -8,10 +8,10 @@ endif
 
 all: debug-build run
 
-release: CFLAGS += -DDEBUG=0
+release: CFLAGS += -DDEBUG=0 -O3
 release: build
 
-debug-build: CFLAGS += -g -DDEBUG=1
+debug-build: CFLAGS += -g -DDEBUG=1 -O0
 debug-build: build
 
 build: build-lib build-main
