@@ -15,6 +15,12 @@ pic_error(pic_state *pic, const char *msg)
 }
 
 void
+pic_errorf(pic_state *pic, const char *msg, size_t n, ...)
+{
+  pic_error(pic, msg);
+}
+
+void
 pic_abort(pic_state *pic, const char *msg)
 {
   puts(msg);

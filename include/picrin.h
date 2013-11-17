@@ -120,6 +120,7 @@ pic_value pic_expand(pic_state *, pic_value);
 void pic_abort(pic_state *, const char *);
 void pic_raise(pic_state *, pic_value);
 void pic_error(pic_state *, const char *);
+void pic_errorf(pic_state *, const char *, size_t, ...);
 void pic_warn(pic_state *, const char *);
 
 void pic_debug(pic_state *, pic_value);
