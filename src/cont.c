@@ -5,7 +5,7 @@
 #include "picrin/proc.h"
 #include "picrin/cont.h"
 
-static struct pic_cont *save_cont(pic_state *pic);
+static void save_cont(pic_state *, struct pic_cont **);
 static void restore_cont(pic_state *, struct pic_cont *);
 
 static size_t
@@ -22,13 +22,13 @@ native_stack_length(pic_state *pic, pic_value **pos)
     : (size_t)(&t - pic->native_stack_start + 1);
 }
 
-static struct pic_cont *
-save_cont(pic_state *pic)
+static void
+save_cont(pic_state *pic, struct pic_cont **c)
 {
   struct pic_cont *cont;
   pic_value *pos;
 
-  cont = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
+  cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
   cont->blk = pic->blk;
   PIC_BLK_INCREF(pic, cont->blk);
@@ -57,8 +57,6 @@ save_cont(pic_state *pic)
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
 
   cont->result = pic_undef_value();
-
-  return cont;
 }
 
 static void
@@ -162,7 +160,7 @@ pic_cont_callcc(pic_state *pic)
   }
   cb = pic_proc_ptr(v);
 
-  cont = save_cont(pic);
+  save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
     return cont->result;
   }
