@@ -88,6 +88,9 @@ write(pic_state *pic, pic_value obj)
     }
     printf(")");
     break;
+  case PIC_TT_ERROR:
+    printf("#<error %p>", pic_ptr(obj));
+    break;
   case PIC_TT_ENV:
     printf("#<env %p>", pic_env_ptr(obj));
     break;

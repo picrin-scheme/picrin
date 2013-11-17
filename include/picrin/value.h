@@ -87,6 +87,7 @@ enum pic_tt {
   PIC_TT_BLOB,
   PIC_TT_PROC,
   PIC_TT_PORT,
+  PIC_TT_ERROR,
   PIC_TT_ENV,
   PIC_TT_CONT
 };

@@ -147,6 +147,7 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
   }
   case PIC_TT_PROC:
   case PIC_TT_PORT:
+  case PIC_TT_ERROR:
   case PIC_TT_ENV:
   case PIC_TT_CONT:
   case PIC_TT_UNDEF:

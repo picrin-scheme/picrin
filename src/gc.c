@@ -7,6 +7,7 @@
 #include "picrin/port.h"
 #include "picrin/blob.h"
 #include "picrin/cont.h"
+#include "picrin/error.h"
 
 #if GC_DEBUG
 # include <stdio.h>
@@ -207,6 +208,10 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_PORT: {
     break;
   }
+  case PIC_TT_ERROR: {
+    gc_mark(pic, ((struct pic_error *)obj)->irrs);
+    break;
+  }
   case PIC_TT_STRING: {
     break;
   }
@@ -361,6 +366,10 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     if (port->status == PIC_PORT_OPEN) {
       fclose(port->file);
     }
+    break;
+  }
+  case PIC_TT_ERROR: {
+    pic_free(pic, ((struct pic_error *)obj)->msg);
     break;
   }
   case PIC_TT_CONT: {

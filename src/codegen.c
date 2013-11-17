@@ -640,7 +640,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   case PIC_TT_PROC:
   case PIC_TT_UNDEF:
   case PIC_TT_EOF:
-  case PIC_TT_PORT: {
+  case PIC_TT_PORT:
+  case PIC_TT_ERROR: {
     pic_error(pic, "invalid expression given");
   }
   }
