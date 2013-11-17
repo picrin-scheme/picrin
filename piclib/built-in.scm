@@ -417,6 +417,16 @@
       res))
   (fold vector-append-2-inv #() vs))
 
+(define (vector-fill! v fill . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+	(end (if (>= (length opts) 2)
+		 (cadr opts)
+		 (vector-length v))))
+    (do ((i start (+ i 1)))
+	((< i end)
+	 #f)
+      (vector-set! v i fill))))
+
 ;;; 6.9 bytevector
 
 (define (bytevector . objs)
