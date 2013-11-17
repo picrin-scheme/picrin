@@ -172,7 +172,8 @@ scope_local_define(pic_state *pic, const char *name, codegen_scope *scope)
   struct xh_entry *e;
 
   e = xh_put(scope->local_tbl, name, scope->argc + scope->localc++);
-  scope->dirty_flags = (int *)pic_realloc(pic, scope->dirty_flags, (e->val + 1) * sizeof(int));
+  scope->dirty_flags = (int *)pic_realloc(pic, scope->dirty_flags, (scope->argc + scope->localc) * sizeof(int));
+  scope->dirty_flags[e->val] = 0;
   return e->val;
 }
 
