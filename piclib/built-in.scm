@@ -503,6 +503,12 @@
 	 #f)
       (vector-set! v i fill))))
 
+(define (vector->string . args)
+  (list->string (apply vector->list args)))
+
+(define (string->vector . args)
+  (list->vector (apply string->list args)))
+
 ;;; 6.9 bytevector
 
 (define (bytevector . objs)
