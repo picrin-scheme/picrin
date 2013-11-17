@@ -241,6 +241,11 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       }
     }
 
+    /* exception handlers */
+    for (i = 0; i < cont->ridx; ++i) {
+      gc_mark_object(pic, (struct pic_object *)cont->rescue[i]);
+    }
+
     /* arena */
     for (i = 0; i < cont->arena_idx; ++i) {
       gc_mark_object(pic, cont->arena[i]);
@@ -293,6 +298,11 @@ gc_mark_phase(pic_state *pic)
     if (ci->env) {
       gc_mark_object(pic, (struct pic_object *)ci->env);
     }
+  }
+
+  /* exception handlers */
+  for (i = 0; i < pic->ridx; ++i) {
+    gc_mark_object(pic, (struct pic_object *)pic->rescue[i]);
   }
 
   /* arena */
@@ -358,6 +368,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->stk_ptr);
     pic_free(pic, cont->st_ptr);
     pic_free(pic, cont->ci_ptr);
+    pic_free(pic, cont->rescue);
     PIC_BLK_DECREF(pic, cont->blk);
     break;
   }

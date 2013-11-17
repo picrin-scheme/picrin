@@ -16,6 +16,9 @@ struct pic_cont {
   pic_callinfo *ci_ptr;
   size_t ci_offset, ci_len;
 
+  struct pic_proc **rescue;
+  size_t ridx, rlen;
+
   struct pic_object *arena[PIC_ARENA_SIZE];
   int arena_idx;
 

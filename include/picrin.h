@@ -37,6 +37,9 @@ typedef struct {
   pic_callinfo *ci;
   pic_callinfo *cibase, *ciend;
 
+  struct pic_proc **rescue;
+  size_t ridx, rlen;
+
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;

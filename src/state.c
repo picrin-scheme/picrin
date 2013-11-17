@@ -37,6 +37,11 @@ pic_open(int argc, char *argv[], char **envp)
   pic->cibase = pic->ci = (pic_callinfo *)malloc(sizeof(pic_callinfo) * PIC_STACK_SIZE);
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
+  /* exception handlers */
+  pic->rescue = (struct pic_proc **)malloc(sizeof(struct pic_proc *) * PIC_RESCUE_SIZE);
+  pic->ridx = 0;
+  pic->rlen = PIC_RESCUE_SIZE;
+
   /* memory heap */
   pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
   init_heap_page(pic->heap);
