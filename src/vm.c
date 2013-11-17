@@ -475,6 +475,24 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
       proc = pic_proc_ptr(x);
 
+#if VM_DEBUG
+      puts("== calling proc...");
+      printf("  proc = ");
+      pic_debug(pic, pic_obj_value(proc));
+      puts("");
+      printf("  argv = ");
+      pic_debug(pic, argv);
+      puts("");
+      if (! proc->cfunc_p) {
+	printf("  irep = ");
+	print_irep(pic, proc->u.irep);
+      }
+      else {
+	printf("  cfunc = %p\n", proc->u.cfunc);
+      }
+      puts("");
+#endif
+
       ci = PUSHCI();
       ci->argc = c.u.i;
       ci->pc = pc;

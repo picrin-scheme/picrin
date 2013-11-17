@@ -687,7 +687,7 @@ valid_formal(pic_state *pic, pic_value formal)
 }
 
 static void
-lift_cv(pic_state *pic, struct pic_irep *irep)
+lift_cv(pic_state *pic, struct pic_irep *irep, int d)
 {
   int i;
   struct pic_code c;
@@ -699,11 +699,12 @@ lift_cv(pic_state *pic, struct pic_irep *irep)
       /* pass */
       break;
     case OP_LAMBDA:
-      lift_cv(pic, pic->irep[c.u.i]);
+      lift_cv(pic, pic->irep[c.u.i], d + 1);
       break;
     case OP_CREF:
     case OP_CSET:
-      irep->code[i].u.r.depth--;
+      if (irep->code[i].u.r.depth > d)
+	irep->code[i].u.r.depth--;
       break;
     }
   }
@@ -817,7 +818,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
 	++c;
     }
     if (c == 0) {
-      lift_cv(pic, irep);
+      lift_cv(pic, irep, 0);
       irep->cv_tbl = NULL;
       irep->cv_num = 0;
     }
@@ -911,6 +912,10 @@ print_irep(pic_state *pic, struct pic_irep *irep)
 
   printf("## irep %p\n", irep);
   printf("[clen = %zd, ccapa = %zd, argc = %d, localc = %d]\n", irep->clen, irep->ccapa, irep->argc, irep->localc);
+  printf(":: cv_num = %d\n", irep->cv_num);
+  for (i = 0; i < irep->cv_num; ++i) {
+    printf(": %d -> %d\n", irep->cv_tbl[i], i);
+  }
   for (i = 0; i < irep->clen; ++i) {
     printf("[%2d] ", irep->code[i].insn);
     switch (irep->code[i].insn) {
