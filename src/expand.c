@@ -162,7 +162,7 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 }
 
 pic_value
-pic_expand(pic_state *pic, pic_value obj)
+pic_macroexpand(pic_state *pic, pic_value obj)
 {
   struct syntactic_env env;
   pic_value v;

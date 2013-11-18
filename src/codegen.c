@@ -872,7 +872,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   state->irep = new_irep(pic);
   state->irep->argc = 1;
   state->irep->localc = 0;
-  codegen(state, pic_expand(pic, obj), false);
+  codegen(state, pic_macroexpand(pic, obj), false);
   state->irep->code[state->irep->clen].insn = OP_RET;
   state->irep->clen++;
   state->irep->cv_num = 0;
