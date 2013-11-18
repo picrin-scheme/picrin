@@ -136,7 +136,7 @@ yy_blob_new(struct parser_control *p, char *dat, int len)
 void yyerror(struct parser_control *, const char *);
 %}
 
-%pure_parser
+%pure-parser
 %parse-param {struct parser_control *p}
 %lex-param {struct parser_control *p}
 
