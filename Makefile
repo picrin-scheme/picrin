@@ -23,7 +23,7 @@ build-main:
 build-lib:
 	cd src; \
 	  yacc -d parse.y; \
-	  lex scan.l
+	  lex -X scan.l
 	$(CC) $(CFLAGS) -shared src/*.c -o lib/$(PICRIN_LIB) -I./include -I./extlib -lm
 
 clean:
