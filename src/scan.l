@@ -3,10 +3,7 @@
 #include <string.h>
 
 #include "picrin.h"
-
-/* Guts! bison3 seems emit prototype declaration of yyparse in y.tab.h... */
-struct parser_control;
-
+#include "picrin/parse.h"
 #include "y.tab.h"
 
 #define YY_DECL int yylex_(YYSTYPE *yylvalp, yyscan_t yyscanner)

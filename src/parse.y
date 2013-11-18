@@ -6,6 +6,7 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/blob.h"
+#include "picrin/parse.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -16,16 +17,6 @@ void yylex_init();
 void yyset_in();
 void yy_scan_string();
 void yylex_destroy();
-
-struct parser_control {
-  pic_state *pic;
-  void *yyscanner;
-  pic_value value;
-  bool incomp;
-  int yynerrs;
-  struct pic_vector *yy_arena;
-  int yy_arena_idx;
-};
 
 #define YY_ARENA_SIZE 50
 
