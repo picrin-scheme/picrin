@@ -5,6 +5,8 @@
 #include "picrin.h"
 #include "y.tab.h"
 
+struct parser_control;
+
 #define YY_DECL int yylex_(YYSTYPE *yylvalp, yyscan_t yyscanner)
 %}
 
