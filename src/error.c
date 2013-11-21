@@ -75,6 +75,11 @@ pic_error_with_exception_handler(pic_state *pic)
   thunk = pic_proc_ptr(w);
 
   if (pic->ridx >= pic->rlen) {
+
+#if DEBUG
+    puts("rescue realloced");
+#endif
+
     pic->rescue = (struct pic_proc **)pic_realloc(pic, pic->rescue, pic->rlen * 2);
     pic->rlen *= 2;
   }

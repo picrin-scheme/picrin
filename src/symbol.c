@@ -16,6 +16,11 @@ pic_intern_cstr(pic_state *pic, const char *str)
   }
 
   if (pic->slen >= pic->scapa) {
+
+#if DEBUG
+    puts("sym_pool realloced");
+#endif
+
     pic->scapa *= 2;
     pic->sym_pool = pic_realloc(pic, pic->sym_pool, sizeof(const char *) * pic->scapa);
   }
