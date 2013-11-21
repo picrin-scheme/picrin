@@ -45,6 +45,8 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
   int ai = pic_gc_arena_preserve(pic);
 
 #if DEBUG
+  printf("current ai = %d\n", ai);
+
   printf("expanding...");
   pic_debug(pic, obj);
   puts("");
@@ -130,6 +132,7 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 
       pic_gc_arena_restore(pic, ai);
       pic_gc_protect(pic, v);
+      pic_gc_protect(pic, obj);
     }
     v = pic_reverse(pic, v);
 
