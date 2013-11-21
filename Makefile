@@ -24,7 +24,7 @@ build-lib:
 	cd src; \
 	  yacc -d parse.y; \
 	  flex scan.l
-	$(CC) $(CFLAGS) -shared src/*.c -o lib/$(PICRIN_LIB) -I./include -I./extlib -lm
+	$(CC) $(CFLAGS) -shared -fPIC src/*.c -o lib/$(PICRIN_LIB) -I./include -I./extlib -lm
 
 clean:
 	rm -f src/y.tab.c src/y.tab.h src/lex.yy.c
