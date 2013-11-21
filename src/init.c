@@ -25,7 +25,7 @@ pic_load_stdlib(pic_state *pic)
 {
   static const char *fn = "piclib/built-in.scm";
   FILE *file;
-  int n, i;
+  int n, i, ai;
   pic_value v, vs;
   struct pic_proc *proc;
 
@@ -41,6 +41,7 @@ pic_load_stdlib(pic_state *pic)
     abort();
   }
 
+  ai = pic_gc_arena_preserve(pic);
   for (i = 0; i < n; ++i, vs = pic_cdr(pic, vs)) {
     v = pic_car(pic, vs);
 
@@ -57,6 +58,8 @@ pic_load_stdlib(pic_state *pic)
       fputs("fatal error: built-in.scm evaluation failure", stderr);
       abort();
     }
+
+    pic_gc_arena_restore(pic, ai);
   }
 
 #if DEBUG
