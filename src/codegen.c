@@ -284,7 +284,18 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
       }
       else if (sym == pic->sLAMBDA) {
-	int k = pic->ilen++;
+	int k;
+
+	if (pic->ilen >= pic->icapa) {
+
+#if DEBUG
+	  puts("irep realloced");
+#endif
+
+	  pic->irep = (struct pic_irep **)pic_realloc(pic, pic->irep, pic->icapa * 2);
+	  pic->icapa *= 2;
+	}
+	k = pic->ilen++;
 	irep->code[irep->clen].insn = OP_LAMBDA;
 	irep->code[irep->clen].u.i = k;
 	irep->clen++;
