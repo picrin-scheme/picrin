@@ -35,20 +35,24 @@ pic_type(pic_value v)
 const char *
 pic_type_repr(enum pic_tt tt)
 {
-  static const char *reprs[13] = {
+  static const char *reprs[17] = {
     "nil",
     "boolean",
     "float",
     "int",
     "symbol",
+    "char",
     "eof",
     "undef",
     "pair",
     "string",
     "vector",
+    "blob",
     "proc",
     "port",
-    "env"
+    "error",
+    "env",
+    "cont"
   };
 
   return reprs[tt];
