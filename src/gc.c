@@ -434,7 +434,7 @@ gc_sweep_phase(pic_state *pic)
       continue;
     for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
       if (! gc_is_marked(p)) {
-	p->s.ptr = f;
+	p->s.ptr = f;		/* For dead objects we can safely reuse ptr field */
 	f = p;
       }
       gc_unmark(p);
