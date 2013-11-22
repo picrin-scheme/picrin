@@ -407,6 +407,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 
 	pidx = pic->plen++;
+	if (pidx >= pic->pcapa) {
+	  pic_abort(pic, "constant pool overflow");
+	}
 	pic->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
 	irep->code[irep->clen].insn = OP_PUSHCONST;
 	irep->code[irep->clen].u.i = pidx;
@@ -640,6 +643,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   case PIC_TT_BLOB: {
     int pidx;
     pidx = pic->plen++;
+    if (pidx >= pic->pcapa) {
+      pic_abort(pic, "constant pool overflow");
+    }
     pic->pool[pidx] = obj;
     irep->code[irep->clen].insn = OP_PUSHCONST;
     irep->code[irep->clen].u.i = pidx;

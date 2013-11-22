@@ -20,6 +20,9 @@ define_macro(pic_state *pic, const char *name, struct pic_proc *macro)
   int idx;
 
   idx = pic->mlen++;
+  if (idx >= pic->mcapa) {
+    pic_abort(pic, "macro table overflow");
+  }
   pic->macros[idx] = macro;
   xh_put(pic->global_tbl, name, ~idx);
 }
