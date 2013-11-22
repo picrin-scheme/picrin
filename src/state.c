@@ -30,44 +30,44 @@ pic_open(int argc, char *argv[], char **envp)
   pic->blk->refcnt = 1;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = (pic_value *)malloc(sizeof(pic_value) * PIC_STACK_SIZE);
+  pic->stbase = pic->sp = (pic_value *)calloc(PIC_STACK_SIZE, sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   /* callinfo */
-  pic->cibase = pic->ci = (pic_callinfo *)malloc(sizeof(pic_callinfo) * PIC_STACK_SIZE);
+  pic->cibase = pic->ci = (pic_callinfo *)calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   /* exception handlers */
-  pic->rescue = (struct pic_proc **)malloc(sizeof(struct pic_proc *) * PIC_RESCUE_SIZE);
+  pic->rescue = (struct pic_proc **)calloc(PIC_RESCUE_SIZE, sizeof(struct pic_proc *));
   pic->ridx = 0;
   pic->rlen = PIC_RESCUE_SIZE;
 
   /* memory heap */
-  pic->heap = (struct heap_page *)malloc(sizeof(struct heap_page));
+  pic->heap = (struct heap_page *)calloc(1, sizeof(struct heap_page));
   init_heap_page(pic->heap);
 
   /* symbol table */
   pic->sym_tbl = xh_new();
-  pic->sym_pool = (const char **)malloc(sizeof(const char *) * PIC_SYM_POOL_SIZE);
+  pic->sym_pool = (const char **)calloc(PIC_SYM_POOL_SIZE, sizeof(const char *));
   pic->slen = 0;
   pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
 
   /* irep */
-  pic->irep = (struct pic_irep **)malloc(sizeof(struct pic_irep *) * PIC_IREP_SIZE);
+  pic->irep = (struct pic_irep **)calloc(PIC_IREP_SIZE, sizeof(struct pic_irep *));
   pic->ilen = 0;
   pic->icapa = PIC_IREP_SIZE;
 
   /* globals */
   pic->global_tbl = xh_new();
-  pic->globals = (pic_value *)malloc(sizeof(pic_value) * PIC_GLOBALS_SIZE);
+  pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
-  pic->macros = (struct pic_proc **)malloc(sizeof(struct pic_proc *) * PIC_MACROS_SIZE);
+  pic->macros = (struct pic_proc **)calloc(PIC_MACROS_SIZE, sizeof(struct pic_proc *));
   pic->mlen = 0;
   pic->mcapa = PIC_MACROS_SIZE;
 
   /* pool */
-  pic->pool = (pic_value *)malloc(sizeof(pic_value) * PIC_POOL_SIZE);
+  pic->pool = (pic_value *)calloc(PIC_POOL_SIZE, sizeof(pic_value));
   pic->plen = 0;
   pic->pcapa = PIC_POOL_SIZE;
 
