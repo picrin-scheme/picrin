@@ -16,7 +16,7 @@ union header {
 };
 
 struct heap_page {
-  union header *base, *freep, *endp;
+  union header base, *freep;
   size_t heap_size;
 };
 

@@ -16,24 +16,25 @@
 void
 init_heap_page(struct heap_page *heap)
 {
-  union header *base, *freep;
-  void *p;
+  int nu;
 
-  p = (union header *)malloc(PIC_HEAP_SIZE);
+  nu = (PIC_HEAP_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
 
-  heap->base = base = (union header *)
-    (((unsigned long)p + sizeof(union header) -1) & ~(sizeof(union header) - 1));
-  base->s.ptr = base + 1;
-  base->s.size = 1;
+  heap->base.s.ptr = (union header *)calloc(nu, sizeof(union header));
+  heap->base.s.size = 0;	/* not 1, since it must never be fused into other headers */
+  heap->base.s.mark = PIC_GC_UNMARK;
 
-  heap->freep = freep = base->s.ptr;
-  freep->s.ptr = base;
-  freep->s.size = ((char *)p + PIC_HEAP_SIZE - (char *)freep) / sizeof(union header);
+  heap->freep = heap->base.s.ptr;
+  heap->freep->s.size = nu - 1;
+  heap->freep->s.ptr = heap->freep + heap->freep->s.size;
+  heap->freep->s.mark = PIC_GC_UNMARK;
 
-  heap->endp = freep + freep->s.size;
+  heap->freep->s.ptr->s.size = 0;
+  heap->freep->s.ptr->s.ptr = &heap->base;
+  heap->freep->s.ptr->s.mark = PIC_GC_UNMARK;
 
 #if GC_DEBUG
-  printf("base = %p\nbase->s.ptr = %p\n", base, base->s.ptr);
+  printf("freep = %p\n", heap->freep);
 #endif
 }
 
@@ -119,8 +120,7 @@ gc_alloc(pic_state *pic, size_t size)
 
   nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
 
-  freep = pic->heap->freep;
-  prevp = freep;
+  prevp = freep = pic->heap->freep;
   for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
     if (p->s.size >= nunits)
       break;
@@ -335,7 +335,9 @@ static void
 gc_finalize_object(pic_state *pic, struct pic_object *obj)
 {
 #if GC_DEBUG
-  printf("finalizing object type %d\n", obj->tt);
+  printf("* finalizing object:");
+  pic_debug(pic, pic_obj_value(obj));
+  puts("");
 #endif
 
   switch (obj->tt) {
@@ -394,81 +396,58 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
 }
 
 static void
+gc_free(pic_state *pic, union header *p)
+{
+  union header *freep, *bp;
+
+  freep = pic->heap->freep;
+  for (bp = freep; ! (p > bp && p < bp->s.ptr); bp = bp->s.ptr) {
+    if (bp >= bp->s.ptr && (p > bp || p < bp->s.ptr)) {
+      break;
+    }
+  }
+  if (p + p->s.size == bp->s.ptr) {
+    p->s.size += bp->s.ptr->s.size;
+    p->s.ptr = bp->s.ptr->s.ptr;
+  }
+  else {
+    p->s.ptr = bp->s.ptr;
+  }
+  if (bp + bp->s.size == p) {
+    bp->s.size += p->s.size;
+    bp->s.ptr = p->s.ptr;
+  }
+  else {
+    bp->s.ptr = p;
+  }
+  pic->heap->freep = bp;
+}
+
+static void
 gc_sweep_phase(pic_state *pic)
 {
-  union header *base, *bp, *p;
+  union header *basep, *bp, *p, *f = NULL;
 
-#if GC_DEBUG
-  int freed = 0;
-
-  puts("sweep started");
-#endif
-
-  base = pic->heap->base;
-#if GC_DEBUG_DETAIL
-  printf("base = %p\nbase->s.ptr = %p\n", base, base->s.ptr);
-#endif
-  for (p = base->s.ptr; ; p = p->s.ptr) {
-
-#if GC_DEBUG_DETAIL
-    puts("sweeping block");
-#endif
-
-  retry:
-
-    for (bp = p + p->s.size; bp != p->s.ptr; bp += bp->s.size) {
-
-#if GC_DEBUG_DETAIL
-      printf("  bp = %p\n  p  = %p\n  p->s.ptr = %p\n  endp = %p\n",bp, p, p->s.ptr, pic->heap->endp);
-#endif
-
-      if (p >= p->s.ptr && bp == pic->heap->endp)
-	break;
-      if (gc_is_marked(bp)) {
-
-#if GC_DEBUG_DETAIL
-	printf("marked:\t\t\t");
-	pic_debug(pic, pic_obj_value((struct pic_object *)(bp + 1)));
-	printf("\n");
-#endif
-
-	gc_unmark(bp);
-	continue;
+  basep = &pic->heap->base;
+  for (bp = basep->s.ptr; bp != basep; bp = bp->s.ptr) {
+    if (bp->s.size == 0)	/* end of page */
+      continue;
+    for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
+      if (! gc_is_marked(p)) {
+	p->s.ptr = f;
+	f = p;
       }
-
-      /* free! */
-      gc_finalize_object(pic, (struct pic_object *)(bp + 1));
-      if (bp + bp->s.size == p->s.ptr) {
-	bp->s.size += p->s.ptr->s.size;
-	bp->s.ptr = p->s.ptr->s.ptr;
-      }
-      else {
-	bp->s.ptr = p->s.ptr;
-      }
-      if (p + p->s.size == bp) {
-	p->s.size += bp->s.size;
-	p->s.ptr = bp->s.ptr;
-      }
-      else {
-	p->s.ptr = bp;
-	/* retry with next p */
-	p = p->s.ptr;
-      }
-
-#if GC_DEBUG
-      freed++;
-#endif
-
-      goto retry;
+      gc_unmark(p);
     }
-
-    if (p->s.ptr == base)
-      break;
   }
 
-#if GC_DEBUG
-  printf("freed: %d counts\n", freed);
-#endif
+  /* free! */
+  while (f) {
+    p = f->s.ptr;
+    gc_finalize_object(pic, (struct pic_object *)(f + 1));
+    gc_free(pic, f);
+    f = p;
+  }
 }
 
 void
