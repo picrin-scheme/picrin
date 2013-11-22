@@ -405,12 +405,12 @@ gc_sweep_phase(pic_state *pic)
 #endif
 
   base = pic->heap->base;
-#if GC_DEBUG
+#if GC_DEBUG_DETAIL
   printf("base = %p\nbase->s.ptr = %p\n", base, base->s.ptr);
 #endif
   for (p = base->s.ptr; ; p = p->s.ptr) {
 
-#if GC_DEBUG
+#if GC_DEBUG_DETAIL
     puts("sweeping block");
 #endif
 
@@ -418,7 +418,7 @@ gc_sweep_phase(pic_state *pic)
 
     for (bp = p + p->s.size; bp != p->s.ptr; bp += bp->s.size) {
 
-#if GC_DEBUG
+#if GC_DEBUG_DETAIL
       printf("  bp = %p\n  p  = %p\n  p->s.ptr = %p\n  endp = %p\n",bp, p, p->s.ptr, pic->heap->endp);
 #endif
 
@@ -426,7 +426,7 @@ gc_sweep_phase(pic_state *pic)
 	break;
       if (gc_is_marked(bp)) {
 
-#if GC_DEBUG
+#if GC_DEBUG_DETAIL
 	printf("marked:\t\t\t");
 	pic_debug(pic, pic_obj_value((struct pic_object *)(bp + 1)));
 	printf("\n");
@@ -435,10 +435,6 @@ gc_sweep_phase(pic_state *pic)
 	gc_unmark(bp);
 	continue;
       }
-
-#if GC_DEBUG
-      puts("unmarked");
-#endif
 
       /* free! */
       gc_finalize_object(pic, (struct pic_object *)(bp + 1));
