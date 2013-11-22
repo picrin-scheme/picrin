@@ -66,7 +66,7 @@ typedef struct {
   jmp_buf *jmp;
   const char *errmsg;
 
-  struct heap_page *heap;
+  struct pic_heap *heap;
   struct pic_object *arena[PIC_ARENA_SIZE];
   int arena_idx;
 

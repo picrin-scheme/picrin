@@ -14,7 +14,7 @@
 #endif
 
 void
-init_heap_page(struct heap_page *heap)
+init_heap(struct pic_heap *heap)
 {
   heap->base.s.ptr = heap->freep = &heap->base;
   heap->base.s.size = 0;	/* not 1, since it must never be fused into other headers */
