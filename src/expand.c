@@ -132,7 +132,6 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
 
       pic_gc_arena_restore(pic, ai);
       pic_gc_protect(pic, v);
-      pic_gc_protect(pic, obj);
     }
     v = pic_reverse(pic, v);
 
