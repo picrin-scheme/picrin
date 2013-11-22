@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <limits.h>
 #include <math.h>
@@ -301,7 +302,7 @@ pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
 # define VM_LOOP_END } }
 #endif
 
-#define PUSH(v) (*pic->sp++ = (v))
+#define PUSH(v) ((pic->sp >= pic->stend) ? abort() : (*pic->sp++ = (v)))
 #define POP() (*--pic->sp)
 #define POPN(i) (pic->sp -= (i))
 
