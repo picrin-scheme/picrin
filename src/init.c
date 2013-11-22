@@ -47,14 +47,14 @@ pic_load_stdlib(pic_state *pic)
 
     proc = pic_codegen(pic, v);
     if (proc == NULL) {
-      fputs(pic->errmsg, stderr);
+      fprintf(stderr, "in codegen: %s\n", pic->errmsg);
       fputs("fatal error: built-in.scm compilation failure", stderr);
       abort();
     }
 
     v = pic_apply(pic, proc, pic_nil_value());
     if (pic_undef_p(v)) {
-      fputs(pic->errmsg, stderr);
+      fprintf(stderr, "in execute: %s\n", pic->errmsg);
       fputs("fatal error: built-in.scm evaluation failure", stderr);
       abort();
     }
