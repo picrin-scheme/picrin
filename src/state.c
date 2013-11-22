@@ -43,8 +43,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic->rlen = PIC_RESCUE_SIZE;
 
   /* memory heap */
-  pic->heap = (struct heap_page *)calloc(1, sizeof(struct heap_page));
-  init_heap_page(pic->heap);
+  pic->heap = (struct pic_heap *)calloc(1, sizeof(struct pic_heap));
+  init_heap(pic->heap);
 
   /* symbol table */
   pic->sym_tbl = xh_new();

@@ -14,7 +14,7 @@
 #endif
 
 void
-init_heap_page(struct heap_page *heap)
+init_heap(struct pic_heap *heap)
 {
   int nu;
 
