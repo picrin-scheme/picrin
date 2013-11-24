@@ -441,7 +441,7 @@ gc_free(pic_state *pic, union header *p)
 static void
 gc_sweep_phase(pic_state *pic)
 {
-  union header *basep, *bp, *p, *f = NULL;
+  union header *basep, *bp, *p, *s = NULL, *t;
 
   basep = &pic->heap->base;
   for (bp = basep->s.ptr; bp != basep; bp = bp->s.ptr) {
@@ -449,19 +449,25 @@ gc_sweep_phase(pic_state *pic)
       continue;
     for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
       if (! gc_is_marked(p)) {
-	p->s.ptr = f;		/* For dead objects we can safely reuse ptr field */
-	f = p;
+	if (s == NULL) {
+	  s = t = p;
+	}
+	else {
+	  t->s.ptr = p;
+	  t = t->s.ptr;
+	}
+	t->s.ptr = NULL; /* For dead objects we can safely reuse ptr field */
       }
       gc_unmark(p);
     }
   }
 
   /* free! */
-  while (f) {
-    p = f->s.ptr;
-    gc_finalize_object(pic, (struct pic_object *)(f + 1));
-    gc_free(pic, f);
-    f = p;
+  while (s) {
+    p = s->s.ptr;
+    gc_finalize_object(pic, (struct pic_object *)(s + 1));
+    gc_free(pic, s);
+    s = p;
   }
 }
 
