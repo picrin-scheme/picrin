@@ -292,6 +292,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  in->up = senv;
 	  in->tbl = xh_new();
 	  in->stx = NULL;
+	  in->xlen = 0;
+	  in->xcapa = 0;
 
 	  for (a = var; pic_pair_p(a); a = pic_cdr(pic, a)) {
 	    pic_sym gen, orig;
@@ -395,6 +397,8 @@ pic_macroexpand_2(pic_state *pic, pic_value expr)
   senv->up = NULL;
   senv->tbl = pic->var_tbl;
   senv->stx = pic->stx;
+  senv->xlen = pic->xlen;
+  senv->xcapa = pic->xcapa;
 
   return macroexpand(pic, expr, senv);
 }

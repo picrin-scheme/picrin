@@ -287,7 +287,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (senv->stx) {
       int i;
 
-      for (i = 0; i < 6; ++i) {
+      for (i = 0; i < senv->xlen; ++i) {
 	gc_mark_object(pic, (struct pic_object *)senv->stx[i]);
       }
     }

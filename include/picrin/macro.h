@@ -6,6 +6,7 @@ struct pic_senv {
   struct pic_senv *up;
   struct xhash *tbl;
   struct pic_syntax **stx;
+  size_t xlen, xcapa;
 };
 
 struct pic_syntax {
