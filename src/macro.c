@@ -12,7 +12,7 @@
 #define FALLTHROUGH ((void)0)
 
 static void
-define_macro(pic_state *pic, const char *name, struct pic_proc *macro)
+pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
   int idx;
 
@@ -105,7 +105,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  abort();
 	}
 	assert(pic_proc_p(v));
-	define_macro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
+	pic_defmacro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_false_value();
