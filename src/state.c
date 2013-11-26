@@ -104,6 +104,7 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sUNQUOTE, "unquote");
   register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
   register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
+  register_core_symbol(pic, sDEFINE_MACRO, "define-macro");
   register_core_symbol(pic, sCONS, "cons");
   register_core_symbol(pic, sCAR, "car");
   register_core_symbol(pic, sCDR, "cdr");
