@@ -53,7 +53,7 @@ xh_get(struct xhash *x, const char *key)
 
   idx = xh_hash(key) % x->size;
   for (e = x->buckets[idx]; e; e = e->next) {
-    if (! strcmp(key, e->key))
+    if (strcmp(key, e->key) == 0)
       return e;
   }
   return NULL;
