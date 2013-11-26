@@ -132,6 +132,7 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_syntax(pic, PIC_STX_LAMBDA, "lambda");
   register_core_syntax(pic, PIC_STX_IF, "if");
   register_core_syntax(pic, PIC_STX_BEGIN, "begin");
+  register_core_syntax(pic, PIC_STX_DEFMACRO, "define-macro");
   pic_gc_arena_restore(pic, ai);
 
   pic_init_core(pic);

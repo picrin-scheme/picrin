@@ -17,7 +17,8 @@ struct pic_syntax {
     PIC_STX_QUOTE,
     PIC_STX_LAMBDA,
     PIC_STX_IF,
-    PIC_STX_BEGIN
+    PIC_STX_BEGIN,
+    PIC_STX_DEFMACRO
   } kind;
   pic_sym sym;
 };
