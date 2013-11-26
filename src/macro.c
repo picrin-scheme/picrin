@@ -203,7 +203,7 @@ new_uniq_sym(pic_state *pic, pic_sym base)
   char *str;
   pic_sym uniq;
 
-  str = (char *)pic_alloc(pic, strlen(pic_symbol_name(pic, base)), + (int)log10(s) + 2);
+  str = (char *)pic_alloc(pic, strlen(pic_symbol_name(pic, base)) + (int)log10(s) + 2);
   sprintf(str, "%s@%d", pic_symbol_name(pic, base), s);
   uniq = pic_intern_cstr(pic, str);
 
