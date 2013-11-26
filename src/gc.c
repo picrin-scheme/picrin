@@ -424,9 +424,11 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destory(senv->tbl);
-    if (senv->stx)
-      pic_free(pic, senv->stx);
+    if (senv->up) {
+      xh_destory(senv->tbl);
+      if (senv->stx)
+	pic_free(pic, senv->stx);
+    }
     break;
   }
   case PIC_TT_SYNTAX: {
