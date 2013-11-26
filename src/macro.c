@@ -171,6 +171,8 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
   abort();
 }
 
+pic_value pic_macroexpand_2(pic_state *, pic_value);
+
 pic_value
 pic_macroexpand(pic_state *pic, pic_value obj)
 {
@@ -193,6 +195,12 @@ pic_macroexpand(pic_state *pic, pic_value obj)
   puts("");
 #endif
 
+  v = pic_macroexpand_2(pic, v);
+#if DEBUG
+  puts("after expand:");
+  pic_debug(pic, v);
+  puts("");
+#endif
   return v;
 }
 
