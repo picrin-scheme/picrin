@@ -11,7 +11,7 @@
 
 #define FALLTHROUGH ((void)0)
 
-static void
+void
 pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
   int idx;
