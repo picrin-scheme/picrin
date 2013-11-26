@@ -199,7 +199,7 @@ pic_macroexpand(pic_state *pic, pic_value obj)
 static pic_sym
 new_uniq_sym(pic_state *pic, pic_sym base)
 {
-  int s = pic->uniq_sym_count++;
+  int s = ++pic->uniq_sym_count;
   char *str;
   pic_sym uniq;
 
