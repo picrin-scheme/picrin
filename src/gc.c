@@ -276,6 +276,11 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYNTAX: {
+    struct pic_syntax *stx = (struct pic_syntax *)obj;
+
+    if (stx->macro) {
+      gc_mark_object(pic, (struct pic_object *)stx->macro);
+    }
     break;
   }
   case PIC_TT_SENV: {

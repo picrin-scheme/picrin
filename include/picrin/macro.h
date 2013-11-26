@@ -18,14 +18,17 @@ struct pic_syntax {
     PIC_STX_LAMBDA,
     PIC_STX_IF,
     PIC_STX_BEGIN,
+    PIC_STX_MACRO,
     PIC_STX_DEFMACRO
   } kind;
   pic_sym sym;
+  struct pic_proc *macro;
 };
 
 #define pic_syntax(v) ((struct pic_syntax *)pic_ptr(v))
 #define pic_syntax_p(v) (pic_type(v) == PIC_TT_SYNTAX)
 
 struct pic_syntax *pic_syntax_new(pic_state *, int kind, pic_sym sym);
+struct pic_syntax *pic_syntax_new_macro(pic_state *, pic_sym, struct pic_proc *);
 
 #endif

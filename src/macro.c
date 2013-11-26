@@ -385,6 +385,19 @@ pic_syntax_new(pic_state *pic, int kind, pic_sym sym)
   stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
   stx->kind = kind;
   stx->sym = sym;
+  stx->macro = NULL;
+  return stx;
+}
+
+struct pic_syntax *
+pic_syntax_new_macro(pic_state *pic, pic_sym sym, struct pic_proc *macro)
+{
+  struct pic_syntax *stx;
+
+  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
+  stx->kind = PIC_STX_MACRO;
+  stx->sym = sym;
+  stx->macro = macro;
   return stx;
 }
 
