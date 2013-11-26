@@ -3,6 +3,7 @@
 #include "picrin.h"
 #include "picrin/gc.h"
 #include "picrin/proc.h"
+#include "picrin/macro.h"
 #include "xhash/xhash.h"
 
 void pic_init_core(pic_state *);
@@ -66,6 +67,12 @@ pic_open(int argc, char *argv[], char **envp)
   pic->macros = (struct pic_proc **)calloc(PIC_MACROS_SIZE, sizeof(struct pic_proc *));
   pic->mlen = 0;
   pic->mcapa = PIC_MACROS_SIZE;
+
+  /* identifier table */
+  pic->var_tbl = xh_new();
+  pic->stx = (struct pic_syntax **)calloc(PIC_MACROS_SIZE, sizeof(struct pic_syntax *));
+  pic->xlen = 0;
+  pic->xcapa = PIC_MACROS_SIZE;
 
   /* pool */
   pic->pool = (pic_value *)calloc(PIC_POOL_SIZE, sizeof(pic_value));

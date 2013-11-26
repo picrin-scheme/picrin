@@ -52,12 +52,16 @@ typedef struct {
   size_t slen, scapa;
   int uniq_sym_count;
 
-  /* positive for variables, negative for macros (bitwise-not) */
   struct xhash *global_tbl;
   pic_value *globals;
   size_t glen, gcapa;
   struct pic_proc **macros;
   size_t mlen, mcapa;
+
+  /* positive for variables, negative for macros (bitwise-not) */
+  struct xhash *var_tbl;
+  struct pic_syntax **stx;
+  size_t xlen, xcapa;
 
   struct pic_irep **irep;
   size_t ilen, icapa;
