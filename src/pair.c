@@ -134,6 +134,30 @@ pic_acons(pic_state *pic, pic_value key, pic_value val, pic_value assoc)
   return pic_cons(pic, pic_cons(pic, key, val), assoc);
 }
 
+pic_value
+pic_caar(pic_state *pic, pic_value v)
+{
+  return pic_car(pic, pic_car(pic, v));
+}
+
+pic_value
+pic_cadr(pic_state *pic, pic_value v)
+{
+  return pic_car(pic, pic_cdr(pic, v));
+}
+
+pic_value
+pic_cdar(pic_state *pic, pic_value v)
+{
+  return pic_cdr(pic, pic_car(pic, v));
+}
+
+pic_value
+pic_cddr(pic_state *pic, pic_value v)
+{
+  return pic_cdr(pic, pic_cdr(pic, v));
+}
+
 static pic_value
 pic_pair_pair_p(pic_state *pic)
 {
