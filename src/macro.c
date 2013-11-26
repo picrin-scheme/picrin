@@ -162,6 +162,8 @@ expand(pic_state *pic, pic_value obj, struct syntactic_env *env)
   case PIC_TT_ENV:
   case PIC_TT_CONT:
   case PIC_TT_UNDEF:
+  case PIC_TT_SENV:
+  case PIC_TT_SYNTAX:
     pic_error(pic, "unexpected value type");
     return pic_undef_value();	/* unreachable */
   }

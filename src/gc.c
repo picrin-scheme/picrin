@@ -8,6 +8,8 @@
 #include "picrin/blob.h"
 #include "picrin/cont.h"
 #include "picrin/error.h"
+#include "picrin/macro.h"
+#include "xhash/xhash.h"
 
 #if GC_DEBUG
 # include <stdio.h>
@@ -273,6 +275,24 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, cont->result);
     break;
   }
+  case PIC_TT_SYNTAX: {
+    break;
+  }
+  case PIC_TT_SENV: {
+    struct pic_senv *senv = (struct pic_senv *)obj;
+
+    if (senv->up) {
+      gc_mark_object(pic, (struct pic_object *)senv->up);
+    }
+    if (senv->stx) {
+      int i;
+
+      for (i = 0; i < 6; ++i) {
+	gc_mark_object(pic, (struct pic_object *)senv->stx[i]);
+      }
+    }
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -395,6 +415,16 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->ci_ptr);
     pic_free(pic, cont->rescue);
     PIC_BLK_DECREF(pic, cont->blk);
+    break;
+  }
+  case PIC_TT_SENV: {
+    struct pic_senv *senv = (struct pic_senv *)obj;
+    xh_destory(senv->tbl);
+    if (senv->stx)
+      pic_free(pic, senv->stx);
+    break;
+  }
+  case PIC_TT_SYNTAX: {
     break;
   }
   case PIC_TT_NIL:
