@@ -360,8 +360,6 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* macros */
-  for (i = 0; i < pic->mlen; ++i) {
-    gc_mark_object(pic, (struct pic_object *)pic->macros[i]);
   for (i = 0; i < pic->xlen; ++i) {
     gc_mark_object(pic, (struct pic_object *)pic->stx[i]);
   }

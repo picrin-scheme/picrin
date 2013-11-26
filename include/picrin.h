@@ -55,8 +55,6 @@ typedef struct {
   struct xhash *global_tbl;
   pic_value *globals;
   size_t glen, gcapa;
-  struct pic_proc **macros;
-  size_t mlen, mcapa;
 
   /* positive for variables, negative for macros (bitwise-not) */
   struct xhash *var_tbl;

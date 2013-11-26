@@ -64,9 +64,6 @@ pic_open(int argc, char *argv[], char **envp)
   pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
-  pic->macros = (struct pic_proc **)calloc(PIC_MACROS_SIZE, sizeof(struct pic_proc *));
-  pic->mlen = 0;
-  pic->mcapa = PIC_MACROS_SIZE;
 
   /* identifier table */
   pic->var_tbl = xh_new();
