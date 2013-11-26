@@ -392,6 +392,7 @@ pic_value
 pic_macroexpand_2(pic_state *pic, pic_value expr)
 {
   struct pic_senv *senv;
+  pic_value v;
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = NULL;
@@ -400,5 +401,19 @@ pic_macroexpand_2(pic_state *pic, pic_value expr)
   senv->xlen = pic->xlen;
   senv->xcapa = pic->xcapa;
 
-  return macroexpand(pic, expr, senv);
+#if DEBUG
+  puts("before expand:");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
+  v = macroexpand(pic, expr, senv);
+
+#if DEBUG
+  puts("after expand:");
+  pic_debug(pic, v);
+  puts("");
+#endif
+
+  return v;
 }
