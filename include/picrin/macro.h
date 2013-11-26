@@ -24,4 +24,6 @@ struct pic_syntax {
 #define pic_syntax(v) ((struct pic_syntax *)pic_ptr(v))
 #define pic_syntax_p(v) (pic_type(v) == PIC_TT_SYNTAX)
 
+struct pic_syntax *pic_syntax_new(pic_state *, int kind, pic_sym sym);
+
 #endif

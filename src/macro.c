@@ -375,7 +375,7 @@ macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv)
   return pic_cons(pic, v, macroexpand_list(pic, pic_cdr(pic, list), senv));
 }
 
-static struct pic_syntax *
+struct pic_syntax *
 pic_syntax_new(pic_state *pic, int kind, pic_sym sym)
 {
   struct pic_syntax *stx;
@@ -390,27 +390,11 @@ pic_value
 pic_macroexpand_2(pic_state *pic, pic_value expr)
 {
   struct pic_senv *senv;
-  struct pic_syntax **stx;
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = NULL;
-  senv->tbl = xh_new();
-  senv->stx = NULL;
-  stx = (struct pic_syntax **)pic_alloc(pic, sizeof(struct pic_syntax *) * 6);
-  stx[0] = pic_syntax_new(pic, PIC_STX_DEFINE, pic->sDEFINE);
-  stx[1] = pic_syntax_new(pic, PIC_STX_SET, pic->sSETBANG);
-  stx[2] = pic_syntax_new(pic, PIC_STX_QUOTE, pic->sQUOTE);
-  stx[3] = pic_syntax_new(pic, PIC_STX_LAMBDA, pic->sLAMBDA);
-  stx[4] = pic_syntax_new(pic, PIC_STX_IF, pic->sIF);
-  stx[5] = pic_syntax_new(pic, PIC_STX_BEGIN, pic->sBEGIN);
-  senv->stx = stx;
-
-  xh_put(senv->tbl, "define", ~0);
-  xh_put(senv->tbl, "set!", ~1);
-  xh_put(senv->tbl, "quote", ~2);
-  xh_put(senv->tbl, "lambda", ~3);
-  xh_put(senv->tbl, "if", ~4);
-  xh_put(senv->tbl, "begin", ~5);
+  senv->tbl = pic->var_tbl;
+  senv->stx = pic->stx;
 
   return macroexpand(pic, expr, senv);
 }

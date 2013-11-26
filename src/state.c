@@ -118,6 +118,19 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sGT, ">");
   register_core_symbol(pic, sGE, ">=");
   pic_gc_arena_restore(pic, ai);
+
+#define register_core_syntax(pic,kind,name) do {			\
+    pic->stx[pic->xlen] = pic_syntax_new(pic, kind, pic_intern_cstr(pic, name)); \
+    xh_put(pic->global_tbl, name, ~pic->xlen);				\
+    pic->xlen++;							\
+  } while (0)
+
+  register_core_syntax(pic, PIC_STX_DEFINE, "define");
+  register_core_syntax(pic, PIC_STX_SET, "set!");
+  register_core_syntax(pic, PIC_STX_QUOTE, "quote");
+  register_core_syntax(pic, PIC_STX_LAMBDA, "lambda");
+  register_core_syntax(pic, PIC_STX_IF, "if");
+  register_core_syntax(pic, PIC_STX_BEGIN, "begin");
   pic_gc_arena_restore(pic, ai);
 
   pic_init_core(pic);
