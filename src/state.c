@@ -82,31 +82,35 @@ pic_open(int argc, char *argv[], char **envp)
   /* native stack marker */
   pic->native_stack_start = &t;
 
+#define register_core_symbol(pic,slot,name) do {	\
+    pic->slot = pic_intern_cstr(pic, name);		\
+  } while (0)
+
   ai = pic_gc_arena_preserve(pic);
-  pic->sDEFINE = pic_intern_cstr(pic, "define");
-  pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
-  pic->sIF = pic_intern_cstr(pic, "if");
-  pic->sBEGIN = pic_intern_cstr(pic, "begin");
-  pic->sSETBANG = pic_intern_cstr(pic, "set!");
-  pic->sQUOTE = pic_intern_cstr(pic, "quote");
-  pic->sQUASIQUOTE = pic_intern_cstr(pic, "quasiquote");
-  pic->sUNQUOTE = pic_intern_cstr(pic, "unquote");
-  pic->sUNQUOTE_SPLICING = pic_intern_cstr(pic, "unquote-splicing");
-  pic->sDEFINE_SYNTAX = pic_intern_cstr(pic, "define-syntax");
-  pic->sDEFINE_MACRO = pic_intern_cstr(pic, "define-macro");
-  pic->sCONS = pic_intern_cstr(pic, "cons");
-  pic->sCAR = pic_intern_cstr(pic, "car");
-  pic->sCDR = pic_intern_cstr(pic, "cdr");
-  pic->sNILP = pic_intern_cstr(pic, "null?");
-  pic->sADD = pic_intern_cstr(pic, "+");
-  pic->sSUB = pic_intern_cstr(pic, "-");
-  pic->sMUL = pic_intern_cstr(pic, "*");
-  pic->sDIV = pic_intern_cstr(pic, "/");
-  pic->sEQ = pic_intern_cstr(pic, "=");
-  pic->sLT = pic_intern_cstr(pic, "<");
-  pic->sLE = pic_intern_cstr(pic, "<=");
-  pic->sGT = pic_intern_cstr(pic, ">");
-  pic->sGE = pic_intern_cstr(pic, ">=");
+  register_core_symbol(pic, sDEFINE, "define");
+  register_core_symbol(pic, sLAMBDA, "lambda");
+  register_core_symbol(pic, sIF, "if");
+  register_core_symbol(pic, sBEGIN, "begin");
+  register_core_symbol(pic, sSETBANG, "set!");
+  register_core_symbol(pic, sQUOTE, "quote");
+  register_core_symbol(pic, sQUASIQUOTE, "quasiquote");
+  register_core_symbol(pic, sUNQUOTE, "unquote");
+  register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
+  register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
+  register_core_symbol(pic, sCONS, "cons");
+  register_core_symbol(pic, sCAR, "car");
+  register_core_symbol(pic, sCDR, "cdr");
+  register_core_symbol(pic, sNILP, "null?");
+  register_core_symbol(pic, sADD, "+");
+  register_core_symbol(pic, sSUB, "-");
+  register_core_symbol(pic, sMUL, "*");
+  register_core_symbol(pic, sDIV, "/");
+  register_core_symbol(pic, sEQ, "=");
+  register_core_symbol(pic, sLT, "<");
+  register_core_symbol(pic, sLE, "<=");
+  register_core_symbol(pic, sGT, ">");
+  register_core_symbol(pic, sGE, ">=");
+  pic_gc_arena_restore(pic, ai);
   pic_gc_arena_restore(pic, ai);
 
   pic_init_core(pic);
