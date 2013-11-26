@@ -119,7 +119,7 @@ pic_open(int argc, char *argv[], char **envp)
 
 #define register_core_syntax(pic,kind,name) do {			\
     pic->stx[pic->xlen] = pic_syntax_new(pic, kind, pic_intern_cstr(pic, name)); \
-    xh_put(pic->global_tbl, name, ~pic->xlen);				\
+    xh_put(pic->var_tbl, name, ~pic->xlen);				\
     pic->xlen++;							\
   } while (0)
 
