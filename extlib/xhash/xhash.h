@@ -62,8 +62,7 @@ xh_get(struct xhash *x, const char *key)
 static inline struct xh_entry *
 xh_put(struct xhash *x, const char *key, int val)
 {
-  int idx, len;
-  char *new_key;
+  int idx;
   struct xh_entry *e;
 
   if ((e = xh_get(x, key))) {
@@ -71,14 +70,10 @@ xh_put(struct xhash *x, const char *key, int val)
     return e;
   }
 
-  len = strlen(key);
-  new_key = (char *)malloc(len+1);
-  strcpy(new_key, key);
-
   idx = xh_hash(key) % x->size;
   e = (struct xh_entry *)malloc(sizeof(struct xh_entry));
   e->next = x->buckets[idx];
-  e->key = new_key;
+  e->key = strdup(key);
   e->val = val;
 
   return x->buckets[idx] = e;
