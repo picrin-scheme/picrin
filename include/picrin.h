@@ -50,6 +50,7 @@ typedef struct {
   struct xhash *sym_tbl;
   const char **sym_pool;
   size_t slen, scapa;
+  int uniq_sym_count;
 
   /* positive for variables, negative for macros (bitwise-not) */
   struct xhash *global_tbl;

@@ -51,6 +51,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->sym_pool = (const char **)calloc(PIC_SYM_POOL_SIZE, sizeof(const char *));
   pic->slen = 0;
   pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
+  pic->uniq_sym_count = 0;
 
   /* irep */
   pic->irep = (struct pic_irep **)calloc(PIC_IREP_SIZE, sizeof(struct pic_irep *));

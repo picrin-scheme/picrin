@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
+#include <math.h>
 
 #include "picrin.h"
 #include "picrin/pair.h"
@@ -189,4 +191,19 @@ pic_macroexpand(pic_state *pic, pic_value obj)
 #endif
 
   return v;
+}
+
+static pic_sym
+new_uniq_sym(pic_state *pic, pic_sym base)
+{
+  int s = pic->uniq_sym_count++;
+  char *str;
+  pic_sym uniq;
+
+  str = (char *)pic_alloc(pic, strlen(pic_symbol_name(pic, base)), + (int)log10(s) + 2);
+  sprintf(str, "%s@%d", pic_symbol_name(pic, base), s);
+  uniq = pic_intern_cstr(pic, str);
+
+  pic_free(pic, str);
+  return uniq;
 }
