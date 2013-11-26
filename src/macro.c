@@ -242,8 +242,8 @@ macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv)
 {
   pic_value v;
 
-  if (pic_nil_p(list))
-    return list;
+  if (! pic_pair_p(list))
+    return macroexpand(pic, list, senv);
 
   v = macroexpand(pic, pic_car(pic, list), senv);
   return pic_cons(pic, v, macroexpand_list(pic, pic_cdr(pic, list), senv));
