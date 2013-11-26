@@ -210,3 +210,199 @@ new_uniq_sym(pic_state *pic, pic_sym base)
   pic_free(pic, str);
   return uniq;
 }
+
+static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
+
+static pic_value
+macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
+  int ai = pic_gc_arena_preserve(pic);
+
+  switch (pic_type(expr)) {
+  case PIC_TT_SYMBOL: {
+    struct xh_entry *e;
+    while (senv) {
+      if ((e = xh_get(senv->tbl, pic_symbol_name(pic, pic_sym(expr)))) != NULL) {
+	if (e->val >= 0)
+	  return pic_symbol_value((pic_sym)e->val);
+	else
+	  return pic_obj_value(senv->stx[~e->val]);
+      }
+      senv = senv->up;
+    }
+    return expr;
+  }
+  case PIC_TT_PAIR: {
+    pic_value car, v;
+
+    if (! pic_list_p(pic, expr))
+      return expr;
+
+    car = macroexpand(pic, pic_car(pic, expr), senv);
+    if (pic_syntax_p(car)) {
+      switch (pic_syntax(car)->kind) {
+      case PIC_STX_LAMBDA: {
+	struct pic_senv *in;
+	pic_value a;
+
+	in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+	in->up = senv;
+	in->tbl = xh_new();
+	in->stx = NULL;
+
+	for (a = pic_cadr(pic, expr); ! pic_nil_p(a); a = pic_cdr(pic, a)) {
+	  pic_sym gen, orig;
+
+	  orig = pic_sym(pic_car(pic, a));
+	  gen = new_uniq_sym(pic, orig);
+	  xh_put(senv->tbl, pic_symbol_name(pic, orig), (int)gen);
+	}
+
+	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
+		     pic_cons(pic,
+			      macroexpand_list(pic, pic_cadr(pic, expr), in),
+			      macroexpand_list(pic, pic_cddr(pic, expr), in)));
+
+	pic_gc_arena_restore(pic, ai);
+	pic_gc_protect(pic, v);
+	return v;
+      }
+      case PIC_STX_DEFINE: {
+	pic_sym uniq;
+	pic_value var;
+	struct pic_senv *in = senv;
+
+	if (pic_length(pic, expr) < 2) {
+	  pic_error(pic, "syntax error");
+	}
+
+	var = pic_car(pic, pic_cdr(pic, expr));
+	if (pic_pair_p(var)) {
+	  pic_value a;
+
+	  in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+	  in->up = senv;
+	  in->tbl = xh_new();
+	  in->stx = NULL;
+
+	  for (a = var; pic_pair_p(a); a = pic_cdr(pic, a)) {
+	    pic_sym gen, orig;
+
+	    orig = pic_sym(pic_car(pic, a));
+	    gen = new_uniq_sym(pic, orig);
+	    xh_put(senv->tbl, pic_symbol_name(pic, orig), (int)gen);
+	  }
+	  if (pic_symbol_p(a)) {
+	    xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
+	  }
+
+	  v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
+		       pic_cons(pic,
+				macroexpand_list(pic, pic_cadr(pic, expr), in),
+				macroexpand_list(pic, pic_cddr(pic, expr), in)));
+	  pic_gc_arena_restore(pic, ai);
+	  pic_gc_protect(pic, v);
+	  return v;
+	}
+
+	uniq = new_uniq_sym(pic, pic_sym(var));
+	xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(var)), (int)uniq);
+      }
+	FALLTHROUGH;
+      case PIC_STX_SET:
+      case PIC_STX_IF:
+      case PIC_STX_BEGIN:
+	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), macroexpand_list(pic, pic_cdr(pic, expr), senv));
+	pic_gc_arena_restore(pic, ai);
+	pic_gc_protect(pic, v);
+	return v;
+      case PIC_STX_QUOTE:
+	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), pic_cdr(pic, expr));
+	pic_gc_arena_restore(pic, ai);
+	pic_gc_protect(pic, v);
+	return v;
+      }
+    }
+
+    v = pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, v);
+    return v;
+  }
+  case PIC_TT_EOF:
+  case PIC_TT_NIL:
+  case PIC_TT_BOOL:
+  case PIC_TT_FLOAT:
+  case PIC_TT_INT:
+  case PIC_TT_CHAR:
+  case PIC_TT_STRING:
+  case PIC_TT_VECTOR:
+  case PIC_TT_BLOB: {
+    return expr;
+  }
+  case PIC_TT_PROC:
+  case PIC_TT_PORT:
+  case PIC_TT_ERROR:
+  case PIC_TT_ENV:
+  case PIC_TT_CONT:
+  case PIC_TT_UNDEF:
+  case PIC_TT_SENV:
+  case PIC_TT_SYNTAX:
+    pic_error(pic, "unexpected value type");
+    return pic_undef_value();	/* unreachable */
+  }
+  /* suppress warnings, never be called */
+  abort();
+}
+
+static pic_value
+macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv)
+{
+  pic_value v;
+
+  if (pic_nil_p(list))
+    return list;
+
+  v = macroexpand(pic, pic_car(pic, list), senv);
+  return pic_cons(pic, v, macroexpand_list(pic, pic_cdr(pic, list), senv));
+}
+
+static struct pic_syntax *
+pic_syntax_new(pic_state *pic, int kind, pic_sym sym)
+{
+  struct pic_syntax *stx;
+
+  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
+  stx->kind = kind;
+  stx->sym = sym;
+  return stx;
+}
+
+pic_value
+pic_macroexpand_2(pic_state *pic, pic_value expr)
+{
+  struct pic_senv *senv;
+  struct pic_syntax **stx;
+
+  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  senv->up = NULL;
+  senv->tbl = xh_new();
+  senv->stx = NULL;
+  stx = (struct pic_syntax **)pic_alloc(pic, sizeof(struct pic_syntax *) * 6);
+  stx[0] = pic_syntax_new(pic, PIC_STX_DEFINE, pic->sDEFINE);
+  stx[1] = pic_syntax_new(pic, PIC_STX_SET, pic->sSETBANG);
+  stx[2] = pic_syntax_new(pic, PIC_STX_QUOTE, pic->sQUOTE);
+  stx[3] = pic_syntax_new(pic, PIC_STX_LAMBDA, pic->sLAMBDA);
+  stx[4] = pic_syntax_new(pic, PIC_STX_IF, pic->sIF);
+  stx[5] = pic_syntax_new(pic, PIC_STX_BEGIN, pic->sBEGIN);
+  senv->stx = stx;
+
+  xh_put(senv->tbl, "define", ~0);
+  xh_put(senv->tbl, "set!", ~1);
+  xh_put(senv->tbl, "quote", ~2);
+  xh_put(senv->tbl, "lambda", ~3);
+  xh_put(senv->tbl, "if", ~4);
+  xh_put(senv->tbl, "begin", ~5);
+
+  return macroexpand(pic, expr, senv);
+}
