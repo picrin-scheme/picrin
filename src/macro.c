@@ -6,6 +6,7 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/proc.h"
+#include "picrin/macro.h"
 #include "xhash/xhash.h"
 
 #define FALLTHROUGH ((void)0)
