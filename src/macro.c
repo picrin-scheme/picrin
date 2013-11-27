@@ -16,12 +16,13 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
   int idx;
 
-  idx = pic->xlen++;
+  idx = pic->xlen;
   if (idx >= pic->xcapa) {
     pic_abort(pic, "macro table overflow");
   }
   pic->stx[idx] = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro);
   xh_put(pic->global_tbl, name, ~idx);
+  pic->xlen++;
 }
 
 static pic_sym
