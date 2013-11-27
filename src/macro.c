@@ -80,6 +80,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	var = pic_car(pic, pic_cdr(pic, expr));
 	if (pic_pair_p(var)) {
+	  /* FIXME: unhygienic */
 	  val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
 			 pic_cons(pic, pic_cdr(pic, var),
 				  pic_cdr(pic, pic_cdr(pic, expr))));
