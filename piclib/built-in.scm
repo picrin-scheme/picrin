@@ -177,6 +177,16 @@
       (single-for-each f list)
       (multiple-for-each f (cons list lists))))
 
+(define sc-macro-transformer
+  (lambda (f)
+    (lambda (expr use-env mac-env)
+      (make-syntactic-closure mac-env '() (f expr use-env)))))
+
+(define rsc-macro-transformer
+  (lambda (f)
+    (lambda (expr use-env mac-env)
+      (make-syntactic-closure use-env '() (f expr mac-env)))))
+
 (define-macro (let bindings . body)
   (if (symbol? bindings)
       (begin
