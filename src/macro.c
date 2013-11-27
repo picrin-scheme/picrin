@@ -26,6 +26,45 @@ new_uniq_sym(pic_state *pic, pic_sym base)
   return uniq;
 }
 
+static struct pic_senv *
+new_global_senv(pic_state *pic)
+{
+  struct pic_senv *senv;
+
+  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  senv->up = NULL;
+  senv->tbl = pic->var_tbl;
+  senv->stx = pic->stx;
+  senv->xlen = pic->xlen;
+  senv->xcapa = pic->xcapa;
+  return senv;
+}
+
+static struct pic_senv *
+new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
+{
+  struct pic_senv *senv;
+  pic_value a;
+  pic_sym sym;
+
+  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  senv->up = up;
+  senv->tbl = xh_new();
+  senv->stx = NULL;
+  senv->xlen = 0;
+  senv->xcapa = 0;
+
+  for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
+    sym = pic_sym(pic_car(pic, a));
+    xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)new_uniq_sym(pic, sym));
+  }
+  if (pic_symbol_p(a)) {
+    sym = pic_sym(a);
+    xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)new_uniq_sym(pic, sym));
+  }
+  return senv;
+}
+
 struct pic_syntax *
 pic_syntax_new(pic_state *pic, int kind, pic_sym sym)
 {
@@ -148,24 +187,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	return macroexpand(pic, v, senv);
       }
       case PIC_STX_LAMBDA: {
-	struct pic_senv *in;
-	pic_value a;
-
-	in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-	in->up = senv;
-	in->tbl = xh_new();
-	in->stx = NULL;
-
-	for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
-	  pic_sym gen, orig;
-
-	  orig = pic_sym(pic_car(pic, a));
-	  gen = new_uniq_sym(pic, orig);
-	  xh_put(in->tbl, pic_symbol_name(pic, orig), (int)gen);
-	}
-	if (pic_symbol_p(a)) {
-	  xh_put(in->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
-	}
+	struct pic_senv *in = new_local_senv(pic, pic_cadr(pic, expr), senv);
 
 	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
 		     pic_cons(pic,
@@ -179,7 +201,6 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       case PIC_STX_DEFINE: {
 	pic_sym uniq;
 	pic_value var;
-	struct pic_senv *in = senv;
 
 	if (pic_length(pic, expr) < 2) {
 	  pic_error(pic, "syntax error");
@@ -187,35 +208,24 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	var = pic_cadr(pic, expr);
 	if (pic_pair_p(var)) {
+	  struct pic_senv *in = new_local_senv(pic, pic_cdr(pic, var), senv);
 	  pic_value a;
-
-	  in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-	  in->up = senv;
-	  in->tbl = xh_new();
-	  in->stx = NULL;
-	  in->xlen = 0;
-	  in->xcapa = 0;
+	  pic_sym sym;
 
 	  /* defined symbol */
 	  a = pic_car(pic, var);
-	  xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
-	  var = pic_cdr(pic, var);
-
-	  for (a = var; pic_pair_p(a); a = pic_cdr(pic, a)) {
-	    pic_sym gen, orig;
-
-	    orig = pic_sym(pic_car(pic, a));
-	    gen = new_uniq_sym(pic, orig);
-	    xh_put(in->tbl, pic_symbol_name(pic, orig), (int)gen);
+	  if (! pic_symbol_p(a)) {
+	    pic_error(pic, "binding to non-symbol object");
 	  }
-	  if (pic_symbol_p(a)) {
-	    xh_put(in->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
-	  }
+	  sym = pic_sym(a);
+	  xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)new_uniq_sym(pic, sym));
 
+	  /* binding value */
 	  v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
 		       pic_cons(pic,
 				macroexpand_list(pic, pic_cadr(pic, expr), in),
 				macroexpand_list(pic, pic_cddr(pic, expr), in)));
+
 	  pic_gc_arena_restore(pic, ai);
 	  pic_gc_protect(pic, v);
 	  return v;
@@ -292,12 +302,7 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   struct pic_senv *senv;
   pic_value v;
 
-  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = NULL;
-  senv->tbl = pic->var_tbl;
-  senv->stx = pic->stx;
-  senv->xlen = pic->xlen;
-  senv->xcapa = pic->xcapa;
+  senv = new_global_senv(pic);
 
 #if DEBUG
   puts("before expand:");
