@@ -248,6 +248,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  return v;
 	}
 
+	if (! pic_symbol_p(var)) {
+	  pic_error(pic, "binding to non-symbol object");
+	}
 	uniq = new_uniq_sym(pic, pic_sym(var));
 	xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(var)), (int)uniq);
       }
