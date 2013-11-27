@@ -89,6 +89,17 @@ pic_syntax_new_macro(pic_state *pic, pic_sym sym, struct pic_proc *macro)
   return stx;
 }
 
+static struct pic_sc *
+sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
+  struct pic_sc *sc;
+
+  sc = (struct pic_sc *)pic_obj_alloc(pic, sizeof(struct pic_sc), PIC_TT_SC);
+  sc->expr = expr;
+  sc->senv = senv;
+  return sc;
+}
+
 void
 pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
@@ -325,4 +336,27 @@ pic_macroexpand(pic_state *pic, pic_value expr)
 #endif
 
   return v;
+}
+
+static pic_value
+pic_make_sc(pic_state *pic)
+{
+  pic_value senv, free_vars, expr;
+  struct pic_sc *sc;
+
+  pic_get_args(pic, "ooo", &senv, &free_vars, &expr);
+
+  if (! pic_senv_p(senv))
+    pic_error(pic, "make-syntactic-closure: senv required");
+
+  /* just ignore free_vars for now */
+  sc = sc_new(pic, expr, pic_senv(senv));
+
+  return pic_obj_value(sc);
+}
+
+void
+pic_init_macro(pic_state *pic)
+{
+  pic_defun(pic, "make-syntactic-closure", pic_make_sc);
 }

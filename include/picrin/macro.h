@@ -37,6 +37,9 @@ struct pic_sc {
 #define pic_syntax(v) ((struct pic_syntax *)pic_ptr(v))
 #define pic_syntax_p(v) (pic_type(v) == PIC_TT_SYNTAX)
 
+#define pic_senv(v) ((struct pic_senv *)pic_ptr(v))
+#define pic_senv_p(v) (pic_type(v) == PIC_TT_SENV)
+
 struct pic_syntax *pic_syntax_new(pic_state *, int kind, pic_sym sym);
 struct pic_syntax *pic_syntax_new_macro(pic_state *, pic_sym, struct pic_proc *);
 
