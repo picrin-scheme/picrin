@@ -16,40 +16,26 @@
 void
 init_heap(struct pic_heap *heap)
 {
-  heap->base.s.ptr = heap->freep = &heap->base;
+  int nu;
+
+  nu = (PIC_HEAP_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
+
+  heap->base.s.ptr = (union header *)calloc(nu, sizeof(union header));
   heap->base.s.size = 0;	/* not 1, since it must never be fused into other headers */
   heap->base.s.mark = PIC_GC_UNMARK;
+
+  heap->freep = heap->base.s.ptr;
+  heap->freep->s.size = nu - 1;
+  heap->freep->s.ptr = heap->freep + heap->freep->s.size;
+  heap->freep->s.mark = PIC_GC_UNMARK;
+
+  heap->freep->s.ptr->s.size = 0;
+  heap->freep->s.ptr->s.ptr = &heap->base;
+  heap->freep->s.ptr->s.mark = PIC_GC_UNMARK;
 
 #if GC_DEBUG
   printf("freep = %p\n", heap->freep);
 #endif
-}
-
-static void gc_free(pic_state *, union header *);
-
-static void *
-add_heap_page(pic_state *pic)
-{
-  int nu;
-  union header *p, *ep;
-
-#if DEBUG
-  puts("heap page added");
-#endif
-
-  nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
-  p = (union header *)calloc(nu, sizeof(union header));
-  p->s.size = nu - 1;
-  p->s.mark = PIC_GC_UNMARK;
-  gc_free(pic, p);
-
-  ep = p + p->s.size;		/* end of page */
-  ep->s.size = 0;
-  ep->s.mark = PIC_GC_UNMARK;
-  ep->s.ptr = p->s.ptr;
-  p->s.ptr = ep;
-
-  return pic->heap->freep;
 }
 
 void *
@@ -139,8 +125,7 @@ gc_alloc(pic_state *pic, size_t size)
     if (p->s.size >= nunits)
       break;
     if (p == freep) {
-      if ((p = add_heap_page(pic)) == NULL)
-	return NULL;
+      return 0;
     }
   }
   if (p->s.size == nunits) {
