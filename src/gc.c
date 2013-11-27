@@ -139,7 +139,8 @@ gc_alloc(pic_state *pic, size_t size)
     if (p->s.size >= nunits)
       break;
     if (p == freep) {
-      return NULL;
+      if ((p = add_heap_page(pic)) == NULL)
+	return NULL;
     }
   }
   if (p->s.size == nunits) {
@@ -493,11 +494,8 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
   if (obj == NULL) {
     pic_gc_run(pic);
     obj = (struct pic_object *)gc_alloc(pic, size);
-    if (obj == NULL) {
-      if (add_heap_page(pic) == NULL)
-	pic_abort(pic, "GC memory exhausted");
-      obj = (struct pic_object *)gc_alloc(pic, size);
-    }
+    if (obj == NULL)
+      pic_abort(pic, "GC memory exhausted");
   }
   obj->tt = tt;
 
