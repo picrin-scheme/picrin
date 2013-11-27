@@ -277,6 +277,7 @@ pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
   while (argc--) {
     v = pic_cons(pic, va_arg(ap, pic_value), v);
   }
+  v = pic_reverse(pic, v);
 
   va_end(ap);
   return pic_apply(pic, proc, v);
