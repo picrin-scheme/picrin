@@ -267,6 +267,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (stx->macro) {
       gc_mark_object(pic, (struct pic_object *)stx->macro);
     }
+    if (stx->senv) {
+      gc_mark_object(pic, (struct pic_object *)stx->macro);
+    }
     break;
   }
   case PIC_TT_SENV: {
