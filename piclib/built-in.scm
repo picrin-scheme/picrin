@@ -187,6 +187,23 @@
     (lambda (expr use-env mac-env)
       (make-syntactic-closure use-env '() (f expr mac-env)))))
 
+(define er-macro-transformer
+  (lambda (f)
+    (lambda (expr use-env mac-env)
+      ((lambda (rename compare) (f expr rename compare))
+       ((lambda (renames)
+          (lambda (identifier)
+            ((lambda (cell)
+               (if cell
+                   (cdr cell)
+                   ((lambda (name)
+                      (set! renames (cons (cons identifier name) renames))
+                      name)
+                    (make-syntactic-closure mac-env '() identifier))))
+             (assq identifier renames))))
+        '())
+       (lambda (x y) (identifier=? use-env x use-env y))))))
+
 (define-macro (let bindings . body)
   (if (symbol? bindings)
       (begin

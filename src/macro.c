@@ -102,6 +102,18 @@ sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
   return sc;
 }
 
+static bool
+pic_identifier_p(pic_value obj)
+{
+  if (pic_symbol_p(obj)) {
+    return true;
+  }
+  if (pic_sc_p(obj)) {
+    return pic_identifier_p(pic_sc(obj)->expr);
+  }
+  return false;
+}
+
 static void
 pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
 {
@@ -395,7 +407,7 @@ pic_macroexpand(pic_state *pic, pic_value expr)
 }
 
 static pic_value
-pic_make_sc(pic_state *pic)
+pic_macro_make_sc(pic_state *pic)
 {
   pic_value senv, free_vars, expr;
   struct pic_sc *sc;
@@ -411,8 +423,49 @@ pic_make_sc(pic_state *pic)
   return pic_obj_value(sc);
 }
 
+static pic_value
+pic_macro_identifier_p(pic_state *pic)
+{
+  pic_value obj;
+
+  pic_get_args(pic, "o", &obj);
+
+  return pic_bool_value(pic_identifier_p(obj));
+}
+
+static pic_value
+pic_macro_identifier_eq_p(pic_state *pic)
+{
+  pic_value e, x, f, y;
+  struct pic_senv *e1, *e2;
+
+  pic_get_args(pic, "oooo", &e, &x, &f, &y);
+
+  if (! pic_senv_p(e)) {
+    pic_error(pic, "unexpected type of argument 1");
+  }
+  e1 = pic_senv(e);
+  if (! pic_identifier_p(x)) {
+    pic_error(pic, "unexpected type of argument 2");
+  }
+  if (! pic_senv_p(f)) {
+    pic_error(pic, "unexpected type of argument 3");
+  }
+  e2 = pic_senv(f);
+  if (! pic_identifier_p(y)) {
+    pic_error(pic, "unexpected type of argument 4");
+  }
+
+  x = macroexpand(pic, x, e1);
+  y = macroexpand(pic, y, e2);
+
+  return pic_bool_value(pic_eq_p(x, y));
+}
+
 void
 pic_init_macro(pic_state *pic)
 {
-  pic_defun(pic, "make-syntactic-closure", pic_make_sc);
+  pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
+  pic_defun(pic, "identifier?", pic_macro_identifier_p);
+  pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
 }
