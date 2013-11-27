@@ -5,6 +5,7 @@
 #include "picrin/proc.h"
 #include "picrin/port.h"
 #include "picrin/blob.h"
+#include "picrin/macro.h"
 
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
@@ -104,7 +105,9 @@ write(pic_state *pic, pic_value obj)
     printf("#<senv %p>", pic_ptr(obj));
     break;
   case PIC_TT_SC:
-    printf("#<sc %p>", pic_ptr(obj));
+    printf("#<sc %p: ", pic_ptr(obj));
+    write(pic, pic_sc(obj)->expr);
+    printf(">");
     break;
   }
 }
