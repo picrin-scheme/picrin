@@ -111,6 +111,12 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
   int ai = pic_gc_arena_preserve(pic);
 
   switch (pic_type(expr)) {
+  case PIC_TT_SC: {
+    struct pic_sc *sc;
+
+    sc = pic_sc(expr);
+    return macroexpand(pic, sc->expr, sc->senv);
+  }
   case PIC_TT_SYMBOL: {
     struct xh_entry *e;
     while (senv) {

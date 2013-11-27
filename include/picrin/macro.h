@@ -25,6 +25,15 @@ struct pic_syntax {
   struct pic_proc *macro;
 };
 
+struct pic_sc {
+  PIC_OBJECT_HEADER
+  pic_value expr;
+  struct pic_senv *senv;
+};
+
+#define pic_sc(v) ((struct pic_sc *)pic_ptr(v))
+#define pic_sc_p(v) (pic_type(v) == PIC_TT_SC)
+
 #define pic_syntax(v) ((struct pic_syntax *)pic_ptr(v))
 #define pic_syntax_p(v) (pic_type(v) == PIC_TT_SYNTAX)
 
