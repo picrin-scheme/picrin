@@ -131,12 +131,14 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	in->tbl = xh_new();
 	in->stx = NULL;
 
-	for (a = pic_cadr(pic, expr); ! pic_nil_p(a); a = pic_cdr(pic, a)) {
+	for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
 	  pic_sym gen, orig;
 
 	  orig = pic_sym(pic_car(pic, a));
 	  gen = new_uniq_sym(pic, orig);
 	  xh_put(senv->tbl, pic_symbol_name(pic, orig), (int)gen);
+	if (pic_symbol_p(a)) {
+	  xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
 	}
 
 	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
