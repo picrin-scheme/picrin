@@ -136,9 +136,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	  orig = pic_sym(pic_car(pic, a));
 	  gen = new_uniq_sym(pic, orig);
-	  xh_put(senv->tbl, pic_symbol_name(pic, orig), (int)gen);
+	  xh_put(in->tbl, pic_symbol_name(pic, orig), (int)gen);
+	}
 	if (pic_symbol_p(a)) {
-	  xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
+	  xh_put(in->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
 	}
 
 	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
@@ -170,15 +171,20 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  in->xlen = 0;
 	  in->xcapa = 0;
 
+	  /* defined symbol */
+	  a = pic_car(pic, var);
+	  xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
+	  var = pic_cdr(pic, var);
+
 	  for (a = var; pic_pair_p(a); a = pic_cdr(pic, a)) {
 	    pic_sym gen, orig;
 
 	    orig = pic_sym(pic_car(pic, a));
 	    gen = new_uniq_sym(pic, orig);
-	    xh_put(senv->tbl, pic_symbol_name(pic, orig), (int)gen);
+	    xh_put(in->tbl, pic_symbol_name(pic, orig), (int)gen);
 	  }
 	  if (pic_symbol_p(a)) {
-	    xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
+	    xh_put(in->tbl, pic_symbol_name(pic, pic_sym(a)), (int)new_uniq_sym(pic, pic_sym(a)));
 	  }
 
 	  v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
