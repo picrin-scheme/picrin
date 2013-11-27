@@ -3,6 +3,7 @@
 #include "picrin.h"
 #include "picrin/gc.h"
 #include "picrin/proc.h"
+#include "picrin/macro.h"
 #include "xhash/xhash.h"
 
 void pic_init_core(pic_state *);
@@ -51,6 +52,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->sym_pool = (const char **)calloc(PIC_SYM_POOL_SIZE, sizeof(const char *));
   pic->slen = 0;
   pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
+  pic->uniq_sym_count = 0;
 
   /* irep */
   pic->irep = (struct pic_irep **)calloc(PIC_IREP_SIZE, sizeof(struct pic_irep *));
@@ -62,9 +64,12 @@ pic_open(int argc, char *argv[], char **envp)
   pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
-  pic->macros = (struct pic_proc **)calloc(PIC_MACROS_SIZE, sizeof(struct pic_proc *));
-  pic->mlen = 0;
-  pic->mcapa = PIC_MACROS_SIZE;
+
+  /* identifier table */
+  pic->var_tbl = xh_new();
+  pic->stx = (struct pic_syntax **)calloc(PIC_MACROS_SIZE, sizeof(struct pic_syntax *));
+  pic->xlen = 0;
+  pic->xcapa = PIC_MACROS_SIZE;
 
   /* pool */
   pic->pool = (pic_value *)calloc(PIC_POOL_SIZE, sizeof(pic_value));
@@ -81,31 +86,50 @@ pic_open(int argc, char *argv[], char **envp)
   /* native stack marker */
   pic->native_stack_start = &t;
 
+#define register_core_symbol(pic,slot,name) do {	\
+    pic->slot = pic_intern_cstr(pic, name);		\
+  } while (0)
+
   ai = pic_gc_arena_preserve(pic);
-  pic->sDEFINE = pic_intern_cstr(pic, "define");
-  pic->sLAMBDA = pic_intern_cstr(pic, "lambda");
-  pic->sIF = pic_intern_cstr(pic, "if");
-  pic->sBEGIN = pic_intern_cstr(pic, "begin");
-  pic->sSETBANG = pic_intern_cstr(pic, "set!");
-  pic->sQUOTE = pic_intern_cstr(pic, "quote");
-  pic->sQUASIQUOTE = pic_intern_cstr(pic, "quasiquote");
-  pic->sUNQUOTE = pic_intern_cstr(pic, "unquote");
-  pic->sUNQUOTE_SPLICING = pic_intern_cstr(pic, "unquote-splicing");
-  pic->sDEFINE_SYNTAX = pic_intern_cstr(pic, "define-syntax");
-  pic->sDEFINE_MACRO = pic_intern_cstr(pic, "define-macro");
-  pic->sCONS = pic_intern_cstr(pic, "cons");
-  pic->sCAR = pic_intern_cstr(pic, "car");
-  pic->sCDR = pic_intern_cstr(pic, "cdr");
-  pic->sNILP = pic_intern_cstr(pic, "null?");
-  pic->sADD = pic_intern_cstr(pic, "+");
-  pic->sSUB = pic_intern_cstr(pic, "-");
-  pic->sMUL = pic_intern_cstr(pic, "*");
-  pic->sDIV = pic_intern_cstr(pic, "/");
-  pic->sEQ = pic_intern_cstr(pic, "=");
-  pic->sLT = pic_intern_cstr(pic, "<");
-  pic->sLE = pic_intern_cstr(pic, "<=");
-  pic->sGT = pic_intern_cstr(pic, ">");
-  pic->sGE = pic_intern_cstr(pic, ">=");
+  register_core_symbol(pic, sDEFINE, "define");
+  register_core_symbol(pic, sLAMBDA, "lambda");
+  register_core_symbol(pic, sIF, "if");
+  register_core_symbol(pic, sBEGIN, "begin");
+  register_core_symbol(pic, sSETBANG, "set!");
+  register_core_symbol(pic, sQUOTE, "quote");
+  register_core_symbol(pic, sQUASIQUOTE, "quasiquote");
+  register_core_symbol(pic, sUNQUOTE, "unquote");
+  register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
+  register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
+  register_core_symbol(pic, sDEFINE_MACRO, "define-macro");
+  register_core_symbol(pic, sCONS, "cons");
+  register_core_symbol(pic, sCAR, "car");
+  register_core_symbol(pic, sCDR, "cdr");
+  register_core_symbol(pic, sNILP, "null?");
+  register_core_symbol(pic, sADD, "+");
+  register_core_symbol(pic, sSUB, "-");
+  register_core_symbol(pic, sMUL, "*");
+  register_core_symbol(pic, sDIV, "/");
+  register_core_symbol(pic, sEQ, "=");
+  register_core_symbol(pic, sLT, "<");
+  register_core_symbol(pic, sLE, "<=");
+  register_core_symbol(pic, sGT, ">");
+  register_core_symbol(pic, sGE, ">=");
+  pic_gc_arena_restore(pic, ai);
+
+#define register_core_syntax(pic,kind,name) do {			\
+    pic->stx[pic->xlen] = pic_syntax_new(pic, kind, pic_intern_cstr(pic, name)); \
+    xh_put(pic->var_tbl, name, ~pic->xlen);				\
+    pic->xlen++;							\
+  } while (0)
+
+  register_core_syntax(pic, PIC_STX_DEFINE, "define");
+  register_core_syntax(pic, PIC_STX_SET, "set!");
+  register_core_syntax(pic, PIC_STX_QUOTE, "quote");
+  register_core_syntax(pic, PIC_STX_LAMBDA, "lambda");
+  register_core_syntax(pic, PIC_STX_IF, "if");
+  register_core_syntax(pic, PIC_STX_BEGIN, "begin");
+  register_core_syntax(pic, PIC_STX_DEFMACRO, "define-macro");
   pic_gc_arena_restore(pic, ai);
 
   pic_init_core(pic);

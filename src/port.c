@@ -97,6 +97,12 @@ write(pic_state *pic, pic_value obj)
   case PIC_TT_CONT:
     printf("#<cont %p>", pic_ptr(obj));
     break;
+  case PIC_TT_SENV:
+    printf("#<senv %p>", pic_ptr(obj));
+    break;
+  case PIC_TT_SYNTAX:
+    printf("#<senv %p>", pic_ptr(obj));
+    break;
   }
 }
 

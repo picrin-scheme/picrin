@@ -89,7 +89,9 @@ enum pic_tt {
   PIC_TT_PORT,
   PIC_TT_ERROR,
   PIC_TT_ENV,
-  PIC_TT_CONT
+  PIC_TT_CONT,
+  PIC_TT_SENV,
+  PIC_TT_SYNTAX
 };
 
 #define PIC_OBJECT_HEADER			\
