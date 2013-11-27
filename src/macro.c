@@ -11,20 +11,6 @@
 
 #define FALLTHROUGH ((void)0)
 
-void
-pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
-{
-  int idx;
-
-  idx = pic->xlen;
-  if (idx >= pic->xcapa) {
-    pic_abort(pic, "macro table overflow");
-  }
-  pic->stx[idx] = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro);
-  xh_put(pic->var_tbl, name, ~idx);
-  pic->xlen++;
-}
-
 static pic_sym
 new_uniq_sym(pic_state *pic, pic_sym base)
 {
@@ -38,6 +24,44 @@ new_uniq_sym(pic_state *pic, pic_sym base)
 
   pic_free(pic, str);
   return uniq;
+}
+
+struct pic_syntax *
+pic_syntax_new(pic_state *pic, int kind, pic_sym sym)
+{
+  struct pic_syntax *stx;
+
+  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
+  stx->kind = kind;
+  stx->sym = sym;
+  stx->macro = NULL;
+  return stx;
+}
+
+struct pic_syntax *
+pic_syntax_new_macro(pic_state *pic, pic_sym sym, struct pic_proc *macro)
+{
+  struct pic_syntax *stx;
+
+  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
+  stx->kind = PIC_STX_MACRO;
+  stx->sym = sym;
+  stx->macro = macro;
+  return stx;
+}
+
+void
+pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
+{
+  int idx;
+
+  idx = pic->xlen;
+  if (idx >= pic->xcapa) {
+    pic_abort(pic, "macro table overflow");
+  }
+  pic->stx[idx] = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro);
+  xh_put(pic->var_tbl, name, ~idx);
+  pic->xlen++;
 }
 
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
@@ -260,30 +284,6 @@ macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv)
 
   v = macroexpand(pic, pic_car(pic, list), senv);
   return pic_cons(pic, v, macroexpand_list(pic, pic_cdr(pic, list), senv));
-}
-
-struct pic_syntax *
-pic_syntax_new(pic_state *pic, int kind, pic_sym sym)
-{
-  struct pic_syntax *stx;
-
-  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
-  stx->kind = kind;
-  stx->sym = sym;
-  stx->macro = NULL;
-  return stx;
-}
-
-struct pic_syntax *
-pic_syntax_new_macro(pic_state *pic, pic_sym sym, struct pic_proc *macro)
-{
-  struct pic_syntax *stx;
-
-  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
-  stx->kind = PIC_STX_MACRO;
-  stx->sym = sym;
-  stx->macro = macro;
-  return stx;
 }
 
 pic_value
