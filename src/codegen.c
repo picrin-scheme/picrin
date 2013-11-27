@@ -201,7 +201,10 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
     name = pic_symbol_name(pic, pic_sym(obj));
     s = scope_lookup(state, name, &depth, &idx);
     if (! s) {
-      pic_error(pic, "unbound variable");
+#if DEBUG
+      printf("%s\n", name);
+#endif
+      pic_error(pic, "symbol: unbound variable");
     }
 
     switch (depth) {
