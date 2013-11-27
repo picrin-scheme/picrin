@@ -314,18 +314,6 @@
 
 ;;; 6.2. Numbers
 
-(define (+ . args)
-  (do ((acc 0)
-       (nums args (cdr nums)))
-      ((pair? nums) acc)
-    (set! acc (+ acc (car nums)))))
-
-(define (* . args)
-  (do ((acc 1)
-       (nums args (cdr nums)))
-      ((pair? nums) acc)
-    (set! acc (* acc (car nums)))))
-
 (define (min x . args)
   (let loop ((pivot x) (rest args))
     (if (null? rest)
