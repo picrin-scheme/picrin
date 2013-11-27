@@ -5,7 +5,7 @@
 #define PIC_DIRECT_THREADED_VM 1
 
 /* switch internal value representation */
-#define PIC_NAN_BOXING 1
+/* #define PIC_NAN_BOXING 1 */
 
 /* enable readline module */
 #define PIC_ENABLE_READLINE 1
