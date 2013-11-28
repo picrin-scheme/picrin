@@ -7,7 +7,7 @@ else
   PICRIN_LIB=libpicrin.so
 endif
 
-all: debug run
+all: release run
 
 release: CFLAGS += -DDEBUG=0 -O3
 release: build
