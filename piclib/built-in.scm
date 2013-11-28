@@ -177,33 +177,6 @@
       (single-for-each f list)
       (multiple-for-each f (cons list lists))))
 
-(define sc-macro-transformer
-  (lambda (f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure mac-env '() (f expr use-env)))))
-
-(define rsc-macro-transformer
-  (lambda (f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure use-env '() (f expr mac-env)))))
-
-(define er-macro-transformer
-  (lambda (f)
-    (lambda (expr use-env mac-env)
-      ((lambda (rename compare) (f expr rename compare))
-       ((lambda (renames)
-          (lambda (identifier)
-            ((lambda (cell)
-               (if cell
-                   (cdr cell)
-                   ((lambda (name)
-                      (set! renames (cons (cons identifier name) renames))
-                      name)
-                    (make-syntactic-closure mac-env '() identifier))))
-             (assq identifier renames))))
-        '())
-       (lambda (x y) (identifier=? use-env x use-env y))))))
-
 (define-macro (let bindings . body)
   (if (symbol? bindings)
       (begin
@@ -561,3 +534,38 @@
       (bytevector-copy! res (bytevector-length v) w)
       res))
   (fold bytevector-append-2-inv #() vs))
+
+;;; hygienic macros
+
+(define (walk f obj)
+  (write obj)
+  (newline)
+  (if (pair? obj)
+      (cons (walk f (car obj)) (walk f (cdr obj)))
+      (if (vector? obj)
+	  (list->vector (map (lambda (x) (walk f x)) (vector->list obj)))
+	  (f obj))))
+
+(define (sc-macro-transformer f)
+  (lambda (expr use-env mac-env)
+    (make-syntactic-closure mac-env '() (f expr use-env))))
+
+(define (rsc-macro-transformer f)
+  (lambda (expr use-env mac-env)
+    (make-syntactic-closure use-env '() (f expr mac-env))))
+
+(define (er-macro-transformer f)
+  (lambda (expr use-env mac-env)
+    (define (rename identifier)
+      (make-syntactic-closure mac-env '() identifier))
+    (define (compare x y)
+      (identifier=? use-env x use-env y))
+    (make-syntactic-closure use-env '() (f expr rename compare))))
+
+(define (ir-macro-transformer f)
+  (lambda (expr use-env mac-env)
+    (define (inject identifier)
+      (make-syntactic-closure use-env '() identifier))
+    (define (compare x y)
+      (identifier=? use-env x use-env y))
+    (make-syntactic-closure mac-env '() (f (walk inject expr) inject compare))))
