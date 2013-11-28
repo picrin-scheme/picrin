@@ -11,6 +11,9 @@
 
 #define FALLTHROUGH ((void)0)
 
+static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
+static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
+
 static pic_sym
 new_uniq_sym(pic_state *pic, pic_sym base)
 {
@@ -55,12 +58,26 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
   senv->xcapa = 0;
 
   for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
-    sym = pic_sym(pic_car(pic, a));
+    pic_value v = pic_car(pic, a);
+
+    if (! pic_symbol_p(v)) {
+      v = macroexpand(pic, v, up);
+    }
+    if (! pic_symbol_p(v)) {
+      pic_error(pic, "syntax error");
+    }
+    sym = pic_sym(v);
     xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)new_uniq_sym(pic, sym));
+  }
+  if (! pic_symbol_p(a)) {
+    a = macroexpand(pic, a, up);
   }
   if (pic_symbol_p(a)) {
     sym = pic_sym(a);
     xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)new_uniq_sym(pic, sym));
+  }
+  else if (! pic_nil_p(a)) {
+    pic_error(pic, "syntax error");
   }
   return senv;
 }
@@ -133,8 +150,6 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
   pic_defsyntax(pic, name, macro, NULL);
 }
-
-static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
 
 static pic_value
 macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
