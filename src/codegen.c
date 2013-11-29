@@ -723,7 +723,10 @@ lift_cv(pic_state *pic, struct pic_irep *irep, int d)
       /* pass */
       break;
     case OP_LAMBDA:
-      lift_cv(pic, pic->irep[c.u.i], d + 1);
+      if (pic->irep[c.u.i]->cv_num == 0)
+	lift_cv(pic, pic->irep[c.u.i], d);
+      else
+	lift_cv(pic, pic->irep[c.u.i], d + 1);
       break;
     case OP_CREF:
     case OP_CSET:
