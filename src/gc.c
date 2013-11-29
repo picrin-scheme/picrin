@@ -476,6 +476,9 @@ static void
 gc_sweep_phase(pic_state *pic)
 {
   union header *basep, *bp, *p, *s = NULL, *t;
+#if DEBUG
+  int c = 0;
+#endif
 
   basep = &pic->heap->base;
   for (bp = basep->s.ptr; bp != basep; bp = bp->s.ptr) {
@@ -502,7 +505,14 @@ gc_sweep_phase(pic_state *pic)
     gc_finalize_object(pic, (struct pic_object *)(s + 1));
     gc_free(pic, s);
     s = p;
+#if DEBUG
+    c++;
+#endif
   }
+
+#if DEBUG
+  printf("freed %d objects!\n", c);
+#endif
 }
 
 void
