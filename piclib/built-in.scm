@@ -535,6 +535,46 @@
       res))
   (fold bytevector-append-2-inv #() vs))
 
+;;; 6.10 control features
+
+(define (string-map f v . vs)
+  (let* ((len (fold min (string-length v) (map string-length vs)))
+	 (vec (make-string len)))
+    (let loop ((n 0))
+      (if (= n len)
+	  vec
+	  (begin (string-set! vec n
+			      (apply f (cons (string-ref v n)
+					     (map (lambda (v) (string-ref v n)) vs))))
+		 (loop (+ n 1)))))))
+
+(define (string-for-each f v . vs)
+  (let* ((len (fold min (string-length v) (map string-length vs))))
+    (let loop ((n 0))
+      (unless (= n len)
+	(apply f (string-ref v n)
+	       (map (lambda (v) (string-ref v n)) vs))
+	(loop (+ n 1))))))
+
+(define (vector-map f v . vs)
+  (let* ((len (fold min (vector-length v) (map vector-length vs)))
+	 (vec (make-vector len)))
+    (let loop ((n 0))
+      (if (= n len)
+	  vec
+	  (begin (vector-set! vec n
+			      (apply f (cons (vector-ref v n)
+					     (map (lambda (v) (vector-ref v n)) vs))))
+		 (loop (+ n 1)))))))
+
+(define (vector-for-each f v . vs)
+  (let* ((len (fold min (vector-length v) (map vector-length vs))))
+    (let loop ((n 0))
+      (unless (= n len)
+	(apply f (vector-ref v n)
+	       (map (lambda (v) (vector-ref v n)) vs))
+	(loop (+ n 1))))))
+
 ;;; hygienic macros
 
 (define (walk f obj)
