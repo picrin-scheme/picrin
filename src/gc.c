@@ -142,6 +142,34 @@ gc_alloc(pic_state *pic, size_t size)
   return (void *)(p + 1);
 }
 
+static void
+gc_free(pic_state *pic, union header *bp)
+{
+  union header *freep, *p;
+
+  freep = pic->heap->freep;
+  for (p = freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
+    if (p >= p->s.ptr && (bp > p || bp < p->s.ptr)) {
+      break;
+    }
+  }
+  if (bp + bp->s.size == p->s.ptr) {
+    bp->s.size += p->s.ptr->s.size;
+    bp->s.ptr = p->s.ptr->s.ptr;
+  }
+  else {
+    bp->s.ptr = p->s.ptr;
+  }
+  if (p + p->s.size == bp) {
+    p->s.size += bp->s.size;
+    p->s.ptr = bp->s.ptr;
+  }
+  else {
+    p->s.ptr = bp;
+  }
+  pic->heap->freep = p;
+}
+
 static void gc_mark(pic_state *, pic_value);
 static void gc_mark_object(pic_state *pic, struct pic_object *obj);
 
@@ -440,34 +468,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_UNDEF:
     pic_abort(pic, "logic flaw");
   }
-}
-
-static void
-gc_free(pic_state *pic, union header *p)
-{
-  union header *freep, *bp;
-
-  freep = pic->heap->freep;
-  for (bp = freep; ! (p > bp && p < bp->s.ptr); bp = bp->s.ptr) {
-    if (bp >= bp->s.ptr && (p > bp || p < bp->s.ptr)) {
-      break;
-    }
-  }
-  if (p + p->s.size == bp->s.ptr) {
-    p->s.size += bp->s.ptr->s.size;
-    p->s.ptr = bp->s.ptr->s.ptr;
-  }
-  else {
-    p->s.ptr = bp->s.ptr;
-  }
-  if (bp + bp->s.size == p) {
-    bp->s.size += p->s.size;
-    bp->s.ptr = p->s.ptr;
-  }
-  else {
-    bp->s.ptr = p;
-  }
-  pic->heap->freep = bp;
 }
 
 static void
