@@ -27,13 +27,11 @@ init_heap(struct pic_heap *heap)
   heap->base.s.mark = PIC_GC_UNMARK;
 
   heap->freep = heap->base.s.ptr;
-  heap->freep->s.size = nu - 1;
-  heap->freep->s.ptr = heap->freep + heap->freep->s.size;
+  heap->freep->s.size = nu;
+  heap->freep->s.ptr = &heap->base;
   heap->freep->s.mark = PIC_GC_UNMARK;
 
-  heap->freep->s.ptr->s.size = 0;
-  heap->freep->s.ptr->s.ptr = &heap->base;
-  heap->freep->s.ptr->s.mark = PIC_GC_UNMARK;
+  heap->endp = heap->freep + heap->freep->s.size;
 
 #if GC_DEBUG
   printf("freep = %p\n", heap->freep);
@@ -482,9 +480,10 @@ gc_sweep_phase(pic_state *pic)
 
   basep = &pic->heap->base;
   for (bp = basep->s.ptr; bp != basep; bp = bp->s.ptr) {
-    if (bp->s.size == 0)	/* end of page */
-      continue;
     for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
+      if (p == pic->heap->endp) {
+	goto end;
+      }
       if (! gc_is_marked(p)) {
 	if (s == NULL) {
 	  s = p;
@@ -498,6 +497,7 @@ gc_sweep_phase(pic_state *pic)
       gc_unmark(p);
     }
   }
+ end:
 
   /* free! */
   while (s) {

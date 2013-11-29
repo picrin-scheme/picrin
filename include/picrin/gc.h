@@ -16,7 +16,7 @@ union header {
 };
 
 struct pic_heap {
-  union header base, *freep;
+  union header base, *freep, *endp;
   size_t heap_size;
 };
 
