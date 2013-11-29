@@ -455,7 +455,7 @@ gc_free(pic_state *pic, union header *p)
       break;
     }
   }
-  if (p + p->s.size == bp->s.ptr && bp->s.ptr->s.size > 0) {
+  if (p + p->s.size == bp->s.ptr) {
     p->s.size += bp->s.ptr->s.size;
     p->s.ptr = bp->s.ptr->s.ptr;
   }
