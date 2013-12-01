@@ -61,7 +61,7 @@ pic_realloc(pic_state *pic, void *ptr, size_t size)
 }
 
 void *
-pic_calloc(pic_state *pic, unsigned count, size_t size)
+pic_calloc(pic_state *pic, size_t count, size_t size)
 {
   void *ptr;
 
