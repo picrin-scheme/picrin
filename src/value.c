@@ -35,27 +35,48 @@ pic_type(pic_value v)
 const char *
 pic_type_repr(enum pic_tt tt)
 {
-  static const char *reprs[17] = {
-    "nil",
-    "boolean",
-    "float",
-    "int",
-    "symbol",
-    "char",
-    "eof",
-    "undef",
-    "pair",
-    "string",
-    "vector",
-    "blob",
-    "proc",
-    "port",
-    "error",
-    "env",
-    "cont"
-  };
-
-  return reprs[tt];
+  switch (tt) {
+  case PIC_TT_NIL:
+    return "nil";
+  case PIC_TT_BOOL:
+    return "boolean";
+  case PIC_TT_FLOAT:
+    return "float";
+  case PIC_TT_INT:
+    return "int";
+  case PIC_TT_SYMBOL:
+    return "symbol";
+  case PIC_TT_CHAR:
+    return "char";
+  case PIC_TT_EOF:
+    return "eof";
+  case PIC_TT_UNDEF:
+    return "undef";
+  case PIC_TT_PAIR:
+    return "pair";
+  case PIC_TT_STRING:
+    return "string";
+  case PIC_TT_VECTOR:
+    return "vector";
+  case PIC_TT_BLOB:
+    return "blob";
+  case PIC_TT_PORT:
+    return "port";
+  case PIC_TT_ERROR:
+    return "error";
+  case PIC_TT_ENV:
+    return "env";
+  case PIC_TT_CONT:
+    return "cont";
+  case PIC_TT_PROC:
+    return "proc";
+  case PIC_TT_SC:
+    return "sc";
+  case PIC_TT_SENV:
+    return "senv";
+  case PIC_TT_SYNTAX:
+    return "syntax";
+  }
 }
 
 pic_value
