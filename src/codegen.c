@@ -195,7 +195,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
     codegen_scope *s;
-    int depth, idx;
+    int depth = -1, idx = -1;
     const char *name;
 
     name = pic_symbol_name(pic, pic_sym(obj));
@@ -362,7 +362,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
       else if (sym == pic->sSETBANG) {
 	codegen_scope *s;
 	pic_value var;
-	int depth, idx;
+	int depth = -1, idx = -1;
 
 	if (pic_length(pic, obj) != 3) {
 	  pic_error(pic, "syntax error");

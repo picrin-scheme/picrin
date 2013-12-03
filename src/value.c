@@ -77,6 +77,8 @@ pic_type_repr(enum pic_tt tt)
   case PIC_TT_SYNTAX:
     return "syntax";
   }
+  /* logic flaw */
+  abort();
 }
 
 pic_value
