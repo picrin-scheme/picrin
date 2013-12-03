@@ -2,15 +2,15 @@
 #define GC_H__
 
 enum pic_gc_mark {
-  PIC_GC_MARK,
-  PIC_GC_UNMARK
+  PIC_GC_UNMARK = 0,
+  PIC_GC_MARK
 };
 
 union header {
   struct {
     union header *ptr;
     size_t size;
-    enum pic_gc_mark mark;
+    enum pic_gc_mark mark : 1;
   } s;
   long alignment[2];
 };
