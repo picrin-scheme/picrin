@@ -578,8 +578,6 @@
 ;;; hygienic macros
 
 (define (walk f obj)
-  (write obj)
-  (newline)
   (if (pair? obj)
       (cons (walk f (car obj)) (walk f (cdr obj)))
       (if (vector? obj)

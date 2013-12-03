@@ -41,7 +41,9 @@ add_heap_page(pic_state *pic)
   struct heap_page *page;
   size_t nu;
 
+#if GC_DEBUG
   puts("adding heap page!");
+#endif
 
   nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
 
