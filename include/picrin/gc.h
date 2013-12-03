@@ -11,7 +11,6 @@ union header {
     union header *ptr;
     size_t size;
     enum pic_gc_mark mark;
-    enum pic_tt tt;
   } s;
   long alignment[2];
 };

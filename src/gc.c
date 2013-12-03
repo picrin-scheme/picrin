@@ -674,7 +674,6 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
     }
   }
   obj->tt = tt;
-  (((union header *)obj) - 1)->s.tt = tt;
 
   return obj;
 }
