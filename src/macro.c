@@ -179,9 +179,6 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
   case PIC_TT_PAIR: {
     pic_value car, v;
 
-    if (! pic_list_p(pic, expr))
-      return expr;
-
     car = macroexpand(pic, pic_car(pic, expr), senv);
     if (pic_syntax_p(car)) {
       switch (pic_syntax(car)->kind) {
