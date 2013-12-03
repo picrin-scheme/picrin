@@ -25,7 +25,7 @@
 /* #define DEBUG 1 */
 
 #if DEBUG
-# define GC_STRESS 1
+# define GC_STRESS 0
 # define VM_DEBUG 1
 # define GC_DEBUG 1
 # define GC_DEBUG_DETAIL 0
