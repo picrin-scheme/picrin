@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/irep.h"
 
@@ -39,15 +40,24 @@ pic_proc_proc_p(pic_state *pic)
 static pic_value
 pic_proc_apply(pic_state *pic)
 {
-  pic_value proc, args;
+  pic_value proc, *args, v;
+  size_t argc;
+  int i;
 
-  pic_get_args(pic, "oo", &proc, &args);
+  pic_get_args(pic, "o*", &proc, &argc, &args);
 
   if (! pic_proc_p(proc)) {
     pic_error(pic, "apply: expected procedure");
   }
+  if (argc == 0) {
+    pic_error(pic, "apply: wrong number of arguments");
+  }
+  v = args[argc - 1];
+  for (i = argc - 2; i >= 0; --i) {
+    v = pic_cons(pic, args[i], v);
+  }
 
-  return pic_apply(pic, pic_proc_ptr(proc), args);
+  return pic_apply(pic, pic_proc_ptr(proc), v);
 }
 
 void
