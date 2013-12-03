@@ -11,13 +11,19 @@ union header {
     union header *ptr;
     size_t size;
     enum pic_gc_mark mark;
+    enum pic_tt tt;
   } s;
-  long alignment;   /* force alignment for headers to be allocated at the size of long */
+  long alignment[2];
+};
+
+struct heap_page {
+  union header *basep, *endp;
+  struct heap_page *next;
 };
 
 struct pic_heap {
-  union header base, *freep, *endp;
-  size_t heap_size;
+  union header base, *freep;
+  struct heap_page *pages;
 };
 
 void init_heap(struct pic_heap *);

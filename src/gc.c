@@ -12,30 +12,56 @@
 #include "xhash/xhash.h"
 
 #if GC_DEBUG
+# include <string.h>
 # include <stdio.h>
+# include <assert.h>
 #endif
 
 void
 init_heap(struct pic_heap *heap)
 {
-  int nu;
-
-  nu = (PIC_HEAP_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
-
-  heap->base.s.ptr = (union header *)calloc(nu, sizeof(union header));
-  heap->base.s.size = 0;	/* not 1, since it must never be fused into other headers */
+  heap->base.s.ptr = &heap->base;
+  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
   heap->base.s.mark = PIC_GC_UNMARK;
 
-  heap->freep = heap->base.s.ptr;
-  heap->freep->s.size = nu;
-  heap->freep->s.ptr = &heap->base;
-  heap->freep->s.mark = PIC_GC_UNMARK;
-
-  heap->endp = heap->freep + heap->freep->s.size;
+  heap->freep = &heap->base;
+  heap->pages = NULL;
 
 #if GC_DEBUG
   printf("freep = %p\n", heap->freep);
 #endif
+}
+
+static void gc_free(pic_state *, union header *);
+
+static void
+add_heap_page(pic_state *pic)
+{
+  union header *up, *np;
+  struct heap_page *page;
+  size_t nu;
+
+  puts("adding heap page!");
+
+  nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
+
+  up = (union header *)pic_calloc(pic, 1 + nu + 1, sizeof(union header));
+  up->s.size = nu + 1;
+  up->s.mark = PIC_GC_UNMARK;
+  gc_free(pic, up);
+
+  np = up + 1;
+  np->s.size = nu;
+  np->s.ptr = up->s.ptr;
+  up->s.size = 1;
+  up->s.ptr = np;
+
+  page = (struct heap_page *)pic_alloc(pic, sizeof(struct heap_page));
+  page->basep = up;
+  page->endp = up + nu + 1;
+  page->next = pic->heap->pages;
+
+  pic->heap->pages = page;
 }
 
 void *
@@ -118,6 +144,10 @@ gc_alloc(pic_state *pic, size_t size)
   union header *freep, *p, *prevp;
   size_t nunits;
 
+#if GC_DEBUG
+  assert(size > 0);
+#endif
+
   nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
 
   prevp = freep = pic->heap->freep;
@@ -125,9 +155,31 @@ gc_alloc(pic_state *pic, size_t size)
     if (p->s.size >= nunits)
       break;
     if (p == freep) {
-      return 0;
+      return NULL;
     }
   }
+
+#if GC_DEBUG
+  {
+    int i, j;
+    unsigned char *c;
+    size_t s;
+    if (p->s.size == nunits) {
+      c = (unsigned char *)(p + p->s.size - nunits + 1);
+      s = nunits - 1;
+    } else {
+      c = (unsigned char *)(p + p->s.size - nunits);
+      s = nunits;
+    }
+
+    for (i = 0; i < s; ++i) {
+      for (j = 0; j < sizeof(union header); ++j) {
+	assert(c[i * sizeof(union header) + j] == 0xAA);
+      }
+    }
+  }
+#endif
+
   if (p->s.size == nunits) {
     prevp->s.ptr = p->s.ptr;
   }
@@ -139,6 +191,12 @@ gc_alloc(pic_state *pic, size_t size)
   pic->heap->freep = prevp;
 
   p->s.mark = PIC_GC_UNMARK;
+
+#if GC_DEBUG
+  memset(p+1, 0, sizeof(union header) * (nunits - 1));
+  p->s.ptr = (union header *)0xcafebabe;
+#endif
+
   return (void *)(p + 1);
 }
 
@@ -146,6 +204,15 @@ static void
 gc_free(pic_state *pic, union header *bp)
 {
   union header *freep, *p;
+
+#if GC_DEBUG
+  assert(bp != NULL);
+  assert(bp->s.size > 1);
+#endif
+
+#if GC_DEBUG
+  memset(bp + 1, 0xAA, (bp->s.size - 1) * sizeof(union header));
+#endif
 
   freep = pic->heap->freep;
   for (p = freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
@@ -156,13 +223,21 @@ gc_free(pic_state *pic, union header *bp)
   if (bp + bp->s.size == p->s.ptr) {
     bp->s.size += p->s.ptr->s.size;
     bp->s.ptr = p->s.ptr->s.ptr;
+
+#if GC_DEBUG
+    memset(p->s.ptr, 0xAA, sizeof(union header));
+#endif
   }
   else {
     bp->s.ptr = p->s.ptr;
   }
-  if (p + p->s.size == bp) {
+  if (p + p->s.size == bp && p->s.size > 1) {
     p->s.size += bp->s.size;
     p->s.ptr = bp->s.ptr;
+
+#if GC_DEBUG
+    memset(bp, 0xAA, sizeof(union header));
+#endif
   }
   else {
     p->s.ptr = bp;
@@ -395,8 +470,8 @@ static void
 gc_finalize_object(pic_state *pic, struct pic_object *obj)
 {
 #if GC_DEBUG
-  printf("* finalizing object:");
-  pic_debug(pic, pic_obj_value(obj));
+  printf("* finalizing object: %s", pic_type_repr(pic_type(pic_obj_value(obj))));
+  //  pic_debug(pic, pic_obj_value(obj));
   puts("");
 #endif
 
@@ -471,64 +546,117 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
 }
 
 static void
-gc_sweep_phase(pic_state *pic)
+gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
-  union header *basep, *bp, *p, *s = NULL, *t;
-#if DEBUG
+#if GC_DEBUG
+  static union header *NIL = (union header *)0xdeadbeef;
+#else
+  static union header *NIL = NULL;
+#endif
+  union header *bp, *p, *s = NIL, *t;
+
+#if GC_DEBUG
   int c = 0;
 #endif
 
-  basep = &pic->heap->base;
-  for (bp = basep->s.ptr; bp != basep; bp = bp->s.ptr) {
+  for (bp = page->basep; ; bp = bp->s.ptr) {
     for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
-      if (p == pic->heap->endp) {
-	goto end;
+      if (p == page->endp) {
+	goto escape;
       }
       if (! gc_is_marked(p)) {
-	if (s == NULL) {
+	if (s == NIL) {
 	  s = p;
 	}
 	else {
 	  t->s.ptr = p;
 	}
 	t = p;
-	t->s.ptr = NULL; /* For dead objects we can safely reuse ptr field */
+	t->s.ptr = NIL; /* For dead objects we can safely reuse ptr field */
       }
       gc_unmark(p);
     }
   }
- end:
+ escape:
 
   /* free! */
-  while (s) {
-    p = s->s.ptr;
+  while (s != NIL) {
+    t = s->s.ptr;
     gc_finalize_object(pic, (struct pic_object *)(s + 1));
     gc_free(pic, s);
-    s = p;
-#if DEBUG
+    s = t;
+
+#if GC_DEBUG
     c++;
 #endif
   }
 
-#if DEBUG
-  printf("freed %d objects!\n", c);
+#if GC_DEBUG
+  printf("freed objects count: %d\n", c);
 #endif
+}
+
+static void
+gc_sweep_phase(pic_state *pic)
+{
+  struct heap_page *page = pic->heap->pages;
+
+  while (page) {
+    gc_sweep_page(pic, page);
+    page = page->next;
+  }
 }
 
 void
 pic_gc_run(pic_state *pic)
 {
+#if GC_DEBUG
+  struct heap_page *page;
+#endif
+
 #if DEBUG
   puts("gc run!");
 #endif
+
   gc_mark_phase(pic);
   gc_sweep_phase(pic);
+
+#if GC_DEBUG
+  for (page = pic->heap->pages; page; page = page->next) {
+    union header *bp, *p;
+    unsigned char *c;
+
+    for (bp = page->basep; ; bp = bp->s.ptr) {
+      for (c = (unsigned char *)(bp+1); c != (unsigned char *)(bp + bp->s.size); ++c) {
+	assert(*c == 0xAA);
+      }
+      for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
+	if (p == page->endp) {
+	  /* if (page->next) */
+	  /*   assert(bp->s.ptr == page->next->basep); */
+	  /* else */
+	  /*   assert(bp->s.ptr == &pic->heap->base); */
+	  goto escape;
+	}
+	assert(! gc_is_marked(p));
+      }
+    }
+  escape:
+    ((void)0);
+  }
+
+  puts("not error on heap found! gc successfully finished");
+#endif
 }
 
 struct pic_object *
 pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
 {
   struct pic_object *obj;
+
+#if GC_DEBUG
+  printf("*allocating: %s\n", pic_type_repr(tt));
+#endif
 
 #if GC_STRESS
   pic_gc_run(pic);
@@ -538,10 +666,15 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
   if (obj == NULL) {
     pic_gc_run(pic);
     obj = (struct pic_object *)gc_alloc(pic, size);
-    if (obj == NULL)
-      pic_abort(pic, "GC memory exhausted");
+    if (obj == NULL) {
+      add_heap_page(pic);
+      obj = (struct pic_object *)gc_alloc(pic, size);
+      if (obj == NULL)
+	pic_abort(pic, "GC memory exhausted");
+    }
   }
   obj->tt = tt;
+  (((union header *)obj) - 1)->s.tt = tt;
 
   return obj;
 }
