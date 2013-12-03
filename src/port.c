@@ -297,6 +297,27 @@ pic_port_eof_object(pic_state *pic)
   return v;
 }
 
+pic_value
+pic_port_close_port(pic_state *pic)
+{
+  pic_value v;
+  struct pic_port *port;
+
+  pic_get_args(pic, "o", &v);
+
+  if (! pic_port_p(v)) {
+    pic_error(pic, "close-port: expected port");
+  }
+  port = pic_port_ptr(v);
+
+  if (fclose(port->file) == EOF) {
+    pic_error(pic, "close-port: failure");
+  }
+  port->status = PIC_PORT_CLOSE;
+
+  return pic_false_value();
+}
+
 void
 pic_init_port(pic_state *pic)
 {
@@ -311,4 +332,7 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "newline", pic_port_newline);
   pic_defun(pic, "eof-object?", pic_port_eof_object_p);
   pic_defun(pic, "eof-object", pic_port_eof_object);
+  pic_defun(pic, "close-port", pic_port_close_port);
+  pic_defun(pic, "close-input-port", pic_port_close_port);
+  pic_defun(pic, "close-output-port", pic_port_close_port);
 }
