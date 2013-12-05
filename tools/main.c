@@ -23,7 +23,8 @@ print_help(void)
     "Usage: picrin [options] [file]\n"
     "\n"
     "Options:\n"
-    "  -h			show this help";
+    "  -e [program]             run one liner ecript\n"
+    "  -h                       show this help";
 
   puts(help);
 }
