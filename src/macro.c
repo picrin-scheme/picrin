@@ -156,13 +156,16 @@ pic_identifier_p(pic_value obj)
 static void
 pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
 {
+  struct pic_syntax *stx;
   int idx;
+
+  stx = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro, mac_env);
 
   idx = pic->global_senv->xlen;
   if (idx >= pic->global_senv->xcapa) {
     pic_abort(pic, "macro table overflow");
   }
-  pic->global_senv->stx[idx] = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro, mac_env);
+  pic->global_senv->stx[idx] = stx;
   xh_put(pic->global_senv->tbl, name, ~idx);
   pic->global_senv->xlen++;
 }
