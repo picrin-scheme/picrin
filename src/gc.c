@@ -458,8 +458,8 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* macros */
-  for (i = 0; i < pic->xlen; ++i) {
-    gc_mark_object(pic, (struct pic_object *)pic->stx[i]);
+  if (pic->global_senv) {
+    gc_mark_object(pic, (struct pic_object *)pic->global_senv);
   }
 
   /* pool */
@@ -518,11 +518,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    if (senv->up) {
-      xh_destory(senv->tbl);
-      if (senv->stx)
-	pic_free(pic, senv->stx);
-    }
+    xh_destory(senv->tbl);
+    if (senv->stx)
+      pic_free(pic, senv->stx);
     break;
   }
   case PIC_TT_SYNTAX: {

@@ -14,8 +14,6 @@
 #define CODE_MAX_LENGTH 1024
 #define LINE_MAX_LENGTH 256
 
-static char *fname;
-
 void
 print_help(void)
 {
@@ -25,33 +23,10 @@ print_help(void)
     "Usage: picrin [options] [file]\n"
     "\n"
     "Options:\n"
-    "  -h			show this help";
+    "  -e [program]             run one liner ecript\n"
+    "  -h                       show this help";
 
   puts(help);
-}
-
-bool
-parse_opt(int argc, char *argv[])
-{
-  int r;
-
-  while (~(r = getopt(argc, argv, "h"))) {
-    switch (r) {
-    case 'h':
-      print_help();
-      exit(0);
-    }
-  }
-  argc -= optind;
-  argv += optind;
-
-  if (argc == 0) {
-    return 1;
-  }
-  else {
-    fname = argv[0];
-    return 0;
-  }
 }
 
 int
@@ -200,6 +175,77 @@ exec_file(pic_state *pic, const char *fname)
   return 0;
 }
 
+static int
+exec_string(pic_state *pic, const char *str)
+{
+  int n, i;
+  pic_value vs, v;
+  struct pic_proc *proc;
+  int ai = pic_gc_arena_preserve(pic);
+
+  n = pic_parse_cstr(pic, str, &vs);
+  if (n < 0) {
+    return 1;
+  }
+
+  for (i = 0; i < n; ++i) {
+    v = pic_car(pic, vs);
+
+    proc = pic_codegen(pic, v);
+    if (proc == NULL) {
+      return 1;
+    }
+    v = pic_apply(pic, proc, pic_nil_value());
+    if (pic_undef_p(v)) {
+      return 1;
+    }
+
+    vs = pic_cdr(pic, vs);
+
+    pic_gc_arena_restore(pic, ai);
+  }
+
+  return 0;
+}
+
+static char *fname;
+static char *one_liner;
+
+enum {
+  NO_MODE = 0,
+  INTERACTIVE_MODE,
+  FILE_EXEC_MODE,
+  ONE_LINER_MODE,
+} mode;
+
+void
+parse_opt(int argc, char *argv[])
+{
+  int r;
+
+  while (~(r = getopt(argc, argv, "he:"))) {
+    switch (r) {
+    case 'h':
+      print_help();
+      exit(0);
+    case 'e':
+      one_liner = optarg;
+      mode = ONE_LINER_MODE;
+    }
+  }
+  argc -= optind;
+  argv += optind;
+
+  if (argc == 0) {
+    if (mode == NO_MODE)
+      mode = INTERACTIVE_MODE;
+  }
+  else {
+    fname = argv[0];
+    mode = FILE_EXEC_MODE;
+  }
+}
+
 int
 main(int argc, char *argv[], char **envp)
 {
@@ -208,11 +254,21 @@ main(int argc, char *argv[], char **envp)
 
   pic = pic_open(argc, argv, envp);
 
-  if (parse_opt(argc, argv)) {
+  parse_opt(argc, argv);
+
+  switch (mode) {
+  case NO_MODE:
+    puts("logic flaw");
+    abort();
+  case INTERACTIVE_MODE:
     res = repl(pic);
-  }
-  else {
+    break;
+  case FILE_EXEC_MODE:
     res = exec_file(pic, fname);
+    break;
+  case ONE_LINER_MODE:
+    res = exec_string(pic, one_liner);
+    break;
   }
 
   pic_close(pic);

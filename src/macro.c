@@ -29,18 +29,40 @@ new_uniq_sym(pic_state *pic, pic_sym base)
   return uniq;
 }
 
-static struct pic_senv *
-new_global_senv(pic_state *pic)
+struct pic_senv *
+pic_core_syntactic_env(pic_state *pic)
 {
   struct pic_senv *senv;
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = NULL;
-  senv->tbl = pic->var_tbl;
-  senv->stx = pic->stx;
-  senv->xlen = pic->xlen;
-  senv->xcapa = pic->xcapa;
+  senv->tbl = xh_new();
+  senv->stx = (struct pic_syntax **)pic_calloc(pic, PIC_MACROS_SIZE, sizeof(struct pic_syntax *));
+  senv->xlen = 0;
+  senv->xcapa = PIC_MACROS_SIZE;
+
+#define register_core_syntax(pic,senv,kind,name) do {			\
+    senv->stx[senv->xlen] = pic_syntax_new(pic, kind, pic_intern_cstr(pic, name)); \
+    xh_put(senv->tbl, name, ~senv->xlen);				\
+    senv->xlen++;							\
+  } while (0)
+
+  register_core_syntax(pic, senv, PIC_STX_DEFINE, "define");
+  register_core_syntax(pic, senv, PIC_STX_SET, "set!");
+  register_core_syntax(pic, senv, PIC_STX_QUOTE, "quote");
+  register_core_syntax(pic, senv, PIC_STX_LAMBDA, "lambda");
+  register_core_syntax(pic, senv, PIC_STX_IF, "if");
+  register_core_syntax(pic, senv, PIC_STX_BEGIN, "begin");
+  register_core_syntax(pic, senv, PIC_STX_DEFMACRO, "define-macro");
+  register_core_syntax(pic, senv, PIC_STX_DEFSYNTAX, "define-syntax");
+
   return senv;
+}
+
+static struct pic_senv *
+new_global_senv(pic_state *pic)
+{
+  return pic->global_senv;
 }
 
 static struct pic_senv *
@@ -136,13 +158,13 @@ pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct p
 {
   int idx;
 
-  idx = pic->xlen;
-  if (idx >= pic->xcapa) {
+  idx = pic->global_senv->xlen;
+  if (idx >= pic->global_senv->xcapa) {
     pic_abort(pic, "macro table overflow");
   }
-  pic->stx[idx] = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro, mac_env);
-  xh_put(pic->var_tbl, name, ~idx);
-  pic->xlen++;
+  pic->global_senv->stx[idx] = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro, mac_env);
+  xh_put(pic->global_senv->tbl, name, ~idx);
+  pic->global_senv->xlen++;
 }
 
 void

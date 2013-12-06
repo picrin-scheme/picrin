@@ -577,13 +577,6 @@
 
 ;;; hygienic macros
 
-(define (walk f obj)
-  (if (pair? obj)
-      (cons (walk f (car obj)) (walk f (cdr obj)))
-      (if (vector? obj)
-	  (list->vector (map (lambda (x) (walk f x)) (vector->list obj)))
-	  (f obj))))
-
 (define (sc-macro-transformer f)
   (lambda (expr use-env mac-env)
     (make-syntactic-closure mac-env '() (f expr use-env))))
@@ -602,6 +595,13 @@
 
 (define (acons key val alist)
   (cons (cons key val) alist))
+
+(define (walk f obj)
+  (if (pair? obj)
+      (cons (walk f (car obj)) (walk f (cdr obj)))
+      (if (vector? obj)
+	  (list->vector (map (lambda (x) (walk f x)) (vector->list obj)))
+	  (f obj))))
 
 (define (ir-macro-transformer f)
   (lambda (expr use-env mac-env)

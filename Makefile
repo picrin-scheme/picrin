@@ -36,3 +36,6 @@ run:
 
 tak: release
 	bin/picrin etc/tak.scm
+
+no-act:
+	bin/picrin -e ''

@@ -56,10 +56,7 @@ typedef struct {
   pic_value *globals;
   size_t glen, gcapa;
 
-  /* positive for variables, negative for macros (bitwise-not) */
-  struct xhash *var_tbl;
-  struct pic_syntax **stx;
-  size_t xlen, xcapa;
+  struct pic_senv *global_senv;
 
   struct pic_irep **irep;
   size_t ilen, icapa;

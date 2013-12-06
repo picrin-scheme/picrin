@@ -1,0 +1,3 @@
+[submodule "extlib/xhash"]
+	path = extlib/xhash
+	url = git://github.com/wasabiz/xhash.git
