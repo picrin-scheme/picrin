@@ -250,7 +250,7 @@ int
 main(int argc, char *argv[], char **envp)
 {
   pic_state *pic;
-  int res;
+  int res = -1;
 
   pic = pic_open(argc, argv, envp);
 
