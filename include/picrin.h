@@ -100,6 +100,8 @@ int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defmacro(pic_state *, const char *, struct pic_proc *);
 
+bool pic_equal_p(pic_state *, pic_value, pic_value);
+
 pic_sym pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym);
 
