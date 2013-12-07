@@ -209,7 +209,7 @@ exec_string(pic_state *pic, const char *str)
 }
 
 static char *fname;
-static char *one_liner;
+static char *script;
 
 enum {
   NO_MODE = 0,
@@ -229,7 +229,7 @@ parse_opt(int argc, char *argv[])
       print_help();
       exit(0);
     case 'e':
-      one_liner = optarg;
+      script = optarg;
       mode = ONE_LINER_MODE;
     }
   }
@@ -267,7 +267,7 @@ main(int argc, char *argv[], char **envp)
     res = exec_file(pic, fname);
     break;
   case ONE_LINER_MODE:
-    res = exec_string(pic, one_liner);
+    res = exec_string(pic, script);
     break;
   }
 
