@@ -92,7 +92,8 @@ enum pic_tt {
   PIC_TT_CONT,
   PIC_TT_SENV,
   PIC_TT_SYNTAX,
-  PIC_TT_SC
+  PIC_TT_SC,
+  PIC_TT_LIB
 };
 
 #define PIC_OBJECT_HEADER			\

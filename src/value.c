@@ -76,6 +76,8 @@ pic_type_repr(enum pic_tt tt)
     return "senv";
   case PIC_TT_SYNTAX:
     return "syntax";
+  case PIC_TT_LIB:
+    return "lib";
   }
   /* logic flaw */
   abort();

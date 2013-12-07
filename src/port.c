@@ -109,6 +109,9 @@ write(pic_state *pic, pic_value obj)
     write(pic, pic_sc(obj)->expr);
     printf(">");
     break;
+  case PIC_TT_LIB:
+    printf("#<library %p>", pic_ptr(obj));
+    break;
   }
 }
 

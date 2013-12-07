@@ -415,6 +415,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
   case PIC_TT_UNDEF:
   case PIC_TT_SENV:
   case PIC_TT_SYNTAX:
+  case PIC_TT_LIB:
     pic_error(pic, "unexpected value type");
     return pic_undef_value();	/* unreachable */
   }
