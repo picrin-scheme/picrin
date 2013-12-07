@@ -42,3 +42,15 @@ pic_in_library(pic_state *pic, const char *name)
 
   pic->lib = pic_lib_ptr(pic_cdr(pic, v));
 }
+
+struct pic_lib *
+pic_find_library(pic_state *pic, pic_value spec)
+{
+  pic_value v;
+
+  v = pic_assoc(pic, spec, pic->lib_tbl);
+  if (pic_false_p(v)) {
+    return NULL;
+  }
+  return pic_lib_ptr(pic_cdr(pic, v));
+}

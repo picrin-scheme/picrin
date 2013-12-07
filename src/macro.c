@@ -238,17 +238,41 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         pic_value program;
         struct pic_senv *senv;
 
-        /* FIXME: replace it with null-env once import is implemented */
-        senv = pic_core_syntactic_env(pic);
+        senv = pic_minimal_syntactic_env(pic);
 
+        if (pic_length(pic, expr) < 2) {
+          pic_error(pic, "syntax error");
+        }
         program = macroexpand_list(pic, pic_cddr(pic, expr), senv);
 
         return pic_cons(pic, pic_symbol_value(pic->sBEGIN), program);
       }
-      case PIC_STX_IMPORT:
+      case PIC_STX_IMPORT: {
+        struct pic_lib *lib;
+        struct xh_iterator it;
+
+        lib = pic_find_library(pic, pic_cadr(pic, expr));
+        if (! lib) {
+          pic_error(pic, "library not found");
+        }
+        it = xh_begin(lib->exports);
+        while (! xh_isend(&it)) {
+          xh_put(pic->lib->senv->tbl, it.e->key, it.e->val);
+          xh_next(lib->exports, &it);
+        }
+        return pic_false_value();
+      }
       case PIC_STX_EXPORT: {
-        puts("FIXME: import/export");
-        abort();
+        pic_sym orig, ren;
+        pic_value v;
+
+        orig = ren = pic_sym(pic_car(pic, expr));
+        v = macroexpand(pic, pic_car(pic, expr), senv);
+        if (pic_symbol_p(v)) {
+          ren = pic_sym(v);
+        }
+        xh_put(pic->lib->exports, pic_symbol_name(pic, orig), (int)ren);
+        return pic_false_value();
       }
       case PIC_STX_DEFSYNTAX: {
 	pic_value var, val;
