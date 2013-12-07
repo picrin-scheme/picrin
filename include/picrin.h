@@ -122,8 +122,8 @@ pic_value pic_apply_argv(pic_state *pic, struct pic_proc *, size_t, ...);
 struct pic_proc *pic_codegen(pic_state *, pic_value);
 pic_value pic_macroexpand(pic_state *, pic_value);
 
-void pic_make_library(pic_state *, pic_value);
-void pic_in_library(pic_state *, pic_value);
+void pic_make_library(pic_state *, const char *);
+void pic_in_library(pic_state *, const char *);
 
 void pic_abort(pic_state *, const char *);
 void pic_raise(pic_state *, pic_value);
