@@ -7,4 +7,6 @@ struct pic_lib {
   struct xhash *exports;
 };
 
+#define pic_lib_ptr(o) ((struct pic_lib *)pic_ptr(o))
+
 #endif
