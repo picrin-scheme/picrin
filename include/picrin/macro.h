@@ -21,7 +21,10 @@ struct pic_syntax {
     PIC_STX_BEGIN,
     PIC_STX_MACRO,
     PIC_STX_DEFMACRO,
-    PIC_STX_DEFSYNTAX
+    PIC_STX_DEFSYNTAX,
+    PIC_STX_DEFLIBRARY,
+    PIC_STX_IMPORT,
+    PIC_STX_EXPORT
   } kind;
   pic_sym sym;
   struct pic_proc *macro;

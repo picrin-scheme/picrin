@@ -55,6 +55,9 @@ pic_core_syntactic_env(pic_state *pic)
   register_core_syntax(pic, senv, PIC_STX_BEGIN, "begin");
   register_core_syntax(pic, senv, PIC_STX_DEFMACRO, "define-macro");
   register_core_syntax(pic, senv, PIC_STX_DEFSYNTAX, "define-syntax");
+  register_core_syntax(pic, senv, PIC_STX_DEFLIBRARY, "define-library");
+  register_core_syntax(pic, senv, PIC_STX_IMPORT, "import");
+  register_core_syntax(pic, senv, PIC_STX_EXPORT, "export");
 
   return senv;
 }
@@ -207,6 +210,22 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
     car = macroexpand(pic, pic_car(pic, expr), senv);
     if (pic_syntax_p(car)) {
       switch (pic_syntax(car)->kind) {
+      case PIC_STX_DEFLIBRARY: {
+        pic_value program;
+        struct pic_senv *senv;
+
+        /* FIXME: replace it with null-env once import is implemented */
+        senv = pic_core_syntactic_env(pic);
+
+        program = macroexpand_list(pic, pic_cddr(pic, expr), senv);
+
+        return pic_cons(pic, pic_symbol_value(pic->sBEGIN), program);
+      }
+      case PIC_STX_IMPORT:
+      case PIC_STX_EXPORT: {
+        puts("FIXME: import/export");
+        abort();
+      }
       case PIC_STX_DEFSYNTAX: {
 	pic_value var, val;
 	struct pic_proc *proc;
