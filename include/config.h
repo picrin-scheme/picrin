@@ -1,5 +1,5 @@
-#ifndef PICCONF_H__
-#define PICCONF_H__
+#ifndef CONFIG_H__
+#define CONFIG_H__
 
 /* switch normal VM and direct threaded VM */
 #define PIC_DIRECT_THREADED_VM 1
