@@ -24,7 +24,7 @@ pic_make_library(pic_state *pic, const char *name)
   pic_value spec = lib_spec(pic, name);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
-  lib->senv = pic_minimal_syntactic_env(pic);
+  lib->senv = pic_core_syntactic_env(pic);
   lib->exports = xh_new();
 
   pic->lib_tbl = pic_acons(pic, spec, pic_obj_value(lib), pic->lib_tbl);
