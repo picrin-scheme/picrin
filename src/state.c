@@ -65,9 +65,9 @@ pic_open(int argc, char *argv[], char **envp)
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
 
-  /* syntactic env */
-  pic->global_senv = NULL;      /* prevent gc from hanging during marking phase */
-  pic->global_senv = pic_core_syntactic_env(pic);
+  /* libraries */
+  pic->lib_tbl = pic_nil_value();
+  pic->lib = NULL;
 
   /* pool */
   pic->pool = (pic_value *)calloc(PIC_POOL_SIZE, sizeof(pic_value));

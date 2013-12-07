@@ -7,6 +7,7 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/macro.h"
+#include "picrin/lib.h"
 #include "xhash/xhash.h"
 
 #define FALLTHROUGH ((void)0)
@@ -65,7 +66,7 @@ pic_core_syntactic_env(pic_state *pic)
 static struct pic_senv *
 new_global_senv(pic_state *pic)
 {
-  return pic->global_senv;
+  return pic->lib->senv;
 }
 
 static struct pic_senv *
@@ -160,17 +161,18 @@ static void
 pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
 {
   struct pic_syntax *stx;
+  struct pic_senv *global_senv = pic->lib->senv;
   int idx;
 
   stx = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro, mac_env);
 
-  idx = pic->global_senv->xlen;
-  if (idx >= pic->global_senv->xcapa) {
+  idx = global_senv->xlen;
+  if (idx >= global_senv->xcapa) {
     pic_abort(pic, "macro table overflow");
   }
-  pic->global_senv->stx[idx] = stx;
-  xh_put(pic->global_senv->tbl, name, ~idx);
-  pic->global_senv->xlen++;
+  global_senv->stx[idx] = stx;
+  xh_put(global_senv->tbl, name, ~idx);
+  global_senv->xlen++;
 }
 
 void

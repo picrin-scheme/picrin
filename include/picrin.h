@@ -57,7 +57,8 @@ typedef struct {
   pic_value *globals;
   size_t glen, gcapa;
 
-  struct pic_senv *global_senv;
+  pic_value lib_tbl;
+  struct pic_lib *lib;
 
   struct pic_irep **irep;
   size_t ilen, icapa;

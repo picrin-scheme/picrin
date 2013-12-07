@@ -463,15 +463,13 @@ gc_mark_phase(pic_state *pic)
     gc_mark(pic, pic->globals[i]);
   }
 
-  /* macros */
-  if (pic->global_senv) {
-    gc_mark_object(pic, (struct pic_object *)pic->global_senv);
-  }
-
   /* pool */
   for (i = 0; i < pic->plen; ++i) {
     gc_mark(pic, pic->pool[i]);
   }
+
+  /* library table */
+  gc_mark(pic, pic->lib_tbl);
 }
 
 static void
