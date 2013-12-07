@@ -29,7 +29,9 @@ print_help(void)
   puts(help);
 }
 
-int
+int exit_status;
+
+void
 repl(pic_state *pic)
 {
   char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
@@ -123,14 +125,16 @@ repl(pic_state *pic)
 
  eof:
   puts("");
-  return 0;
+  exit_status = 0;
+  return;
 
  overflow:
   puts("** [fatal] line input overflow");
-  return 1;
+  exit_status = 1;
+  return;
 }
 
-int
+void
 exec_file(pic_state *pic, const char *fname)
 {
   FILE *file;
@@ -141,13 +145,13 @@ exec_file(pic_state *pic, const char *fname)
   file = fopen(fname, "r");
   if (file == NULL) {
     fprintf(stderr, "fatal error: could not read %s\n", fname);
-    return 1;
+    goto abort;
   }
 
   n = pic_parse_file(pic, file, &vs);
   if (n <= 0) {
     fprintf(stderr, "fatal error: %s broken\n", fname);
-    return 1;
+    goto abort;
   }
 
   for (i = 0; i < n; ++i) {
@@ -159,23 +163,27 @@ exec_file(pic_state *pic, const char *fname)
     if (proc == NULL) {
       fputs(pic->errmsg, stderr);
       fprintf(stderr, "fatal error: %s compilation failure\n", fname);
-      return 1;
+      goto abort;
     }
 
     v = pic_apply(pic, proc, pic_nil_value());
     if (pic_undef_p(v)) {
       fputs(pic->errmsg, stderr);
       fprintf(stderr, "fatal error: %s evaluation failure\n", fname);
-      return 1;
+      goto abort;
     }
 
     vs = pic_cdr(pic, vs);
   }
 
-  return 0;
+  return;
+
+ abort:
+  exit_status = 1;
+  return;
 }
 
-static int
+void
 exec_string(pic_state *pic, const char *str)
 {
   int n, i;
@@ -185,7 +193,7 @@ exec_string(pic_state *pic, const char *str)
 
   n = pic_parse_cstr(pic, str, &vs);
   if (n < 0) {
-    return 1;
+    goto abort;
   }
 
   for (i = 0; i < n; ++i) {
@@ -193,11 +201,11 @@ exec_string(pic_state *pic, const char *str)
 
     proc = pic_codegen(pic, v);
     if (proc == NULL) {
-      return 1;
+      goto abort;
     }
     v = pic_apply(pic, proc, pic_nil_value());
     if (pic_undef_p(v)) {
-      return 1;
+      goto abort;
     }
 
     vs = pic_cdr(pic, vs);
@@ -205,7 +213,11 @@ exec_string(pic_state *pic, const char *str)
     pic_gc_arena_restore(pic, ai);
   }
 
-  return 0;
+  return;
+
+ abort:
+  exit_status = 1;
+  return;
 }
 
 static char *fname;
@@ -250,7 +262,6 @@ int
 main(int argc, char *argv[], char **envp)
 {
   pic_state *pic;
-  int res = -1;
 
   pic = pic_open(argc, argv, envp);
 
@@ -261,17 +272,17 @@ main(int argc, char *argv[], char **envp)
     puts("logic flaw");
     abort();
   case INTERACTIVE_MODE:
-    res = repl(pic);
+    repl(pic);
     break;
   case FILE_EXEC_MODE:
-    res = exec_file(pic, fname);
+    exec_file(pic, fname);
     break;
   case ONE_LINER_MODE:
-    res = exec_string(pic, script);
+    exec_string(pic, script);
     break;
   }
 
   pic_close(pic);
 
-  return res;
+  return exit_status;
 }
