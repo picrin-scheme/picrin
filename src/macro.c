@@ -31,7 +31,7 @@ new_uniq_sym(pic_state *pic, pic_sym base)
 }
 
 struct pic_senv *
-pic_core_syntactic_env(pic_state *pic)
+pic_null_syntactic_env(pic_state *pic)
 {
   struct pic_senv *senv;
 
@@ -42,11 +42,31 @@ pic_core_syntactic_env(pic_state *pic)
   senv->xlen = 0;
   senv->xcapa = PIC_MACROS_SIZE;
 
+  return senv;
+}
+
 #define register_core_syntax(pic,senv,kind,name) do {			\
     senv->stx[senv->xlen] = pic_syntax_new(pic, kind, pic_intern_cstr(pic, name)); \
     xh_put(senv->tbl, name, ~senv->xlen);				\
     senv->xlen++;							\
   } while (0)
+
+struct pic_senv *
+pic_minimal_syntactic_env(pic_state *pic)
+{
+  struct pic_senv *senv = pic_null_syntactic_env(pic);
+
+  register_core_syntax(pic, senv, PIC_STX_DEFLIBRARY, "define-library");
+  register_core_syntax(pic, senv, PIC_STX_IMPORT, "import");
+  register_core_syntax(pic, senv, PIC_STX_EXPORT, "export");
+
+  return senv;
+}
+
+struct pic_senv *
+pic_core_syntactic_env(pic_state *pic)
+{
+  struct pic_senv *senv = pic_null_syntactic_env(pic);
 
   register_core_syntax(pic, senv, PIC_STX_DEFINE, "define");
   register_core_syntax(pic, senv, PIC_STX_SET, "set!");
@@ -62,6 +82,8 @@ pic_core_syntactic_env(pic_state *pic)
 
   return senv;
 }
+
+#undef register_core_syntax
 
 static struct pic_senv *
 new_global_senv(pic_state *pic)

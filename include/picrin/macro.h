@@ -46,6 +46,8 @@ struct pic_sc {
 #define pic_senv(v) ((struct pic_senv *)pic_ptr(v))
 #define pic_senv_p(v) (pic_type(v) == PIC_TT_SENV)
 
+struct pic_senv *pic_null_syntactic_env(pic_state *pic);
+struct pic_senv *pic_minimal_syntactic_env(pic_state *pic);
 struct pic_senv *pic_core_syntactic_env(pic_state *pic);
 
 struct pic_syntax *pic_syntax_new(pic_state *, int kind, pic_sym sym);
