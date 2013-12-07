@@ -260,16 +260,6 @@
 (define-macro (unless test . exprs)
   (list 'if test #f (cons 'begin exprs)))
 
-(define (equal? x y)
-  (cond
-   ((eqv? x y)
-    #t)
-   ((and (pair? x) (pair? y))
-    (and (equal? (car x) (car y))
-	 (equal? (cdr x) (cdr y))))
-   (else
-    #f)))
-
 (define (member obj list . opts)
   (let ((compare (if (null? opts) equal? (car opts))))
     (if (null? list)
