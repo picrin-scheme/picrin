@@ -129,6 +129,24 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
 }
 
 pic_value
+pic_assoc(pic_state *pic, pic_value key, pic_value assoc)
+{
+  pic_value cell;
+
+ enter:
+
+  if (pic_nil_p(assoc))
+    return assoc;
+
+  cell = pic_car(pic, assoc);
+  if (pic_equal_p(pic, key, pic_car(pic, cell)))
+    return cell;
+
+  assoc = pic_cdr(pic, assoc);
+  goto enter;
+}
+
+pic_value
 pic_acons(pic_state *pic, pic_value key, pic_value val, pic_value assoc)
 {
   return pic_cons(pic, pic_cons(pic, key, val), assoc);
