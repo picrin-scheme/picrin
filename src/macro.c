@@ -66,7 +66,7 @@ pic_minimal_syntactic_env(pic_state *pic)
 struct pic_senv *
 pic_core_syntactic_env(pic_state *pic)
 {
-  struct pic_senv *senv = pic_null_syntactic_env(pic);
+  struct pic_senv *senv = pic_minimal_syntactic_env(pic);
 
   register_core_syntax(pic, senv, PIC_STX_DEFINE, "define");
   register_core_syntax(pic, senv, PIC_STX_SET, "set!");
@@ -76,9 +76,6 @@ pic_core_syntactic_env(pic_state *pic)
   register_core_syntax(pic, senv, PIC_STX_BEGIN, "begin");
   register_core_syntax(pic, senv, PIC_STX_DEFMACRO, "define-macro");
   register_core_syntax(pic, senv, PIC_STX_DEFSYNTAX, "define-syntax");
-  register_core_syntax(pic, senv, PIC_STX_DEFLIBRARY, "define-library");
-  register_core_syntax(pic, senv, PIC_STX_IMPORT, "import");
-  register_core_syntax(pic, senv, PIC_STX_EXPORT, "export");
 
   return senv;
 }
