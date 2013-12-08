@@ -118,11 +118,11 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sGE, ">=");
   pic_gc_arena_restore(pic, ai);
 
+  pic_init_core(pic);
+
   /* set library */
   pic_make_library(pic, pic_parse(pic, "user"));
   pic_in_library(pic, pic_parse(pic, "user"));
-
-  pic_init_core(pic);
 
   return pic;
 }

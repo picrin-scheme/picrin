@@ -3,6 +3,8 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/lib.h"
+#include "picrin/macro.h"
 
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
@@ -90,9 +92,22 @@ pic_features(pic_state *pic)
 void
 pic_init_core(pic_state *pic)
 {
-  int ai;
+  int ai = pic_gc_arena_preserve(pic);
 
-  ai = pic_gc_arena_preserve(pic);
+  pic_make_library(pic, pic_parse(pic, "(scheme base)"));
+  pic_in_library(pic, pic_parse(pic, "(scheme base)"));
+
+  /* load core syntaces */
+  pic->lib->senv = pic_core_syntactic_env(pic);
+  pic_export(pic, pic_intern_cstr(pic, "define"));
+  pic_export(pic, pic_intern_cstr(pic, "set!"));
+  pic_export(pic, pic_intern_cstr(pic, "quote"));
+  pic_export(pic, pic_intern_cstr(pic, "lambda"));
+  pic_export(pic, pic_intern_cstr(pic, "if"));
+  pic_export(pic, pic_intern_cstr(pic, "begin"));
+  pic_export(pic, pic_intern_cstr(pic, "define-macro"));
+  pic_export(pic, pic_intern_cstr(pic, "define-syntax"));
+
   pic_init_bool(pic); DONE;
   pic_init_pair(pic); DONE;
   pic_init_port(pic); DONE;
