@@ -114,6 +114,74 @@ DEFINE_ARITH_CMP(>, gt)
 DEFINE_ARITH_CMP(<=, le)
 DEFINE_ARITH_CMP(>=, ge)
 
+#define DEFINE_ARITH_OP(op, name, unit)                         \
+  static pic_value                                              \
+  pic_number_##name(pic_state *pic)                             \
+  {                                                             \
+    size_t argc;                                                \
+    pic_value *argv;                                            \
+    int i;                                                      \
+    double f;                                                   \
+    bool e = true;                                              \
+                                                                \
+    pic_get_args(pic, "*", &argc, &argv);                       \
+                                                                \
+    f = unit;                                                   \
+    for (i = 0; i < argc; ++i) {                                \
+      if (pic_int_p(argv[i])) {                                 \
+        f op##= pic_int(argv[i]);                               \
+      }                                                         \
+      else if (pic_float_p(argv[i])) {                          \
+        e = false;                                              \
+        f op##= pic_float(argv[i]);                             \
+      }                                                         \
+      else {                                                    \
+        pic_error(pic, #op ": number required");                \
+      }                                                         \
+    }                                                           \
+                                                                \
+    return e ? pic_int_value((int)f) : pic_float_value(f);      \
+  }
+
+DEFINE_ARITH_OP(+, add, 0)
+DEFINE_ARITH_OP(*, mul, 1)
+
+#define DEFINE_ARITH_INV_OP(op, name, unit, exact)                      \
+  static pic_value                                                      \
+  pic_number_##name(pic_state *pic)                                     \
+  {                                                                     \
+   size_t argc;                                                         \
+   pic_value *argv;                                                     \
+   int i;                                                               \
+   double f;                                                            \
+   bool e;                                                              \
+                                                                        \
+   pic_get_args(pic, "F*", &f, &e, &argc, &argv);                       \
+                                                                        \
+   e = e && exact;                                                      \
+                                                                        \
+   if (argc == 0) {                                                     \
+     f = unit op f;                                                     \
+   }                                                                    \
+   for (i = 0; i < argc; ++i) {                                         \
+     if (pic_int_p(argv[i])) {                                          \
+       f op##= pic_int(argv[i]);                                        \
+     }                                                                  \
+     else if (pic_float_p(argv[i])) {                                   \
+       e = false;                                                       \
+       f op##= pic_float(argv[i]);                                      \
+     }                                                                  \
+     else {                                                             \
+       pic_error(pic, #op ": number required");                         \
+     }                                                                  \
+   }                                                                    \
+                                                                        \
+   return e ? pic_int_value((int)f) : pic_float_value(f);               \
+  }
+
+DEFINE_ARITH_INV_OP(-, sub, 0, true)
+DEFINE_ARITH_INV_OP(/, div, 1, false)
+
 static pic_value
 pic_number_abs(pic_state *pic)
 {
@@ -439,8 +507,15 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, ">", pic_number_gt);
   pic_defun(pic, "<=", pic_number_le);
   pic_defun(pic, ">=", pic_number_ge);
-  pic_defun(pic, "abs", pic_number_abs);
+  pic_gc_arena_restore(pic, ai);
 
+  pic_defun(pic, "+", pic_number_add);
+  pic_defun(pic, "-", pic_number_sub);
+  pic_defun(pic, "*", pic_number_mul);
+  pic_defun(pic, "/", pic_number_div);
+  pic_gc_arena_restore(pic, ai);
+
+  pic_defun(pic, "abs", pic_number_abs);
   pic_defun(pic, "floor-quotient", pic_number_floor_quotient);
   pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
   pic_defun(pic, "truncate-quotient", pic_number_trunc_quotient);
