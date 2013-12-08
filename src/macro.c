@@ -262,6 +262,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
         it = xh_begin(lib->exports);
         while (! xh_isend(&it)) {
+#if DEBUG
+          printf("* importing %s as %s\n", it.e->key, pic_symbol_name(pic, (pic_sym)it.e->val));
+#endif
           xh_put(pic->lib->senv->tbl, it.e->key, it.e->val);
           xh_next(lib->exports, &it);
         }
@@ -271,8 +274,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         pic_sym orig, ren;
         pic_value v;
 
-        orig = ren = pic_sym(pic_car(pic, expr));
-        v = macroexpand(pic, pic_car(pic, expr), senv);
+        orig = ren = pic_sym(pic_cadr(pic, expr));
+        v = macroexpand(pic, pic_cadr(pic, expr), senv);
         if (pic_symbol_p(v)) {
           ren = pic_sym(v);
         }
