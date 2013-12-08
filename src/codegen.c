@@ -4,6 +4,8 @@
 #include "picrin/pair.h"
 #include "picrin/irep.h"
 #include "picrin/proc.h"
+#include "picrin/lib.h"
+#include "picrin/macro.h"
 #include "xhash/xhash.h"
 
 #define FALLTHROUGH ((void)0)
@@ -931,6 +933,9 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   proc = pic_proc_new_cfunc(pic, cfunc);
   idx = scope_global_define(pic, name);
   pic->globals[idx] = pic_obj_value(proc);
+
+  xh_put(pic->lib->senv->tbl, name, pic_intern_cstr(pic, name));
+  xh_put(pic->lib->exports, name, pic_intern_cstr(pic, name));
 }
 
 void
