@@ -331,11 +331,16 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "port?", pic_port_port_p);
   pic_defun(pic, "input-port-open?", pic_port_input_port_open_p);
   pic_defun(pic, "output-port-open?", pic_port_output_port_open_p);
-  pic_defun(pic, "write", pic_port_write);
-  pic_defun(pic, "newline", pic_port_newline);
   pic_defun(pic, "eof-object?", pic_port_eof_object_p);
   pic_defun(pic, "eof-object", pic_port_eof_object);
   pic_defun(pic, "close-port", pic_port_close_port);
   pic_defun(pic, "close-input-port", pic_port_close_port);
   pic_defun(pic, "close-output-port", pic_port_close_port);
+
+  DEFLIBRARY(pic, "(scheme write)")
+  {
+    pic_defun(pic, "write", pic_port_write);
+    pic_defun(pic, "newline", pic_port_newline);
+  }
+  ENDLIBRARY(pic)
 }
