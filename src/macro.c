@@ -235,7 +235,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
       senv = senv->up;
     }
-    return expr;
+    return pic_symbol_value(new_uniq_sym(pic, pic_sym(expr)));
   }
   case PIC_TT_PAIR: {
     pic_value car, v;
