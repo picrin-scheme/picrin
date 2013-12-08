@@ -10,7 +10,7 @@ pic_make_library(pic_state *pic, pic_value name)
   struct pic_lib *lib;
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
-  lib->senv = pic_core_syntactic_env(pic);
+  lib->senv = pic_minimal_syntactic_env(pic);
   lib->exports = xh_new();
   lib->name = name;
 
