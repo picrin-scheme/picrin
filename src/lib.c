@@ -4,7 +4,7 @@
 #include "picrin/macro.h"
 #include "xhash/xhash.h"
 
-void
+struct pic_lib *
 pic_make_library(pic_state *pic, pic_value name)
 {
   struct pic_lib *lib;
@@ -13,7 +13,10 @@ pic_make_library(pic_state *pic, pic_value name)
   lib->senv = pic_core_syntactic_env(pic);
   lib->exports = xh_new();
 
+  /* register! */
   pic->lib_tbl = pic_acons(pic, name, pic_obj_value(lib), pic->lib_tbl);
+
+  return lib;
 }
 
 void
