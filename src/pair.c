@@ -118,7 +118,7 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
  enter:
 
   if (pic_nil_p(assoc))
-    return assoc;
+    return pic_false_value();
 
   cell = pic_car(pic, assoc);
   if (pic_eq_p(key, pic_car(pic, cell)))
@@ -136,7 +136,7 @@ pic_assoc(pic_state *pic, pic_value key, pic_value assoc)
  enter:
 
   if (pic_nil_p(assoc))
-    return assoc;
+    return pic_false_value();
 
   cell = pic_car(pic, assoc);
   if (pic_equal_p(pic, key, pic_car(pic, cell)))
