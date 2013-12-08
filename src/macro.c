@@ -176,6 +176,18 @@ pic_identifier_p(pic_value obj)
   return false;
 }
 
+void
+pic_export(pic_state *pic, pic_sym sym)
+{
+  pic_export_as(pic, sym, sym);
+}
+
+void
+pic_export_as(pic_state *pic, pic_sym sym, pic_sym alias)
+{
+  xh_put(pic->lib->exports, pic_symbol_name(pic, sym), (int)alias);
+}
+
 static void
 pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
 {
@@ -276,7 +288,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         if (pic_symbol_p(v)) {
           ren = pic_sym(v);
         }
-        xh_put(pic->lib->exports, pic_symbol_name(pic, orig), (int)ren);
+        pic_export_as(pic, orig, ren);
         return pic_false_value();
       }
       case PIC_STX_DEFSYNTAX: {

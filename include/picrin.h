@@ -127,6 +127,9 @@ void pic_in_library(pic_state *, pic_value);
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
+void pic_export(pic_state *, pic_sym);
+void pic_export_as(pic_state *, pic_sym, pic_sym);
+
 void pic_abort(pic_state *, const char *);
 void pic_raise(pic_state *, pic_value);
 void pic_error(pic_state *, const char *);
