@@ -12,6 +12,7 @@ pic_make_library(pic_state *pic, pic_value name)
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->senv = pic_core_syntactic_env(pic);
   lib->exports = xh_new();
+  lib->name = name;
 
   /* register! */
   pic->lib_tbl = pic_acons(pic, name, pic_obj_value(lib), pic->lib_tbl);
