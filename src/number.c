@@ -79,7 +79,7 @@ pic_number_nan_p(pic_state *pic)
     return pic_false_value();
 }
 
-#define DEFINE_MATH_PRED(op, name)			\
+#define DEFINE_ARITH_CMP(op, name)			\
   static pic_value					\
   pic_number_##name(pic_state *pic)			\
   {							\
@@ -108,11 +108,11 @@ pic_number_nan_p(pic_state *pic)
     return pic_true_value();				\
   }
 
-DEFINE_MATH_PRED(=, eq)
-DEFINE_MATH_PRED(<, lt)
-DEFINE_MATH_PRED(>, gt)
-DEFINE_MATH_PRED(<=, le)
-DEFINE_MATH_PRED(>=, ge)
+DEFINE_ARITH_CMP(=, eq)
+DEFINE_ARITH_CMP(<, lt)
+DEFINE_ARITH_CMP(>, gt)
+DEFINE_ARITH_CMP(<=, le)
+DEFINE_ARITH_CMP(>=, ge)
 
 static pic_value
 pic_number_abs(pic_state *pic)
