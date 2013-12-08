@@ -431,3 +431,16 @@ pic_parse_cstr(pic_state *pic, const char *str, pic_value *v)
 
   return r;
 }
+
+pic_value
+pic_parse(pic_state *pic, const char *src)
+{
+  pic_value vs;
+  int r;
+
+  r = pic_parse_cstr(pic, src, &vs);
+  if (r != 1) {
+    return pic_undef_value();
+  }
+  return pic_car(pic, vs);
+}
