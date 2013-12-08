@@ -236,14 +236,19 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       switch (pic_syntax(car)->kind) {
       case PIC_STX_DEFLIBRARY: {
         pic_value program;
-        struct pic_senv *senv;
-
-        senv = pic_minimal_syntactic_env(pic);
+        struct pic_lib *prev = pic->lib, *lib;
 
         if (pic_length(pic, expr) < 2) {
           pic_error(pic, "syntax error");
         }
-        program = macroexpand_list(pic, pic_cddr(pic, expr), senv);
+        lib = pic_make_library(pic, pic_cadr(pic, expr));
+
+        /* macroexpand in new library */
+        pic_in_library(pic, pic_cadr(pic, expr));
+        {
+          program = macroexpand_list(pic, pic_cddr(pic, expr), lib->senv);
+        }
+        pic_in_library(pic, prev->name);
 
         return pic_cons(pic, pic_symbol_value(pic->sBEGIN), program);
       }
