@@ -32,6 +32,174 @@
       (walk (lambda (x) (if (symbol? x) (inject x) x)) expr))
     (make-syntactic-closure mac-env '() (f renamed inject compare))))
 
+;;; Core syntaxes
+
+(define (list . args)
+  args)
+
+(define (caar p)
+  (car (car p)))
+
+(define (cadr p)
+  (car (cdr p)))
+
+(define (cdar p)
+  (cdr (car p)))
+
+(define (cddr p)
+  (cdr (cdr p)))
+
+(define (any pred list)
+  (if (null? list)
+      #f
+      ((lambda (it)
+	 (if it
+	     it
+	     (any pred (cdr list))))
+       (pred (car list)))))
+
+(define (map f list . lists)
+  (define (single-map f list)
+    (if (null? list)
+	'()
+	(cons (f (car list))
+	      (map f (cdr list)))))
+  (define (multiple-map f lists)
+    (if (any null? lists)
+	'()
+	(cons (apply f (single-map car lists))
+	      (multiple-map f (single-map cdr lists)))))
+  (if (null? lists)
+      (single-map f list)
+      (multiple-map f (cons list lists))))
+
+(define-macro (let bindings . body)
+  (if (symbol? bindings)
+      (begin
+	(define name bindings)
+	(set! bindings (car body))
+	(set! body (cdr body))
+	;; expanded form should be like below:
+	;; `(let ()
+	;;    (define ,loop
+	;;      (lambda (,@vars)
+	;;        ,@body))
+	;;    (,loop ,@vals))
+	(list 'let '()
+	      (list 'define name
+		    (cons 'lambda (cons (map car bindings) body)))
+	      (cons name (map cadr bindings))))
+      (cons (cons 'lambda (cons (map car bindings) body))
+	    (map cadr bindings))))
+
+(define-macro (cond . clauses)
+  (if (null? clauses)
+      #f
+      (let ((c (car clauses)))
+	(let ((test (car c))
+	      (if-true (cons 'begin (cdr c)))
+	      (if-false (cons 'cond (cdr clauses))))
+	  (list 'if test if-true if-false)))))
+
+(define-macro (and . exprs)
+  (if (null? exprs)
+      #t
+      (let ((test (car exprs))
+	    (if-true (cons 'and (cdr exprs))))
+	(list 'if test if-true #f))))
+
+(define-macro (or . exprs)
+  (if (null? exprs)
+      #f
+      (let ((test (car exprs))
+	    (if-false (cons 'or (cdr exprs))))
+	(list 'let (list (list 'it test))
+	      (list 'if 'it 'it if-false)))))
+
+(define (append xs ys)
+  (if (null? xs)
+      ys
+      (cons (car xs)
+	    (append (cdr xs) ys))))
+
+(define-macro (quasiquote x)
+  (cond
+   ((symbol? x) (list 'quote x))
+   ((pair? x)
+    (cond
+     ((eq? 'unquote (car x)) (cadr x))
+     ((and (pair? (car x))
+	   (eq? 'unquote-splicing (caar x)))
+      (list 'append (cadr (car x)) (list 'quasiquote (cdr x))))
+     (#t (list 'cons
+	       (list 'quasiquote (car x))
+	       (list 'quasiquote (cdr x))))))
+   (#t x)))
+
+(define-macro (let* bindings . body)
+  (if (null? bindings)
+      `(let () ,@body)
+      `(let ((,(caar bindings)
+	      ,@(cdar bindings)))
+	 (let* (,@(cdr bindings))
+	   ,@body))))
+
+(define-macro (letrec bindings . body)
+  (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
+	(initials (map (lambda (v) `(set! ,@v)) bindings)))
+    `(let (,@vars)
+       (begin ,@initials)
+       ,@body)))
+
+(define-macro (letrec* . args)
+  `(letrec ,@args))
+
+(define-macro (do bindings finish . body)
+  `(let loop ,(map (lambda (x)
+		     (list (car x) (cadr x)))
+		   bindings)
+     (if ,(car finish)
+	 (begin ,@body
+		(loop ,@(map (lambda (x)
+			       (if (null? (cddr x))
+				   (car x)
+				   (car (cddr x))))
+			     bindings)))
+	 (begin ,@(cdr finish)))))
+
+(define-macro (when test . exprs)
+  (list 'if test (cons 'begin exprs) #f))
+
+(define-macro (unless test . exprs)
+  (list 'if test #f (cons 'begin exprs)))
+
+(define (every pred list)
+  (if (null? list)
+      #t
+      (if (pred (car list))
+	  (every pred (cdr list))
+	  #f)))
+
+(define (fold f s xs)
+  (if (null? xs)
+      s
+      (fold f (f (car xs) s) (cdr xs))))
+
+(define (values . args)
+  (if (and (pair? args)
+	   (null? (cdr args)))
+      (car args)
+      (cons '*values-tag* args)))
+
+(define (call-with-values producer consumer)
+  (let ((res (producer)))
+    (if (and (pair? res)
+	     (eq? '*values-tag* (car res)))
+        (apply consumer (cdr res))
+        (consumer res))))
+
+;;; 6.2. Numbers
+
 (define (zero? n)
   (= n 0))
 
@@ -46,6 +214,30 @@
 
 (define (even? n)
   (= 1 (floor-remainder n 2)))
+
+(define (min x . args)
+  (let loop ((pivot x) (rest args))
+    (if (null? rest)
+	pivot
+	(loop (if (< x (car rest)) x (car rest)) (cdr rest)))))
+
+(define (max x . args)
+  (let loop ((pivot x) (rest args))
+    (if (null? rest)
+	pivot
+	(loop (if (> x (car rest)) x (car rest)) (cdr rest)))))
+
+(define (floor/ n m)
+  (values (floor-quotient n m)
+	  (floor-remainder n m)))
+
+(define (truncate/ n m)
+  (values (truncate-quotient n m)
+	  (truncate-remainder n m)))
+
+(define (exact-integer-sqrt k)
+  (let ((n (exact (sqrt k))))
+    (values n (- k (square n)))))
 
 (define (gcd n m)
   (if (negative? n)
@@ -64,20 +256,13 @@
 (define (lcm n m)
   (/ (* n m) (gcd n m)))
 
-(define (caar p)
-  (car (car p)))
+;;; 6.3 Booleans
 
-(define (cadr p)
-  (car (cdr p)))
+(define (boolean=? . objs)
+  (or (every (lambda (x) (eq? x #t)) objs)
+      (every (lambda (x) (eq? x #f)) objs)))
 
-(define (cdar p)
-  (cdr (car p)))
-
-(define (cddr p)
-  (cdr (cdr p)))
-
-(define (list . args)
-  args)
+;;; 6.4 Pairs and lists
 
 (define (list? obj)
   (if (null? obj)
@@ -98,12 +283,6 @@
   (if (null? list)
       0
       (+ 1 (length (cdr list)))))
-
-(define (append xs ys)
-  (if (null? xs)
-      ys
-      (cons (car xs)
-	    (append (cdr xs) ys))))
 
 (define (reverse list . args)
   (if (null? args)
@@ -158,140 +337,6 @@
       (cons (car obj)
 	    (list-copy (cdr obj)))))
 
-(define (every pred list)
-  (if (null? list)
-      #t
-      (if (pred (car list))
-	  (every pred (cdr list))
-	  #f)))
-
-(define (any pred list)
-  (if (null? list)
-      #f
-      ((lambda (it)
-	 (if it
-	     it
-	     (any pred (cdr list))))
-       (pred (car list)))))
-
-(define (fold f s xs)
-  (if (null? xs)
-      s
-      (fold f (f (car xs) s) (cdr xs))))
-
-(define (map f list . lists)
-  (define (single-map f list)
-    (if (null? list)
-	'()
-	(cons (f (car list))
-	      (map f (cdr list)))))
-  (define (multiple-map f lists)
-    (if (any null? lists)
-	'()
-	(cons (apply f (single-map car lists))
-	      (multiple-map f (single-map cdr lists)))))
-  (if (null? lists)
-      (single-map f list)
-      (multiple-map f (cons list lists))))
-
-(define (for-each f list . lists)
-  (define (single-for-each f list)
-    (if (null? list)
-	#f
-	(begin
-	  (f (car list))
-	  (single-for-each f (cdr list)))))
-  (define (multiple-for-each f lists)
-    (if (any null? lists)
-	#f
-	(begin
-	  (apply f (map car lists))
-	  (multiple-for-each f (map cdr lists)))))
-  (if (null? lists)
-      (single-for-each f list)
-      (multiple-for-each f (cons list lists))))
-
-(define-macro (let bindings . body)
-  (if (symbol? bindings)
-      (begin
-	(define name bindings)
-	(set! bindings (car body))
-	(set! body (cdr body))
-	;; expanded form should be like below:
-	;; `(let ()
-	;;    (define ,loop
-	;;      (lambda (,@vars)
-	;;        ,@body))
-	;;    (,loop ,@vals))
-	(list 'let '()
-	      (list 'define name
-		    (cons 'lambda (cons (map car bindings) body)))
-	      (cons name (map cadr bindings))))
-      (cons (cons 'lambda (cons (map car bindings) body))
-	    (map cadr bindings))))
-
-(define-macro (cond . clauses)
-  (if (null? clauses)
-      #f
-      (let ((c (car clauses)))
-	(let ((test (car c))
-	      (if-true (cons 'begin (cdr c)))
-	      (if-false (cons 'cond (cdr clauses))))
-	  (list 'if test if-true if-false)))))
-
-(define-macro (and . exprs)
-  (if (null? exprs)
-      #t
-      (let ((test (car exprs))
-	    (if-true (cons 'and (cdr exprs))))
-	(list 'if test if-true #f))))
-
-(define-macro (or . exprs)
-  (if (null? exprs)
-      #f
-      (let ((test (car exprs))
-	    (if-false (cons 'or (cdr exprs))))
-	(list 'let (list (list 'it test))
-	      (list 'if 'it 'it if-false)))))
-
-(define-macro (quasiquote x)
-  (cond
-   ((symbol? x) (list 'quote x))
-   ((pair? x)
-    (cond
-     ((eq? 'unquote (car x)) (cadr x))
-     ((and (pair? (car x))
-	   (eq? 'unquote-splicing (caar x)))
-      (list 'append (cadr (car x)) (list 'quasiquote (cdr x))))
-     (#t (list 'cons
-	       (list 'quasiquote (car x))
-	       (list 'quasiquote (cdr x))))))
-   (#t x)))
-
-(define-macro (let* bindings . body)
-  (if (null? bindings)
-      `(let () ,@body)
-      `(let ((,(caar bindings)
-	      ,@(cdar bindings)))
-	 (let* (,@(cdr bindings))
-	   ,@body))))
-
-(define-macro (letrec bindings . body)
-  (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
-	(initials (map (lambda (v) `(set! ,@v)) bindings)))
-    `(let (,@vars)
-       (begin ,@initials)
-       ,@body)))
-
-(define-macro (letrec* . args)
-  `(letrec ,@args))
-
-(define-macro (when test . exprs)
-  (list 'if test (cons 'begin exprs) #f))
-
-(define-macro (unless test . exprs)
-  (list 'if test #f (cons 'begin exprs)))
-
 (define (member obj list . opts)
   (let ((compare (if (null? opts) equal? (car opts))))
     (if (null? list)
@@ -307,64 +352,6 @@
 	(if (compare obj (caar list))
 	    (car list)
 	    (assoc obj (cdr list) compare)))))
-
-(define (values . args)
-  (if (and (pair? args)
-	   (null? (cdr args)))
-      (car args)
-      (cons '*values-tag* args)))
-
-(define (call-with-values producer consumer)
-  (let ((res (producer)))
-    (if (and (pair? res)
-	     (eq? '*values-tag* (car res)))
-        (apply consumer (cdr res))
-        (consumer res))))
-
-(define-macro (do bindings finish . body)
-  `(let loop ,(map (lambda (x)
-		     (list (car x) (cadr x)))
-		   bindings)
-     (if ,(car finish)
-	 (begin ,@body
-		(loop ,@(map (lambda (x)
-			       (if (null? (cddr x))
-				   (car x)
-				   (car (cddr x))))
-			     bindings)))
-	 (begin ,@(cdr finish)))))
-
-;;; 6.2. Numbers
-
-(define (min x . args)
-  (let loop ((pivot x) (rest args))
-    (if (null? rest)
-	pivot
-	(loop (if (< x (car rest)) x (car rest)) (cdr rest)))))
-
-(define (max x . args)
-  (let loop ((pivot x) (rest args))
-    (if (null? rest)
-	pivot
-	(loop (if (> x (car rest)) x (car rest)) (cdr rest)))))
-
-(define (floor/ n m)
-  (values (floor-quotient n m)
-	  (floor-remainder n m)))
-
-(define (truncate/ n m)
-  (values (truncate-quotient n m)
-	  (truncate-remainder n m)))
-
-(define (exact-integer-sqrt k)
-  (let ((n (exact (sqrt k))))
-    (values n (- k (square n)))))
-
-;;; 6.3 Booleans
-
-(define (boolean=? . objs)
-  (or (every (lambda (x) (eq? x #t)) objs)
-      (every (lambda (x) (eq? x #f)) objs)))
 
 ;;; 6.5. Symbols
 
@@ -558,6 +545,23 @@
   (fold bytevector-append-2-inv #() vs))
 
 ;;; 6.10 control features
+
+(define (for-each f list . lists)
+  (define (single-for-each f list)
+    (if (null? list)
+	#f
+	(begin
+	  (f (car list))
+	  (single-for-each f (cdr list)))))
+  (define (multiple-for-each f lists)
+    (if (any null? lists)
+	#f
+	(begin
+	  (apply f (map car lists))
+	  (multiple-for-each f (map cdr lists)))))
+  (if (null? lists)
+      (single-for-each f list)
+      (multiple-for-each f (cons list lists))))
 
 (define (string-map f v . vs)
   (let* ((len (fold min (string-length v) (map string-length vs)))
