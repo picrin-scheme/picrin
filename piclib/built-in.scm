@@ -611,6 +611,17 @@
         (identifier=? use-env x use-env y))
       (make-syntactic-closure mac-env '() (unwrap (f (wrap expr) inject compare))))))
 
+(define-syntax or
+  (er-macro-transformer
+   (lambda (expr inject compare)
+     (let ((exprs (cdr expr)))
+       (if (null? exprs)
+           #f
+           `(let ((it ,(car exprs)))
+              (if it
+                  it
+                  (or ,@(cdr exprs)))))))))
+
 (define-syntax case
   (er-macro-transformer
    (lambda (expr inject compare)
