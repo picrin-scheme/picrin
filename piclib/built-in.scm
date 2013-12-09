@@ -173,6 +173,21 @@
 (define-macro (unless test . exprs)
   (list 'if test #f (cons 'begin exprs)))
 
+(define-syntax define-auxiliary-syntax
+  (ir-macro-transformer
+   (lambda (expr i c)
+     `(define-syntax ,(cadr expr)
+        (sc-macro-transformer
+         (lambda (expr env)
+           (error "invalid use of auxiliary syntax")))))))
+
+(define-auxiliary-syntax else)
+(define-auxiliary-syntax =>)
+(define-auxiliary-syntax _)
+(define-auxiliary-syntax ...)
+(define-auxiliary-syntax unquote)
+(define-auxiliary-syntax unquote-splicing)
+
 (define (every pred list)
   (if (null? list)
       #t
@@ -601,17 +616,6 @@
 	       (map (lambda (v) (vector-ref v n)) vs))
 	(loop (+ n 1))))))
 
-
-(define-syntax define-auxiliary-syntax
-  (ir-macro-transformer
-   (lambda (expr i c)
-     `(define-syntax ,(cadr expr)
-        (sc-macro-transformer
-         (lambda (expr env)
-           (error "invalid use of auxiliary syntax")))))))
-
-(define-auxiliary-syntax unquote)
-(define-auxiliary-syntax unquote-splicing)
 (define-syntax or
   (ir-macro-transformer
    (lambda (expr inject compare)
