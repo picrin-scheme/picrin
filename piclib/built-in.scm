@@ -205,8 +205,6 @@
 	      (if-false (cons 'cond (cdr clauses))))
 	  (list 'if test if-true if-false)))))
 
-(define else #t)
-
 (define-macro (and . exprs)
   (if (null? exprs)
       #t
