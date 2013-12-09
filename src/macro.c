@@ -240,16 +240,21 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
   }
   case PIC_TT_SYMBOL: {
     struct xh_entry *e;
-    while (senv) {
+    pic_sym uniq;
+    while (true) {
       if ((e = xh_get(senv->tbl, pic_symbol_name(pic, pic_sym(expr)))) != NULL) {
 	if (e->val >= 0)
 	  return pic_symbol_value((pic_sym)e->val);
 	else
 	  return pic_obj_value(senv->stx[~e->val]);
       }
+      if (! senv->up)
+        break;
       senv = senv->up;
     }
-    return pic_symbol_value(new_uniq_sym(pic, pic_sym(expr)));
+    uniq = new_uniq_sym(pic, pic_sym(expr));
+    xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(expr)), (int)uniq);
+    return pic_symbol_value(uniq);
   }
   case PIC_TT_PAIR: {
     pic_value car, v;
