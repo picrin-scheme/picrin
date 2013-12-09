@@ -347,6 +347,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	  /* defined symbol */
 	  a = pic_car(pic, var);
+          if (! pic_symbol_p(a)) {
+            a = macroexpand(pic, a, senv);
+          }
 	  if (! pic_symbol_p(a)) {
 	    pic_error(pic, "binding to non-symbol object");
 	  }
@@ -364,6 +367,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  return v;
 	}
 
+        if (! pic_symbol_p(var)) {
+          var = macroexpand(pic, var, senv);
+        }
 	if (! pic_symbol_p(var)) {
 	  pic_error(pic, "binding to non-symbol object");
 	}
