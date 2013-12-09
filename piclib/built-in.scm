@@ -612,7 +612,7 @@
       (make-syntactic-closure mac-env '() (unwrap (f (wrap expr) inject compare))))))
 
 (define-syntax or
-  (er-macro-transformer
+  (ir-macro-transformer
    (lambda (expr inject compare)
      (let ((exprs (cdr expr)))
        (if (null? exprs)
@@ -623,14 +623,14 @@
                   (or ,@(cdr exprs)))))))))
 
 (define-syntax case
-  (er-macro-transformer
+  (ir-macro-transformer
    (lambda (expr inject compare)
      (let ((key (cadr expr))
            (clauses (cddr expr)))
        `(let ((key ,key))
           ,(let loop ((clauses clauses))
                (if (null? clauses)
-                   '#f
+                   #f
                    `(if (or ,@(map (lambda (x) `(eqv? key ,x)) (caar clauses)))
                         ,@(cdar clauses)
                         ,(loop (cdr clauses))))))))))
