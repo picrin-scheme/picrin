@@ -153,6 +153,20 @@ pic_identifier_p(pic_value obj)
   return false;
 }
 
+static pic_value
+strip(pic_state *pic, pic_value expr)
+{
+  if (pic_sc_p(expr)) {
+    return strip(pic, pic_sc(expr)->expr);
+  }
+  else if (pic_pair_p(expr)) {
+    return pic_cons(pic,
+                    strip(pic, pic_car(pic, expr)),
+                    strip(pic, pic_cdr(pic, expr)));
+  }
+  return expr;
+}
+
 static void
 pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
 {
@@ -365,7 +379,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	pic_gc_protect(pic, v);
 	return v;
       case PIC_STX_QUOTE:
-	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), pic_cdr(pic, expr));
+	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), strip(pic, pic_cdr(pic, expr)));
 	pic_gc_arena_restore(pic, ai);
 	pic_gc_protect(pic, v);
 	return v;
