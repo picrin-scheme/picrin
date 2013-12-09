@@ -50,6 +50,10 @@ repl(pic_state *pic)
   while (1) {
     prompt = code[0] == '\0' ? "> " : "* ";
 
+#if DEBUG
+    printf("[current ai = %d]\n", ai);
+#endif
+
 #if PIC_ENABLE_READLINE
     read_line = readline(prompt);
     if (read_line == NULL) {
