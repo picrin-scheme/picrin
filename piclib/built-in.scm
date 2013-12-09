@@ -583,9 +583,6 @@
       (identifier=? use-env x use-env y))
     (make-syntactic-closure use-env '() (f expr rename compare))))
 
-(define (acons key val alist)
-  (cons (cons key val) alist))
-
 (define (walk f obj)
   (if (pair? obj)
       (cons (walk f (car obj)) (walk f (cdr obj)))
@@ -595,18 +592,33 @@
 
 (define (ir-macro-transformer f)
   (lambda (expr use-env mac-env)
-    (let ((wrapped '()))
-      (define (inject obj)
-        (let ((s (make-syntactic-closure use-env '() obj)))
-          (set! wrapped (acons s obj wrapped))
-          s))
-      (define (extract obj)
-        (let ((t (assq obj wrapped)))
-          (if t (cdr t) obj)))
-      (define (wrap expr)
-        (walk inject expr))
-      (define (unwrap expr)
-        (walk extract expr))
-      (define (compare x y)
-        (identifier=? use-env x use-env y))
-      (make-syntactic-closure mac-env '() (unwrap (f (wrap expr) inject compare))))))
+    (define (inject identifier)
+      (make-syntactic-closure use-env '() identifier))
+    (define (compare x y)
+      (identifier=? mac-env x mac-env y))
+    (let ((expr (walk (lambda (x) (if (symbol? x) (inject x) x)) expr)))
+      (make-syntactic-closure mac-env '() (f expr inject compare)))))
+
+(define-syntax or
+  (ir-macro-transformer
+   (lambda (expr inject compare)
+     (let ((exprs (cdr expr)))
+       (if (null? exprs)
+           #f
+           `(let ((it ,(car exprs)))
+              (if it
+                  it
+                  (or ,@(cdr exprs)))))))))
+
+(define-syntax case
+  (ir-macro-transformer
+   (lambda (expr inject compare)
+     (let ((key (cadr expr))
+           (clauses (cddr expr)))
+       `(let ((key ,key))
+          ,(let loop ((clauses clauses))
+               (if (null? clauses)
+                   #f
+                   `(if (or ,@(map (lambda (x) `(eqv? key ,x)) (caar clauses)))
+                        ,@(cdar clauses)
+                        ,(loop (cdr clauses))))))))))

@@ -76,7 +76,7 @@
 | 6.11 Exceptions | yes | TODO: native error handling |
 | 6.12 Environments and evaluation | N/A | |
 | 6.13 Ports | incomplete | |
-| 6.14 System interface | incomplete | `exit` is unsafe when used with dynamic-wind |
+| 6.14 System interface | yes | |
 
 ## Homepage
 

@@ -26,6 +26,7 @@ pic_system_exit(pic_state *pic)
 {
   pic_value v;
   int argc, status = EXIT_SUCCESS;
+  struct pic_block *blk;
 
   argc = pic_get_args(pic, "|o", &v);
   if (argc == 1) {
@@ -39,6 +40,12 @@ pic_system_exit(pic_state *pic)
     default:
       break;
     }
+  }
+
+  blk = pic->blk;
+  while (blk) {
+    pic_apply_argv(pic, blk->out, 0);
+    blk = blk->prev;
   }
 
   exit(status);

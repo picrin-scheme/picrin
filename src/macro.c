@@ -176,6 +176,20 @@ pic_identifier_p(pic_value obj)
   return false;
 }
 
+static pic_value
+strip(pic_state *pic, pic_value expr)
+{
+  if (pic_sc_p(expr)) {
+    return strip(pic, pic_sc(expr)->expr);
+  }
+  else if (pic_pair_p(expr)) {
+    return pic_cons(pic,
+                    strip(pic, pic_car(pic, expr)),
+                    strip(pic, pic_cdr(pic, expr)));
+  }
+  return expr;
+}
+
 void
 pic_export(pic_state *pic, pic_sym sym)
 {
@@ -430,6 +444,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	  /* defined symbol */
 	  a = pic_car(pic, var);
+          if (! pic_symbol_p(a)) {
+            a = macroexpand(pic, a, senv);
+          }
 	  if (! pic_symbol_p(a)) {
 	    pic_error(pic, "binding to non-symbol object");
 	  }
@@ -447,6 +464,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  return v;
 	}
 
+        if (! pic_symbol_p(var)) {
+          var = macroexpand(pic, var, senv);
+        }
 	if (! pic_symbol_p(var)) {
 	  pic_error(pic, "binding to non-symbol object");
 	}
@@ -462,7 +482,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	pic_gc_protect(pic, v);
 	return v;
       case PIC_STX_QUOTE:
-	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), pic_cdr(pic, expr));
+	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), strip(pic, pic_cdr(pic, expr)));
 	pic_gc_arena_restore(pic, ai);
 	pic_gc_protect(pic, v);
 	return v;
