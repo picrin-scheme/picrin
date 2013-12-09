@@ -592,8 +592,9 @@
       (make-syntactic-closure use-env '() identifier))
     (define (compare x y)
       (identifier=? mac-env x mac-env y))
-    (let ((expr (walk (lambda (x) (if (symbol? x) (inject x) x)) expr)))
-      (make-syntactic-closure mac-env '() (f expr inject compare)))))
+    (define renamed
+      (walk (lambda (x) (if (symbol? x) (inject x) x)) expr))
+    (make-syntactic-closure mac-env '() (f renamed inject compare))))
 
 (define-syntax define-auxiliary-syntax
   (ir-macro-transformer
