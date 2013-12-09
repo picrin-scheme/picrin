@@ -336,7 +336,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  pic_error(pic, "syntax error");
 	}
 
-	var = pic_cadr(pic, expr);
+	var = strip(pic, pic_cadr(pic, expr));
 	if (! pic_symbol_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
