@@ -610,3 +610,16 @@
       (define (compare x y)
         (identifier=? use-env x use-env y))
       (make-syntactic-closure mac-env '() (unwrap (f (wrap expr) inject compare))))))
+
+(define-syntax case
+  (er-macro-transformer
+   (lambda (expr inject compare)
+     (let ((key (cadr expr))
+           (clauses (cddr expr)))
+       `(let ((key ,key))
+          ,(let loop ((clauses clauses))
+               (if (null? clauses)
+                   '#f
+                   `(if (or ,@(map (lambda (x) `(eqv? key ,x)) (caar clauses)))
+                        ,@(cdar clauses)
+                        ,(loop (cdr clauses))))))))))
