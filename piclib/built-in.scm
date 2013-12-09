@@ -584,9 +584,7 @@
 (define (walk f obj)
   (if (pair? obj)
       (cons (walk f (car obj)) (walk f (cdr obj)))
-      (if (vector? obj)
-	  (list->vector (map (lambda (x) (walk f x)) (vector->list obj)))
-	  (f obj))))
+      (f obj)))
 
 (define (ir-macro-transformer f)
   (lambda (expr use-env mac-env)
