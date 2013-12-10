@@ -38,14 +38,14 @@
 | 4.1.6 Assignments | yes | |
 | 4.1.7 Inclusion | no | `include` and `include-ci` |
 | 4.2.1 Conditionals | incomplete | TODO: `cond-expand` |
-| 4.2.2 Binding constructs | incomplete | TODO: `let-values`, `let*-values` |
+| 4.2.2 Binding constructs | yes | |
 | 4.2.3 Sequencing | yes | |
 | 4.2.4 Iteration | yes | |
 | 4.2.5 Delayed evaluation | N/A | |
 | 4.2.6 Dynamic bindings | no | TODO: `make-parameter`, `parameterize` in C level |
 | 4.2.7 Exception handling | no | `guard` syntax. |
 | 4.2.8 Quasiquotation | incomplete | nested is unsupported |
-| 4.2.9  Case-lambda | N/A | |
+| 4.2.9 Case-lambda | N/A | |
 | 4.3.1 Bindings constructs for syntactic keywords | incomplete | (*1) |
 | 4.3.2 Pattern language | no | `syntax-rules` |
 | 4.3.3 Signaling errors in macro transformers | yes | |
@@ -53,7 +53,7 @@
 | 5.2 Import declarations | incomplete | only simple import declarations, no support for import with renaming. |
 | 5.3.1 Top level definitions | yes | |
 | 5.3.2 Internal definitions | yes | TODO: interreferential definitions |
-| 5.3.3 Multiple-value definitions | no | |
+| 5.3.3 Multiple-value definitions | yes | |
 | 5.4 Syntax definitions | yes | TODO: internal macro definition is not supported. |
 | 5.5 Recored-type definitions | no | |
 | 5.6.1 Library Syntax | yes | In picrin, libraries can be reopend. |
