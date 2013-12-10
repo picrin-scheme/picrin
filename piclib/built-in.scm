@@ -196,6 +196,14 @@
 (import (picrin macro)
         (picrin core-syntax))
 
+(export let let* letrec letrec*
+        quasiquote unquote unquote-splicing
+        and or
+        cond case else =>
+        do
+        when unless
+        _ ...)
+
 (define (any pred list)
   (if (null? list)
       #f
