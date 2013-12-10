@@ -56,7 +56,7 @@
 | 5.3.3 Multiple-value definitions | yes | |
 | 5.4 Syntax definitions | yes | TODO: internal macro definition is not supported. |
 | 5.5 Recored-type definitions | no | |
-| 5.6.1 Library Syntax | yes | In picrin, libraries can be reopend. |
+| 5.6.1 Library Syntax | incomplete | In picrin, libraries can be reopend and can be nested. |
 | 5.6.2 Library example | N/A | |
 | 5.7 The REPL | yes | |
 | 6.1 Equivalence predicates | yes | |
