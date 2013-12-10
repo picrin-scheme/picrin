@@ -939,19 +939,10 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 }
 
 void
-print_irep(pic_state *pic, struct pic_irep *irep)
+print_code(pic_state *pic, struct pic_code c)
 {
-  int i;
-
-  printf("## irep %p\n", irep);
-  printf("[clen = %zd, ccapa = %zd, argc = %d, localc = %d]\n", irep->clen, irep->ccapa, irep->argc, irep->localc);
-  printf(":: cv_num = %d\n", irep->cv_num);
-  for (i = 0; i < irep->cv_num; ++i) {
-    printf(": %d -> %d\n", irep->cv_tbl[i], i);
-  }
-  for (i = 0; i < irep->clen; ++i) {
-    printf("[%2d] ", irep->code[i].insn);
-    switch (irep->code[i].insn) {
+    printf("[%2d] ", c.insn);
+    switch (c.insn) {
     case OP_POP:
       puts("OP_POP");
       break;
@@ -965,54 +956,54 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       puts("OP_PUSHFALSE");
       break;
     case OP_PUSHFLOAT:
-      printf("OP_PUSHFLOAT\t%f\n", irep->code[i].u.f);
+      printf("OP_PUSHFLOAT\t%f\n", c.u.f);
       break;
     case OP_PUSHINT:
-      printf("OP_PUSHINT\t%d\n", irep->code[i].u.i);
+      printf("OP_PUSHINT\t%d\n", c.u.i);
       break;
     case OP_PUSHCHAR:
-      printf("OP_PUSHCHAR\t%c\n", irep->code[i].u.c);
+      printf("OP_PUSHCHAR\t%c\n", c.u.c);
       break;
     case OP_PUSHCONST:
       printf("OP_PUSHCONST\t");
-      pic_debug(pic, pic->pool[irep->code[i].u.i]);
+      pic_debug(pic, pic->pool[c.u.i]);
       puts("");
       break;
     case OP_GREF:
-      printf("OP_GREF\t%i\n", irep->code[i].u.i);
+      printf("OP_GREF\t%i\n", c.u.i);
       break;
     case OP_GSET:
-      printf("OP_GSET\t%i\n", irep->code[i].u.i);
+      printf("OP_GSET\t%i\n", c.u.i);
       break;
     case OP_LREF:
-      printf("OP_LREF\t%d\n", irep->code[i].u.i);
+      printf("OP_LREF\t%d\n", c.u.i);
       break;
     case OP_LSET:
-      printf("OP_LSET\t%d\n", irep->code[i].u.i);
+      printf("OP_LSET\t%d\n", c.u.i);
       break;
     case OP_CREF:
-      printf("OP_CREF\t%d\t%d\n", irep->code[i].u.r.depth, irep->code[i].u.r.idx);
+      printf("OP_CREF\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
       break;
     case OP_CSET:
-      printf("OP_CSET\t%d\t%d\n", irep->code[i].u.r.depth, irep->code[i].u.r.idx);
+      printf("OP_CSET\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
       break;
     case OP_JMP:
-      printf("OP_JMP\t%d\n", irep->code[i].u.i);
+      printf("OP_JMP\t%d\n", c.u.i);
       break;
     case OP_JMPIF:
-      printf("OP_JMPIF\t%d\n", irep->code[i].u.i);
+      printf("OP_JMPIF\t%d\n", c.u.i);
       break;
     case OP_CALL:
-      printf("OP_CALL\t%d\n", irep->code[i].u.i);
+      printf("OP_CALL\t%d\n", c.u.i);
       break;
     case OP_TAILCALL:
-      printf("OP_TAILCALL\t%d\n", irep->code[i].u.i);
+      printf("OP_TAILCALL\t%d\n", c.u.i);
       break;
     case OP_RET:
       puts("OP_RET");
       break;
     case OP_LAMBDA:
-      printf("OP_LAMBDA\t%d\n", irep->code[i].u.i);
+      printf("OP_LAMBDA\t%d\n", c.u.i);
       break;
     case OP_CONS:
       puts("OP_CONS");
@@ -1054,5 +1045,20 @@ print_irep(pic_state *pic, struct pic_irep *irep)
       puts("OP_STOP");
       break;
     }
+}
+
+void
+print_irep(pic_state *pic, struct pic_irep *irep)
+{
+  int i;
+
+  printf("## irep %p\n", irep);
+  printf("[clen = %zd, ccapa = %zd, argc = %d, localc = %d]\n", irep->clen, irep->ccapa, irep->argc, irep->localc);
+  printf(":: cv_num = %d\n", irep->cv_num);
+  for (i = 0; i < irep->cv_num; ++i) {
+    printf(": %d -> %d\n", irep->cv_tbl[i], i);
+  }
+  for (i = 0; i < irep->clen; ++i) {
+    print_code(pic, irep->code[i]);
   }
 }

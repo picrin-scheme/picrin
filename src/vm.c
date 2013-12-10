@@ -283,8 +283,10 @@ pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
   return pic_apply(pic, proc, v);
 }
 
+void print_code(pic_state *, struct pic_code);
+
 #if VM_DEBUG
-# define OPCODE_EXEC_HOOK printf("OP = %d\n", c.insn)
+# define OPCODE_EXEC_HOOK print_code(pic, c)
 #else
 # define OPCODE_EXEC_HOOK ((void)0)
 #endif
