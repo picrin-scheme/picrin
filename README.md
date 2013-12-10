@@ -44,17 +44,17 @@
 | 4.2.7 Exception handling | no | `guard` syntax. |
 | 4.2.8 Quasiquotation | incomplete | nested is unsupported |
 | 4.2.9  Case-lambda | N/A | |
-| 4.3.1 Bindings constructs for syntactic keywords | no | Instead, picrin provides so-called legacy macro (`define-macro`). |
-| 4.3.2 Pattern language | -- | see above. |
-| 4.3.3 Signaling errors in macro transformers | -- | see above. |
+| 4.3.1 Bindings constructs for syntactic keywords | incomplete | picrin provides hygienic macros in addition to so-called legacy macro (`define-macro`), such as syntactic closure, explicit renaming macro, and finally -- although experimentally -- implicit renaming macro. as of now let-syntax and letrec-syntax are not provided. |
+| 4.3.2 Pattern language | no | `syntax-rules` |
+| 4.3.3 Signaling errors in macro transformers | yes | |
 | 5.1 Programs | yes | |
-| 5.2 Import declarations | no | |
+| 5.2 Import declarations | incomplete | only simple import declarations, no support for import with renaming. |
 | 5.3.1 Top level definitions | yes | |
 | 5.3.2 Internal definitions | yes | TODO: interreferential definitions |
 | 5.3.3 Multiple-value definitions | no | |
-| 5.4 Syntax definitions | -- | see notes on section 4.3.1. |
+| 5.4 Syntax definitions | yes | TODO: internal macro definition is not supported. |
 | 5.5 Recored-type definitions | no | |
-| 5.6.1 Library Syntax | no | |
+| 5.6.1 Library Syntax | yes | In picrin, libraries can be reopend. |
 | 5.6.2 Library example | N/A | |
 | 5.7 The REPL | yes | |
 | 6.1 Equivalence predicates | yes | |
