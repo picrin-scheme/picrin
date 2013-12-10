@@ -1,38 +1,187 @@
 ;;; hygienic macros
+(define-library (picrin macro)
+  (import (scheme base))
 
-(define (sc-macro-transformer f)
-  (lambda (expr use-env mac-env)
-    (make-syntactic-closure mac-env '() (f expr use-env))))
+  (define (sc-macro-transformer f)
+    (lambda (expr use-env mac-env)
+      (make-syntactic-closure mac-env '() (f expr use-env))))
 
-(define (rsc-macro-transformer f)
-  (lambda (expr use-env mac-env)
-    (make-syntactic-closure use-env '() (f expr mac-env))))
+  (define (rsc-macro-transformer f)
+    (lambda (expr use-env mac-env)
+      (make-syntactic-closure use-env '() (f expr mac-env))))
 
-(define (er-macro-transformer f)
-  (lambda (expr use-env mac-env)
-    (define (rename identifier)
-      (make-syntactic-closure mac-env '() identifier))
-    (define (compare x y)
-      (identifier=? use-env x use-env y))
-    (make-syntactic-closure use-env '() (f expr rename compare))))
+  (define (er-macro-transformer f)
+    (lambda (expr use-env mac-env)
+      (define (rename identifier)
+        (make-syntactic-closure mac-env '() identifier))
+      (define (compare x y)
+        (identifier=? use-env x use-env y))
+      (make-syntactic-closure use-env '() (f expr rename compare))))
 
-(define (walk f obj)
-  (if (pair? obj)
-      (cons (walk f (car obj))
-            (walk f (cdr obj)))
-      (f obj)))
+  (define (walk f obj)
+    (if (pair? obj)
+        (cons (walk f (car obj))
+              (walk f (cdr obj)))
+        (f obj)))
 
-(define (ir-macro-transformer f)
-  (lambda (expr use-env mac-env)
-    (define (inject identifier)
-      (make-syntactic-closure use-env '() identifier))
-    (define (compare x y)
-      (identifier=? mac-env x mac-env y))
-    (define renamed
-      (walk (lambda (x) (if (symbol? x) (inject x) x)) expr))
-    (make-syntactic-closure mac-env '() (f renamed inject compare))))
+  (define (ir-macro-transformer f)
+    (lambda (expr use-env mac-env)
+      (define (inject identifier)
+        (make-syntactic-closure use-env '() identifier))
+      (define (compare x y)
+        (identifier=? mac-env x mac-env y))
+      (define renamed
+        (walk (lambda (x) (if (symbol? x) (inject x) x)) expr))
+      (make-syntactic-closure mac-env '() (f renamed inject compare))))
 
-;;; Core syntaxes
+  (export sc-macro-transformer
+          rsc-macro-transformer
+          er-macro-transformer
+          ir-macro-transformer))
+
+;;; core syntaces
+(define-library (picrin core-syntax)
+  (import (scheme base)
+          (picrin macro))
+
+  (define (list . args) args)
+
+  (define (caar p) (car (car p)))
+  (define (cadr p) (car (cdr p)))
+  (define (cdar p) (cdr (car p)))
+  (define (cddr p) (cdr (cdr p)))
+
+  (define (map f list)
+    (if (null? list)
+        list
+        (cons (f (car list))
+              (map f (cdr list)))))
+
+  (define-macro (let bindings . body)
+    (if (symbol? bindings)
+        (begin
+          (define name bindings)
+          (set! bindings (car body))
+          (set! body (cdr body))
+          ;; expanded form should be like below:
+          ;; `(let ()
+          ;;    (define ,loop
+          ;;      (lambda (,@vars)
+          ;;        ,@body))
+          ;;    (,loop ,@vals))
+          (list 'let '()
+                (list 'define name
+                      (cons 'lambda (cons (map car bindings) body)))
+                (cons name (map cadr bindings))))
+        (cons (cons 'lambda (cons (map car bindings) body))
+              (map cadr bindings))))
+
+  (define-macro (cond . clauses)
+    (if (null? clauses)
+        #f
+        (let ((c (car clauses)))
+          (let ((test (car c))
+                (if-true (cons 'begin (cdr c)))
+                (if-false (cons 'cond (cdr clauses))))
+            (list 'if test if-true if-false)))))
+
+  (define-macro (and . exprs)
+    (if (null? exprs)
+        #t
+        (let ((test (car exprs))
+              (if-true (cons 'and (cdr exprs))))
+          (list 'if test if-true #f))))
+
+  (define-macro (or . exprs)
+    (if (null? exprs)
+        #f
+        (let ((test (car exprs))
+              (if-false (cons 'or (cdr exprs))))
+          (list 'let (list (list 'it test))
+                (list 'if 'it 'it if-false)))))
+
+  (define (append xs ys)
+    (if (null? xs)
+        ys
+        (cons (car xs)
+              (append (cdr xs) ys))))
+
+  (define-macro (quasiquote x)
+    (cond
+     ((symbol? x) (list 'quote x))
+     ((pair? x)
+      (cond
+       ((eq? 'unquote (car x)) (cadr x))
+       ((and (pair? (car x))
+             (eq? 'unquote-splicing (caar x)))
+        (list 'append (cadr (car x)) (list 'quasiquote (cdr x))))
+       (#t (list 'cons
+                 (list 'quasiquote (car x))
+                 (list 'quasiquote (cdr x))))))
+     (#t x)))
+
+  (define-macro (let* bindings . body)
+    (if (null? bindings)
+        `(let () ,@body)
+        `(let ((,(caar bindings)
+                ,@(cdar bindings)))
+           (let* (,@(cdr bindings))
+             ,@body))))
+
+  (define-macro (letrec bindings . body)
+    (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
+          (initials (map (lambda (v) `(set! ,@v)) bindings)))
+      `(let (,@vars)
+         (begin ,@initials)
+         ,@body)))
+
+  (define-macro (letrec* . args)
+    `(letrec ,@args))
+
+  (define-macro (do bindings finish . body)
+    `(let loop ,(map (lambda (x)
+                       (list (car x) (cadr x)))
+                     bindings)
+       (if ,(car finish)
+           (begin ,@body
+                  (loop ,@(map (lambda (x)
+                                 (if (null? (cddr x))
+                                     (car x)
+                                     (car (cddr x))))
+                               bindings)))
+           (begin ,@(cdr finish)))))
+
+  (define-macro (when test . exprs)
+    (list 'if test (cons 'begin exprs) #f))
+
+  (define-macro (unless test . exprs)
+    (list 'if test #f (cons 'begin exprs)))
+
+  (define-syntax define-auxiliary-syntax
+    (ir-macro-transformer
+     (lambda (expr i c)
+       `(define-syntax ,(cadr expr)
+          (sc-macro-transformer
+           (lambda (expr env)
+             (error "invalid use of auxiliary syntax")))))))
+
+  (define-auxiliary-syntax else)
+  (define-auxiliary-syntax =>)
+  (define-auxiliary-syntax _)
+  (define-auxiliary-syntax ...)
+  (define-auxiliary-syntax unquote)
+  (define-auxiliary-syntax unquote-splicing)
+
+  (export let let* letrec letrec*
+          quasiquote unquote unquote-splicing
+          and or
+          cond else =>
+          do
+          when unless
+          _ ...))
+
+(import (picrin macro)
+        (picrin core-syntax))
 
 (define (list . args)
   args)
@@ -49,6 +198,12 @@
 (define (cddr p)
   (cdr (cdr p)))
 
+(define (append xs ys)
+  (if (null? xs)
+      ys
+      (cons (car xs)
+            (append (cdr xs) ys))))
+
 (define (any pred list)
   (if (null? list)
       #f
@@ -57,136 +212,6 @@
 	     it
 	     (any pred (cdr list))))
        (pred (car list)))))
-
-(define (map f list . lists)
-  (define (single-map f list)
-    (if (null? list)
-	'()
-	(cons (f (car list))
-	      (map f (cdr list)))))
-  (define (multiple-map f lists)
-    (if (any null? lists)
-	'()
-	(cons (apply f (single-map car lists))
-	      (multiple-map f (single-map cdr lists)))))
-  (if (null? lists)
-      (single-map f list)
-      (multiple-map f (cons list lists))))
-
-(define-macro (let bindings . body)
-  (if (symbol? bindings)
-      (begin
-	(define name bindings)
-	(set! bindings (car body))
-	(set! body (cdr body))
-	;; expanded form should be like below:
-	;; `(let ()
-	;;    (define ,loop
-	;;      (lambda (,@vars)
-	;;        ,@body))
-	;;    (,loop ,@vals))
-	(list 'let '()
-	      (list 'define name
-		    (cons 'lambda (cons (map car bindings) body)))
-	      (cons name (map cadr bindings))))
-      (cons (cons 'lambda (cons (map car bindings) body))
-	    (map cadr bindings))))
-
-(define-macro (cond . clauses)
-  (if (null? clauses)
-      #f
-      (let ((c (car clauses)))
-	(let ((test (car c))
-	      (if-true (cons 'begin (cdr c)))
-	      (if-false (cons 'cond (cdr clauses))))
-	  (list 'if test if-true if-false)))))
-
-(define-macro (and . exprs)
-  (if (null? exprs)
-      #t
-      (let ((test (car exprs))
-	    (if-true (cons 'and (cdr exprs))))
-	(list 'if test if-true #f))))
-
-(define-macro (or . exprs)
-  (if (null? exprs)
-      #f
-      (let ((test (car exprs))
-	    (if-false (cons 'or (cdr exprs))))
-	(list 'let (list (list 'it test))
-	      (list 'if 'it 'it if-false)))))
-
-(define (append xs ys)
-  (if (null? xs)
-      ys
-      (cons (car xs)
-	    (append (cdr xs) ys))))
-
-(define-macro (quasiquote x)
-  (cond
-   ((symbol? x) (list 'quote x))
-   ((pair? x)
-    (cond
-     ((eq? 'unquote (car x)) (cadr x))
-     ((and (pair? (car x))
-	   (eq? 'unquote-splicing (caar x)))
-      (list 'append (cadr (car x)) (list 'quasiquote (cdr x))))
-     (#t (list 'cons
-	       (list 'quasiquote (car x))
-	       (list 'quasiquote (cdr x))))))
-   (#t x)))
-
-(define-macro (let* bindings . body)
-  (if (null? bindings)
-      `(let () ,@body)
-      `(let ((,(caar bindings)
-	      ,@(cdar bindings)))
-	 (let* (,@(cdr bindings))
-	   ,@body))))
-
-(define-macro (letrec bindings . body)
-  (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
-	(initials (map (lambda (v) `(set! ,@v)) bindings)))
-    `(let (,@vars)
-       (begin ,@initials)
-       ,@body)))
-
-(define-macro (letrec* . args)
-  `(letrec ,@args))
-
-(define-macro (do bindings finish . body)
-  `(let loop ,(map (lambda (x)
-		     (list (car x) (cadr x)))
-		   bindings)
-     (if ,(car finish)
-	 (begin ,@body
-		(loop ,@(map (lambda (x)
-			       (if (null? (cddr x))
-				   (car x)
-				   (car (cddr x))))
-			     bindings)))
-	 (begin ,@(cdr finish)))))
-
-(define-macro (when test . exprs)
-  (list 'if test (cons 'begin exprs) #f))
-
-(define-macro (unless test . exprs)
-  (list 'if test #f (cons 'begin exprs)))
-
-(define-syntax define-auxiliary-syntax
-  (ir-macro-transformer
-   (lambda (expr i c)
-     `(define-syntax ,(cadr expr)
-        (sc-macro-transformer
-         (lambda (expr env)
-           (error "invalid use of auxiliary syntax")))))))
-
-(define-auxiliary-syntax else)
-(define-auxiliary-syntax =>)
-(define-auxiliary-syntax _)
-(define-auxiliary-syntax ...)
-(define-auxiliary-syntax unquote)
-(define-auxiliary-syntax unquote-splicing)
 
 (define (every pred list)
   (if (null? list)
@@ -383,7 +408,11 @@
 
 (define-macro (define-char-transitive-predicate name op)
   `(define (,name . cs)
-     (apply ,op (map char->integer cs))))
+     (letrec ((map (lambda (f list)
+                     (if (null? list)
+                         list
+                         (cons (f (car list)) (map f (cdr list)))))))
+       (apply ,op (map char->integer cs)))))
 
 (define-char-transitive-predicate char=? =)
 (define-char-transitive-predicate char<? <)
@@ -560,6 +589,21 @@
   (fold bytevector-append-2-inv #() vs))
 
 ;;; 6.10 control features
+
+(define (map f list . lists)
+  (define (single-map f list)
+    (if (null? list)
+	'()
+	(cons (f (car list))
+	      (map f (cdr list)))))
+  (define (multiple-map f lists)
+    (if (any null? lists)
+	'()
+	(cons (apply f (single-map car lists))
+	      (multiple-map f (single-map cdr lists)))))
+  (if (null? lists)
+      (single-map f list)
+      (multiple-map f (cons list lists))))
 
 (define (for-each f list . lists)
   (define (single-for-each f list)
