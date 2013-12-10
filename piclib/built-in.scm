@@ -50,6 +50,9 @@
   (define (cadr p) (car (cdr p)))
   (define (cdar p) (cdr (car p)))
   (define (cddr p) (cdr (cdr p)))
+  (define (cadar p) (car (cdar p)))
+  (define (caddr p) (car (cddr p)))
+  (define (cdddr p) (cdr (cddr p)))
 
   (define (map f list)
     (if (null? list)
@@ -57,48 +60,54 @@
         (cons (f (car list))
               (map f (cdr list)))))
 
-  (define-macro (let bindings . body)
-    (if (symbol? bindings)
-        (begin
-          (define name bindings)
-          (set! bindings (car body))
-          (set! body (cdr body))
-          ;; expanded form should be like below:
-          ;; `(let ()
-          ;;    (define ,loop
-          ;;      (lambda (,@vars)
-          ;;        ,@body))
-          ;;    (,loop ,@vals))
-          (list 'let '()
-                (list 'define name
-                      (cons 'lambda (cons (map car bindings) body)))
-                (cons name (map cadr bindings))))
-        (cons (cons 'lambda (cons (map car bindings) body))
-              (map cadr bindings))))
+  (define-syntax let
+    (er-macro-transformer
+     (lambda (expr r compare)
+       (if (symbol? (cadr expr))
+           (begin
+             (define name (cadr expr))
+             (define bindings (caddr expr))
+             (define body (cdddr expr))
+             (list (r 'let) '()
+                   (list (r 'define) name
+                         (cons (r 'lambda) (cons (map car bindings) body)))
+                   (cons name (map cadr bindings))))
+           (begin
+             (define bindings (cadr expr))
+             (define body (cddr expr))
+             (cons (cons (r 'lambda) (cons (map car bindings) body))
+                   (map cadr bindings)))))))
 
-  (define-macro (cond . clauses)
-    (if (null? clauses)
-        #f
-        (let ((c (car clauses)))
-          (let ((test (car c))
-                (if-true (cons 'begin (cdr c)))
-                (if-false (cons 'cond (cdr clauses))))
-            (list 'if test if-true if-false)))))
+  (define-syntax cond
+    (er-macro-transformer
+     (lambda (expr r compare)
+       (let ((clauses (cdr expr)))
+         (if (null? clauses)
+             #f
+             (list (r 'if) (caar clauses)
+                   (cons (r 'begin) (cdar clauses))
+                   (cons (r 'cond) (cdr clauses))))))))
 
-  (define-macro (and . exprs)
-    (if (null? exprs)
-        #t
-        (let ((test (car exprs))
-              (if-true (cons 'and (cdr exprs))))
-          (list 'if test if-true #f))))
+  (define-syntax and
+    (er-macro-transformer
+     (lambda (expr r compare)
+       (let ((exprs (cdr expr)))
+         (if (null? exprs)
+             #t
+             (list (r 'if) (car exprs)
+                   (cons (r 'and) (cdr exprs))
+                   #f))))))
 
-  (define-macro (or . exprs)
-    (if (null? exprs)
-        #f
-        (let ((test (car exprs))
-              (if-false (cons 'or (cdr exprs))))
-          (list 'let (list (list 'it test))
-                (list 'if 'it 'it if-false)))))
+  (define-syntax or
+    (er-macro-transformer
+     (lambda (expr r compare)
+       (let ((exprs (cdr expr)))
+         (if (null? exprs)
+             #f
+             (list (r 'let) (list (list (r 'it) (car exprs)))
+                   (list (r 'if) (r 'it)
+                         (r 'it)
+                         (cons (r 'or) (cdr exprs)))))))))
 
   (define (append xs ys)
     (if (null? xs)
@@ -106,77 +115,124 @@
         (cons (car xs)
               (append (cdr xs) ys))))
 
-  (define-macro (quasiquote x)
-    (cond
-     ((symbol? x) (list 'quote x))
-     ((pair? x)
-      (cond
-       ((eq? 'unquote (car x)) (cadr x))
-       ((and (pair? (car x))
-             (eq? 'unquote-splicing (caar x)))
-        (list 'append (cadr (car x)) (list 'quasiquote (cdr x))))
-       (#t (list 'cons
-                 (list 'quasiquote (car x))
-                 (list 'quasiquote (cdr x))))))
-     (#t x)))
+  (define-syntax quasiquote
+    (er-macro-transformer
+     (lambda (expr r compare?)
+       (let ((x (cadr expr)))
+         (cond
+          ((symbol? x) (list (r 'quote) x)) ; should test with identifier?
+          ((pair? x) (cond
+                      ((compare? (r 'unquote) (car x))
+                       (cadr x))
+                      ((and (pair? (car x))
+                            (compare? (r 'unquote-splicing) (caar x)))
+                       (list (r 'append) (cadar x)
+                             (list (r 'quasiquote) (cdr x))))
+                      (#t
+                       (list (r 'cons)
+                             (list (r 'quasiquote) (car x))
+                             (list (r 'quasiquote) (cdr x))))))
+          (#t x))))))
 
-  (define-macro (let* bindings . body)
-    (if (null? bindings)
-        `(let () ,@body)
-        `(let ((,(caar bindings)
-                ,@(cdar bindings)))
-           (let* (,@(cdr bindings))
-             ,@body))))
+  #;
+  (define-syntax let*
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((bindings (cadr form))
+             (body (cddr form)))
+         (if (null? bindings)
+             `(let () ,@body)
+             `(let ((,(caar bindings)
+                     ,@(cdar bindings)))
+                (let* (,@(cdr bindings))
+                  ,@body)))))))
 
-  (define-macro (letrec bindings . body)
-    (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
-          (initials (map (lambda (v) `(set! ,@v)) bindings)))
-      `(let (,@vars)
-         (begin ,@initials)
-         ,@body)))
+  (define-syntax let*
+    (er-macro-transformer
+     (lambda (form r compare)
+       (let ((bindings (cadr form))
+             (body (cddr form)))
+         (if (null? bindings)
+             `(,(r 'let) () ,@body)
+             `(,(r 'let) ((,(caar bindings)
+                           ,@(cdar bindings)))
+               (,(r 'let*) (,@(cdr bindings))
+                ,@body)))))))
 
-  (define-macro (letrec* . args)
-    `(letrec ,@args))
+  (define-syntax letrec
+    (er-macro-transformer
+     (lambda (form r compare)
+       (let ((bindings (cadr form))
+             (body (cddr form)))
+         (let ((vars (map (lambda (v) `(,v #f)) (map car bindings)))
+               (initials (map (lambda (v) `(,(r 'set!) ,@v)) bindings)))
+           `(,(r 'let) (,@vars)
+             ,@initials
+             ,@body))))))
 
-  (define-macro (do bindings finish . body)
-    `(let loop ,(map (lambda (x)
-                       (list (car x) (cadr x)))
-                     bindings)
-       (if ,(car finish)
-           (begin ,@body
-                  (loop ,@(map (lambda (x)
-                                 (if (null? (cddr x))
-                                     (car x)
-                                     (car (cddr x))))
-                               bindings)))
-           (begin ,@(cdr finish)))))
+  (define-syntax letrec*
+    (er-macro-transformer
+     (lambda (form rename compare)
+       `(,(rename 'letrec) ,@(cdr form)))))
 
-  (define-macro (when test . exprs)
-    (list 'if test (cons 'begin exprs) #f))
+  (define-syntax do
+    (er-macro-transformer
+     (lambda (form r compare)
+       (let ((bindings (cadr form))
+             (finish (caddr form))
+             (body (cdddr form)))
+         `(,(r 'let) ,(r 'loop) ,(map (lambda (x)
+                                        (list (car x) (cadr x)))
+                                      bindings)
+           (,(r 'if) ,(car finish)
+            (,(r 'begin) ,@body
+             (,(r 'loop) ,@(map (lambda (x)
+                                  (if (null? (cddr x))
+                                      (car x)
+                                      (car (cddr x))))
+                                bindings)))
+            (,(r 'begin) ,@(cdr finish))))))))
 
-  (define-macro (unless test . exprs)
-    (list 'if test #f (cons 'begin exprs)))
+  (define-syntax when
+    (er-macro-transformer
+     (lambda (expr rename compare)
+       (let ((test (cadr expr))
+             (body (cddr expr)))
+         `(,(rename 'if) ,test
+              (,(rename 'begin) ,@body)
+              #f)))))
+
+  (define-syntax unless
+    (er-macro-transformer
+     (lambda (expr rename compare)
+       (let ((test (cadr expr))
+             (body (cddr expr)))
+         `(,(rename 'if) ,test
+              #f
+              (,(rename 'begin) ,@body))))))
 
   (define-syntax case
-    (ir-macro-transformer
-     (lambda (expr inject compare)
+    (er-macro-transformer
+     (lambda (expr r compare)
        (let ((key (cadr expr))
              (clauses (cddr expr)))
-         `(let ((key ,key))
+         `(,(r 'let) ((,(r 'key) ,key))
             ,(let loop ((clauses clauses))
                (if (null? clauses)
                    #f
-                   `(if (or ,@(map (lambda (x) `(eqv? key ,x)) (caar clauses)))
-                        ,@(cdar clauses)
+                   `(,(r 'if) (,(r 'or)
+                               ,@(map (lambda (x) `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
+                                      (caar clauses)))
+                        (begin ,@(cdar clauses))
                         ,(loop (cdr clauses))))))))))
 
   (define-syntax define-auxiliary-syntax
-    (ir-macro-transformer
-     (lambda (expr i c)
-       `(define-syntax ,(cadr expr)
-          (sc-macro-transformer
-           (lambda (expr env)
-             (error "invalid use of auxiliary syntax")))))))
+    (er-macro-transformer
+     (lambda (expr r c)
+       `(,(r 'define-syntax) ,(cadr expr)
+          ,(r '(sc-macro-transformer
+                (lambda (expr env)
+                  (error "invalid use of auxiliary syntax"))))))))
 
   (define-auxiliary-syntax else)
   (define-auxiliary-syntax =>)
@@ -680,14 +736,3 @@
 	(apply f (vector-ref v n)
 	       (map (lambda (v) (vector-ref v n)) vs))
 	(loop (+ n 1))))))
-
-(define-syntax or
-  (ir-macro-transformer
-   (lambda (expr inject compare)
-     (let ((exprs (cdr expr)))
-       (if (null? exprs)
-           #f
-           `(let ((it ,(car exprs)))
-              (if it
-                  it
-                  (or ,@(cdr exprs)))))))))
