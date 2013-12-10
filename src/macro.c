@@ -625,16 +625,10 @@ pic_macro_identifier_eq_p(pic_state *pic)
     pic_error(pic, "unexpected type of argument 1");
   }
   e1 = pic_senv(e);
-  if (! pic_identifier_p(x)) {
-    pic_error(pic, "unexpected type of argument 2");
-  }
   if (! pic_senv_p(f)) {
     pic_error(pic, "unexpected type of argument 3");
   }
   e2 = pic_senv(f);
-  if (! pic_identifier_p(y)) {
-    pic_error(pic, "unexpected type of argument 4");
-  }
 
   x = macroexpand(pic, x, e1);
   y = macroexpand(pic, y, e2);
