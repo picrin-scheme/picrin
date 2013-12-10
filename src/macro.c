@@ -231,6 +231,12 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   int ai = pic_gc_arena_preserve(pic);
 
+#if DEBUG
+  printf("[macroexpand] expanding... ");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
   switch (pic_type(expr)) {
   case PIC_TT_SC: {
     struct pic_sc *sc;
@@ -629,6 +635,10 @@ pic_macro_identifier_eq_p(pic_state *pic)
     pic_error(pic, "unexpected type of argument 3");
   }
   e2 = pic_senv(f);
+
+  if (! (pic_identifier_p(x) && pic_identifier_p(y))) {
+    return pic_false_value();
+  }
 
   x = macroexpand(pic, x, e1);
   y = macroexpand(pic, y, e2);
