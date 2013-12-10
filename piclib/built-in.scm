@@ -24,6 +24,7 @@
               (walk f (cdr obj)))
         (f obj)))
 
+  ;; experimental support
   (define (ir-macro-transformer f)
     (lambda (expr use-env mac-env)
       (define (inject identifier)
