@@ -54,6 +54,21 @@ pic_number_inexact_p(pic_state *pic)
 }
 
 static pic_value
+pic_number_finite_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic_int_p(v))
+    return pic_true_value();
+  if (pic_float_p(v) && ! (isinf(pic_float(v)) || isnan(pic_float(v))))
+    return pic_true_value();
+  else
+    return pic_false_value();
+}
+
+static pic_value
 pic_number_infinite_p(pic_state *pic)
 {
   pic_value v;
