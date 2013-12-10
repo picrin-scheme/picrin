@@ -28,15 +28,15 @@ pic_make_library(pic_state *pic, pic_value name)
 }
 
 void
-pic_in_library(pic_state *pic, pic_value name)
+pic_in_library(pic_state *pic, pic_value spec)
 {
-  pic_value v;
+  struct pic_lib *lib;
 
-  v = pic_assoc(pic, name, pic->lib_tbl);
-  if (pic_false_p(v)) {
+  lib = pic_find_library(pic, spec);
+  if (! lib) {
     pic_error(pic, "library not found");
   }
-  pic->lib = pic_lib_ptr(pic_cdr(pic, v));
+  pic->lib = lib;
 }
 
 struct pic_lib *
