@@ -281,6 +281,12 @@
   (define (cdar p) (cdr (car p)))
   (define (caar p) (car (car p)))
 
+  (define (map f list)
+    (if (null? list)
+        list
+        (cons (f (car list))
+              (map f (cdr list)))))
+
   (define-syntax let*-values
     (er-macro-transformer
      (lambda (form r c)
@@ -297,10 +303,30 @@
      (lambda (form r c)
        `(,(r 'let*-values) ,@(cdr form)))))
 
+  (define-syntax define-values
+    (er-macro-transformer
+     (lambda (form r c)
+       (let ((formals (cadr form)))
+         `(,(r 'begin)
+            ,@(do ((vars formals (cdr vars))
+                   (defs '()))
+                  ((pair? vars)
+                   defs)
+                (set! defs (cons `(,(r 'define) ,(car vars) #f) defs)))
+            (,(r 'call-with-values)
+                (,(r 'lambda) () ,@(cddr form))
+              (,(r 'lambda) (,@(map r formals))
+                ,@(do ((vars formals (cdr vars))
+                       (assn '()))
+                      ((pair? vars)
+                       assn)
+                    (set! assn (cons `(,(r 'set!) ,(car vars) ,(r (car vars))) assn))))))))))
+
   (export values
           call-with-values
           let-values
-          let*-values))
+          let*-values
+          define-values))
 
 (import (picrin macro)
         (picrin core-syntax)
@@ -316,7 +342,8 @@
 (export values
         call-with-values
         let-values
-        let*-values)
+        let*-values
+        define-values)
 
 (define (any pred list)
   (if (null? list)
