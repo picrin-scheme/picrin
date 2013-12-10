@@ -376,7 +376,7 @@
 (import (scheme inexact))
 
 (define (exact-integer-sqrt k)
-  (let ((n (exact (sqrt k))))
+  (let ((n (exact (floor (sqrt k)))))
     (values n (- k (square n)))))
 
 (define (gcd n m)
