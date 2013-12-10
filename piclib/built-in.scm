@@ -160,7 +160,7 @@
                (,(r 'let*) (,@(cdr bindings))
                 ,@body)))))))
 
-  (define-syntax letrec
+  (define-syntax letrec*
     (er-macro-transformer
      (lambda (form r compare)
        (let ((bindings (cadr form))
@@ -171,10 +171,10 @@
              ,@initials
              ,@body))))))
 
-  (define-syntax letrec*
+  (define-syntax letrec
     (er-macro-transformer
      (lambda (form rename compare)
-       `(,(rename 'letrec) ,@(cdr form)))))
+       `(,(rename 'letrec*) ,@(cdr form)))))
 
   (define-syntax do
     (er-macro-transformer
@@ -281,7 +281,7 @@
   (define (cdar p) (cdr (car p)))
   (define (caar p) (car (car p)))
 
-  (define-syntax let-values
+  (define-syntax let*-values
     (er-macro-transformer
      (lambda (form r c)
        (let ((formals (cadr form)))
@@ -289,13 +289,13 @@
              `(,(r 'let) () ,@(cddr form))
              `(,(r 'call-with-values) (,(r 'lambda) () ,@(cdar formals))
                (,(r 'lambda) (,@(caar formals))
-                (,(r 'let-values) (,@(cdr formals))
+                (,(r 'let*-values) (,@(cdr formals))
                  ,@(cddr form)))))))))
 
-  (define-syntax let*-values
+  (define-syntax let-values
     (er-macro-transformer
      (lambda (form r c)
-       `(,(r 'let-values) ,@(cdr form)))))
+       `(,(r 'let*-values) ,@(cdr form)))))
 
   (export values
           call-with-values
