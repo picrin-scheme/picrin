@@ -285,6 +285,9 @@
       s
       (fold f (f (car xs) s) (cdr xs))))
 
+;;; FIXME forward declaration
+(define map #f)
+
 ;;; multiple value
 
 (define (values . args)
@@ -513,11 +516,7 @@
 
 (define-macro (define-char-transitive-predicate name op)
   `(define (,name . cs)
-     (letrec ((map (lambda (f list)
-                     (if (null? list)
-                         list
-                         (cons (f (car list)) (map f (cdr list)))))))
-       (apply ,op (map char->integer cs)))))
+     (apply ,op (map char->integer cs))))
 
 (define-char-transitive-predicate char=? =)
 (define-char-transitive-predicate char<? <)
@@ -708,27 +707,54 @@
       res))
   (fold bytevector-append-2-inv #() vs))
 
+(define (bytevector->list v start end)
+    (do ((i start (+ i 1))
+	 (res '()))
+	((< i end)
+	 (reverse res))
+      (set! res (cons (bytevector-u8-ref v i) res))))
+
+(define (list->bytevector v)
+  (apply bytevector v))
+
+(define (utf8->string v . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+        (end (if (>= (length opts) 2)
+                 (cadr opts)
+                 (bytevector-length v))))
+    (list->string (map integer->char (bytevector->list v start end)))))
+
+(define (string->utf8 s . opts)
+  (let ((start (if (pair? opts) (car opts) 0))
+        (end (if (>= (length opts) 2)
+                 (cadr opts)
+                 (string-length s))))
+    (list->bytevector (map char->integer (string->list s start end)))))
+
 (export bytevector
         bytevector-copy!
         bytevector-copy
-        bytevector-append)
+        bytevector-append
+        utf8->string
+        string->utf8)
 
 ;;; 6.10 control features
 
-(define (map f list . lists)
-  (define (single-map f list)
-    (if (null? list)
-	'()
-	(cons (f (car list))
-	      (map f (cdr list)))))
-  (define (multiple-map f lists)
-    (if (any null? lists)
-	'()
-	(cons (apply f (single-map car lists))
-	      (multiple-map f (single-map cdr lists)))))
-  (if (null? lists)
-      (single-map f list)
-      (multiple-map f (cons list lists))))
+(set! map
+      (lambda (f list . lists)
+        (define (single-map f list)
+          (if (null? list)
+              '()
+              (cons (f (car list))
+                    (map f (cdr list)))))
+        (define (multiple-map f lists)
+          (if (any null? lists)
+              '()
+              (cons (apply f (single-map car lists))
+                    (multiple-map f (single-map cdr lists)))))
+        (if (null? lists)
+            (single-map f list)
+            (multiple-map f (cons list lists)))))
 
 (define (for-each f list . lists)
   (define (single-for-each f list)
