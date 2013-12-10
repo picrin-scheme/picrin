@@ -292,9 +292,15 @@
                 (,(r 'let-values) (,@(cdr formals))
                  ,@(cddr form)))))))))
 
+  (define-syntax let*-values
+    (er-macro-transformer
+     (lambda (form r c)
+       `(,(r 'let-values) ,@(cdr form)))))
+
   (export values
           call-with-values
-          let-values))
+          let-values
+          let*-values))
 
 (import (picrin macro)
         (picrin core-syntax)
@@ -309,7 +315,8 @@
 
 (export values
         call-with-values
-        let-values)
+        let-values
+        let*-values)
 
 (define (any pred list)
   (if (null? list)
