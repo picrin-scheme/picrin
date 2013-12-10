@@ -282,6 +282,8 @@
       s
       (fold f (f (car xs) s) (cdr xs))))
 
+;;; multiple value
+
 (define (values . args)
   (if (and (pair? args)
 	   (null? (cdr args)))
