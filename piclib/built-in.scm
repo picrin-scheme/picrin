@@ -254,8 +254,32 @@
           do when unless
           _ ... syntax-error))
 
+
+;;; multiple value
+(define-library (picrin multiple-value)
+  (import (scheme base)
+          (picrin macro)
+          (picrin core-syntax))
+
+  (define (values . args)
+    (if (and (pair? args)
+             (null? (cdr args)))
+        (car args)
+        (cons '*values-tag* args)))
+
+  (define (call-with-values producer consumer)
+    (let ((res (producer)))
+      (if (and (pair? res)
+               (eq? '*values-tag* (car res)))
+          (apply consumer (cdr res))
+          (consumer res))))
+
+  (export values
+          call-with-values))
+
 (import (picrin macro)
-        (picrin core-syntax))
+        (picrin core-syntax)
+        (picrin multiple-value))
 
 (export let let* letrec letrec*
         quasiquote unquote unquote-splicing
@@ -263,6 +287,9 @@
         cond case else =>
         do when unless
         _ ... syntax-error)
+
+(export values
+        call-with-values)
 
 (define (any pred list)
   (if (null? list)
@@ -287,24 +314,6 @@
 
 ;;; FIXME forward declaration
 (define map #f)
-
-;;; multiple value
-
-(define (values . args)
-  (if (and (pair? args)
-	   (null? (cdr args)))
-      (car args)
-      (cons '*values-tag* args)))
-
-(define (call-with-values producer consumer)
-  (let ((res (producer)))
-    (if (and (pair? res)
-	     (eq? '*values-tag* (car res)))
-        (apply consumer (cdr res))
-        (consumer res))))
-
-(export values
-        call-with-values)
 
 ;;; 6.2. Numbers
 
