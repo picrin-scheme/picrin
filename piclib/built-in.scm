@@ -745,3 +745,11 @@
 	(apply f (vector-ref v n)
 	       (map (lambda (v) (vector-ref v n)) vs))
 	(loop (+ n 1))))))
+
+;;; 6.13. Input and output
+
+(define (call-with-port port proc)
+  (dynamic-wind
+      (lambda () #f)
+      (lambda () (proc port))
+      (lambda () (close-port port))))
