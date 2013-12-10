@@ -639,7 +639,11 @@ pic_macro_identifier_eq_p(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
-  pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
-  pic_defun(pic, "identifier?", pic_macro_identifier_p);
-  pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
+  DEFLIBRARY(pic, "(picrin macro)")
+  {
+    pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
+    pic_defun(pic, "identifier?", pic_macro_identifier_p);
+    pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
+  }
+  ENDLIBRARY(pic)
 }
