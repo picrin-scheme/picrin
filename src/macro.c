@@ -263,22 +263,35 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
     if (pic_syntax_p(car)) {
       switch (pic_syntax(car)->kind) {
       case PIC_STX_DEFLIBRARY: {
-        pic_value program;
-        struct pic_lib *prev = pic->lib, *lib;
+        pic_value exprs;
+        struct pic_lib *prev = pic->lib;
 
         if (pic_length(pic, expr) < 2) {
           pic_error(pic, "syntax error");
         }
-        lib = pic_make_library(pic, pic_cadr(pic, expr));
+        pic_make_library(pic, pic_cadr(pic, expr));
 
-        /* macroexpand in new library */
+        /* proceed expressions in new library */
         pic_in_library(pic, pic_cadr(pic, expr));
         {
-          program = macroexpand_list(pic, pic_cddr(pic, expr), lib->senv);
+          struct pic_proc *proc;
+
+          for (exprs = pic_cddr(pic, expr); ! pic_nil_p(exprs); exprs = pic_cdr(pic, exprs)) {
+            v = pic_car(pic, exprs);
+
+            proc = pic_codegen(pic, v);
+            if (proc == NULL) {
+              abort();
+            }
+            pic_apply_argv(pic, proc, 0);
+            if (pic_undef_p(v)) {
+              abort();
+            }
+          }
         }
         pic_in_library(pic, prev->name);
 
-        return pic_cons(pic, pic_symbol_value(pic->sBEGIN), program);
+        return pic_false_value();
       }
       case PIC_STX_IMPORT: {
         struct pic_lib *lib;
