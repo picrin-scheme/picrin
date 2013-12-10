@@ -114,5 +114,5 @@ pic_init_file(pic_state *pic)
     pic_defun(pic, "file-exists?", pic_file_exists_p);
     pic_defun(pic, "delete-file", pic_file_delete);
   }
-  ENDLIBRARY(pic)
+  ENDLIBRARY(pic);
 }

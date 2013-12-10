@@ -130,5 +130,5 @@ pic_init_system(pic_state *pic)
     pic_defun(pic, "get-environment-variable", pic_system_getenv);
     pic_defun(pic, "get-environment-variables", pic_system_getenvs);
   }
-  ENDLIBRARY(pic)
+  ENDLIBRARY(pic);
 }

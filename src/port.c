@@ -342,5 +342,5 @@ pic_init_port(pic_state *pic)
   {
     pic_defun(pic, "write", pic_port_write);
   }
-  ENDLIBRARY(pic)
+  ENDLIBRARY(pic);
 }

@@ -655,5 +655,5 @@ pic_init_macro(pic_state *pic)
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
   }
-  ENDLIBRARY(pic)
+  ENDLIBRARY(pic);
 }

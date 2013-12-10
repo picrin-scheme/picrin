@@ -43,5 +43,5 @@ pic_init_time(pic_state *pic)
     pic_defun(pic, "current-jiffy", pic_current_jiffy);
     pic_defun(pic, "jiffies-per-second", pic_jiffies_per_second);
   }
-  ENDLIBRARY(pic)
+  ENDLIBRARY(pic);
 }

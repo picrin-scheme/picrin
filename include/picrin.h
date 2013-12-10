@@ -128,13 +128,15 @@ struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define DEFLIBRARY(pic,name)                                    \
-  {                                                             \
+  do {                                                          \
     struct pic_lib *lib__ = pic->lib;                           \
     pic_make_library(pic, pic_parse(pic, name));                \
-    pic_in_library(pic, pic_parse(pic, name));
+    pic_in_library(pic, pic_parse(pic, name));                  \
+    do
 #define ENDLIBRARY(pic)                                         \
+    while (0);                                                  \
     pic->lib = lib__;                                           \
-  }
+  } while (0)
 
 void pic_export(pic_state *, pic_sym);
 
