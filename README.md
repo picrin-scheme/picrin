@@ -29,7 +29,7 @@
 | 3.2 Disjointness of types   | yes | |
 | 3.3 External representations | | |
 | 3.4 Storage model | yes | |
-| 3.5 Proper tail recursion | incomplete | apply, call/cc, call/values, eval are not yet |
+| 3.5 Proper tail recursion | incomplete | TODO: apply, call/cc |
 | 4.1.1 Variable references | yes | |
 | 4.1.2 Literal expressions | yes | |
 | 4.1.3 Procedure calls | yes | In picrin `()` is self-evaluating |
