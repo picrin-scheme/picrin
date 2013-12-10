@@ -183,27 +183,6 @@
 (import (picrin macro)
         (picrin core-syntax))
 
-(define (list . args)
-  args)
-
-(define (caar p)
-  (car (car p)))
-
-(define (cadr p)
-  (car (cdr p)))
-
-(define (cdar p)
-  (cdr (car p)))
-
-(define (cddr p)
-  (cdr (cdr p)))
-
-(define (append xs ys)
-  (if (null? xs)
-      ys
-      (cons (car xs)
-            (append (cdr xs) ys))))
-
 (define (any pred list)
   (if (null? list)
       #f
@@ -311,6 +290,21 @@
 	  (list? (cdr obj))
 	  #f)))
 
+(define (list . args)
+  args)
+
+(define (caar p)
+  (car (car p)))
+
+(define (cadr p)
+  (car (cdr p)))
+
+(define (cdar p)
+  (cdr (car p)))
+
+(define (cddr p)
+  (cdr (cdr p)))
+
 (define (make-list k . args)
   (if (null? args)
       (make-list k #f)
@@ -323,6 +317,12 @@
   (if (null? list)
       0
       (+ 1 (length (cdr list)))))
+
+(define (append xs ys)
+  (if (null? xs)
+      ys
+      (cons (car xs)
+            (append (cdr xs) ys))))
 
 (define (reverse list . args)
   (if (null? args)
