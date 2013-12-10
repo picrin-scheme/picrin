@@ -337,6 +337,9 @@
   (values (truncate-quotient n m)
 	  (truncate-remainder n m)))
 
+; (import (only (scheme inexact) sqrt))
+(import (scheme inexact))
+
 (define (exact-integer-sqrt k)
   (let ((n (exact (sqrt k))))
     (values n (- k (square n)))))
