@@ -336,11 +336,11 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "close-port", pic_port_close_port);
   pic_defun(pic, "close-input-port", pic_port_close_port);
   pic_defun(pic, "close-output-port", pic_port_close_port);
+  pic_defun(pic, "newline", pic_port_newline);
 
   DEFLIBRARY(pic, "(scheme write)")
   {
     pic_defun(pic, "write", pic_port_write);
-    pic_defun(pic, "newline", pic_port_newline);
   }
   ENDLIBRARY(pic)
 }
