@@ -46,7 +46,7 @@
 | 4.2.7 Exception handling | no | `guard` syntax. |
 | 4.2.8 Quasiquotation | incomplete | nested is unsupported |
 | 4.2.9  Case-lambda | N/A | |
-| 4.3.1 Bindings constructs for syntactic keywords | incomplete | picrin provides hygienic macros in addition to so-called legacy macro (`define-macro`), such as syntactic closure, explicit renaming macro, and implicit renaming macro. as of now let-syntax and letrec-syntax are not provided. |
+| 4.3.1 Bindings constructs for syntactic keywords | incomplete | (*1) |
 | 4.3.2 Pattern language | no | `syntax-rules` |
 | 4.3.3 Signaling errors in macro transformers | yes | |
 | 5.1 Programs | yes | |
@@ -79,6 +79,8 @@
 | 6.12 Environments and evaluation | N/A | |
 | 6.13 Ports | incomplete | |
 | 6.14 System interface | yes | |
+
+1. Picrin provides hygienic macros in addition to so-called legacy macro (`define-macro`), such as syntactic closure, explicit renaming macro, and implicit renaming macro. As of now let-syntax and letrec-syntax are not provided.
 
 ## Homepage
 
