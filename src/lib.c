@@ -8,13 +8,16 @@ struct pic_lib *
 pic_make_library(pic_state *pic, pic_value name)
 {
   struct pic_lib *lib;
+  struct pic_senv *senv;
 
   if ((lib = pic_find_library(pic, name)) != NULL) {
     return lib;
   }
 
+  senv = pic_minimal_syntactic_env(pic);
+
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
-  lib->senv = pic_minimal_syntactic_env(pic);
+  lib->senv = senv;
   lib->exports = xh_new();
   lib->name = name;
 
