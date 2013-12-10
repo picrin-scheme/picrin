@@ -157,6 +157,19 @@
   (define-macro (unless test . exprs)
     (list 'if test #f (cons 'begin exprs)))
 
+  (define-syntax case
+    (ir-macro-transformer
+     (lambda (expr inject compare)
+       (let ((key (cadr expr))
+             (clauses (cddr expr)))
+         `(let ((key ,key))
+            ,(let loop ((clauses clauses))
+               (if (null? clauses)
+                   #f
+                   `(if (or ,@(map (lambda (x) `(eqv? key ,x)) (caar clauses)))
+                        ,@(cdar clauses)
+                        ,(loop (cdr clauses))))))))))
+
   (define-syntax define-auxiliary-syntax
     (ir-macro-transformer
      (lambda (expr i c)
@@ -175,7 +188,7 @@
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
           and or
-          cond else =>
+          cond case else =>
           do
           when unless
           _ ...))
@@ -670,16 +683,3 @@
               (if it
                   it
                   (or ,@(cdr exprs)))))))))
-
-(define-syntax case
-  (ir-macro-transformer
-   (lambda (expr inject compare)
-     (let ((key (cadr expr))
-           (clauses (cddr expr)))
-       `(let ((key ,key))
-          ,(let loop ((clauses clauses))
-               (if (null? clauses)
-                   #f
-                   `(if (or ,@(map (lambda (x) `(eqv? key ,x)) (caar clauses)))
-                        ,@(cdar clauses)
-                        ,(loop (cdr clauses))))))))))
