@@ -40,10 +40,9 @@
           er-macro-transformer
           ir-macro-transformer))
 
-;;; core syntaces
-(define-library (picrin core-syntax)
-  (import (scheme base)
-          (picrin macro))
+;;; bootstrap utilities
+(define-library (picrin bootstrap-tools)
+  (import (scheme base))
 
   (define (list . args) args)
 
@@ -60,6 +59,22 @@
         list
         (cons (f (car list))
               (map f (cdr list)))))
+
+  (define (append xs ys)
+    (if (null? xs)
+        ys
+        (cons (car xs)
+              (append (cdr xs) ys))))
+
+  (export list map append
+          caar cadr cdar cddr
+          cadar caddr cdddr))
+
+;;; core syntaces
+(define-library (picrin core-syntax)
+  (import (scheme base)
+          (picrin macro)
+          (picrin bootstrap-tools))
 
   (define-syntax let
     (er-macro-transformer
@@ -109,12 +124,6 @@
                    (list (r 'if) (r 'it)
                          (r 'it)
                          (cons (r 'or) (cdr exprs)))))))))
-
-  (define (append xs ys)
-    (if (null? xs)
-        ys
-        (cons (car xs)
-              (append (cdr xs) ys))))
 
   (define-syntax quasiquote
     (er-macro-transformer
@@ -259,7 +268,8 @@
 (define-library (picrin multiple-value)
   (import (scheme base)
           (picrin macro)
-          (picrin core-syntax))
+          (picrin core-syntax)
+          (picrin bootstrap-tools))
 
   (define *values-tag* (cons #f '()))
 
@@ -275,17 +285,6 @@
                (eq? *values-tag* (car res)))
           (apply consumer (cdr res))
           (consumer res))))
-
-  (define (cadr p) (car (cdr p)))
-  (define (cddr p) (cdr (cdr p)))
-  (define (cdar p) (cdr (car p)))
-  (define (caar p) (car (car p)))
-
-  (define (map f list)
-    (if (null? list)
-        list
-        (cons (f (car list))
-              (map f (cdr list)))))
 
   (define-syntax let*-values
     (er-macro-transformer
