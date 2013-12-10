@@ -73,7 +73,7 @@
 | 6.6 Characters | yes | |
 | 6.7 Strings | yes | `substring` is not provided |
 | 6.8 Vectors | yes | |
-| 6.9 Bytevectors | incomplete | TODO: string<->utf8 conversion |
+| 6.9 Bytevectors | yes | |
 | 6.10  Control features | yes | |
 | 6.11 Exceptions | yes | TODO: native error handling |
 | 6.12 Environments and evaluation | N/A | |
