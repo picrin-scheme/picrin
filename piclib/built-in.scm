@@ -63,7 +63,7 @@
   (define-syntax let
     (er-macro-transformer
      (lambda (expr r compare)
-       (if (symbol? (cadr expr))
+       (if (identifier? (cadr expr))
            (begin
              (define name (cadr expr))
              (define bindings (caddr expr))
