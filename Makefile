@@ -38,4 +38,4 @@ tak: release
 	bin/picrin etc/tak.scm
 
 no-act:
-	bin/picrin -e ''
+	bin/picrin -e '' > /dev/null
