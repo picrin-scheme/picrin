@@ -227,6 +227,11 @@
                         (begin ,@(cdar clauses))
                         ,(loop (cdr clauses))))))))))
 
+  (define-syntax syntax-error
+    (er-macro-transformer
+     (lambda (expr rename compare)
+       (apply error (cdr expr)))))
+
   (define-syntax define-auxiliary-syntax
     (er-macro-transformer
      (lambda (expr r c)
@@ -246,9 +251,8 @@
           quasiquote unquote unquote-splicing
           and or
           cond case else =>
-          do
-          when unless
-          _ ...))
+          do when unless
+          _ ... syntax-error))
 
 (import (picrin macro)
         (picrin core-syntax))
@@ -257,9 +261,8 @@
         quasiquote unquote unquote-splicing
         and or
         cond case else =>
-        do
-        when unless
-        _ ...)
+        do when unless
+        _ ... syntax-error)
 
 (define (any pred list)
   (if (null? list)
