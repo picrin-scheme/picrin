@@ -261,16 +261,18 @@
           (picrin macro)
           (picrin core-syntax))
 
+  (define *values-tag* (cons #f '()))
+
   (define (values . args)
     (if (and (pair? args)
              (null? (cdr args)))
         (car args)
-        (cons '*values-tag* args)))
+        (cons *values-tag* args)))
 
   (define (call-with-values producer consumer)
     (let ((res (producer)))
       (if (and (pair? res)
-               (eq? '*values-tag* (car res)))
+               (eq? *values-tag* (car res)))
           (apply consumer (cdr res))
           (consumer res))))
 
