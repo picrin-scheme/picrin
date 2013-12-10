@@ -321,13 +321,13 @@
   (let loop ((pivot x) (rest args))
     (if (null? rest)
 	pivot
-	(loop (if (< x (car rest)) x (car rest)) (cdr rest)))))
+	(loop (if (< pivot (car rest)) pivot (car rest)) (cdr rest)))))
 
 (define (max x . args)
   (let loop ((pivot x) (rest args))
     (if (null? rest)
 	pivot
-	(loop (if (> x (car rest)) x (car rest)) (cdr rest)))))
+	(loop (if (> pivot (car rest)) pivot (car rest)) (cdr rest)))))
 
 (define (floor/ n m)
   (values (floor-quotient n m)
