@@ -13,6 +13,8 @@
 - Internal representation by Nan-Boxing
 - conservative call/cc implementation (users can freely interleave native stack with VM stack)
 - exact GC (simple mark and sweep, partially reference count is used as well)
+- support full set hygienic macro transformers, including implicit renaming macros
+- R7RS library syntax
 - advanced REPL support (multi-line input, etc)
 - tiny & portable library (all functions will be in `libpicrin.so`)
 
