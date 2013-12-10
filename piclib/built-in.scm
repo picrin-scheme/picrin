@@ -276,8 +276,25 @@
           (apply consumer (cdr res))
           (consumer res))))
 
+  (define (cadr p) (car (cdr p)))
+  (define (cddr p) (cdr (cdr p)))
+  (define (cdar p) (cdr (car p)))
+  (define (caar p) (car (car p)))
+
+  (define-syntax let-values
+    (er-macro-transformer
+     (lambda (form r c)
+       (let ((formals (cadr form)))
+         (if (null? formals)
+             `(,(r 'let) () ,@(cddr form))
+             `(,(r 'call-with-values) (,(r 'lambda) () ,@(cdar formals))
+               (,(r 'lambda) (,@(caar formals))
+                (,(r 'let-values) (,@(cdr formals))
+                 ,@(cddr form)))))))))
+
   (export values
-          call-with-values))
+          call-with-values
+          let-values))
 
 (import (picrin macro)
         (picrin core-syntax)
@@ -291,7 +308,8 @@
         _ ... syntax-error)
 
 (export values
-        call-with-values)
+        call-with-values
+        let-values)
 
 (define (any pred list)
   (if (null? list)
