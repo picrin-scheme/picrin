@@ -300,6 +300,9 @@
         (apply consumer (cdr res))
         (consumer res))))
 
+(export values
+        call-with-values)
+
 ;;; 6.2. Numbers
 
 (define (zero? n)
@@ -361,11 +364,19 @@
 (define (lcm n m)
   (/ (* n m) (gcd n m)))
 
+(export zero? positive? negative?
+        odd? even? min max
+        floor/ truncate/
+        exact-integer-sqrt
+        gcd lcm)
+
 ;;; 6.3 Booleans
 
 (define (boolean=? . objs)
   (or (every (lambda (x) (eq? x #t)) objs)
       (every (lambda (x) (eq? x #f)) objs)))
+
+(export boolean=?)
 
 ;;; 6.4 Pairs and lists
 
@@ -429,6 +440,12 @@
 (define (list-set! list k obj)
   (set-car! (list-tail list k) obj))
 
+(define (list-copy obj)
+  (if (null? obj)
+      obj
+      (cons (car obj)
+	    (list-copy (cdr obj)))))
+
 (define (memq obj list)
   (if (null? list)
       #f
@@ -457,12 +474,6 @@
 	  (car list)
 	  (assq obj (cdr list)))))
 
-(define (list-copy obj)
-  (if (null? obj)
-      obj
-      (cons (car obj)
-	    (list-copy (cdr obj)))))
-
 (define (member obj list . opts)
   (let ((compare (if (null? opts) equal? (car opts))))
     (if (null? list)
@@ -479,6 +490,12 @@
 	    (car list)
 	    (assoc obj (cdr list) compare)))))
 
+(export list? list caar cadr cdar cddr
+        make-list length append reverse
+        list-tail list-ref list-set! list-copy
+        memq memv member
+        assq assv assoc)
+
 ;;; 6.5. Symbols
 
 (define (symbol=? . objs)
@@ -489,6 +506,8 @@
 		      (eq? x sym)))
 	       (cdr objs))
 	#f)))
+
+(export symbol=?)
 
 ;;; 6.6 Characters
 
@@ -505,6 +524,12 @@
 (define-char-transitive-predicate char>? >)
 (define-char-transitive-predicate char<=? <=)
 (define-char-transitive-predicate char>=? >=)
+
+(export char=?
+        char<?
+        char>?
+        char<=?
+        char>=?)
 
 ;;; 6.7 String
 
@@ -567,6 +592,10 @@
 	((< i end)
 	 #f)
       (string-set! v i fill))))
+
+(export string string->list list->string
+        string-copy! string-copy
+        string-append string-fill!)
 
 ;;; 6.8. Vector
 
@@ -636,6 +665,11 @@
 (define (string->vector . args)
   (list->vector (apply string->list args)))
 
+(export vector vector->list list->vector
+        vector-copy! vector-copy
+        vector-append vector-fill!
+        vector->string string->vector)
+
 ;;; 6.9 bytevector
 
 (define (bytevector . objs)
@@ -673,6 +707,11 @@
       (bytevector-copy! res (bytevector-length v) w)
       res))
   (fold bytevector-append-2-inv #() vs))
+
+(export bytevector
+        bytevector-copy!
+        bytevector-copy
+        bytevector-append)
 
 ;;; 6.10 control features
 
@@ -746,6 +785,10 @@
 	       (map (lambda (v) (vector-ref v n)) vs))
 	(loop (+ n 1))))))
 
+(export map for-each
+        string-map string-for-each
+        vector-map vector-for-each)
+
 ;;; 6.13. Input and output
 
 (define (call-with-port port proc)
@@ -753,3 +796,5 @@
       (lambda () #f)
       (lambda () (proc port))
       (lambda () (close-port port))))
+
+(export call-with-port)
