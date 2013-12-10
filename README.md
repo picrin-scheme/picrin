@@ -40,7 +40,7 @@
 | 4.2.1 Conditionals | incomplete | TODO: `cond-expand` |
 | 4.2.2 Binding constructs | incomplete | TODO: `let-values`, `let*-values` |
 | 4.2.3 Sequencing | yes | |
-| 4.2.4 Iteration | yes | TODO: `do` is unsafe when nested |
+| 4.2.4 Iteration | yes | |
 | 4.2.5 Delayed evaluation | N/A | |
 | 4.2.6 Dynamic bindings | no | TODO: `make-parameter`, `parameterize` in C level |
 | 4.2.7 Exception handling | no | `guard` syntax. |
