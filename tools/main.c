@@ -1,12 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "picrin.h"
 #include "picrin/pair.h"
 
 #if PIC_ENABLE_READLINE
-# include <string.h>
-# include <stdlib.h>
 # include <readline/readline.h>
 # include <readline/history.h>
 #endif
