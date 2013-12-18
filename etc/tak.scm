@@ -1,3 +1,7 @@
+(import (scheme base)
+        (scheme time)
+        (scheme write))
+
 (define (time f)
   (let ((start (current-jiffy)))
     (f)

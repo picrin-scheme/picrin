@@ -1,3 +1,6 @@
+(import (scheme base)
+        (scheme write))
+
 (begin
 
  (define foo (lambda (a)
