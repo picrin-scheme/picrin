@@ -35,12 +35,14 @@ void
 repl(pic_state *pic)
 {
   char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
-  char *read_line, *prompt;
+  char *prompt;
   pic_value v, vs;
   struct pic_proc *proc;
   int ai, n, i;
 
-#if ! PIC_ENABLE_READLINE
+#if PIC_ENABLE_READLINE
+  char *read_line;
+#else
   char last_char;
   int char_index;
 #endif
@@ -65,7 +67,7 @@ repl(pic_state *pic)
       free(read_line);
     }
 #else
-    printf(prompt);
+    printf("%s", prompt);
 
     char_index = 0;
     while ((last_char = getchar()) != '\n') {
