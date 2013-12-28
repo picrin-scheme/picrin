@@ -1,7 +1,3 @@
-
-	This product is developed at the second-grade course, Informatic Science
-	Basic Experiment class at the University of Tokyo.
-
 # Picrin - a lightweight scheme interpreter [![Build Status](https://travis-ci.org/wasabiz/picrin.png)](https://travis-ci.org/wasabiz/picrin)
 
 ## Features
