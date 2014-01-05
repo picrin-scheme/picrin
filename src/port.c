@@ -59,10 +59,10 @@ write(pic_state *pic, pic_value obj)
     printf("#<undef>");
     break;
   case PIC_TT_PROC:
-    printf("#<proc %p>", pic_proc_ptr(obj));
+    printf("#<proc %p>", pic_ptr(obj));
     break;
   case PIC_TT_PORT:
-    printf("#<port %p>", pic_port_ptr(obj));
+    printf("#<port %p>", pic_ptr(obj));
     break;
   case PIC_TT_STRING:
     printf("\"");
@@ -93,7 +93,7 @@ write(pic_state *pic, pic_value obj)
     printf("#<error %p>", pic_ptr(obj));
     break;
   case PIC_TT_ENV:
-    printf("#<env %p>", pic_env_ptr(obj));
+    printf("#<env %p>", pic_ptr(obj));
     break;
   case PIC_TT_CONT:
     printf("#<cont %p>", pic_ptr(obj));
