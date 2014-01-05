@@ -1,3 +1,6 @@
+(import (scheme base)
+        (scheme write))
+
 (define (print obj)
   (write obj)
   (newline)

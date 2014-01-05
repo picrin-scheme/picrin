@@ -1,3 +1,6 @@
+(import (scheme base)
+        (picrin macro))
+
 (define-syntax aif
   (ir-macro-transformer
    (lambda (form inject cmp)

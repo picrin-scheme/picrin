@@ -1,6 +1,10 @@
+(import (scheme base)
+        (scheme write))
+
 (define (sum k acc)
   (if (zero? k)
       acc
       (sum (- k 1) (+ k acc))))
 
-(display (sum 1000 0))
+(write (sum 1000 0))
+(newline)
