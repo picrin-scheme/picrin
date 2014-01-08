@@ -673,7 +673,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   case PIC_TT_SENV:
   case PIC_TT_SYNTAX:
   case PIC_TT_SC:
-  case PIC_TT_LIB: {
+  case PIC_TT_LIB:
+  case PIC_TT_VAR: {
     pic_error(pic, "invalid expression given");
   }
   }

@@ -10,6 +10,7 @@
 #include "picrin/error.h"
 #include "picrin/macro.h"
 #include "picrin/lib.h"
+#include "picrin/var.h"
 #include "xhash/xhash.h"
 
 #if GC_DEBUG
@@ -403,6 +404,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark_object(pic, (struct pic_object *)lib->senv);
     break;
   }
+  case PIC_TT_VAR: {
+    struct pic_var *var = (struct pic_var *)obj;
+    gc_mark(pic, var->value);
+    if (var->conv) {
+      gc_mark_object(pic, (struct pic_object *)var->conv);
+    }
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -537,6 +546,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_LIB: {
     struct pic_lib *lib = (struct pic_lib *)obj;
     xh_destory(lib->exports);
+    break;
+  }
+  case PIC_TT_VAR: {
     break;
   }
   case PIC_TT_NIL:
