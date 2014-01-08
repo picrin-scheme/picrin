@@ -40,15 +40,13 @@ pic_proc_proc_p(pic_state *pic)
 static pic_value
 pic_proc_apply(pic_state *pic)
 {
-  pic_value proc, *args, v;
+  struct pic_proc *proc;
+  pic_value *args, v;
   size_t argc;
   int i;
 
-  pic_get_args(pic, "o*", &proc, &argc, &args);
+  pic_get_args(pic, "l*", &proc, &argc, &args);
 
-  if (! pic_proc_p(proc)) {
-    pic_error(pic, "apply: expected procedure");
-  }
   if (argc == 0) {
     pic_error(pic, "apply: wrong number of arguments");
   }
@@ -57,7 +55,7 @@ pic_proc_apply(pic_state *pic)
     v = pic_cons(pic, args[i], v);
   }
 
-  return pic_apply(pic, pic_proc_ptr(proc), v);
+  return pic_apply(pic, proc, v);
 }
 
 void

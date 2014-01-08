@@ -59,20 +59,10 @@ pic_raise(pic_state *pic, pic_value obj)
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
-  pic_value v, w;
   struct pic_proc *handler, *thunk;
+  pic_value v;
 
-  pic_get_args(pic, "oo", &v, &w);
-
-  if (! pic_proc_p(v)){
-    pic_error(pic, "expected procedure");
-  }
-  handler = pic_proc_ptr(v);
-
-  if (! pic_proc_p(v)) {
-    pic_error(pic, "expected procedure");
-  }
-  thunk = pic_proc_ptr(w);
+  pic_get_args(pic, "ll", &handler, &thunk);
 
   if (pic->ridx >= pic->rlen) {
 

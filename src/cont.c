@@ -150,15 +150,9 @@ static pic_value
 pic_cont_callcc(pic_state *pic)
 {
   struct pic_cont *cont;
-  pic_value v;
   struct pic_proc *cb;
 
-  pic_get_args(pic, "o", &v);
-
-  if (! pic_proc_p(v)) {
-    pic_error(pic, "expected procedure");
-  }
-  cb = pic_proc_ptr(v);
+  pic_get_args(pic, "l", &cb);
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
@@ -182,23 +176,10 @@ pic_cont_callcc(pic_state *pic)
 static pic_value
 pic_cont_dynamic_wind(pic_state *pic)
 {
-  pic_value a,b,c,v;
   struct pic_proc *in, *thunk, *out;
+  pic_value v;
 
-  pic_get_args(pic, "ooo", &a, &b, &c);
-
-  if (! pic_proc_p(a)) {
-    pic_error(pic, "procedure expected");
-  }
-  in = pic_proc_ptr(a);
-  if (! pic_proc_p(b)) {
-    pic_error(pic, "procedure expected");
-  }
-  thunk = pic_proc_ptr(b);
-  if (! pic_proc_p(c)) {
-    pic_error(pic, "procedure expected");
-  }
-  out = pic_proc_ptr(c);
+  pic_get_args(pic, "lll", &in, &thunk, &out);
 
   /* enter */
   pic_apply_argv(pic, in, 0);

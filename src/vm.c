@@ -240,6 +240,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	}
       }
       break;
+    case 'l':
+      {
+        struct pic_proc **l;
+        pic_value v;
+
+        l = va_arg(ap, struct pic_proc **);
+        if (i < argc) {
+          v = GET_OPERAND(pic,i);
+          if (pic_proc_p(v)) {
+            *l = pic_proc_ptr(v);
+          }
+          else {
+            pic_error(pic, "pic_get_args, expected procedure");
+          }
+          i++;
+        }
+        break;
+      }
     default:
       {
 	pic_error(pic, "pic_get_args: invalid argument specifier given");
