@@ -138,6 +138,7 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
     pic->lib = lib__;                                           \
   } while (0)
 
+void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
 
 void pic_abort(pic_state *, const char *);

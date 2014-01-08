@@ -191,6 +191,46 @@ strip(pic_state *pic, pic_value expr)
 }
 
 void
+pic_import(pic_state *pic, pic_value spec)
+{
+  struct pic_lib *lib;
+  struct xh_iterator it;
+
+  lib = pic_find_library(pic, spec);
+  if (! lib) {
+    pic_error(pic, "library not found");
+  }
+  it = xh_begin(lib->exports);
+  while (! xh_isend(&it)) {
+#if DEBUG
+    if (it.e->val >= 0) {
+      printf("* importing %s as %s\n", it.e->key, pic_symbol_name(pic, (pic_sym)it.e->val));
+    }
+    else {
+      printf("* importing %s\n", it.e->key);
+    }
+#endif
+    if (it.e->val >= 0) {
+      xh_put(pic->lib->senv->tbl, it.e->key, it.e->val);
+    }
+    else {                /* syntax object */
+      int idx;
+      struct pic_senv *senv = pic->lib->senv;
+
+      idx = senv->xlen;
+      if (idx >= senv->xcapa) {
+        pic_abort(pic, "macro table overflow");
+      }
+      /* bring macro object from imported lib */
+      senv->stx[idx] = lib->senv->stx[~it.e->val];
+      xh_put(senv->tbl, it.e->key, ~idx);
+      senv->xlen++;
+    }
+    xh_next(lib->exports, &it);
+  }
+}
+
+void
 pic_export(pic_state *pic, pic_sym sym)
 {
   struct xh_entry *e;
@@ -300,44 +340,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         return pic_none_value();
       }
       case PIC_STX_IMPORT: {
-        struct pic_lib *lib;
-        struct xh_iterator it;
-
         for (v = pic_cdr(pic, expr); ! pic_nil_p(v); v = pic_cdr(pic, v)) {
           pic_value spec = pic_car(pic, v);
 
-          lib = pic_find_library(pic, spec);
-          if (! lib) {
-            pic_error(pic, "library not found");
-          }
-          it = xh_begin(lib->exports);
-          while (! xh_isend(&it)) {
-#if DEBUG
-            if (it.e->val >= 0) {
-              printf("* importing %s as %s\n", it.e->key, pic_symbol_name(pic, (pic_sym)it.e->val));
-            }
-            else {
-              printf("* importing %s\n", it.e->key);
-            }
-#endif
-            if (it.e->val >= 0) {
-              xh_put(pic->lib->senv->tbl, it.e->key, it.e->val);
-            }
-            else {                /* syntax object */
-              int idx;
-              struct pic_senv *senv = pic->lib->senv;
-
-              idx = senv->xlen;
-              if (idx >= senv->xcapa) {
-                pic_abort(pic, "macro table overflow");
-              }
-              /* bring macro object from imported lib */
-              senv->stx[idx] = lib->senv->stx[~it.e->val];
-              xh_put(senv->tbl, it.e->key, ~idx);
-              senv->xlen++;
-            }
-            xh_next(lib->exports, &it);
-          }
+          pic_import(pic, spec);
         }
         return pic_none_value();
       }
