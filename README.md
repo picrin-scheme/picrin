@@ -38,7 +38,7 @@
 | 4.2.3 Sequencing | yes | |
 | 4.2.4 Iteration | yes | |
 | 4.2.5 Delayed evaluation | N/A | |
-| 4.2.6 Dynamic bindings | no | TODO: `make-parameter`, `parameterize` in C level |
+| 4.2.6 Dynamic bindings | yes | |
 | 4.2.7 Exception handling | no | `guard` syntax. |
 | 4.2.8 Quasiquotation | incomplete | nested is unsupported |
 | 4.2.9 Case-lambda | N/A | |
