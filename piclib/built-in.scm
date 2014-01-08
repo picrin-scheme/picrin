@@ -195,13 +195,13 @@
                                         (list (car x) (cadr x)))
                                       bindings)
            (,(r 'if) ,(car finish)
+            (,(r 'begin) ,@(cdr finish))
             (,(r 'begin) ,@body
              (,(r 'loop) ,@(map (lambda (x)
                                   (if (null? (cddr x))
                                       (car x)
                                       (car (cddr x))))
-                                bindings)))
-            (,(r 'begin) ,@(cdr finish))))))))
+                                bindings)))))))))
 
   (define-syntax when
     (er-macro-transformer
@@ -309,7 +309,7 @@
          `(,(r 'begin)
             ,@(do ((vars formals (cdr vars))
                    (defs '()))
-                  ((pair? vars)
+                  ((null? vars)
                    defs)
                 (set! defs (cons `(,(r 'define) ,(car vars) #f) defs)))
             (,(r 'call-with-values)
@@ -317,7 +317,7 @@
               (,(r 'lambda) (,@(map r formals))
                 ,@(do ((vars formals (cdr vars))
                        (assn '()))
-                      ((pair? vars)
+                      ((null? vars)
                        assn)
                     (set! assn (cons `(,(r 'set!) ,(car vars) ,(r (car vars))) assn))))))))))
 
@@ -599,7 +599,7 @@
     (let ((v (make-string len)))
       (do ((i 0 (+ i 1))
 	   (l objs (cdr l)))
-	  ((< i len)
+	  ((= i len)
 	   v)
 	(string-set! v i (car l))))))
 
@@ -610,7 +610,7 @@
 		 (string-length string))))
     (do ((i start (+ i 1))
 	 (res '()))
-	((< i end)
+	((= i end)
 	 (reverse res))
       (set! res (cons (string-ref string i) res)))))
 
@@ -624,7 +624,7 @@
 		 (string-length from))))
     (do ((i at (+ i 1))
 	 (j start (+ j 1)))
-	((< j end))
+	((= j end))
       (string-set! to i (string-ref from j)))))
 
 (define (string-copy v . opts)
@@ -650,7 +650,7 @@
 		 (cadr opts)
 		 (string-length v))))
     (do ((i start (+ i 1)))
-	((< i end)
+	((= i end)
 	 #f)
       (string-set! v i fill))))
 
@@ -665,7 +665,7 @@
     (let ((v (make-vector len)))
       (do ((i 0 (+ i 1))
 	   (l objs (cdr l)))
-	  ((< i len)
+	  ((= i len)
 	   v)
 	(vector-set! v i (car l))))))
 
@@ -676,7 +676,7 @@
 		 (vector-length vector))))
     (do ((i start (+ i 1))
 	 (res '()))
-	((< i end)
+	((= i end)
 	 (reverse res))
       (set! res (cons (vector-ref vector i) res)))))
 
@@ -690,7 +690,7 @@
 		 (vector-length from))))
     (do ((i at (+ i 1))
 	 (j start (+ j 1)))
-	((< j end))
+	((= j end))
       (vector-set! to i (vector-ref from j)))))
 
 (define (vector-copy v . opts)
@@ -716,7 +716,7 @@
 		 (cadr opts)
 		 (vector-length v))))
     (do ((i start (+ i 1)))
-	((< i end)
+	((= i end)
 	 #f)
       (vector-set! v i fill))))
 
@@ -738,7 +738,7 @@
     (let ((v (make-bytevector len)))
       (do ((i 0 (+ i 1))
 	   (l objs (cdr l)))
-	  ((< i len)
+	  ((= i len)
 	   v)
 	(bytevector-u8-set! v i (car l))))))
 
@@ -749,7 +749,7 @@
 		 (bytevector-length from))))
     (do ((i at (+ i 1))
 	 (j start (+ j 1)))
-	((< j end))
+	((= j end))
       (bytevector-u8-set! to i (bytevector-u8-ref from j)))))
 
 (define (bytevector-copy v . opts)
@@ -772,7 +772,7 @@
 (define (bytevector->list v start end)
     (do ((i start (+ i 1))
 	 (res '()))
-	((< i end)
+	((= i end)
 	 (reverse res))
       (set! res (cons (bytevector-u8-ref v i) res))))
 
