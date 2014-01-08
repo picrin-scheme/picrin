@@ -1,5 +1,9 @@
 #include "picrin/var.h"
 
+#include <assert.h>
+
+#define UNREACHABLE (assert(false))
+
 struct pic_var *
 pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv)
 {
@@ -59,6 +63,7 @@ var_call(pic_state *pic)
   else {
     pic_abort(pic, "logic flaw");
   }
+  UNREACHABLE;
 }
 
 static pic_value
@@ -98,6 +103,7 @@ get_var_from_proc(pic_state *pic, struct pic_proc *proc)
 
  typeerror:
   pic_error(pic, "expected parameter");
+  UNREACHABLE;
 }
 
 static pic_value
