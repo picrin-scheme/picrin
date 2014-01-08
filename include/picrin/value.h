@@ -143,6 +143,7 @@ pic_value pic_float_value(double);
 pic_value pic_int_value(int);
 pic_value pic_symbol_value(pic_sym);
 pic_value pic_char_value(char c);
+pic_value pic_none_value();
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)

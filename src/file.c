@@ -99,7 +99,7 @@ pic_file_delete(pic_state *pic)
   if (remove(fname) != 0) {
     pic_error(pic, "file cannot be deleted");
   }
-  return pic_true_value();
+  return pic_none_value();
 }
 
 void

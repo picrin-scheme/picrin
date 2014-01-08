@@ -82,7 +82,7 @@ pic_str_string_set(pic_state *pic)
   pic_get_args(pic, "sic", &str, &len, &k, &c);
 
   str[k] = c;
-  return pic_false_value();
+  return pic_none_value();
 }
 
 #define DEFINE_STRING_CMP(name, op)			\

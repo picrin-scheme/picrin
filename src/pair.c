@@ -237,7 +237,7 @@ pic_pair_set_car(pic_state *pic)
     pic_error(pic, "pair expected");
 
   pic_pair_ptr(v)->car = w;
-  return pic_true_value();
+  return pic_none_value();
 }
 
 static pic_value
@@ -251,7 +251,7 @@ pic_pair_set_cdr(pic_state *pic)
     pic_error(pic, "pair expected");
 
   pic_pair_ptr(v)->cdr = w;
-  return pic_true_value();
+  return pic_none_value();
 }
 
 void

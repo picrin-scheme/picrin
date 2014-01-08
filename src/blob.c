@@ -76,7 +76,7 @@ pic_blob_bytevector_u8_set(pic_state *pic)
     pic_error(pic, "byte out of range");
 
   bv->data[k] = v;
-  return pic_false_value();
+  return pic_none_value();
 }
 
 void

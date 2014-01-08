@@ -297,7 +297,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
         pic_in_library(pic, prev->name);
 
-        return pic_false_value();
+        return pic_none_value();
       }
       case PIC_STX_IMPORT: {
         struct pic_lib *lib;
@@ -339,7 +339,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
             xh_next(lib->exports, &it);
           }
         }
-        return pic_false_value();
+        return pic_none_value();
       }
       case PIC_STX_EXPORT: {
         for (v = pic_cdr(pic, expr); ! pic_nil_p(v); v = pic_cdr(pic, v)) {
@@ -350,7 +350,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
           /* TODO: warn if symbol is shadowed by local variable */
           pic_export(pic, pic_sym(spec));
         }
-        return pic_false_value();
+        return pic_none_value();
       }
       case PIC_STX_DEFSYNTAX: {
 	pic_value var, val;
@@ -380,7 +380,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	pic_defsyntax(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v), senv);
 
 	pic_gc_arena_restore(pic, ai);
-	return pic_false_value();
+	return pic_none_value();
       }
       case PIC_STX_DEFMACRO: {
 	pic_value var, val;
@@ -422,7 +422,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	pic_defmacro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
 
 	pic_gc_arena_restore(pic, ai);
-	return pic_false_value();
+	return pic_none_value();
       }
       case PIC_STX_MACRO: {
 	if (pic_syntax(car)->senv == NULL) { /* legacy macro */

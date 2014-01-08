@@ -10,6 +10,9 @@
 /* enable readline module */
 #define PIC_ENABLE_READLINE 1
 
+/* treat false value as none */
+#define PIC_NONE_IS_FALSE 1
+
 /* initial memory size (to be dynamically extended if necessary) */
 #define PIC_ARENA_SIZE 100
 #define PIC_HEAP_PAGE_SIZE (10000)

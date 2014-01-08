@@ -11,7 +11,7 @@ pic_vec_new(pic_state *pic, size_t len)
   vec->len = len;
   vec->data = (pic_value *)pic_alloc(pic, sizeof(pic_value) * len);
   for (i = 0; i < len; ++i) {
-    vec->data[i] = pic_false_value();
+    vec->data[i] = pic_none_value();
   }
   return vec;
 }
@@ -41,7 +41,7 @@ pic_vec_extend_ip(pic_state *pic, struct pic_vector *vec, int size)
   vec->len = size;
   vec->data = (pic_value *)pic_realloc(pic, vec->data, sizeof(pic_value) * size);
   for (i = len; i < size; ++i) {
-    vec->data[i] = pic_false_value();
+    vec->data[i] = pic_none_value();
   }
 }
 
@@ -110,7 +110,7 @@ pic_vec_vector_set(pic_state *pic)
     pic_error(pic, "vector-set!: index out of range");
   }
   v->data[k] = o;
-  return pic_false_value();
+  return pic_none_value();
 }
 
 void

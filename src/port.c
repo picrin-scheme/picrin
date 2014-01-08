@@ -263,14 +263,14 @@ pic_port_write(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
   write(pic, v);
-  return pic_false_value();
+  return pic_none_value();
 }
 
 static pic_value
 pic_port_newline(pic_state *pic)
 {
   puts("");
-  return pic_false_value();
+  return pic_none_value();
 }
 
 static pic_value
@@ -318,7 +318,7 @@ pic_port_close_port(pic_state *pic)
   }
   port->status = PIC_PORT_CLOSE;
 
-  return pic_false_value();
+  return pic_none_value();
 }
 
 void

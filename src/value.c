@@ -208,6 +208,16 @@ pic_undef_value()
   return v;
 }
 
+pic_value
+pic_none_value()
+{
+#if PIC_NONE_IS_FALSE
+  return pic_false_value();
+#else
+# error enable PIC_NONE_IS_FALSE
+#endif
+}
+
 #if PIC_NAN_BOXING
 
 bool

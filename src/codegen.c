@@ -8,6 +8,12 @@
 #include "picrin/macro.h"
 #include "xhash/xhash.h"
 
+#if PIC_NONE_IS_FALSE
+# define OP_PUSHNONE OP_PUSHFALSE
+#else
+# error enable PIC_NONE_IS_FALSE
+#endif
+
 #define FALLTHROUGH ((void)0)
 
 typedef struct codegen_scope {
@@ -272,7 +278,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  irep->code[irep->clen].insn = OP_GSET;
 	  irep->code[irep->clen].u.i = idx;
 	  irep->clen++;
-	  irep->code[irep->clen].insn = OP_PUSHFALSE;
+	  irep->code[irep->clen].insn = OP_PUSHNONE;
 	  irep->clen++;
 	  break;
 	}
@@ -283,7 +289,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  irep->code[irep->clen].u.r.depth = 0;
 	  irep->code[irep->clen].u.r.idx = idx;
 	  irep->clen++;
-	  irep->code[irep->clen].insn = OP_PUSHFALSE;
+	  irep->code[irep->clen].insn = OP_PUSHNONE;
 	  irep->clen++;
 	  break;
 	}
@@ -312,7 +318,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	int s,t;
 	pic_value if_true, if_false;
 
-	if_false = pic_false_value();
+	if_false = pic_none_value();
 	switch (pic_length(pic, obj)) {
 	default:
 	  pic_error(pic, "syntax error");
@@ -400,7 +406,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  break;
 	}
 
-	irep->code[irep->clen].insn = OP_PUSHFALSE;
+	irep->code[irep->clen].insn = OP_PUSHNONE;
 	irep->clen++;
 	break;
       }
