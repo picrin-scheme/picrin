@@ -327,9 +327,38 @@
           let*-values
           define-values))
 
+;;; parameter
+(define-library (picrin parameter)
+  (import (scheme base)
+          (picrin macro)
+          (picrin core-syntax)
+          (picrin bootstrap-tools))
+
+  ;; reopen (pircin parameter)
+  ;; see src/var.c
+
+  (define-syntax parameterize
+    (er-macro-transformer
+     (lambda (form r compare)
+       (let ((bindings (cadr form))
+             (body (cddr form)))
+         (let ((vars (map car bindings)))
+           `(,(r 'let) (,@(map (lambda (var)
+                                 `(,(r var) (,var)))
+                            vars))
+              ,@bindings
+              (,(r 'let) ((,(r 'result) (begin ,@body)))
+                ,@(map (lambda (var)
+                         `(,(r 'parameter-set!) ,var ,(r var)))
+                       vars)
+                ,(r 'result))))))))
+
+  (export parameterize))
+
 (import (picrin macro)
         (picrin core-syntax)
-        (picrin multiple-value))
+        (picrin multiple-value)
+        (picrin parameter))
 
 (export let let* letrec letrec*
         quasiquote unquote unquote-splicing
@@ -343,6 +372,9 @@
         let-values
         let*-values
         define-values)
+
+(export make-parameter
+        parameterize)
 
 (define (any pred list)
   (if (null? list)
