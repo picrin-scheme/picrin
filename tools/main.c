@@ -29,6 +29,20 @@ print_help(void)
   puts(help);
 }
 
+void
+import_repllib(pic_state *pic)
+{
+  int ai = pic_gc_arena_preserve(pic);
+
+  pic_import(pic, pic_parse(pic, "(scheme base)"));
+
+#if DEBUG
+  puts("* imported repl libraries");
+#endif
+
+  pic_gc_arena_restore(pic, ai);
+}
+
 int exit_status;
 
 void
@@ -272,6 +286,10 @@ main(int argc, char *argv[], char **envp)
   pic = pic_open(argc, argv, envp);
 
   parse_opt(argc, argv);
+
+  if (mode == INTERACTIVE_MODE || mode == ONE_LINER_MODE) {
+    import_repllib(pic);
+  }
 
   switch (mode) {
   case NO_MODE:
