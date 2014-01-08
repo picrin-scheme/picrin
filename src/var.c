@@ -1,0 +1,158 @@
+#include "picrin/var.h"
+
+struct pic_var *
+pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv)
+{
+  struct pic_var *var;
+
+  var = (struct pic_var *)pic_obj_alloc(pic, sizeof(struct pic_var), PIC_TT_VAR);
+  var->value = pic_undef_value();
+  var->conv = conv;
+
+  pic_var_set(pic, var, init);
+
+  return var;
+}
+
+pic_value
+pic_var_ref(pic_state *pic, struct pic_var *var)
+{
+  return var->value;
+}
+
+void
+pic_var_set(pic_state *pic, struct pic_var *var, pic_value value)
+{
+  if (var->conv) {
+    value = pic_apply_argv(pic, var->conv, 1, value);
+  }
+  pic_var_set_force(pic, var, value);
+}
+
+void
+pic_var_set_force(pic_state *pic, struct pic_var *var, pic_value value)
+{
+  var->value = value;
+}
+
+static pic_value
+var_call(pic_state *pic)
+{
+  struct pic_proc *proc;
+  struct pic_var *var;
+  pic_value v;
+  int c;
+
+  proc = pic_get_proc(pic);
+
+  c = pic_get_args(pic, "|o", &v);
+  if (c == 1) {
+    var = pic_var_ptr(proc->env->values[0]);
+    return pic_var_ref(pic, var);
+  }
+  else if (c == 2) {
+    var = pic_var_ptr(proc->env->values[0]);
+
+    pic_var_set(pic, var, v);
+    return pic_none_value();
+  }
+  else {
+    pic_abort(pic, "logic flaw");
+  }
+}
+
+static pic_value
+pic_var_make_parameter(pic_state *pic)
+{
+  struct pic_proc *proc, *conv = NULL;
+  struct pic_var *var;
+  pic_value init;
+
+  pic_get_args(pic, "o|l", &init, &conv);
+
+  var = pic_var_new(pic, init, conv);
+
+  proc = pic_proc_new(pic, var_call);
+  pic_proc_cv_reserve(pic, proc, 1);
+  pic_proc_cv_set(pic, proc, 0, pic_obj_value(var));
+
+  return pic_obj_value(proc);
+}
+
+static struct pic_var *
+get_var_from_proc(pic_state *pic, struct pic_proc *proc)
+{
+  pic_value v;
+
+  if (! proc->cfunc_p) {
+    goto typeerror;
+  }
+  if (pic_proc_cv_size(pic, proc) != 1) {
+    goto typeerror;
+  }
+  v = pic_proc_cv_ref(pic, proc, 0);
+  if (! pic_var_p(v)) {
+    goto typeerror;
+  }
+  return pic_var_ptr(v);
+
+ typeerror:
+  pic_error(pic, "expected parameter");
+}
+
+static pic_value
+pic_var_parameter_ref(pic_state *pic)
+{
+  struct pic_proc *proc;
+  struct pic_var *var;
+
+  pic_get_args(pic, "l", &proc);
+
+  var = get_var_from_proc(pic, proc);
+  return pic_var_ref(pic, var);
+}
+
+static pic_value
+pic_var_parameter_set(pic_state *pic)
+{
+  struct pic_proc *proc;
+  struct pic_var *var;
+  pic_value v;
+
+  pic_get_args(pic, "lo", &proc, &v);
+
+  var = get_var_from_proc(pic, proc);
+  /* no convert */
+  pic_var_set_force(pic, var, v);
+  return pic_none_value();
+}
+
+static pic_value
+pic_var_parameter_converter(pic_state *pic)
+{
+  struct pic_proc *proc;
+  struct pic_var *var;
+
+  pic_get_args(pic, "l", &proc);
+
+  var = get_var_from_proc(pic, proc);
+  if (var->conv) {
+    return pic_obj_value(var->conv);
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+void
+pic_init_var(pic_state *pic)
+{
+  DEFLIBRARY(pic, "(picrin parameter)")
+  {
+    pic_defun(pic, "make-parameter", pic_var_make_parameter);
+    pic_defun(pic, "parameter-ref", pic_var_parameter_ref);
+    pic_defun(pic, "parameter-set!", pic_var_parameter_set); /* no convert */
+    pic_defun(pic, "parameter-converter", pic_var_parameter_converter);
+  }
+  ENDLIBRARY(pic);
+}
