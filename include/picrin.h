@@ -101,6 +101,7 @@ struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defmacro(pic_state *, const char *, struct pic_proc *);
+void pic_defvar(pic_state *, const char *, pic_value);
 
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
