@@ -29,7 +29,7 @@ init_heap(struct pic_heap *heap)
   heap->pages = NULL;
 
 #if GC_DEBUG
-  printf("freep = %p\n", heap->freep);
+  printf("freep = %p\n", (void *)heap->freep);
 #endif
 }
 

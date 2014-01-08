@@ -94,7 +94,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 <CHAR>alarm	{ yylvalp->c = '\a'; BEGIN(INITIAL); return tCHAR; }
 <CHAR>backspace	{ yylvalp->c = '\b'; BEGIN(INITIAL); return tCHAR; }
 <CHAR>delete	{ yylvalp->c = 0x7f; BEGIN(INITIAL); return tCHAR; }
-<CHAR>escape	{ yylvalp->c = '\e'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>escape	{ yylvalp->c = 0x1b; BEGIN(INITIAL); return tCHAR; }
 <CHAR>newline	{ yylvalp->c = '\n'; BEGIN(INITIAL); return tCHAR; }
 <CHAR>null	{ yylvalp->c = '\0'; BEGIN(INITIAL); return tCHAR; }
 <CHAR>return	{ yylvalp->c = '\r'; BEGIN(INITIAL); return tCHAR; }

@@ -1052,7 +1052,7 @@ print_irep(pic_state *pic, struct pic_irep *irep)
 {
   int i;
 
-  printf("## irep %p\n", irep);
+  printf("## irep %p\n", (void *)irep);
   printf("[clen = %zd, ccapa = %zd, argc = %d, localc = %d]\n", irep->clen, irep->ccapa, irep->argc, irep->localc);
   printf(":: cv_num = %d\n", irep->cv_num);
   for (i = 0; i < irep->cv_num; ++i) {

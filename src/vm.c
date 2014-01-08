@@ -359,7 +359,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     print_irep(pic, proc->u.irep);
   }
   else {
-    printf("  cfunc = %p\n", proc->u.cfunc);
+    printf("  cfunc = %p\n", (void *)proc->u.cfunc);
   }
   puts("\nLet's go!");
 #endif
@@ -492,7 +492,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	print_irep(pic, proc->u.irep);
       }
       else {
-	printf("  cfunc = %p\n", proc->u.cfunc);
+	printf("  cfunc = %p\n", (void *)proc->u.cfunc);
       }
       puts("");
 #endif
@@ -718,8 +718,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 #if VM_DEBUG
       puts("**VM END STATE**");
-      printf("stbase\t= %p\nsp\t= %p\n", pic->stbase, pic->sp);
-      printf("cibase\t= %p\nci\t= %p\n", pic->cibase, pic->ci);
+      printf("stbase\t= %p\nsp\t= %p\n", (void *)pic->stbase, (void *)pic->sp);
+      printf("cibase\t= %p\nci\t= %p\n", (void *)pic->cibase, (void *)pic->ci);
       if (pic->stbase < pic->sp) {
 	pic_value *sp;
 	printf("* stack trace:");
