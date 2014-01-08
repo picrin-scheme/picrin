@@ -164,11 +164,8 @@ pic_cont_callcc(pic_state *pic)
     c = pic_proc_new(pic, cont_call);
 
     /* save the continuation object in proc */
-    c->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-    c->env->up = NULL;
-    c->env->valuec = 1;
-    c->env->values = (pic_value *)pic_calloc(pic, 1, sizeof(pic_value));
-    c->env->values[0] = pic_obj_value(cont);
+    pic_proc_cv_reserve(pic, c, 1);
+    pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
 
     return pic_apply_argv(pic, cb, 1, pic_obj_value(c));
   }
