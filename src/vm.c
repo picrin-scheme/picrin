@@ -613,7 +613,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_LAMBDA) {
       struct pic_proc *proc;
 
-      proc = pic_proc_new(pic, pic->irep[c.u.i], pic->ci->env);
+      proc = pic_proc_new_irep(pic, pic->irep[c.u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;

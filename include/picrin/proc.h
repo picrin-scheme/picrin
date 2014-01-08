@@ -26,7 +26,7 @@ struct pic_proc {
 
 #define pic_proc_cfunc_p(o) (pic_proc_ptr(o)->cfunc_p)
 
-struct pic_proc *pic_proc_new(pic_state *, struct pic_irep *, struct pic_env *);
-struct pic_proc *pic_proc_new_cfunc(pic_state *, pic_func_t);
+struct pic_proc *pic_proc_new(pic_state *, pic_func_t);
+struct pic_proc *pic_proc_new_irep(pic_state *, struct pic_irep *, struct pic_env *);
 
 #endif

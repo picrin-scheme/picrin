@@ -161,7 +161,8 @@ pic_cont_callcc(pic_state *pic)
   else {
     struct pic_proc *c;
 
-    c = pic_proc_new_cfunc(pic, cont_call);
+    c = pic_proc_new(pic, cont_call);
+
     /* save the continuation object in proc */
     c->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
     c->env->up = NULL;

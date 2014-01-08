@@ -913,7 +913,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   state->irep->cv_num = 0;
   state->irep->cv_tbl = NULL;
 
-  proc = pic_proc_new(pic, state->irep, NULL);
+  proc = pic_proc_new_irep(pic, state->irep, NULL);
 
   destroy_codegen_state(pic, state);
 
@@ -936,7 +936,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   struct pic_proc *proc;
   int idx;
 
-  proc = pic_proc_new_cfunc(pic, cfunc);
+  proc = pic_proc_new(pic, cfunc);
   idx = scope_global_define(pic, name);
   pic->globals[idx] = pic_obj_value(proc);
 
