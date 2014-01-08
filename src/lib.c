@@ -11,6 +11,13 @@ pic_make_library(pic_state *pic, pic_value name)
   struct pic_senv *senv;
 
   if ((lib = pic_find_library(pic, name)) != NULL) {
+
+#if DEBUG
+    printf("* reopen library: ");
+    pic_debug(pic, name);
+    puts("");
+#endif
+
     return lib;
   }
 
