@@ -186,6 +186,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	}
       }
       break;
+    case 'm':
+      {
+	pic_sym *m;
+	pic_value v;
+
+	m = va_arg(ap, pic_sym *);
+	if (i < argc) {
+	  v = GET_OPERAND(pic,i);
+	  if (pic_symbol_p(v)) {
+	    *m = pic_sym(v);
+	  }
+	  else {
+	    pic_error(pic, "pic_get_args: expected vector");
+	  }
+	  i++;
+	}
+      }
     case 'v':
       {
 	struct pic_vector **vec;
