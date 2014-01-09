@@ -659,6 +659,80 @@ pic_macro_identifier_eq_p(pic_state *pic)
   return pic_bool_value(pic_eq_p(x, y));
 }
 
+static pic_value
+er_macro_rename(pic_state *pic)
+{
+  pic_sym sym;
+  struct pic_senv *mac_env;
+
+  pic_get_args(pic, "m", &sym);
+
+  mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
+
+  return macroexpand(pic, pic_symbol_value(sym), mac_env);
+}
+
+static pic_value
+er_macro_compare(pic_state *pic)
+{
+  pic_sym x, y;
+  struct pic_senv *use_env;
+  pic_value a, b;
+
+  pic_get_args(pic, "mm", &x, &y);
+
+  use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
+
+  a = macroexpand(pic, pic_symbol_value(x), use_env);
+  b = macroexpand(pic, pic_symbol_value(y), use_env);
+
+  return pic_bool_value(pic_eq_p(a, b));
+}
+
+static pic_value
+er_macro_call(pic_state *pic)
+{
+  pic_value expr, use_env, mac_env;
+  struct pic_proc *rename, *compare, *cb;
+
+  pic_get_args(pic, "ooo", &expr, &use_env, &mac_env);
+
+  if (! pic_senv_p(use_env)) {
+    pic_error(pic, "unexpected type of argument 1");
+  }
+  if (! pic_senv_p(mac_env)) {
+    pic_error(pic, "unexpected type of argument 3");
+  }
+
+  rename = pic_proc_new(pic, er_macro_rename);
+  pic_proc_cv_reserve(pic, rename, 2);
+  pic_proc_cv_set(pic, rename, 0, use_env);
+  pic_proc_cv_set(pic, rename, 1, mac_env);
+
+  compare = pic_proc_new(pic, er_macro_compare);
+  pic_proc_cv_reserve(pic, compare, 2);
+  pic_proc_cv_set(pic, compare, 0, use_env);
+  pic_proc_cv_set(pic, compare, 1, mac_env);
+
+  cb = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
+
+  return pic_apply_argv(pic, cb, 3, expr, pic_obj_value(rename), pic_obj_value(compare));
+}
+
+static pic_value
+pic_macro_er_macro_transformer(pic_state *pic)
+{
+  struct pic_proc *cb, *proc;
+
+  pic_get_args(pic, "l", &cb);
+
+  proc = pic_proc_new(pic, er_macro_call);
+  pic_proc_cv_reserve(pic, proc, 1);
+  pic_proc_cv_set(pic, proc, 0, pic_obj_value(cb));
+
+  return pic_obj_value(proc);
+}
+
 void
 pic_init_macro(pic_state *pic)
 {
@@ -667,6 +741,7 @@ pic_init_macro(pic_state *pic)
     pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
+    pic_defun(pic, "er-macro-transformer", pic_macro_er_macro_transformer);
   }
   ENDLIBRARY(pic);
 }
