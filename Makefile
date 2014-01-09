@@ -7,7 +7,10 @@ else
   PICRIN_LIB=libpicrin.so
 endif
 
-all: release
+all: deps release
+
+deps:
+	git submodule update --init
 
 release: CFLAGS += -DDEBUG=0 -O3
 release: build
