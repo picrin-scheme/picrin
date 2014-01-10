@@ -675,16 +675,18 @@ er_macro_rename(pic_state *pic)
 static pic_value
 er_macro_compare(pic_state *pic)
 {
-  pic_sym x, y;
-  struct pic_senv *use_env;
   pic_value a, b;
+  struct pic_senv *use_env;
 
-  pic_get_args(pic, "mm", &x, &y);
+  pic_get_args(pic, "oo", &a, &b);
+
+  if (! pic_symbol_p(a) || ! pic_symbol_p(b))
+    return pic_false_value();   /* should be an error? */
 
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
 
-  a = macroexpand(pic, pic_symbol_value(x), use_env);
-  b = macroexpand(pic, pic_symbol_value(y), use_env);
+  a = macroexpand(pic, a, use_env);
+  b = macroexpand(pic, b, use_env);
 
   return pic_bool_value(pic_eq_p(a, b));
 }
