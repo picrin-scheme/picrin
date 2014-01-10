@@ -664,12 +664,19 @@ er_macro_rename(pic_state *pic)
 {
   pic_sym sym;
   struct pic_senv *mac_env;
+  pic_value v;
 
   pic_get_args(pic, "m", &sym);
 
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
 
-  return macroexpand(pic, pic_symbol_value(sym), mac_env);
+  v = macroexpand(pic, pic_symbol_value(sym), mac_env);
+  if (pic_syntax_p(v)) {
+    return pic_symbol_value(sym);
+  }
+  else {
+    return v;
+  }
 }
 
 static pic_value
