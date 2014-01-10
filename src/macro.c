@@ -36,6 +36,20 @@ new_uniq_sym(pic_state *pic, pic_sym base)
   return uniq;
 }
 
+static bool
+uniq_sym_p(pic_state *pic, pic_sym sym)
+{
+  const char *name;
+
+  assert(sym >= 0);
+
+  name = pic->sym_pool[sym];
+  if (sym == pic_intern_cstr(pic, name))
+    return false;
+  else
+    return true;
+}
+
 struct pic_senv *
 pic_null_syntactic_env(pic_state *pic)
 {
@@ -293,6 +307,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
   case PIC_TT_SYMBOL: {
     struct xh_entry *e;
     pic_sym uniq;
+
+    if (uniq_sym_p(pic, pic_sym(expr))) {
+      return expr;
+    }
     while (true) {
       if ((e = xh_get(senv->tbl, pic_symbol_name(pic, pic_sym(expr)))) != NULL) {
 	if (e->val >= 0)
