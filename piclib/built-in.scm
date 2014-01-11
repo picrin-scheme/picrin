@@ -245,9 +245,9 @@
     (er-macro-transformer
      (lambda (expr r c)
        `(,(r 'define-syntax) ,(cadr expr)
-          ,(r '(sc-macro-transformer
-                (lambda (expr env)
-                  (error "invalid use of auxiliary syntax"))))))))
+           (,(r 'sc-macro-transformer)
+                (,(r 'lambda) (expr env)
+                  (,(r 'error) "invalid use of auxiliary syntax")))))))
 
   (define-auxiliary-syntax else)
   (define-auxiliary-syntax =>)
