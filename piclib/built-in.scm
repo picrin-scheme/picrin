@@ -10,14 +10,6 @@
     (lambda (expr use-env mac-env)
       (make-syntactic-closure use-env '() (f expr mac-env))))
 
-  (define (er-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (define (rename identifier)
-        (make-syntactic-closure mac-env '() identifier))
-      (define (compare x y)
-        (identifier=? use-env x use-env y))
-      (make-syntactic-closure use-env '() (f expr rename compare))))
-
   (define (walk f obj)
     (if (pair? obj)
         (cons (walk f (car obj))
@@ -37,7 +29,6 @@
 
   (export sc-macro-transformer
           rsc-macro-transformer
-          er-macro-transformer
           ir-macro-transformer))
 
 ;;; bootstrap utilities
