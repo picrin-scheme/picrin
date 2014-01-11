@@ -10,14 +10,6 @@
     (lambda (expr use-env mac-env)
       (make-syntactic-closure use-env '() (f expr mac-env))))
 
-  (define (er-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (define (rename identifier)
-        (make-syntactic-closure mac-env '() identifier))
-      (define (compare x y)
-        (identifier=? use-env x use-env y))
-      (make-syntactic-closure use-env '() (f expr rename compare))))
-
   (define (walk f obj)
     (if (pair? obj)
         (cons (walk f (car obj))
@@ -37,7 +29,6 @@
 
   (export sc-macro-transformer
           rsc-macro-transformer
-          er-macro-transformer
           ir-macro-transformer))
 
 ;;; bootstrap utilities
@@ -79,7 +70,7 @@
   (define-syntax let
     (er-macro-transformer
      (lambda (expr r compare)
-       (if (identifier? (cadr expr))
+       (if (symbol? (cadr expr))
            (begin
              (define name (cadr expr))
              (define bindings (caddr expr))
@@ -130,7 +121,7 @@
      (lambda (expr r compare?)
        (let ((x (cadr expr)))
          (cond
-          ((symbol? x) (list (r 'quote) x)) ; should test with identifier?
+          ((symbol? x) (list (r 'quote) x))
           ((pair? x) (cond
                       ((compare? (r 'unquote) (car x))
                        (cadr x))
@@ -245,9 +236,9 @@
     (er-macro-transformer
      (lambda (expr r c)
        `(,(r 'define-syntax) ,(cadr expr)
-          ,(r '(sc-macro-transformer
-                (lambda (expr env)
-                  (error "invalid use of auxiliary syntax"))))))))
+           (,(r 'sc-macro-transformer)
+                (,(r 'lambda) (expr env)
+                  (,(r 'error) "invalid use of auxiliary syntax")))))))
 
   (define-auxiliary-syntax else)
   (define-auxiliary-syntax =>)

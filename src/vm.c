@@ -198,7 +198,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 	    *m = pic_sym(v);
 	  }
 	  else {
-	    pic_error(pic, "pic_get_args: expected vector");
+	    pic_error(pic, "pic_get_args: expected symbol");
 	  }
 	  i++;
 	}
