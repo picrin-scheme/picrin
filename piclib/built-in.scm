@@ -70,7 +70,7 @@
   (define-syntax let
     (er-macro-transformer
      (lambda (expr r compare)
-       (if (identifier? (cadr expr))
+       (if (symbol? (cadr expr))
            (begin
              (define name (cadr expr))
              (define bindings (caddr expr))
@@ -121,7 +121,7 @@
      (lambda (expr r compare?)
        (let ((x (cadr expr)))
          (cond
-          ((symbol? x) (list (r 'quote) x)) ; should test with identifier?
+          ((symbol? x) (list (r 'quote) x))
           ((pair? x) (cond
                       ((compare? (r 'unquote) (car x))
                        (cadr x))
