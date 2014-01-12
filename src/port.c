@@ -156,7 +156,7 @@ pic_debug(pic_state *pic, pic_value obj)
 }
 
 static pic_value
-make_port_from_fp(pic_state *pic, FILE *fp, short flags)
+port_new_from_fp(pic_state *pic, FILE *fp, short flags)
 {
   struct pic_port *port;
 
@@ -165,6 +165,12 @@ make_port_from_fp(pic_state *pic, FILE *fp, short flags)
   port->flags = flags;
   port->status = PIC_PORT_OPEN;
   return pic_obj_value(port);
+}
+
+static pic_value
+port_new_stdio(pic_state *pic, FILE *fp, short dir)
+{
+  return port_new_from_fp(pic, fp, dir | PIC_PORT_TEXT);
 }
 
 static pic_value
@@ -339,9 +345,9 @@ pic_port_close_port(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_defvar(pic, "current-input-port", make_port_from_fp(pic, stdin, PIC_PORT_IN | PIC_PORT_TEXT));
-  pic_defvar(pic, "current-output-port", make_port_from_fp(pic, stdout, PIC_PORT_OUT | PIC_PORT_TEXT));
-  pic_defvar(pic, "current-error-port", make_port_from_fp(pic, stderr, PIC_PORT_OUT | PIC_PORT_TEXT));
+  pic_defvar(pic, "current-input-port", port_new_stdio(pic, stdin, PIC_PORT_IN));
+  pic_defvar(pic, "current-output-port", port_new_stdio(pic, stdout, PIC_PORT_OUT));
+  pic_defvar(pic, "current-error-port", port_new_stdio(pic, stderr, PIC_PORT_OUT));
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);
