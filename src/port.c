@@ -7,6 +7,16 @@
 #include "picrin/blob.h"
 #include "picrin/macro.h"
 
+pic_value
+pic_eof_object()
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_EOF);
+
+  return v;
+}
+
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
 
@@ -312,13 +322,9 @@ pic_port_eof_object_p(pic_state *pic)
 static pic_value
 pic_port_eof_object(pic_state *pic)
 {
-  pic_value v;
-
   pic_get_args(pic, "");
 
-  pic_init_value(v, PIC_VTYPE_EOF);
-
-  return v;
+  return pic_eof_object();
 }
 
 static pic_value
