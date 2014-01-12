@@ -348,6 +348,10 @@ pic_port_close_port(pic_state *pic)
 #define assert_port_profile(port, flgs, stat, caller) do {              \
     if ((port->flags & (flgs)) != (flgs)) {                             \
       switch (flgs) {                                                   \
+      case PIC_PORT_IN:                                                 \
+        pic_error(pic, caller ": expected output port");                \
+      case PIC_PORT_OUT:                                                \
+        pic_error(pic, caller ": expected input port");                 \
       case PIC_PORT_IN | PIC_PORT_TEXT:                                 \
         pic_error(pic, caller ": expected input/textual port");         \
       case PIC_PORT_IN | PIC_PORT_BINARY:                               \
@@ -428,6 +432,33 @@ pic_port_write_simple(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_port_write_char(pic_state *pic)
+{
+  char c;
+  struct pic_port *port = pic_stdout(pic);
+
+  pic_get_args(pic, "c|p", &c, &port);
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "write-char");
+
+  fputc(c, port->file);
+  return pic_none_value();
+}
+
+static pic_value
+pic_port_flush(pic_state *pic)
+{
+  struct pic_port *port = pic_stdout(pic);
+
+  pic_get_args(pic, "|p", &port);
+
+  assert_port_profile(port, PIC_PORT_OUT, PIC_PORT_OPEN, "flush-output-port");
+
+  fflush(port->file);
+  return pic_none_value();
+}
+
 void
 pic_init_port(pic_state *pic)
 {
@@ -454,6 +485,8 @@ pic_init_port(pic_state *pic)
 
   /* write */
   pic_defun(pic, "newline", pic_port_newline);
+  pic_defun(pic, "write-char", pic_port_write_char);
+  pic_defun(pic, "flush-output-port", pic_port_flush);
 
   DEFLIBRARY(pic, "(scheme write)")
   {
