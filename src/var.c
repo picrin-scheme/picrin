@@ -5,7 +5,7 @@
 #define UNREACHABLE (assert(false))
 
 struct pic_var *
-pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv)
+pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv /* = NULL */)
 {
   struct pic_var *var;
 
