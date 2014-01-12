@@ -510,7 +510,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	pic_gc_protect(pic, v);
 	return v;
       case PIC_STX_QUOTE:
-	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), strip(pic, pic_cdr(pic, expr)));
+	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), pic_cdr(pic, expr));
 	pic_gc_arena_restore(pic, ai);
 	pic_gc_protect(pic, v);
 	return v;
