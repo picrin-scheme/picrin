@@ -27,6 +27,16 @@ pic_stdin(pic_state *pic)
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }
 
+struct pic_port *
+pic_stdout(pic_state *pic)
+{
+  struct pic_proc *proc;
+
+  proc = pic_proc_ptr(pic_ref(pic, "current-output-port"));
+
+  return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
+}
+
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
 
@@ -298,23 +308,6 @@ pic_port_output_port_open_p(pic_state *pic)
 }
 
 static pic_value
-pic_port_write_simple(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-  write(pic, v);
-  return pic_none_value();
-}
-
-static pic_value
-pic_port_newline(pic_state *pic)
-{
-  puts("");
-  return pic_none_value();
-}
-
-static pic_value
 pic_port_eof_object_p(pic_state *pic)
 {
   pic_value v;
@@ -410,6 +403,29 @@ pic_port_peek_char(pic_state *pic)
     ungetc(c, port->file);
     return pic_char_value(c);
   }
+}
+
+static pic_value
+pic_port_newline(pic_state *pic)
+{
+  struct pic_port *port = pic_stdout(pic);
+
+  pic_get_args(pic, "|p", &port);
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "newline");
+
+  fputs("\n", port->file);
+  return pic_none_value();
+}
+
+static pic_value
+pic_port_write_simple(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+  write(pic, v);
+  return pic_none_value();
 }
 
 void
