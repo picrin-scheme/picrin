@@ -352,6 +352,29 @@ pic_port_close_port(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_port_read_char(pic_state *pic)
+{
+  char c;
+  struct pic_port *port = pic_stdin(pic);
+
+  pic_get_args(pic, "|p", &port);
+
+  if ((port->flags & PIC_PORT_IN) == 0) {
+    pic_error(pic, "read-char: expected input-port");
+  }
+  if (port->status != PIC_PORT_OPEN) {
+    pic_error(pic, "read-char: expected open port");
+  }
+
+  if ((c = fgetc(port->file)) == EOF) {
+    return pic_eof_object();
+  }
+  else {
+    return pic_char_value(c);
+  }
+}
+
 void
 pic_init_port(pic_state *pic)
 {
@@ -371,6 +394,11 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "close-port", pic_port_close_port);
   pic_defun(pic, "close-input-port", pic_port_close_port);
   pic_defun(pic, "close-output-port", pic_port_close_port);
+
+  /* input */
+  pic_defun(pic, "read-char", pic_port_read_char);
+
+  /* write */
   pic_defun(pic, "newline", pic_port_newline);
 
   DEFLIBRARY(pic, "(scheme write)")
