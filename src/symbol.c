@@ -1,5 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
+#include <assert.h>
 
 #include "picrin.h"
 #include "xhash/xhash.h"
@@ -28,6 +30,35 @@ pic_intern_cstr(pic_state *pic, const char *str)
   pic->sym_pool[id] = strdup(str);
   xh_put(pic->sym_tbl, str, id);
   return id;
+}
+
+pic_sym
+pic_gensym(pic_state *pic, pic_sym base)
+{
+  int s = ++pic->uniq_sym_count;
+  char *str;
+  pic_sym uniq;
+
+  str = (char *)pic_alloc(pic, strlen(pic_symbol_name(pic, base)) + (int)log10(s) + 3);
+  sprintf(str, "%s@%d", pic_symbol_name(pic, base), s);
+
+  /* don't put the symbol to pic->sym_tbl to keep it uninterned */
+  if (pic->slen >= pic->scapa) {
+    pic->scapa *= 2;
+    pic->sym_pool = pic_realloc(pic, pic->sym_pool, sizeof(const char *) * pic->scapa);
+  }
+  uniq = pic->slen++;
+  pic->sym_pool[uniq] = str;
+
+  return uniq;
+}
+
+bool
+pic_interned_p(pic_state *pic, pic_sym sym)
+{
+  assert(sym >= 0);
+
+  return sym == pic_intern_cstr(pic, pic_symbol_name(pic, sym));
 }
 
 const char *

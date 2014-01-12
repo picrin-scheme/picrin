@@ -107,6 +107,8 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 
 pic_sym pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym);
+pic_sym pic_gensym(pic_state *, pic_sym);
+bool pic_interned_p(pic_state *, pic_sym);
 
 struct pic_string *pic_str_new(pic_state *, const char *, size_t);
 struct pic_string *pic_str_new_cstr(pic_state *, const char *);
