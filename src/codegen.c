@@ -932,17 +932,28 @@ pic_codegen(pic_state *pic, pic_value obj)
 }
 
 void
-pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
+pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
-  struct pic_proc *proc;
   int idx;
+  pic_sym gsym;
+  struct pic_lib *lib2;
 
-  proc = pic_proc_new(pic, cfunc);
-  idx = scope_global_define(pic, name);
-  pic->globals[idx] = pic_obj_value(proc);
+  gsym = pic_gensym(pic, pic_intern_cstr(pic, name));
 
-  xh_put(pic->lib->senv->tbl, name, pic_intern_cstr(pic, name));
-  xh_put(pic->lib->exports, name, pic_intern_cstr(pic, name));
+  /* push to the global arena */
+  idx = scope_global_define(pic, pic_symbol_name(pic, gsym));
+  pic->globals[idx] = val;
+
+  /* register to the senv */
+  xh_put(lib->senv->tbl, name, gsym);
+
+  /* export! */
+  lib2 = pic->lib;
+  {
+    pic->lib = lib;
+    pic_export(pic, pic_intern_cstr(pic, name));
+    pic->lib = lib2;
+  }
 }
 
 void

@@ -300,6 +300,15 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return i;
 }
 
+void
+pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
+{
+  struct pic_proc *proc;
+
+  proc = pic_proc_new(pic, cfunc);
+  pic_define(pic, pic->lib, name, pic_obj_value(proc));
+}
+
 pic_value
 pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
 {
