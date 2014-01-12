@@ -298,7 +298,7 @@ pic_port_output_port_open_p(pic_state *pic)
 }
 
 static pic_value
-pic_port_write(pic_state *pic)
+pic_port_write_simple(pic_state *pic)
 {
   pic_value v;
 
@@ -427,7 +427,7 @@ pic_init_port(pic_state *pic)
 
   DEFLIBRARY(pic, "(scheme write)")
   {
-    pic_defun(pic, "write", pic_port_write);
+    pic_defun(pic, "write-simple", pic_port_write_simple);
   }
   ENDLIBRARY(pic);
 }
