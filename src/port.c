@@ -352,13 +352,27 @@ pic_port_close_port(pic_state *pic)
   return pic_none_value();
 }
 
-#define assert_port_profile(port, flgs, stat, caller) do { \
-    if ((port->flags & flgs) != flgs) {                    \
-      pic_error(pic, caller ": expected input port");      \
-    }                                                      \
-    if (port->status != stat) {                            \
-      pic_error(pic, caller ": expected open port");       \
-    }                                                      \
+#define assert_port_profile(port, flgs, stat, caller) do {              \
+    if ((port->flags & (flgs)) != (flgs)) {                             \
+      switch (flgs) {                                                   \
+      case PIC_PORT_IN | PIC_PORT_TEXT:                                 \
+        pic_error(pic, caller ": expected input/textual port");         \
+      case PIC_PORT_IN | PIC_PORT_BINARY:                               \
+        pic_error(pic, caller ": expected input/binary port");          \
+      case PIC_PORT_OUT | PIC_PORT_TEXT:                                \
+        pic_error(pic, caller ": expected output/textual port");        \
+      case PIC_PORT_OUT | PIC_PORT_BINARY:                              \
+        pic_error(pic, caller ": expected output/binary port");         \
+      }                                                                 \
+    }                                                                   \
+    if (port->status != stat) {                                         \
+      switch (stat) {                                                   \
+      case PIC_PORT_OPEN:                                               \
+        pic_error(pic, caller ": expected open port");                  \
+      case PIC_PORT_CLOSE:                                              \
+        pic_error(pic, caller ": expected close port");                 \
+      }                                                                 \
+    }                                                                   \
   } while (0)
 
 static pic_value
@@ -369,7 +383,7 @@ pic_port_read_char(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN, PIC_PORT_OPEN, "read-char");
+  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-char");
 
   if ((c = fgetc(port->file)) == EOF) {
     return pic_eof_object();
@@ -387,7 +401,7 @@ pic_port_peek_char(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN, PIC_PORT_OPEN, "peek-char");
+  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "peek-char");
 
   if ((c = fgetc(port->file)) == EOF) {
     return pic_eof_object();
