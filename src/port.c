@@ -303,7 +303,7 @@ pic_port_eof_object(pic_state *pic)
   return v;
 }
 
-pic_value
+static pic_value
 pic_port_close_port(pic_state *pic)
 {
   pic_value v;
