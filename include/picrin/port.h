@@ -27,4 +27,8 @@ struct pic_port {
 
 pic_value pic_eof_object();
 
+struct pic_port *pic_stdin(pic_state *);
+struct pic_port *pic_stdout(pic_state *);
+struct pic_port *pic_stderr(pic_state *);
+
 #endif

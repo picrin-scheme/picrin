@@ -17,6 +17,16 @@ pic_eof_object()
   return v;
 }
 
+struct pic_port *
+pic_stdin(pic_state *pic)
+{
+  struct pic_proc *proc;
+
+  proc = pic_proc_ptr(pic_ref(pic, "current-input-port"));
+
+  return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
+}
+
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
 
