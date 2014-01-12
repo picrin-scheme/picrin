@@ -7,6 +7,7 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/proc.h"
+#include "picrin/port.h"
 #include "picrin/irep.h"
 #include "picrin/blob.h"
 #include "picrin/var.h"
@@ -271,6 +272,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
           }
           else {
             pic_error(pic, "pic_get_args, expected procedure");
+          }
+          i++;
+        }
+        break;
+      }
+    case 'p':
+      {
+        struct pic_port **p;
+        pic_value v;
+
+        p = va_arg(ap, struct pic_port **);
+        if (i < argc) {
+          v = GET_OPERAND(pic,i);
+          if (pic_port_p(v)) {
+            *p = pic_port_ptr(v);
+          }
+          else {
+            pic_error(pic, "pic_get_args, expected port");
           }
           i++;
         }
