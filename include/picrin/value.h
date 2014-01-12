@@ -157,11 +157,14 @@ pic_value pic_none_value();
 #define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
 #define pic_float_p(v) (pic_vtype(v) == PIC_VTYPE_FLOAT)
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
-#define pic_symbol_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
+#define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
+
+/* obsoleted macro(s) */
+#define pic_symbol_p pic_sym_p
 
 bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
