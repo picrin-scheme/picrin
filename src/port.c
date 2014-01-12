@@ -410,6 +410,16 @@ pic_port_peek_char(pic_state *pic)
 }
 
 static pic_value
+pic_port_write_simple(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+  write(pic, v);
+  return pic_none_value();
+}
+
+static pic_value
 pic_port_newline(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
@@ -419,16 +429,6 @@ pic_port_newline(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "newline");
 
   fputs("\n", port->file);
-  return pic_none_value();
-}
-
-static pic_value
-pic_port_write_simple(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-  write(pic, v);
   return pic_none_value();
 }
 
