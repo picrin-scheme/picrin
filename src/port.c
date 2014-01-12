@@ -330,15 +330,9 @@ pic_port_eof_object(pic_state *pic)
 static pic_value
 pic_port_close_port(pic_state *pic)
 {
-  pic_value v;
   struct pic_port *port;
 
-  pic_get_args(pic, "o", &v);
-
-  if (! pic_port_p(v)) {
-    pic_error(pic, "close-port: expected port");
-  }
-  port = pic_port_ptr(v);
+  pic_get_args(pic, "p", &port);
 
   if (fclose(port->file) == EOF) {
     pic_error(pic, "close-port: failure");
