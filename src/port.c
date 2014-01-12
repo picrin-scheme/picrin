@@ -352,6 +352,15 @@ pic_port_close_port(pic_state *pic)
   return pic_none_value();
 }
 
+#define assert_port_profile(port, flgs, stat, caller) do { \
+    if ((port->flags & flgs) != flgs) {                    \
+      pic_error(pic, caller ": expected input port");      \
+    }                                                      \
+    if (port->status != stat) {                            \
+      pic_error(pic, caller ": expected open port");       \
+    }                                                      \
+  } while (0)
+
 static pic_value
 pic_port_read_char(pic_state *pic)
 {
@@ -360,17 +369,31 @@ pic_port_read_char(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  if ((port->flags & PIC_PORT_IN) == 0) {
-    pic_error(pic, "read-char: expected input-port");
-  }
-  if (port->status != PIC_PORT_OPEN) {
-    pic_error(pic, "read-char: expected open port");
-  }
+  assert_port_profile(port, PIC_PORT_IN, PIC_PORT_OPEN, "read-char");
 
   if ((c = fgetc(port->file)) == EOF) {
     return pic_eof_object();
   }
   else {
+    return pic_char_value(c);
+  }
+}
+
+static pic_value
+pic_port_peek_char(pic_state *pic)
+{
+  char c;
+  struct pic_port *port = pic_stdin(pic);
+
+  pic_get_args(pic, "|p", &port);
+
+  assert_port_profile(port, PIC_PORT_IN, PIC_PORT_OPEN, "peek-char");
+
+  if ((c = fgetc(port->file)) == EOF) {
+    return pic_eof_object();
+  }
+  else {
+    ungetc(c, port->file);
     return pic_char_value(c);
   }
 }
@@ -397,6 +420,7 @@ pic_init_port(pic_state *pic)
 
   /* input */
   pic_defun(pic, "read-char", pic_port_read_char);
+  pic_defun(pic, "peek-char", pic_port_peek_char);
 
   /* write */
   pic_defun(pic, "newline", pic_port_newline);
