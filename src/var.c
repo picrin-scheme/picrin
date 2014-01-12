@@ -66,22 +66,28 @@ var_call(pic_state *pic)
   UNREACHABLE;
 }
 
+struct pic_proc *
+pic_wrap_var(pic_state *pic, struct pic_var *var)
+{
+  struct pic_proc *proc;
+
+  proc = pic_proc_new(pic, var_call);
+  pic_proc_cv_init(pic, proc, 1);
+  pic_proc_cv_set(pic, proc, 0, pic_obj_value(var));
+  return proc;
+}
+
 static pic_value
 pic_var_make_parameter(pic_state *pic)
 {
-  struct pic_proc *proc, *conv = NULL;
+  struct pic_proc *conv = NULL;
   struct pic_var *var;
   pic_value init;
 
   pic_get_args(pic, "o|l", &init, &conv);
 
   var = pic_var_new(pic, init, conv);
-
-  proc = pic_proc_new(pic, var_call);
-  pic_proc_cv_init(pic, proc, 1);
-  pic_proc_cv_set(pic, proc, 0, pic_obj_value(var));
-
-  return pic_obj_value(proc);
+  return pic_obj_value(pic_wrap_var(pic, var));
 }
 
 static struct pic_var *
