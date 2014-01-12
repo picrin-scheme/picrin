@@ -178,7 +178,7 @@ void
 pic_import(pic_state *pic, pic_value spec)
 {
   struct pic_lib *lib;
-  struct xh_iterator it;
+  struct xh_iter it;
 
   lib = pic_find_library(pic, spec);
   if (! lib) {
