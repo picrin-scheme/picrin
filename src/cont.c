@@ -164,7 +164,7 @@ pic_cont_callcc(pic_state *pic)
     c = pic_proc_new(pic, cont_call);
 
     /* save the continuation object in proc */
-    pic_proc_cv_reserve(pic, c, 1);
+    pic_proc_cv_init(pic, c, 1);
     pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
 
     return pic_apply_argv(pic, cb, 1, pic_obj_value(c));

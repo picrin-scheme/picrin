@@ -78,7 +78,7 @@ pic_var_make_parameter(pic_state *pic)
   var = pic_var_new(pic, init, conv);
 
   proc = pic_proc_new(pic, var_call);
-  pic_proc_cv_reserve(pic, proc, 1);
+  pic_proc_cv_init(pic, proc, 1);
   pic_proc_cv_set(pic, proc, 0, pic_obj_value(var));
 
   return pic_obj_value(proc);

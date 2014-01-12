@@ -30,7 +30,7 @@ struct pic_proc *pic_proc_new(pic_state *, pic_func_t);
 struct pic_proc *pic_proc_new_irep(pic_state *, struct pic_irep *, struct pic_env *);
 
 /* closed variables accessor */
-void pic_proc_cv_reserve(pic_state *, struct pic_proc *, size_t);
+void pic_proc_cv_init(pic_state *, struct pic_proc *, size_t);
 int pic_proc_cv_size(pic_state *, struct pic_proc *);
 pic_value pic_proc_cv_ref(pic_state *, struct pic_proc *, size_t);
 void pic_proc_cv_set(pic_state *, struct pic_proc *, size_t, pic_value);

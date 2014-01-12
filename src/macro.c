@@ -732,12 +732,12 @@ er_macro_call(pic_state *pic)
   }
 
   rename = pic_proc_new(pic, er_macro_rename);
-  pic_proc_cv_reserve(pic, rename, 2);
+  pic_proc_cv_init(pic, rename, 2);
   pic_proc_cv_set(pic, rename, 0, use_env);
   pic_proc_cv_set(pic, rename, 1, mac_env);
 
   compare = pic_proc_new(pic, er_macro_compare);
-  pic_proc_cv_reserve(pic, compare, 2);
+  pic_proc_cv_init(pic, compare, 2);
   pic_proc_cv_set(pic, compare, 0, use_env);
   pic_proc_cv_set(pic, compare, 1, mac_env);
 
@@ -754,7 +754,7 @@ pic_macro_er_macro_transformer(pic_state *pic)
   pic_get_args(pic, "l", &cb);
 
   proc = pic_proc_new(pic, er_macro_call);
-  pic_proc_cv_reserve(pic, proc, 1);
+  pic_proc_cv_init(pic, proc, 1);
   pic_proc_cv_set(pic, proc, 0, pic_obj_value(cb));
 
   return pic_obj_value(proc);

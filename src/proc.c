@@ -28,7 +28,7 @@ pic_proc_new_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
 }
 
 void
-pic_proc_cv_reserve(pic_state *pic, struct pic_proc *proc, size_t cv_size)
+pic_proc_cv_init(pic_state *pic, struct pic_proc *proc, size_t cv_size)
 {
   struct pic_env *env;
 
