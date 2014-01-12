@@ -307,7 +307,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   struct pic_proc *proc;
 
   proc = pic_proc_new(pic, cfunc);
-  pic_define(pic, pic->lib, name, pic_obj_value(proc));
+  pic_define(pic, name, pic_obj_value(proc));
 }
 
 void
@@ -316,7 +316,7 @@ pic_defvar(pic_state *pic, const char *name, pic_value init)
   struct pic_var *var;
 
   var = pic_var_new(pic, init, NULL);
-  pic_define(pic, pic->lib, name, pic_obj_value(pic_wrap_var(pic, var)));
+  pic_define(pic, name, pic_obj_value(pic_wrap_var(pic, var)));
 }
 
 pic_value

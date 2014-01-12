@@ -97,9 +97,9 @@ void pic_gc_arena_restore(pic_state *, int);
 pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
 
-void pic_define(pic_state *, struct pic_lib *, const char *, pic_value); /* symbol is automatically exported */
-pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
-pic_value pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
+void pic_define(pic_state *, const char *, pic_value); /* symbol is automatically exported */
+pic_value pic_ref(pic_state *, const char *);
+void pic_set(pic_state *, const char *, pic_value);
 
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);

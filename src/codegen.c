@@ -932,11 +932,10 @@ pic_codegen(pic_state *pic, pic_value obj)
 }
 
 void
-pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
+pic_define(pic_state *pic, const char *name, pic_value val)
 {
   int idx;
   pic_sym gsym;
-  struct pic_lib *lib2;
 
   gsym = pic_gensym(pic, pic_intern_cstr(pic, name));
 
@@ -945,15 +944,10 @@ pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
   pic->globals[idx] = val;
 
   /* register to the senv */
-  xh_put(lib->senv->tbl, name, gsym);
+  xh_put(pic->lib->senv->tbl, name, gsym);
 
   /* export! */
-  lib2 = pic->lib;
-  {
-    pic->lib = lib;
-    pic_export(pic, pic_intern_cstr(pic, name));
-    pic->lib = lib2;
-  }
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 void
