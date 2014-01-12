@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #include "picrin.h"
 #include "picrin/pair.h"
@@ -948,6 +949,21 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 
   /* export! */
   pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+pic_value
+pic_ref(pic_state *pic, const char *name)
+{
+  struct xh_entry *e;
+
+  if (! (e = xh_get(pic->lib->senv->tbl, name))) {
+    pic_error(pic, "symbol not defined");
+  }
+  assert(e->val >= 0);
+  if (! (e = xh_get(pic->global_tbl, pic_symbol_name(pic, (pic_sym)e->val)))) {
+    pic_abort(pic, "logic flaw");
+  }
+  return pic->globals[e->val];
 }
 
 void
