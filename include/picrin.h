@@ -125,6 +125,8 @@ int pic_parse_file(pic_state *, FILE *file, pic_value *);
 int pic_parse_cstr(pic_state *, const char *, pic_value *);
 pic_value pic_parse(pic_state *, const char *);
 
+pic_value pic_load(pic_state *, const char *);
+
 pic_value pic_apply(pic_state *pic, struct pic_proc *, pic_value);
 pic_value pic_apply_argv(pic_state *pic, struct pic_proc *, size_t, ...);
 struct pic_proc *pic_codegen(pic_state *, pic_value);
