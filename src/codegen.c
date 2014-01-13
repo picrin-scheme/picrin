@@ -435,7 +435,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}						\
       } while (0)
 
-      else if (sym == pic->sCONS) {
+      else if (sym == pic->rCONS) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -443,21 +443,21 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	irep->clen++;
 	break;
       }
-      else if (sym == pic->sCAR) {
+      else if (sym == pic->rCAR) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	irep->code[irep->clen].insn = OP_CAR;
 	irep->clen++;
 	break;
       }
-      else if (sym == pic->sCDR) {
+      else if (sym == pic->rCDR) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	irep->code[irep->clen].insn = OP_CDR;
 	irep->clen++;
 	break;
       }
-      else if (sym == pic->sNILP) {
+      else if (sym == pic->rNILP) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	irep->code[irep->clen].insn = OP_NILP;
@@ -471,7 +471,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}						\
       } while (0)
 
-      else if (sym == pic->sADD) {
+      else if (sym == pic->rADD) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(0);
@@ -497,7 +497,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->sSUB) {
+      else if (sym == pic->rSUB) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(1);
@@ -520,7 +520,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->sMUL) {
+      else if (sym == pic->rMUL) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(0);
@@ -546,7 +546,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->sDIV) {
+      else if (sym == pic->rDIV) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(1);
@@ -572,7 +572,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->sEQ) {
+      else if (sym == pic->rEQ) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -580,7 +580,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	irep->clen++;
 	break;
       }
-      else if (sym == pic->sLT) {
+      else if (sym == pic->rLT) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -588,7 +588,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	irep->clen++;
 	break;
       }
-      else if (sym == pic->sLE) {
+      else if (sym == pic->rLE) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -596,7 +596,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	irep->clen++;
 	break;
       }
-      else if (sym == pic->sGT) {
+      else if (sym == pic->rGT) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
@@ -604,7 +604,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	irep->clen++;
 	break;
       }
-      else if (sym == pic->sGE) {
+      else if (sym == pic->rGE) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
