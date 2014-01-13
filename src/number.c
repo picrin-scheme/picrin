@@ -123,7 +123,7 @@ pic_number_nan_p(pic_state *pic)
     return pic_true_value();				\
   }
 
-DEFINE_ARITH_CMP(=, eq)
+DEFINE_ARITH_CMP(==, eq)
 DEFINE_ARITH_CMP(<, lt)
 DEFINE_ARITH_CMP(>, gt)
 DEFINE_ARITH_CMP(<=, le)
