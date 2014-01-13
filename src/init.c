@@ -23,6 +23,7 @@ void pic_init_error(pic_state *);
 void pic_init_str(pic_state *);
 void pic_init_macro(pic_state *);
 void pic_init_var(pic_state *);
+void pic_init_load(pic_state *);
 
 void
 pic_load_stdlib(pic_state *pic)
@@ -126,6 +127,7 @@ pic_init_core(pic_state *pic)
   pic_init_str(pic); DONE;
   pic_init_macro(pic); DONE;
   pic_init_var(pic); DONE;
+  pic_init_load(pic); DONE;
 
   pic_load_stdlib(pic); DONE;
 
