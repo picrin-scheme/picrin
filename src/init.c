@@ -29,48 +29,27 @@ void pic_init_load(pic_state *);
 void
 pic_load_stdlib(pic_state *pic)
 {
-  static const char *fn = "piclib/built-in.scm";
-  FILE *file;
-  int n, i, ai;
-  pic_value v, vs;
-  struct pic_proc *proc;
+  static const char *filename = "piclib/built-in.scm";
+  jmp_buf jmp, *prev_jmp = pic->jmp;
 
-  file = fopen(fn, "r");
-  if (file == NULL) {
-    fputs("fatal error: could not read built-in.scm", stderr);
+  if (setjmp(jmp) == 0) {
+    pic->jmp = &jmp;
+  }
+  else {
+    /* error! */
+    fputs("fatal error: failure in loading built-in.scm\n", stderr);
+    fputs(pic->errmsg, stderr);
     abort();
   }
 
-  n = pic_parse_file(pic, file, &vs);
-  if (n < 0) {
-    fputs("fatal error: built-in.scm broken", stderr);
-    abort();
-  }
-
-  ai = pic_gc_arena_preserve(pic);
-  for (i = 0; i < n; ++i, vs = pic_cdr(pic, vs)) {
-    v = pic_car(pic, vs);
-
-    proc = pic_codegen(pic, v);
-    if (proc == NULL) {
-      fprintf(stderr, "in codegen: %s\n", pic->errmsg);
-      fputs("fatal error: built-in.scm compilation failure", stderr);
-      abort();
-    }
-
-    v = pic_apply(pic, proc, pic_nil_value());
-    if (pic_undef_p(v)) {
-      fprintf(stderr, "in execute: %s\n", pic->errmsg);
-      fputs("fatal error: built-in.scm evaluation failure", stderr);
-      abort();
-    }
-
-    pic_gc_arena_restore(pic, ai);
-  }
+  /* load 'built-in.scm' */
+  pic_load(pic, filename);
 
 #if DEBUG
   puts("successfully loaded stdlib");
 #endif
+
+  pic->jmp = prev_jmp;
 }
 
 #define PUSH_SYM(pic, lst, name)		\
