@@ -165,6 +165,13 @@ pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
 
   size = block * nitems;        /* TODO: optimize block read */
 
+  /* take care of ungetc buf */
+  while (file->ur > 0) {
+    *dst++ = file->ub[--file->ur];
+    if (size == 0)
+      return block * nitems;
+  }
+
   while (1) {
     avail = file->c - file->s;
     if (size <= avail) {
@@ -219,6 +226,12 @@ pic_fgetc(pic_file *file)
   pic_fread(buf, 1, 1, file);
 
   return buf[0];
+}
+
+int
+pic_ungetc(int c, pic_file *file)
+{
+  return file->ub[file->ur++] = (char)c;
 }
 
 int
