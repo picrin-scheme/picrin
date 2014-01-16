@@ -4,8 +4,38 @@
 #include "picrin/blob.h"
 #include "picrin/macro.h"
 
-static void write_pair(pic_state *pic, struct pic_pair *pair);
-static void write_str(pic_state *pic, struct pic_string *str);
+static void write(pic_state *, pic_value);
+
+static void
+write_pair(pic_state *pic, struct pic_pair *pair)
+{
+  write(pic, pair->car);
+
+  if (pic_nil_p(pair->cdr)) {
+    return;
+  }
+  if (pic_pair_p(pair->cdr)) {
+    printf(" ");
+    write_pair(pic, pic_pair_ptr(pair->cdr));
+    return;
+  }
+  printf(" . ");
+  write(pic, pair->cdr);
+}
+
+static void
+write_str(pic_state *pic, struct pic_string *str)
+{
+  int i;
+  const char *cstr = str->str;
+
+  for (i = 0; i < str->len; ++i) {
+    if (cstr[i] == '"' || cstr[i] == '\\') {
+      putchar('\\');
+    }
+    putchar(cstr[i]);
+  }
+}
 
 static void
 write(pic_state *pic, pic_value obj)
@@ -112,37 +142,6 @@ write(pic_state *pic, pic_value obj)
   case PIC_TT_VAR:
     printf("#<var %p>", pic_ptr(obj));
     break;
-  }
-}
-
-static void
-write_pair(pic_state *pic, struct pic_pair *pair)
-{
-  write(pic, pair->car);
-
-  if (pic_nil_p(pair->cdr)) {
-    return;
-  }
-  if (pic_pair_p(pair->cdr)) {
-    printf(" ");
-    write_pair(pic, pic_pair_ptr(pair->cdr));
-    return;
-  }
-  printf(" . ");
-  write(pic, pair->cdr);
-}
-
-static void
-write_str(pic_state *pic, struct pic_string *str)
-{
-  int i;
-  const char *cstr = str->str;
-
-  for (i = 0; i < str->len; ++i) {
-    if (cstr[i] == '"' || cstr[i] == '\\') {
-      putchar('\\');
-    }
-    putchar(cstr[i]);
   }
 }
 
