@@ -187,7 +187,7 @@ pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
       memcpy(dst, file->s, size);
       memmove(file->s, file->s + size, avail - size);
       file->c -= size;
-      break;
+      return block * nitems;
     }
     else {
       memcpy(dst, file->s, avail);
@@ -197,8 +197,6 @@ pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
       pic_ffill(file);
     }
   }
-
-  return block * nitems;
 }
 
 size_t
@@ -220,11 +218,9 @@ pic_fwrite(const void *ptr, size_t block, size_t nitems, pic_file *file)
     else {
       memcpy(file->c, dst, size);
       file->c += size;
-      break;
+      return block * nitems;
     }
   }
-
-  return block * nitems;
 }
 
 int
