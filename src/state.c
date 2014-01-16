@@ -4,6 +4,7 @@
 #include "picrin/gc.h"
 #include "picrin/proc.h"
 #include "picrin/macro.h"
+#include "picrin/cont.h"
 #include "xhash/xhash.h"
 
 void pic_init_core(pic_state *);
@@ -117,5 +118,39 @@ pic_open(int argc, char *argv[], char **envp)
 void
 pic_close(pic_state *pic)
 {
+  int i;
+
+  /* free global stacks */
+  free(pic->stbase);
+  free(pic->cibase);
+  free(pic->rescue);
+  free(pic->globals);
+  free(pic->pool);
+
+  pic->glen = 0;
+  pic->rlen = 0;
+  pic->plen = 0;
+  pic->arena_idx = 0;
+  pic->lib_tbl = pic_undef_value();
+
+  /* free all values */
+  pic_gc_run(pic);
+
+  /* free heaps */
+  finalize_heap(pic->heap);
+  free(pic->heap);
+
+  /* free symbol names */
+  for (i = 0; i < pic->slen; ++i) {
+    free((void *)pic->sym_pool[i]);
+  }
+
+  /* free ireps */
+  for (i = 0; i < pic->ilen; ++i) {
+    free(pic->irep[i]);
+  }
+
+  PIC_BLK_DECREF(pic, pic->blk);
+
   free(pic);
 }
