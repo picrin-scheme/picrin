@@ -7,15 +7,15 @@ static pic_value
 generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
 {
   struct pic_port *port;
-  FILE *fp;
+  pic_file *file;
 
-  fp = fopen(fname, mode);
-  if (! fp) {
+  file = pic_fopen(fname, mode);
+  if (! file) {
     pic_error(pic, "could not open file");
   }
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = fp;
+  port->file = file;
   port->flags = flags;
   port->status = PIC_PORT_OPEN;
 

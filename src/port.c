@@ -359,7 +359,7 @@ pic_port_close_port(pic_state *pic)
 
   pic_get_args(pic, "p", &port);
 
-  if (fclose(port->file) == EOF) {
+  if (pic_fclose(port->file) == EOF) {
     pic_error(pic, "close-port: failure");
   }
   port->status = PIC_PORT_CLOSE;
@@ -404,7 +404,7 @@ pic_port_read_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-char");
 
-  if ((c = fgetc(port->file)) == EOF) {
+  if ((c = pic_fgetc(port->file)) == EOF) {
     return pic_eof_object();
   }
   else {
@@ -422,11 +422,11 @@ pic_port_peek_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "peek-char");
 
-  if ((c = fgetc(port->file)) == EOF) {
+  if ((c = pic_fgetc(port->file)) == EOF) {
     return pic_eof_object();
   }
   else {
-    ungetc(c, port->file);
+    pic_ungetc(c, port->file);
     return pic_char_value(c);
   }
 }
@@ -450,7 +450,7 @@ pic_port_newline(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "newline");
 
-  fputs("\n", port->file);
+  pic_fputs("\n", port->file);
   return pic_none_value();
 }
 
@@ -464,7 +464,7 @@ pic_port_write_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "write-char");
 
-  fputc(c, port->file);
+  pic_fputc(c, port->file);
   return pic_none_value();
 }
 
@@ -477,7 +477,7 @@ pic_port_flush(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT, PIC_PORT_OPEN, "flush-output-port");
 
-  fflush(port->file);
+  pic_fflush(port->file);
   return pic_none_value();
 }
 
