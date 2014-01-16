@@ -120,13 +120,13 @@ pic_funopen(void *cookie,
 static int
 file_read(void *cookie, char *ptr, int size)
 {
-  return fread(ptr, size, 1, (FILE *)cookie);
+  return fread(ptr, 1, size, (FILE *)cookie);
 }
 
 static int
 file_write(void *cookie, const char *ptr, int size)
 {
-  return fwrite(ptr, size, 1, (FILE *)cookie);
+  return fwrite(ptr, 1, size, (FILE *)cookie);
 }
 
 static fpos_t
