@@ -43,4 +43,10 @@ struct pic_port *pic_stderr(pic_state *);
 
 pic_file *pic_funopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), fpos_t (*seek)(void *, fpos_t, int), int (*close)(void *));
 
+pic_file *pic_fopen(const char *, const char *);
+int pic_fclose(pic_file *);
+
+size_t pic_fread(void *, size_t, size_t, pic_file *);
+size_t pic_fwrite(const void *, size_t, size_t, pic_file *);
+
 #endif
