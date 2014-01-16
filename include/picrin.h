@@ -90,6 +90,7 @@ struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
 struct pic_object *pic_obj_alloc_unsafe(pic_state *, size_t, enum pic_tt);
 void pic_free(pic_state *, void *);
 
+void pic_gc_run(pic_state *);
 void pic_gc_protect(pic_state *, pic_value);
 int pic_gc_arena_preserve(pic_state *);
 void pic_gc_arena_restore(pic_state *, int);
