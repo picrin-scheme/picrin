@@ -82,11 +82,18 @@ pic_funopen(void *cookie,
   if (! file) {
     return NULL;
   }
+  /* no buffering at the beginning */
+  file->buf = NULL;
+  file->mode = _IONBF;
+  file->bufsiz = 0;
+  /* set vtable */
   file->vtable.cookie = cookie;
   file->vtable.read = read;
   file->vtable.write = write;
   file->vtable.seek = seek;
   file->vtable.close = close;
+
+  pic_setvbuf(file, (char *)NULL, _IOFBF, 0);
 
   return file;
 }
