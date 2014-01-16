@@ -71,6 +71,12 @@ pic_fflush(pic_file *file)
   return file->vtable.write(file->vtable.cookie, file->s, file->c - file->s);
 }
 
+int
+pic_ffill(pic_file *file)
+{
+  return file->vtable.read(file->vtable.cookie, file->c, file->e - file->c);
+}
+
 pic_file *
 pic_funopen(void *cookie,
             int (*read)(void *, char *, int),
@@ -147,6 +153,34 @@ pic_fclose(pic_file *file)
   }
   free(file);
   return 0;
+}
+
+size_t
+pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
+{
+  int size, avail;
+  char *dst = (char *)ptr;
+
+  size = block * nitems;        /* TODO: optimize block read */
+
+  while (1) {
+    avail = file->c - file->s;
+    if (size <= avail) {
+      memcpy(dst, file->s, size);
+      file->c -= size;
+      memmove(file->s, file->c, avail - size);
+      break;
+    }
+    else {
+      memcpy(dst, file->s, avail);
+      file->c -= avail;
+      size -= avail;
+      dst += avail;
+      pic_ffill(file);
+    }
+  }
+
+  return block * nitems;
 }
 
 size_t

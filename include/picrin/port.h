@@ -47,6 +47,7 @@ struct pic_port *pic_stderr(pic_state *);
 
 int pic_setvbuf(pic_file *, char *, int, size_t);
 int pic_fflush(pic_file *);
+int pic_ffill(pic_file *);
 
 pic_file *pic_funopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), fpos_t (*seek)(void *, fpos_t, int), int (*close)(void *));
 
