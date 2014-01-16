@@ -308,5 +308,9 @@ main(int argc, char *argv[], char **envp)
 
   pic_close(pic);
 
+#if DEBUG
+  puts("* picrin successfully closed");
+#endif
+
   return exit_status;
 }
