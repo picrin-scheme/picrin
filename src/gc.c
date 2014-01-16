@@ -34,6 +34,18 @@ init_heap(struct pic_heap *heap)
 #endif
 }
 
+void
+finalize_heap(struct pic_heap *heap)
+{
+  struct heap_page *page;
+
+  while (heap->pages) {
+    page = heap->pages;
+    heap->pages = heap->pages->next;
+    free(page);
+  }
+}
+
 static void gc_free(pic_state *, union header *);
 
 static void

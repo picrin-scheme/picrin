@@ -26,5 +26,6 @@ struct pic_heap {
 };
 
 void init_heap(struct pic_heap *);
+void finalize_heap(struct pic_heap *);
 
 #endif
