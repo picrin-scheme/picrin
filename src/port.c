@@ -147,6 +147,32 @@ pic_fclose(pic_file *file)
   return 0;
 }
 
+size_t
+pic_fwrite(const void *ptr, size_t block, size_t nitems, pic_file *file)
+{
+  int size, room;
+  char *dst = (char *)ptr;
+
+  size = block * nitems;               /* TODO: optimize block write */
+  while (1) {
+    room = file->e - file->c;
+    if (room < size) {
+      memcpy(file->c, dst, room);
+      file->c += room;
+      size -= room;
+      dst += room;
+      pic_fflush(file);
+    }
+    else {
+      memcpy(file->c, dst, size);
+      file->c += size;
+      break;
+    }
+  }
+
+  return block * nitems;
+}
+
 int
 pic_fgetc(pic_file *file)
 {

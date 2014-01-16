@@ -19,6 +19,7 @@ typedef struct {
   char *buf;
   int mode;
   int bufsiz;
+  char *s, *c, *e;
   struct {
     void *cookie;
     int (*read)(void *, char *, int);
