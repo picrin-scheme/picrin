@@ -94,6 +94,8 @@ pic_funopen(void *cookie,
   file->buf = NULL;
   file->mode = _IONBF;
   file->bufsiz = 0;
+  file->us = PIC_UBUFSIZ;
+  file->ur = 0;
   /* set vtable */
   file->vtable.cookie = cookie;
   file->vtable.read = read;

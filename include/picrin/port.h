@@ -15,11 +15,19 @@ enum pic_port_status {
   PIC_PORT_CLOSE,
 };
 
+#define PIC_UBUFSIZ 3
+
 typedef struct {
+  /* buffered IO */
   char *buf;
   int mode;
   int bufsiz;
   char *s, *c, *e;
+  /* ungetc buf */
+  char ub[PIC_UBUFSIZ];
+  int us;
+  int ur;
+  /* operators */
   struct {
     void *cookie;
     int (*read)(void *, char *, int);
