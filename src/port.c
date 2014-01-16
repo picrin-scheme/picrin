@@ -137,7 +137,7 @@ file_write(void *cookie, const char *ptr, int size)
 static fpos_t
 file_seek(void *cookie, fpos_t pos, int whence)
 {
-  return fseek((FILE *)cookie, pos, whence);
+  return fseek((FILE *)cookie, (long)pos, whence);
 }
 
 static int
