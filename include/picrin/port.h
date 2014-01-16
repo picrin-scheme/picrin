@@ -17,7 +17,12 @@ enum pic_port_status {
 
 #define PIC_UBUFSIZ 3
 
+enum pic_file_flags {
+  PIC_FILE_EOF = 1,
+};
+
 typedef struct {
+  short flags;
   /* buffered IO */
   char *buf;
   int mode;

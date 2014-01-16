@@ -72,6 +72,7 @@ pic_fflush(pic_file *file)
   int r;
 
   r = file->vtable.write(file->vtable.cookie, file->s, file->c - file->s);
+  /* TODO: error handling (r == -1 or r < file->c - file->s)*/
   file->c -= r;
   return r;
 }
@@ -82,6 +83,10 @@ pic_ffill(pic_file *file)
   int r;
 
   r = file->vtable.read(file->vtable.cookie, file->c, file->e - file->c);
+  /* TODO: error handling (r == -1) */
+  if (r < file->e - file->c) {
+    file->flags |= PIC_FILE_EOF;
+  }
   file->c += r;
   return r;
 }
@@ -194,9 +199,14 @@ pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
       file->c = file->s;
       size -= avail;
       dst += avail;
+      if ((file->flags & PIC_FILE_EOF) != 0)
+        break;
       pic_ffill(file);
     }
   }
+  /* handle end-of-file */
+  *dst = EOF;
+  return block * nitems - size;
 }
 
 size_t
