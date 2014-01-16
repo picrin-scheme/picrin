@@ -185,8 +185,8 @@ pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
     avail = file->c - file->s;
     if (size <= avail) {
       memcpy(dst, file->s, size);
+      memmove(file->s, file->s + size, avail - size);
       file->c -= size;
-      memmove(file->s, file->c, avail - size);
       break;
     }
     else {
