@@ -63,6 +63,12 @@ pic_setvbuf(pic_file *file, char *buf, int mode, size_t bufsiz)
   return 0;
 }
 
+int
+pic_fflush(pic_file *file)
+{
+  return file->vtable.write(file->vtable.cookie, file->s, file->c - file->s);
+}
+
 pic_file *
 pic_funopen(void *cookie,
             int (*read)(void *, char *, int),
