@@ -104,6 +104,7 @@ pic_funopen(void *cookie,
   if (! file) {
     return NULL;
   }
+  file->flags = 0;
   /* no buffering at the beginning */
   file->buf = NULL;
   file->mode = _IONBF;
