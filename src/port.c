@@ -37,6 +37,32 @@ pic_stdout(pic_state *pic)
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }
 
+int
+pic_setvbuf(pic_file *file, char *buf, int mode, size_t bufsiz)
+{
+  /* FIXME: free old buf */
+
+  file->mode = mode;
+  if (buf) {
+    file->buf = buf;
+    file->bufsiz = bufsiz;
+  }
+  else {
+    if (mode == _IONBF) {
+      file->buf = NULL;
+      file->bufsiz = 0;
+    }
+    else {
+      assert(bufsiz == 0);
+      file->buf = (char *)malloc(BUFSIZ);
+      file->bufsiz = BUFSIZ;
+    }
+  }
+  file->s = file->c = file->buf;
+  file->e = file->buf + file->bufsiz;
+  return 0;
+}
+
 pic_file *
 pic_funopen(void *cookie,
             int (*read)(void *, char *, int),
