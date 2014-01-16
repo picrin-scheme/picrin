@@ -72,7 +72,8 @@ int pic_fclose(pic_file *);
 
 /* memory access */
 pic_file *pic_mropen(const char *, size_t, const char *);
-pic_file *pic_mwopen(char **, size_t *);
+pic_file *pic_mwopen();
+const char *pic_getmbuf(pic_file *);
 
 /* direct IO with buffering */
 size_t pic_fread(void *, size_t, size_t, pic_file *);
