@@ -15,11 +15,21 @@ enum pic_port_status {
   PIC_PORT_CLOSE,
 };
 
+typedef struct {
+  struct {
+    void *cookie;
+    int (*read)(void *, char *, int);
+    int (*write)(void *, const char *, int);
+    fpos_t (*seek)(void *, fpos_t, int);
+    int (*close)(void *);
+  } vtable;
+} pic_file;
+
 struct pic_port {
   PIC_OBJECT_HEADER
-  FILE *file;
-  short flags;
-  enum pic_port_status status;
+  pic_file *file;
+  int flags;
+  int status;
 };
 
 #define pic_port_p(v) (pic_type(v) == PIC_TT_PORT)
