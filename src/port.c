@@ -108,6 +108,38 @@ pic_fclose(pic_file *file)
   return 0;
 }
 
+int
+pic_fgetc(pic_file *file)
+{
+  char buf[1];
+
+  pic_fread(buf, 1, 1, file);
+
+  return buf[0];
+}
+
+int
+pic_fputc(int c, pic_file *file)
+{
+  char buf[1];
+
+  buf[0] = c;
+  pic_fwrite(buf, 1, 1, file);
+
+  return buf[0];
+}
+
+int
+pic_fputs(const char *str, pic_file *file)
+{
+  int len;
+
+  len = strlen(str);
+  pic_fwrite(str, len, 1, file);
+
+  return 0;
+}
+
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
 
