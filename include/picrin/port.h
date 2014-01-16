@@ -58,11 +58,13 @@ struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
 struct pic_port *pic_stderr(pic_state *);
 
+/* generic file constructor */
+pic_file *pic_funopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*close)(void *));
+
+/* buffering */
 int pic_setvbuf(pic_file *, char *, int, size_t);
 int pic_fflush(pic_file *);
 int pic_ffill(pic_file *);
-
-pic_file *pic_funopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*close)(void *));
 
 /* file access */
 pic_file *pic_fopen(const char *, const char *);
