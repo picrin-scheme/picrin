@@ -177,7 +177,7 @@ pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
   /* take care of ungetc buf */
   while (file->ur > 0) {
     *dst++ = file->ub[--file->ur];
-    if (size == 0)
+    if (--size == 0)
       return block * nitems;
   }
 
