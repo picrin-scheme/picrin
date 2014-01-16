@@ -37,6 +37,28 @@ pic_stdout(pic_state *pic)
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }
 
+pic_file *
+pic_funopen(void *cookie,
+            int (*read)(void *, char *, int),
+            int (*write)(void *, const char *, int),
+            fpos_t (*seek)(void *, fpos_t, int),
+            int (*close)(void *))
+{
+  pic_file *file;
+
+  file = (pic_file *)malloc(sizeof(pic_file));
+  if (! file) {
+    return NULL;
+  }
+  file->vtable.cookie = cookie;
+  file->vtable.read = read;
+  file->vtable.write = write;
+  file->vtable.seek = seek;
+  file->vtable.close = close;
+
+  return file;
+}
+
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
 
