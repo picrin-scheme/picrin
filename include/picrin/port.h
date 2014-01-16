@@ -37,7 +37,7 @@ typedef struct {
     void *cookie;
     int (*read)(void *, char *, int);
     int (*write)(void *, const char *, int);
-    fpos_t (*seek)(void *, fpos_t, int);
+    long (*seek)(void *, long, int);
     int (*close)(void *);
   } vtable;
 } pic_file;
@@ -62,7 +62,7 @@ int pic_setvbuf(pic_file *, char *, int, size_t);
 int pic_fflush(pic_file *);
 int pic_ffill(pic_file *);
 
-pic_file *pic_funopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), fpos_t (*seek)(void *, fpos_t, int), int (*close)(void *));
+pic_file *pic_funopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*close)(void *));
 
 /* file access */
 pic_file *pic_fopen(const char *, const char *);

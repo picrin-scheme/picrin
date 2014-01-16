@@ -95,7 +95,7 @@ pic_file *
 pic_funopen(void *cookie,
             int (*read)(void *, char *, int),
             int (*write)(void *, const char *, int),
-            fpos_t (*seek)(void *, fpos_t, int),
+            long (*seek)(void *, long, int),
             int (*close)(void *))
 {
   pic_file *file;
@@ -134,10 +134,10 @@ file_write(void *cookie, const char *ptr, int size)
   return fwrite(ptr, 1, size, (FILE *)cookie);
 }
 
-static fpos_t
-file_seek(void *cookie, fpos_t pos, int whence)
+static long
+file_seek(void *cookie, long pos, int whence)
 {
-  return fseek((FILE *)cookie, (long)pos, whence);
+  return fseek((FILE *)cookie, pos, whence);
 }
 
 static int
