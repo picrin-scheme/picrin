@@ -43,6 +43,7 @@ int
 pic_setvbuf(pic_file *file, char *buf, int mode, size_t bufsiz)
 {
   /* FIXME: free old buf */
+  assert(mode != _IONBF);       /* FIXME: support IONBF */
 
   file->mode = mode;
   if (buf) {
