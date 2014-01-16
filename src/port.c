@@ -69,13 +69,21 @@ pic_setvbuf(pic_file *file, char *buf, int mode, size_t bufsiz)
 int
 pic_fflush(pic_file *file)
 {
-  return file->vtable.write(file->vtable.cookie, file->s, file->c - file->s);
+  int r;
+
+  r = file->vtable.write(file->vtable.cookie, file->s, file->c - file->s);
+  file->c -= r;
+  return r;
 }
 
 int
 pic_ffill(pic_file *file)
 {
-  return file->vtable.read(file->vtable.cookie, file->c, file->e - file->c);
+  int r;
+
+  r = file->vtable.read(file->vtable.cookie, file->c, file->e - file->c);
+  file->c += r;
+  return r;
 }
 
 pic_file *
