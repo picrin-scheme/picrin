@@ -64,12 +64,19 @@ int pic_ffill(pic_file *);
 
 pic_file *pic_funopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), fpos_t (*seek)(void *, fpos_t, int), int (*close)(void *));
 
+/* file access */
 pic_file *pic_fopen(const char *, const char *);
 int pic_fclose(pic_file *);
 
+/* memory access */
+pic_file *pic_mropen(const char *, size_t, const char *);
+pic_file *pic_mwopen(char **, size_t *);
+
+/* direct IO with buffering */
 size_t pic_fread(void *, size_t, size_t, pic_file *);
 size_t pic_fwrite(const void *, size_t, size_t, pic_file *);
 
+/* character IO */
 int pic_fgetc(pic_file *);
 int pic_ungetc(int, pic_file *);
 int pic_fputc(int, pic_file *);
