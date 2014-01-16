@@ -49,4 +49,9 @@ int pic_fclose(pic_file *);
 size_t pic_fread(void *, size_t, size_t, pic_file *);
 size_t pic_fwrite(const void *, size_t, size_t, pic_file *);
 
+int pic_fgetc(pic_file *);
+int pic_ungetc(int, pic_file *);
+int pic_fputc(int, pic_file *);
+int pic_fputs(const char *, pic_file *);
+
 #endif
