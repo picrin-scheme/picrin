@@ -191,7 +191,7 @@ pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
     }
     else {
       memcpy(dst, file->s, avail);
-      file->c -= avail;
+      file->c = file->s;
       size -= avail;
       dst += avail;
       pic_ffill(file);
@@ -212,7 +212,7 @@ pic_fwrite(const void *ptr, size_t block, size_t nitems, pic_file *file)
     room = file->e - file->c;
     if (room < size) {
       memcpy(file->c, dst, room);
-      file->c += room;
+      file->c = file->e;
       size -= room;
       dst += room;
       pic_fflush(file);
