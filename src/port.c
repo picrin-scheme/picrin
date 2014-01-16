@@ -59,6 +59,55 @@ pic_funopen(void *cookie,
   return file;
 }
 
+static int
+file_read(void *cookie, char *ptr, int size)
+{
+  return fread(ptr, size, 1, (FILE *)cookie);
+}
+
+static int
+file_write(void *cookie, const char *ptr, int size)
+{
+  return fwrite(ptr, size, 1, (FILE *)cookie);
+}
+
+static fpos_t
+file_seek(void *cookie, fpos_t pos, int whence)
+{
+  return fseek((FILE *)cookie, pos, whence);
+}
+
+static int
+file_close(void *cookie)
+{
+  return fclose((FILE *)cookie);
+}
+
+pic_file *
+pic_fopen(const char *filename, const char *mode)
+{
+  FILE *fp;
+
+  fp = fopen(filename, mode);
+  if (! fp) {
+    return NULL;
+  }
+  return pic_funopen(fp, file_read, file_write, file_seek, file_close);
+}
+
+int
+pic_fclose(pic_file *file)
+{
+  int r;
+
+  r = file->vtable.close(file->vtable.cookie);
+  if (! r) {
+    return -1;
+  }
+  free(file);
+  return 0;
+}
+
 static void write_pair(pic_state *pic, struct pic_pair *pair);
 static void write_str(pic_state *pic, struct pic_string *str);
 
@@ -213,7 +262,7 @@ port_new_from_fp(pic_state *pic, FILE *fp, short flags)
   struct pic_port *port;
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = fp;
+  port->file = pic_funopen(fp, file_read, file_write, file_seek, file_close);
   port->flags = flags;
   port->status = PIC_PORT_OPEN;
   return pic_obj_value(port);
