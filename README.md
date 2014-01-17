@@ -1,4 +1,6 @@
-# Picrin - a lightweight scheme interpreter [![Build Status](https://travis-ci.org/wasabiz/picrin.png)](https://travis-ci.org/wasabiz/picrin)
+# Picrin [![Build Status](https://travis-ci.org/wasabiz/picrin.png)](https://travis-ci.org/wasabiz/picrin)
+
+Picrin is a lightweight scheme implementation intended to comform full R7RS specification. Its code is written in pure C99 and does not requires any special external libraries installed on the platform.
 
 ## Features
 
