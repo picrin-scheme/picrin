@@ -124,4 +124,4 @@ The compilation is tested only on Mac OSX. I think (or hope) it'll be ok to comp
 
 ## Authors
 
-Yuichi Nishiwaki (yuichi.nishiwaki at gmail.com)
+See `AUTHORS`
