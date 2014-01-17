@@ -75,6 +75,11 @@ int pic_fclose(pic_file *);
 size_t pic_fread(void *, size_t, size_t, pic_file *);
 size_t pic_fwrite(const void *, size_t, size_t, pic_file *);
 
+/* indicator positioning */
+long pic_fseek(pic_file *, long offset, int whence);
+long pic_ftell(pic_file *);
+void pic_rewind(pic_file *);
+
 /* character IO */
 int pic_fgetc(pic_file *);
 int pic_ungetc(int, pic_file *);
