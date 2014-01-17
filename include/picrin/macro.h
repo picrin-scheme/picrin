@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #ifndef MACRO_H__
 #define MACRO_H__
 

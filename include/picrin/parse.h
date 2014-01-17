@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #ifndef PARSE_H__
 #define PARSE_H__
 

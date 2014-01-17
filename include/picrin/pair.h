@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #ifndef PAIR_H__
 #define PAIR_H__
 

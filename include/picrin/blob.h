@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #ifndef BLOB_H__
 #define BLOB_H__
 

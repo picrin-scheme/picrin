@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #ifndef GC_H__
 #define GC_H__
 

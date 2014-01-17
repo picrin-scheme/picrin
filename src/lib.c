@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #include "picrin.h"
 #include "picrin/lib.h"
 #include "picrin/pair.h"

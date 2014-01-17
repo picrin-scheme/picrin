@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #ifndef CONFIG_H__
 #define CONFIG_H__
 

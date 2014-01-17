@@ -1,3 +1,7 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
