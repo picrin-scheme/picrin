@@ -66,14 +66,10 @@ int pic_setvbuf(pic_file *, char *, int, size_t);
 int pic_fflush(pic_file *);
 int pic_ffill(pic_file *);
 
-/* file access */
+/* resource aquisition */
 pic_file *pic_fopen(const char *, const char *);
+pic_file *pic_mopen(const char *, size_t, const char *);
 int pic_fclose(pic_file *);
-
-/* memory access */
-pic_file *pic_mropen(const char *, size_t, const char *);
-pic_file *pic_mwopen();
-const char *pic_getmbuf(pic_file *);
 
 /* direct IO with buffering */
 size_t pic_fread(void *, size_t, size_t, pic_file *);
