@@ -21,6 +21,25 @@
 
 #define FALLTHROUGH ((void)0)
 
+static struct pic_irep *
+new_irep(pic_state *pic)
+{
+  struct pic_irep *irep;
+
+  irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
+  irep->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
+  irep->clen = 0;
+  irep->ccapa = 1024;
+  irep->argc = -1;
+  irep->localc = -1;
+  irep->varg = false;
+  return irep;
+}
+
+/**
+ * scope object
+ */
+
 typedef struct codegen_scope {
   struct codegen_scope *up;
 
@@ -95,20 +114,9 @@ destroy_scope(pic_state *pic, codegen_scope *scope)
   pic_free(pic, scope);
 }
 
-static struct pic_irep *
-new_irep(pic_state *pic)
-{
-  struct pic_irep *irep;
-
-  irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
-  irep->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
-  irep->clen = 0;
-  irep->ccapa = 1024;
-  irep->argc = -1;
-  irep->localc = -1;
-  irep->varg = false;
-  return irep;
-}
+/**
+ * global codegen state
+ */
 
 typedef struct codegen_state {
   pic_state *pic;
