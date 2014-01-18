@@ -29,7 +29,6 @@ new_irep(pic_state *pic)
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
   irep->code = NULL;
   irep->clen = 0;
-  irep->ccapa = 0;
   irep->argc = -1;
   irep->localc = -1;
   irep->varg = false;
@@ -848,7 +847,6 @@ codegen_lambda(codegen_state *state, pic_value obj)
     irep->localc = state->scope->localc;
     irep->code = state->scope->code;
     irep->clen = state->scope->clen;
-    irep->ccapa = state->scope->ccapa;
 
     /* fixup local references */
     for (i = 0; i < irep->clen; ++i) {
@@ -1126,7 +1124,7 @@ pic_dump_irep(pic_state *pic, struct pic_irep *irep)
   int i;
 
   printf("## irep %p\n", (void *)irep);
-  printf("[clen = %zd, ccapa = %zd, argc = %d, localc = %d]\n", irep->clen, irep->ccapa, irep->argc, irep->localc);
+  printf("[clen = %zd, argc = %d, localc = %d]\n", irep->clen, irep->argc, irep->localc);
   printf(":: cv_num = %d\n", irep->cv_num);
   for (i = 0; i < irep->cv_num; ++i) {
     printf(": %d -> %d\n", irep->cv_tbl[i], i);

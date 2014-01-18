@@ -61,7 +61,7 @@ struct pic_code {
 struct pic_irep {
   PIC_OBJECT_HEADER
   struct pic_code *code;
-  size_t clen, ccapa;
+  size_t clen;
   int argc, localc;
   unsigned *cv_tbl, cv_num;
   bool varg;
