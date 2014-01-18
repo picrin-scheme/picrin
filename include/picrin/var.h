@@ -9,9 +9,6 @@
 extern "C" {
 #endif
 
-#include "picrin.h"
-#include "picrin/proc.h"
-
 struct pic_var {
   PIC_OBJECT_HEADER
   pic_value value;
