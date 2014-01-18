@@ -150,13 +150,10 @@ cont_call(pic_state *pic)
   return pic_undef_value();
 }
 
-static pic_value
-pic_cont_callcc(pic_state *pic)
+pic_value
+pic_callcc(pic_state *pic, struct pic_proc *proc)
 {
   struct pic_cont *cont;
-  struct pic_proc *cb;
-
-  pic_get_args(pic, "l", &cb);
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
@@ -171,8 +168,18 @@ pic_cont_callcc(pic_state *pic)
     pic_proc_cv_init(pic, c, 1);
     pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
 
-    return pic_apply_argv(pic, cb, 1, pic_obj_value(c));
+    return pic_apply_argv(pic, proc, 1, pic_obj_value(c));
   }
+}
+
+static pic_value
+pic_cont_callcc(pic_state *pic)
+{
+  struct pic_proc *cb;
+
+  pic_get_args(pic, "l", &cb);
+
+  return pic_callcc(pic, cb);
 }
 
 static pic_value

@@ -50,6 +50,8 @@ struct pic_cont {
     }							\
   } while (0)
 
+pic_value pic_callcc(pic_state *, struct pic_proc *);
+
 #if defined(__cplusplus)
 }
 #endif
