@@ -492,6 +492,12 @@ gc_mark_phase(pic_state *pic)
     gc_mark(pic, pic->globals[i]);
   }
 
+  /* irep */
+  for (i = 0; i < pic->ilen; ++i) {
+    if (pic->irep[i])
+      gc_mark_object(pic, (struct pic_object *)pic->irep[i]);
+  }
+
   /* pool */
   for (i = 0; i < pic->plen; ++i) {
     gc_mark(pic, pic->pool[i]);

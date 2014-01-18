@@ -316,6 +316,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	irep->code[irep->clen].u.i = k;
 	irep->clen++;
 
+        /* prevent GC from hanging */
+        pic->irep[k] = NULL;
+
 	pic->irep[k] = codegen_lambda(state, obj);
 	break;
       }
