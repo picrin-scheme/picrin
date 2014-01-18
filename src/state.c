@@ -59,11 +59,6 @@ pic_open(int argc, char *argv[], char **envp)
   pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
   pic->uniq_sym_count = 0;
 
-  /* irep */
-  pic->irep = (struct pic_irep **)calloc(PIC_IREP_SIZE, sizeof(struct pic_irep *));
-  pic->ilen = 0;
-  pic->icapa = PIC_IREP_SIZE;
-
   /* globals */
   pic->global_tbl = xh_new();
   pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
@@ -130,7 +125,6 @@ pic_close(pic_state *pic)
   free(pic->rescue);
   free(pic->globals);
   free(pic->pool);
-  free(pic->irep);
 
   pic->glen = 0;
   pic->rlen = 0;

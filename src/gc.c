@@ -432,6 +432,12 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_IREP: {
+    struct pic_irep *irep = (struct pic_irep *)obj;
+    int i;
+
+    for (i = 0; i < irep->ilen; ++i) {
+      gc_mark_object(pic, (struct pic_object *)irep->irep[i]);
+    }
     break;
   }
   case PIC_TT_NIL:
@@ -493,12 +499,6 @@ gc_mark_phase(pic_state *pic)
   /* global variables */
   for (i = 0; i < pic->glen; ++i) {
     gc_mark(pic, pic->globals[i]);
-  }
-
-  /* irep */
-  for (i = 0; i < pic->ilen; ++i) {
-    if (pic->irep[i])
-      gc_mark_object(pic, (struct pic_object *)pic->irep[i]);
   }
 
   /* pool */

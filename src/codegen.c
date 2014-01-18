@@ -32,6 +32,7 @@ new_irep(pic_state *pic)
   irep->argc = -1;
   irep->localc = -1;
   irep->varg = false;
+  irep->irep = NULL;
   return irep;
 }
 
@@ -50,6 +51,9 @@ typedef struct codegen_scope {
   /* actual bit code sequence */
   struct pic_code *code;
   size_t clen, ccapa;
+  /* child ireps */
+  struct pic_irep **irep;
+  size_t ilen, icapa;
 
   struct codegen_scope *up;
 } codegen_scope;
@@ -69,6 +73,9 @@ new_global_scope(pic_state *pic)
   scope->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
   scope->clen = 0;
   scope->ccapa = 1024;
+  scope->irep = (struct pic_irep **)pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
+  scope->ilen = 0;
+  scope->icapa = PIC_IREP_SIZE;
 
   return scope;
 }
@@ -110,6 +117,10 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   new_scope->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
   new_scope->clen = 0;
   new_scope->ccapa = 1024;
+
+  new_scope->irep = (struct pic_irep **)pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
+  new_scope->ilen = 0;
+  new_scope->icapa = PIC_IREP_SIZE;
 
   return new_scope;
 }
@@ -317,24 +328,19 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
       else if (sym == pic->sLAMBDA) {
 	int k;
 
-	if (pic->ilen >= pic->icapa) {
-
+	if (scope->ilen >= scope->icapa) {
 #if DEBUG
 	  puts("irep realloced");
 #endif
-
-	  pic->irep = (struct pic_irep **)pic_realloc(pic, pic->irep, pic->icapa * 2);
-	  pic->icapa *= 2;
+	  scope->irep = (struct pic_irep **)pic_realloc(pic, scope->irep, scope->icapa * 2);
+	  scope->icapa *= 2;
 	}
-	k = pic->ilen++;
+	k = scope->ilen++;
 	scope->code[scope->clen].insn = OP_LAMBDA;
 	scope->code[scope->clen].u.i = k;
 	scope->clen++;
 
-        /* prevent GC from hanging */
-        pic->irep[k] = NULL;
-
-	pic->irep[k] = codegen_lambda(state, obj);
+	scope->irep[k] = codegen_lambda(state, obj);
 	break;
       }
       else if (sym == pic->sIF) {
@@ -756,10 +762,10 @@ lift_cv(pic_state *pic, struct pic_irep *irep, int d)
       /* pass */
       break;
     case OP_LAMBDA:
-      if (pic->irep[c.u.i]->cv_num == 0)
-	lift_cv(pic, pic->irep[c.u.i], d);
+      if (irep->irep[c.u.i]->cv_num == 0)
+	lift_cv(pic, irep->irep[c.u.i], d);
       else
-	lift_cv(pic, pic->irep[c.u.i], d + 1);
+	lift_cv(pic, irep->irep[c.u.i], d + 1);
       break;
     case OP_CREF:
     case OP_CSET:
@@ -783,11 +789,11 @@ slide_cv(pic_state *pic, unsigned *cv_tbl, unsigned cv_num, struct pic_irep *ire
       /* pass */
       break;
     case OP_LAMBDA:
-      if (pic->irep[c.u.i]->cv_num == 0) {
-	slide_cv(pic, cv_tbl, cv_num, pic->irep[c.u.i], d);
+      if (irep->irep[c.u.i]->cv_num == 0) {
+	slide_cv(pic, cv_tbl, cv_num, irep->irep[c.u.i], d);
       }
       else {
-	slide_cv(pic, cv_tbl, cv_num, pic->irep[c.u.i], d + 1);
+	slide_cv(pic, cv_tbl, cv_num, irep->irep[c.u.i], d + 1);
       }
       break;
     case OP_CREF:
@@ -847,6 +853,8 @@ codegen_lambda(codegen_state *state, pic_value obj)
     irep->localc = state->scope->localc;
     irep->code = pic_realloc(pic, state->scope->code, sizeof(struct pic_code) * state->scope->clen);
     irep->clen = state->scope->clen;
+    irep->irep = pic_realloc(pic, state->scope->irep, sizeof(struct pic_irep *) * state->scope->ilen);
+    irep->ilen = state->scope->ilen;
 
     /* fixup local references */
     for (i = 0; i < irep->clen; ++i) {
@@ -937,6 +945,8 @@ pic_codegen(pic_state *pic, pic_value obj)
   irep->localc = 0;
   irep->code = pic_realloc(pic, state->scope->code, sizeof(struct pic_code) * state->scope->clen);
   irep->clen = state->scope->clen;
+  irep->irep = pic_realloc(pic, state->scope->irep, sizeof(struct pic_irep *) * state->scope->ilen);
+  irep->ilen = state->scope->ilen;
   irep->cv_num = 0;
   irep->cv_tbl = NULL;
 

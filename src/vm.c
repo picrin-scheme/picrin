@@ -657,9 +657,19 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_LAMBDA) {
+      pic_value self;
+      struct pic_irep *irep;
       struct pic_proc *proc;
 
-      proc = pic_proc_new_irep(pic, pic->irep[c.u.i], pic->ci->env);
+      self = pic->ci->fp[0];
+      if (! pic_proc_p(self)) {
+        pic_error(pic, "logic flaw");
+      }
+      irep = pic_proc_ptr(self)->u.irep;
+      if (pic_proc_cfunc_p(self)) {
+        pic_error(pic, "logic flaw");
+      }
+      proc = pic_proc_new_irep(pic, irep->irep[c.u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;
