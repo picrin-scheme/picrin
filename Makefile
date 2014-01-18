@@ -40,5 +40,8 @@ run:
 tak: release
 	bin/picrin etc/tak.scm
 
+lines: clean
+	wc -l `find . -name "*.[chyl]"`
+
 no-act:
 	bin/picrin -e '' > /dev/null
