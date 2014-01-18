@@ -149,10 +149,14 @@ pic_close(pic_state *pic)
     free((void *)pic->sym_pool[i]);
   }
 
+  free(pic->sym_pool);
+
   /* free ireps */
   for (i = 0; i < pic->ilen; ++i) {
     free(pic->irep[i]);
   }
+
+  free(pic->irep);
 
   PIC_BLK_DECREF(pic, pic->blk);
 
