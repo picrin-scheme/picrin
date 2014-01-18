@@ -884,7 +884,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
 
 #if VM_DEBUG
   printf("* generated lambda:\n");
-  print_irep(pic, irep);
+  pic_dump_irep(pic, irep);
   puts("");
 #endif
 
@@ -924,7 +924,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   destroy_codegen_state(pic, state);
 
 #if VM_DEBUG
-  print_irep(pic, proc->u.irep);
+  pic_dump_irep(pic, proc->u.irep);
 #endif
 
  exit:
@@ -1098,7 +1098,7 @@ print_code(pic_state *pic, struct pic_code c)
 }
 
 void
-print_irep(pic_state *pic, struct pic_irep *irep)
+pic_dump_irep(pic_state *pic, struct pic_irep *irep)
 {
   int i;
 

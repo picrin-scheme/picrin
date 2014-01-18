@@ -66,7 +66,7 @@ struct pic_irep {
   bool varg;
 };
 
-void print_irep(pic_state *, struct pic_irep *);
+void pic_dump_irep(pic_state *, struct pic_irep *);
 
 #if defined(__cplusplus)
 }
