@@ -130,6 +130,7 @@ pic_close(pic_state *pic)
   free(pic->rescue);
   free(pic->globals);
   free(pic->pool);
+  free(pic->irep);
 
   pic->glen = 0;
   pic->rlen = 0;
@@ -150,13 +151,6 @@ pic_close(pic_state *pic)
   }
 
   free(pic->sym_pool);
-
-  /* free ireps */
-  for (i = 0; i < pic->ilen; ++i) {
-    free(pic->irep[i]);
-  }
-
-  free(pic->irep);
 
   PIC_BLK_DECREF(pic, pic->blk);
 
