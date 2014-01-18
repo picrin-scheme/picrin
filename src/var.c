@@ -45,6 +45,28 @@ pic_var_set_force(pic_state *pic, struct pic_var *var, pic_value value)
   var->value = value;
 }
 
+static struct pic_var *
+get_var_from_proc(pic_state *pic, struct pic_proc *proc)
+{
+  pic_value v;
+
+  if (! proc->cfunc_p) {
+    goto typeerror;
+  }
+  if (pic_proc_cv_size(pic, proc) != 1) {
+    goto typeerror;
+  }
+  v = pic_proc_cv_ref(pic, proc, 0);
+  if (! pic_var_p(v)) {
+    goto typeerror;
+  }
+  return pic_var_ptr(v);
+
+ typeerror:
+  pic_error(pic, "expected parameter");
+  UNREACHABLE;
+}
+
 static pic_value
 var_call(pic_state *pic)
 {
@@ -83,6 +105,12 @@ pic_wrap_var(pic_state *pic, struct pic_var *var)
   return proc;
 }
 
+struct pic_var *
+pic_unwrap_var(pic_state *pic, struct pic_proc *proc)
+{
+  return get_var_from_proc(pic, proc);
+}
+
 static pic_value
 pic_var_make_parameter(pic_state *pic)
 {
@@ -94,28 +122,6 @@ pic_var_make_parameter(pic_state *pic)
 
   var = pic_var_new(pic, init, conv);
   return pic_obj_value(pic_wrap_var(pic, var));
-}
-
-static struct pic_var *
-get_var_from_proc(pic_state *pic, struct pic_proc *proc)
-{
-  pic_value v;
-
-  if (! proc->cfunc_p) {
-    goto typeerror;
-  }
-  if (pic_proc_cv_size(pic, proc) != 1) {
-    goto typeerror;
-  }
-  v = pic_proc_cv_ref(pic, proc, 0);
-  if (! pic_var_p(v)) {
-    goto typeerror;
-  }
-  return pic_var_ptr(v);
-
- typeerror:
-  pic_error(pic, "expected parameter");
-  UNREACHABLE;
 }
 
 static pic_value
