@@ -343,8 +343,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 #if DEBUG
 	  puts("irep realloced");
 #endif
-	  scope->irep = (struct pic_irep **)pic_realloc(pic, scope->irep, scope->icapa * 2);
 	  scope->icapa *= 2;
+	  scope->irep = (struct pic_irep **)pic_realloc(pic, scope->irep, sizeof(struct pic_irep *) * scope->icapa);
 	}
 	k = scope->ilen++;
 	scope->code[scope->clen].insn = OP_LAMBDA;
@@ -458,8 +458,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 
 	if (scope->plen >= scope->pcapa) {
-          scope->pool = (pic_value *)pic_realloc(pic, scope->pool, scope->pcapa * 2);
           scope->pcapa *= 2;
+          scope->pool = (pic_value *)pic_realloc(pic, scope->pool, sizeof(pic_value) * scope->pcapa);
 	}
 	pidx = scope->plen++;
 	scope->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
@@ -695,8 +695,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   case PIC_TT_BLOB: {
     int pidx;
     if (scope->plen >= scope->pcapa) {
-      scope->pool = (pic_value *)pic_realloc(pic, scope->pool, scope->pcapa * 2);
       scope->pcapa *= 2;
+      scope->pool = (pic_value *)pic_realloc(pic, scope->pool, sizeof(pic_value) * scope->pcapa);
     }
     pidx = scope->plen++;
     scope->pool[pidx] = obj;

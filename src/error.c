@@ -74,8 +74,8 @@ pic_error_with_exception_handler(pic_state *pic)
     puts("rescue realloced");
 #endif
 
-    pic->rescue = (struct pic_proc **)pic_realloc(pic, pic->rescue, pic->rlen * 2);
     pic->rlen *= 2;
+    pic->rescue = (struct pic_proc **)pic_realloc(pic, pic->rescue, sizeof(struct pic_proc *) * pic->rlen);
   }
   pic->rescue[pic->ridx++] = handler;
 
