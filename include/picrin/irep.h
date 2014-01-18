@@ -5,6 +5,10 @@
 #ifndef IREP_H__
 #define IREP_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 enum pic_opcode {
   OP_POP,
   OP_PUSHNIL,
@@ -63,5 +67,9 @@ struct pic_irep {
 };
 
 void print_irep(pic_state *, struct pic_irep *);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

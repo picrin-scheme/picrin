@@ -5,6 +5,10 @@
 #ifndef PORT_H__
 #define PORT_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include <stdio.h>
 
 #define PIC_UBUFSIZ 3
@@ -89,5 +93,9 @@ int pic_fgetc(pic_file *);
 int pic_ungetc(int, pic_file *);
 int pic_fputc(int, pic_file *);
 int pic_fputs(const char *, pic_file *);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

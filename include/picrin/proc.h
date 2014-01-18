@@ -5,6 +5,10 @@
 #ifndef PROC_H__
 #define PROC_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct pic_env {
   PIC_OBJECT_HEADER
   pic_value *values;
@@ -38,5 +42,9 @@ void pic_proc_cv_init(pic_state *, struct pic_proc *, size_t);
 int pic_proc_cv_size(pic_state *, struct pic_proc *);
 pic_value pic_proc_cv_ref(pic_state *, struct pic_proc *, size_t);
 void pic_proc_cv_set(pic_state *, struct pic_proc *, size_t, pic_value);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

@@ -5,6 +5,10 @@
 #ifndef VAR_H__
 #define VAR_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "picrin.h"
 #include "picrin/proc.h"
 
@@ -25,5 +29,9 @@ struct pic_var *pic_unwrap_var(pic_state *, struct pic_proc *);
 pic_value pic_var_ref(pic_state *, struct pic_var *);
 void pic_var_set(pic_state *, struct pic_var *, pic_value);
 void pic_var_set_force(pic_state *, struct pic_var *, pic_value);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

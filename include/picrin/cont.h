@@ -5,6 +5,10 @@
 #ifndef CONT_H__
 #define CONT_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct pic_cont {
   PIC_OBJECT_HEADER
   jmp_buf jmp;
@@ -45,5 +49,9 @@ struct pic_cont {
       }							\
     }							\
   } while (0)
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

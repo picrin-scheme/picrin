@@ -5,6 +5,10 @@
 #ifndef MACRO_H__
 #define MACRO_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct pic_senv {
   PIC_OBJECT_HEADER
   struct pic_senv *up;
@@ -57,5 +61,9 @@ struct pic_senv *pic_core_syntactic_env(pic_state *pic);
 
 struct pic_syntax *pic_syntax_new(pic_state *, int kind, pic_sym sym);
 struct pic_syntax *pic_syntax_new_macro(pic_state *, pic_sym, struct pic_proc *, struct pic_senv *senv);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

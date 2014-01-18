@@ -5,6 +5,10 @@
 #ifndef ERROR_H__
 #define ERROR_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct pic_error {
   PIC_OBJECT_HEADER
   enum pic_error_kind {
@@ -18,5 +22,9 @@ struct pic_error {
 
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)
 #define pic_error_ptr(v) ((struct pic_error *)pic_ptr(v))
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

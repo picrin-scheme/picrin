@@ -5,6 +5,10 @@
 #ifndef BLOB_H__
 #define BLOB_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct pic_blob {
   PIC_OBJECT_HEADER
   char *data;
@@ -15,5 +19,9 @@ struct pic_blob {
 #define pic_blob_ptr(v) ((struct pic_blob *)pic_ptr(v))
 
 struct pic_blob *pic_blob_new(pic_state *, char *, int len);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

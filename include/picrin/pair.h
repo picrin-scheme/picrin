@@ -5,6 +5,10 @@
 #ifndef PAIR_H__
 #define PAIR_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 pic_value pic_cons(pic_state *, pic_value, pic_value);
 pic_value pic_car(pic_state *, pic_value);
 pic_value pic_cdr(pic_state *, pic_value);
@@ -24,5 +28,9 @@ pic_value pic_caar(pic_state *, pic_value);
 pic_value pic_cadr(pic_state *, pic_value);
 pic_value pic_cdar(pic_state *, pic_value);
 pic_value pic_cddr(pic_state *, pic_value);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

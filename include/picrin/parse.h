@@ -5,6 +5,10 @@
 #ifndef PARSE_H__
 #define PARSE_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct parser_control {
   pic_state *pic;
   void *yyscanner;
@@ -14,5 +18,9 @@ struct parser_control {
   struct pic_vector *yy_arena;
   int yy_arena_idx;
 };
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

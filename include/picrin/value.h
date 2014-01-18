@@ -5,6 +5,10 @@
 #ifndef VALUE_H__
 #define VALUE_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 typedef int pic_sym;
 
 /**
@@ -172,5 +176,9 @@ pic_value pic_none_value();
 
 bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

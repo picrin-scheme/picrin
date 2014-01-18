@@ -5,6 +5,10 @@
 #ifndef GC_H__
 #define GC_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 enum pic_gc_mark {
   PIC_GC_UNMARK = 0,
   PIC_GC_MARK
@@ -31,5 +35,9 @@ struct pic_heap {
 
 void init_heap(struct pic_heap *);
 void finalize_heap(struct pic_heap *);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

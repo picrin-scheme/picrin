@@ -24,6 +24,10 @@
 #ifndef PICRIN_H__
 #define PICRIN_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <setjmp.h>
@@ -181,5 +185,9 @@ void pic_errorf(pic_state *, const char *, size_t, ...);
 void pic_warn(pic_state *, const char *);
 
 void pic_debug(pic_state *, pic_value);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
