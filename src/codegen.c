@@ -74,9 +74,9 @@ new_global_scope(pic_state *pic)
   scope->localc = -1;
   scope->dirty_flags = NULL;
   scope->varg = false;
-  scope->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
+  scope->code = (struct pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
   scope->clen = 0;
-  scope->ccapa = 1024;
+  scope->ccapa = PIC_ISEQ_SIZE;
   scope->irep = (struct pic_irep **)pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
   scope->ilen = 0;
   scope->icapa = PIC_IREP_SIZE;
@@ -121,9 +121,9 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   new_scope->localc = l;
   new_scope->dirty_flags = (int *)pic_calloc(pic, i + l, sizeof(int));
 
-  new_scope->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
+  new_scope->code = (struct pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
   new_scope->clen = 0;
-  new_scope->ccapa = 1024;
+  new_scope->ccapa = PIC_ISEQ_SIZE;
 
   new_scope->irep = (struct pic_irep **)pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
   new_scope->ilen = 0;

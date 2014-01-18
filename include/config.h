@@ -27,6 +27,7 @@
 #define PIC_MACROS_SIZE 1024
 #define PIC_SYM_POOL_SIZE 128
 #define PIC_POOL_SIZE 1024
+#define PIC_ISEQ_SIZE 1024
 
 /* enable all debug flags */
 /* #define DEBUG 1 */
