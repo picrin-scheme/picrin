@@ -18,7 +18,7 @@
 (define (f)
   (tak 12 6 0))
 
-(write (time f))
+(write-simple (time f))
 (newline)
 
 ; 70fb34 -> 10.374959
