@@ -59,7 +59,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
   pic->uniq_sym_count = 0;
 
-  /* globals */
+  /* global variables */
   pic->global_tbl = xh_new();
   pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
   pic->glen = 0;
