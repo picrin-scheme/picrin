@@ -25,8 +25,8 @@
 #define PIC_GLOBALS_SIZE 1024
 #define PIC_MACROS_SIZE 1024
 #define PIC_SYM_POOL_SIZE 128
-#define PIC_IREP_SIZE 256
-#define PIC_POOL_SIZE 1024
+#define PIC_IREP_SIZE 8
+#define PIC_POOL_SIZE 8
 #define PIC_ISEQ_SIZE 1024
 
 /* enable all debug flags */
