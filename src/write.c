@@ -146,6 +146,9 @@ write(pic_state *pic, pic_value obj)
   case PIC_TT_VAR:
     printf("#<var %p>", pic_ptr(obj));
     break;
+  case PIC_TT_IREP:
+    printf("#<irep %p>", pic_ptr(obj));
+    break;
   }
 }
 

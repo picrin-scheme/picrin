@@ -428,6 +428,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_IREP: {
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -565,6 +568,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_VAR: {
+    break;
+  }
+  case PIC_TT_IREP: {
     break;
   }
   case PIC_TT_NIL:

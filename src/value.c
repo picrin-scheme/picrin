@@ -84,6 +84,8 @@ pic_type_repr(enum pic_tt tt)
     return "lib";
   case PIC_TT_VAR:
     return "var";
+  case PIC_TT_IREP:
+    return "irep";
   }
   /* logic flaw */
   abort();
