@@ -33,6 +33,7 @@ new_irep(pic_state *pic)
   irep->localc = -1;
   irep->varg = false;
   irep->irep = NULL;
+  irep->pool = NULL;
   return irep;
 }
 
@@ -44,7 +45,7 @@ typedef struct codegen_scope {
   bool varg;
   /* local variables are 1-indexed, 0 is reserved for the callee */
   struct xhash *local_tbl;
-  /* rest args variable is counted at localc */
+  /* rest args variable is counted by localc */
   size_t argc, localc;
   /* if local var i is captured, then dirty_flags[i] == 1 */
   int *dirty_flags;
@@ -54,6 +55,9 @@ typedef struct codegen_scope {
   /* child ireps */
   struct pic_irep **irep;
   size_t ilen, icapa;
+  /* constant object pool */
+  pic_value *pool;
+  size_t plen, pcapa;
 
   struct codegen_scope *up;
 } codegen_scope;
@@ -76,6 +80,9 @@ new_global_scope(pic_state *pic)
   scope->irep = (struct pic_irep **)pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
   scope->ilen = 0;
   scope->icapa = PIC_IREP_SIZE;
+  scope->pool = (pic_value *)pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
+  scope->plen = 0;
+  scope->pcapa = PIC_POOL_SIZE;
 
   return scope;
 }
@@ -121,6 +128,10 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   new_scope->irep = (struct pic_irep **)pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
   new_scope->ilen = 0;
   new_scope->icapa = PIC_IREP_SIZE;
+
+  new_scope->pool = (pic_value *)pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
+  new_scope->plen = 0;
+  new_scope->pcapa = PIC_POOL_SIZE;
 
   return new_scope;
 }
@@ -446,11 +457,11 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	pidx = pic->plen++;
-	if (pidx >= pic->pcapa) {
+	pidx = scope->plen++;
+	if (pidx >= scope->pcapa) {
 	  pic_abort(pic, "constant pool overflow");
 	}
-	pic->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
+	scope->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
 	scope->code[scope->clen].insn = OP_PUSHCONST;
 	scope->code[scope->clen].u.i = pidx;
 	scope->clen++;
@@ -682,11 +693,11 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   case PIC_TT_VECTOR:
   case PIC_TT_BLOB: {
     int pidx;
-    pidx = pic->plen++;
-    if (pidx >= pic->pcapa) {
+    pidx = scope->plen++;
+    if (pidx >= scope->pcapa) {
       pic_abort(pic, "constant pool overflow");
     }
-    pic->pool[pidx] = obj;
+    scope->pool[pidx] = obj;
     scope->code[scope->clen].insn = OP_PUSHCONST;
     scope->code[scope->clen].u.i = pidx;
     scope->clen++;
@@ -855,6 +866,8 @@ codegen_lambda(codegen_state *state, pic_value obj)
     irep->clen = state->scope->clen;
     irep->irep = pic_realloc(pic, state->scope->irep, sizeof(struct pic_irep *) * state->scope->ilen);
     irep->ilen = state->scope->ilen;
+    irep->pool = pic_realloc(pic, state->scope->pool, sizeof(pic_value) * state->scope->plen);
+    irep->plen = state->scope->plen;
 
     /* fixup local references */
     for (i = 0; i < irep->clen; ++i) {
@@ -947,6 +960,8 @@ pic_codegen(pic_state *pic, pic_value obj)
   irep->clen = state->scope->clen;
   irep->irep = pic_realloc(pic, state->scope->irep, sizeof(struct pic_irep *) * state->scope->ilen);
   irep->ilen = state->scope->ilen;
+  irep->pool = pic_realloc(pic, state->scope->pool, sizeof(pic_value) * state->scope->plen);
+  irep->plen = state->scope->plen;
   irep->cv_num = 0;
   irep->cv_tbl = NULL;
 
@@ -1046,9 +1061,7 @@ print_code(pic_state *pic, struct pic_code c)
       printf("OP_PUSHCHAR\t%c\n", c.u.c);
       break;
     case OP_PUSHCONST:
-      printf("OP_PUSHCONST\t");
-      pic_debug(pic, pic->pool[c.u.i]);
-      puts("");
+      printf("OP_PUSHCONST\t%d\n", c.u.i);
       break;
     case OP_GREF:
       printf("OP_GREF\t%i\n", c.u.i);

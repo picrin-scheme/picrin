@@ -438,6 +438,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     for (i = 0; i < irep->ilen; ++i) {
       gc_mark_object(pic, (struct pic_object *)irep->irep[i]);
     }
+    for (i = 0; i < irep->plen; ++i) {
+      gc_mark(pic, irep->pool[i]);
+    }
     break;
   }
   case PIC_TT_NIL:
@@ -499,11 +502,6 @@ gc_mark_phase(pic_state *pic)
   /* global variables */
   for (i = 0; i < pic->glen; ++i) {
     gc_mark(pic, pic->globals[i]);
-  }
-
-  /* pool */
-  for (i = 0; i < pic->plen; ++i) {
-    gc_mark(pic, pic->pool[i]);
   }
 
   /* library table */
@@ -584,6 +582,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, irep->code);
     pic_free(pic, irep->cv_tbl);
     pic_free(pic, irep->irep);
+    pic_free(pic, irep->pool);
     break;
   }
   case PIC_TT_NIL:

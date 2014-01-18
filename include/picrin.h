@@ -87,9 +87,6 @@ typedef struct {
   pic_value lib_tbl;
   struct pic_lib *lib;
 
-  pic_value *pool;
-  size_t plen, pcapa;
-
   jmp_buf *jmp;
   const char *errmsg;
 

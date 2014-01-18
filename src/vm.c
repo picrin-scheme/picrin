@@ -472,7 +472,18 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      PUSH(pic->pool[c.u.i]);
+      pic_value self;
+      struct pic_irep *irep;
+
+      self = pic->ci->fp[0];
+      if (! pic_proc_p(self)) {
+        pic_error(pic, "logic flaw");
+      }
+      irep = pic_proc_ptr(self)->u.irep;
+      if (pic_proc_cfunc_p(self)) {
+        pic_error(pic, "logic flaw");
+      }
+      PUSH(irep->pool[c.u.i]);
       NEXT;
     }
     CASE(OP_GREF) {

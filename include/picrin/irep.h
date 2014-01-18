@@ -65,7 +65,8 @@ struct pic_irep {
   unsigned *cv_tbl, cv_num;
   bool varg;
   struct pic_irep **irep;
-  size_t clen, ilen;
+  pic_value *pool;
+  size_t clen, ilen, plen;
 };
 
 void pic_dump_irep(pic_state *, struct pic_irep *);

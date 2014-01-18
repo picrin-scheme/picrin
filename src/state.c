@@ -69,11 +69,6 @@ pic_open(int argc, char *argv[], char **envp)
   pic->lib_tbl = pic_nil_value();
   pic->lib = NULL;
 
-  /* pool */
-  pic->pool = (pic_value *)calloc(PIC_POOL_SIZE, sizeof(pic_value));
-  pic->plen = 0;
-  pic->pcapa = PIC_POOL_SIZE;
-
   /* error handling */
   pic->jmp = NULL;
   pic->errmsg = NULL;
@@ -124,11 +119,9 @@ pic_close(pic_state *pic)
   free(pic->cibase);
   free(pic->rescue);
   free(pic->globals);
-  free(pic->pool);
 
   pic->glen = 0;
   pic->rlen = 0;
-  pic->plen = 0;
   pic->arena_idx = 0;
   pic->lib_tbl = pic_undef_value();
 
