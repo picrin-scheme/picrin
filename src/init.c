@@ -74,13 +74,6 @@ pic_features(pic_state *pic)
   return fs;
 }
 
-#define register_renamed_symbol(pic, slot, name) do {                   \
-    struct xh_entry *e;                                                 \
-    if (! (e = xh_get(pic->lib->senv->tbl, name)))                      \
-      pic_error(pic, "internal error! native VM procedure not found");  \
-    pic->slot = e->val;                                                 \
-  } while (0)
-
 #define DONE pic_gc_arena_restore(pic, ai);
 
 void
@@ -121,21 +114,6 @@ pic_init_core(pic_state *pic)
   pic_init_var(pic); DONE;
   pic_init_load(pic); DONE;
   pic_init_write(pic); DONE;
-
-  /* native VM procedures */
-  register_renamed_symbol(pic, rCONS, "cons");
-  register_renamed_symbol(pic, rCAR, "car");
-  register_renamed_symbol(pic, rCDR, "cdr");
-  register_renamed_symbol(pic, rNILP, "null?");
-  register_renamed_symbol(pic, rADD, "+");
-  register_renamed_symbol(pic, rSUB, "-");
-  register_renamed_symbol(pic, rMUL, "*");
-  register_renamed_symbol(pic, rDIV, "/");
-  register_renamed_symbol(pic, rEQ, "=");
-  register_renamed_symbol(pic, rLT, "<");
-  register_renamed_symbol(pic, rLE, "<=");
-  register_renamed_symbol(pic, rGT, ">");
-  register_renamed_symbol(pic, rGE, ">=");
 
   pic_load_stdlib(pic); DONE;
 

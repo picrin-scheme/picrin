@@ -153,16 +153,44 @@ destroy_scope(pic_state *pic, codegen_scope *scope)
 typedef struct codegen_state {
   pic_state *pic;
   codegen_scope *scope;
+  pic_sym rCONS, rCAR, rCDR, rNILP;
+  pic_sym rADD, rSUB, rMUL, rDIV;
+  pic_sym rEQ, rLT, rLE, rGT, rGE;
 } codegen_state;
+
+#define register_renamed_symbol(pic, state, slot, lib, name) do {       \
+    struct xh_entry *e;                                                 \
+    if (! (e = xh_get(lib->senv->tbl, name)))                           \
+      pic_error(pic, "internal error! native VM procedure not found");  \
+    state->slot = e->val;                                               \
+  } while (0)
 
 static codegen_state *
 new_codegen_state(pic_state *pic)
 {
   codegen_state *state;
+  struct pic_lib *stdlib;
 
   state = (codegen_state *)pic_alloc(pic, sizeof(codegen_state));
   state->pic = pic;
   state->scope = new_global_scope(pic);
+
+  stdlib = pic_find_library(pic, pic_parse(pic, "(scheme base)"));
+
+  /* native VM procedures */
+  register_renamed_symbol(pic, state, rCONS, stdlib, "cons");
+  register_renamed_symbol(pic, state, rCAR, stdlib, "car");
+  register_renamed_symbol(pic, state, rCDR, stdlib, "cdr");
+  register_renamed_symbol(pic, state, rNILP, stdlib, "null?");
+  register_renamed_symbol(pic, state, rADD, stdlib, "+");
+  register_renamed_symbol(pic, state, rSUB, stdlib, "-");
+  register_renamed_symbol(pic, state, rMUL, stdlib, "*");
+  register_renamed_symbol(pic, state, rDIV, stdlib, "/");
+  register_renamed_symbol(pic, state, rEQ, stdlib, "=");
+  register_renamed_symbol(pic, state, rLT, stdlib, "<");
+  register_renamed_symbol(pic, state, rLE, stdlib, "<=");
+  register_renamed_symbol(pic, state, rGT, stdlib, ">");
+  register_renamed_symbol(pic, state, rGE, stdlib, ">=");
 
   return state;
 }
@@ -475,7 +503,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}						\
       } while (0)
 
-      else if (sym == pic->rCONS) {
+      else if (sym == state->rCONS) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -483,21 +511,21 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	scope->clen++;
 	break;
       }
-      else if (sym == pic->rCAR) {
+      else if (sym == state->rCAR) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	scope->code[scope->clen].insn = OP_CAR;
 	scope->clen++;
 	break;
       }
-      else if (sym == pic->rCDR) {
+      else if (sym == state->rCDR) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	scope->code[scope->clen].insn = OP_CDR;
 	scope->clen++;
 	break;
       }
-      else if (sym == pic->rNILP) {
+      else if (sym == state->rNILP) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	scope->code[scope->clen].insn = OP_NILP;
@@ -511,7 +539,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}						\
       } while (0)
 
-      else if (sym == pic->rADD) {
+      else if (sym == state->rADD) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(0);
@@ -537,7 +565,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->rSUB) {
+      else if (sym == state->rSUB) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(1);
@@ -560,7 +588,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->rMUL) {
+      else if (sym == state->rMUL) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(0);
@@ -586,7 +614,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->rDIV) {
+      else if (sym == state->rDIV) {
 	pic_value args;
 
 	ARGC_ASSERT_GE(1);
@@ -612,7 +640,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	}
 	break;
       }
-      else if (sym == pic->rEQ) {
+      else if (sym == state->rEQ) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -620,7 +648,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	scope->clen++;
 	break;
       }
-      else if (sym == pic->rLT) {
+      else if (sym == state->rLT) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -628,7 +656,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	scope->clen++;
 	break;
       }
-      else if (sym == pic->rLE) {
+      else if (sym == state->rLE) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
@@ -636,7 +664,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	scope->clen++;
 	break;
       }
-      else if (sym == pic->rGT) {
+      else if (sym == state->rGT) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
@@ -644,7 +672,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	scope->clen++;
 	break;
       }
-      else if (sym == pic->rGE) {
+      else if (sym == state->rGE) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
