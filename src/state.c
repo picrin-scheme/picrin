@@ -98,6 +98,19 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
   register_core_symbol(pic, sIMPORT, "import");
   register_core_symbol(pic, sEXPORT, "export");
+  register_core_symbol(pic, sCONS, "cons");
+  register_core_symbol(pic, sCAR, "car");
+  register_core_symbol(pic, sCDR, "cdr");
+  register_core_symbol(pic, sNILP, "null?");
+  register_core_symbol(pic, sADD, "+");
+  register_core_symbol(pic, sSUB, "-");
+  register_core_symbol(pic, sMUL, "*");
+  register_core_symbol(pic, sDIV, "/");
+  register_core_symbol(pic, sEQ, "=");
+  register_core_symbol(pic, sLT, "<");
+  register_core_symbol(pic, sLE, "<=");
+  register_core_symbol(pic, sGT, ">");
+  register_core_symbol(pic, sGE, ">=");
   pic_gc_arena_restore(pic, ai);
 
   pic_init_core(pic);

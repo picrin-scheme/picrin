@@ -71,6 +71,9 @@ typedef struct {
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;
   pic_sym sDEFINE_LIBRARY, sIMPORT, sEXPORT;
+  pic_sym sCONS, sCAR, sCDR, sNILP;
+  pic_sym sADD, sSUB, sMUL, sDIV;
+  pic_sym sEQ, sLT, sLE, sGT, sGE;
 
   struct xhash *sym_tbl;
   const char **sym_pool;
