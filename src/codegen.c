@@ -955,8 +955,8 @@ pic_define(pic_state *pic, const char *name, pic_value val)
   pic_export(pic, pic_intern_cstr(pic, name));
 }
 
-pic_value
-pic_ref(pic_state *pic, const char *name)
+static int
+global_ref(pic_state *pic, const char *name)
 {
   struct xh_entry *e;
 
@@ -967,7 +967,25 @@ pic_ref(pic_state *pic, const char *name)
   if (! (e = xh_get(pic->global_tbl, pic_symbol_name(pic, (pic_sym)e->val)))) {
     pic_abort(pic, "logic flaw");
   }
-  return pic->globals[e->val];
+  return e->val;
+}
+
+pic_value
+pic_ref(pic_state *pic, const char *name)
+{
+  int gid;
+
+  gid = global_ref(pic, name);
+  return pic->globals[gid];
+}
+
+void
+pic_set(pic_state *pic, const char *name, pic_value value)
+{
+  int gid;
+
+  gid = global_ref(pic, name);
+  pic->globals[gid] = value;
 }
 
 void
