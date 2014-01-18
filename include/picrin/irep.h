@@ -59,6 +59,7 @@ struct pic_code {
 };
 
 struct pic_irep {
+  PIC_OBJECT_HEADER
   struct pic_code *code;
   size_t clen, ccapa;
   int argc, localc;
