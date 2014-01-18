@@ -27,9 +27,9 @@ new_irep(pic_state *pic)
   struct pic_irep *irep;
 
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
-  irep->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
+  irep->code = NULL;
   irep->clen = 0;
-  irep->ccapa = 1024;
+  irep->ccapa = 0;
   irep->argc = -1;
   irep->localc = -1;
   irep->varg = false;
@@ -41,15 +41,18 @@ new_irep(pic_state *pic)
  */
 
 typedef struct codegen_scope {
-  struct codegen_scope *up;
-
+  bool varg;
   /* local variables are 1-indexed, 0 is reserved for the callee */
   struct xhash *local_tbl;
   /* rest args variable is counted at localc */
   size_t argc, localc;
   /* if local var i is captured, then dirty_flags[i] == 1 */
   int *dirty_flags;
-  bool varg;
+  /* actual bit code sequence */
+  struct pic_code *code;
+  size_t clen, ccapa;
+
+  struct codegen_scope *up;
 } codegen_scope;
 
 static codegen_scope *
@@ -64,6 +67,10 @@ new_global_scope(pic_state *pic)
   scope->localc = -1;
   scope->dirty_flags = NULL;
   scope->varg = false;
+  scope->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
+  scope->clen = 0;
+  scope->ccapa = 1024;
+
   return scope;
 }
 
@@ -101,6 +108,10 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   new_scope->localc = l;
   new_scope->dirty_flags = (int *)pic_calloc(pic, i + l, sizeof(int));
 
+  new_scope->code = (struct pic_code *)pic_alloc(pic, sizeof(struct pic_code) * 1024);
+  new_scope->clen = 0;
+  new_scope->ccapa = 1024;
+
   return new_scope;
 }
 
@@ -121,7 +132,6 @@ destroy_scope(pic_state *pic, codegen_scope *scope)
 typedef struct codegen_state {
   pic_state *pic;
   codegen_scope *scope;
-  struct pic_irep *irep;
 } codegen_state;
 
 static codegen_state *
@@ -211,7 +221,7 @@ static void
 codegen(codegen_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  struct pic_irep *irep = state->irep;
+  codegen_scope *scope = state->scope;
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
@@ -230,19 +240,19 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 
     switch (depth) {
     case -1:			/* global */
-      irep->code[irep->clen].insn = OP_GREF;
-      irep->code[irep->clen].u.i = idx;
-      irep->clen++;
+      scope->code[scope->clen].insn = OP_GREF;
+      scope->code[scope->clen].u.i = idx;
+      scope->clen++;
       break;
     default:			/* nonlocal */
       s->dirty_flags[idx] = 1;
       /* at this stage, lref and cref are not distinguished */
       FALLTHROUGH;
     case 0:			/* local */
-      irep->code[irep->clen].insn = OP_CREF;
-      irep->code[irep->clen].u.r.depth = depth;
-      irep->code[irep->clen].u.r.idx = idx;
-      irep->clen++;
+      scope->code[scope->clen].insn = OP_CREF;
+      scope->code[scope->clen].u.r.depth = depth;
+      scope->code[scope->clen].u.r.idx = idx;
+      scope->clen++;
       break;
     }
     break;
@@ -288,22 +298,22 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	if (scope_is_global(s)) {
 	  idx = scope_global_define(pic, pic_symbol_name(pic, pic_sym(var)));
 	  codegen(state, val, false);
-	  irep->code[irep->clen].insn = OP_GSET;
-	  irep->code[irep->clen].u.i = idx;
-	  irep->clen++;
-	  irep->code[irep->clen].insn = OP_PUSHNONE;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_GSET;
+	  scope->code[scope->clen].u.i = idx;
+	  scope->clen++;
+	  scope->code[scope->clen].insn = OP_PUSHNONE;
+	  scope->clen++;
 	  break;
 	}
 	else {
 	  idx = scope_local_define(pic, pic_symbol_name(pic, pic_sym(var)), s);
 	  codegen(state, val, false);
-	  irep->code[irep->clen].insn = OP_CSET;
-	  irep->code[irep->clen].u.r.depth = 0;
-	  irep->code[irep->clen].u.r.idx = idx;
-	  irep->clen++;
-	  irep->code[irep->clen].insn = OP_PUSHNONE;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_CSET;
+	  scope->code[scope->clen].u.r.depth = 0;
+	  scope->code[scope->clen].u.r.idx = idx;
+	  scope->clen++;
+	  scope->code[scope->clen].insn = OP_PUSHNONE;
+	  scope->clen++;
 	  break;
 	}
       }
@@ -320,9 +330,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  pic->icapa *= 2;
 	}
 	k = pic->ilen++;
-	irep->code[irep->clen].insn = OP_LAMBDA;
-	irep->code[irep->clen].u.i = k;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_LAMBDA;
+	scope->code[scope->clen].u.i = k;
+	scope->clen++;
 
         /* prevent GC from hanging */
         pic->irep[k] = NULL;
@@ -348,19 +358,19 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 
-	irep->code[irep->clen].insn = OP_JMPIF;
-	s = irep->clen++;
+	scope->code[scope->clen].insn = OP_JMPIF;
+	s = scope->clen++;
 
 	/* if false branch */
 	codegen(state, if_false, tailpos);
-	irep->code[irep->clen].insn = OP_JMP;
-	t = irep->clen++;
+	scope->code[scope->clen].insn = OP_JMP;
+	t = scope->clen++;
 
-	irep->code[s].u.i = irep->clen - s;
+	scope->code[s].u.i = scope->clen - s;
 
 	/* if true branch */
 	codegen(state, if_true, tailpos);
-	irep->code[t].u.i = irep->clen - t;
+	scope->code[t].u.i = scope->clen - t;
 	break;
       }
       else if (sym == pic->sBEGIN) {
@@ -376,8 +386,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  }
 	  else {
 	    codegen(state, v, false);
-	    irep->code[irep->clen].insn = OP_POP;
-	    irep->clen++;
+	    scope->code[scope->clen].insn = OP_POP;
+	    scope->clen++;
 	  }
 	  seq = pic_cdr(pic, seq);
 	}
@@ -406,24 +416,24 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 
 	switch (depth) {
 	case -1:			/* global */
-	  irep->code[irep->clen].insn = OP_GSET;
-	  irep->code[irep->clen].u.i = idx;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_GSET;
+	  scope->code[scope->clen].u.i = idx;
+	  scope->clen++;
 	  break;
 	default:			/* nonlocal */
 	  s->dirty_flags[idx] = 1;
 	  /* at this stage, lset and cset are not distinguished */
 	  FALLTHROUGH;
 	case 0:			/* local */
-	  irep->code[irep->clen].insn = OP_CSET;
-	  irep->code[irep->clen].u.r.depth = depth;
-	  irep->code[irep->clen].u.r.idx = idx;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_CSET;
+	  scope->code[scope->clen].u.r.depth = depth;
+	  scope->code[scope->clen].u.r.idx = idx;
+	  scope->clen++;
 	  break;
 	}
 
-	irep->code[irep->clen].insn = OP_PUSHNONE;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_PUSHNONE;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->sQUOTE) {
@@ -438,9 +448,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  pic_abort(pic, "constant pool overflow");
 	}
 	pic->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
-	irep->code[irep->clen].insn = OP_PUSHCONST;
-	irep->code[irep->clen].u.i = pidx;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_PUSHCONST;
+	scope->code[scope->clen].u.i = pidx;
+	scope->clen++;
 	break;
       }
 
@@ -454,29 +464,29 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_CONS;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_CONS;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->rCAR) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	irep->code[irep->clen].insn = OP_CAR;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_CAR;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->rCDR) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	irep->code[irep->clen].insn = OP_CDR;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_CDR;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->rNILP) {
 	ARGC_ASSERT(1);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	irep->code[irep->clen].insn = OP_NILP;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_NILP;
+	scope->clen++;
 	break;
       }
 
@@ -492,9 +502,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	ARGC_ASSERT_GE(0);
 	switch (pic_length(pic, obj)) {
 	case 1:
-	  irep->code[irep->clen].insn = OP_PUSHINT;
-	  irep->code[irep->clen].u.i = 0;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_PUSHINT;
+	  scope->code[scope->clen].u.i = 0;
+	  scope->clen++;
 	  break;
 	case 2:
 	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
@@ -504,8 +514,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  codegen(state, pic_car(pic, args), false);
 	  while (pic_length(pic, args) >= 2) {
 	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
-	    irep->code[irep->clen].insn = OP_ADD;
-	    irep->clen++;
+	    scope->code[scope->clen].insn = OP_ADD;
+	    scope->clen++;
 	    args = pic_cdr(pic, args);
 	  }
 	  break;
@@ -519,16 +529,16 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	switch (pic_length(pic, obj)) {
 	case 2:
 	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	  irep->code[irep->clen].insn = OP_MINUS;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_MINUS;
+	  scope->clen++;
 	  break;
 	default:
 	  args = pic_cdr(pic, obj);
 	  codegen(state, pic_car(pic, args), false);
 	  while (pic_length(pic, args) >= 2) {
 	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
-	    irep->code[irep->clen].insn = OP_SUB;
-	    irep->clen++;
+	    scope->code[scope->clen].insn = OP_SUB;
+	    scope->clen++;
 	    args = pic_cdr(pic, args);
 	  }
 	  break;
@@ -541,9 +551,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	ARGC_ASSERT_GE(0);
 	switch (pic_length(pic, obj)) {
 	case 1:
-	  irep->code[irep->clen].insn = OP_PUSHINT;
-	  irep->code[irep->clen].u.i = 1;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_PUSHINT;
+	  scope->code[scope->clen].u.i = 1;
+	  scope->clen++;
 	  break;
 	case 2:
 	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
@@ -553,8 +563,8 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  codegen(state, pic_car(pic, args), false);
 	  while (pic_length(pic, args) >= 2) {
 	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
-	    irep->code[irep->clen].insn = OP_MUL;
-	    irep->clen++;
+	    scope->code[scope->clen].insn = OP_MUL;
+	    scope->clen++;
 	    args = pic_cdr(pic, args);
 	  }
 	  break;
@@ -567,20 +577,20 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	ARGC_ASSERT_GE(1);
 	switch (pic_length(pic, obj)) {
 	case 2:
-	  irep->code[irep->clen].insn = OP_PUSHINT;
-	  irep->code[irep->clen].u.i = 1;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_PUSHINT;
+	  scope->code[scope->clen].u.i = 1;
+	  scope->clen++;
 	  codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	  irep->code[irep->clen].insn = OP_DIV;
-	  irep->clen++;
+	  scope->code[scope->clen].insn = OP_DIV;
+	  scope->clen++;
 	  break;
 	default:
 	  args = pic_cdr(pic, obj);
 	  codegen(state, pic_car(pic, args), false);
 	  while (pic_length(pic, args) >= 2) {
 	    codegen(state, pic_car(pic, pic_cdr(pic, args)), false);
-	    irep->code[irep->clen].insn = OP_DIV;
-	    irep->clen++;
+	    scope->code[scope->clen].insn = OP_DIV;
+	    scope->clen++;
 	    args = pic_cdr(pic, args);
 	  }
 	  break;
@@ -591,40 +601,40 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_EQ;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_EQ;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->rLT) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_LT;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_LT;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->rLE) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
-	irep->code[irep->clen].insn = OP_LE;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_LE;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->rGT) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	irep->code[irep->clen].insn = OP_LT;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_LT;
+	scope->clen++;
 	break;
       }
       else if (sym == pic->rGE) {
 	ARGC_ASSERT(2);
 	codegen(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false);
 	codegen(state, pic_car(pic, pic_cdr(pic, obj)), false);
-	irep->code[irep->clen].insn = OP_LE;
-	irep->clen++;
+	scope->code[scope->clen].insn = OP_LE;
+	scope->clen++;
 	break;
       }
     }
@@ -634,35 +644,35 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   }
   case PIC_TT_BOOL: {
     if (pic_true_p(obj)) {
-      irep->code[irep->clen].insn = OP_PUSHTRUE;
+      scope->code[scope->clen].insn = OP_PUSHTRUE;
     }
     else {
-      irep->code[irep->clen].insn = OP_PUSHFALSE;
+      scope->code[scope->clen].insn = OP_PUSHFALSE;
     }
-    irep->clen++;
+    scope->clen++;
     break;
   }
   case PIC_TT_FLOAT: {
-    irep->code[irep->clen].insn = OP_PUSHFLOAT;
-    irep->code[irep->clen].u.f = pic_float(obj);
-    irep->clen++;
+    scope->code[scope->clen].insn = OP_PUSHFLOAT;
+    scope->code[scope->clen].u.f = pic_float(obj);
+    scope->clen++;
     break;
   }
   case PIC_TT_INT: {
-    irep->code[irep->clen].insn = OP_PUSHINT;
-    irep->code[irep->clen].u.i = pic_int(obj);
-    irep->clen++;
+    scope->code[scope->clen].insn = OP_PUSHINT;
+    scope->code[scope->clen].u.i = pic_int(obj);
+    scope->clen++;
     break;
   }
   case PIC_TT_NIL: {
-    irep->code[irep->clen].insn = OP_PUSHNIL;
-    irep->clen++;
+    scope->code[scope->clen].insn = OP_PUSHNIL;
+    scope->clen++;
     break;
   }
   case PIC_TT_CHAR: {
-    irep->code[irep->clen].insn = OP_PUSHCHAR;
-    irep->code[irep->clen].u.c = pic_char(obj);
-    irep->clen++;
+    scope->code[scope->clen].insn = OP_PUSHCHAR;
+    scope->code[scope->clen].u.c = pic_char(obj);
+    scope->clen++;
     break;
   }
   case PIC_TT_STRING:
@@ -674,9 +684,9 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
       pic_abort(pic, "constant pool overflow");
     }
     pic->pool[pidx] = obj;
-    irep->code[irep->clen].insn = OP_PUSHCONST;
-    irep->code[irep->clen].u.i = pidx;
-    irep->clen++;
+    scope->code[scope->clen].insn = OP_PUSHCONST;
+    scope->code[scope->clen].u.i = pidx;
+    scope->clen++;
     break;
   }
   case PIC_TT_CONT:
@@ -700,7 +710,7 @@ static void
 codegen_call(codegen_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  struct pic_irep *irep = state->irep;
+  codegen_scope *scope = state->scope;
   pic_value seq;
   int i = 0;
 
@@ -711,9 +721,9 @@ codegen_call(codegen_state *state, pic_value obj, bool tailpos)
     codegen(state, v, false);
     ++i;
   }
-  irep->code[irep->clen].insn = tailpos ? OP_TAILCALL : OP_CALL;
-  irep->code[irep->clen].u.i = i;
-  irep->clen++;
+  scope->code[scope->clen].insn = tailpos ? OP_TAILCALL : OP_CALL;
+  scope->code[scope->clen].u.i = i;
+  scope->clen++;
 }
 
 static bool
@@ -802,8 +812,7 @@ static struct pic_irep *
 codegen_lambda(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  codegen_scope *prev_scope;
-  struct pic_irep *prev_irep, *irep;
+  struct pic_irep *irep;
   pic_value args, body, v;
   int i, c, k;
 
@@ -817,13 +826,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   }
 
   /* inner environment */
-  prev_irep = state->irep;
-  prev_scope = state->scope;
-
   state->scope = new_local_scope(pic, args, state->scope);
-  state->irep = irep = new_irep(pic);
-  irep->argc = state->scope->argc;
-  irep->varg = state->scope->varg;
   {
     /* body */
     body = pic_cdr(pic, pic_cdr(pic, obj));
@@ -833,14 +836,21 @@ codegen_lambda(codegen_state *state, pic_value obj)
       }
       else {
 	codegen(state, pic_car(pic, v), false);
-	irep->code[irep->clen].insn = OP_POP;
-	irep->clen++;
+	state->scope->code[state->scope->clen].insn = OP_POP;
+	state->scope->clen++;
       }
     }
-    irep->code[irep->clen].insn = OP_RET;
-    irep->clen++;
+    state->scope->code[state->scope->clen].insn = OP_RET;
+    state->scope->clen++;
 
+    /* create irep */
+    irep = new_irep(pic);
+    irep->varg = state->scope->varg;
+    irep->argc = state->scope->argc;
     irep->localc = state->scope->localc;
+    irep->code = state->scope->code;
+    irep->clen = state->scope->clen;
+    irep->ccapa = state->scope->ccapa;
 
     /* fixup local references */
     for (i = 0; i < irep->clen; ++i) {
@@ -890,8 +900,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   }
   destroy_scope(pic, state->scope);
 
-  state->irep = prev_irep;
-  state->scope = prev_scope;
+  state->scope = state->scope->up;
 
 #if VM_DEBUG
   printf("* generated lambda:\n");
@@ -907,6 +916,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 {
   struct pic_proc *proc;
   codegen_state *state;
+  struct pic_irep *irep;
   jmp_buf jmp, *prev_jmp = pic->jmp;
   int ai = pic_gc_arena_preserve(pic);
 
@@ -921,16 +931,20 @@ pic_codegen(pic_state *pic, pic_value obj)
     goto exit;
   }
 
-  state->irep = new_irep(pic);
-  state->irep->argc = 1;
-  state->irep->localc = 0;
   codegen(state, pic_macroexpand(pic, obj), false);
-  state->irep->code[state->irep->clen].insn = OP_RET;
-  state->irep->clen++;
-  state->irep->cv_num = 0;
-  state->irep->cv_tbl = NULL;
+  state->scope->code[state->scope->clen].insn = OP_RET;
+  state->scope->clen++;
 
-  proc = pic_proc_new_irep(pic, state->irep, NULL);
+  irep = new_irep(pic);
+  irep->varg = false;
+  irep->argc = 1;
+  irep->localc = 0;
+  irep->code = state->scope->code;
+  irep->clen = state->scope->clen;
+  irep->cv_num = 0;
+  irep->cv_tbl = NULL;
+
+  proc = pic_proc_new_irep(pic, irep, NULL);
 
   destroy_codegen_state(pic, state);
 
