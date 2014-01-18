@@ -484,7 +484,7 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, pic->arena[i]);
   }
 
-  /* globals */
+  /* global variables */
   for (i = 0; i < pic->glen; ++i) {
     gc_mark(pic, pic->globals[i]);
   }
