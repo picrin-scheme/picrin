@@ -271,7 +271,6 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
       if (sym == pic->sDEFINE) {
 	int idx;
 	pic_value var, val;
-	codegen_scope *s;
 
 	if (pic_length(pic, obj) < 2) {
 	  pic_error(pic, "syntax error");
@@ -294,8 +293,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	s = state->scope;
-	if (scope_is_global(s)) {
+	if (scope_is_global(scope)) {
 	  idx = scope_global_define(pic, pic_symbol_name(pic, pic_sym(var)));
 	  codegen(state, val, false);
 	  scope->code[scope->clen].insn = OP_GSET;
@@ -306,7 +304,7 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  break;
 	}
 	else {
-	  idx = scope_local_define(pic, pic_symbol_name(pic, pic_sym(var)), s);
+	  idx = scope_local_define(pic, pic_symbol_name(pic, pic_sym(var)), scope);
 	  codegen(state, val, false);
 	  scope->code[scope->clen].insn = OP_CSET;
 	  scope->code[scope->clen].u.r.depth = 0;
