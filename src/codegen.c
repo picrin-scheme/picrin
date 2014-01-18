@@ -845,7 +845,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
     irep->varg = state->scope->varg;
     irep->argc = state->scope->argc;
     irep->localc = state->scope->localc;
-    irep->code = state->scope->code;
+    irep->code = pic_realloc(pic, state->scope->code, sizeof(struct pic_code) * state->scope->clen);
     irep->clen = state->scope->clen;
 
     /* fixup local references */
@@ -935,7 +935,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   irep->varg = false;
   irep->argc = 1;
   irep->localc = 0;
-  irep->code = state->scope->code;
+  irep->code = pic_realloc(pic, state->scope->code, sizeof(struct pic_code) * state->scope->clen);
   irep->clen = state->scope->clen;
   irep->cv_num = 0;
   irep->cv_tbl = NULL;
