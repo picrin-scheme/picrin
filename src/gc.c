@@ -90,7 +90,7 @@ pic_alloc(pic_state *pic, size_t size)
   void *ptr;
 
   ptr = malloc(size);
-  if (ptr == NULL) {
+  if (ptr == NULL && size > 0) {
     pic_abort(pic, "memory exhausted");
   }
   return ptr;
@@ -100,7 +100,7 @@ void *
 pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
   ptr = realloc(ptr, size);
-  if (ptr == NULL) {
+  if (ptr == NULL && size > 0) {
     pic_abort(pic, "memory exhausted");
   }
   return ptr;
@@ -112,7 +112,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
   void *ptr;
 
   ptr = calloc(count ,size);
-  if (ptr == NULL) {
+  if (ptr == NULL && size > 0) {
     pic_abort(pic, "memory exhausted");
   }
   return ptr;
