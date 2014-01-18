@@ -457,10 +457,11 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	pidx = scope->plen++;
-	if (pidx >= scope->pcapa) {
-	  pic_abort(pic, "constant pool overflow");
+	if (scope->plen >= scope->pcapa) {
+          scope->pool = (pic_value *)pic_realloc(pic, scope->pool, scope->pcapa * 2);
+          scope->pcapa *= 2;
 	}
+	pidx = scope->plen++;
 	scope->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
 	scope->code[scope->clen].insn = OP_PUSHCONST;
 	scope->code[scope->clen].u.i = pidx;
@@ -693,10 +694,11 @@ codegen(codegen_state *state, pic_value obj, bool tailpos)
   case PIC_TT_VECTOR:
   case PIC_TT_BLOB: {
     int pidx;
-    pidx = scope->plen++;
-    if (pidx >= scope->pcapa) {
-      pic_abort(pic, "constant pool overflow");
+    if (scope->plen >= scope->pcapa) {
+      scope->pool = (pic_value *)pic_realloc(pic, scope->pool, scope->pcapa * 2);
+      scope->pcapa *= 2;
     }
+    pidx = scope->plen++;
     scope->pool[pidx] = obj;
     scope->code[scope->clen].insn = OP_PUSHCONST;
     scope->code[scope->clen].u.i = pidx;
