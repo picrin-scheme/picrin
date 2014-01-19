@@ -183,9 +183,8 @@ gc_alloc(pic_state *pic, size_t size)
 
 #if GC_DEBUG
   {
-    int i, j;
     unsigned char *c;
-    size_t s;
+    size_t s, i, j;
     if (p->s.size == nunits) {
       c = (unsigned char *)(p + p->s.size - nunits + 1);
       s = nunits - 1;
