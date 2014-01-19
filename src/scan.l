@@ -28,6 +28,7 @@
 %option noinput
 %option nounput
 %option extra-type="struct parser_control *"
+%option never-interactive
 
   /* comment */
 comment		;.*$
