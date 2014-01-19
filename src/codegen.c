@@ -554,6 +554,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_IREP:
     pic_error(pic, "invalid expression given");
   }
+  pic_abort(pic, "logic flaw");
 }
 
 static pic_value
