@@ -721,6 +721,138 @@ pic_macro_er_macro_transformer(pic_state *pic)
   return pic_obj_value(proc);
 }
 
+static pic_value
+ir_macro_inject(pic_state *pic)
+{
+  pic_sym sym;
+  struct pic_senv *use_env;
+  pic_value v;
+
+  pic_get_args(pic, "m", &sym);
+
+  use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
+
+  v = macroexpand(pic, pic_symbol_value(sym), use_env);
+  if (pic_syntax_p(v)) {
+    return pic_symbol_value(sym);
+  }
+  else {
+    return v;
+  }
+}
+
+static pic_value
+ir_macro_compare(pic_state *pic)
+{
+  pic_value a, b;
+  struct pic_senv *use_env;
+
+  pic_get_args(pic, "oo", &a, &b);
+
+  if (! pic_sym_p(a) || ! pic_sym_p(b))
+    return pic_false_value();   /* should be an error? */
+
+  use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
+
+  a = macroexpand(pic, a, use_env);
+  b = macroexpand(pic, b, use_env);
+
+  return pic_bool_value(pic_eq_p(a, b));
+}
+
+static pic_value
+ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, pic_value *assoc)
+{
+  if (pic_sym_p(expr)) {
+    pic_value ren;
+    ren = macroexpand(pic, expr, use_env);
+    *assoc = pic_acons(pic, ren, expr, *assoc);
+    return ren;
+  }
+  else if (pic_pair_p(expr)) {
+    return pic_cons(pic,
+                    ir_macro_wrap(pic, pic_car(pic, expr), use_env, assoc),
+                    ir_macro_wrap(pic, pic_cdr(pic, expr), use_env, assoc));
+  }
+  else {
+    return expr;
+  }
+}
+
+static pic_value
+ir_macro_unwrap(pic_state *pic, pic_value expr, struct pic_senv *mac_env, pic_value *assoc)
+{
+  if (pic_sym_p(expr) || pic_syntax_p(expr)) {
+    pic_value r;
+    if (pic_test(r = pic_assq(pic, expr, *assoc))) {
+      return pic_cdr(pic, r);
+    }
+    r = macroexpand(pic, expr, mac_env);
+    if (pic_syntax_p(r)) {
+      return expr;
+    }
+    else {
+      return r;
+    }
+  }
+  else if (pic_pair_p(expr)) {
+    return pic_cons(pic,
+                    ir_macro_unwrap(pic, pic_car(pic, expr), mac_env, assoc),
+                    ir_macro_unwrap(pic, pic_cdr(pic, expr), mac_env, assoc));
+  }
+  else {
+    return expr;
+  }
+}
+
+static pic_value
+ir_macro_call(pic_state *pic)
+{
+  pic_value expr, use_env, mac_env;
+  struct pic_proc *inject, *compare, *cb;
+  pic_value assoc = pic_nil_value();
+
+  pic_get_args(pic, "ooo", &expr, &use_env, &mac_env);
+
+  if (! pic_senv_p(use_env)) {
+    pic_error(pic, "unexpected type of argument 1");
+  }
+  if (! pic_senv_p(mac_env)) {
+    pic_error(pic, "unexpected type of argument 3");
+  }
+
+  inject = pic_proc_new(pic, ir_macro_inject);
+  pic_proc_cv_init(pic, inject, 2);
+  pic_proc_cv_set(pic, inject, 0, use_env);
+  pic_proc_cv_set(pic, inject, 1, mac_env);
+
+  compare = pic_proc_new(pic, ir_macro_compare);
+  pic_proc_cv_init(pic, compare, 2);
+  pic_proc_cv_set(pic, compare, 0, use_env);
+  pic_proc_cv_set(pic, compare, 1, mac_env);
+
+  cb = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
+
+  expr = ir_macro_wrap(pic, expr, pic_senv_ptr(use_env), &assoc);
+  expr = pic_apply_argv(pic, cb, 3, expr, pic_obj_value(inject), pic_obj_value(compare));
+  expr = ir_macro_unwrap(pic, expr, pic_senv_ptr(mac_env), &assoc);
+  return expr;
+}
+
+static pic_value
+pic_macro_ir_macro_transformer(pic_state *pic)
+{
+  struct pic_proc *cb, *proc;
+
+  pic_get_args(pic, "l", &cb);
+
+  proc = pic_proc_new(pic, ir_macro_call);
+  pic_proc_cv_init(pic, proc, 1);
+  pic_proc_cv_set(pic, proc, 0, pic_obj_value(cb));
+
+  return pic_obj_value(proc);
+}
+
 void
 pic_init_macro(pic_state *pic)
 {
@@ -729,5 +861,6 @@ pic_init_macro(pic_state *pic)
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
     pic_defun(pic, "er-macro-transformer", pic_macro_er_macro_transformer);
+    pic_defun(pic, "ir-macro-transformer", pic_macro_ir_macro_transformer);
   }
 }

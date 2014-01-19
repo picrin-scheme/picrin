@@ -10,26 +10,8 @@
     (lambda (expr use-env mac-env)
       (make-syntactic-closure use-env '() (f expr mac-env))))
 
-  (define (walk f obj)
-    (if (pair? obj)
-        (cons (walk f (car obj))
-              (walk f (cdr obj)))
-        (f obj)))
-
-  ;; experimental support
-  (define (ir-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (define (inject identifier)
-        (make-syntactic-closure use-env '() identifier))
-      (define (compare x y)
-        (identifier=? mac-env x mac-env y))
-      (define renamed
-        (walk (lambda (x) (if (symbol? x) (inject x) x)) expr))
-      (make-syntactic-closure mac-env '() (f renamed inject compare))))
-
   (export sc-macro-transformer
-          rsc-macro-transformer
-          ir-macro-transformer))
+          rsc-macro-transformer))
 
 ;;; bootstrap utilities
 (define-library (picrin bootstrap-tools)
