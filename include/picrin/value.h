@@ -257,6 +257,7 @@ pic_type_repr(enum pic_tt tt)
   case PIC_TT_IREP:
     return "irep";
   }
+  return 0;                     /* logic flaw */
 }
 
 static inline pic_value
