@@ -157,6 +157,8 @@ struct pic_blob;
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
 
+#define pic_test(v) (! pic_false_p(v))
+
 static inline enum pic_tt pic_type(pic_value);
 static inline const char *pic_type_repr(enum pic_tt);
 
