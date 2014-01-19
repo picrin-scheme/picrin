@@ -106,6 +106,7 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sSUB, "-");
   register_core_symbol(pic, sMUL, "*");
   register_core_symbol(pic, sDIV, "/");
+  register_core_symbol(pic, sMINUS, "minus");
   register_core_symbol(pic, sEQ, "=");
   register_core_symbol(pic, sLT, "<");
   register_core_symbol(pic, sLE, "<=");

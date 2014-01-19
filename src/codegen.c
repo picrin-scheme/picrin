@@ -37,6 +37,615 @@ new_irep(pic_state *pic)
   return irep;
 }
 
+static bool
+valid_formal(pic_state *pic, pic_value formal)
+{
+  if (pic_symbol_p(formal))
+    return true;
+
+  while (pic_pair_p(formal)) {
+    if (! pic_symbol_p(pic_car(pic, formal))) {
+      return false;
+    }
+    formal = pic_cdr(pic, formal);
+  }
+  if (pic_nil_p(formal))
+    return true;
+  if (pic_symbol_p(formal))
+    return true;
+
+  return false;
+}
+
+typedef struct analyze_scope {
+  bool varg;
+  /* rest args variable is counted by localc */
+  size_t argc, localc;
+  /* local variables are 1-indexed, 0 is reserved for the callee */
+  struct xhash *local_tbl;
+  /* if local var i is captured, then dirty_flags[i] == 1 */
+  int *dirty_flags;
+
+  struct analyze_scope *up;
+} analyze_scope;
+
+static analyze_scope *
+global_scope(pic_state *pic)
+{
+  analyze_scope *scope;
+
+  scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
+  scope->up = NULL;
+  scope->local_tbl = pic->global_tbl;
+  scope->argc = -1;
+  scope->localc = -1;
+  scope->varg = false;
+  scope->dirty_flags = NULL;
+
+  return scope;
+}
+
+typedef struct analyze_state {
+  pic_state *pic;
+  analyze_scope *scope;
+  pic_sym rCONS, rCAR, rCDR, rNILP;
+  pic_sym rADD, rSUB, rMUL, rDIV;
+  pic_sym rEQ, rLT, rLE, rGT, rGE;
+  pic_sym sCALL, sTAILCALL;
+  pic_sym sGREF, sLREF, sCREF;
+  pic_sym sGSET, sLSET, sCSET;
+} analyze_state;
+
+#define register_symbol(pic, state, slot, name) do {    \
+    state->slot = pic_intern_cstr(pic, name);           \
+  } while (0)
+
+#define register_renamed_symbol(pic, state, slot, lib, name) do {       \
+    struct xh_entry *e;                                                 \
+    if (! (e = xh_get(lib->senv->tbl, name)))                           \
+      pic_error(pic, "internal error! native VM procedure not found");  \
+    state->slot = e->val;                                               \
+  } while (0)
+
+static analyze_state *
+new_analyze_state(pic_state *pic)
+{
+  analyze_state *state;
+  struct pic_lib *stdlib;
+
+  state = (analyze_state *)pic_alloc(pic, sizeof(analyze_state));
+  state->pic = pic;
+  state->scope = global_scope(pic);
+
+  stdlib = pic_find_library(pic, pic_parse(pic, "(scheme base)"));
+
+  /* native VM procedures */
+  register_renamed_symbol(pic, state, rCONS, stdlib, "cons");
+  register_renamed_symbol(pic, state, rCAR, stdlib, "car");
+  register_renamed_symbol(pic, state, rCDR, stdlib, "cdr");
+  register_renamed_symbol(pic, state, rNILP, stdlib, "null?");
+  register_renamed_symbol(pic, state, rADD, stdlib, "+");
+  register_renamed_symbol(pic, state, rSUB, stdlib, "-");
+  register_renamed_symbol(pic, state, rMUL, stdlib, "*");
+  register_renamed_symbol(pic, state, rDIV, stdlib, "/");
+  register_renamed_symbol(pic, state, rEQ, stdlib, "=");
+  register_renamed_symbol(pic, state, rLT, stdlib, "<");
+  register_renamed_symbol(pic, state, rLE, stdlib, "<=");
+  register_renamed_symbol(pic, state, rGT, stdlib, ">");
+  register_renamed_symbol(pic, state, rGE, stdlib, ">=");
+
+  register_symbol(pic, state, sCALL, "call");
+  register_symbol(pic, state, sTAILCALL, "tail-call");
+  register_symbol(pic, state, sGREF, "gref");
+  register_symbol(pic, state, sLREF, "lref");
+  register_symbol(pic, state, sCREF, "cref");
+  register_symbol(pic, state, sGREF, "gref");
+  register_symbol(pic, state, sLREF, "lref");
+  register_symbol(pic, state, sCREF, "cref");
+
+  return state;
+}
+
+static void
+push_scope(analyze_state *state, pic_value args)
+{
+  pic_state *pic = state->pic;
+  analyze_scope *scope;
+  struct xhash *x;
+  pic_value v;
+  int i, l;
+
+  scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
+  scope->up = state->scope;
+  scope->local_tbl = x = xh_new();
+  scope->varg = false;
+
+  i = 1; l = 0;
+  for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
+    pic_value sym;
+
+    sym = pic_car(pic, v);
+    xh_put(x, pic_symbol_name(pic, pic_sym(sym)), i++);
+  }
+  if (pic_nil_p(v)) {
+    /* pass */
+  }
+  else if (pic_symbol_p(v)) {
+    scope->varg = true;
+    xh_put(x, pic_symbol_name(pic, pic_sym(v)), i + l++);
+  }
+  else {
+    pic_error(pic, "logic flaw");
+  }
+  scope->argc = i;
+  scope->localc = l;
+  scope->dirty_flags = (int *)pic_calloc(pic, i + l, sizeof(int));
+}
+
+static void
+pop_scope(analyze_state *state)
+{
+  analyze_scope *scope;
+
+  scope = state->scope;
+  xh_destroy(scope->local_tbl);
+  pic_free(state->pic, scope->dirty_flags);
+
+  scope = scope->up;
+  pic_free(state->pic, state->scope);
+  state->scope = scope;
+}
+
+static analyze_scope *
+lookup_var(analyze_state *state, const char *key, int *depth, int *idx)
+{
+  analyze_scope *scope = state->scope;
+  struct xh_entry *e;
+  int d = 0;
+
+ enter:
+
+  e = xh_get(scope->local_tbl, key);
+  if (e && e->val >= 0) {
+    if (scope->up == NULL) {	/* global */
+      *depth = -1;
+    }
+    else {			/* non-global */
+      *depth = d;
+    }
+    *idx = e->val;
+    return scope;
+  }
+  if (scope->up) {
+    scope = scope->up;
+    ++d;
+    goto enter;
+  }
+  return NULL;
+}
+
+static int
+define_global_var(pic_state *pic, const char *name)
+{
+  struct xh_entry *e;
+
+  if ((e = xh_get(pic->global_tbl, name))) {
+    pic_warn(pic, "redefining global");
+    return e->val;
+  }
+  e = xh_put(pic->global_tbl, name, pic->glen++);
+  if (pic->glen >= pic->gcapa) {
+    pic_error(pic, "global table overflow");
+  }
+  return e->val;
+}
+
+static int
+define_local_var(pic_state *pic, const char *name, analyze_scope *scope)
+{
+  struct xh_entry *e;
+
+  e = xh_put(scope->local_tbl, name, scope->argc + scope->localc++);
+  scope->dirty_flags = (int *)pic_realloc(pic, scope->dirty_flags, (scope->argc + scope->localc) * sizeof(int));
+  scope->dirty_flags[e->val] = 0;
+  return e->val;
+}
+
+static bool
+is_global_scope(analyze_scope *scope)
+{
+  return scope->up == NULL;
+}
+
+static pic_value
+new_gref(analyze_state *state, int idx)
+{
+  return pic_list(state->pic, 2, pic_symbol_value(state->sGREF), pic_int_value(idx));
+}
+
+static pic_value
+new_gset(analyze_state *state, int idx, pic_value value)
+{
+  return pic_list(state->pic, 3, pic_symbol_value(state->sGSET), pic_int_value(idx), value);
+}
+
+static pic_value
+new_cref(analyze_state *state, int depth, int idx)
+{
+  return pic_list(state->pic, 3, pic_symbol_value(state->sCREF), pic_int_value(depth), pic_int_value(idx));
+}
+
+static pic_value
+new_cset(analyze_state *state, int depth, int idx, pic_value value)
+{
+  return pic_list(state->pic, 4, pic_symbol_value(state->sCSET), pic_int_value(depth), pic_int_value(idx), value);
+}
+
+static pic_value analyze_call(analyze_state *, pic_value, bool);
+static pic_value analyze_lambda(analyze_state *, pic_value);
+
+static pic_value
+analyze(analyze_state *state, pic_value obj, bool tailpos)
+{
+  pic_state *pic = state->pic;
+  analyze_scope *scope = state->scope;
+
+  switch (pic_type(obj)) {
+  case PIC_TT_SYMBOL: {
+    analyze_scope *s;
+    int depth = -1, idx = -1;
+    const char *name = pic_symbol_name(pic, pic_sym(obj));
+
+    s = lookup_var(state, name, &depth, &idx);
+    if (! s) {
+#if DEBUG
+      printf("%s\n", name);
+#endif
+      pic_error(pic, "symbol: unbound variable");
+    }
+
+    switch (depth) {
+    case -1:			/* global */
+      return new_gref(state, idx);
+    default:			/* nonlocal */
+      s->dirty_flags[idx] = 1;
+      /* at this stage, lref and cref are not distinguished */
+      FALLTHROUGH;
+    case 0:			/* local */
+      return new_cref(state, depth, idx);
+    }
+  }
+  case PIC_TT_PAIR: {
+    pic_value proc;
+
+    if (! pic_list_p(pic, obj)) {
+      pic_error(pic, "invalid expression given");
+    }
+
+    proc = pic_car(pic, obj);
+    if (pic_symbol_p(proc)) {
+      pic_sym sym = pic_sym(proc);
+
+      if (sym == pic->sDEFINE) {
+	int idx;
+	pic_value var, val;
+
+	if (pic_length(pic, obj) < 2) {
+	  pic_error(pic, "syntax error");
+	}
+
+	var = pic_car(pic, pic_cdr(pic, obj));
+	if (pic_pair_p(var)) {
+	  val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
+			 pic_cons(pic, pic_cdr(pic, var),
+				  pic_cdr(pic, pic_cdr(pic, obj))));
+	  var = pic_car(pic, var);
+	}
+	else {
+	  if (pic_length(pic, obj) != 3) {
+	    pic_error(pic, "syntax error");
+	  }
+	  val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+	}
+	if (! pic_symbol_p(var)) {
+	  pic_error(pic, "syntax error");
+	}
+
+	if (is_global_scope(scope)) {
+	  idx = define_global_var(pic, pic_symbol_name(pic, pic_sym(var)));
+          return new_gset(state, idx, analyze(state, val, false));
+	}
+	else {
+	  idx = define_local_var(pic, pic_symbol_name(pic, pic_sym(var)), scope);
+          return new_cset(state, 0, idx, analyze(state, val, false));
+	}
+      }
+      else if (sym == pic->sLAMBDA) {
+        return analyze_lambda(state, obj);
+      }
+      else if (sym == pic->sIF) {
+	pic_value if_true, if_false;
+
+	if_false = pic_none_value();
+	switch (pic_length(pic, obj)) {
+	default:
+	  pic_error(pic, "syntax error");
+	  break;
+	case 4:
+	  if_false = pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+	  FALLTHROUGH;
+	case 3:
+	  if_true = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+	}
+
+        return pic_list(pic, 4,
+                        pic_symbol_value(pic->sIF),
+                        analyze(state, pic_car(pic, pic_cdr(pic, obj)), false),
+                        analyze(state, if_true, tailpos),
+                        analyze(state, if_false, tailpos));
+      }
+      else if (sym == pic->sBEGIN) {
+	pic_value seq;
+        bool tail;
+
+        /* TODO: unwrap if the number of objects is 1 or 0 */
+        seq = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
+        for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
+          if (pic_nil_p(pic_cdr(pic, obj))) {
+            tail = tailpos;
+          } else {
+            tail = false;
+          }
+          seq = pic_cons(pic, analyze(state, pic_car(pic, obj), tail), seq);
+        }
+        return pic_reverse(pic, seq);
+      }
+      else if (sym == pic->sSETBANG) {
+	analyze_scope *s;
+	pic_value var, val;
+	int depth = -1, idx = -1;
+
+	if (pic_length(pic, obj) != 3) {
+	  pic_error(pic, "syntax error");
+	}
+
+	var = pic_car(pic, pic_cdr(pic, obj));
+	if (! pic_symbol_p(var)) {
+	  pic_error(pic, "syntax error");
+	}
+
+	s = lookup_var(state, pic_symbol_name(pic, pic_sym(var)), &depth, &idx);
+	if (! s) {
+	  pic_error(pic, "unbound variable");
+	}
+
+        val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+
+	switch (depth) {
+	case -1:			/* global */
+          return new_gset(state, idx, val);
+	default:			/* nonlocal */
+	  s->dirty_flags[idx] = 1;
+	  /* at this stage, lset and cset are not distinguished */
+	  FALLTHROUGH;
+	case 0:			/* local */
+          return new_cset(state, depth, idx, val);
+	}
+      }
+      else if (sym == pic->sQUOTE) {
+	if (pic_length(pic, obj) != 2) {
+	  pic_error(pic, "syntax error");
+	}
+        return obj;             /* TODO: quote only if necessary */
+      }
+
+#define ARGC_ASSERT(n) do {				\
+	if (pic_length(pic, obj) != (n) + 1) {		\
+	  pic_error(pic, "wrong number of arguments");	\
+	}						\
+      } while (0)
+
+#define CONSTRUCT_OP1(op)                                               \
+      pic_list(pic, 2,                                                  \
+               pic_symbol_value(op),                                    \
+               analyze(state, pic_car(pic, pic_cdr(pic, obj)), false))
+
+#define CONSTRUCT_OP2(op)                                               \
+      pic_list(pic, 3,                                                  \
+               pic_symbol_value(op),                                    \
+               analyze(state, pic_car(pic, pic_cdr(pic, obj)), false),  \
+               analyze(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false))
+
+      else if (sym == state->rCONS) {
+	ARGC_ASSERT(2);
+        return CONSTRUCT_OP2(pic->sCONS);
+      }
+      else if (sym == state->rCAR) {
+	ARGC_ASSERT(1);
+        return CONSTRUCT_OP1(pic->sCAR);
+      }
+      else if (sym == state->rCDR) {
+	ARGC_ASSERT(1);
+        return CONSTRUCT_OP1(pic->sCDR);
+      }
+      else if (sym == state->rNILP) {
+	ARGC_ASSERT(1);
+        return CONSTRUCT_OP1(pic->sNILP);
+      }
+
+#define ARGC_ASSERT_GE(n) do {				\
+	if (pic_length(pic, obj) < (n) + 1) {		\
+	  pic_error(pic, "wrong number of arguments");	\
+	}						\
+      } while (0)
+
+#define FOLD_ARGS(sym) do {                                             \
+        obj = analyze(state, pic_car(pic, args), false);                \
+        for (args = pic_cdr(pic, obj); ! pic_nil_p(args); args = pic_cdr(pic, args)) { \
+          obj = pic_list(pic, 3, pic_symbol_value(sym), obj,            \
+                         analyze(state, pic_car(pic, args), false));    \
+        }                                                               \
+      } while (0)
+
+      else if (sym == state->rADD) {
+	pic_value args;
+
+	ARGC_ASSERT_GE(0);
+	switch (pic_length(pic, obj)) {
+	case 1:
+          return pic_int_value(0);
+	case 2:
+	  return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
+	default:
+	  args = pic_cdr(pic, obj);
+          FOLD_ARGS(pic->sADD);
+          return obj;
+	}
+      }
+      else if (sym == state->rSUB) {
+	pic_value args;
+
+	ARGC_ASSERT_GE(1);
+	switch (pic_length(pic, obj)) {
+	case 2:
+          return pic_list(pic, 2, pic_symbol_value(pic->sMINUS),
+                          analyze(state, pic_car(pic, pic_cdr(pic, obj)), false));
+	default:
+	  args = pic_cdr(pic, obj);
+          FOLD_ARGS(pic->sSUB);
+          return obj;
+	}
+      }
+      else if (sym == state->rMUL) {
+	pic_value args;
+
+	ARGC_ASSERT_GE(0);
+	switch (pic_length(pic, obj)) {
+	case 1:
+          return pic_int_value(1);
+	case 2:
+	  return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
+	default:
+	  args = pic_cdr(pic, obj);
+          FOLD_ARGS(pic->sMUL);
+          return obj;
+	}
+      }
+      else if (sym == state->rDIV) {
+	pic_value args;
+
+	ARGC_ASSERT_GE(1);
+	switch (pic_length(pic, obj)) {
+	case 2:
+          args = pic_cdr(pic, obj);
+          obj = pic_list(pic, 3, proc, pic_float_value(1), pic_car(pic, args));
+          return analyze(state, obj, tailpos);
+	default:
+	  args = pic_cdr(pic, obj);
+          FOLD_ARGS(pic->sDIV);
+          return obj;
+	}
+	break;
+      }
+      else if (sym == state->rEQ) {
+	ARGC_ASSERT(2);
+        return CONSTRUCT_OP2(pic->sEQ);
+      }
+      else if (sym == state->rLT) {
+	ARGC_ASSERT(2);
+        return CONSTRUCT_OP2(pic->sLT);
+      }
+      else if (sym == state->rLE) {
+	ARGC_ASSERT(2);
+        return CONSTRUCT_OP2(pic->sLE);
+      }
+      else if (sym == state->rGT) {
+	ARGC_ASSERT(2);
+        return CONSTRUCT_OP2(pic->sGT);
+      }
+      else if (sym == state->rGE) {
+	ARGC_ASSERT(2);
+        return CONSTRUCT_OP2(pic->sGE);
+      }
+    }
+    return analyze_call(state, obj, tailpos);
+  }
+  case PIC_TT_BOOL:
+  case PIC_TT_FLOAT:
+  case PIC_TT_INT:
+  case PIC_TT_NIL:
+  case PIC_TT_CHAR: {
+    return obj;
+  }
+  case PIC_TT_STRING:
+  case PIC_TT_VECTOR:
+  case PIC_TT_BLOB: {
+    return pic_list(pic, 2, pic_symbol_value(pic->sQUOTE), obj);
+  }
+  case PIC_TT_CONT:
+  case PIC_TT_ENV:
+  case PIC_TT_PROC:
+  case PIC_TT_UNDEF:
+  case PIC_TT_EOF:
+  case PIC_TT_PORT:
+  case PIC_TT_ERROR:
+  case PIC_TT_SENV:
+  case PIC_TT_SYNTAX:
+  case PIC_TT_SC:
+  case PIC_TT_LIB:
+  case PIC_TT_VAR:
+  case PIC_TT_IREP:
+    pic_error(pic, "invalid expression given");
+  }
+}
+
+static pic_value
+analyze_call(analyze_state *state, pic_value obj, bool tailpos)
+{
+  pic_state *pic = state->pic;
+  pic_value seq;
+  pic_sym call;
+
+  if (tailpos) {
+    call = state->sCALL;
+  } else {
+    call = state->sTAILCALL;
+  }
+  seq = pic_list(pic, 1, pic_symbol_value(call));
+  for (; ! pic_nil_p(seq); obj = pic_cdr(pic, obj)) {
+    seq = pic_cons(pic, analyze(state, pic_car(pic, obj), false), seq);
+  }
+  return pic_reverse(pic, seq);
+}
+
+static pic_value
+analyze_lambda(analyze_state *state, pic_value obj)
+{
+  pic_state *pic = state->pic;
+  pic_value args, body;
+
+  if (pic_length(pic, obj) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  /* formal arguments */
+  args = pic_car(pic, pic_cdr(pic, obj));
+  if (! valid_formal(pic, args)) {
+    pic_error(pic, "syntax error");
+  }
+
+  /* analyze body in inner environment */
+  push_scope(state, args);
+  {
+    body = pic_cdr(pic, pic_cdr(pic, obj));
+    body = pic_cons(pic, pic_symbol_value(pic->sBEGIN), body);
+    body = analyze(state, body, true);
+  }
+  pop_scope(state);
+
+  return pic_list(pic, 3, pic_symbol_value(pic->sLAMBDA), args, body);
+}
+
 /**
  * scope object
  */
@@ -768,26 +1377,6 @@ codegen_call(codegen_state *state, pic_value obj, bool tailpos)
   scope->code[scope->clen].insn = tailpos ? OP_TAILCALL : OP_CALL;
   scope->code[scope->clen].u.i = i;
   scope->clen++;
-}
-
-static bool
-valid_formal(pic_state *pic, pic_value formal)
-{
-  if (pic_symbol_p(formal))
-    return true;
-
-  while (pic_pair_p(formal)) {
-    if (! pic_symbol_p(pic_car(pic, formal))) {
-      return false;
-    }
-    formal = pic_cdr(pic, formal);
-  }
-  if (pic_nil_p(formal))
-    return true;
-  if (pic_symbol_p(formal))
-    return true;
-
-  return false;
 }
 
 static void
