@@ -160,7 +160,8 @@ push_scope(analyze_state *state, pic_value args)
   scope->local_tbl = x = xh_new();
   scope->varg = false;
 
-  i = 1; l = 0;
+  i = 1;
+  l = 0;
   for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
     pic_value sym;
 
@@ -180,6 +181,8 @@ push_scope(analyze_state *state, pic_value args)
   scope->argc = i;
   scope->localc = l;
   scope->dirty_flags = (int *)pic_calloc(pic, i + l, sizeof(int));
+
+  state->scope = scope;
 }
 
 static void
@@ -627,7 +630,7 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
     call = state->sTAILCALL;
   }
   seq = pic_list(pic, 1, pic_symbol_value(call));
-  for (; ! pic_nil_p(seq); obj = pic_cdr(pic, obj)) {
+  for (; ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
     seq = pic_cons(pic, analyze(state, pic_car(pic, obj), false), seq);
   }
   seq = pic_reverse(pic, seq);
