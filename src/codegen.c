@@ -281,11 +281,25 @@ new_cset(analyze_state *state, int depth, int idx, pic_value value)
   return pic_list(state->pic, 4, pic_symbol_value(state->sCSET), pic_int_value(depth), pic_int_value(idx), value);
 }
 
+static pic_value analyze_node(analyze_state *, pic_value, bool);
 static pic_value analyze_call(analyze_state *, pic_value, bool);
 static pic_value analyze_lambda(analyze_state *, pic_value);
 
 static pic_value
 analyze(analyze_state *state, pic_value obj, bool tailpos)
+{
+  int ai = pic_gc_arena_preserve(state->pic);
+  pic_value res;
+
+  res = analyze_node(state, obj, tailpos);
+
+  pic_gc_arena_restore(state->pic, ai);
+  pic_gc_protect(state->pic, res);
+  return res;
+}
+
+static pic_value
+analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
   analyze_scope *scope = state->scope;
@@ -603,6 +617,7 @@ static pic_value
 analyze_call(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
+  int ai = pic_gc_arena_preserve(pic);
   pic_value seq;
   pic_sym call;
 
@@ -615,13 +630,18 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
   for (; ! pic_nil_p(seq); obj = pic_cdr(pic, obj)) {
     seq = pic_cons(pic, analyze(state, pic_car(pic, obj), false), seq);
   }
-  return pic_reverse(pic, seq);
+  seq = pic_reverse(pic, seq);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, seq);
+  return seq;
 }
 
 static pic_value
 analyze_lambda(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
+  int ai = pic_gc_arena_preserve(pic);
   pic_value args, body;
 
   if (pic_length(pic, obj) < 2) {
@@ -643,7 +663,10 @@ analyze_lambda(analyze_state *state, pic_value obj)
   }
   pop_scope(state);
 
-  return pic_list(pic, 3, pic_symbol_value(pic->sLAMBDA), args, body);
+  obj = pic_list(pic, 3, pic_symbol_value(pic->sLAMBDA), args, body);
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, obj);
+  return obj;
 }
 
 /**
