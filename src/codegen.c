@@ -93,7 +93,6 @@ typedef struct analyze_state {
   pic_sym rEQ, rLT, rLE, rGT, rGE;
   pic_sym sCALL, sTAILCALL;
   pic_sym sGREF, sLREF, sCREF;
-  pic_sym sGSET, sLSET, sCSET;
 } analyze_state;
 
 static void push_scope(analyze_state *, pic_value);
@@ -139,9 +138,6 @@ new_analyze_state(pic_state *pic)
 
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
-  register_symbol(pic, state, sGREF, "gref");
-  register_symbol(pic, state, sLREF, "lref");
-  register_symbol(pic, state, sCREF, "cref");
   register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
