@@ -122,7 +122,7 @@ repl(pic_state *pic)
 #endif
 
       /* eval */
-      proc = pic_codegen(pic, v);
+      proc = pic_compile(pic, v);
       if (proc == NULL) {
 	printf("compilation error: %s\n", pic->errmsg);
 	pic->errmsg = NULL;
@@ -183,7 +183,7 @@ exec_file(pic_state *pic, const char *fname)
 
     v = pic_car(pic, vs);
 
-    proc = pic_codegen(pic, v);
+    proc = pic_compile(pic, v);
     if (proc == NULL) {
       fputs(pic->errmsg, stderr);
       fprintf(stderr, "fatal error: %s compilation failure\n", fname);
@@ -223,7 +223,7 @@ exec_string(pic_state *pic, const char *str)
   for (i = 0; i < n; ++i) {
     v = pic_car(pic, vs);
 
-    proc = pic_codegen(pic, v);
+    proc = pic_compile(pic, v);
     if (proc == NULL) {
       goto abort;
     }

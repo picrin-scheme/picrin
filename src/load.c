@@ -27,7 +27,7 @@ pic_load(pic_state *pic, const char *fn)
   for (i = 0; i < n; ++i, vs = pic_cdr(pic, vs)) {
     v = pic_car(pic, vs);
 
-    proc = pic_codegen(pic, v);
+    proc = pic_compile(pic, v);
     if (proc == NULL) {
       pic_error(pic, "load: compilation failure");
     }

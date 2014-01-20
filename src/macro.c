@@ -317,7 +317,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
           for (exprs = pic_cddr(pic, expr); ! pic_nil_p(exprs); exprs = pic_cdr(pic, exprs)) {
             v = pic_car(pic, exprs);
 
-            proc = pic_codegen(pic, v);
+            proc = pic_compile(pic, v);
             if (proc == NULL) {
               abort();
             }
@@ -364,7 +364,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	}
 
 	val = pic_cadr(pic, pic_cdr(pic, expr));
-	proc = pic_codegen(pic, val);
+	proc = pic_compile(pic, val);
 	if (pic->errmsg) {
 	  printf("macroexpand error: %s\n", pic->errmsg);
 	  abort();
@@ -406,7 +406,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  pic_error(pic, "syntax error");
 	}
 
-	proc = pic_codegen(pic, val);
+	proc = pic_compile(pic, val);
 	if (pic->errmsg) {
 	  printf("macroexpand error: %s\n", pic->errmsg);
 	  abort();

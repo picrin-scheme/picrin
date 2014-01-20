@@ -69,6 +69,9 @@ struct pic_irep {
   size_t clen, ilen, plen;
 };
 
+pic_value pic_analyze(pic_state *, pic_value);
+struct pic_irep *pic_codegen(pic_state *pic, pic_value obj);
+
 void pic_dump_irep(pic_state *, struct pic_irep *);
 
 #if defined(__cplusplus)
