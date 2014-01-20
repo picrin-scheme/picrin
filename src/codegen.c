@@ -64,7 +64,7 @@ typedef struct analyze_scope {
   /* local variables are 1-indexed, 0 is reserved for the callee */
   struct xhash *local_tbl;
   /* if local var i is captured, then dirty_flags[i] == 1 */
-  int *dirty_flags;
+  struct xhash *dirty_flags;
 
   struct analyze_scope *up;
 } analyze_scope;
@@ -152,12 +152,14 @@ push_scope(analyze_state *state, pic_value args)
   pic_state *pic = state->pic;
   analyze_scope *scope;
   struct xhash *x;
+  struct xh_iter it;
   pic_value v;
   int i, l;
 
   scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
   scope->up = state->scope;
   scope->local_tbl = x = xh_new();
+  scope->dirty_flags = xh_new();
   scope->varg = false;
 
   i = 1;
@@ -180,7 +182,11 @@ push_scope(analyze_state *state, pic_value args)
   }
   scope->argc = i;
   scope->localc = l;
-  scope->dirty_flags = (int *)pic_calloc(pic, i + l, sizeof(int));
+
+  /* set dirty flags */
+  for (it = xh_begin(x); ! xh_isend(&it); xh_next(x, &it)) {
+    xh_put(scope->dirty_flags, it.e->key, 0);
+  }
 
   state->scope = scope;
 }
@@ -192,66 +198,48 @@ pop_scope(analyze_state *state)
 
   scope = state->scope;
   xh_destory(scope->local_tbl);
-  pic_free(state->pic, scope->dirty_flags);
+  xh_destory(scope->dirty_flags);
 
   scope = scope->up;
   pic_free(state->pic, state->scope);
   state->scope = scope;
 }
 
-static analyze_scope *
-lookup_var(analyze_state *state, const char *key, int *depth, int *idx)
+static int
+lookup_var(analyze_state *state, const char *key)
 {
   analyze_scope *scope = state->scope;
   struct xh_entry *e;
-  int d = 0;
+  int depth = 0;
 
  enter:
 
   e = xh_get(scope->local_tbl, key);
   if (e && e->val >= 0) {
-    if (scope->up == NULL) {	/* global */
-      *depth = -1;
+    if (depth > 0) {            /* mark dirty */
+      xh_put(scope->dirty_flags, key, 1);
     }
-    else {			/* non-global */
-      *depth = d;
-    }
-    *idx = e->val;
-    return scope;
+    return depth;
   }
   if (scope->up) {
     scope = scope->up;
-    ++d;
+    ++depth;
     goto enter;
   }
-  return NULL;
+  return -1;
 }
 
-static int
-define_global_var(pic_state *pic, const char *name)
+static void
+define_var(analyze_state *state, const char *name)
 {
   struct xh_entry *e;
+  analyze_scope *scope = state->scope;
+  int c;
 
-  if ((e = xh_get(pic->global_tbl, name))) {
-    pic_warn(pic, "redefining global");
-    return e->val;
-  }
-  e = xh_put(pic->global_tbl, name, pic->glen++);
-  if (pic->glen >= pic->gcapa) {
-    pic_error(pic, "global table overflow");
-  }
-  return e->val;
-}
+  c = scope->argc + scope->localc++;
+  e = xh_put(state->scope->local_tbl, name, c);
 
-static int
-define_local_var(pic_state *pic, const char *name, analyze_scope *scope)
-{
-  struct xh_entry *e;
-
-  e = xh_put(scope->local_tbl, name, scope->argc + scope->localc++);
-  scope->dirty_flags = (int *)pic_realloc(pic, scope->dirty_flags, (scope->argc + scope->localc) * sizeof(int));
-  scope->dirty_flags[e->val] = 0;
-  return e->val;
+  xh_put(scope->dirty_flags, name, 0);
 }
 
 static bool
@@ -261,27 +249,12 @@ is_global_scope(analyze_scope *scope)
 }
 
 static pic_value
-new_gref(analyze_state *state, int idx)
+new_cref(analyze_state *state, int depth, pic_sym sym)
 {
-  return pic_list(state->pic, 2, pic_symbol_value(state->sGREF), pic_int_value(idx));
-}
-
-static pic_value
-new_gset(analyze_state *state, int idx, pic_value value)
-{
-  return pic_list(state->pic, 3, pic_symbol_value(state->sGSET), pic_int_value(idx), value);
-}
-
-static pic_value
-new_cref(analyze_state *state, int depth, int idx)
-{
-  return pic_list(state->pic, 3, pic_symbol_value(state->sCREF), pic_int_value(depth), pic_int_value(idx));
-}
-
-static pic_value
-new_cset(analyze_state *state, int depth, int idx, pic_value value)
-{
-  return pic_list(state->pic, 4, pic_symbol_value(state->sCSET), pic_int_value(depth), pic_int_value(idx), value);
+  return pic_list(state->pic, 3,
+                  pic_symbol_value(state->sCREF),
+                  pic_int_value(depth),
+                  pic_symbol_value(sym));
 }
 
 static pic_value analyze_node(analyze_state *, pic_value, bool);
@@ -305,32 +278,18 @@ static pic_value
 analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  analyze_scope *scope = state->scope;
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
-    analyze_scope *s;
-    int depth = -1, idx = -1;
     const char *name = pic_symbol_name(pic, pic_sym(obj));
+    int depth;
 
-    s = lookup_var(state, name, &depth, &idx);
-    if (! s) {
-#if DEBUG
-      printf("%s\n", name);
-#endif
+    depth = lookup_var(state, name);
+    if (depth == -1) {
       pic_error(pic, "symbol: unbound variable");
     }
-
-    switch (depth) {
-    case -1:			/* global */
-      return new_gref(state, idx);
-    default:			/* nonlocal */
-      s->dirty_flags[idx] = 1;
-      /* at this stage, lref and cref are not distinguished */
-      FALLTHROUGH;
-    case 0:			/* local */
-      return new_cref(state, depth, idx);
-    }
+    /* at this stage, lref/cref/gref are not distinguished */
+    return new_cref(state, depth, pic_sym(obj));
   }
   case PIC_TT_PAIR: {
     pic_value proc;
@@ -344,7 +303,6 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
       pic_sym sym = pic_sym(proc);
 
       if (sym == pic->sDEFINE) {
-	int idx;
 	pic_value var, val;
 
 	if (pic_length(pic, obj) < 2) {
@@ -368,14 +326,11 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	if (is_global_scope(scope)) {
-	  idx = define_global_var(pic, pic_symbol_name(pic, pic_sym(var)));
-          return new_gset(state, idx, analyze(state, val, false));
-	}
-	else {
-	  idx = define_local_var(pic, pic_symbol_name(pic, pic_sym(var)), scope);
-          return new_cset(state, 0, idx, analyze(state, val, false));
-	}
+        define_var(state, pic_symbol_name(pic, pic_sym(var)));
+        return pic_list(pic, 3,
+                        pic_symbol_value(pic->sSETBANG),
+                        analyze(state, var, false),
+                        analyze(state, val, false));
       }
       else if (sym == pic->sLAMBDA) {
         return analyze_lambda(state, obj);
@@ -418,9 +373,8 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return pic_reverse(pic, seq);
       }
       else if (sym == pic->sSETBANG) {
-	analyze_scope *s;
 	pic_value var, val;
-	int depth = -1, idx = -1;
+	int depth;
 
 	if (pic_length(pic, obj) != 3) {
 	  pic_error(pic, "syntax error");
@@ -431,23 +385,17 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	s = lookup_var(state, pic_symbol_name(pic, pic_sym(var)), &depth, &idx);
-	if (! s) {
+	depth = lookup_var(state, pic_symbol_name(pic, pic_sym(var)));
+	if (depth == -1) {
 	  pic_error(pic, "unbound variable");
 	}
 
         val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
 
-	switch (depth) {
-	case -1:			/* global */
-          return new_gset(state, idx, val);
-	default:			/* nonlocal */
-	  s->dirty_flags[idx] = 1;
-	  /* at this stage, lset and cset are not distinguished */
-	  FALLTHROUGH;
-	case 0:			/* local */
-          return new_cset(state, depth, idx, val);
-	}
+        return pic_list(pic, 3,
+                        pic_symbol_value(pic->sSETBANG),
+                        analyze(state, var, false),
+                        analyze(state, val, false));
       }
       else if (sym == pic->sQUOTE) {
 	if (pic_length(pic, obj) != 2) {
@@ -645,7 +593,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   int ai = pic_gc_arena_preserve(pic);
-  pic_value args, body;
+  pic_value args, body, defs;
 
   if (pic_length(pic, obj) < 2) {
     pic_error(pic, "syntax error");
@@ -657,12 +605,35 @@ analyze_lambda(analyze_state *state, pic_value obj)
     pic_error(pic, "syntax error");
   }
 
-  /* analyze body in inner environment */
   push_scope(state, args);
   {
+    struct xhash *dirty_flags;
+    struct xh_iter it;
+
+    /* analyze body in inner environment */
     body = pic_cdr(pic, pic_cdr(pic, obj));
     body = pic_cons(pic, pic_symbol_value(pic->sBEGIN), body);
     body = analyze(state, body, true);
+
+    dirty_flags = state->scope->dirty_flags;
+
+    /* declare local variables */
+    defs = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
+    for (it = xh_begin(dirty_flags); ! xh_isend(&it); xh_next(dirty_flags, &it)) {
+      pic_value close;
+      if (it.e->val == 1) {
+        close = pic_true_value();
+      } else {
+        close = pic_false_value();
+      }
+      defs = pic_cons(pic,
+                      pic_list(pic, 3,
+                               pic_symbol_value(pic->sDEFINE),
+                               pic_symbol_value(pic_intern_cstr(pic, it.e->key)),
+                               close),
+                      defs);
+    }
+    defs = pic_reverse(pic, defs);
   }
   pop_scope(state);
 
@@ -735,7 +706,8 @@ new_local_scope(pic_state *pic, pic_value args, codegen_scope *scope)
   new_scope->local_tbl = x = xh_new();
   new_scope->varg = false;
 
-  i = 1; l = 0;
+  i = 1;
+  l = 0;
   for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
     pic_value sym;
 
