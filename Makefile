@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall
+CFLAGS= -std=gnu99 -Wall
 
 ifeq ($(findstring CYGWIN,$(shell uname -s)), CYGWIN)
   PICRIN_LIB=cygpicrin.dll
