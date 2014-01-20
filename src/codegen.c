@@ -96,6 +96,9 @@ typedef struct analyze_state {
   pic_sym sGSET, sLSET, sCSET;
 } analyze_state;
 
+static void push_scope(analyze_state *, pic_value);
+static void pop_scope(analyze_state *);
+
 #define register_symbol(pic, state, slot, name) do {    \
     state->slot = pic_intern_cstr(pic, name);           \
   } while (0)
@@ -115,7 +118,7 @@ new_analyze_state(pic_state *pic)
 
   state = (analyze_state *)pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
-  state->scope = global_scope(pic);
+  state->scope = NULL;
 
   stdlib = pic_find_library(pic, pic_parse(pic, "(scheme base)"));
 
@@ -142,6 +145,9 @@ new_analyze_state(pic_state *pic)
   register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
+
+  /* push initial scope */
+  push_scope(state, pic_nil_value());
 
   return state;
 }
@@ -240,12 +246,6 @@ define_var(analyze_state *state, const char *name)
   e = xh_put(state->scope->local_tbl, name, c);
 
   xh_put(scope->dirty_flags, name, 0);
-}
-
-static bool
-is_global_scope(analyze_scope *scope)
-{
-  return scope->up == NULL;
 }
 
 static pic_value
