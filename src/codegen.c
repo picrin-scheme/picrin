@@ -191,7 +191,7 @@ pop_scope(analyze_state *state)
   analyze_scope *scope;
 
   scope = state->scope;
-  xh_destroy(scope->local_tbl);
+  xh_destory(scope->local_tbl);
   pic_free(state->pic, scope->dirty_flags);
 
   scope = scope->up;
