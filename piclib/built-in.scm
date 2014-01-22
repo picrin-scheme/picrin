@@ -748,23 +748,6 @@
 
 ;;; 6.10 control features
 
-(define (for-each f list . lists)
-  (define (single-for-each f list)
-    (if (null? list)
-	#f
-	(begin
-	  (f (car list))
-	  (single-for-each f (cdr list)))))
-  (define (multiple-for-each f lists)
-    (if (any null? lists)
-	#f
-	(begin
-	  (apply f (map car lists))
-	  (multiple-for-each f (map cdr lists)))))
-  (if (null? lists)
-      (single-for-each f list)
-      (multiple-for-each f (cons list lists))))
-
 (define (string-map f v . vs)
   (let* ((len (fold min (string-length v) (map string-length vs)))
 	 (vec (make-string len)))
@@ -803,8 +786,7 @@
 	       (map (lambda (v) (vector-ref v n)) vs))
 	(loop (+ n 1))))))
 
-(export for-each
-        string-map string-for-each
+(export string-map string-for-each
         vector-map vector-for-each)
 
 ;;; 6.13. Input and output
