@@ -4,8 +4,27 @@
 
 #include <math.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include "picrin.h"
+
+static int
+gcd(int a, int b)
+{
+  if (a > b)
+    return gcd(b, a);
+  if (a < 0)
+    return gcd(-a, b);
+  if (a > 0)
+    return gcd(b % a, a);
+  return b;
+}
+
+static int
+lcm(int a, int b)
+{
+  return abs(a * b) / gcd(a, b);
+}
 
 static pic_value
 pic_number_real_p(pic_state *pic)
@@ -183,6 +202,62 @@ pic_number_even_p(pic_state *pic)
   return pic_bool_value(i % 2 == 0);
 }
 
+static pic_value
+pic_number_max(pic_state *pic)
+{
+  size_t argc;
+  pic_value *argv;
+  int i;
+  double f;
+  bool e = true;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  f = -INFINITY;
+  for (i = 0; i < argc; ++i) {
+    if (pic_int_p(argv[i])) {
+      f = fmax(f, pic_int(argv[i]));
+    }
+    else if (pic_float_p(argv[i])) {
+      e = false;
+      f = fmax(f, pic_float(argv[i]));
+    }
+    else {
+      pic_error(pic, "min: number required");
+    }
+  }
+
+  return e ? pic_int_value(f) : pic_float_value(f);
+}
+
+static pic_value
+pic_number_min(pic_state *pic)
+{
+  size_t argc;
+  pic_value *argv;
+  int i;
+  double f;
+  bool e = true;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  f = INFINITY;
+  for (i = 0; i < argc; ++i) {
+    if (pic_int_p(argv[i])) {
+      f = fmin(f, pic_int(argv[i]));
+    }
+    else if (pic_float_p(argv[i])) {
+      e = false;
+      f = fmin(f, pic_float(argv[i]));
+    }
+    else {
+      pic_error(pic, "min: number required");
+    }
+  }
+
+  return e ? pic_int_value(f) : pic_float_value(f);
+}
+
 #define DEFINE_ARITH_OP(op, name, unit)                         \
   static pic_value                                              \
   pic_number_##name(pic_state *pic)                             \
@@ -331,6 +406,58 @@ pic_number_trunc_remainder(pic_state *pic)
   else {
     return pic_float_value(i - j * q);
   }
+}
+
+static pic_value
+pic_number_gcd(pic_state *pic)
+{
+  size_t argc;
+  pic_value *args;
+  int r;
+  bool e = true;
+
+  pic_get_args(pic, "*", &argc, &args);
+
+  r = 0;
+  while (argc-- > 0) {
+    if (pic_int_p(args[argc])) {
+      r = gcd(r, pic_int(args[argc]));
+    }
+    else if (pic_float_p(args[argc])) {
+      e = false;
+      r = gcd(r, pic_float(args[argc]));
+    }
+    else {
+      pic_error(pic, "gcd: number required");
+    }
+  }
+  return e ? pic_int_value(r) : pic_float_value(r);
+}
+
+static pic_value
+pic_number_lcm(pic_state *pic)
+{
+  size_t argc;
+  pic_value *args;
+  int r;
+  bool e = true;
+
+  pic_get_args(pic, "*", &argc, &args);
+
+  r = 1;
+  while (argc-- > 0) {
+    if (pic_int_p(args[argc])) {
+      r = lcm(r, pic_int(args[argc]));
+    }
+    else if (pic_float_p(args[argc])) {
+      e = false;
+      r = lcm(r, pic_float(args[argc]));
+    }
+    else {
+      pic_error(pic, "lcm: number required");
+    }
+  }
+  return e ? pic_int_value(r) : pic_float_value(r);
 }
 
 static pic_value
@@ -581,6 +708,11 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "negative?", pic_number_negative_p);
   pic_defun(pic, "odd?", pic_number_odd_p);
   pic_defun(pic, "even?", pic_number_even_p);
+  pic_gc_arena_restore(pic, ai);
+
+  pic_defun(pic, "min", pic_number_min);
+  pic_defun(pic, "max", pic_number_max);
+  pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "+", pic_number_add);
   pic_defun(pic, "-", pic_number_sub);
@@ -593,6 +725,10 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
   pic_defun(pic, "truncate-quotient", pic_number_trunc_quotient);
   pic_defun(pic, "truncate-remainder", pic_number_trunc_remainder);
+  pic_gc_arena_restore(pic, ai);
+
+  pic_defun(pic, "gcd", pic_number_gcd);
+  pic_defun(pic, "lcm", pic_number_lcm);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "floor", pic_number_floor);

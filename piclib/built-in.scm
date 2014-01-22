@@ -361,18 +361,6 @@
 
 ;;; 6.2. Numbers
 
-(define (min x . args)
-  (let loop ((pivot x) (rest args))
-    (if (null? rest)
-	pivot
-	(loop (if (< pivot (car rest)) pivot (car rest)) (cdr rest)))))
-
-(define (max x . args)
-  (let loop ((pivot x) (rest args))
-    (if (null? rest)
-	pivot
-	(loop (if (> pivot (car rest)) pivot (car rest)) (cdr rest)))))
-
 (define (floor/ n m)
   (values (floor-quotient n m)
 	  (floor-remainder n m)))
@@ -388,27 +376,8 @@
   (let ((n (exact (floor (sqrt k)))))
     (values n (- k (square n)))))
 
-(define (gcd n m)
-  (if (negative? n)
-      (set! n (- n)))
-  (if (negative? m)
-      (set! m (- m)))
-  (if (> n m)
-      ((lambda (tmp)
-	 (set! n m)
-	 (set! m tmp))
-       n))
-  (if (zero? n)
-      m
-      (gcd (floor-remainder m n) n)))
-
-(define (lcm n m)
-  (/ (* n m) (gcd n m)))
-
-(export min max
-        floor/ truncate/
-        exact-integer-sqrt
-        gcd lcm)
+(export floor/ truncate/
+        exact-integer-sqrt)
 
 ;;; 6.3 Booleans
 
