@@ -115,6 +115,23 @@ pic_reverse(pic_state *pic, pic_value list)
 }
 
 pic_value
+pic_append(pic_state *pic, pic_value xs, pic_value ys)
+{
+  int ai = pic_gc_arena_preserve(pic);
+
+  if (pic_nil_p(xs)) {
+    return ys;
+  }
+  else {
+    xs = pic_cons(pic, pic_car(pic, xs), pic_append(pic, pic_cdr(pic, xs), ys));
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, xs);
+  return xs;
+}
+
+pic_value
 pic_assq(pic_state *pic, pic_value key, pic_value assoc)
 {
   pic_value cell;

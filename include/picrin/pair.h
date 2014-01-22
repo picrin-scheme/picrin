@@ -19,6 +19,7 @@ pic_value pic_list_from_array(pic_state *, size_t, pic_value *);
 
 int pic_length(pic_state *, pic_value);
 pic_value pic_reverse(pic_state *, pic_value);
+pic_value pic_append(pic_state *, pic_value, pic_value);
 
 pic_value pic_assq(pic_state *, pic_value key, pic_value assoc);
 pic_value pic_assoc(pic_state *, pic_value key, pic_value assoc);
