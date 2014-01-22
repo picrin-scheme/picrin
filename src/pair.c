@@ -180,6 +180,21 @@ pic_cddr(pic_state *pic, pic_value v)
   return pic_cdr(pic, pic_cdr(pic, v));
 }
 
+pic_value
+pic_list_tail(pic_state *pic, pic_value list, int i)
+{
+  while (i-- > 0) {
+    list = pic_cdr(pic, list);
+  }
+  return list;
+}
+
+pic_value
+pic_list_ref(pic_state *pic, pic_value list, int i)
+{
+  return pic_car(pic, pic_list_tail(pic, list, i));
+}
+
 static pic_value
 pic_pair_pair_p(pic_state *pic)
 {
