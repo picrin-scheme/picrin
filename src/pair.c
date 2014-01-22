@@ -213,6 +213,12 @@ pic_list_ref(pic_state *pic, pic_value list, int i)
   return pic_car(pic, pic_list_tail(pic, list, i));
 }
 
+void
+pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
+{
+  pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
+}
+
 static pic_value
 pic_pair_pair_p(pic_state *pic)
 {
@@ -410,6 +416,19 @@ pic_pair_list_ref(pic_state *pic)
   return pic_list_ref(pic, list, i);
 }
 
+static pic_value
+pic_pair_list_set(pic_state *pic)
+{
+  pic_value list, obj;
+  int i;
+
+  pic_get_args(pic, "oio", &list, &i, &obj);
+
+  pic_list_set(pic, list, i, obj);
+
+  return pic_none_value();
+}
+
 void
 pic_init_pair(pic_state *pic)
 {
@@ -431,4 +450,5 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "reverse", pic_pair_reverse);
   pic_defun(pic, "list-tail", pic_pair_list_tail);
   pic_defun(pic, "list-ref", pic_pair_list_ref);
+  pic_defun(pic, "list-set!", pic_pair_list_set);
 }

@@ -462,9 +462,6 @@
 	  (cons (car args)
 		(make-list (- k 1) (car args))))))
 
-(define (list-set! list k obj)
-  (set-car! (list-tail list k) obj))
-
 (define (list-copy obj)
   (if (null? obj)
       obj
