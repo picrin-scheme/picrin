@@ -445,20 +445,6 @@
 
 ;;; 6.4 Pairs and lists
 
-(define (make-list k . args)
-  (if (null? args)
-      (make-list k #f)
-      (if (zero? k)
-	  '()
-	  (cons (car args)
-		(make-list (- k 1) (car args))))))
-
-(define (list-copy obj)
-  (if (null? obj)
-      obj
-      (cons (car obj)
-	    (list-copy (cdr obj)))))
-
 (define (memq obj list)
   (if (null? list)
       #f
@@ -503,8 +489,7 @@
 	    (car list)
 	    (assoc obj (cdr list) compare)))))
 
-(export make-list list-copy
-        memq memv member
+(export memq memv member
         assq assv assoc)
 
 ;;; 6.5. Symbols

@@ -85,6 +85,20 @@ pic_list_from_array(pic_state *pic, size_t c, pic_value *vs)
   return pic_reverse(pic, v);
 }
 
+pic_value
+pic_make_list(pic_state *pic, int k, pic_value fill)
+{
+  pic_value list;
+  int i;
+
+  list = pic_nil_value();
+  for (i = 0; i < k; ++i) {
+    list = pic_cons(pic, fill, list);
+  }
+
+  return list;
+}
+
 int
 pic_length(pic_state *pic, pic_value obj)
 {
@@ -219,6 +233,17 @@ pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
   pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
 }
 
+pic_value
+pic_list_copy(pic_state *pic, pic_value obj)
+{
+  if (pic_pair_p(obj)) {
+    return pic_cons(pic, pic_car(pic, obj), pic_list_copy(pic, pic_cdr(pic, obj)));
+  }
+  else {
+    return obj;
+  }
+}
+
 static pic_value
 pic_pair_pair_p(pic_state *pic)
 {
@@ -348,6 +373,17 @@ pic_pair_list_p(pic_state *pic)
 }
 
 static pic_value
+pic_pair_make_list(pic_state *pic)
+{
+  int i;
+  pic_value fill = pic_none_value();
+
+  pic_get_args(pic, "i|o", &i, &fill);
+
+  return pic_make_list(pic, i, fill);
+}
+
+static pic_value
 pic_pair_list(pic_state *pic)
 {
   size_t argc;
@@ -429,6 +465,16 @@ pic_pair_list_set(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_pair_list_copy(pic_state *pic)
+{
+  pic_value obj;
+
+  pic_get_args(pic, "o", &obj);
+
+  return pic_list_copy(pic, obj);
+}
+
 void
 pic_init_pair(pic_state *pic)
 {
@@ -444,6 +490,7 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "cddr", pic_pair_cddr);
   pic_defun(pic, "null?", pic_pair_null_p);
   pic_defun(pic, "list?", pic_pair_list_p);
+  pic_defun(pic, "make-list", pic_pair_make_list);
   pic_defun(pic, "list", pic_pair_list);
   pic_defun(pic, "length", pic_pair_length);
   pic_defun(pic, "append", pic_pair_append);
@@ -451,4 +498,5 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "list-tail", pic_pair_list_tail);
   pic_defun(pic, "list-ref", pic_pair_list_ref);
   pic_defun(pic, "list-set!", pic_pair_list_set);
+  pic_defun(pic, "list-copy", pic_pair_list_copy);
 }
