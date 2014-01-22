@@ -39,13 +39,7 @@
   (define (caddr p) (car (cddr p)))
   (define (cdddr p) (cdr (cddr p)))
 
-  (define (map f list)
-    (if (null? list)
-        list
-        (cons (f (car list))
-              (map f (cdr list)))))
-
-  (export map cadar caddr cdddr))
+  (export cadar caddr cdddr))
 
 ;;; core syntaces
 (define-library (picrin core-syntax)
@@ -373,9 +367,6 @@
   (if (null? xs)
       s
       (fold f (f (car xs) s) (cdr xs))))
-
-;;; FIXME forward declaration
-(define map #f)
 
 ;;; 6.2. Numbers
 
@@ -757,22 +748,6 @@
 
 ;;; 6.10 control features
 
-(set! map
-      (lambda (f list . lists)
-        (define (single-map f list)
-          (if (null? list)
-              '()
-              (cons (f (car list))
-                    (map f (cdr list)))))
-        (define (multiple-map f lists)
-          (if (any null? lists)
-              '()
-              (cons (apply f (single-map car lists))
-                    (multiple-map f (single-map cdr lists)))))
-        (if (null? lists)
-            (single-map f list)
-            (multiple-map f (cons list lists)))))
-
 (define (for-each f list . lists)
   (define (single-for-each f list)
     (if (null? list)
@@ -828,7 +803,7 @@
 	       (map (lambda (v) (vector-ref v n)) vs))
 	(loop (+ n 1))))))
 
-(export map for-each
+(export for-each
         string-map string-for-each
         vector-map vector-for-each)
 

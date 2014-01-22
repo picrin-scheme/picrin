@@ -85,21 +85,45 @@ static pic_value
 pic_proc_apply(pic_state *pic)
 {
   struct pic_proc *proc;
-  pic_value *args, v;
+  pic_value *args;
   size_t argc;
-  int i;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   if (argc == 0) {
     pic_error(pic, "apply: wrong number of arguments");
   }
-  v = args[argc - 1];
-  for (i = argc - 2; i >= 0; --i) {
-    v = pic_cons(pic, args[i], v);
-  }
 
-  return pic_apply(pic, proc, v);
+  return pic_apply(pic, proc, pic_list_from_array(pic, argc, args));
+}
+
+static pic_value
+pic_proc_map(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc;
+  pic_value *args;
+  int i;
+  pic_value cars, ret;
+
+  pic_get_args(pic, "l*", &proc, &argc, &args);
+
+  ret = pic_nil_value();
+  do {
+    cars = pic_nil_value();
+    for (i = argc - 1; i >= 0; --i) {
+      if (! pic_pair_p(args[i])) {
+        break;
+      }
+      cars = pic_cons(pic, pic_car(pic, args[i]), cars);
+      args[i] = pic_cdr(pic, args[i]);
+    }
+    if (i >= 0)
+      break;
+    ret = pic_cons(pic, pic_apply(pic, proc, cars), ret);
+  } while (1);
+
+  return pic_reverse(pic, ret);
 }
 
 void
@@ -107,4 +131,5 @@ pic_init_proc(pic_state *pic)
 {
   pic_defun(pic, "procedure?", pic_proc_proc_p);
   pic_defun(pic, "apply", pic_proc_apply);
+  pic_defun(pic, "map", pic_proc_map);
 }
