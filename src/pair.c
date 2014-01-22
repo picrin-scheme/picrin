@@ -290,6 +290,28 @@ pic_pair_set_cdr(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_pair_list_tail(pic_state *pic)
+{
+  pic_value list;
+  int i;
+
+  pic_get_args(pic, "oi", &list, &i);
+
+  return pic_list_tail(pic, list, i);
+}
+
+static pic_value
+pic_pair_list_ref(pic_state *pic)
+{
+  pic_value list;
+  int i;
+
+  pic_get_args(pic, "oi", &list, &i);
+
+  return pic_list_ref(pic, list, i);
+}
+
 void
 pic_init_pair(pic_state *pic)
 {
@@ -300,4 +322,6 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "cons", pic_pair_cons);
   pic_defun(pic, "set-car!", pic_pair_set_car);
   pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
+  pic_defun(pic, "list-tail", pic_pair_list_tail);
+  pic_defun(pic, "list-ref", pic_pair_list_ref);
 }

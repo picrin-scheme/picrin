@@ -517,14 +517,6 @@
 	  (reverse (cdr list)
 		   (cons (car list) (car args))))))
 
-(define (list-tail list k)
-  (if (zero? k)
-      list
-      (list-tail (cdr list) (- k 1))))
-
-(define (list-ref list k)
-  (car (list-tail list k)))
-
 (define (list-set! list k obj)
   (set-car! (list-tail list k) obj))
 
