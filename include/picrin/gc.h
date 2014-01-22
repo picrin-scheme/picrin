@@ -18,7 +18,7 @@ union header {
     size_t size;
     unsigned int mark : 1;
   } s;
-  long alignment[2];
+  long alignment[4];
 };
 
 struct heap_page {
