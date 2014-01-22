@@ -133,6 +133,56 @@ DEFINE_ARITH_CMP(>, gt)
 DEFINE_ARITH_CMP(<=, le)
 DEFINE_ARITH_CMP(>=, ge)
 
+static pic_value
+pic_number_zero_p(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_bool_value(f == 0);
+}
+
+static pic_value
+pic_number_positive_p(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_bool_value(f > 0);
+}
+
+static pic_value
+pic_number_negative_p(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_bool_value(f < 0);
+}
+
+static pic_value
+pic_number_odd_p(pic_state *pic)
+{
+  int i;
+
+  pic_get_args(pic, "i", &i);
+
+  return pic_bool_value(i % 2 != 0);
+}
+
+static pic_value
+pic_number_even_p(pic_state *pic)
+{
+  int i;
+
+  pic_get_args(pic, "i", &i);
+
+  return pic_bool_value(i % 2 == 0);
+}
+
 #define DEFINE_ARITH_OP(op, name, unit)                         \
   static pic_value                                              \
   pic_number_##name(pic_state *pic)                             \
@@ -525,6 +575,12 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "<=", pic_number_le);
   pic_defun(pic, ">=", pic_number_ge);
   pic_gc_arena_restore(pic, ai);
+
+  pic_defun(pic, "zero?", pic_number_zero_p);
+  pic_defun(pic, "positive?", pic_number_positive_p);
+  pic_defun(pic, "negative?", pic_number_negative_p);
+  pic_defun(pic, "odd?", pic_number_odd_p);
+  pic_defun(pic, "even?", pic_number_even_p);
 
   pic_defun(pic, "+", pic_number_add);
   pic_defun(pic, "-", pic_number_sub);

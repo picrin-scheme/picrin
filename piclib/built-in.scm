@@ -347,15 +347,6 @@
 (export make-parameter
         parameterize)
 
-(define (any pred list)
-  (if (null? list)
-      #f
-      ((lambda (it)
-	 (if it
-	     it
-	     (any pred (cdr list))))
-       (pred (car list)))))
-
 (define (every pred list)
   (if (null? list)
       #t
@@ -369,21 +360,6 @@
       (fold f (f (car xs) s) (cdr xs))))
 
 ;;; 6.2. Numbers
-
-(define (zero? n)
-  (= n 0))
-
-(define (positive? x)
-  (> x 0))
-
-(define (negative? x)
-  (< x 0))
-
-(define (odd? n)
-  (= 0 (floor-remainder n 2)))
-
-(define (even? n)
-  (= 1 (floor-remainder n 2)))
 
 (define (min x . args)
   (let loop ((pivot x) (rest args))
@@ -429,8 +405,7 @@
 (define (lcm n m)
   (/ (* n m) (gcd n m)))
 
-(export zero? positive? negative?
-        odd? even? min max
+(export min max
         floor/ truncate/
         exact-integer-sqrt
         gcd lcm)
