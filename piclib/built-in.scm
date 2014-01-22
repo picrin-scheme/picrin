@@ -512,9 +512,7 @@
 	    (car list)
 	    (assoc obj (cdr list) compare)))))
 
-(export list? list caar cadr cdar cddr
-        make-list length append reverse
-        list-tail list-ref list-set! list-copy
+(export make-list list-copy
         memq memv member
         assq assv assoc)
 
