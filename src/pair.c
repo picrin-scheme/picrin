@@ -291,6 +291,17 @@ pic_pair_null_p(pic_state *pic)
 }
 
 static pic_value
+pic_pair_list(pic_state *pic)
+{
+  size_t argc;
+  pic_value *argv;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  return pic_list_from_array(pic, argc, argv);
+}
+
+static pic_value
 pic_pair_length(pic_state *pic)
 {
   pic_value list;
@@ -358,6 +369,7 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "set-car!", pic_pair_set_car);
   pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
   pic_defun(pic, "null?", pic_pair_null_p);
+  pic_defun(pic, "list", pic_pair_list);
   pic_defun(pic, "length", pic_pair_length);
   pic_defun(pic, "append", pic_pair_append);
   pic_defun(pic, "reverse", pic_pair_reverse);

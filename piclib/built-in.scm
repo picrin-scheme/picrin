@@ -35,8 +35,6 @@
 (define-library (picrin bootstrap-tools)
   (import (scheme base))
 
-  (define (list . args) args)
-
   (define (caar p) (car (car p)))
   (define (cadr p) (car (cdr p)))
   (define (cdar p) (cdr (car p)))
@@ -51,14 +49,7 @@
         (cons (f (car list))
               (map f (cdr list)))))
 
-  (define (append xs ys)
-    (if (null? xs)
-        ys
-        (cons (car xs)
-              (append (cdr xs) ys))))
-
-  (export list map append
-          caar cadr cdar cddr
+  (export map caar cadr cdar cddr
           cadar caddr cdddr))
 
 ;;; core syntaces
@@ -474,9 +465,6 @@
       (if (pair? obj)
 	  (list? (cdr obj))
 	  #f)))
-
-(define (list . args)
-  args)
 
 (define (caar p)
   (car (car p)))
