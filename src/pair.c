@@ -243,16 +243,6 @@ pic_pair_cdr(pic_state *pic)
 }
 
 static pic_value
-pic_pair_null_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  return pic_bool_value(pic_nil_p(v));
-}
-
-static pic_value
 pic_pair_cons(pic_state *pic)
 {
   pic_value v,w;
@@ -291,6 +281,52 @@ pic_pair_set_cdr(pic_state *pic)
 }
 
 static pic_value
+pic_pair_null_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_nil_p(v));
+}
+
+static pic_value
+pic_pair_length(pic_state *pic)
+{
+  pic_value list;
+
+  pic_get_args(pic, "o", &list);
+
+  return pic_int_value(pic_length(pic, list));
+}
+
+static pic_value
+pic_pair_append(pic_state *pic)
+{
+  size_t argc;
+  pic_value *args, list;
+
+  pic_get_args(pic, "*", &argc, &args);
+
+  list = args[--argc];
+
+  while (argc-- > 0) {
+    list = pic_append(pic, args[argc], list);
+  }
+  return list;
+}
+
+static pic_value
+pic_pair_reverse(pic_state *pic)
+{
+  pic_value list;
+
+  pic_get_args(pic, "o", &list);
+
+  return pic_reverse(pic, list);
+}
+
+static pic_value
 pic_pair_list_tail(pic_state *pic)
 {
   pic_value list;
@@ -318,10 +354,13 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "pair?", pic_pair_pair_p);
   pic_defun(pic, "car", pic_pair_car);
   pic_defun(pic, "cdr", pic_pair_cdr);
-  pic_defun(pic, "null?", pic_pair_null_p);
   pic_defun(pic, "cons", pic_pair_cons);
   pic_defun(pic, "set-car!", pic_pair_set_car);
   pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
+  pic_defun(pic, "null?", pic_pair_null_p);
+  pic_defun(pic, "length", pic_pair_length);
+  pic_defun(pic, "append", pic_pair_append);
+  pic_defun(pic, "reverse", pic_pair_reverse);
   pic_defun(pic, "list-tail", pic_pair_list_tail);
   pic_defun(pic, "list-ref", pic_pair_list_ref);
 }

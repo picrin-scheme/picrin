@@ -498,25 +498,6 @@
 	  (cons (car args)
 		(make-list (- k 1) (car args))))))
 
-(define (length list)
-  (if (null? list)
-      0
-      (+ 1 (length (cdr list)))))
-
-(define (append xs ys)
-  (if (null? xs)
-      ys
-      (cons (car xs)
-            (append (cdr xs) ys))))
-
-(define (reverse list . args)
-  (if (null? args)
-      (reverse list '())
-      (if (null? list)
-	  (car args)
-	  (reverse (cdr list)
-		   (cons (car list) (car args))))))
-
 (define (list-set! list k obj)
   (set-car! (list-tail list k) obj))
 
