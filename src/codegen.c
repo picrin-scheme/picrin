@@ -658,6 +658,8 @@ typedef struct codegen_context {
   bool varg;
   /* rest args variable is counted by localc */
   size_t argc, localc;
+  /* closed variable table */
+  unsigned *cv_tbl, cv_num;
   /* actual bit code sequence */
   struct pic_code *code;
   size_t clen, ccapa;
@@ -680,6 +682,7 @@ typedef struct codegen_state {
   codegen_context *cxt;
   pic_sym sGREF, sCREF, sLREF;
   pic_sym sCALL, sTAILCALL;
+  unsigned *cv_tbl, cv_num;
 } codegen_state;
 
 static void push_codegen_context(codegen_state *, pic_value, pic_value);
@@ -731,6 +734,9 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value defs)
   }
   cxt->localc += pic_length(pic, defs);
 
+  cxt->cv_tbl = NULL;
+  cxt->cv_num = 0;
+
   cxt->code = (struct pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
@@ -758,6 +764,8 @@ pop_codegen_context(codegen_state *state)
   irep->varg = state->cxt->varg;
   irep->argc = state->cxt->argc;
   irep->localc = state->cxt->localc;
+  irep->cv_tbl = state->cxt->cv_tbl;
+  irep->cv_num = state->cxt->cv_num;
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(struct pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);
