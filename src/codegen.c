@@ -300,7 +300,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
       pic_error(pic, "invalid expression given");
     }
 
-    proc = pic_car(pic, obj);
+    proc = pic_list_ref(pic, obj, 0);
     if (pic_symbol_p(proc)) {
       pic_sym sym = pic_sym(proc);
 
@@ -311,18 +311,18 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	var = pic_car(pic, pic_cdr(pic, obj));
+	var = pic_list_ref(pic, obj, 1);
 	if (pic_pair_p(var)) {
 	  val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
-			 pic_cons(pic, pic_cdr(pic, var),
-				  pic_cdr(pic, pic_cdr(pic, obj))));
-	  var = pic_car(pic, var);
+			 pic_cons(pic, pic_list_tail(pic, var, 1),
+				  pic_list_tail(pic, obj, 2)));
+	  var = pic_list_ref(pic, var, 0);
 	}
 	else {
 	  if (pic_length(pic, obj) != 3) {
 	    pic_error(pic, "syntax error");
 	  }
-	  val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+	  val = pic_list_ref(pic, obj, 2);
 	}
 	if (! pic_symbol_p(var)) {
 	  pic_error(pic, "syntax error");
@@ -346,15 +346,15 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	  break;
 	case 4:
-	  if_false = pic_car(pic, pic_cdr(pic, pic_cdr(pic, pic_cdr(pic, obj))));
+	  if_false = pic_list_ref(pic, obj, 3);
 	  FALLTHROUGH;
 	case 3:
-	  if_true = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+	  if_true = pic_list_ref(pic, obj, 2);
 	}
 
         return pic_list(pic, 4,
                         pic_symbol_value(pic->sIF),
-                        analyze(state, pic_car(pic, pic_cdr(pic, obj)), false),
+                        analyze(state, pic_list_ref(pic, obj, 1), false),
                         analyze(state, if_true, tailpos),
                         analyze(state, if_false, tailpos));
       }
@@ -381,12 +381,12 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	  pic_error(pic, "syntax error");
 	}
 
-	var = pic_car(pic, pic_cdr(pic, obj));
+	var = pic_list_ref(pic, obj, 1);
 	if (! pic_symbol_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
 
-        val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+        val = pic_list_ref(pic, obj, 2);
 
         return pic_list(pic, 3,
                         pic_symbol_value(pic->sSETBANG),
@@ -409,13 +409,13 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 #define CONSTRUCT_OP1(op)                                               \
       pic_list(pic, 2,                                                  \
                pic_symbol_value(op),                                    \
-               analyze(state, pic_car(pic, pic_cdr(pic, obj)), false))
+               analyze(state, pic_list_ref(pic, obj, 1), false))
 
 #define CONSTRUCT_OP2(op)                                               \
       pic_list(pic, 3,                                                  \
                pic_symbol_value(op),                                    \
-               analyze(state, pic_car(pic, pic_cdr(pic, obj)), false),  \
-               analyze(state, pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj))), false))
+               analyze(state, pic_list_ref(pic, obj, 1), false),        \
+               analyze(state, pic_list_ref(pic, obj, 2), false))
 
       else if (sym == state->rCONS) {
 	ARGC_ASSERT(2);
@@ -861,10 +861,10 @@ codegen(codegen_state *state, pic_value obj)
     pic_value var, val;
     pic_sym type;
 
-    val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
+    val = pic_list_ref(pic, obj, 2);
     codegen(state, val);
 
-    var = pic_car(pic, pic_cdr(pic, obj));
+    var = pic_list_ref(pic, obj, 1);
     type = pic_sym(var);
     if (type == state->sGREF) {
       cxt->code[cxt->clen].insn = OP_GSET;
