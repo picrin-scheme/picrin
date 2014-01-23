@@ -94,7 +94,6 @@ valid_formal(pic_state *pic, pic_value formal)
 }
 
 typedef struct analyze_scope {
-  int depth;
   /* rest args variable is counted by localc */
   bool varg;
   size_t argc, localc;
@@ -195,7 +194,6 @@ push_scope(analyze_state *state, pic_value args)
 
   scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
   scope->up = state->scope;
-  scope->depth = state->scope ? state->scope->depth + 1 : 0;
   scope->var_tbl = xh_new();
   scope->varg = false;
   scope->vars = analyze_args(pic, args, &scope->varg, &scope->argc, &scope->localc);
