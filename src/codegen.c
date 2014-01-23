@@ -37,9 +37,10 @@ new_irep(pic_state *pic)
   return irep;
 }
 
-static bool
-analyze_args(pic_state *pic, pic_value args, struct xhash *x, bool *varg, size_t *argc, size_t *localc)
+static pic_sym *
+analyze_args(pic_state *pic, pic_value args, bool *varg, size_t *argc, size_t *localc)
 {
+  pic_sym *syms = pic_alloc(pic, sizeof(pic_sym));
   size_t i = 1, l = 0;
   pic_value v;
 
@@ -48,10 +49,12 @@ analyze_args(pic_state *pic, pic_value args, struct xhash *x, bool *varg, size_t
     pic_value sym;
 
     sym = pic_car(pic, v);
-    if (! pic_symbol_p(sym))
-      return false;
-    if (x)
-      xh_put(x, pic_symbol_name(pic, pic_sym(sym)), i);
+    if (! pic_symbol_p(sym)) {
+      pic_free(pic, syms);
+      return NULL;
+    }
+    syms = pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
+    syms[i] = pic_sym(sym);
     i++;
   }
   if (pic_nil_p(v)) {
@@ -59,17 +62,18 @@ analyze_args(pic_state *pic, pic_value args, struct xhash *x, bool *varg, size_t
   }
   else if (pic_symbol_p(v)) {
     *varg = true;
-    if (x)
-      xh_put(x, pic_symbol_name(pic, pic_sym(v)), i + l);
+    syms = pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
+    syms[i] = pic_sym(v);
     l++;
   }
   else {
-    return false;
+    pic_free(pic, syms);
+    return NULL;
   }
   *argc = i;
   *localc = l;
 
-  return true;
+  return syms;
 }
 
 static bool
@@ -77,8 +81,16 @@ valid_formal(pic_state *pic, pic_value formal)
 {
   bool varg;
   size_t argc, localc;
+  pic_sym *syms;
 
-  return analyze_args(pic, formal, NULL, &varg, &argc, &localc);
+  syms = analyze_args(pic, formal, &varg, &argc, &localc);
+  if (syms == NULL) {
+    return false;
+  }
+  else {
+    pic_free(pic, syms);
+    return true;
+  }
 }
 
 typedef struct analyze_scope {
