@@ -2,8 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
-#ifndef PORT_H__
-#define PORT_H__
+#ifndef PICRIN_PORT_H__
+#define PICRIN_PORT_H__
 
 #if defined(__cplusplus)
 extern "C" {
