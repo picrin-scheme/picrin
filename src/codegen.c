@@ -99,7 +99,7 @@ typedef struct analyze_state {
   pic_sym rCONS, rCAR, rCDR, rNILP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE;
-  pic_sym sCALL, sTAILCALL;
+  pic_sym sCALL, sTAILCALL, sREF;
   pic_sym sGREF, sLREF, sCREF;
 } analyze_state;
 
@@ -148,6 +148,7 @@ new_analyze_state(pic_state *pic)
 
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
+  register_symbol(pic, state, sREF, "ref");
   register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
@@ -248,10 +249,10 @@ define_var(analyze_state *state, const char *name)
 }
 
 static pic_value
-new_cref(analyze_state *state, int depth, pic_sym sym)
+new_ref(analyze_state *state, int depth, pic_sym sym)
 {
   return pic_list(state->pic, 3,
-                  pic_symbol_value(state->sCREF),
+                  pic_symbol_value(state->sREF),
                   pic_int_value(depth),
                   pic_symbol_value(sym));
 }
@@ -288,7 +289,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
       pic_error(pic, "symbol: unbound variable");
     }
     /* at this stage, lref/cref/gref are not distinguished */
-    return new_cref(state, depth, pic_sym(obj));
+    return new_ref(state, depth, pic_sym(obj));
   }
   case PIC_TT_PAIR: {
     pic_value proc;
