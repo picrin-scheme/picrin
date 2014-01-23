@@ -409,7 +409,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	if (pic_length(pic, obj) != 2) {
 	  pic_error(pic, "syntax error");
 	}
-        return obj;             /* TODO: quote only if necessary */
+        return obj;
       }
 
 #define ARGC_ASSERT(n) do {				\
@@ -547,9 +547,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
   case PIC_TT_NIL:
-  case PIC_TT_CHAR: {
-    return obj;
-  }
+  case PIC_TT_CHAR:
   case PIC_TT_STRING:
   case PIC_TT_VECTOR:
   case PIC_TT_BLOB: {
@@ -821,51 +819,9 @@ codegen(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
-  pic_value tag;
   pic_sym sym;
 
-  switch (pic_type(obj)) {
-  case PIC_TT_BOOL:
-    if (pic_true_p(obj)) {
-      cxt->code[cxt->clen].insn = OP_PUSHTRUE;
-    } else {
-      cxt->code[cxt->clen].insn = OP_PUSHFALSE;
-    }
-    cxt->clen++;
-    return;
-  case PIC_TT_FLOAT:
-    cxt->code[cxt->clen].insn = OP_PUSHFLOAT;
-    cxt->code[cxt->clen].u.f = pic_float(obj);
-    cxt->clen++;
-    return;
-  case PIC_TT_INT:
-    cxt->code[cxt->clen].insn = OP_PUSHINT;
-    cxt->code[cxt->clen].u.i = pic_int(obj);
-    cxt->clen++;
-    return;
-  case PIC_TT_NIL:
-    cxt->code[cxt->clen].insn = OP_PUSHNIL;
-    cxt->clen++;
-    return;
-  case PIC_TT_CHAR:
-    cxt->code[cxt->clen].insn = OP_PUSHCHAR;
-    cxt->code[cxt->clen].u.c = pic_char(obj);
-    cxt->clen++;
-    return;
-  default:
-    break;
-  }
-
-  if (! pic_list_p(pic, obj)) {
-    pic_error(pic, "codegen: invalid AST given");
-  }
-
-  tag = pic_car(pic, obj);
-  if (! pic_symbol_p(tag)) {
-    pic_error(pic, "codegen: broken AST");
-  }
-
-  sym = pic_sym(tag);
+  sym = pic_sym(pic_car(pic, obj));
   if (sym == state->sGREF) {
     cxt->code[cxt->clen].insn = OP_GREF;
     cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, obj, 1));
@@ -961,16 +917,47 @@ codegen(codegen_state *state, pic_value obj)
   else if (sym == pic->sQUOTE) {
     int pidx;
 
-    if (cxt->plen >= cxt->pcapa) {
-      cxt->pcapa *= 2;
-      cxt->pool = (pic_value *)pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->pcapa);
+    obj = pic_list_ref(pic, obj, 1);
+    switch (pic_type(obj)) {
+    case PIC_TT_BOOL:
+      if (pic_true_p(obj)) {
+        cxt->code[cxt->clen].insn = OP_PUSHTRUE;
+      } else {
+        cxt->code[cxt->clen].insn = OP_PUSHFALSE;
+      }
+      cxt->clen++;
+      return;
+    case PIC_TT_FLOAT:
+      cxt->code[cxt->clen].insn = OP_PUSHFLOAT;
+      cxt->code[cxt->clen].u.f = pic_float(obj);
+      cxt->clen++;
+      return;
+    case PIC_TT_INT:
+      cxt->code[cxt->clen].insn = OP_PUSHINT;
+      cxt->code[cxt->clen].u.i = pic_int(obj);
+      cxt->clen++;
+      return;
+    case PIC_TT_NIL:
+      cxt->code[cxt->clen].insn = OP_PUSHNIL;
+      cxt->clen++;
+      return;
+    case PIC_TT_CHAR:
+      cxt->code[cxt->clen].insn = OP_PUSHCHAR;
+      cxt->code[cxt->clen].u.c = pic_char(obj);
+      cxt->clen++;
+      return;
+    default:
+      if (cxt->plen >= cxt->pcapa) {
+        cxt->pcapa *= 2;
+        cxt->pool = (pic_value *)pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->pcapa);
+      }
+      pidx = cxt->plen++;
+      cxt->pool[pidx] = obj;
+      cxt->code[cxt->clen].insn = OP_PUSHCONST;
+      cxt->code[cxt->clen].u.i = pidx;
+      cxt->clen++;
+      return;
     }
-    pidx = cxt->plen++;
-    cxt->pool[pidx] = pic_car(pic, pic_cdr(pic, obj));
-    cxt->code[cxt->clen].insn = OP_PUSHCONST;
-    cxt->code[cxt->clen].u.i = pidx;
-    cxt->clen++;
-    return;
   }
   else if (sym == pic->sCONS) {
     codegen(state, pic_list_ref(pic, obj, 1));
