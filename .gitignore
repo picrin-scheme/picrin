@@ -6,3 +6,6 @@ src/y.tab.h
 lib/libpicrin.so
 lib/libpicrin.so.dSYM
 .dir-locals.el
+GPATH
+GRTAGS
+GTAGS

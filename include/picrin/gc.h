@@ -9,18 +9,16 @@
 extern "C" {
 #endif
 
-enum pic_gc_mark {
-  PIC_GC_UNMARK = 0,
-  PIC_GC_MARK
-};
+#define PIC_GC_UNMARK 0
+#define PIC_GC_MARK 1
 
 union header {
   struct {
     union header *ptr;
     size_t size;
-    enum pic_gc_mark mark : 1;
+    unsigned int mark : 1;
   } s;
-  long alignment[2];
+  long alignment[4];
 };
 
 struct heap_page {

@@ -35,31 +35,11 @@
 (define-library (picrin bootstrap-tools)
   (import (scheme base))
 
-  (define (list . args) args)
-
-  (define (caar p) (car (car p)))
-  (define (cadr p) (car (cdr p)))
-  (define (cdar p) (cdr (car p)))
-  (define (cddr p) (cdr (cdr p)))
   (define (cadar p) (car (cdar p)))
   (define (caddr p) (car (cddr p)))
   (define (cdddr p) (cdr (cddr p)))
 
-  (define (map f list)
-    (if (null? list)
-        list
-        (cons (f (car list))
-              (map f (cdr list)))))
-
-  (define (append xs ys)
-    (if (null? xs)
-        ys
-        (cons (car xs)
-              (append (cdr xs) ys))))
-
-  (export list map append
-          caar cadr cdar cddr
-          cadar caddr cdddr))
+  (export cadar caddr cdddr))
 
 ;;; core syntaces
 (define-library (picrin core-syntax)
@@ -367,15 +347,6 @@
 (export make-parameter
         parameterize)
 
-(define (any pred list)
-  (if (null? list)
-      #f
-      ((lambda (it)
-	 (if it
-	     it
-	     (any pred (cdr list))))
-       (pred (car list)))))
-
 (define (every pred list)
   (if (null? list)
       #t
@@ -388,37 +359,7 @@
       s
       (fold f (f (car xs) s) (cdr xs))))
 
-;;; FIXME forward declaration
-(define map #f)
-
 ;;; 6.2. Numbers
-
-(define (zero? n)
-  (= n 0))
-
-(define (positive? x)
-  (> x 0))
-
-(define (negative? x)
-  (< x 0))
-
-(define (odd? n)
-  (= 0 (floor-remainder n 2)))
-
-(define (even? n)
-  (= 1 (floor-remainder n 2)))
-
-(define (min x . args)
-  (let loop ((pivot x) (rest args))
-    (if (null? rest)
-	pivot
-	(loop (if (< pivot (car rest)) pivot (car rest)) (cdr rest)))))
-
-(define (max x . args)
-  (let loop ((pivot x) (rest args))
-    (if (null? rest)
-	pivot
-	(loop (if (> pivot (car rest)) pivot (car rest)) (cdr rest)))))
 
 (define (floor/ n m)
   (values (floor-quotient n m)
@@ -435,28 +376,8 @@
   (let ((n (exact (floor (sqrt k)))))
     (values n (- k (square n)))))
 
-(define (gcd n m)
-  (if (negative? n)
-      (set! n (- n)))
-  (if (negative? m)
-      (set! m (- m)))
-  (if (> n m)
-      ((lambda (tmp)
-	 (set! n m)
-	 (set! m tmp))
-       n))
-  (if (zero? n)
-      m
-      (gcd (floor-remainder m n) n)))
-
-(define (lcm n m)
-  (/ (* n m) (gcd n m)))
-
-(export zero? positive? negative?
-        odd? even? min max
-        floor/ truncate/
-        exact-integer-sqrt
-        gcd lcm)
+(export floor/ truncate/
+        exact-integer-sqrt)
 
 ;;; 6.3 Booleans
 
@@ -467,72 +388,6 @@
 (export boolean=?)
 
 ;;; 6.4 Pairs and lists
-
-(define (list? obj)
-  (if (null? obj)
-      #t
-      (if (pair? obj)
-	  (list? (cdr obj))
-	  #f)))
-
-(define (list . args)
-  args)
-
-(define (caar p)
-  (car (car p)))
-
-(define (cadr p)
-  (car (cdr p)))
-
-(define (cdar p)
-  (cdr (car p)))
-
-(define (cddr p)
-  (cdr (cdr p)))
-
-(define (make-list k . args)
-  (if (null? args)
-      (make-list k #f)
-      (if (zero? k)
-	  '()
-	  (cons (car args)
-		(make-list (- k 1) (car args))))))
-
-(define (length list)
-  (if (null? list)
-      0
-      (+ 1 (length (cdr list)))))
-
-(define (append xs ys)
-  (if (null? xs)
-      ys
-      (cons (car xs)
-            (append (cdr xs) ys))))
-
-(define (reverse list . args)
-  (if (null? args)
-      (reverse list '())
-      (if (null? list)
-	  (car args)
-	  (reverse (cdr list)
-		   (cons (car list) (car args))))))
-
-(define (list-tail list k)
-  (if (zero? k)
-      list
-      (list-tail (cdr list) (- k 1))))
-
-(define (list-ref list k)
-  (car (list-tail list k)))
-
-(define (list-set! list k obj)
-  (set-car! (list-tail list k) obj))
-
-(define (list-copy obj)
-  (if (null? obj)
-      obj
-      (cons (car obj)
-	    (list-copy (cdr obj)))))
 
 (define (memq obj list)
   (if (null? list)
@@ -578,10 +433,7 @@
 	    (car list)
 	    (assoc obj (cdr list) compare)))))
 
-(export list? list caar cadr cdar cddr
-        make-list length append reverse
-        list-tail list-ref list-set! list-copy
-        memq memv member
+(export memq memv member
         assq assv assoc)
 
 ;;; 6.5. Symbols
@@ -825,39 +677,6 @@
 
 ;;; 6.10 control features
 
-(set! map
-      (lambda (f list . lists)
-        (define (single-map f list)
-          (if (null? list)
-              '()
-              (cons (f (car list))
-                    (map f (cdr list)))))
-        (define (multiple-map f lists)
-          (if (any null? lists)
-              '()
-              (cons (apply f (single-map car lists))
-                    (multiple-map f (single-map cdr lists)))))
-        (if (null? lists)
-            (single-map f list)
-            (multiple-map f (cons list lists)))))
-
-(define (for-each f list . lists)
-  (define (single-for-each f list)
-    (if (null? list)
-	#f
-	(begin
-	  (f (car list))
-	  (single-for-each f (cdr list)))))
-  (define (multiple-for-each f lists)
-    (if (any null? lists)
-	#f
-	(begin
-	  (apply f (map car lists))
-	  (multiple-for-each f (map cdr lists)))))
-  (if (null? lists)
-      (single-for-each f list)
-      (multiple-for-each f (cons list lists))))
-
 (define (string-map f v . vs)
   (let* ((len (fold min (string-length v) (map string-length vs)))
 	 (vec (make-string len)))
@@ -896,8 +715,7 @@
 	       (map (lambda (v) (vector-ref v n)) vs))
 	(loop (+ n 1))))))
 
-(export map for-each
-        string-map string-for-each
+(export string-map string-for-each
         vector-map vector-for-each)
 
 ;;; 6.13. Input and output
