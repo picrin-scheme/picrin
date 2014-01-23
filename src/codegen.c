@@ -82,8 +82,8 @@ valid_formal(pic_state *pic, pic_value formal)
 }
 
 typedef struct analyze_scope {
-  bool varg;
   /* rest args variable is counted by localc */
+  bool varg;
   size_t argc, localc;
   /* local variables are 1-indexed, 0 is reserved for the callee */
   struct xhash *local_tbl;
@@ -121,6 +121,7 @@ static analyze_state *
 new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
+  struct xhash *global_tbl;
   struct xh_iter it;
   struct pic_lib *stdlib;
 
@@ -154,7 +155,8 @@ new_analyze_state(pic_state *pic)
   /* push initial scope */
   push_scope(state, pic_nil_value());
 
-  for (it = xh_begin(pic->global_tbl); ! xh_isend(&it); xh_next(pic->global_tbl, &it)) {
+  global_tbl = pic->global_tbl;
+  for (it = xh_begin(global_tbl); ! xh_isend(&it); xh_next(global_tbl, &it)) {
     xh_put(state->scope->local_tbl, it.e->key, 0);
   }
 
@@ -371,7 +373,6 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
       }
       else if (sym == pic->sSETBANG) {
 	pic_value var, val;
-	int depth;
 
 	if (pic_length(pic, obj) != 3) {
 	  pic_error(pic, "syntax error");
@@ -380,11 +381,6 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	var = pic_car(pic, pic_cdr(pic, obj));
 	if (! pic_symbol_p(var)) {
 	  pic_error(pic, "syntax error");
-	}
-
-	depth = lookup_var(state, pic_symbol_name(pic, pic_sym(var)));
-	if (depth == -1) {
-	  pic_error(pic, "unbound variable");
 	}
 
         val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, obj)));
