@@ -657,6 +657,241 @@ pic_analyze(pic_state *pic, pic_value obj)
   return obj;
 }
 
+typedef struct resolver_scope {
+  int depth;
+  bool varg;
+  size_t argc, localc;
+  struct xhash *cvs, *lvs;
+  unsigned cv_num;
+
+  struct resolver_scope *up;
+} resolver_scope;
+
+typedef struct resolver_state {
+  pic_state *pic;
+  resolver_scope *scope;
+  pic_sym sREF, sCLOSE;
+  pic_sym sGREF, sCREF, sLREF;
+} resolver_state;
+
+static void push_resolver_scope(resolver_state *, pic_value, pic_value);
+static void pop_resolver_scope(resolver_state *);
+
+static resolver_state *
+new_resolver_state(pic_state *pic)
+{
+  resolver_state *state;
+
+  state = (resolver_state *)pic_alloc(pic, sizeof(resolver_state));
+  state->pic = pic;
+  state->scope = NULL;
+
+  register_symbol(pic, state, sREF, "ref");
+  register_symbol(pic, state, sCLOSE, "close");
+  register_symbol(pic, state, sGREF, "gref");
+  register_symbol(pic, state, sLREF, "lref");
+  register_symbol(pic, state, sCREF, "cref");
+
+  push_resolver_scope(state, pic_nil_value(), pic_nil_value());
+
+  return state;
+}
+
+static void
+destroy_resolver_state(resolver_state *state)
+{
+  /* TODO */
+}
+
+static void
+push_resolver_scope(resolver_state *state, pic_value args, pic_value decls)
+{
+  pic_state *pic = state->pic;
+  resolver_scope *scope;
+  pic_sym *vars;
+  int i;
+
+  scope = (resolver_scope *)pic_alloc(pic, sizeof(resolver_scope));
+  scope->up = state->scope;
+  scope->depth = scope->up ? scope->up->depth + 1 : 0;
+  scope->lvs = xh_new();
+  scope->cvs = xh_new();
+
+  vars = analyze_args(pic, args, &scope->varg, &scope->argc, &scope->localc);
+  for (; ! pic_nil_p(decls); decls = pic_cdr(pic, decls)) {
+    pic_value decl = pic_car(pic, decls);
+    if (pic_sym(pic_car(pic, decl)) == state->sCLOSE) {
+      break;
+    }
+    scope->localc++;
+    vars = (pic_sym *)pic_realloc(pic, vars, sizeof(pic_sym) * (scope->argc + scope->localc));
+    vars[scope->argc + scope->localc - 1] = pic_sym(pic_list_ref(pic, decl, 1));
+  }
+
+  /* local variables */
+  for (i = 1; i < scope->argc + scope->localc; ++i) {
+    xh_put(scope->lvs, pic_symbol_name(pic, vars[i]), i);
+  }
+
+  /* closed variables */
+  scope->cv_num = 0;
+  for (; ! pic_nil_p(decls); decls = pic_cdr(pic, decls)) {
+    pic_value decl = pic_car(pic, decls);
+    xh_put(scope->cvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, decl, 1))), scope->cv_num++);
+  }
+
+  pic_free(pic, vars);
+
+  state->scope = scope;
+}
+
+static void
+pop_resolver_scope(resolver_state *state)
+{
+  /* FIXME */
+  state->scope = state->scope->up;
+}
+
+static bool
+is_closed(resolver_state *state, int depth, pic_sym sym)
+{
+  resolver_scope *scope = state->scope;
+
+  while (depth-- > 0) {
+    scope = scope->up;
+  }
+
+  return xh_get(scope->cvs, pic_symbol_name(state->pic, sym)) != NULL;
+}
+
+static pic_value
+resolve_gref(resolver_state *state, pic_sym sym)
+{
+  pic_state *pic = state->pic;
+  const char *name = pic_symbol_name(pic, sym);
+  struct xh_entry *e;
+  int i;
+
+  if ((e = xh_get(pic->global_tbl, name))) {
+    i = e->val;
+  }
+  else {
+    i = pic->glen++;
+    if (i >= pic->gcapa) {
+      pic_error(pic, "global table overflow");
+    }
+    xh_put(pic->global_tbl, name, i);
+  }
+  return pic_list(pic, 2, pic_symbol_value(state->sGREF), pic_int_value(i));
+}
+
+static pic_value
+resolve_lref(resolver_state *state, pic_sym sym)
+{
+  pic_state *pic = state->pic;
+  int i;
+
+  i = xh_get(state->scope->lvs, pic_symbol_name(pic, sym))->val;
+
+  return pic_list(pic, 2, pic_symbol_value(state->sLREF), pic_int_value(i));
+}
+
+static pic_value
+resolve_cref(resolver_state *state, int depth, pic_sym sym)
+{
+  pic_state *pic = state->pic;
+  resolver_scope *scope = state->scope;
+  int i, d;
+
+  d = depth;
+  while (d-- > 0) {
+    scope = scope->up;
+  }
+
+  i = xh_get(scope->cvs, pic_symbol_name(pic, sym))->val;
+
+  return pic_list(pic, 3,
+                  pic_symbol_value(state->sCREF),
+                  pic_int_value(depth),
+                  pic_int_value(i));
+}
+
+static pic_value
+resolve_reference(resolver_state *state, pic_value obj)
+{
+  pic_state *pic = state->pic;
+  resolver_scope *scope = state->scope;
+  pic_sym tag;
+
+  if (! pic_pair_p(obj))
+    return obj;
+
+  tag = pic_sym(pic_car(pic, obj));
+  if (tag == state->sREF) {
+    int depth;
+    pic_sym sym;
+
+    depth = pic_int(pic_list_ref(pic, obj, 1));
+    sym = pic_sym(pic_list_ref(pic, obj, 2));
+    if (depth == scope->depth) {
+      return resolve_gref(state, sym);
+    }
+    else if (depth == 0 && is_closed(state, depth, sym)) {
+      return resolve_lref(state, sym);
+    }
+    else {
+      return resolve_cref(state, depth, sym);
+    }
+  }
+  else if (tag == pic->sLAMBDA) {
+    pic_value args, decls, body;
+
+    args = pic_list_ref(pic, obj, 1);
+    decls = pic_cdr(pic, pic_list_ref(pic, obj, 2));
+    body = pic_list_ref(pic, obj, 3);
+
+    push_resolver_scope(state, args, decls);
+    {
+      int localc;
+
+      body = resolve_reference(state, body);
+
+      /* slice decls. dropping out close declarations */
+      localc = scope->localc - (scope->varg ? 1 : 0);
+      decls = pic_reverse(pic, decls);
+      decls = pic_list_tail(pic, decls, pic_length(pic, decls) - localc);
+      decls = pic_reverse(pic, decls);
+      decls = pic_cons(pic, pic_symbol_value(pic->sBEGIN), decls);
+    }
+    pop_resolver_scope(state);
+
+    return pic_list(pic, 4, pic_symbol_value(pic->sLAMBDA), args, decls, body);
+  }
+  else if (tag == pic->sQUOTE) {
+    return obj;
+  }
+  else {
+    pic_value seq = pic_list(pic, 1, pic_symbol_value(tag));
+    for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
+      seq = pic_cons(pic, resolve_reference(state, pic_car(pic, obj)), seq);
+    }
+    return pic_reverse(pic, seq);
+  }
+}
+
+static pic_value
+pic_resolve(pic_state *pic, pic_value obj)
+{
+  resolver_state *state;
+
+  state = new_resolver_state(pic);
+
+  obj = resolve_reference(state, obj);
+
+  destroy_resolver_state(state);
+  return obj;
+}
+
 /**
  * scope object
  */
@@ -800,6 +1035,10 @@ codegen(codegen_state *state, pic_value obj)
   pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
   pic_sym sym;
+
+  printf("generating... ");
+  pic_debug(pic, obj);
+  puts("");
 
   sym = pic_sym(pic_car(pic, obj));
   if (sym == state->sGREF) {
@@ -1104,6 +1343,10 @@ pic_compile(pic_state *pic, pic_value obj)
 
   /* analyze */
   obj = pic_analyze(pic, obj);
+  pic_debug(pic, obj);
+
+  /* resolution */
+  obj = pic_resolve(pic, obj);
   pic_debug(pic, obj);
 
   /* codegen */
