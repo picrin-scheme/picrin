@@ -826,7 +826,7 @@ codegen(codegen_state *state, pic_value obj)
     codegen(state, val);
 
     var = pic_list_ref(pic, obj, 1);
-    type = pic_sym(var);
+    type = pic_sym(pic_list_ref(pic, var, 0));
     if (type == state->sGREF) {
       cxt->code[cxt->clen].insn = OP_GSET;
       cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, var, 1));
