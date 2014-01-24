@@ -1039,7 +1039,7 @@ codegen(codegen_state *state, pic_value obj)
       codegen(state, pic_car(pic, obj));
     }
     cxt->code[cxt->clen].insn = (sym == state->sCALL) ? OP_CALL : OP_TAILCALL;
-    cxt->code[cxt->clen].u.i = len;
+    cxt->code[cxt->clen].u.i = len - 1;
     cxt->clen++;
     return;
   }
