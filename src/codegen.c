@@ -813,7 +813,7 @@ codegen(codegen_state *state, pic_value obj)
     cxt->code[cxt->clen].u.r.idx = pic_int(pic_list_ref(pic, obj, 2));
     cxt->clen++;
     return;
-  } else if (sym == state-> sLREF) {
+  } else if (sym == state->sLREF) {
     cxt->code[cxt->clen].insn = OP_LREF;
     cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, obj, 1));
     cxt->clen++;
@@ -1003,30 +1003,35 @@ codegen(codegen_state *state, pic_value obj)
     codegen(state, pic_list_ref(pic, obj, 2));
     cxt->code[cxt->clen].insn = OP_EQ;
     cxt->clen++;
+    return;
   }
   else if (sym == pic->sLT) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
     cxt->code[cxt->clen].insn = OP_LT;
     cxt->clen++;
+    return;
   }
   else if (sym == pic->sLE) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
     cxt->code[cxt->clen].insn = OP_LE;
     cxt->clen++;
+    return;
   }
   else if (sym == pic->sGT) {
     codegen(state, pic_list_ref(pic, obj, 2));
     codegen(state, pic_list_ref(pic, obj, 1));
     cxt->code[cxt->clen].insn = OP_LT;
     cxt->clen++;
+    return;
   }
   else if (sym == pic->sGE) {
     codegen(state, pic_list_ref(pic, obj, 2));
     codegen(state, pic_list_ref(pic, obj, 1));
     cxt->code[cxt->clen].insn = OP_LE;
     cxt->clen++;
+    return;
   }
   else if (sym == state->sCALL || sym == state->sTAILCALL) {
     int len = pic_length(pic, obj);
@@ -1036,6 +1041,7 @@ codegen(codegen_state *state, pic_value obj)
     cxt->code[cxt->clen].insn = (sym == state->sCALL) ? OP_CALL : OP_TAILCALL;
     cxt->code[cxt->clen].u.i = len;
     cxt->clen++;
+    return;
   }
   pic_error(pic, "codegen: unknown AST type");
 }
@@ -1060,8 +1066,6 @@ codegen_lambda(codegen_state *state, pic_value obj)
   }
   return pop_codegen_context(state);
 }
-
-pic_value pic_analyze(pic_state *, pic_value);
 
 struct pic_irep *
 pic_codegen(pic_state *pic, pic_value obj)
