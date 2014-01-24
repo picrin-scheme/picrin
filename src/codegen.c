@@ -796,22 +796,6 @@ pop_codegen_context(codegen_state *state)
   return irep;
 }
 
-static int
-scope_global_define(pic_state *pic, const char *name)
-{
-  struct xh_entry *e;
-
-  if ((e = xh_get(pic->global_tbl, name))) {
-    pic_warn(pic, "redefining global");
-    return e->val;
-  }
-  e = xh_put(pic->global_tbl, name, pic->glen++);
-  if (pic->glen >= pic->gcapa) {
-    pic_error(pic, "global table overflow");
-  }
-  return e->val;
-}
-
 static struct pic_irep *codegen_lambda(codegen_state *, pic_value);
 
 static void
@@ -1138,6 +1122,22 @@ pic_compile(pic_state *pic, pic_value obj)
   pic_gc_protect(pic, pic_obj_value(proc));
 
   return proc;
+}
+
+static int
+scope_global_define(pic_state *pic, const char *name)
+{
+  struct xh_entry *e;
+
+  if ((e = xh_get(pic->global_tbl, name))) {
+    pic_warn(pic, "redefining global");
+    return e->val;
+  }
+  e = xh_put(pic->global_tbl, name, pic->glen++);
+  if (pic->glen >= pic->gcapa) {
+    pic_error(pic, "global table overflow");
+  }
+  return e->val;
 }
 
 void
