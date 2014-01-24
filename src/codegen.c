@@ -1050,14 +1050,14 @@ static struct pic_irep *
 codegen_lambda(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  pic_value args, defs, body;
+  pic_value args, decls, body;
 
   args = pic_list_ref(pic, obj, 1);
-  defs = pic_cdr(pic, pic_list_ref(pic, obj, 2));
+  decls = pic_cdr(pic, pic_list_ref(pic, obj, 2));
   body = pic_list_ref(pic, obj, 3);
 
   /* inner environment */
-  push_codegen_context(state, args, defs);
+  push_codegen_context(state, args, decls);
   {
     /* body */
     codegen(state, body);
