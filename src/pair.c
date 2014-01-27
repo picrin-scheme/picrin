@@ -58,6 +58,7 @@ pic_list_p(pic_state *pic, pic_value obj)
 pic_value
 pic_list(pic_state *pic, size_t c, ...)
 {
+  int ai = pic_gc_arena_preserve(pic);
   va_list ap;
   pic_value v;
 
@@ -69,6 +70,10 @@ pic_list(pic_state *pic, size_t c, ...)
   }
 
   va_end(ap);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, v);
+
   return pic_reverse(pic, v);
 }
 
