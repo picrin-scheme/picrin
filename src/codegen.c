@@ -874,9 +874,14 @@ resolve_reference_node(resolver_state *state, pic_value obj)
     return obj;
   }
   else {
+    int ai = pic_gc_arena_preserve(pic);
     pic_value seq = pic_list(pic, 1, pic_symbol_value(tag));
     for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
       seq = pic_cons(pic, resolve_reference(state, pic_car(pic, obj)), seq);
+
+      pic_gc_arena_restore(pic, ai);
+      pic_gc_protect(pic, obj);
+      pic_gc_protect(pic, seq);
     }
     return pic_reverse(pic, seq);
   }
