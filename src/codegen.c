@@ -1096,7 +1096,7 @@ codegen(codegen_state *state, pic_value obj)
       return;
     }
     else if (type == state->sLREF) {
-      cxt->code[cxt->clen].insn = OP_CSET;
+      cxt->code[cxt->clen].insn = OP_LSET;
       cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, var, 1));
       cxt->clen++;
       cxt->code[cxt->clen].insn = OP_PUSHNONE;
