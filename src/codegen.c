@@ -1572,4 +1572,8 @@ pic_dump_irep(pic_state *pic, struct pic_irep *irep)
   for (i = 0; i < irep->clen; ++i) {
     print_code(pic, irep->code[i]);
   }
+
+  for (i = 0; i < irep->ilen; ++i) {
+    pic_dump_irep(pic, irep->irep[i]);
+  }
 }
