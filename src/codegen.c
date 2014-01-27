@@ -447,7 +447,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 
 #define FOLD_ARGS(sym) do {                                             \
         obj = analyze(state, pic_car(pic, args), false);                \
-        for (args = pic_cdr(pic, obj); ! pic_nil_p(args); args = pic_cdr(pic, args)) { \
+        for (args = pic_cdr(pic, args); ! pic_nil_p(args); args = pic_cdr(pic, args)) { \
           obj = pic_list(pic, 3, pic_symbol_value(sym), obj,            \
                          analyze(state, pic_car(pic, args), false));    \
         }                                                               \
