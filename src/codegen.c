@@ -110,8 +110,7 @@ typedef struct analyze_state {
   pic_sym rCONS, rCAR, rCDR, rNILP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE;
-  pic_sym sCALL, sTAILCALL;
-  pic_sym sDECLARE, sCLOSE, sREF;
+  pic_sym sCALL, sTAILCALL, sREF;
 } analyze_state;
 
 static void push_scope(analyze_state *, pic_value);
@@ -159,8 +158,6 @@ new_analyze_state(pic_state *pic)
 
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
-  register_symbol(pic, state, sDECLARE, "declare");
-  register_symbol(pic, state, sCLOSE, "close");
   register_symbol(pic, state, sREF, "ref");
 
   /* push initial scope */
@@ -674,7 +671,7 @@ typedef struct resolver_scope {
 typedef struct resolver_state {
   pic_state *pic;
   resolver_scope *scope;
-  pic_sym sREF, sCLOSE;
+  pic_sym sREF;
   pic_sym sGREF, sCREF, sLREF;
 } resolver_state;
 
@@ -691,7 +688,6 @@ new_resolver_state(pic_state *pic)
   state->scope = NULL;
 
   register_symbol(pic, state, sREF, "ref");
-  register_symbol(pic, state, sCLOSE, "close");
   register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
