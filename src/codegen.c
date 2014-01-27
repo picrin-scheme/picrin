@@ -700,7 +700,8 @@ new_resolver_state(pic_state *pic)
 static void
 destroy_resolver_state(resolver_state *state)
 {
-  /* TODO */
+  pop_resolver_scope(state);
+  pic_free(state->pic, state);
 }
 
 static void
@@ -748,8 +749,15 @@ push_resolver_scope(resolver_state *state, pic_value args, pic_value decls)
 static void
 pop_resolver_scope(resolver_state *state)
 {
-  /* FIXME */
-  state->scope = state->scope->up;
+  resolver_scope *scope;
+
+  scope = state->scope;
+  xh_destory(scope->cvs);
+  xh_destory(scope->lvs);
+
+  scope = scope->up;
+  pic_free(state->pic, state->scope);
+  state->scope = scope;
 }
 
 static bool
@@ -1049,10 +1057,6 @@ codegen(codegen_state *state, pic_value obj)
   pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
   pic_sym sym;
-
-  printf("generating... ");
-  pic_debug(pic, obj);
-  puts("");
 
   sym = pic_sym(pic_car(pic, obj));
   if (sym == state->sGREF) {
