@@ -595,7 +595,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   int ai = pic_gc_arena_preserve(pic);
-  pic_value args, body, decls;
+  pic_value args, body, locals, varg, closes;
 
   if (pic_length(pic, obj) < 2) {
     pic_error(pic, "syntax error");
@@ -617,28 +617,32 @@ analyze_lambda(analyze_state *state, pic_value obj)
     body = pic_cons(pic, pic_symbol_value(pic->sBEGIN), body);
     body = analyze(state, body, true);
 
-    /* declare local variables */
-    decls = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
-    for (i = scope->varg ? 1 : 0; i < scope->localc; ++i) {
-      pic_value decl = pic_list(pic, 2,
-                                pic_symbol_value(state->sDECLARE),
-                                pic_symbol_value(scope->vars[scope->argc + i]));
-      decls = pic_cons(pic, decl, decls);
+    args = pic_nil_value();
+    for (i = 1; i < scope->argc; ++i) {
+      args = pic_cons(pic, pic_symbol_value(scope->vars[i]), args);
     }
+    args = pic_reverse(pic, args);
+
+    locals = pic_nil_value();
+    for (i = 0; i < scope->localc; ++i) {
+      locals = pic_cons(pic, pic_symbol_value(scope->vars[scope->argc + i]), locals);
+    }
+    locals = pic_reverse(pic, locals);
+
+    varg = scope->varg ? pic_true_value() : pic_false_value();
+
+    closes = pic_nil_value();
     for (i = 1; i < scope->argc + scope->localc; ++i) {
       pic_sym var = scope->vars[i];
       if (xh_get(scope->var_tbl, pic_symbol_name(pic, var))) {
-        pic_value close = pic_list(pic, 2,
-                                   pic_symbol_value(state->sCLOSE),
-                                   pic_symbol_value(var));
-        decls = pic_cons(pic, close, decls);
+        closes = pic_cons(pic, pic_symbol_value(var), closes);
       }
     }
-    decls = pic_reverse(pic, decls);
+    closes = pic_reverse(pic, closes);
   }
   pop_scope(state);
 
-  obj = pic_list(pic, 4, pic_symbol_value(pic->sLAMBDA), args, decls, body);
+  obj = pic_list(pic, 6, pic_symbol_value(pic->sLAMBDA), args, locals, varg, closes, body);
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, obj);
   return obj;
@@ -674,7 +678,7 @@ typedef struct resolver_state {
   pic_sym sGREF, sCREF, sLREF;
 } resolver_state;
 
-static void push_resolver_scope(resolver_state *, pic_value, pic_value);
+static void push_resolver_scope(resolver_state *, pic_value, pic_value, bool, pic_value);
 static void pop_resolver_scope(resolver_state *);
 
 static resolver_state *
@@ -692,7 +696,7 @@ new_resolver_state(pic_state *pic)
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
 
-  push_resolver_scope(state, pic_nil_value(), pic_nil_value());
+  push_resolver_scope(state, pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 
   return state;
 }
@@ -705,43 +709,36 @@ destroy_resolver_state(resolver_state *state)
 }
 
 static void
-push_resolver_scope(resolver_state *state, pic_value args, pic_value decls)
+push_resolver_scope(resolver_state *state, pic_value args, pic_value locals, bool varg, pic_value closes)
 {
   pic_state *pic = state->pic;
   resolver_scope *scope;
-  pic_sym *vars;
-  int i;
+  int i, c;
 
   scope = (resolver_scope *)pic_alloc(pic, sizeof(resolver_scope));
   scope->up = state->scope;
   scope->depth = scope->up ? scope->up->depth + 1 : 0;
   scope->lvs = xh_new();
   scope->cvs = xh_new();
+  scope->argc = pic_length(pic, args) + 1;
+  scope->localc = pic_length(pic, locals);
+  scope->varg = varg;
 
-  vars = analyze_args(pic, args, &scope->varg, &scope->argc, &scope->localc);
-  for (; ! pic_nil_p(decls); decls = pic_cdr(pic, decls)) {
-    pic_value decl = pic_car(pic, decls);
-    if (pic_sym(pic_car(pic, decl)) == state->sCLOSE) {
-      break;
-    }
-    scope->localc++;
-    vars = (pic_sym *)pic_realloc(pic, vars, sizeof(pic_sym) * (scope->argc + scope->localc));
-    vars[scope->argc + scope->localc - 1] = pic_sym(pic_list_ref(pic, decl, 1));
+  /* arguments */
+  for (i = 1; i < scope->argc; ++i) {
+    xh_put(scope->lvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, args, i - 1))), i);
   }
 
-  /* local variables */
-  for (i = 1; i < scope->argc + scope->localc; ++i) {
-    xh_put(scope->lvs, pic_symbol_name(pic, vars[i]), i);
+  /* locals */
+  for (i = 0; i < scope->localc; ++i) {
+    xh_put(scope->lvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, locals, i))), scope->argc + i);
   }
 
   /* closed variables */
   scope->cv_num = 0;
-  for (; ! pic_nil_p(decls); decls = pic_cdr(pic, decls)) {
-    pic_value decl = pic_car(pic, decls);
-    xh_put(scope->cvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, decl, 1))), scope->cv_num++);
+  for (i = 0, c = pic_length(pic, closes); i < c; ++i) {
+    xh_put(scope->cvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, closes, i))), scope->cv_num++);
   }
-
-  pic_free(pic, vars);
 
   state->scope = scope;
 }
@@ -866,28 +863,22 @@ resolve_reference_node(resolver_state *state, pic_value obj)
     }
   }
   else if (tag == pic->sLAMBDA) {
-    pic_value args, decls, body;
+    pic_value args, locals, closes, body;
+    bool varg;
 
     args = pic_list_ref(pic, obj, 1);
-    decls = pic_cdr(pic, pic_list_ref(pic, obj, 2));
-    body = pic_list_ref(pic, obj, 3);
+    locals = pic_list_ref(pic, obj, 2);
+    varg = pic_true_p(pic_list_ref(pic, obj, 3));
+    closes = pic_list_ref(pic, obj, 4);
+    body = pic_list_ref(pic, obj, 5);
 
-    push_resolver_scope(state, args, decls);
+    push_resolver_scope(state, args, locals, varg, closes);
     {
-      int localc;
-
       body = resolve_reference(state, body);
-
-      /* slice decls. dropping out close declarations */
-      localc = scope->localc - (scope->varg ? 1 : 0);
-      decls = pic_reverse(pic, decls);
-      decls = pic_list_tail(pic, decls, pic_length(pic, decls) - localc);
-      decls = pic_reverse(pic, decls);
-      decls = pic_cons(pic, pic_symbol_value(pic->sBEGIN), decls);
     }
     pop_resolver_scope(state);
 
-    return pic_list(pic, 4, pic_symbol_value(pic->sLAMBDA), args, decls, body);
+    return pic_list(pic, 6, pic_symbol_value(pic->sLAMBDA), args, locals, pic_bool_value(varg), closes, body);
   }
   else if (tag == pic->sQUOTE) {
     return obj;
@@ -949,7 +940,7 @@ typedef struct codegen_state {
   unsigned *cv_tbl, cv_num;
 } codegen_state;
 
-static void push_codegen_context(codegen_state *, pic_value, pic_value);
+static void push_codegen_context(codegen_state *, pic_value, pic_value, bool, pic_value);
 static struct pic_irep *pop_codegen_context(codegen_state *);
 
 static codegen_state *
@@ -967,7 +958,7 @@ new_codegen_state(pic_state *pic)
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
 
-  push_codegen_context(state, pic_nil_value(), pic_nil_value());
+  push_codegen_context(state, pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 
   return state;
 }
@@ -985,25 +976,38 @@ destroy_codegen_state(codegen_state *state)
 }
 
 static void
-push_codegen_context(codegen_state *state, pic_value args, pic_value defs)
+push_codegen_context(codegen_state *state, pic_value args, pic_value locals, bool varg, pic_value closes)
 {
   pic_state *pic = state->pic;
   codegen_context *cxt;
-  pic_sym *syms;
+  int i, c;
+  struct xhash *vars;
 
   cxt = (codegen_context *)pic_alloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
+  cxt->argc = pic_length(pic, args) + 1;
+  cxt->localc = pic_length(pic, locals);
+  cxt->varg = varg;
 
-  syms = analyze_args(pic, args,  &cxt->varg, &cxt->argc, &cxt->localc);
-  if (! syms) {
-    pic_error(pic, "logic flaw");
-  } else {
-    pic_free(pic, syms);
+  /* number local variables */
+  vars = xh_new();
+  for (i = 1; i < cxt->argc; ++i) {
+    xh_put(vars, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, args, i - 1))), i);
   }
-  cxt->localc += pic_length(pic, defs);
+  for (i = 0; i < cxt->localc; ++i) {
+    xh_put(vars, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, locals, i))), cxt->argc + i);
+  }
 
+  /* closed variables */
   cxt->cv_tbl = NULL;
   cxt->cv_num = 0;
+  for (i = 0, c = pic_length(pic, closes); i < c; ++i) {
+    i = cxt->cv_num++;
+    cxt->cv_tbl = (unsigned *)pic_realloc(pic, cxt->cv_tbl, sizeof(unsigned) * cxt->cv_num);
+    cxt->cv_tbl[i] = xh_get(vars, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, closes, i))))->val;
+  }
+
+  xh_destory(vars);
 
   cxt->code = (struct pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
   cxt->clen = 0;
@@ -1307,14 +1311,17 @@ static struct pic_irep *
 codegen_lambda(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  pic_value args, decls, body;
+  pic_value args, locals, closes, body;
+  bool varg;
 
   args = pic_list_ref(pic, obj, 1);
-  decls = pic_cdr(pic, pic_list_ref(pic, obj, 2));
-  body = pic_list_ref(pic, obj, 3);
+  locals = pic_list_ref(pic, obj, 2);
+  varg = pic_true_p(pic_list_ref(pic, obj, 3));
+  closes = pic_list_ref(pic, obj, 4);
+  body = pic_list_ref(pic, obj, 5);
 
   /* inner environment */
-  push_codegen_context(state, args, decls);
+  push_codegen_context(state, args, locals, varg, closes);
   {
     /* body */
     codegen(state, body);
