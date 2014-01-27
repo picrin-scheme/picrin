@@ -40,7 +40,7 @@ new_irep(pic_state *pic)
 static pic_sym *
 analyze_args(pic_state *pic, pic_value args, bool *varg, size_t *argc, size_t *localc)
 {
-  pic_sym *syms = pic_alloc(pic, sizeof(pic_sym));
+  pic_sym *syms = (pic_sym *)pic_alloc(pic, sizeof(pic_sym));
   size_t i = 1, l = 0;
   pic_value v;
 
@@ -53,7 +53,7 @@ analyze_args(pic_state *pic, pic_value args, bool *varg, size_t *argc, size_t *l
       pic_free(pic, syms);
       return NULL;
     }
-    syms = pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
+    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
     syms[i] = pic_sym(sym);
     i++;
   }
@@ -62,7 +62,7 @@ analyze_args(pic_state *pic, pic_value args, bool *varg, size_t *argc, size_t *l
   }
   else if (pic_symbol_p(v)) {
     *varg = true;
-    syms = pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
+    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
     syms[i] = pic_sym(v);
     l++;
   }
@@ -254,7 +254,7 @@ define_var(analyze_state *state, pic_sym sym)
   xh_put(state->scope->var_tbl, name, 0);
 
   scope->localc++;
-  scope->vars = pic_realloc(pic, scope->vars, sizeof(pic_sym) * scope->argc + scope->localc);
+  scope->vars = (pic_sym *)pic_realloc(pic, scope->vars, sizeof(pic_sym) * (scope->argc + scope->localc));
   scope->vars[scope->argc + scope->localc - 1] = sym;
 }
 
