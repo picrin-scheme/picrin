@@ -616,18 +616,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	}
 
 	/* prepare env */
-	if (proc->u.irep->cv_num == 0) {
-	  ci->env = proc->env;
-	}
-	else {
-	  ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-	  ci->env->up = proc->env;
-	  ci->env->valuec = proc->u.irep->cv_num;
-	  ci->env->values = (pic_value *)pic_calloc(pic, ci->env->valuec, sizeof(pic_value));
-	  for (i = 0; i < ci->env->valuec; ++i) {
-	    ci->env->values[i] = ci->fp[proc->u.irep->cv_tbl[i]];
-	  }
-	}
+        ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+        ci->env->up = proc->env;
+        ci->env->valuec = proc->u.irep->cv_num;
+        ci->env->values = (pic_value *)pic_calloc(pic, ci->env->valuec, sizeof(pic_value));
+        for (i = 0; i < ci->env->valuec; ++i) {
+          ci->env->values[i] = ci->fp[proc->u.irep->cv_tbl[i]];
+        }
 
 	pc = proc->u.irep->code;
 	pic_gc_arena_restore(pic, ai);
