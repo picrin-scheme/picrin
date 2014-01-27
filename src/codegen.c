@@ -816,8 +816,22 @@ resolve_cref(resolver_state *state, int depth, pic_sym sym)
                   pic_int_value(i));
 }
 
+static pic_value resolve_reference_node(resolver_state *state, pic_value obj);
+
 static pic_value
 resolve_reference(resolver_state *state, pic_value obj)
+{
+  int ai = pic_gc_arena_preserve(state->pic);
+
+  obj = resolve_reference_node(state, obj);
+
+  pic_gc_arena_restore(state->pic, ai);
+  pic_gc_protect(state->pic, obj);
+  return obj;
+}
+
+static pic_value
+resolve_reference_node(resolver_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   resolver_scope *scope = state->scope;
