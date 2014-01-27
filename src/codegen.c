@@ -1338,19 +1338,35 @@ pic_compile(pic_state *pic, pic_value obj)
     goto exit;
   }
 
+  fprintf(stderr, "## input expression\n");
+  pic_debug(pic, obj);
+  fprintf(stderr, "\n");
+
   /* macroexpand */
+  fprintf(stderr, "## macroexpand started\n");
   obj = pic_macroexpand(pic, obj);
+  pic_debug(pic, obj);
+  fprintf(stderr, "\n");
 
   /* analyze */
+  fprintf(stderr, "## analyzer started\n");
   obj = pic_analyze(pic, obj);
   pic_debug(pic, obj);
+  fprintf(stderr, "\n");
 
   /* resolution */
+  fprintf(stderr, "## resolver started\n");
   obj = pic_resolve(pic, obj);
   pic_debug(pic, obj);
+  fprintf(stderr, "\n");
 
   /* codegen */
+  fprintf(stderr, "## codegen started\n");
   irep = pic_codegen(pic, obj);
+  pic_dump_irep(pic, irep);
+
+  fprintf(stderr, "## compilation finished\n");
+  puts("");
 
   proc = pic_proc_new_irep(pic, irep, NULL);
 
