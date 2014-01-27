@@ -754,15 +754,9 @@ pop_resolver_scope(resolver_state *state)
 }
 
 static bool
-is_closed(resolver_state *state, int depth, pic_sym sym)
+is_closed(resolver_state *state, pic_sym sym)
 {
-  resolver_scope *scope = state->scope;
-
-  while (depth-- > 0) {
-    scope = scope->up;
-  }
-
-  return xh_get(scope->cvs, pic_symbol_name(state->pic, sym)) != NULL;
+  return xh_get(state->scope->cvs, pic_symbol_name(state->pic, sym)) != NULL;
 }
 
 static pic_value
@@ -851,7 +845,7 @@ resolve_reference_node(resolver_state *state, pic_value obj)
     if (depth == scope->depth) {
       return resolve_gref(state, sym);
     }
-    else if (depth == 0 && is_closed(state, depth, sym)) {
+    else if (depth == 0 && is_closed(state, sym)) {
       return resolve_lref(state, sym);
     }
     else {
