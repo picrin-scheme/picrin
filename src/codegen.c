@@ -1359,9 +1359,13 @@ pic_compile(pic_state *pic, pic_value obj)
     goto exit;
   }
 
+  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+
   fprintf(stderr, "## input expression\n");
   pic_debug(pic, obj);
   fprintf(stderr, "\n");
+
+  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
 
   /* macroexpand */
   fprintf(stderr, "## macroexpand started\n");
@@ -1369,17 +1373,23 @@ pic_compile(pic_state *pic, pic_value obj)
   pic_debug(pic, obj);
   fprintf(stderr, "\n");
 
+  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+
   /* analyze */
   fprintf(stderr, "## analyzer started\n");
   obj = pic_analyze(pic, obj);
   pic_debug(pic, obj);
   fprintf(stderr, "\n");
 
+  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+
   /* resolution */
   fprintf(stderr, "## resolver started\n");
   obj = pic_resolve(pic, obj);
   pic_debug(pic, obj);
   fprintf(stderr, "\n");
+
+  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
 
   /* codegen */
   fprintf(stderr, "## codegen started\n");
