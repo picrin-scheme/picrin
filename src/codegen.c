@@ -571,7 +571,7 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
   pic_value seq;
   pic_sym call;
 
-  if (tailpos) {
+  if (! tailpos) {
     call = state->sCALL;
   } else {
     call = state->sTAILCALL;
