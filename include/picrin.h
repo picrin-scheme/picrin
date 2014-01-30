@@ -40,6 +40,7 @@ extern "C" {
 #endif
 
 #define FALLTHROUGH ((void)0)
+#define UNUSED(v) ((void)(v))
 
 #include "config.h"
 #include "picrin/value.h"
