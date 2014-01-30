@@ -140,9 +140,12 @@ struct pic_blob;
 #define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))
 #define pic_vec_ptr(o) ((struct pic_vector *)pic_ptr(o))
 
+/* SEE BELOW
 inline enum pic_tt pic_type(pic_value);
 inline const char *pic_type_repr(enum pic_tt);
+*/
 
+/* SEE BELOW
 inline pic_value pic_nil_value();
 inline pic_value pic_true_value();
 inline pic_value pic_false_value();
@@ -154,6 +157,7 @@ inline pic_value pic_int_value(int);
 inline pic_value pic_symbol_value(pic_sym);
 inline pic_value pic_char_value(char c);
 inline pic_value pic_none_value();
+*/
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
@@ -175,9 +179,10 @@ inline pic_value pic_none_value();
 /* obsoleted macro(s) */
 #define pic_symbol_p pic_sym_p
 
+/* SEE BELOW
 inline bool pic_eq_p(pic_value, pic_value);
 inline bool pic_eqv_p(pic_value, pic_value);
-
+*/
 
 inline enum pic_tt
 pic_type(pic_value v)
