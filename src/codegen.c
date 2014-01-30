@@ -369,7 +369,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 
         switch (pic_length(pic, obj)) {
         case 1:
-          return pic_none_value();
+          return analyze(state, pic_none_value(), tailpos);
         case 2:
           return analyze(state, pic_list_ref(pic, obj, 1), tailpos);
         default:
