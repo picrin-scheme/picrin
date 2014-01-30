@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall
+CFLAGS=-Wall -Wextra
 
 ifeq ($(findstring CYGWIN,$(shell uname -s)), CYGWIN)
   PICRIN_LIB=cygpicrin.dll
