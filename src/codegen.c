@@ -367,17 +367,23 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	pic_value seq;
         bool tail;
 
-        /* TODO: unwrap if the number of objects is 1 or 0 */
-        seq = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
-        for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
-          if (pic_nil_p(pic_cdr(pic, obj))) {
-            tail = tailpos;
-          } else {
-            tail = false;
+        switch (pic_length(pic, obj)) {
+        case 1:
+          return pic_none_value();
+        case 2:
+          return analyze(state, pic_list_ref(pic, obj, 1), tailpos);
+        default:
+          seq = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
+          for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
+            if (pic_nil_p(pic_cdr(pic, obj))) {
+              tail = tailpos;
+            } else {
+              tail = false;
+            }
+            seq = pic_cons(pic, analyze(state, pic_car(pic, obj), tail), seq);
           }
-          seq = pic_cons(pic, analyze(state, pic_car(pic, obj), tail), seq);
+          return pic_reverse(pic, seq);
         }
-        return pic_reverse(pic, seq);
       }
       else if (sym == pic->sSETBANG) {
 	pic_value var, val;
