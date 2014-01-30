@@ -33,12 +33,13 @@ extern "C" {
 #include <setjmp.h>
 #include <stdio.h>
 
-  /* noreturn */
 #if __STDC_VERSION__ >= 201112L
 # define NORETURN _Noreturn
 #elif __GNUC__ || __clang__
 # define NORETURN __attribute__((noreturn))
 #endif
+
+#define FALLTHROUGH ((void)0)
 
 #include "config.h"
 #include "picrin/value.h"

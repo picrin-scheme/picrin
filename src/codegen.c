@@ -19,8 +19,6 @@
 # error enable PIC_NONE_IS_FALSE
 #endif
 
-#define FALLTHROUGH ((void)0)
-
 static struct pic_irep *
 new_irep(pic_state *pic)
 {

@@ -13,8 +13,6 @@
 #include "picrin/lib.h"
 #include "xhash/xhash.h"
 
-#define FALLTHROUGH ((void)0)
-
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
 
