@@ -1495,114 +1495,116 @@ pic_set(pic_state *pic, const char *name, pic_value value)
 void
 print_code(pic_state *pic, struct pic_code c)
 {
-    printf("[%2d] ", c.insn);
-    switch (c.insn) {
-    case OP_POP:
-      puts("OP_POP");
-      break;
-    case OP_PUSHNIL:
-      puts("OP_PUSHNIL");
-      break;
-    case OP_PUSHTRUE:
-      puts("OP_PUSHTRUE");
-      break;
-    case OP_PUSHFALSE:
-      puts("OP_PUSHFALSE");
-      break;
-    case OP_PUSHFLOAT:
-      printf("OP_PUSHFLOAT\t%f\n", c.u.f);
-      break;
-    case OP_PUSHINT:
-      printf("OP_PUSHINT\t%d\n", c.u.i);
-      break;
-    case OP_PUSHCHAR:
-      printf("OP_PUSHCHAR\t%c\n", c.u.c);
-      break;
-    case OP_PUSHCONST:
-      printf("OP_PUSHCONST\t%d\n", c.u.i);
-      break;
-    case OP_GREF:
-      printf("OP_GREF\t%i\n", c.u.i);
-      break;
-    case OP_GSET:
-      printf("OP_GSET\t%i\n", c.u.i);
-      break;
-    case OP_LREF:
-      printf("OP_LREF\t%d\n", c.u.i);
-      break;
-    case OP_LSET:
-      printf("OP_LSET\t%d\n", c.u.i);
-      break;
-    case OP_CREF:
-      printf("OP_CREF\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
-      break;
-    case OP_CSET:
-      printf("OP_CSET\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
-      break;
-    case OP_JMP:
-      printf("OP_JMP\t%d\n", c.u.i);
-      break;
-    case OP_JMPIF:
-      printf("OP_JMPIF\t%d\n", c.u.i);
-      break;
-    case OP_CALL:
-      printf("OP_CALL\t%d\n", c.u.i);
-      break;
-    case OP_TAILCALL:
-      printf("OP_TAILCALL\t%d\n", c.u.i);
-      break;
-    case OP_RET:
-      puts("OP_RET");
-      break;
-    case OP_LAMBDA:
-      printf("OP_LAMBDA\t%d\n", c.u.i);
-      break;
-    case OP_CONS:
-      puts("OP_CONS");
-      break;
-    case OP_CAR:
-      puts("OP_CAR");
-      break;
-    case OP_NILP:
-      puts("OP_NILP");
-      break;
-    case OP_CDR:
-      puts("OP_CDR");
-      break;
-    case OP_ADD:
-      puts("OP_ADD");
-      break;
-    case OP_SUB:
-      puts("OP_SUB");
-      break;
-    case OP_MUL:
-      puts("OP_MUL");
-      break;
-    case OP_DIV:
-      puts("OP_DIV");
-      break;
-    case OP_MINUS:
-      puts("OP_MINUS");
-      break;
-    case OP_EQ:
-      puts("OP_EQ");
-      break;
-    case OP_LT:
-      puts("OP_LT");
-      break;
-    case OP_LE:
-      puts("OP_LE");
-      break;
-    case OP_STOP:
-      puts("OP_STOP");
-      break;
-    }
+  UNUSED(pic);
+
+  printf("[%2d] ", c.insn);
+  switch (c.insn) {
+  case OP_POP:
+    puts("OP_POP");
+    break;
+  case OP_PUSHNIL:
+    puts("OP_PUSHNIL");
+    break;
+  case OP_PUSHTRUE:
+    puts("OP_PUSHTRUE");
+    break;
+  case OP_PUSHFALSE:
+    puts("OP_PUSHFALSE");
+    break;
+  case OP_PUSHFLOAT:
+    printf("OP_PUSHFLOAT\t%f\n", c.u.f);
+    break;
+  case OP_PUSHINT:
+    printf("OP_PUSHINT\t%d\n", c.u.i);
+    break;
+  case OP_PUSHCHAR:
+    printf("OP_PUSHCHAR\t%c\n", c.u.c);
+    break;
+  case OP_PUSHCONST:
+    printf("OP_PUSHCONST\t%d\n", c.u.i);
+    break;
+  case OP_GREF:
+    printf("OP_GREF\t%i\n", c.u.i);
+    break;
+  case OP_GSET:
+    printf("OP_GSET\t%i\n", c.u.i);
+    break;
+  case OP_LREF:
+    printf("OP_LREF\t%d\n", c.u.i);
+    break;
+  case OP_LSET:
+    printf("OP_LSET\t%d\n", c.u.i);
+    break;
+  case OP_CREF:
+    printf("OP_CREF\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
+    break;
+  case OP_CSET:
+    printf("OP_CSET\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
+    break;
+  case OP_JMP:
+    printf("OP_JMP\t%d\n", c.u.i);
+    break;
+  case OP_JMPIF:
+    printf("OP_JMPIF\t%d\n", c.u.i);
+    break;
+  case OP_CALL:
+    printf("OP_CALL\t%d\n", c.u.i);
+    break;
+  case OP_TAILCALL:
+    printf("OP_TAILCALL\t%d\n", c.u.i);
+    break;
+  case OP_RET:
+    puts("OP_RET");
+    break;
+  case OP_LAMBDA:
+    printf("OP_LAMBDA\t%d\n", c.u.i);
+    break;
+  case OP_CONS:
+    puts("OP_CONS");
+    break;
+  case OP_CAR:
+    puts("OP_CAR");
+    break;
+  case OP_NILP:
+    puts("OP_NILP");
+    break;
+  case OP_CDR:
+    puts("OP_CDR");
+    break;
+  case OP_ADD:
+    puts("OP_ADD");
+    break;
+  case OP_SUB:
+    puts("OP_SUB");
+    break;
+  case OP_MUL:
+    puts("OP_MUL");
+    break;
+  case OP_DIV:
+    puts("OP_DIV");
+    break;
+  case OP_MINUS:
+    puts("OP_MINUS");
+    break;
+  case OP_EQ:
+    puts("OP_EQ");
+    break;
+  case OP_LT:
+    puts("OP_LT");
+    break;
+  case OP_LE:
+    puts("OP_LE");
+    break;
+  case OP_STOP:
+    puts("OP_STOP");
+    break;
+  }
 }
 
 void
 pic_dump_irep(pic_state *pic, struct pic_irep *irep)
 {
-  int i;
+  unsigned i;
 
   printf("## irep %p\n", (void *)irep);
   printf("[clen = %zd, argc = %d, localc = %d]\n", irep->clen, irep->argc, irep->localc);

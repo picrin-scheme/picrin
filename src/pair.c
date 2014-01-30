@@ -48,6 +48,8 @@ pic_cdr(pic_state *pic, pic_value obj)
 bool
 pic_list_p(pic_state *pic, pic_value obj)
 {
+  UNUSED(pic);
+
   while (pic_pair_p(obj)) {
     obj = pic_pair_ptr(obj)->cdr;
   }

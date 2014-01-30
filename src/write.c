@@ -33,6 +33,8 @@ write_str(pic_state *pic, struct pic_string *str)
   size_t i;
   const char *cstr = str->str;
 
+  UNUSED(pic);
+
   for (i = 0; i < str->len; ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       putchar('\\');

@@ -27,6 +27,7 @@ pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv /* = NULL */)
 pic_value
 pic_var_ref(pic_state *pic, struct pic_var *var)
 {
+  UNUSED(pic);
   return var->value;
 }
 
@@ -42,6 +43,7 @@ pic_var_set(pic_state *pic, struct pic_var *var, pic_value value)
 void
 pic_var_set_force(pic_state *pic, struct pic_var *var, pic_value value)
 {
+  UNUSED(pic);
   var->value = value;
 }
 

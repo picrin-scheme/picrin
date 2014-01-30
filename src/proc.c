@@ -50,6 +50,7 @@ pic_proc_cv_init(pic_state *pic, struct pic_proc *proc, size_t cv_size)
 int
 pic_proc_cv_size(pic_state *pic, struct pic_proc *proc)
 {
+  UNUSED(pic);
   return proc->env ? proc->env->valuec : 0;
 }
 

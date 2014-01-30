@@ -25,12 +25,15 @@ pic_error(pic_state *pic, const char *msg)
 void
 pic_errorf(pic_state *pic, const char *msg, size_t n, ...)
 {
+  UNUSED(n);
   pic_error(pic, msg);
 }
 
 void
 pic_abort(pic_state *pic, const char *msg)
 {
+  UNUSED(pic);
+
   fprintf(stderr, "abort: %s\n", msg);
   fflush(stderr);
   abort();
@@ -39,6 +42,8 @@ pic_abort(pic_state *pic, const char *msg)
 void
 pic_warn(pic_state *pic, const char *msg)
 {
+  UNUSED(pic);
+
   fprintf(stderr, "warn: %s\n", msg);
 }
 
