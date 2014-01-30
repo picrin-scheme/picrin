@@ -134,6 +134,9 @@ pic_close(pic_state *pic)
   free(pic->rescue);
   free(pic->globals);
 
+  xh_destroy(pic->sym_tbl);
+  xh_destroy(pic->global_tbl);
+
   pic->glen = 0;
   pic->rlen = 0;
   pic->arena_idx = 0;
@@ -150,7 +153,6 @@ pic_close(pic_state *pic)
   for (i = 0; i < pic->slen; ++i) {
     free((void *)pic->sym_pool[i]);
   }
-
   free(pic->sym_pool);
 
   PIC_BLK_DECREF(pic, pic->blk);
