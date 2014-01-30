@@ -33,6 +33,13 @@ extern "C" {
 #include <setjmp.h>
 #include <stdio.h>
 
+  /* noreturn */
+#if __STDC_VERSION__ >= 201112L
+# define NORETURN _Noreturn
+#elif __GNUC__ || __clang__
+# define NORETURN __attribute__((noreturn))
+#endif
+
 #include "config.h"
 #include "picrin/value.h"
 
@@ -173,10 +180,10 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
 void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
 
-void pic_abort(pic_state *, const char *);
-void pic_raise(pic_state *, pic_value);
-void pic_error(pic_state *, const char *);
-void pic_errorf(pic_state *, const char *, size_t, ...);
+NORETURN void pic_abort(pic_state *, const char *);
+NORETURN void pic_raise(pic_state *, pic_value);
+NORETURN void pic_error(pic_state *, const char *);
+NORETURN void pic_errorf(pic_state *, const char *, size_t, ...);
 void pic_warn(pic_state *, const char *);
 
 void pic_debug(pic_state *, pic_value);

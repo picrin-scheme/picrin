@@ -84,7 +84,7 @@ pic_error_with_exception_handler(pic_state *pic)
   return v;
 }
 
-static pic_value
+NORETURN static pic_value
 pic_error_raise(pic_state *pic)
 {
   pic_value v;
@@ -92,9 +92,6 @@ pic_error_raise(pic_state *pic)
   pic_get_args(pic, "o", &v);
 
   pic_raise(pic, v);
-
-  /* the function never returns */
-  return pic_undef_value();
 }
 
 static pic_value
@@ -116,7 +113,7 @@ pic_error_raise_continuable(pic_state *pic)
   return a;
 }
 
-static pic_value
+NORETURN static pic_value
 pic_error_error(pic_state *pic)
 {
   char *str;
@@ -133,10 +130,8 @@ pic_error_error(pic_state *pic)
   e->irrs = pic_list_from_array(pic, argc, argv);
 
   pic_raise(pic, pic_obj_value(e));
-
-  /* never returns */
-  return pic_undef_value();
 }
+
 static pic_value
 pic_error_error_object_p(pic_state *pic)
 {

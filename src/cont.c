@@ -72,7 +72,7 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
   restore_cont(pic, cont);
 }
 
-static void
+NORETURN static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
   pic_value v;
@@ -128,7 +128,7 @@ walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
   }
 }
 
-static pic_value
+NORETURN static pic_value
 cont_call(pic_state *pic)
 {
   struct pic_proc *proc;
@@ -145,9 +145,6 @@ cont_call(pic_state *pic)
   walk_to_block(pic, pic->blk, cont->blk);
 
   restore_cont(pic, cont);
-
-  /* the function never returns */
-  return pic_undef_value();
 }
 
 pic_value
