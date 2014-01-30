@@ -36,10 +36,10 @@ new_irep(pic_state *pic)
 }
 
 static pic_sym *
-analyze_args(pic_state *pic, pic_value args, bool *varg, size_t *argc, size_t *localc)
+analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
 {
   pic_sym *syms = (pic_sym *)pic_alloc(pic, sizeof(pic_sym));
-  size_t i = 1, l = 0;
+  int i = 1, l = 0;
   pic_value v;
 
   *varg = false;
@@ -78,7 +78,7 @@ static bool
 valid_formal(pic_state *pic, pic_value formal)
 {
   bool varg;
-  size_t argc, localc;
+  int argc, localc;
   pic_sym *syms;
 
   syms = analyze_args(pic, formal, &varg, &argc, &localc);
@@ -94,7 +94,7 @@ valid_formal(pic_state *pic, pic_value formal)
 typedef struct analyze_scope {
   /* rest args variable is counted by localc */
   bool varg;
-  size_t argc, localc;
+  int argc, localc;
   /* if variable v is captured, then xh_get(var_tbl, v) == 1 */
   struct xhash *var_tbl;
   pic_sym *vars;
@@ -665,7 +665,7 @@ pic_analyze(pic_state *pic, pic_value obj)
 typedef struct resolver_scope {
   int depth;
   bool varg;
-  size_t argc, localc;
+  int argc, localc;
   struct xhash *cvs, *lvs;
   unsigned cv_num;
 
@@ -769,7 +769,7 @@ resolve_gref(resolver_state *state, pic_sym sym)
   pic_state *pic = state->pic;
   const char *name = pic_symbol_name(pic, sym);
   struct xh_entry *e;
-  int i;
+  size_t i;
 
   if ((e = xh_get(pic->global_tbl, name))) {
     i = e->val;
@@ -911,7 +911,7 @@ pic_resolve(pic_state *pic, pic_value obj)
 typedef struct codegen_context {
   bool varg;
   /* rest args variable is counted by localc */
-  size_t argc, localc;
+  int argc, localc;
   /* closed variable table */
   unsigned *cv_tbl, cv_num;
   /* actual bit code sequence */

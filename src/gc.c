@@ -342,7 +342,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_VECTOR: {
-    int i;
+    size_t i;
     for (i = 0; i < ((struct pic_vector *)obj)->len; ++i) {
       gc_mark(pic, ((struct pic_vector *)obj)->data[i]);
     }
@@ -355,7 +355,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_cont *cont = (struct pic_cont *)obj;
     pic_value *stack;
     pic_callinfo *ci;
-    int i;
+    size_t i;
+    int j;
 
     /* block */
     gc_mark_block(pic, cont->blk);
@@ -378,8 +379,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
 
     /* arena */
-    for (i = 0; i < cont->arena_idx; ++i) {
-      gc_mark_object(pic, cont->arena[i]);
+    for (j = 0; j < cont->arena_idx; ++j) {
+      gc_mark_object(pic, cont->arena[j]);
     }
 
     gc_mark(pic, cont->result);
@@ -403,7 +404,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       gc_mark_object(pic, (struct pic_object *)senv->up);
     }
     if (senv->stx) {
-      int i;
+      size_t i;
 
       for (i = 0; i < senv->xlen; ++i) {
 	gc_mark_object(pic, (struct pic_object *)senv->stx[i]);
@@ -433,7 +434,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_IREP: {
     struct pic_irep *irep = (struct pic_irep *)obj;
-    int i;
+    size_t i;
 
     for (i = 0; i < irep->ilen; ++i) {
       gc_mark_object(pic, (struct pic_object *)irep->irep[i]);
@@ -472,7 +473,8 @@ gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
   pic_callinfo *ci;
-  int i;
+  size_t i;
+  int j;
 
   /* block */
   gc_mark_block(pic, pic->blk);
@@ -495,8 +497,8 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* arena */
-  for (i = 0; i < pic->arena_idx; ++i) {
-    gc_mark_object(pic, pic->arena[i]);
+  for (j = 0; j < pic->arena_idx; ++j) {
+    gc_mark_object(pic, pic->arena[j]);
   }
 
   /* global variables */

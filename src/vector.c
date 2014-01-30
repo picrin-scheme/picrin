@@ -9,7 +9,7 @@ struct pic_vector *
 pic_vec_new(pic_state *pic, size_t len)
 {
   struct pic_vector *vec;
-  int i;
+  size_t i;
 
   vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TT_VECTOR);
   vec->len = len;
@@ -24,7 +24,7 @@ struct pic_vector *
 pic_vec_new_from_list(pic_state *pic, pic_value data)
 {
   struct pic_vector *vec;
-  int i, len;
+  size_t i, len;
 
   len = pic_length(pic, data);
 
@@ -37,9 +37,9 @@ pic_vec_new_from_list(pic_state *pic, pic_value data)
 }
 
 void
-pic_vec_extend_ip(pic_state *pic, struct pic_vector *vec, int size)
+pic_vec_extend_ip(pic_state *pic, struct pic_vector *vec, size_t size)
 {
-  int len, i;
+  size_t len, i;
 
   len = vec->len;
   vec->len = size;
@@ -63,14 +63,15 @@ static pic_value
 pic_vec_make_vector(pic_state *pic)
 {
   pic_value v;
-  int k, n, i;
+  int n, k;
+  size_t i;
   struct pic_vector *vec;
 
   n = pic_get_args(pic, "i|o", &k, &v);
 
   vec = pic_vec_new(pic, k);
   if (n == 3) {
-    for (i = 0; i < k; ++i) {
+    for (i = 0; i < (size_t)k; ++i) {
       vec->data[i] = v;
     }
   }
@@ -95,7 +96,7 @@ pic_vec_vector_ref(pic_state *pic)
 
   pic_get_args(pic, "vi", &v, &k);
 
-  if (k < 0 || v->len <= k) {
+  if (k < 0 || v->len <= (size_t)k) {
     pic_error(pic, "vector-ref: index out of range");
   }
   return v->data[k];
@@ -110,7 +111,7 @@ pic_vec_vector_set(pic_state *pic)
 
   pic_get_args(pic, "vio", &v, &k, &o);
 
-  if (k < 0 || v->len <= k) {
+  if (k < 0 || v->len <= (size_t)k) {
     pic_error(pic, "vector-set!: index out of range");
   }
   v->data[k] = o;

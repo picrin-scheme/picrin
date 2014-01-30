@@ -151,7 +151,7 @@ struct pic_string *pic_str_new_cstr(pic_state *, const char *);
 
 struct pic_vector *pic_vec_new(pic_state *, size_t);
 struct pic_vector *pic_vec_new_from_list(pic_state *, pic_value);
-void pic_vec_extend_ip(pic_state *, struct pic_vector *, int);
+void pic_vec_extend_ip(pic_state *, struct pic_vector *, size_t);
 
 int pic_parse_file(pic_state *, FILE *file, pic_value *);
 int pic_parse_cstr(pic_state *, const char *, pic_value *);

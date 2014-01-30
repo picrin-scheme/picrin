@@ -12,13 +12,13 @@ extern "C" {
 struct pic_blob {
   PIC_OBJECT_HEADER
   char *data;
-  int len;
+  size_t len;
 };
 
 #define pic_blob_p(v) (pic_type(v) == PIC_TT_BLOB)
 #define pic_blob_ptr(v) ((struct pic_blob *)pic_ptr(v))
 
-struct pic_blob *pic_blob_new(pic_state *, char *, int len);
+struct pic_blob *pic_blob_new(pic_state *, char *, size_t len);
 
 #if defined(__cplusplus)
 }

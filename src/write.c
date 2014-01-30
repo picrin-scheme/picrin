@@ -30,7 +30,7 @@ write_pair(pic_state *pic, struct pic_pair *pair)
 static void
 write_str(pic_state *pic, struct pic_string *str)
 {
-  int i;
+  size_t i;
   const char *cstr = str->str;
 
   for (i = 0; i < str->len; ++i) {
@@ -44,7 +44,7 @@ write_str(pic_state *pic, struct pic_string *str)
 static void
 write(pic_state *pic, pic_value obj)
 {
-  int i;
+  size_t i;
 
   switch (pic_type(obj)) {
   case PIC_TT_NIL:

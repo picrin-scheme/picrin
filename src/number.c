@@ -123,7 +123,7 @@ pic_number_nan_p(pic_state *pic)
   {							\
     size_t argc;					\
     pic_value *argv;					\
-    int i;						\
+    size_t i;						\
     double f,g;						\
     							\
     pic_get_args(pic, "ff*", &f, &g, &argc, &argv);	\
@@ -207,7 +207,7 @@ pic_number_max(pic_state *pic)
 {
   size_t argc;
   pic_value *argv;
-  int i;
+  size_t i;
   double f;
   bool e = true;
 
@@ -235,7 +235,7 @@ pic_number_min(pic_state *pic)
 {
   size_t argc;
   pic_value *argv;
-  int i;
+  size_t i;
   double f;
   bool e = true;
 
@@ -264,7 +264,7 @@ pic_number_min(pic_state *pic)
   {                                                             \
     size_t argc;                                                \
     pic_value *argv;                                            \
-    int i;                                                      \
+    size_t i;                                                   \
     double f;                                                   \
     bool e = true;                                              \
                                                                 \
@@ -296,7 +296,7 @@ DEFINE_ARITH_OP(*, mul, 1)
   {                                                                     \
    size_t argc;                                                         \
    pic_value *argv;                                                     \
-   int i;                                                               \
+   size_t i;                                                            \
    double f;                                                            \
    bool e;                                                              \
                                                                         \

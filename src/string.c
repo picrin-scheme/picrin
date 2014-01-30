@@ -95,7 +95,7 @@ pic_str_string_set(pic_state *pic)
   {							\
     size_t argc;					\
     pic_value *argv;					\
-    int i;						\
+    size_t i;						\
 							\
     pic_get_args(pic, "*", &argc, &argv);		\
 							\

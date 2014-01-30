@@ -16,7 +16,7 @@ struct parser_control {
   bool incomp;
   int yynerrs;
   struct pic_vector *yy_arena;
-  int yy_arena_idx;
+  size_t yy_arena_idx;
 };
 
 #if defined(__cplusplus)

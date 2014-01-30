@@ -630,7 +630,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
     }
     CASE(OP_TAILCALL) {
-      int argc;
+      int i, argc;
       pic_value *argv;
 
       argc = c.u.i;

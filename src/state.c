@@ -126,7 +126,7 @@ pic_open(int argc, char *argv[], char **envp)
 void
 pic_close(pic_state *pic)
 {
-  int i;
+  size_t i;
 
   /* free global stacks */
   free(pic->stbase);

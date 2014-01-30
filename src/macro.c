@@ -200,7 +200,7 @@ pic_import(pic_state *pic, pic_value spec)
       xh_put(pic->lib->senv->tbl, it.e->key, it.e->val);
     }
     else {                /* syntax object */
-      int idx;
+      size_t idx;
       struct pic_senv *senv = pic->lib->senv;
 
       idx = senv->xlen;
@@ -233,7 +233,7 @@ pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct p
 {
   struct pic_syntax *stx;
   struct pic_senv *global_senv = pic->lib->senv;
-  int idx;
+  size_t idx;
 
   stx = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro, mac_env);
 

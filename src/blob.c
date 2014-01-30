@@ -8,7 +8,7 @@
 #include "picrin/blob.h"
 
 struct pic_blob *
-pic_blob_new(pic_state *pic, char *dat, int len)
+pic_blob_new(pic_state *pic, char *dat, size_t len)
 {
   struct pic_blob *bv;
 

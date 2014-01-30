@@ -81,7 +81,7 @@ pic_value
 pic_list_from_array(pic_state *pic, size_t c, pic_value *vs)
 {
   pic_value v;
-  int i;
+  size_t i;
 
   v = pic_nil_value();
   for (i = 0; i < c; ++i) {
