@@ -71,9 +71,9 @@ typedef struct {
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;
   pic_sym sDEFINE_LIBRARY, sIMPORT, sEXPORT;
-  pic_sym rCONS, rCAR, rCDR, rNILP;
-  pic_sym rADD, rSUB, rMUL, rDIV;
-  pic_sym rEQ, rLT, rLE, rGT, rGE;
+  pic_sym sCONS, sCAR, sCDR, sNILP;
+  pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
+  pic_sym sEQ, sLT, sLE, sGT, sGE;
 
   struct xhash *sym_tbl;
   const char **sym_pool;
@@ -152,7 +152,7 @@ pic_value pic_load(pic_state *, const char *);
 
 pic_value pic_apply(pic_state *pic, struct pic_proc *, pic_value);
 pic_value pic_apply_argv(pic_state *pic, struct pic_proc *, size_t, ...);
-struct pic_proc *pic_codegen(pic_state *, pic_value);
+struct pic_proc *pic_compile(pic_state *, pic_value);
 pic_value pic_macroexpand(pic_state *, pic_value);
 
 void pic_in_library(pic_state *, pic_value);

@@ -156,6 +156,7 @@ void
 pic_debug(pic_state *pic, pic_value obj)
 {
   write(pic, obj);
+  fflush(stdout);
 }
 
 static pic_value
