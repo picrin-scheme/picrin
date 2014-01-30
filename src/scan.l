@@ -11,8 +11,19 @@
 #include "y.tab.h"
 
 #define YY_DECL int yylex_(YYSTYPE *yylvalp, yyscan_t yyscanner)
+
+/* NOTE:
+ *  An internal function `yy_fatal_error` takes yyscanner for its second
+ * argument but doesn't use it. This invokes a `unused variable` compiler
+ * warning and it became super unusable if `-Werror` is turned on the system.
+ * Since there's no flag to switch `yy_fatal_error` off and replace it with
+ * a user-defined function, we modify this macro constant to use yyscanner
+ * at least once avoiding get flex affected in any condition.
+ */
+#define YY_EXIT_FAILURE ( (void)yyscanner, 2 )
 %}
 
+%option noyyalloc noyyrealloc noyyfree
 %option reentrant
 %option noinput
 %option nounput
@@ -130,8 +141,33 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 %%
 
+#define UNUSED(v) ((void)(v))
+
+void *
+yyalloc(size_t bytes, yyscan_t yyscanner)
+{
+  UNUSED(yyscanner);
+  return malloc(bytes);
+}
+
+void *
+yyrealloc(void *ptr, size_t bytes, yyscan_t yyscanner)
+{
+  UNUSED(yyscanner);
+  return realloc(ptr, bytes);
+}
+
+void
+yyfree(void * ptr, yyscan_t yyscanner)
+{
+  UNUSED(yyscanner);
+  free(ptr);
+}
+
 int
 yywrap(yyscan_t yyscanner)
 {
+  UNUSED(yyscanner);
+
   return 1;
 }
