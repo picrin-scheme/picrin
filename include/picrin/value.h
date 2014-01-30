@@ -143,17 +143,17 @@ struct pic_blob;
 enum pic_tt pic_type(pic_value);
 const char *pic_type_repr(enum pic_tt);
 
-pic_value pic_nil_value();
-pic_value pic_true_value();
-pic_value pic_false_value();
-pic_value pic_bool_value(bool);
-pic_value pic_undef_value();
-pic_value pic_obj_value(void *);
-pic_value pic_float_value(double);
-pic_value pic_int_value(int);
-pic_value pic_symbol_value(pic_sym);
-pic_value pic_char_value(char c);
-pic_value pic_none_value();
+inline pic_value pic_nil_value();
+inline pic_value pic_true_value();
+inline pic_value pic_false_value();
+inline pic_value pic_bool_value(bool);
+inline pic_value pic_undef_value();
+inline pic_value pic_obj_value(void *);
+inline pic_value pic_float_value(double);
+inline pic_value pic_int_value(int);
+inline pic_value pic_symbol_value(pic_sym);
+inline pic_value pic_char_value(char c);
+inline pic_value pic_none_value();
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
@@ -177,6 +177,142 @@ pic_value pic_none_value();
 
 bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
+
+
+inline pic_value
+pic_nil_value()
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_NIL);
+  return v;
+}
+
+inline pic_value
+pic_true_value()
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_TRUE);
+  return v;
+}
+
+inline pic_value
+pic_false_value()
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_FALSE);
+  return v;
+}
+
+inline pic_value
+pic_bool_value(bool b)
+{
+  pic_value v;
+
+  pic_init_value(v, b ? PIC_VTYPE_TRUE : PIC_VTYPE_FALSE);
+  return v;
+}
+
+#if PIC_NAN_BOXING
+
+inline pic_value
+pic_obj_value(void *ptr)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_HEAP);
+  v.u.data = (void*)((long long)v.u.data | ((long long)ptr));
+  return v;
+}
+
+inline pic_value
+pic_float_value(double f)
+{
+  pic_value v;
+
+  if (f != f) {
+    v.u.type_ = 0x7ff80000;
+    v.u.i = 0;
+  } else {
+    v.u.f = f;
+  }
+  return v;
+}
+
+#else
+
+inline pic_value
+pic_obj_value(void *ptr)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_HEAP);
+  v.u.data = ptr;
+  return v;
+}
+
+inline pic_value
+pic_float_value(double f)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_FLOAT);
+  v.u.f = f;
+  return v;
+}
+
+#endif
+
+inline pic_value
+pic_int_value(int i)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_INT);
+  v.u.i = i;
+  return v;
+}
+
+inline pic_value
+pic_symbol_value(pic_sym sym)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_SYMBOL);
+  v.u.sym = sym;
+  return v;
+}
+
+inline pic_value
+pic_char_value(char c)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_CHAR);
+  v.u.c = c;
+  return v;
+}
+
+inline pic_value
+pic_undef_value()
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_UNDEF);
+  return v;
+}
+
+inline pic_value
+pic_none_value()
+{
+#if PIC_NONE_IS_FALSE
+  return pic_false_value();
+#else
+# error enable PIC_NONE_IS_FALSE
+#endif
+}
 
 #if defined(__cplusplus)
 }
