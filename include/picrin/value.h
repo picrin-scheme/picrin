@@ -140,24 +140,20 @@ struct pic_blob;
 #define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))
 #define pic_vec_ptr(o) ((struct pic_vector *)pic_ptr(o))
 
-/* SEE BELOW
-inline enum pic_tt pic_type(pic_value);
-inline const char *pic_type_repr(enum pic_tt);
-*/
+static inline enum pic_tt pic_type(pic_value);
+static inline const char *pic_type_repr(enum pic_tt);
 
-/* SEE BELOW
-inline pic_value pic_nil_value();
-inline pic_value pic_true_value();
-inline pic_value pic_false_value();
-inline pic_value pic_bool_value(bool);
-inline pic_value pic_undef_value();
-inline pic_value pic_obj_value(void *);
-inline pic_value pic_float_value(double);
-inline pic_value pic_int_value(int);
-inline pic_value pic_symbol_value(pic_sym);
-inline pic_value pic_char_value(char c);
-inline pic_value pic_none_value();
-*/
+static inline pic_value pic_nil_value();
+static inline pic_value pic_true_value();
+static inline pic_value pic_false_value();
+static inline pic_value pic_bool_value(bool);
+static inline pic_value pic_undef_value();
+static inline pic_value pic_obj_value(void *);
+static inline pic_value pic_float_value(double);
+static inline pic_value pic_int_value(int);
+static inline pic_value pic_symbol_value(pic_sym);
+static inline pic_value pic_char_value(char c);
+static inline pic_value pic_none_value();
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
@@ -179,12 +175,10 @@ inline pic_value pic_none_value();
 /* obsoleted macro(s) */
 #define pic_symbol_p pic_sym_p
 
-/* SEE BELOW
-inline bool pic_eq_p(pic_value, pic_value);
-inline bool pic_eqv_p(pic_value, pic_value);
-*/
+static inline bool pic_eq_p(pic_value, pic_value);
+static inline bool pic_eqv_p(pic_value, pic_value);
 
-inline enum pic_tt
+static inline enum pic_tt
 pic_type(pic_value v)
 {
   switch (pic_vtype(v)) {
@@ -211,7 +205,7 @@ pic_type(pic_value v)
   }
 }
 
-inline const char *
+static inline const char *
 pic_type_repr(enum pic_tt tt)
 {
   switch (tt) {
@@ -264,7 +258,7 @@ pic_type_repr(enum pic_tt tt)
   }
 }
 
-inline pic_value
+static inline pic_value
 pic_nil_value()
 {
   pic_value v;
@@ -273,7 +267,7 @@ pic_nil_value()
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_true_value()
 {
   pic_value v;
@@ -282,7 +276,7 @@ pic_true_value()
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_false_value()
 {
   pic_value v;
@@ -291,7 +285,7 @@ pic_false_value()
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_bool_value(bool b)
 {
   pic_value v;
@@ -302,7 +296,7 @@ pic_bool_value(bool b)
 
 #if PIC_NAN_BOXING
 
-inline pic_value
+static inline pic_value
 pic_obj_value(void *ptr)
 {
   pic_value v;
@@ -312,7 +306,7 @@ pic_obj_value(void *ptr)
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_float_value(double f)
 {
   pic_value v;
@@ -328,7 +322,7 @@ pic_float_value(double f)
 
 #else
 
-inline pic_value
+static inline pic_value
 pic_obj_value(void *ptr)
 {
   pic_value v;
@@ -338,7 +332,7 @@ pic_obj_value(void *ptr)
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_float_value(double f)
 {
   pic_value v;
@@ -350,7 +344,7 @@ pic_float_value(double f)
 
 #endif
 
-inline pic_value
+static inline pic_value
 pic_int_value(int i)
 {
   pic_value v;
@@ -360,7 +354,7 @@ pic_int_value(int i)
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_symbol_value(pic_sym sym)
 {
   pic_value v;
@@ -370,7 +364,7 @@ pic_symbol_value(pic_sym sym)
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_char_value(char c)
 {
   pic_value v;
@@ -380,7 +374,7 @@ pic_char_value(char c)
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_undef_value()
 {
   pic_value v;
@@ -389,7 +383,7 @@ pic_undef_value()
   return v;
 }
 
-inline pic_value
+static inline pic_value
 pic_none_value()
 {
 #if PIC_NONE_IS_FALSE
@@ -401,13 +395,13 @@ pic_none_value()
 
 #if PIC_NAN_BOXING
 
-inline bool
+static inline bool
 pic_eq_p(pic_value x, pic_value y)
 {
   return x.u.data == y.u.data;
 }
 
-inline bool
+static inline bool
 pic_eqv_p(pic_value x, pic_value y)
 {
   return x.u.data == y.u.data;
@@ -415,7 +409,7 @@ pic_eqv_p(pic_value x, pic_value y)
 
 #else
 
-inline bool
+static inline bool
 pic_eq_p(pic_value x, pic_value y)
 {
   if (pic_type(x) != pic_type(y))
@@ -431,7 +425,7 @@ pic_eq_p(pic_value x, pic_value y)
   }
 }
 
-inline bool
+static inline bool
 pic_eqv_p(pic_value x, pic_value y)
 {
   if (pic_type(x) != pic_type(y))
