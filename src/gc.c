@@ -558,7 +558,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destory(senv->tbl);
+    xh_destroy(senv->tbl);
     if (senv->stx)
       pic_free(pic, senv->stx);
     break;
@@ -571,7 +571,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_LIB: {
     struct pic_lib *lib = (struct pic_lib *)obj;
-    xh_destory(lib->exports);
+    xh_destroy(lib->exports);
     break;
   }
   case PIC_TT_VAR: {

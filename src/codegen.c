@@ -206,7 +206,7 @@ pop_scope(analyze_state *state)
   analyze_scope *scope;
 
   scope = state->scope;
-  xh_destory(scope->var_tbl);
+  xh_destroy(scope->var_tbl);
   pic_free(state->pic, scope->vars);
 
   scope = scope->up;
@@ -749,8 +749,8 @@ pop_resolver_scope(resolver_state *state)
   resolver_scope *scope;
 
   scope = state->scope;
-  xh_destory(scope->cvs);
-  xh_destory(scope->lvs);
+  xh_destroy(scope->cvs);
+  xh_destroy(scope->lvs);
 
   scope = scope->up;
   pic_free(state->pic, state->scope);
@@ -1006,7 +1006,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
     cxt->cv_tbl[i] = xh_get(vars, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, closes, i))))->val;
   }
 
-  xh_destory(vars);
+  xh_destroy(vars);
 
   cxt->code = (struct pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
   cxt->clen = 0;
