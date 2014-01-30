@@ -1167,11 +1167,6 @@ codegen(codegen_state *state, pic_value obj)
       }
       cxt->clen++;
       return;
-    case PIC_TT_FLOAT:
-      cxt->code[cxt->clen].insn = OP_PUSHFLOAT;
-      cxt->code[cxt->clen].u.f = pic_float(obj);
-      cxt->clen++;
-      return;
     case PIC_TT_INT:
       cxt->code[cxt->clen].insn = OP_PUSHINT;
       cxt->code[cxt->clen].u.i = pic_int(obj);
@@ -1510,9 +1505,6 @@ print_code(pic_state *pic, struct pic_code c)
     break;
   case OP_PUSHFALSE:
     puts("OP_PUSHFALSE");
-    break;
-  case OP_PUSHFLOAT:
-    printf("OP_PUSHFLOAT\t%f\n", c.u.f);
     break;
   case OP_PUSHINT:
     printf("OP_PUSHINT\t%d\n", c.u.i);

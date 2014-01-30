@@ -387,7 +387,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
-    &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE, &&L_OP_PUSHFLOAT,
+    &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE,
     &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHCONST,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET, &&L_OP_LAMBDA,
@@ -457,10 +457,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     }
     CASE(OP_PUSHFALSE) {
       PUSH(pic_false_value());
-      NEXT;
-    }
-    CASE(OP_PUSHFLOAT) {
-      PUSH(pic_float_value(c.u.f));
       NEXT;
     }
     CASE(OP_PUSHINT) {
