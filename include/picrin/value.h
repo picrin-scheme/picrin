@@ -135,10 +135,27 @@ struct pic_proc;
 struct pic_port;
 struct pic_blob;
 
+#define pic_float(v) ((v).u.f)
+#define pic_int(v) ((v).u.i)
+#define pic_sym(v) ((v).u.sym)
+#define pic_char(v) ((v).u.c)
+
 #define pic_obj_ptr(o) ((struct pic_object *)pic_ptr(o))
 #define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
 #define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))
 #define pic_vec_ptr(o) ((struct pic_vector *)pic_ptr(o))
+
+#define pic_nil_p(v) (pic_vtype(v) == PIC_VTYPE_NIL)
+#define pic_true_p(v) (pic_vtype(v) == PIC_VTYPE_TRUE)
+#define pic_false_p(v) (pic_vtype(v) == PIC_VTYPE_FALSE)
+#define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
+#define pic_float_p(v) (pic_vtype(v) == PIC_VTYPE_FLOAT)
+#define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
+#define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
+#define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
+#define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
+#define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
+#define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
 
 static inline enum pic_tt pic_type(pic_value);
 static inline const char *pic_type_repr(enum pic_tt);
@@ -154,23 +171,6 @@ static inline pic_value pic_int_value(int);
 static inline pic_value pic_symbol_value(pic_sym);
 static inline pic_value pic_char_value(char c);
 static inline pic_value pic_none_value();
-
-#define pic_float(v) ((v).u.f)
-#define pic_int(v) ((v).u.i)
-#define pic_sym(v) ((v).u.sym)
-#define pic_char(v) ((v).u.c)
-
-#define pic_nil_p(v) (pic_vtype(v) == PIC_VTYPE_NIL)
-#define pic_true_p(v) (pic_vtype(v) == PIC_VTYPE_TRUE)
-#define pic_false_p(v) (pic_vtype(v) == PIC_VTYPE_FALSE)
-#define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
-#define pic_float_p(v) (pic_vtype(v) == PIC_VTYPE_FLOAT)
-#define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
-#define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
-#define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
-#define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
-#define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
-#define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
 
 static inline bool pic_eq_p(pic_value, pic_value);
 static inline bool pic_eqv_p(pic_value, pic_value);
