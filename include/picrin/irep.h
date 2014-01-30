@@ -47,7 +47,6 @@ enum pic_opcode {
 struct pic_code {
   enum pic_opcode insn;
   union {
-    double f;
     int i;
     char c;
     struct {
