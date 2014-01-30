@@ -172,9 +172,6 @@ static inline pic_value pic_none_value();
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
 
-/* obsoleted macro(s) */
-#define pic_symbol_p pic_sym_p
-
 static inline bool pic_eq_p(pic_value, pic_value);
 static inline bool pic_eqv_p(pic_value, pic_value);
 

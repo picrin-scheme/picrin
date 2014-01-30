@@ -78,7 +78,7 @@ pic_symbol_symbol_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_symbol_p(v));
+  return pic_bool_value(pic_sym_p(v));
 }
 
 static pic_value
@@ -88,7 +88,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (! pic_symbol_p(v)) {
+  if (! pic_sym_p(v)) {
     pic_error(pic, "symbol->string: expected symbol");
   }
 

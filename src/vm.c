@@ -193,7 +193,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       m = va_arg(ap, pic_sym *);
       if (i < argc) {
         v = GET_OPERAND(pic,i);
-        if (pic_symbol_p(v)) {
+        if (pic_sym_p(v)) {
           *m = pic_sym(v);
         }
         else {

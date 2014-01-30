@@ -47,7 +47,7 @@ analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
     pic_value sym;
 
     sym = pic_car(pic, v);
-    if (! pic_symbol_p(sym)) {
+    if (! pic_sym_p(sym)) {
       pic_free(pic, syms);
       return NULL;
     }
@@ -58,7 +58,7 @@ analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
   if (pic_nil_p(v)) {
     /* pass */
   }
-  else if (pic_symbol_p(v)) {
+  else if (pic_sym_p(v)) {
     *varg = true;
     syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
     syms[i] = pic_sym(v);
@@ -304,7 +304,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     }
 
     proc = pic_list_ref(pic, obj, 0);
-    if (pic_symbol_p(proc)) {
+    if (pic_sym_p(proc)) {
       pic_sym sym = pic_sym(proc);
 
       if (sym == pic->sDEFINE) {
@@ -327,7 +327,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	  }
 	  val = pic_list_ref(pic, obj, 2);
 	}
-	if (! pic_symbol_p(var)) {
+	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
 
@@ -391,7 +391,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	}
 
 	var = pic_list_ref(pic, obj, 1);
-	if (! pic_symbol_p(var)) {
+	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
 

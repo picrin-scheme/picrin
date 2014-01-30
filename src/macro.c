@@ -91,19 +91,19 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
   for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
 
-    if (! pic_symbol_p(v)) {
+    if (! pic_sym_p(v)) {
       v = macroexpand(pic, v, up);
     }
-    if (! pic_symbol_p(v)) {
+    if (! pic_sym_p(v)) {
       pic_error(pic, "syntax error");
     }
     sym = pic_sym(v);
     xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)pic_gensym(pic, sym));
   }
-  if (! pic_symbol_p(a)) {
+  if (! pic_sym_p(a)) {
     a = macroexpand(pic, a, up);
   }
-  if (pic_symbol_p(a)) {
+  if (pic_sym_p(a)) {
     sym = pic_sym(a);
     xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)pic_gensym(pic, sym));
   }
@@ -153,7 +153,7 @@ sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
 static bool
 pic_identifier_p(pic_value obj)
 {
-  if (pic_symbol_p(obj)) {
+  if (pic_sym_p(obj)) {
     return true;
   }
   if (pic_sc_p(obj)) {
@@ -340,7 +340,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       case PIC_STX_EXPORT: {
         for (v = pic_cdr(pic, expr); ! pic_nil_p(v); v = pic_cdr(pic, v)) {
           pic_value spec = pic_car(pic, v);
-          if (! pic_symbol_p(spec)) {
+          if (! pic_sym_p(spec)) {
             pic_error(pic, "syntax error");
           }
           /* TODO: warn if symbol is shadowed by local variable */
@@ -357,7 +357,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	}
 
 	var = strip(pic, pic_cadr(pic, expr));
-	if (! pic_symbol_p(var)) {
+	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
 
@@ -400,7 +400,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  }
 	  val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, expr)));
 	}
-	if (! pic_symbol_p(var)) {
+	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
 
@@ -474,10 +474,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	  /* defined symbol */
 	  a = pic_car(pic, var);
-          if (! pic_symbol_p(a)) {
+          if (! pic_sym_p(a)) {
             a = macroexpand(pic, a, senv);
           }
-	  if (! pic_symbol_p(a)) {
+	  if (! pic_sym_p(a)) {
 	    pic_error(pic, "binding to non-symbol object");
 	  }
 	  sym = pic_sym(a);
@@ -494,10 +494,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  return v;
 	}
 
-        if (! pic_symbol_p(var)) {
+        if (! pic_sym_p(var)) {
           var = macroexpand(pic, var, senv);
         }
-	if (! pic_symbol_p(var)) {
+	if (! pic_sym_p(var)) {
 	  pic_error(pic, "binding to non-symbol object");
 	}
 	uniq = pic_gensym(pic, pic_sym(var));
@@ -672,7 +672,7 @@ er_macro_compare(pic_state *pic)
 
   pic_get_args(pic, "oo", &a, &b);
 
-  if (! pic_symbol_p(a) || ! pic_symbol_p(b))
+  if (! pic_sym_p(a) || ! pic_sym_p(b))
     return pic_false_value();   /* should be an error? */
 
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
