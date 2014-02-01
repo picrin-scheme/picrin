@@ -126,12 +126,11 @@ pic_reverse(pic_state *pic, pic_value list)
   pic_value v, acc;
 
   acc = pic_nil_value();
-  for (v = list; ! pic_nil_p(v); v = pic_cdr(pic ,v)) {
-    acc = pic_cons(pic, pic_car(pic, v), acc);
+  pic_for_each(v, list) {
+    acc = pic_cons(pic, v, acc);
 
     pic_gc_arena_restore(pic, ai);
     pic_gc_protect(pic, acc);
-    pic_gc_protect(pic, v);
   }
   return acc;
 }

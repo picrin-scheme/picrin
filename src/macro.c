@@ -299,7 +299,6 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
     if (pic_syntax_p(car)) {
       switch (pic_syntax(car)->kind) {
       case PIC_STX_DEFLIBRARY: {
-        pic_value exprs;
         struct pic_lib *prev = pic->lib;
 
         if (pic_length(pic, expr) < 2) {
@@ -312,9 +311,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         {
           struct pic_proc *proc;
 
-          for (exprs = pic_cddr(pic, expr); ! pic_nil_p(exprs); exprs = pic_cdr(pic, exprs)) {
-            v = pic_car(pic, exprs);
-
+          pic_for_each (v, pic_cddr(pic, expr)) {
             proc = pic_compile(pic, v);
             if (proc == NULL) {
               abort();
@@ -330,16 +327,15 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         return pic_none_value();
       }
       case PIC_STX_IMPORT: {
-        for (v = pic_cdr(pic, expr); ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-          pic_value spec = pic_car(pic, v);
-
+        pic_value spec;
+        pic_for_each (spec, pic_cdr(pic, expr)) {
           pic_import(pic, spec);
         }
         return pic_none_value();
       }
       case PIC_STX_EXPORT: {
-        for (v = pic_cdr(pic, expr); ! pic_nil_p(v); v = pic_cdr(pic, v)) {
-          pic_value spec = pic_car(pic, v);
+        pic_value spec;
+        pic_for_each (spec, pic_cdr(pic, expr)) {
           if (! pic_sym_p(spec)) {
             pic_error(pic, "syntax error");
           }

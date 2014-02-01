@@ -435,14 +435,14 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 
 #define FOLD_ARGS(sym) do {                                             \
         obj = analyze(state, pic_car(pic, args), false);                \
-        for (args = pic_cdr(pic, args); ! pic_nil_p(args); args = pic_cdr(pic, args)) { \
+        pic_for_each (arg, pic_cdr(pic, args)) {                        \
           obj = pic_list(pic, 3, pic_symbol_value(sym), obj,            \
-                         analyze(state, pic_car(pic, args), false));    \
+                         analyze(state, arg, false));                   \
         }                                                               \
       } while (0)
 
       else if (sym == state->rADD) {
-	pic_value args;
+	pic_value args, arg;
 
 	ARGC_ASSERT_GE(0);
 	switch (pic_length(pic, obj)) {
@@ -457,7 +457,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	}
       }
       else if (sym == state->rSUB) {
-	pic_value args;
+	pic_value args, arg;
 
 	ARGC_ASSERT_GE(1);
 	switch (pic_length(pic, obj)) {
@@ -471,7 +471,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	}
       }
       else if (sym == state->rMUL) {
-	pic_value args;
+	pic_value args, arg;
 
 	ARGC_ASSERT_GE(0);
 	switch (pic_length(pic, obj)) {
@@ -486,7 +486,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	}
       }
       else if (sym == state->rDIV) {
-	pic_value args;
+	pic_value args, arg;
 
 	ARGC_ASSERT_GE(1);
 	switch (pic_length(pic, obj)) {
@@ -556,7 +556,7 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
   int ai = pic_gc_arena_preserve(pic);
-  pic_value seq;
+  pic_value seq, elt;
   pic_sym call;
 
   if (! tailpos) {
@@ -565,8 +565,8 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
     call = state->sTAILCALL;
   }
   seq = pic_list(pic, 1, pic_symbol_value(call));
-  for (; ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
-    seq = pic_cons(pic, analyze(state, pic_car(pic, obj), false), seq);
+  pic_for_each (elt, obj) {
+    seq = pic_cons(pic, analyze(state, elt, false), seq);
   }
   seq = pic_reverse(pic, seq);
 
@@ -863,12 +863,12 @@ resolve_reference_node(resolver_state *state, pic_value obj)
   }
   else {
     int ai = pic_gc_arena_preserve(pic);
-    pic_value seq = pic_list(pic, 1, pic_symbol_value(tag));
-    for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
-      seq = pic_cons(pic, resolve_reference(state, pic_car(pic, obj)), seq);
+    pic_value seq = pic_list(pic, 1, pic_symbol_value(tag)), elt;
+
+    pic_for_each (elt, pic_cdr(pic, obj)) {
+      seq = pic_cons(pic, resolve_reference(state, elt), seq);
 
       pic_gc_arena_restore(pic, ai);
-      pic_gc_protect(pic, obj);
       pic_gc_protect(pic, seq);
     }
     return pic_reverse(pic, seq);
@@ -1133,8 +1133,9 @@ codegen(codegen_state *state, pic_value obj)
     return;
   }
   else if (sym == pic->sBEGIN) {
-    for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
-      codegen(state, pic_car(pic, obj));
+    pic_value elt;
+    pic_for_each (elt, pic_cdr(pic, obj)) {
+      codegen(state, elt);
     }
     return;
   }
@@ -1274,8 +1275,10 @@ codegen(codegen_state *state, pic_value obj)
   }
   else if (sym == state->sCALL || sym == state->sTAILCALL) {
     int len = pic_length(pic, obj);
-    for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
-      codegen(state, pic_car(pic, obj));
+    pic_value elt;
+
+    pic_for_each (elt, pic_cdr(pic, obj)) {
+      codegen(state, elt);
     }
     cxt->code[cxt->clen].insn = (sym == state->sCALL) ? OP_CALL : OP_TAILCALL;
     cxt->code[cxt->clen].u.i = len - 1;
