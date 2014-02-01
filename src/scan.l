@@ -142,28 +142,28 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 %%
 
-#define UNUSED(v) ((void)(v))
+#undef yyextra
+#define yyextra ((struct yyguts_t *)yyscanner)->yyextra_r
 
 void *
 yyalloc(size_t bytes, yyscan_t yyscanner)
 {
-  UNUSED(yyscanner);
-  return malloc(bytes);
+  return pic_alloc(yyextra->pic, bytes);
 }
 
 void *
 yyrealloc(void *ptr, size_t bytes, yyscan_t yyscanner)
 {
-  UNUSED(yyscanner);
-  return realloc(ptr, bytes);
+  return pic_realloc(yyextra->pic, ptr, bytes);
 }
 
 void
 yyfree(void * ptr, yyscan_t yyscanner)
 {
-  UNUSED(yyscanner);
-  free(ptr);
+  return pic_free(yyextra->pic, ptr);
 }
+
+#define UNUSED(v) ((void)(v))
 
 int
 yywrap(yyscan_t yyscanner)
