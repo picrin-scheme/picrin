@@ -146,7 +146,7 @@ new_analyze_state(pic_state *pic)
   push_scope(state, pic_nil_value());
 
   global_tbl = pic->global_tbl;
-  for (it = xh_begin(global_tbl); ! xh_isend(&it); xh_next(global_tbl, &it)) {
+  for (xh_begin(global_tbl, &it); ! xh_isend(&it); xh_next(&it)) {
     xh_put(state->scope->var_tbl, it.e->key, 0);
   }
 

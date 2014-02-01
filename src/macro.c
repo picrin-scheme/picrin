@@ -186,8 +186,7 @@ pic_import(pic_state *pic, pic_value spec)
   if (! lib) {
     pic_error(pic, "library not found");
   }
-  it = xh_begin(lib->exports);
-  while (! xh_isend(&it)) {
+  for (xh_begin(lib->exports, &it); ! xh_isend(&it); xh_next(&it)) {
 #if DEBUG
     if (it.e->val >= 0) {
       printf("* importing %s as %s\n", it.e->key, pic_symbol_name(pic, (pic_sym)it.e->val));
@@ -212,7 +211,6 @@ pic_import(pic_state *pic, pic_value spec)
       xh_put(senv->tbl, it.e->key, ~idx);
       senv->xlen++;
     }
-    xh_next(lib->exports, &it);
   }
 }
 
