@@ -19,22 +19,6 @@
 # error enable PIC_NONE_IS_FALSE
 #endif
 
-static struct pic_irep *
-new_irep(pic_state *pic)
-{
-  struct pic_irep *irep;
-
-  irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
-  irep->code = NULL;
-  irep->clen = 0;
-  irep->argc = -1;
-  irep->localc = -1;
-  irep->varg = false;
-  irep->irep = NULL;
-  irep->pool = NULL;
-  return irep;
-}
-
 static pic_sym *
 analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
 {
@@ -1031,7 +1015,7 @@ pop_codegen_context(codegen_state *state)
   struct pic_irep *irep;
 
   /* create irep */
-  irep = new_irep(pic);
+  irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
   irep->varg = state->cxt->varg;
   irep->argc = state->cxt->argc;
   irep->localc = state->cxt->localc;
