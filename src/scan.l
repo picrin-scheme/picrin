@@ -27,6 +27,7 @@
 %option reentrant
 %option noinput
 %option nounput
+%option extra-type="struct parser_control *"
 
   /* comment */
 comment		;.*$
@@ -88,7 +89,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 }
 
 {identifier}	{
-  yylvalp->cstr = strdup(yytext);
+  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
   return tSYMBOL;
 }
 
@@ -97,7 +98,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 	[^\\"]*		yymore();
 	"\""		{
 			  yytext[yyleng-1] = '\0';
-			  yylvalp->cstr = strdup(yytext);
+			  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
 			  BEGIN(INITIAL);
 			  return tSTRING;
 			}

@@ -17,7 +17,7 @@
 /* just for supressing warnings. a little bit evil */
 int yylex();
 int yylex_();
-void yylex_init();
+void yylex_init_extra();
 void yyset_in();
 void yy_scan_string();
 void yylex_destroy();
@@ -36,7 +36,7 @@ parser_control_new(pic_state *pic)
   p->value = pic_undef_value();
   p->yy_arena = pic_vec_new(pic, YY_ARENA_SIZE);
   p->yy_arena_idx = 0;
-  yylex_init(&p->yyscanner);
+  yylex_init_extra(p, &p->yyscanner);
 
   return p;
 }
@@ -94,7 +94,7 @@ yy_str_new_cstr(struct parser_control *p, const char *cstr)
 
   str = (struct pic_string *)yy_obj_alloc(p, sizeof(struct pic_string), PIC_TT_STRING);
   str->len = strlen(cstr);
-  str->str = strdup(cstr);
+  str->str = pic_strdup(p->pic, cstr);
 
   return pic_obj_value(str);
 }
@@ -123,7 +123,7 @@ yy_blob_new(struct parser_control *p, char *dat, int len)
   struct pic_blob *bv;
 
   bv = (struct pic_blob *)yy_obj_alloc(p, sizeof(struct pic_blob), PIC_TT_BLOB);
-  bv->data = strndup(dat, len);
+  bv->data = pic_strndup(p->pic, dat, len);
   bv->len = len;
   return pic_obj_value(bv);
 }
