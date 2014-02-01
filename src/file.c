@@ -6,14 +6,15 @@
 
 #include "picrin.h"
 #include "picrin/port.h"
+#include "xfile/xfile.h"
 
 static pic_value
 generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
 {
   struct pic_port *port;
-  pic_file *file;
+  XFILE *file;
 
-  file = pic_fopen(fname, mode);
+  file = xfopen(fname, mode);
   if (! file) {
     pic_error(pic, "could not open file");
   }

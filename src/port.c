@@ -41,246 +41,13 @@ pic_stdout(pic_state *pic)
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }
 
-int
-pic_setvbuf(pic_file *file, char *buf, int mode, size_t bufsiz)
-{
-  /* FIXME: free old buf */
-  assert(mode != _IONBF);       /* FIXME: support IONBF */
-
-  file->mode = mode;
-  if (buf) {
-    file->buf = buf;
-    file->bufsiz = bufsiz;
-  }
-  else {
-    if (mode == _IONBF) {
-      file->buf = NULL;
-      file->bufsiz = 0;
-    }
-    else {
-      assert(bufsiz == 0);
-      file->buf = (char *)malloc(BUFSIZ);
-      file->bufsiz = BUFSIZ;
-    }
-  }
-  file->s = file->c = file->buf;
-  file->e = file->buf + file->bufsiz;
-  return 0;
-}
-
-int
-pic_fflush(pic_file *file)
-{
-  int r;
-
-  r = file->vtable.write(file->vtable.cookie, file->s, file->c - file->s);
-  /* TODO: error handling (r == -1 or r < file->c - file->s)*/
-  file->c -= r;
-  return r;
-}
-
-int
-pic_ffill(pic_file *file)
-{
-  int r;
-
-  r = file->vtable.read(file->vtable.cookie, file->c, file->e - file->c);
-  /* TODO: error handling (r == -1) */
-  if (r < file->e - file->c) {
-    file->flags |= PIC_FILE_EOF;
-  }
-  file->c += r;
-  return r;
-}
-
-pic_file *
-pic_funopen(void *cookie,
-            int (*read)(void *, char *, int),
-            int (*write)(void *, const char *, int),
-            long (*seek)(void *, long, int),
-            int (*close)(void *))
-{
-  pic_file *file;
-
-  file = (pic_file *)malloc(sizeof(pic_file));
-  if (! file) {
-    return NULL;
-  }
-  file->flags = 0;
-  /* no buffering at the beginning */
-  file->buf = NULL;
-  file->mode = _IONBF;
-  file->bufsiz = 0;
-  file->us = PIC_UBUFSIZ;
-  file->ur = 0;
-  /* set vtable */
-  file->vtable.cookie = cookie;
-  file->vtable.read = read;
-  file->vtable.write = write;
-  file->vtable.seek = seek;
-  file->vtable.close = close;
-
-  pic_setvbuf(file, (char *)NULL, _IOFBF, 0);
-
-  return file;
-}
-
-static int
-file_read(void *cookie, char *ptr, int size)
-{
-  return fread(ptr, 1, size, (FILE *)cookie);
-}
-
-static int
-file_write(void *cookie, const char *ptr, int size)
-{
-  return fwrite(ptr, 1, size, (FILE *)cookie);
-}
-
-static long
-file_seek(void *cookie, long pos, int whence)
-{
-  return fseek((FILE *)cookie, pos, whence);
-}
-
-static int
-file_close(void *cookie)
-{
-  return fclose((FILE *)cookie);
-}
-
-pic_file *
-pic_fopen(const char *filename, const char *mode)
-{
-  FILE *fp;
-
-  fp = fopen(filename, mode);
-  if (! fp) {
-    return NULL;
-  }
-  return pic_funopen(fp, file_read, file_write, file_seek, file_close);
-}
-
-int
-pic_fclose(pic_file *file)
-{
-  int r;
-
-  r = file->vtable.close(file->vtable.cookie);
-  if (! r) {
-    return -1;
-  }
-  free(file);
-  return 0;
-}
-
-size_t
-pic_fread(void *ptr, size_t block, size_t nitems, pic_file *file)
-{
-  int size, avail;
-  char *dst = (char *)ptr;
-
-  size = block * nitems;        /* TODO: optimize block read */
-
-  /* take care of ungetc buf */
-  while (file->ur > 0) {
-    *dst++ = file->ub[--file->ur];
-    if (--size == 0)
-      return block * nitems;
-  }
-
-  while (1) {
-    avail = file->c - file->s;
-    if (size <= avail) {
-      memcpy(dst, file->s, size);
-      memmove(file->s, file->s + size, avail - size);
-      file->c -= size;
-      return block * nitems;
-    }
-    else {
-      memcpy(dst, file->s, avail);
-      file->c = file->s;
-      size -= avail;
-      dst += avail;
-      if ((file->flags & PIC_FILE_EOF) != 0)
-        break;
-      pic_ffill(file);
-    }
-  }
-  /* handle end-of-file */
-  *dst = EOF;
-  return block * nitems - size;
-}
-
-size_t
-pic_fwrite(const void *ptr, size_t block, size_t nitems, pic_file *file)
-{
-  int size, room;
-  char *dst = (char *)ptr;
-
-  size = block * nitems;               /* TODO: optimize block write */
-  while (1) {
-    room = file->e - file->c;
-    if (room < size) {
-      memcpy(file->c, dst, room);
-      file->c = file->e;
-      size -= room;
-      dst += room;
-      pic_fflush(file);
-    }
-    else {
-      memcpy(file->c, dst, size);
-      file->c += size;
-      return block * nitems;
-    }
-  }
-}
-
-int
-pic_fgetc(pic_file *file)
-{
-  char buf[1];
-
-  pic_fread(buf, 1, 1, file);
-
-  return buf[0];
-}
-
-int
-pic_ungetc(int c, pic_file *file)
-{
-  return file->ub[file->ur++] = (char)c;
-}
-
-int
-pic_fputc(int c, pic_file *file)
-{
-  char buf[1];
-
-  buf[0] = c;
-  pic_fwrite(buf, 1, 1, file);
-
-  return buf[0];
-}
-
-int
-pic_fputs(const char *str, pic_file *file)
-{
-  int len;
-
-  len = strlen(str);
-  pic_fwrite(str, len, 1, file);
-
-  return 0;
-}
-
 static pic_value
 port_new_from_fp(pic_state *pic, FILE *fp, short flags)
 {
   struct pic_port *port;
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = pic_funopen(fp, file_read, file_write, file_seek, file_close);
+  port->file = xfunopen(fp, file_read, file_write, file_seek, file_close);
   port->flags = flags;
   port->status = PIC_PORT_OPEN;
   return pic_obj_value(port);
@@ -426,7 +193,7 @@ pic_port_close_port(pic_state *pic)
 
   pic_get_args(pic, "p", &port);
 
-  if (pic_fclose(port->file) == EOF) {
+  if (xfclose(port->file) == EOF) {
     pic_error(pic, "close-port: failure");
   }
   port->status = PIC_PORT_CLOSE;
@@ -471,7 +238,7 @@ pic_port_read_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-char");
 
-  if ((c = pic_fgetc(port->file)) == EOF) {
+  if ((c = xfgetc(port->file)) == EOF) {
     return pic_eof_object();
   }
   else {
@@ -489,11 +256,11 @@ pic_port_peek_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "peek-char");
 
-  if ((c = pic_fgetc(port->file)) == EOF) {
+  if ((c = xfgetc(port->file)) == EOF) {
     return pic_eof_object();
   }
   else {
-    pic_ungetc(c, port->file);
+    xungetc(c, port->file);
     return pic_char_value(c);
   }
 }
@@ -507,7 +274,7 @@ pic_port_newline(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "newline");
 
-  pic_fputs("\n", port->file);
+  xfputs("\n", port->file);
   return pic_none_value();
 }
 
@@ -521,7 +288,7 @@ pic_port_write_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "write-char");
 
-  pic_fputc(c, port->file);
+  xfputc(c, port->file);
   return pic_none_value();
 }
 
@@ -534,7 +301,7 @@ pic_port_flush(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT, PIC_PORT_OPEN, "flush-output-port");
 
-  pic_fflush(port->file);
+  xfflush(port->file);
   return pic_none_value();
 }
 
