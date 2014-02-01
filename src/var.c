@@ -173,12 +173,10 @@ pic_var_parameter_converter(pic_state *pic)
 void
 pic_init_var(pic_state *pic)
 {
-  DEFLIBRARY(pic, "(picrin parameter)")
-  {
+  pic_deflibrary ("(picrin parameter)") {
     pic_defun(pic, "make-parameter", pic_var_make_parameter);
     pic_defun(pic, "parameter-ref", pic_var_parameter_ref);
     pic_defun(pic, "parameter-set!", pic_var_parameter_set); /* no convert */
     pic_defun(pic, "parameter-converter", pic_var_parameter_converter);
   }
-  ENDLIBRARY(pic);
 }

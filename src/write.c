@@ -174,9 +174,7 @@ pic_port_write_simple(pic_state *pic)
 void
 pic_init_write(pic_state *pic)
 {
-  DEFLIBRARY(pic, "(scheme write)")
-  {
+  pic_deflibrary ("(scheme write)") {
     pic_defun(pic, "write-simple", pic_port_write_simple);
   }
-  ENDLIBRARY(pic);
 }

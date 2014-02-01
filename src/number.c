@@ -745,8 +745,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "exact", pic_number_exact);
   pic_gc_arena_restore(pic, ai);
 
-  DEFLIBRARY(pic, "(scheme inexact)")
-  {
+  pic_deflibrary ("(scheme inexact)") {
     pic_defun(pic, "finite?", pic_number_finite_p);
     pic_defun(pic, "infinite?", pic_number_infinite_p);
     pic_defun(pic, "nan?", pic_number_nan_p);
@@ -762,5 +761,4 @@ pic_init_number(pic_state *pic)
 
     pic_defun(pic, "sqrt", pic_number_sqrt);
   }
-  ENDLIBRARY(pic);
 }

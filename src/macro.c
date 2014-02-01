@@ -730,12 +730,10 @@ pic_macro_er_macro_transformer(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
-  DEFLIBRARY(pic, "(picrin macro)")
-  {
+  pic_deflibrary ("(picrin macro)") {
     pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
     pic_defun(pic, "er-macro-transformer", pic_macro_er_macro_transformer);
   }
-  ENDLIBRARY(pic);
 }

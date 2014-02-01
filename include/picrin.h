@@ -176,16 +176,22 @@ void pic_in_library(pic_state *, pic_value);
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
-#define DEFLIBRARY(pic,name)                                    \
-  do {                                                          \
-    struct pic_lib *lib__ = pic->lib;                           \
-    pic_make_library(pic, pic_parse(pic, name));                \
-    pic_in_library(pic, pic_parse(pic, name));                  \
-    do
-#define ENDLIBRARY(pic)                                         \
-    while (0);                                                  \
-    pic->lib = lib__;                                           \
-  } while (0)
+#define PIC_DEFLIBRARY_HELPER2(tmp1, tmp2, tmp3, spec)                  \
+  for (struct pic_lib *tmp1 = pic->lib,                                 \
+         *tmp2 = (pic_make_library(pic, pic_parse(pic, spec)),          \
+                  pic_in_library(pic, pic_parse(pic, spec)),            \
+                  NULL);                                                \
+       tmp3 < 1;                                                        \
+       (pic->lib = tmp1), ((void)tmp2), ++tmp3)
+
+#define PIC_DEFLIBRARY_HELPER1(tmp1, tmp2, spec)                        \
+  for (int tmp1 = 0, tmp2 = 0; tmp1 < 1; ++tmp1)                        \
+    PIC_DEFLIBRARY_HELPER2(GENSYM(pic_deflib_tmp3__),                   \
+                           GENSYM(pic_deflib_tmp4__),                   \
+                           tmp2, spec)
+
+#define pic_deflibrary(spec)                                            \
+  PIC_DEFLIBRARY_HELPER1(GENSYM(pic_deflib_tmp1__), GENSYM(pic_deflib_tmp2__), spec)
 
 void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
