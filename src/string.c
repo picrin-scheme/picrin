@@ -13,7 +13,7 @@ pic_str_new(pic_state *pic, const char *cstr, size_t len)
 
   str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TT_STRING);
   str->len = len;
-  str->str = strdup(cstr);
+  str->str = pic_strdup(pic, cstr);
   return str;
 }
 
