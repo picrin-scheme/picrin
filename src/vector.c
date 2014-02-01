@@ -70,7 +70,7 @@ pic_vec_make_vector(pic_state *pic)
   n = pic_get_args(pic, "i|o", &k, &v);
 
   vec = pic_vec_new(pic, k);
-  if (n == 3) {
+  if (n == 2) {
     for (i = 0; i < (size_t)k; ++i) {
       vec->data[i] = v;
     }

@@ -80,11 +80,11 @@ var_call(pic_state *pic)
   proc = pic_get_proc(pic);
 
   c = pic_get_args(pic, "|o", &v);
-  if (c == 1) {
+  if (c == 0) {
     var = pic_var_ptr(proc->env->values[0]);
     return pic_var_ref(pic, var);
   }
-  else if (c == 2) {
+  else if (c == 1) {
     var = pic_var_ptr(proc->env->values[0]);
 
     pic_var_set(pic, var, v);

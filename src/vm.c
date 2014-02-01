@@ -308,7 +308,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
     pic_error(pic, "wrong number of arguments");
   }
   va_end(ap);
-  return i;
+  return i - 1;
 }
 
 void

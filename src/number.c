@@ -540,7 +540,7 @@ pic_number_log(pic_state *pic)
   int argc;
 
   argc = pic_get_args(pic, "f|f", &f, &g);
-  if (argc == 2) {
+  if (argc == 1) {
     return pic_float_value(log(f));
   }
   else {
@@ -605,7 +605,7 @@ pic_number_atan(pic_state *pic)
   int argc;
 
   argc = pic_get_args(pic, "f|f", &f, &g);
-  if (argc == 2) {
+  if (argc == 1) {
     f = atan(f);
     return pic_float_value(f);
   }
