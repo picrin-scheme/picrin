@@ -154,6 +154,8 @@ const char *pic_symbol_name(pic_state *, pic_sym);
 pic_sym pic_gensym(pic_state *, pic_sym);
 bool pic_interned_p(pic_state *, pic_sym);
 
+char *pic_strdup(pic_state *pic, const char *s);
+char *pic_strndup(pic_state *pic, const char *s, size_t n);
 struct pic_string *pic_str_new(pic_state *, const char *, size_t);
 struct pic_string *pic_str_new_cstr(pic_state *, const char *);
 
