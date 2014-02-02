@@ -218,6 +218,21 @@ pic_values_by_list(pic_state *pic, pic_value list)
   return pic_nil_p(list) ? pic_none_value() : pic->ci->fp[0];
 }
 
+size_t
+pic_receive(pic_state *pic, size_t n, pic_value *argv)
+{
+  size_t i;
+
+  for (i = 0; ; ++i) {
+    if (pic_undef_p(pic->ci->fp[i]))
+      break;
+    if (i < n) {
+      argv[i] = pic->ci->fp[i];
+    }
+  }
+  return i;
+}
+
 static pic_value
 pic_cont_callcc(pic_state *pic)
 {
