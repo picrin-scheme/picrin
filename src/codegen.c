@@ -1532,10 +1532,10 @@ print_code(pic_state *pic, struct pic_code c)
     printf("OP_CSET\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
     break;
   case OP_JMP:
-    printf("OP_JMP\t%d\n", c.u.i);
+    printf("OP_JMP\t%x\n", c.u.i);
     break;
   case OP_JMPIF:
-    printf("OP_JMPIF\t%d\n", c.u.i);
+    printf("OP_JMPIF\t%x\n", c.u.i);
     break;
   case OP_NOT:
     puts("OP_NOT");
@@ -1606,6 +1606,7 @@ pic_dump_irep(pic_state *pic, struct pic_irep *irep)
     printf(": %d -> %d\n", irep->cv_tbl[i], i);
   }
   for (i = 0; i < irep->clen; ++i) {
+    printf("%02x ", i);
     print_code(pic, irep->code[i]);
   }
 
