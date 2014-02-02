@@ -83,13 +83,12 @@ pic_value
 pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
 {
   pic_value v;
-  size_t i;
 
   v = pic_nil_value();
-  for (i = 0; i < c; ++i) {
-    v = pic_cons(pic, vs[i], v);
+  while (c--) {
+    v = pic_cons(pic, vs[c], v);
   }
-  return pic_reverse(pic, v);
+  return v;
 }
 
 pic_value
