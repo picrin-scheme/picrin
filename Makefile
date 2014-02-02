@@ -1,4 +1,3 @@
-CC=gcc
 CFLAGS=-Wall -Wextra -std=c99
 
 ifeq ($(findstring CYGWIN,$(shell uname -s)), CYGWIN)
