@@ -30,8 +30,7 @@ struct pic_cont {
   struct pic_object *arena[PIC_ARENA_SIZE];
   int arena_idx;
 
-  size_t argc;
-  pic_value *argv;
+  pic_value results;
 };
 
 #define PIC_BLK_INCREF(pic,blk) do {		\
@@ -54,6 +53,7 @@ struct pic_cont {
 pic_value pic_callcc(pic_state *, struct pic_proc *);
 pic_value pic_values(pic_state *, size_t, ...);
 pic_value pic_values_by_array(pic_state *, size_t, pic_value *);
+pic_value pic_values_by_list(pic_state *, pic_value);
 
 #if defined(__cplusplus)
 }

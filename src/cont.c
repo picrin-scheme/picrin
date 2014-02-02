@@ -9,6 +9,7 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/cont.h"
+#include "picrin/pair.h"
 
 static void save_cont(pic_state *, struct pic_cont **);
 static void restore_cont(pic_state *, struct pic_cont *);
@@ -61,8 +62,7 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->arena_idx = pic->arena_idx;
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
 
-  cont->argc = 0;
-  cont->argv = NULL;
+  cont->results = pic_undef_value();
 }
 
 static void
@@ -142,8 +142,7 @@ cont_call(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   cont = (struct pic_cont *)pic_ptr(proc->env->values[0]);
-  cont->argc = argc;
-  cont->argv = argv;
+  cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
   walk_to_block(pic, pic->blk, cont->blk);
@@ -158,8 +157,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
-    printf("%d\n", cont->argc);
-    return pic_values_from_array(pic, cont->argc, cont->argv);
+    return pic_values_by_list(pic, cont->results);
   }
   else {
     struct pic_proc *c;
@@ -203,6 +201,21 @@ pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
   pic->ci->fp[i] = pic_undef_value();
 
   return argc == 0 ? pic_none_value() : pic->ci->fp[0];
+}
+
+pic_value
+pic_values_by_list(pic_state *pic, pic_value list)
+{
+  pic_value v;
+  size_t i;
+
+  i = 0;
+  pic_for_each (v, list) {
+    pic->ci->fp[i++] = v;
+  }
+  pic->ci->fp[i] = pic_undef_value();
+
+  return pic_nil_p(list) ? pic_none_value() : pic->ci->fp[0];
 }
 
 static pic_value

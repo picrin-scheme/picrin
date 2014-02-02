@@ -386,9 +386,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
 
     /* result values */
-    for (i = 0; i < cont->argc; ++i) {
-      gc_mark(pic, cont->argv[i]);
-    }
+    gc_mark(pic, cont->results);
     break;
   }
   case PIC_TT_SYNTAX: {
