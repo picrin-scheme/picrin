@@ -385,7 +385,10 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       gc_mark_object(pic, cont->arena[j]);
     }
 
-    gc_mark(pic, cont->result);
+    /* result values */
+    for (i = 0; i < cont->argc; ++i) {
+      gc_mark(pic, cont->argv[i]);
+    }
     break;
   }
   case PIC_TT_SYNTAX: {
