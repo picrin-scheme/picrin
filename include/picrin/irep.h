@@ -25,6 +25,7 @@ enum pic_opcode {
   OP_CSET,
   OP_JMP,
   OP_JMPIF,
+  OP_NOT,
   OP_CALL,
   OP_TAILCALL,
   OP_RET,
