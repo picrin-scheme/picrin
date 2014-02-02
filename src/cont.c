@@ -221,13 +221,17 @@ pic_values_by_list(pic_state *pic, pic_value list)
 size_t
 pic_receive(pic_state *pic, size_t n, pic_value *argv)
 {
+  pic_callinfo *ci;
   size_t i;
 
+  /* take info from already discarded frame */
+  ci = pic->ci + 1;
+
   for (i = 0; ; ++i) {
-    if (pic_undef_p(pic->ci->fp[i]))
+    if (pic_undef_p(ci->fp[i]))
       break;
     if (i < n) {
-      argv[i] = pic->ci->fp[i];
+      argv[i] = ci->fp[i];
     }
   }
   return i;
