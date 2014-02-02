@@ -132,7 +132,7 @@ pic_error_error(pic_state *pic)
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = PIC_ERROR_OTHER;
   e->msg = pic_strdup(pic, str);
-  e->irrs = pic_list_from_array(pic, argc, argv);
+  e->irrs = pic_list_by_array(pic, argc, argv);
 
   pic_raise(pic, pic_obj_value(e));
 }

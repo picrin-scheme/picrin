@@ -80,7 +80,7 @@ pic_list(pic_state *pic, size_t c, ...)
 }
 
 pic_value
-pic_list_from_array(pic_state *pic, size_t c, pic_value *vs)
+pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
 {
   pic_value v;
   size_t i;
@@ -397,7 +397,7 @@ pic_pair_list(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  return pic_list_from_array(pic, argc, argv);
+  return pic_list_by_array(pic, argc, argv);
 }
 
 static pic_value

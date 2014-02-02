@@ -95,7 +95,7 @@ pic_proc_apply(pic_state *pic)
     pic_error(pic, "apply: wrong number of arguments");
   }
 
-  return pic_apply(pic, proc, pic_list_from_array(pic, argc, args));
+  return pic_apply(pic, proc, pic_list_by_array(pic, argc, args));
 }
 
 static pic_value

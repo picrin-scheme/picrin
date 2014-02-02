@@ -197,7 +197,7 @@ pic_values(pic_state *pic, size_t c, ...)
 }
 
 pic_value
-pic_values_from_array(pic_state *pic, size_t argc, pic_value *argv)
+pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
 {
   size_t i;
   pic_value head = pic_none_value();
