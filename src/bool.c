@@ -57,7 +57,6 @@ pic_bool_equal_p(pic_state *pic)
   return pic_bool_value(pic_equal_p(pic, x, y));
 }
 
-/* TODO: replace it with native opcode */
 static pic_value
 pic_bool_not(pic_state *pic)
 {

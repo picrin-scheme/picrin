@@ -112,6 +112,7 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sLE, "<=");
   register_core_symbol(pic, sGT, ">");
   register_core_symbol(pic, sGE, ">=");
+  register_core_symbol(pic, sNOT, "not");
   pic_gc_arena_restore(pic, ai);
 
   pic_init_core(pic);

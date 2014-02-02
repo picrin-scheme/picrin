@@ -90,7 +90,7 @@ typedef struct {
   pic_sym sDEFINE_LIBRARY, sIMPORT, sEXPORT;
   pic_sym sCONS, sCAR, sCDR, sNILP;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
-  pic_sym sEQ, sLT, sLE, sGT, sGE;
+  pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
 
   struct xhash *sym_tbl;
   const char **sym_pool;

@@ -91,7 +91,7 @@ typedef struct analyze_state {
   analyze_scope *scope;
   pic_sym rCONS, rCAR, rCDR, rNILP;
   pic_sym rADD, rSUB, rMUL, rDIV;
-  pic_sym rEQ, rLT, rLE, rGT, rGE;
+  pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
   pic_sym sCALL, sTAILCALL, sREF;
 } analyze_state;
 
@@ -137,6 +137,7 @@ new_analyze_state(pic_state *pic)
   register_renamed_symbol(pic, state, rLE, stdlib, "<=");
   register_renamed_symbol(pic, state, rGT, stdlib, ">");
   register_renamed_symbol(pic, state, rGE, stdlib, ">=");
+  register_renamed_symbol(pic, state, rNOT, stdlib, "not");
 
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
@@ -520,6 +521,10 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
       else if (sym == state->rGE) {
 	ARGC_ASSERT(2);
         return CONSTRUCT_OP2(pic->sGE);
+      }
+      else if (sym == state->rNOT) {
+        ARGC_ASSERT(1);
+        return CONSTRUCT_OP1(pic->sNOT);
       }
     }
     return analyze_call(state, obj, tailpos);
@@ -1273,6 +1278,12 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   }
+  else if (sym == pic->sNOT) {
+    codegen(state, pic_list_ref(pic, obj, 1));
+    cxt->code[cxt->clen].insn = OP_NOT;
+    cxt->clen++;
+    return;
+  }
   else if (sym == state->sCALL || sym == state->sTAILCALL) {
     int len = pic_length(pic, obj);
     pic_value elt;
@@ -1525,6 +1536,9 @@ print_code(pic_state *pic, struct pic_code c)
     break;
   case OP_JMPIF:
     printf("OP_JMPIF\t%d\n", c.u.i);
+    break;
+  case OP_NOT:
+    puts("OP_NOT");
     break;
   case OP_CALL:
     printf("OP_CALL\t%d\n", c.u.i);
