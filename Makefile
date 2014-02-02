@@ -24,7 +24,7 @@ debug: build
 build: build-lib build-main
 
 build-main:
-	$(CC) $(CFLAGS) -D_GNU_SOURCE -Wl,-rpath lib tools/main.c src/*.c -o bin/picrin -I./include -I./extlib -L./lib -lreadline -lm -lxfile
+	$(CC) $(CFLAGS) -D_GNU_SOURCE -Wl,-rpath lib tools/main.c -o bin/picrin -I./include -I./extlib -L./lib -lreadline -lm -lxfile -lpicrin
 
 build-lib:
 	cd src; \
