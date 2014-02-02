@@ -51,6 +51,8 @@ struct pic_cont {
   } while (0)
 
 pic_value pic_callcc(pic_state *, struct pic_proc *);
+pic_value pic_values(pic_state *, size_t, ...);
+pic_value pic_values_from_array(pic_state *, size_t, pic_value *);
 
 #if defined(__cplusplus)
 }

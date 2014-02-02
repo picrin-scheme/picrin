@@ -169,6 +169,45 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   }
 }
 
+pic_value
+pic_values(pic_state *pic, size_t c, ...)
+{
+  va_list ap;
+  size_t i;
+  pic_value head = pic_none_value();
+
+  va_start(ap, c);
+
+  for (i = 0; i < c; ++i) {
+    pic->ci->fp[i] = va_arg(ap, pic_value);
+    if (i == 0) {
+      head = pic->ci->fp[0];
+    }
+  }
+  pic->ci->fp[i] = pic_undef_value();
+
+  va_end(ap);
+
+  return head;
+}
+
+pic_value
+pic_values_from_array(pic_state *pic, size_t argc, pic_value *argv)
+{
+  size_t i;
+  pic_value head = pic_none_value();
+
+  for (i = 0; i < argc; ++i) {
+    pic->ci->fp[i] = argv[i];
+    if (i == 0) {
+      head = pic->ci->fp[0];
+    }
+  }
+  pic->ci->fp[i] = pic_undef_value();
+
+  return head;
+}
+
 static pic_value
 pic_cont_callcc(pic_state *pic)
 {
