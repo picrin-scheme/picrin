@@ -242,21 +242,6 @@
           (picrin core-syntax)
           (picrin bootstrap-tools))
 
-  (define *values-tag* (cons #f '()))
-
-  (define (values . args)
-    (if (and (pair? args)
-             (null? (cdr args)))
-        (car args)
-        (cons *values-tag* args)))
-
-  (define (call-with-values producer consumer)
-    (let ((res (producer)))
-      (if (and (pair? res)
-               (eq? *values-tag* (car res)))
-          (apply consumer (cdr res))
-          (consumer res))))
-
   (define-syntax let*-values
     (er-macro-transformer
      (lambda (form r c)
@@ -292,9 +277,7 @@
                        assn)
                     (set! assn (cons `(,(r 'set!) ,(car vars) ,(r (car vars))) assn))))))))))
 
-  (export values
-          call-with-values
-          let-values
+  (export let-values
           let*-values
           define-values))
 
@@ -338,9 +321,7 @@
         do when unless
         _ ... syntax-error)
 
-(export values
-        call-with-values
-        let-values
+(export let-values
         let*-values
         define-values)
 

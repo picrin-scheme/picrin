@@ -280,10 +280,39 @@ pic_cont_dynamic_wind(pic_state *pic)
   return v;
 }
 
+static pic_value
+pic_cont_values(pic_state *pic)
+{
+  size_t argc;
+  pic_value *argv;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  return pic_values_by_array(pic, argc, argv);
+}
+
+static pic_value
+pic_cont_call_with_values(pic_state *pic)
+{
+  struct pic_proc *producer, *consumer;
+  size_t argc;
+  pic_value args[256];
+
+  pic_get_args(pic, "ll", &producer, &consumer);
+
+  pic_apply(pic, producer, pic_nil_value());
+
+  argc = pic_receive(pic, 256, args);
+
+  return pic_apply(pic, consumer, pic_list_by_array(pic, argc, args));
+}
+
 void
 pic_init_cont(pic_state *pic)
 {
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
+  pic_defun(pic, "values", pic_cont_values);
+  pic_defun(pic, "call-with-values", pic_cont_call_with_values);
 }
