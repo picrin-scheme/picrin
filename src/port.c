@@ -42,21 +42,15 @@ pic_stdout(pic_state *pic)
 }
 
 static pic_value
-port_new_from_fp(pic_state *pic, FILE *fp, short flags)
+port_new_stdport(pic_state *pic, XFILE *file, short dir)
 {
   struct pic_port *port;
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = xfunopen(fp, file_read, file_write, file_seek, file_close);
-  port->flags = flags;
+  port->file = file;
+  port->flags = dir | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
   return pic_obj_value(port);
-}
-
-static pic_value
-port_new_stdio(pic_state *pic, FILE *fp, short dir)
-{
-  return port_new_from_fp(pic, fp, dir | PIC_PORT_TEXT);
 }
 
 static pic_value
@@ -308,9 +302,9 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_defvar(pic, "current-input-port", port_new_stdio(pic, stdin, PIC_PORT_IN));
-  pic_defvar(pic, "current-output-port", port_new_stdio(pic, stdout, PIC_PORT_OUT));
-  pic_defvar(pic, "current-error-port", port_new_stdio(pic, stderr, PIC_PORT_OUT));
+  pic_defvar(pic, "current-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
+  pic_defvar(pic, "current-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
+  pic_defvar(pic, "current-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);
