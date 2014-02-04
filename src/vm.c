@@ -411,21 +411,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   argc = pic_length(pic, argv) + 1;
 
 #if VM_DEBUG
-  puts("== booting VM...");
-  printf("  proc = ");
-  pic_debug(pic, pic_obj_value(proc));
-  puts("");
-  printf("  argv = ");
-  pic_debug(pic, argv);
-  puts("");
-  if (! proc->cfunc_p) {
-    printf("  irep = ");
-    pic_dump_irep(pic, proc->u.irep);
-  }
-  else {
-    printf("  cfunc = %p\n", (void *)proc->u.cfunc);
-  }
-  puts("\nLet's go!");
+  puts("### booting VM... ###");
 #endif
 
   PUSH(pic_obj_value(proc));
