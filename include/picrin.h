@@ -57,7 +57,7 @@ struct pic_code;
 
 typedef struct {
   int argc;
-  struct pic_code *pc;
+  struct pic_code *ip;
   pic_value *fp;
   struct pic_env *env;
 } pic_callinfo;

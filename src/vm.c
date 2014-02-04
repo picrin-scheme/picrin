@@ -577,13 +577,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       ci = PUSHCI();
       ci->argc = c.u.i;
-      ci->pc = pic->ip;
+      ci->ip = pic->ip;
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
       if (pic_proc_cfunc_p(x)) {
 	v = proc->u.cfunc(pic);
 	ci = POPCI();
-        pic->ip = ci->pc;
+        pic->ip = ci->ip;
 	pic->sp = ci->fp;
 	PUSH(v);
 	pic_gc_arena_restore(pic, ai);
@@ -643,7 +643,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	pic->ci->fp[i] = argv[i];
       }
       pic->sp = pic->ci->fp + argc;
-      pic->ip = POPCI()->pc;
+      pic->ip = POPCI()->ip;
 
       /* c is not changed */
       goto L_CALL;
@@ -660,7 +660,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       else {
 	v = POP();
 	ci = POPCI();
-	pic->ip = ci->pc;
+	pic->ip = ci->ip;
 	pic->sp = ci->fp;
 	PUSH(v);
       }
