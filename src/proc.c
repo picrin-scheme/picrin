@@ -86,7 +86,7 @@ static pic_value
 pic_proc_apply(pic_state *pic)
 {
   struct pic_proc *proc;
-  pic_value *args;
+  pic_value *args, arg_list;
   size_t argc;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
@@ -94,8 +94,11 @@ pic_proc_apply(pic_state *pic)
   if (argc == 0) {
     pic_error(pic, "apply: wrong number of arguments");
   }
-
-  return pic_apply(pic, proc, pic_list_by_array(pic, argc, args));
+  arg_list = args[--argc];
+  while (argc--) {
+    arg_list = pic_cons(pic, args[argc], arg_list);
+  }
+  return pic_apply(pic, proc, arg_list);
 }
 
 static pic_value
