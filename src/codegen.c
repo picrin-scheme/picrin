@@ -1354,23 +1354,11 @@ pic_codegen(pic_state *pic, pic_value obj)
   return destroy_codegen_state(state);
 }
 
-struct pic_proc *
-pic_compile(pic_state *pic, pic_value obj)
+struct pic_irep *
+compile(pic_state *pic, pic_value obj)
 {
-  struct pic_proc *proc;
   struct pic_irep *irep;
-  jmp_buf jmp, *prev_jmp = pic->jmp;
   int ai = pic_gc_arena_preserve(pic);
-
-
-  if (setjmp(jmp) == 0) {
-    pic->jmp = &jmp;
-  }
-  else {
-    /* error occured */
-    proc = NULL;
-    goto exit;
-  }
 
 #if DEBUG
   fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
@@ -1419,17 +1407,34 @@ pic_compile(pic_state *pic, pic_value obj)
   puts("");
 #endif
 
-  proc = pic_proc_new_irep(pic, irep, NULL);
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, pic_obj_value(irep));
 
 #if VM_DEBUG
   pic_dump_irep(pic, proc->u.irep);
 #endif
+  return irep;
+}
+
+struct pic_proc *
+pic_compile(pic_state *pic, pic_value obj)
+{
+  struct pic_proc *proc;
+  jmp_buf jmp, *prev_jmp = pic->jmp;
+
+  if (setjmp(jmp) == 0) {
+    pic->jmp = &jmp;
+  }
+  else {
+    /* error occured */
+    proc = NULL;
+    goto exit;
+  }
+
+  proc = pic_proc_new_irep(pic, compile(pic, obj), NULL);
 
  exit:
   pic->jmp = prev_jmp;
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, pic_obj_value(proc));
 
   return proc;
 }
