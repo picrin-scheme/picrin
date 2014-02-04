@@ -358,7 +358,7 @@ void print_code(pic_state *, struct pic_code);
 #if PIC_DIRECT_THREADED_VM
 # define VM_LOOP JUMP;
 # define CASE(x) L_##x: OPCODE_EXEC_HOOK;
-# define NEXT c = *++pc; JUMP;
+# define NEXT pc++; JUMP;
 # define JUMP c = *pc; goto *oplabels[pc->insn];
 # define VM_LOOP_END
 #else
