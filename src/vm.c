@@ -359,7 +359,7 @@ void print_code(pic_state *, struct pic_code);
 # define VM_LOOP JUMP;
 # define CASE(x) L_##x: OPCODE_EXEC_HOOK;
 # define NEXT pc++; JUMP;
-# define JUMP c = *pc; goto *oplabels[pc->insn];
+# define JUMP c = *pc; goto *oplabels[c.insn];
 # define VM_LOOP_END
 #else
 # define VM_LOOP for (;;) { c = *pc; switch (c.insn) {
