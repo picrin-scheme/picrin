@@ -107,8 +107,7 @@ pic_proc_apply(pic_state *pic)
     *pic->ci->fp++ = v;
   }
 
-  iseq[0].insn = OP_JMP;        /* OP_NOP */
-  iseq[0].u.i = 1;
+  iseq[0].insn = OP_NOP;
   iseq[1].insn = OP_CALL;
   iseq[1].u.i = pic_length(pic, arg_list) + 1;
   iseq[2].insn = OP_RET;
