@@ -625,7 +625,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
     closes = pic_nil_value();
     for (i = 1; i < scope->argc + scope->localc; ++i) {
       pic_sym var = scope->vars[i];
-      if (xh_get(scope->var_tbl, pic_symbol_name(pic, var))) {
+      if (xh_get(scope->var_tbl, pic_symbol_name(pic, var))->val == 1) {
         closes = pic_cons(pic, pic_symbol_value(var), closes);
       }
     }
