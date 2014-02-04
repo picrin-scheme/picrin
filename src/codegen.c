@@ -839,7 +839,7 @@ resolve_reference_node(resolver_state *state, pic_value obj)
     if (depth == scope->depth) {
       return resolve_gref(state, sym);
     }
-    else if (depth == 0 && is_closed(state, sym)) {
+    else if (depth == 0 && ! is_closed(state, sym)) {
       return resolve_lref(state, sym);
     }
     else {
