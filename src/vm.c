@@ -582,8 +582,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       ci->env = NULL;
       if (pic_proc_cfunc_p(x)) {
 	v = proc->u.cfunc(pic);
+	ci = POPCI();
+        pic->ip = ci->pc;
 	pic->sp = ci->fp;
-	POPCI();
 	PUSH(v);
 	pic_gc_arena_restore(pic, ai);
 	NEXT;
