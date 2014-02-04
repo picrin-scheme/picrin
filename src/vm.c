@@ -425,8 +425,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   boot[0].u.i = argc;
   boot[1].insn = OP_STOP;
   pic->ip = boot;
-  c = *pic->ip;
-  goto L_CALL;
 
   VM_LOOP {
     CASE(OP_NOP) {
