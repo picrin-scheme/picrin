@@ -1354,7 +1354,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   return destroy_codegen_state(state);
 }
 
-struct pic_irep *
+static struct pic_irep *
 compile(pic_state *pic, pic_value obj)
 {
   struct pic_irep *irep;
