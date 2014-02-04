@@ -1493,6 +1493,9 @@ print_code(pic_state *pic, struct pic_code c)
 
   printf("[%2d] ", c.insn);
   switch (c.insn) {
+  case OP_NOP:
+    puts("OP_NOP");
+    break;
   case OP_POP:
     puts("OP_POP");
     break;
