@@ -358,13 +358,13 @@ void print_code(pic_state *, struct pic_code);
 #if PIC_DIRECT_THREADED_VM
 # define VM_LOOP JUMP;
 # define CASE(x) L_##x: OPCODE_EXEC_HOOK;
-# define NEXT pc++; JUMP;
-# define JUMP c = *pc; goto *oplabels[c.insn];
+# define NEXT pic->ip++; JUMP;
+# define JUMP c = *pic->ip; goto *oplabels[c.insn];
 # define VM_LOOP_END
 #else
-# define VM_LOOP for (;;) { c = *pc; switch (c.insn) {
+# define VM_LOOP for (;;) { c = *pic->ip; switch (c.insn) {
 # define CASE(x) case x:
-# define NEXT pc++; break
+# define NEXT pic->ip++; break
 # define JUMP break
 # define VM_LOOP_END } }
 #endif
@@ -379,7 +379,7 @@ void print_code(pic_state *, struct pic_code);
 pic_value
 pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
-  struct pic_code *pc, c;
+  struct pic_code c;
   int ai = pic_gc_arena_preserve(pic);
   jmp_buf jmp, *prev_jmp = pic->jmp;
   size_t argc, i;
@@ -438,8 +438,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   boot[0].insn = OP_CALL;
   boot[0].u.i = argc;
   boot[1].insn = OP_STOP;
-  pc = boot;
-  c = *pc;
+  pic->ip = boot;
+  c = *pic->ip;
   goto L_CALL;
 
   VM_LOOP {
@@ -521,7 +521,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_JMP) {
-      pc += c.u.i;
+      pic->ip += c.u.i;
       JUMP;
     }
     CASE(OP_JMPIF) {
@@ -529,7 +529,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       v = POP();
       if (! pic_false_p(v)) {
-	pc += c.u.i;
+	pic->ip += c.u.i;
 	JUMP;
       }
       NEXT;
@@ -577,7 +577,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       ci = PUSHCI();
       ci->argc = c.u.i;
-      ci->pc = pc;
+      ci->pc = pic->ip;
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
       if (pic_proc_cfunc_p(x)) {
@@ -627,7 +627,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
           ci->env->values[i] = ci->fp[proc->u.irep->cv_tbl[i]];
         }
 
-	pc = proc->u.irep->code;
+	pic->ip = proc->u.irep->code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
       }
@@ -642,7 +642,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	pic->ci->fp[i] = argv[i];
       }
       pic->sp = pic->ci->fp + argc;
-      pc = POPCI()->pc;
+      pic->ip = POPCI()->pc;
 
       /* c is not changed */
       goto L_CALL;
@@ -659,7 +659,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       else {
 	v = POP();
 	ci = POPCI();
-	pc = ci->pc;
+	pic->ip = ci->pc;
 	pic->sp = ci->fp;
 	PUSH(v);
       }

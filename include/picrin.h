@@ -81,6 +81,8 @@ typedef struct {
   pic_callinfo *ci;
   pic_callinfo *cibase, *ciend;
 
+  struct pic_code *ip;
+
   struct pic_proc **rescue;
   size_t ridx, rlen;
 
