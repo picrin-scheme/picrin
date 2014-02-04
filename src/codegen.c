@@ -1363,7 +1363,7 @@ compile(pic_state *pic, pic_value obj)
 #if DEBUG
   fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
 
-  fprintf(stderr, "## input expression\n");
+  fprintf(stderr, "# input expression\n");
   pic_debug(pic, obj);
   fprintf(stderr, "\n");
 
@@ -1402,8 +1402,10 @@ compile(pic_state *pic, pic_value obj)
 #if DEBUG
   fprintf(stderr, "## codegen completed\n");
   pic_dump_irep(pic, irep);
+#endif
 
-  fprintf(stderr, "## compilation finished\n");
+#if DEBUG
+  fprintf(stderr, "# compilation finished\n");
   puts("");
 #endif
 
