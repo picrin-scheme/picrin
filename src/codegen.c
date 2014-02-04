@@ -264,7 +264,7 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
 
   tag = pic_sym(pic_car(pic, res));
   if (tailpos) {
-    if (tag == pic->sIF || tag == pic->sBEGIN || tag == state->sTAILCALL) {
+    if (tag == pic->sIF || tag == pic->sBEGIN || tag == state->sTAILCALL || tag == state->sRETURN) {
       /* pass through */
     }
     else {
