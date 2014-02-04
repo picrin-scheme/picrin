@@ -92,7 +92,7 @@ typedef struct analyze_state {
   pic_sym rCONS, rCAR, rCDR, rNILP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
-  pic_sym sCALL, sTAILCALL, sREF;
+  pic_sym sCALL, sTAILCALL, sREF, sRETURN;
 } analyze_state;
 
 static void push_scope(analyze_state *, pic_value);
@@ -142,6 +142,7 @@ new_analyze_state(pic_state *pic)
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
   register_symbol(pic, state, sREF, "ref");
+  register_symbol(pic, state, sRETURN, "return");
 
   /* push initial scope */
   push_scope(state, pic_nil_value());
@@ -254,13 +255,25 @@ static pic_value analyze_lambda(analyze_state *, pic_value);
 static pic_value
 analyze(analyze_state *state, pic_value obj, bool tailpos)
 {
-  int ai = pic_gc_arena_preserve(state->pic);
+  pic_state *pic = state->pic;
+  int ai = pic_gc_arena_preserve(pic);
   pic_value res;
+  pic_sym tag;
 
   res = analyze_node(state, obj, tailpos);
 
-  pic_gc_arena_restore(state->pic, ai);
-  pic_gc_protect(state->pic, res);
+  tag = pic_sym(pic_car(pic, res));
+  if (tailpos) {
+    if (tag == pic->sIF || tag == pic->sBEGIN || tag == state->sTAILCALL) {
+      /* pass through */
+    }
+    else {
+      res = pic_list(pic, 2, pic_symbol_value(state->sRETURN), res);
+    }
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, res);
   return res;
 }
 
@@ -925,7 +938,7 @@ typedef struct codegen_state {
   pic_state *pic;
   codegen_context *cxt;
   pic_sym sGREF, sCREF, sLREF;
-  pic_sym sCALL, sTAILCALL;
+  pic_sym sCALL, sTAILCALL, sRETURN;
   unsigned *cv_tbl, cv_num;
 } codegen_state;
 
@@ -946,6 +959,7 @@ new_codegen_state(pic_state *pic)
   register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
+  register_symbol(pic, state, sRETURN, "return");
 
   push_codegen_context(state, pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 
@@ -1294,6 +1308,12 @@ codegen(codegen_state *state, pic_value obj)
     }
     cxt->code[cxt->clen].insn = (sym == state->sCALL) ? OP_CALL : OP_TAILCALL;
     cxt->code[cxt->clen].u.i = len - 1;
+    cxt->clen++;
+    return;
+  }
+  else if (sym == state->sRETURN) {
+    codegen(state, pic_list_ref(pic, obj, 1));
+    cxt->code[cxt->clen].insn = OP_RET;
     cxt->clen++;
     return;
   }
