@@ -1338,8 +1338,6 @@ codegen_lambda(codegen_state *state, pic_value obj)
   {
     /* body */
     codegen(state, body);
-    state->cxt->code[state->cxt->clen].insn = OP_RET;
-    state->cxt->clen++;
   }
   return pop_codegen_context(state);
 }
