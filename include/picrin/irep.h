@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 enum pic_opcode {
+  OP_NOP,
   OP_POP,
   OP_PUSHNIL,
   OP_PUSHTRUE,
