@@ -1412,9 +1412,6 @@ compile(pic_state *pic, pic_value obj)
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, pic_obj_value(irep));
 
-#if VM_DEBUG
-  pic_dump_irep(pic, proc->u.irep);
-#endif
   return irep;
 }
 
