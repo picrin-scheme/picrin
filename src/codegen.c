@@ -659,7 +659,7 @@ pic_analyze(pic_state *pic, pic_value obj)
 
   state = new_analyze_state(pic);
 
-  obj = analyze(state, obj, false);
+  obj = analyze(state, obj, true);
 
   destroy_analyze_state(state);
   return obj;
@@ -1350,8 +1350,6 @@ pic_codegen(pic_state *pic, pic_value obj)
   state = new_codegen_state(pic);
 
   codegen(state, obj);
-  state->cxt->code[state->cxt->clen].insn = OP_RET;
-  state->cxt->clen++;
 
   return destroy_codegen_state(state);
 }
