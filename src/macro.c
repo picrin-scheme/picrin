@@ -496,11 +496,11 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	if (! pic_sym_p(var)) {
 	  pic_error(pic, "binding to non-symbol object");
 	}
-	uniq = pic_gensym(pic, pic_sym(var));
-        if (xh_get_int(senv->tbl, pic_sym(var)) != NULL) {
-          pic_warn(pic, "redefining variable");
+        /* do not make duplicate variable slot*/
+        if (xh_get_int(senv->tbl, pic_sym(var)) == NULL) {
+          uniq = pic_gensym(pic, pic_sym(var));
+          xh_put_int(senv->tbl, pic_sym(var), (int)uniq);
         }
-	xh_put_int(senv->tbl, pic_sym(var), (int)uniq);
       }
 	FALLTHROUGH;
       case PIC_STX_SET:
