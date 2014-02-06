@@ -497,6 +497,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  pic_error(pic, "binding to non-symbol object");
 	}
 	uniq = pic_gensym(pic, pic_sym(var));
+        if (xh_get_int(senv->tbl, pic_sym(var)) != NULL) {
+          pic_warn(pic, "redefining variable");
+        }
 	xh_put_int(senv->tbl, pic_sym(var), (int)uniq);
       }
 	FALLTHROUGH;
