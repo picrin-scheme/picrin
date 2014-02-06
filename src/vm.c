@@ -814,3 +814,27 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     }
   } VM_LOOP_END;
 }
+
+struct pic_code trampoline_iseq[] = {
+  { OP_NOP,	{0} },
+  { OP_CALL,	{0} },
+  { OP_RET,	{0} },
+};
+
+pic_value
+pic_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
+{
+  pic_value v, call_list;
+
+  call_list = pic_cons(pic, pic_obj_value(proc), args);
+
+  pic_for_each (v, call_list) {
+    *pic->ci->fp++ = v;
+  }
+
+  trampoline_iseq[1].u.i = pic_length(pic, call_list);
+
+  pic->ci->ip = trampoline_iseq;
+  pic->ci->fp--;                /* the last argument is pushed by the VM */
+  return v;
+}
