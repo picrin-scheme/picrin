@@ -89,7 +89,7 @@ pic_proc_apply(pic_state *pic)
   struct pic_proc *proc;
   pic_value *args;
   size_t argc;
-  pic_value v, arg_list;
+  pic_value v, arg_list, call_list;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
@@ -102,14 +102,14 @@ pic_proc_apply(pic_state *pic)
     arg_list = pic_cons(pic, args[argc], arg_list);
   }
 
-  arg_list = pic_cons(pic, pic_obj_value(proc), arg_list);
-  pic_for_each (v, arg_list) {
+  call_list = pic_cons(pic, pic_obj_value(proc), arg_list);
+  pic_for_each (v, call_list) {
     *pic->ci->fp++ = v;
   }
 
   iseq[0].insn = OP_NOP;
   iseq[1].insn = OP_CALL;
-  iseq[1].u.i = pic_length(pic, arg_list) + 1;
+  iseq[1].u.i = pic_length(pic, call_list);
   iseq[2].insn = OP_RET;
   pic->ci->ip = iseq;
 
