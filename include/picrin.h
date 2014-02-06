@@ -156,8 +156,8 @@ const char *pic_symbol_name(pic_state *, pic_sym);
 pic_sym pic_gensym(pic_state *, pic_sym);
 bool pic_interned_p(pic_state *, pic_sym);
 
-char *pic_strdup(pic_state *pic, const char *s);
-char *pic_strndup(pic_state *pic, const char *s, size_t n);
+char *pic_strdup(pic_state *, const char *);
+char *pic_strndup(pic_state *, const char *, size_t);
 struct pic_string *pic_str_new(pic_state *, const char *, size_t);
 struct pic_string *pic_str_new_cstr(pic_state *, const char *);
 
@@ -171,8 +171,8 @@ pic_value pic_parse(pic_state *, const char *);
 
 pic_value pic_load(pic_state *, const char *);
 
-pic_value pic_apply(pic_state *pic, struct pic_proc *, pic_value);
-pic_value pic_apply_argv(pic_state *pic, struct pic_proc *, size_t, ...);
+pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
+pic_value pic_apply_argv(pic_state *, struct pic_proc *, size_t, ...);
 pic_value pic_trampoline(pic_state *, struct pic_proc *, pic_value);
 struct pic_proc *pic_compile(pic_state *, pic_value);
 pic_value pic_macroexpand(pic_state *, pic_value);

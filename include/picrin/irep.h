@@ -70,7 +70,7 @@ struct pic_irep {
 };
 
 pic_value pic_analyze(pic_state *, pic_value);
-struct pic_irep *pic_codegen(pic_state *pic, pic_value obj);
+struct pic_irep *pic_codegen(pic_state *, pic_value);
 
 void pic_dump_irep(pic_state *, struct pic_irep *);
 
