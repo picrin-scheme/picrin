@@ -181,7 +181,7 @@ void
 pic_import(pic_state *pic, pic_value spec)
 {
   struct pic_lib *lib;
-  struct xh_iter it;
+  xh_iter it;
 
   lib = pic_find_library(pic, spec);
   if (! lib) {
@@ -218,7 +218,7 @@ pic_import(pic_state *pic, pic_value spec)
 void
 pic_export(pic_state *pic, pic_sym sym)
 {
-  struct xh_entry *e;
+  xh_entry *e;
 
   e = xh_get_int(pic->lib->senv->tbl, sym);
   if (! e) {
@@ -272,7 +272,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
     return macroexpand(pic, sc->expr, sc->senv);
   }
   case PIC_TT_SYMBOL: {
-    struct xh_entry *e;
+    xh_entry *e;
     pic_sym uniq;
 
     if (! pic_interned_p(pic, pic_sym(expr))) {

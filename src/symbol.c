@@ -13,7 +13,7 @@
 pic_sym
 pic_intern_cstr(pic_state *pic, const char *str)
 {
-  struct xh_entry *e;
+  xh_entry *e;
   pic_sym id;
 
   e = xh_get(pic->sym_tbl, str);

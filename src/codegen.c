@@ -80,7 +80,7 @@ typedef struct analyze_scope {
   bool varg;
   int argc, localc;
   /* if variable v is captured, then xh_get(var_tbl, v) == 1 */
-  struct xhash *var_tbl;
+  xhash *var_tbl;
   pic_sym *vars;
 
   struct analyze_scope *up;
@@ -103,7 +103,7 @@ static void pop_scope(analyze_state *);
   } while (0)
 
 #define register_renamed_symbol(pic, state, slot, lib, name) do {       \
-    struct xh_entry *e;                                                 \
+    xh_entry *e;                                                 \
     if (! (e = xh_get_int(lib->senv->tbl, pic_intern_cstr(pic, name)))) \
       pic_error(pic, "internal error! native VM procedure not found");  \
     state->slot = e->val;                                               \
@@ -113,8 +113,8 @@ static analyze_state *
 new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
-  struct xhash *global_tbl;
-  struct xh_iter it;
+  xhash *global_tbl;
+  xh_iter it;
   struct pic_lib *stdlib;
 
   state = (analyze_state *)pic_alloc(pic, sizeof(analyze_state));
@@ -204,7 +204,7 @@ static int
 lookup_var(analyze_state *state, pic_sym sym)
 {
   analyze_scope *scope = state->scope;
-  struct xh_entry *e;
+  xh_entry *e;
   int depth = 0;
 
  enter:
@@ -667,7 +667,7 @@ typedef struct resolver_scope {
   int depth;
   bool varg;
   int argc, localc;
-  struct xhash *cvs, *lvs;
+  xhash *cvs, *lvs;
   unsigned cv_num;
 
   struct resolver_scope *up;
@@ -768,7 +768,7 @@ static pic_value
 resolve_gref(resolver_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
-  struct xh_entry *e;
+  xh_entry *e;
   size_t i;
 
   if ((e = xh_get_int(pic->global_tbl, sym))) {
@@ -981,7 +981,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   pic_state *pic = state->pic;
   codegen_context *cxt;
   int i, c;
-  struct xhash *vars;
+  xhash *vars;
 
   cxt = (codegen_context *)pic_alloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
@@ -1438,7 +1438,7 @@ pic_compile(pic_state *pic, pic_value obj)
 static int
 scope_global_define(pic_state *pic, pic_sym sym)
 {
-  struct xh_entry *e;
+  xh_entry *e;
 
   if ((e = xh_get_int(pic->global_tbl, sym))) {
     pic_warn(pic, "redefining global");
@@ -1474,7 +1474,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 static int
 global_ref(pic_state *pic, const char *name)
 {
-  struct xh_entry *e;
+  xh_entry *e;
   pic_sym sym;
 
   sym = pic_intern_cstr(pic, name);
