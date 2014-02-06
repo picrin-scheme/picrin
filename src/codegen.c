@@ -231,7 +231,7 @@ define_var(analyze_state *state, pic_sym sym)
   xh_entry *e;
 
   if ((e = xh_get_int(scope->var_tbl, sym))) {
-    pic_warn(pic, "redefining global variable");
+    pic_warn(pic, "redefining variable");
     return;
   }
 
