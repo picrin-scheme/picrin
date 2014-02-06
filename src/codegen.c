@@ -1435,7 +1435,7 @@ pic_compile(pic_state *pic, pic_value obj)
 }
 
 static int
-scope_global_define(pic_state *pic, pic_sym sym)
+global_def(pic_state *pic, pic_sym sym)
 {
   xh_entry *e;
 
@@ -1448,26 +1448,6 @@ scope_global_define(pic_state *pic, pic_sym sym)
     pic_error(pic, "global table overflow");
   }
   return e->val;
-}
-
-void
-pic_define(pic_state *pic, const char *name, pic_value val)
-{
-  int idx;
-  pic_sym sym, gsym;
-
-  sym = pic_intern_cstr(pic, name);
-  gsym = pic_gensym(pic, sym);
-
-  /* push to the global arena */
-  idx = scope_global_define(pic, gsym);
-  pic->globals[idx] = val;
-
-  /* register to the senv */
-  xh_put_int(pic->lib->senv->tbl, sym, gsym);
-
-  /* export! */
-  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 static int
@@ -1485,6 +1465,26 @@ global_ref(pic_state *pic, const char *name)
     pic_abort(pic, "logic flaw");
   }
   return e->val;
+}
+
+void
+pic_define(pic_state *pic, const char *name, pic_value val)
+{
+  int idx;
+  pic_sym sym, gsym;
+
+  sym = pic_intern_cstr(pic, name);
+  gsym = pic_gensym(pic, sym);
+
+  /* push to the global arena */
+  idx = global_def(pic, gsym);
+  pic->globals[idx] = val;
+
+  /* register to the senv */
+  xh_put_int(pic->lib->senv->tbl, sym, gsym);
+
+  /* export! */
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 pic_value
