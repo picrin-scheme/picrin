@@ -92,7 +92,7 @@ typedef struct analyze_state {
   pic_sym rCONS, rCAR, rCDR, rNILP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
-  pic_sym sCALL, sTAILCALL, sREF;
+  pic_sym sCALL, sTAILCALL, sREF, sRETURN;
 } analyze_state;
 
 static void push_scope(analyze_state *, pic_value);
@@ -142,6 +142,7 @@ new_analyze_state(pic_state *pic)
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
   register_symbol(pic, state, sREF, "ref");
+  register_symbol(pic, state, sRETURN, "return");
 
   /* push initial scope */
   push_scope(state, pic_nil_value());
@@ -254,13 +255,25 @@ static pic_value analyze_lambda(analyze_state *, pic_value);
 static pic_value
 analyze(analyze_state *state, pic_value obj, bool tailpos)
 {
-  int ai = pic_gc_arena_preserve(state->pic);
+  pic_state *pic = state->pic;
+  int ai = pic_gc_arena_preserve(pic);
   pic_value res;
+  pic_sym tag;
 
   res = analyze_node(state, obj, tailpos);
 
-  pic_gc_arena_restore(state->pic, ai);
-  pic_gc_protect(state->pic, res);
+  tag = pic_sym(pic_car(pic, res));
+  if (tailpos) {
+    if (tag == pic->sIF || tag == pic->sBEGIN || tag == state->sTAILCALL || tag == state->sRETURN) {
+      /* pass through */
+    }
+    else {
+      res = pic_list(pic, 2, pic_symbol_value(state->sRETURN), res);
+    }
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, res);
   return res;
 }
 
@@ -646,7 +659,7 @@ pic_analyze(pic_state *pic, pic_value obj)
 
   state = new_analyze_state(pic);
 
-  obj = analyze(state, obj, false);
+  obj = analyze(state, obj, true);
 
   destroy_analyze_state(state);
   return obj;
@@ -925,7 +938,7 @@ typedef struct codegen_state {
   pic_state *pic;
   codegen_context *cxt;
   pic_sym sGREF, sCREF, sLREF;
-  pic_sym sCALL, sTAILCALL;
+  pic_sym sCALL, sTAILCALL, sRETURN;
   unsigned *cv_tbl, cv_num;
 } codegen_state;
 
@@ -946,6 +959,7 @@ new_codegen_state(pic_state *pic)
   register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
+  register_symbol(pic, state, sRETURN, "return");
 
   push_codegen_context(state, pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 
@@ -1297,6 +1311,12 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   }
+  else if (sym == state->sRETURN) {
+    codegen(state, pic_list_ref(pic, obj, 1));
+    cxt->code[cxt->clen].insn = OP_RET;
+    cxt->clen++;
+    return;
+  }
   pic_error(pic, "codegen: unknown AST type");
 }
 
@@ -1318,8 +1338,6 @@ codegen_lambda(codegen_state *state, pic_value obj)
   {
     /* body */
     codegen(state, body);
-    state->cxt->code[state->cxt->clen].insn = OP_RET;
-    state->cxt->clen++;
   }
   return pop_codegen_context(state);
 }
@@ -1332,34 +1350,20 @@ pic_codegen(pic_state *pic, pic_value obj)
   state = new_codegen_state(pic);
 
   codegen(state, obj);
-  state->cxt->code[state->cxt->clen].insn = OP_RET;
-  state->cxt->clen++;
 
   return destroy_codegen_state(state);
 }
 
-struct pic_proc *
-pic_compile(pic_state *pic, pic_value obj)
+static struct pic_irep *
+compile(pic_state *pic, pic_value obj)
 {
-  struct pic_proc *proc;
   struct pic_irep *irep;
-  jmp_buf jmp, *prev_jmp = pic->jmp;
   int ai = pic_gc_arena_preserve(pic);
-
-
-  if (setjmp(jmp) == 0) {
-    pic->jmp = &jmp;
-  }
-  else {
-    /* error occured */
-    proc = NULL;
-    goto exit;
-  }
 
 #if DEBUG
   fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
 
-  fprintf(stderr, "## input expression\n");
+  fprintf(stderr, "# input expression\n");
   pic_debug(pic, obj);
   fprintf(stderr, "\n");
 
@@ -1398,22 +1402,38 @@ pic_compile(pic_state *pic, pic_value obj)
 #if DEBUG
   fprintf(stderr, "## codegen completed\n");
   pic_dump_irep(pic, irep);
+#endif
 
-  fprintf(stderr, "## compilation finished\n");
+#if DEBUG
+  fprintf(stderr, "# compilation finished\n");
   puts("");
 #endif
 
-  proc = pic_proc_new_irep(pic, irep, NULL);
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, pic_obj_value(irep));
 
-#if VM_DEBUG
-  pic_dump_irep(pic, proc->u.irep);
-#endif
+  return irep;
+}
+
+struct pic_proc *
+pic_compile(pic_state *pic, pic_value obj)
+{
+  struct pic_proc *proc;
+  jmp_buf jmp, *prev_jmp = pic->jmp;
+
+  if (setjmp(jmp) == 0) {
+    pic->jmp = &jmp;
+  }
+  else {
+    /* error occured */
+    proc = NULL;
+    goto exit;
+  }
+
+  proc = pic_proc_new_irep(pic, compile(pic, obj), NULL);
 
  exit:
   pic->jmp = prev_jmp;
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, pic_obj_value(proc));
 
   return proc;
 }

@@ -411,21 +411,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   argc = pic_length(pic, argv) + 1;
 
 #if VM_DEBUG
-  puts("== booting VM...");
-  printf("  proc = ");
-  pic_debug(pic, pic_obj_value(proc));
-  puts("");
-  printf("  argv = ");
-  pic_debug(pic, argv);
-  puts("");
-  if (! proc->cfunc_p) {
-    printf("  irep = ");
-    pic_dump_irep(pic, proc->u.irep);
-  }
-  else {
-    printf("  cfunc = %p\n", (void *)proc->u.cfunc);
-  }
-  puts("\nLet's go!");
+  puts("### booting VM... ###");
 #endif
 
   PUSH(pic_obj_value(proc));
@@ -439,8 +425,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   boot[0].u.i = argc;
   boot[1].insn = OP_STOP;
   pic->ip = boot;
-  c = *pic->ip;
-  goto L_CALL;
 
   VM_LOOP {
     CASE(OP_NOP) {
@@ -561,13 +545,17 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       proc = pic_proc_ptr(x);
 
 #if VM_DEBUG
-      puts("== calling proc...");
+      puts("\n== calling proc...");
       printf("  proc = ");
       pic_debug(pic, pic_obj_value(proc));
       puts("");
-      printf("  argv = ");
-      pic_debug(pic, argv);
-      puts("");
+      printf("  argv = (");
+      for (short i = 1; i < c.u.i; ++i) {
+        if (i > 1)
+          printf(" ");
+        pic_debug(pic, pic->sp[-c.u.i + i]);
+      }
+      puts(")");
       if (! proc->cfunc_p) {
 	printf("  irep = ");
 	pic_dump_irep(pic, proc->u.irep);
@@ -575,7 +563,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       else {
 	printf("  cfunc = %p\n", (void *)proc->u.cfunc);
       }
-      puts("");
+      puts("== end\n");
 #endif
 
       ci = PUSHCI();
