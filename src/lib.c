@@ -6,7 +6,6 @@
 #include "picrin/lib.h"
 #include "picrin/pair.h"
 #include "picrin/macro.h"
-#include "xhash/xhash.h"
 
 struct pic_lib *
 pic_make_library(pic_state *pic, pic_value name)

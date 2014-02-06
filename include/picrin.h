@@ -33,6 +33,8 @@ extern "C" {
 #include <setjmp.h>
 #include <stdio.h>
 
+#include "xhash/xhash.h"
+
 #if __STDC_VERSION__ >= 201112L
 # define NORETURN _Noreturn
 #elif __GNUC__ || __clang__

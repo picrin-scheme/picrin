@@ -9,7 +9,6 @@
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/cont.h"
-#include "xhash/xhash.h"
 
 void pic_init_core(pic_state *);
 

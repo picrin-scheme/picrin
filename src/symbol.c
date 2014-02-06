@@ -8,7 +8,6 @@
 #include <assert.h>
 
 #include "picrin.h"
-#include "xhash/xhash.h"
 
 pic_sym
 pic_intern_cstr(pic_state *pic, const char *str)

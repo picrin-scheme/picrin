@@ -11,7 +11,6 @@
 #include "picrin/proc.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
-#include "xhash/xhash.h"
 
 #if PIC_NONE_IS_FALSE
 # define OP_PUSHNONE OP_PUSHFALSE

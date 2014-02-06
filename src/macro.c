@@ -11,7 +11,6 @@
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/lib.h"
-#include "xhash/xhash.h"
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
