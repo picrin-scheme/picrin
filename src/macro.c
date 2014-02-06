@@ -455,29 +455,28 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	return v;
       }
       case PIC_STX_DEFINE: {
-	pic_sym uniq;
-	pic_value var;
+	pic_sym var;
+	pic_value formals;
 
 	if (pic_length(pic, expr) < 2) {
 	  pic_error(pic, "syntax error");
 	}
 
-	var = pic_cadr(pic, expr);
-	if (pic_pair_p(var)) {
-	  struct pic_senv *in = new_local_senv(pic, pic_cdr(pic, var), senv);
+	formals = pic_cadr(pic, expr);
+	if (pic_pair_p(formals)) {
+	  struct pic_senv *in = new_local_senv(pic, pic_cdr(pic, formals), senv);
 	  pic_value a;
-	  pic_sym sym;
 
 	  /* defined symbol */
-	  a = pic_car(pic, var);
+	  a = pic_car(pic, formals);
           if (! pic_sym_p(a)) {
             a = macroexpand(pic, a, senv);
           }
 	  if (! pic_sym_p(a)) {
 	    pic_error(pic, "binding to non-symbol object");
 	  }
-	  sym = pic_sym(a);
-	  xh_put_int(senv->tbl, sym, pic_gensym(pic, sym));
+	  var = pic_sym(a);
+	  xh_put_int(senv->tbl, var, pic_gensym(pic, var));
 
 	  /* binding value */
 	  v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
@@ -490,16 +489,16 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  return v;
 	}
 
-        if (! pic_sym_p(var)) {
-          var = macroexpand(pic, var, senv);
+        if (! pic_sym_p(formals)) {
+          formals = macroexpand(pic, formals, senv);
         }
-	if (! pic_sym_p(var)) {
+	if (! pic_sym_p(formals)) {
 	  pic_error(pic, "binding to non-symbol object");
 	}
-        /* do not make duplicate variable slot*/
-        if (xh_get_int(senv->tbl, pic_sym(var)) == NULL) {
-          uniq = pic_gensym(pic, pic_sym(var));
-          xh_put_int(senv->tbl, pic_sym(var), (int)uniq);
+        var = pic_sym(formals);
+        /* do not make duplicate variable slot */
+        if (xh_get_int(senv->tbl, var) == NULL) {
+          xh_put_int(senv->tbl, var, pic_gensym(pic, var));
         }
       }
 	FALLTHROUGH;
