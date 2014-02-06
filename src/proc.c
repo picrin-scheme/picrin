@@ -102,7 +102,7 @@ pic_proc_apply(pic_state *pic)
     arg_list = pic_cons(pic, args[argc], arg_list);
   }
 
-  *pic->ci->fp++ = pic_obj_value(proc);
+  arg_list = pic_cons(pic, pic_obj_value(proc), arg_list);
   pic_for_each (v, arg_list) {
     *pic->ci->fp++ = v;
   }
