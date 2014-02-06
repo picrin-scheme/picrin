@@ -1458,11 +1458,11 @@ global_ref(pic_state *pic, const char *name)
 
   sym = pic_intern_cstr(pic, name);
   if (! (e = xh_get_int(pic->lib->senv->tbl, sym))) {
-    pic_error(pic, "symbol not defined");
+    return -1;
   }
   assert(e->val >= 0);
   if (! (e = xh_get_int(pic->global_tbl, e->val))) {
-    pic_abort(pic, "logic flaw");
+    return -1;
   }
   return e->val;
 }
@@ -1493,6 +1493,9 @@ pic_ref(pic_state *pic, const char *name)
   int gid;
 
   gid = global_ref(pic, name);
+  if (gid == -1) {
+    pic_error(pic, "symbol not defined");
+  }
   return pic->globals[gid];
 }
 
@@ -1502,6 +1505,9 @@ pic_set(pic_state *pic, const char *name, pic_value value)
   int gid;
 
   gid = global_ref(pic, name);
+  if (gid == -1) {
+    pic_error(pic, "symbol not defined");
+  }
   pic->globals[gid] = value;
 }
 
