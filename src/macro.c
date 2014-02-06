@@ -190,10 +190,10 @@ pic_import(pic_state *pic, pic_value spec)
   for (xh_begin(lib->exports, &it); ! xh_isend(&it); xh_next(&it)) {
 #if DEBUG
     if (it.e->val >= 0) {
-      printf("* importing %s as %s\n", it.e->key, pic_symbol_name(pic, (pic_sym)it.e->val));
+      printf("* importing %s as %s\n", pic_symbol_name(pic, (long)it.e->key), pic_symbol_name(pic, it.e->val));
     }
     else {
-      printf("* importing %s\n", it.e->key);
+      printf("* importing %s\n", pic_symbol_name(pic, (long)it.e->key));
     }
 #endif
     if (it.e->val >= 0) {
