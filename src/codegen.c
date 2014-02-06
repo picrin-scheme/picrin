@@ -228,8 +228,14 @@ define_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
   analyze_scope *scope = state->scope;
+  xh_entry *e;
 
-  xh_put_int(state->scope->var_tbl, sym, 0);
+  if ((e = xh_get_int(scope->var_tbl, sym))) {
+    pic_warn(pic, "redefining global variable");
+    return;
+  }
+
+  xh_put_int(scope->var_tbl, sym, 0);
 
   scope->localc++;
   scope->vars = (pic_sym *)pic_realloc(pic, scope->vars, sizeof(pic_sym) * (scope->argc + scope->localc));
