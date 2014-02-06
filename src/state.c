@@ -53,14 +53,14 @@ pic_open(int argc, char *argv[], char **envp)
   init_heap(pic->heap);
 
   /* symbol table */
-  pic->sym_tbl = xh_new();
+  pic->sym_tbl = xh_new_str();
   pic->sym_pool = (const char **)calloc(PIC_SYM_POOL_SIZE, sizeof(const char *));
   pic->slen = 0;
   pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
   pic->uniq_sym_count = 0;
 
   /* global variables */
-  pic->global_tbl = xh_new();
+  pic->global_tbl = xh_new_int();
   pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;

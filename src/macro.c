@@ -23,7 +23,7 @@ pic_null_syntactic_env(pic_state *pic)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = NULL;
-  senv->tbl = xh_new();
+  senv->tbl = xh_new_int();
   senv->stx = (struct pic_syntax **)pic_calloc(pic, PIC_MACROS_SIZE, sizeof(struct pic_syntax *));
   senv->xlen = 0;
   senv->xcapa = PIC_MACROS_SIZE;
@@ -32,8 +32,9 @@ pic_null_syntactic_env(pic_state *pic)
 }
 
 #define register_core_syntax(pic,senv,kind,name) do {			\
-    senv->stx[senv->xlen] = pic_syntax_new(pic, kind, pic_intern_cstr(pic, name)); \
-    xh_put(senv->tbl, name, ~senv->xlen);				\
+    pic_sym sym = pic_intern_cstr(pic, name);                           \
+    senv->stx[senv->xlen] = pic_syntax_new(pic, kind, sym);             \
+    xh_put_int(senv->tbl, sym, ~senv->xlen);				\
     senv->xlen++;							\
   } while (0)
 
@@ -83,7 +84,7 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = up;
-  senv->tbl = xh_new();
+  senv->tbl = xh_new_int();
   senv->stx = NULL;
   senv->xlen = 0;
   senv->xcapa = 0;
@@ -98,14 +99,14 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
       pic_error(pic, "syntax error");
     }
     sym = pic_sym(v);
-    xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)pic_gensym(pic, sym));
+    xh_put_int(senv->tbl, sym, pic_gensym(pic, sym));
   }
   if (! pic_sym_p(a)) {
     a = macroexpand(pic, a, up);
   }
   if (pic_sym_p(a)) {
     sym = pic_sym(a);
-    xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)pic_gensym(pic, sym));
+    xh_put_int(senv->tbl, sym, pic_gensym(pic, sym));
   }
   else if (! pic_nil_p(a)) {
     pic_error(pic, "syntax error");
@@ -196,7 +197,7 @@ pic_import(pic_state *pic, pic_value spec)
     }
 #endif
     if (it.e->val >= 0) {
-      xh_put(pic->lib->senv->tbl, it.e->key, it.e->val);
+      xh_put_int(pic->lib->senv->tbl, (long)it.e->key, it.e->val);
     }
     else {                /* syntax object */
       size_t idx;
@@ -208,7 +209,7 @@ pic_import(pic_state *pic, pic_value spec)
       }
       /* bring macro object from imported lib */
       senv->stx[idx] = lib->senv->stx[~it.e->val];
-      xh_put(senv->tbl, it.e->key, ~idx);
+      xh_put_int(senv->tbl, (long)it.e->key, ~idx);
       senv->xlen++;
     }
   }
@@ -219,28 +220,30 @@ pic_export(pic_state *pic, pic_sym sym)
 {
   struct xh_entry *e;
 
-  e = xh_get(pic->lib->senv->tbl, pic_symbol_name(pic, sym));
+  e = xh_get_int(pic->lib->senv->tbl, sym);
   if (! e) {
     pic_error(pic, "symbol not defined");
   }
-  xh_put(pic->lib->exports, e->key, e->val);
+  xh_put_int(pic->lib->exports, (long)e->key, e->val);
 }
 
 static void
 pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
 {
+  pic_sym sym;
   struct pic_syntax *stx;
   struct pic_senv *global_senv = pic->lib->senv;
   size_t idx;
 
-  stx = pic_syntax_new_macro(pic, pic_intern_cstr(pic, name), macro, mac_env);
+  sym = pic_intern_cstr(pic, name);
+  stx = pic_syntax_new_macro(pic, sym, macro, mac_env);
 
   idx = global_senv->xlen;
   if (idx >= global_senv->xcapa) {
     pic_abort(pic, "macro table overflow");
   }
   global_senv->stx[idx] = stx;
-  xh_put(global_senv->tbl, name, ~idx);
+  xh_put_int(global_senv->tbl, sym, ~idx);
   global_senv->xlen++;
 }
 
@@ -276,9 +279,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       return expr;
     }
     while (true) {
-      if ((e = xh_get(senv->tbl, pic_symbol_name(pic, pic_sym(expr)))) != NULL) {
+      if ((e = xh_get_int(senv->tbl, pic_sym(expr))) != NULL) {
 	if (e->val >= 0)
-	  return pic_symbol_value((pic_sym)e->val);
+	  return pic_symbol_value(e->val);
 	else
 	  return pic_obj_value(senv->stx[~e->val]);
       }
@@ -287,7 +290,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       senv = senv->up;
     }
     uniq = pic_gensym(pic, pic_sym(expr));
-    xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(expr)), (int)uniq);
+    xh_put_int(senv->tbl, pic_sym(expr), uniq);
     return pic_symbol_value(uniq);
   }
   case PIC_TT_PAIR: {
@@ -475,7 +478,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	    pic_error(pic, "binding to non-symbol object");
 	  }
 	  sym = pic_sym(a);
-	  xh_put(senv->tbl, pic_symbol_name(pic, sym), (int)pic_gensym(pic, sym));
+	  xh_put_int(senv->tbl, sym, pic_gensym(pic, sym));
 
 	  /* binding value */
 	  v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
@@ -495,7 +498,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  pic_error(pic, "binding to non-symbol object");
 	}
 	uniq = pic_gensym(pic, pic_sym(var));
-	xh_put(senv->tbl, pic_symbol_name(pic, pic_sym(var)), (int)uniq);
+	xh_put_int(senv->tbl, pic_sym(var), (int)uniq);
       }
 	FALLTHROUGH;
       case PIC_STX_SET:
