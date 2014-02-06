@@ -11,3 +11,5 @@
   (if (zero? n)
       0
       (apply zero-2 (list (- n 1)))))
+
+(zero-2 100000)
