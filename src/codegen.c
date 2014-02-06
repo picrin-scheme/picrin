@@ -1437,17 +1437,22 @@ pic_compile(pic_state *pic, pic_value obj)
 static int
 global_def(pic_state *pic, pic_sym sym)
 {
-  xh_entry *e;
+  pic_sym gsym;
+  size_t gidx;
 
-  if ((e = xh_get_int(pic->global_tbl, sym))) {
-    pic_warn(pic, "redefining global");
-    return e->val;
-  }
-  e = xh_put_int(pic->global_tbl, sym, pic->glen++);
+  gsym = pic_gensym(pic, sym);
+
+  /* register to the senv */
+  xh_put_int(pic->lib->senv->tbl, sym, gsym);
+
+  /* register to the global table */
+  gidx = pic->glen++;
   if (pic->glen >= pic->gcapa) {
     pic_error(pic, "global table overflow");
   }
-  return e->val;
+  xh_put_int(pic->global_tbl, gsym, gidx);
+
+  return gidx;
 }
 
 static int
@@ -1471,17 +1476,13 @@ void
 pic_define(pic_state *pic, const char *name, pic_value val)
 {
   int idx;
-  pic_sym sym, gsym;
+  pic_sym sym;
 
   sym = pic_intern_cstr(pic, name);
-  gsym = pic_gensym(pic, sym);
 
   /* push to the global arena */
-  idx = global_def(pic, gsym);
+  idx = global_def(pic, sym);
   pic->globals[idx] = val;
-
-  /* register to the senv */
-  xh_put_int(pic->lib->senv->tbl, sym, gsym);
 
   /* export! */
   pic_export(pic, pic_intern_cstr(pic, name));
