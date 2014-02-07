@@ -13,7 +13,7 @@ struct pic_senv {
   PIC_OBJECT_HEADER
   struct pic_senv *up;
   /* positive for variables, negative for macros (bitwise-not) */
-  struct xhash *tbl;
+  xhash *tbl;
   struct pic_syntax **stx;
   size_t xlen, xcapa;
 };

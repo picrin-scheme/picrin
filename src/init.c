@@ -9,7 +9,6 @@
 #include "picrin/pair.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
-#include "xhash/xhash.h"
 
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);

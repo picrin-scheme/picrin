@@ -6,7 +6,6 @@
 #include "picrin/lib.h"
 #include "picrin/pair.h"
 #include "picrin/macro.h"
-#include "xhash/xhash.h"
 
 struct pic_lib *
 pic_make_library(pic_state *pic, pic_value name)
@@ -29,7 +28,7 @@ pic_make_library(pic_state *pic, pic_value name)
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->senv = senv;
-  lib->exports = xh_new();
+  lib->exports = xh_new_int();
   lib->name = name;
 
   /* register! */

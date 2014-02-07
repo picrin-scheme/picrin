@@ -11,7 +11,6 @@
 #include "picrin/proc.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
-#include "xhash/xhash.h"
 
 #if PIC_NONE_IS_FALSE
 # define OP_PUSHNONE OP_PUSHFALSE
@@ -80,7 +79,7 @@ typedef struct analyze_scope {
   bool varg;
   int argc, localc;
   /* if variable v is captured, then xh_get(var_tbl, v) == 1 */
-  struct xhash *var_tbl;
+  xhash *var_tbl;
   pic_sym *vars;
 
   struct analyze_scope *up;
@@ -103,8 +102,8 @@ static void pop_scope(analyze_state *);
   } while (0)
 
 #define register_renamed_symbol(pic, state, slot, lib, name) do {       \
-    struct xh_entry *e;                                                 \
-    if (! (e = xh_get(lib->senv->tbl, name)))                           \
+    xh_entry *e;                                                 \
+    if (! (e = xh_get_int(lib->senv->tbl, pic_intern_cstr(pic, name)))) \
       pic_error(pic, "internal error! native VM procedure not found");  \
     state->slot = e->val;                                               \
   } while (0)
@@ -113,8 +112,8 @@ static analyze_state *
 new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
-  struct xhash *global_tbl;
-  struct xh_iter it;
+  xhash *global_tbl;
+  xh_iter it;
   struct pic_lib *stdlib;
 
   state = (analyze_state *)pic_alloc(pic, sizeof(analyze_state));
@@ -149,7 +148,7 @@ new_analyze_state(pic_state *pic)
 
   global_tbl = pic->global_tbl;
   for (xh_begin(global_tbl, &it); ! xh_isend(&it); xh_next(&it)) {
-    xh_put(state->scope->var_tbl, it.e->key, 0);
+    xh_put_int(state->scope->var_tbl, (long)it.e->key, 0);
   }
 
   return state;
@@ -171,7 +170,7 @@ push_scope(analyze_state *state, pic_value args)
 
   scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
   scope->up = state->scope;
-  scope->var_tbl = xh_new();
+  scope->var_tbl = xh_new_int();
   scope->varg = false;
   scope->vars = analyze_args(pic, args, &scope->varg, &scope->argc, &scope->localc);
 
@@ -180,7 +179,7 @@ push_scope(analyze_state *state, pic_value args)
   }
 
   for (i = 1; i < scope->argc + scope->localc; ++i) {
-    xh_put(scope->var_tbl, pic_symbol_name(pic, scope->vars[i]), 0);
+    xh_put_int(scope->var_tbl, scope->vars[i], 0);
   }
 
   state->scope = scope;
@@ -204,16 +203,15 @@ static int
 lookup_var(analyze_state *state, pic_sym sym)
 {
   analyze_scope *scope = state->scope;
-  struct xh_entry *e;
+  xh_entry *e;
   int depth = 0;
-  const char *key = pic_symbol_name(state->pic, sym);
 
  enter:
 
-  e = xh_get(scope->var_tbl, key);
+  e = xh_get_int(scope->var_tbl, sym);
   if (e) {
     if (depth > 0) {            /* mark dirty */
-      xh_put(scope->var_tbl, key, 1);
+      xh_put_int(scope->var_tbl, sym, 1);
     }
     return depth;
   }
@@ -230,9 +228,14 @@ define_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
   analyze_scope *scope = state->scope;
-  const char *name = pic_symbol_name(pic, sym);
+  xh_entry *e;
 
-  xh_put(state->scope->var_tbl, name, 0);
+  if ((e = xh_get_int(scope->var_tbl, sym))) {
+    pic_warn(pic, "redefining variable");
+    return;
+  }
+
+  xh_put_int(scope->var_tbl, sym, 0);
 
   scope->localc++;
   scope->vars = (pic_sym *)pic_realloc(pic, scope->vars, sizeof(pic_sym) * (scope->argc + scope->localc));
@@ -638,7 +641,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
     closes = pic_nil_value();
     for (i = 1; i < scope->argc + scope->localc; ++i) {
       pic_sym var = scope->vars[i];
-      if (xh_get(scope->var_tbl, pic_symbol_name(pic, var))->val == 1) {
+      if (xh_get_int(scope->var_tbl, var)->val == 1) {
         closes = pic_cons(pic, pic_symbol_value(var), closes);
       }
     }
@@ -669,7 +672,7 @@ typedef struct resolver_scope {
   int depth;
   bool varg;
   int argc, localc;
-  struct xhash *cvs, *lvs;
+  xhash *cvs, *lvs;
   unsigned cv_num;
 
   struct resolver_scope *up;
@@ -721,26 +724,26 @@ push_resolver_scope(resolver_state *state, pic_value args, pic_value locals, boo
   scope = (resolver_scope *)pic_alloc(pic, sizeof(resolver_scope));
   scope->up = state->scope;
   scope->depth = scope->up ? scope->up->depth + 1 : 0;
-  scope->lvs = xh_new();
-  scope->cvs = xh_new();
+  scope->lvs = xh_new_int();
+  scope->cvs = xh_new_int();
   scope->argc = pic_length(pic, args) + 1;
   scope->localc = pic_length(pic, locals);
   scope->varg = varg;
 
   /* arguments */
   for (i = 1; i < scope->argc; ++i) {
-    xh_put(scope->lvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, args, i - 1))), i);
+    xh_put_int(scope->lvs, pic_sym(pic_list_ref(pic, args, i - 1)), i);
   }
 
   /* locals */
   for (i = 0; i < scope->localc; ++i) {
-    xh_put(scope->lvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, locals, i))), scope->argc + i);
+    xh_put_int(scope->lvs, pic_sym(pic_list_ref(pic, locals, i)), scope->argc + i);
   }
 
   /* closed variables */
   scope->cv_num = 0;
   for (i = 0, c = pic_length(pic, closes); i < c; ++i) {
-    xh_put(scope->cvs, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, closes, i))), scope->cv_num++);
+    xh_put_int(scope->cvs, pic_sym(pic_list_ref(pic, closes, i)), scope->cv_num++);
   }
 
   state->scope = scope;
@@ -763,18 +766,17 @@ pop_resolver_scope(resolver_state *state)
 static bool
 is_closed(resolver_state *state, pic_sym sym)
 {
-  return xh_get(state->scope->cvs, pic_symbol_name(state->pic, sym)) != NULL;
+  return xh_get_int(state->scope->cvs, sym) != NULL;
 }
 
 static pic_value
 resolve_gref(resolver_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
-  const char *name = pic_symbol_name(pic, sym);
-  struct xh_entry *e;
+  xh_entry *e;
   size_t i;
 
-  if ((e = xh_get(pic->global_tbl, name))) {
+  if ((e = xh_get_int(pic->global_tbl, sym))) {
     i = e->val;
   }
   else {
@@ -782,7 +784,7 @@ resolve_gref(resolver_state *state, pic_sym sym)
     if (i >= pic->gcapa) {
       pic_error(pic, "global table overflow");
     }
-    xh_put(pic->global_tbl, name, i);
+    xh_put_int(pic->global_tbl, sym, i);
   }
   return pic_list(pic, 2, pic_symbol_value(state->sGREF), pic_int_value(i));
 }
@@ -793,7 +795,7 @@ resolve_lref(resolver_state *state, pic_sym sym)
   pic_state *pic = state->pic;
   int i;
 
-  i = xh_get(state->scope->lvs, pic_symbol_name(pic, sym))->val;
+  i = xh_get_int(state->scope->lvs, sym)->val;
 
   return pic_list(pic, 2, pic_symbol_value(state->sLREF), pic_int_value(i));
 }
@@ -810,7 +812,7 @@ resolve_cref(resolver_state *state, int depth, pic_sym sym)
     scope = scope->up;
   }
 
-  i = xh_get(scope->cvs, pic_symbol_name(pic, sym))->val;
+  i = xh_get_int(scope->cvs, sym)->val;
 
   return pic_list(pic, 3,
                   pic_symbol_value(state->sCREF),
@@ -984,7 +986,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   pic_state *pic = state->pic;
   codegen_context *cxt;
   int i, c;
-  struct xhash *vars;
+  xhash *vars;
 
   cxt = (codegen_context *)pic_alloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
@@ -993,12 +995,12 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   cxt->varg = varg;
 
   /* number local variables */
-  vars = xh_new();
+  vars = xh_new_int();
   for (i = 1; i < cxt->argc; ++i) {
-    xh_put(vars, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, args, i - 1))), i);
+    xh_put_int(vars, pic_sym(pic_list_ref(pic, args, i - 1)), i);
   }
   for (i = 0; i < cxt->localc; ++i) {
-    xh_put(vars, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, locals, i))), cxt->argc + i);
+    xh_put_int(vars, pic_sym(pic_list_ref(pic, locals, i)), cxt->argc + i);
   }
 
   /* closed variables */
@@ -1007,7 +1009,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   for (i = 0, c = pic_length(pic, closes); i < c; ++i) {
     i = cxt->cv_num++;
     cxt->cv_tbl = (unsigned *)pic_realloc(pic, cxt->cv_tbl, sizeof(unsigned) * cxt->cv_num);
-    cxt->cv_tbl[i] = xh_get(vars, pic_symbol_name(pic, pic_sym(pic_list_ref(pic, closes, i))))->val;
+    cxt->cv_tbl[i] = xh_get_int(vars, pic_sym(pic_list_ref(pic, closes, i)))->val;
   }
 
   xh_destroy(vars);
@@ -1439,53 +1441,57 @@ pic_compile(pic_state *pic, pic_value obj)
 }
 
 static int
-scope_global_define(pic_state *pic, const char *name)
+global_ref(pic_state *pic, const char *name)
 {
-  struct xh_entry *e;
+  xh_entry *e;
+  pic_sym sym;
 
-  if ((e = xh_get(pic->global_tbl, name))) {
-    pic_warn(pic, "redefining global");
-    return e->val;
+  sym = pic_intern_cstr(pic, name);
+  if (! (e = xh_get_int(pic->lib->senv->tbl, sym))) {
+    return -1;
   }
-  e = xh_put(pic->global_tbl, name, pic->glen++);
+  assert(e->val >= 0);
+  if (! (e = xh_get_int(pic->global_tbl, e->val))) {
+    return -1;
+  }
+  return e->val;
+}
+
+static int
+global_def(pic_state *pic, const char *name)
+{
+  pic_sym sym, gsym;
+  size_t gidx;
+
+  sym = pic_intern_cstr(pic, name);
+  if ((gidx = global_ref(pic, name)) != -1) {
+    pic_warn(pic, "redefining global");
+    return gidx;
+  }
+
+  gsym = pic_gensym(pic, sym);
+
+  /* register to the senv */
+  xh_put_int(pic->lib->senv->tbl, sym, gsym);
+
+  /* register to the global table */
+  gidx = pic->glen++;
   if (pic->glen >= pic->gcapa) {
     pic_error(pic, "global table overflow");
   }
-  return e->val;
+  xh_put_int(pic->global_tbl, gsym, gidx);
+
+  return gidx;
 }
 
 void
 pic_define(pic_state *pic, const char *name, pic_value val)
 {
-  int idx;
-  pic_sym gsym;
-
-  gsym = pic_gensym(pic, pic_intern_cstr(pic, name));
-
   /* push to the global arena */
-  idx = scope_global_define(pic, pic_symbol_name(pic, gsym));
-  pic->globals[idx] = val;
-
-  /* register to the senv */
-  xh_put(pic->lib->senv->tbl, name, gsym);
+  pic->globals[global_def(pic, name)] = val;
 
   /* export! */
   pic_export(pic, pic_intern_cstr(pic, name));
-}
-
-static int
-global_ref(pic_state *pic, const char *name)
-{
-  struct xh_entry *e;
-
-  if (! (e = xh_get(pic->lib->senv->tbl, name))) {
-    pic_error(pic, "symbol not defined");
-  }
-  assert(e->val >= 0);
-  if (! (e = xh_get(pic->global_tbl, pic_symbol_name(pic, (pic_sym)e->val)))) {
-    pic_abort(pic, "logic flaw");
-  }
-  return e->val;
 }
 
 pic_value
@@ -1494,6 +1500,9 @@ pic_ref(pic_state *pic, const char *name)
   int gid;
 
   gid = global_ref(pic, name);
+  if (gid == -1) {
+    pic_error(pic, "symbol not defined");
+  }
   return pic->globals[gid];
 }
 
@@ -1503,6 +1512,9 @@ pic_set(pic_state *pic, const char *name, pic_value value)
   int gid;
 
   gid = global_ref(pic, name);
+  if (gid == -1) {
+    pic_error(pic, "symbol not defined");
+  }
   pic->globals[gid] = value;
 }
 

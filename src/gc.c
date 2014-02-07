@@ -15,7 +15,6 @@
 #include "picrin/macro.h"
 #include "picrin/lib.h"
 #include "picrin/var.h"
-#include "xhash/xhash.h"
 
 #if GC_DEBUG
 # include <string.h>

@@ -33,6 +33,8 @@ extern "C" {
 #include <setjmp.h>
 #include <stdio.h>
 
+#include "xhash/xhash.h"
+
 #if __STDC_VERSION__ >= 201112L
 # define NORETURN _Noreturn
 #elif __GNUC__ || __clang__
@@ -94,12 +96,12 @@ typedef struct {
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
 
-  struct xhash *sym_tbl;
+  xhash *sym_tbl;
   const char **sym_pool;
   size_t slen, scapa;
   int uniq_sym_count;
 
-  struct xhash *global_tbl;
+  xhash *global_tbl;
   pic_value *globals;
   size_t glen, gcapa;
 
