@@ -53,9 +53,11 @@
        (let ((clauses (cdr expr)))
          (if (null? clauses)
              #f
-             (list (r 'if) (caar clauses)
-                   (cons (r 'begin) (cdar clauses))
-                   (cons (r 'cond) (cdr clauses))))))))
+             (if (compare (r 'else) (caar clauses))
+                 (cons (r 'begin) (cdar clauses))
+                 (list (r 'if) (caar clauses)
+                       (cons (r 'begin) (cdar clauses))
+                       (cons (r 'cond) (cdr clauses)))))))))
 
   (define-syntax and
     (er-macro-transformer
