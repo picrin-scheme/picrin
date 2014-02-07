@@ -238,13 +238,35 @@ pic_receive(pic_state *pic, size_t n, pic_value *argv)
 }
 
 static pic_value
+pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
+{
+  struct pic_cont *cont;
+
+  save_cont(pic, &cont);
+  if (setjmp(cont->jmp)) {
+    return pic_values_by_list(pic, cont->results);
+  }
+  else {
+    struct pic_proc *c;
+
+    c = pic_proc_new(pic, cont_call);
+
+    /* save the continuation object in proc */
+    pic_proc_cv_init(pic, c, 1);
+    pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
+
+    return pic_trampoline(pic, proc, pic_list(pic, 1, pic_obj_value(c)));
+  }
+}
+
+static pic_value
 pic_cont_callcc(pic_state *pic)
 {
   struct pic_proc *cb;
 
   pic_get_args(pic, "l", &cb);
 
-  return pic_callcc(pic, cb);
+  return pic_callcc_trampoline(pic, cb);
 }
 
 static pic_value
