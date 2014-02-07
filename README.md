@@ -27,7 +27,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 3.2 Disjointness of types | yes | |
 | 3.3 External representations | | |
 | 3.4 Storage model | yes | |
-| 3.5 Proper tail recursion | yes | |
+| 3.5 Proper tail recursion | yes | As the report specifies, `apply`, `call/cc`, and `call-with-values` perform tail calls |
 | 4.1.1 Variable references | yes | |
 | 4.1.2 Literal expressions | yes | |
 | 4.1.3 Procedure calls | yes | In picrin `()` is self-evaluating |
