@@ -42,8 +42,8 @@
                          (cons (r 'lambda) (cons (map car bindings) body)))
                    (cons name (map cadr bindings))))
            (begin
-             (define bindings (cadr expr))
-             (define body (cddr expr))
+             (set! bindings (cadr expr))
+             (set! body (cddr expr))
              (cons (cons (r 'lambda) (cons (map car bindings) body))
                    (map cadr bindings)))))))
 
