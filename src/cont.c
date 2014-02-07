@@ -326,7 +326,7 @@ pic_cont_call_with_values(pic_state *pic)
 
   argc = pic_receive(pic, 256, args);
 
-  return pic_apply(pic, consumer, pic_list_by_array(pic, argc, args));
+  return pic_trampoline(pic, consumer, pic_list_by_array(pic, argc, args));
 }
 
 void
