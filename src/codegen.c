@@ -342,7 +342,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_lambda(state, obj);
       }
       else if (sym == pic->sIF) {
-	pic_value if_true, if_false;
+	pic_value cond, if_true, if_false;
 
 	if_false = pic_none_value();
 	switch (pic_length(pic, obj)) {
@@ -356,11 +356,12 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	  if_true = pic_list_ref(pic, obj, 2);
 	}
 
-        return pic_list(pic, 4,
-                        pic_symbol_value(pic->sIF),
-                        analyze(state, pic_list_ref(pic, obj, 1), false),
-                        analyze(state, if_true, tailpos),
-                        analyze(state, if_false, tailpos));
+        /* analyze in order */
+        cond = analyze(state, pic_list_ref(pic, obj, 1), false);
+        if_true = analyze(state, if_true, tailpos);
+        if_false = analyze(state, if_false, tailpos);
+
+        return pic_list(pic, 4, pic_symbol_value(pic->sIF), cond, if_true, if_false);
       }
       else if (sym == pic->sBEGIN) {
 	pic_value seq;
