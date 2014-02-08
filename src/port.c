@@ -196,6 +196,25 @@ pic_port_close_port(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_port_open_input_string(pic_state *pic)
+{
+  struct pic_port *port;
+  char *str;
+  size_t len;
+
+  pic_get_args(pic, "s", &str, &len);
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
+
+  xfputs(str, port->file);
+
+  return pic_obj_value(port);
+}
+
 #define assert_port_profile(port, flgs, stat, caller) do {              \
     if ((port->flags & (flgs)) != (flgs)) {                             \
       switch (flgs) {                                                   \
@@ -384,6 +403,9 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "close-port", pic_port_close_port);
   pic_defun(pic, "close-input-port", pic_port_close_port);
   pic_defun(pic, "close-output-port", pic_port_close_port);
+
+  /* string I/O */
+  pic_defun(pic, "open-input-string", pic_port_open_input_string);
 
   /* input */
   pic_defun(pic, "read-char", pic_port_read_char);
