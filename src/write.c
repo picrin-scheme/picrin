@@ -8,27 +8,27 @@
 #include "picrin/blob.h"
 #include "picrin/macro.h"
 
-static void write(pic_state *, pic_value);
+static void write(pic_state *, pic_value, XFILE *file);
 
 static void
-write_pair(pic_state *pic, struct pic_pair *pair)
+write_pair(pic_state *pic, struct pic_pair *pair, XFILE *file)
 {
-  write(pic, pair->car);
+  write(pic, pair->car, file);
 
   if (pic_nil_p(pair->cdr)) {
     return;
   }
   if (pic_pair_p(pair->cdr)) {
-    printf(" ");
-    write_pair(pic, pic_pair_ptr(pair->cdr));
+    xfprintf(file, " ");
+    write_pair(pic, pic_pair_ptr(pair->cdr), file);
     return;
   }
-  printf(" . ");
-  write(pic, pair->cdr);
+  xfprintf(file, " . ");
+  write(pic, pair->cdr, file);
 }
 
 static void
-write_str(pic_state *pic, struct pic_string *str)
+write_str(pic_state *pic, struct pic_string *str, XFILE *file)
 {
   size_t i;
   const char *cstr = str->str;
@@ -37,119 +37,119 @@ write_str(pic_state *pic, struct pic_string *str)
 
   for (i = 0; i < str->len; ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
-      putchar('\\');
+      xfputc('\\', file);
     }
-    putchar(cstr[i]);
+    xfputc(cstr[i], file);
   }
 }
 
 static void
-write(pic_state *pic, pic_value obj)
+write(pic_state *pic, pic_value obj, XFILE *file)
 {
   size_t i;
 
   switch (pic_type(obj)) {
   case PIC_TT_NIL:
-    printf("()");
+    xfprintf(file, "()");
     break;
   case PIC_TT_BOOL:
     if (pic_true_p(obj))
-      printf("#t");
+      xfprintf(file, "#t");
     else
-      printf("#f");
+      xfprintf(file, "#f");
     break;
   case PIC_TT_PAIR:
-    printf("(");
-    write_pair(pic, pic_pair_ptr(obj));
-    printf(")");
+    xfprintf(file, "(");
+    write_pair(pic, pic_pair_ptr(obj), file);
+    xfprintf(file, ")");
     break;
   case PIC_TT_SYMBOL:
-    printf("%s", pic_symbol_name(pic, pic_sym(obj)));
+    xfprintf(file, "%s", pic_symbol_name(pic, pic_sym(obj)));
     break;
   case PIC_TT_CHAR:
     switch (pic_char(obj)) {
-    default: printf("#\\%c", pic_char(obj)); break;
-    case '\a': printf("#\\alarm"); break;
-    case '\b': printf("#\\backspace"); break;
-    case 0x7f: printf("#\\delete"); break;
-    case 0x1b: printf("#\\escape"); break;
-    case '\n': printf("#\\newline"); break;
-    case '\r': printf("#\\return"); break;
-    case ' ': printf("#\\space"); break;
-    case '\t': printf("#\\tab"); break;
+    default: xfprintf(file, "#\\%c", pic_char(obj)); break;
+    case '\a': xfprintf(file, "#\\alarm"); break;
+    case '\b': xfprintf(file, "#\\backspace"); break;
+    case 0x7f: xfprintf(file, "#\\delete"); break;
+    case 0x1b: xfprintf(file, "#\\escape"); break;
+    case '\n': xfprintf(file, "#\\newline"); break;
+    case '\r': xfprintf(file, "#\\return"); break;
+    case ' ': xfprintf(file, "#\\space"); break;
+    case '\t': xfprintf(file, "#\\tab"); break;
     }
     break;
   case PIC_TT_FLOAT:
-    printf("%f", pic_float(obj));
+    xfprintf(file, "%f", pic_float(obj));
     break;
   case PIC_TT_INT:
-    printf("%d", pic_int(obj));
+    xfprintf(file, "%d", pic_int(obj));
     break;
   case PIC_TT_EOF:
-    printf("#<eof-object>");
+    xfprintf(file, "#<eof-object>");
     break;
   case PIC_TT_UNDEF:
-    printf("#<undef>");
+    xfprintf(file, "#<undef>");
     break;
   case PIC_TT_PROC:
-    printf("#<proc %p>", pic_ptr(obj));
+    xfprintf(file, "#<proc %p>", pic_ptr(obj));
     break;
   case PIC_TT_PORT:
-    printf("#<port %p>", pic_ptr(obj));
+    xfprintf(file, "#<port %p>", pic_ptr(obj));
     break;
   case PIC_TT_STRING:
-    printf("\"");
-    write_str(pic, pic_str_ptr(obj));
-    printf("\"");
+    xfprintf(file, "\"");
+    write_str(pic, pic_str_ptr(obj), file);
+    xfprintf(file, "\"");
     break;
   case PIC_TT_VECTOR:
-    printf("#(");
+    xfprintf(file, "#(");
     for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-      write(pic, pic_vec_ptr(obj)->data[i]);
+      write(pic, pic_vec_ptr(obj)->data[i], file);
       if (i + 1 < pic_vec_ptr(obj)->len) {
-	printf(" ");
+	xfprintf(file, " ");
       }
     }
-    printf(")");
+    xfprintf(file, ")");
     break;
   case PIC_TT_BLOB:
-    printf("#u8(");
+    xfprintf(file, "#u8(");
     for (i = 0; i < pic_blob_ptr(obj)->len; ++i) {
-      printf("%d", pic_blob_ptr(obj)->data[i]);
+      xfprintf(file, "%d", pic_blob_ptr(obj)->data[i]);
       if (i + 1 < pic_blob_ptr(obj)->len) {
-	printf(" ");
+	xfprintf(file, " ");
       }
     }
-    printf(")");
+    xfprintf(file, ")");
     break;
   case PIC_TT_ERROR:
-    printf("#<error %p>", pic_ptr(obj));
+    xfprintf(file, "#<error %p>", pic_ptr(obj));
     break;
   case PIC_TT_ENV:
-    printf("#<env %p>", pic_ptr(obj));
+    xfprintf(file, "#<env %p>", pic_ptr(obj));
     break;
   case PIC_TT_CONT:
-    printf("#<cont %p>", pic_ptr(obj));
+    xfprintf(file, "#<cont %p>", pic_ptr(obj));
     break;
   case PIC_TT_SENV:
-    printf("#<senv %p>", pic_ptr(obj));
+    xfprintf(file, "#<senv %p>", pic_ptr(obj));
     break;
   case PIC_TT_SYNTAX:
-    printf("#<syntax %p>", pic_ptr(obj));
+    xfprintf(file, "#<syntax %p>", pic_ptr(obj));
     break;
   case PIC_TT_SC:
-    printf("#<sc %p: ", pic_ptr(obj));
-    write(pic, pic_sc(obj)->expr);
-    printf(">");
+    xfprintf(file, "#<sc %p: ", pic_ptr(obj));
+    write(pic, pic_sc(obj)->expr, file);
+    xfprintf(file, ">");
     break;
   case PIC_TT_LIB:
-    printf("#<lib %p>", pic_ptr(obj));
+    xfprintf(file, "#<lib %p>", pic_ptr(obj));
     break;
   case PIC_TT_VAR:
-    printf("#<var %p>", pic_ptr(obj));
+    xfprintf(file, "#<var %p>", pic_ptr(obj));
     break;
   case PIC_TT_IREP:
-    printf("#<irep %p>", pic_ptr(obj));
+    xfprintf(file, "#<irep %p>", pic_ptr(obj));
     break;
   }
 }
@@ -157,17 +157,18 @@ write(pic_state *pic, pic_value obj)
 void
 pic_debug(pic_state *pic, pic_value obj)
 {
-  write(pic, obj);
-  fflush(stdout);
+  write(pic, obj, xstdout);
+  xfflush(xstdout);
 }
 
 static pic_value
 pic_port_write_simple(pic_state *pic)
 {
   pic_value v;
+  struct pic_port *port = pic_stdout(pic);
 
-  pic_get_args(pic, "o", &v);
-  write(pic, v);
+  pic_get_args(pic, "o|p", &v, &port);
+  write(pic, v, port->file);
   return pic_none_value();
 }
 
