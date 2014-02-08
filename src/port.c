@@ -196,25 +196,6 @@ pic_port_close_port(pic_state *pic)
   return pic_none_value();
 }
 
-static pic_value
-pic_port_open_input_string(pic_state *pic)
-{
-  struct pic_port *port;
-  char *str;
-  size_t len;
-
-  pic_get_args(pic, "s", &str, &len);
-
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
-  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
-  port->status = PIC_PORT_OPEN;
-
-  xfputs(str, port->file);
-
-  return pic_obj_value(port);
-}
-
 #define assert_port_profile(port, flgs, stat, caller) do {              \
     if ((port->flags & (flgs)) != (flgs)) {                             \
       switch (flgs) {                                                   \
@@ -241,6 +222,65 @@ pic_port_open_input_string(pic_state *pic)
       }                                                                 \
     }                                                                   \
   } while (0)
+
+static pic_value
+pic_port_open_input_string(pic_state *pic)
+{
+  struct pic_port *port;
+  char *str;
+  size_t len;
+
+  pic_get_args(pic, "s", &str, &len);
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
+
+  xfputs(str, port->file);
+  xfflush(port->file);
+  xrewind(port->file);
+
+  return pic_obj_value(port);
+}
+
+static pic_value
+pic_port_open_output_string(pic_state *pic)
+{
+  struct pic_port *port;
+
+  pic_get_args(pic, "");
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
+
+  return pic_obj_value(port);
+}
+
+static pic_value
+pic_port_get_output_string(pic_state *pic)
+{
+  struct pic_port *port;
+  long endpos;
+  char *buf;
+
+  pic_get_args(pic, "p", &port);
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-char");
+
+  /* get endpos */
+  xfflush(port->file);
+  endpos = xftell(port->file);
+  xrewind(port->file);
+
+  /* copy to buf */
+  buf = (char *)pic_alloc(pic, endpos);
+  xfread(buf, 1, endpos, port->file);
+
+  return pic_obj_value(pic_str_new(pic, buf, endpos));
+}
 
 static pic_value
 pic_port_read_char(pic_state *pic)
@@ -406,6 +446,8 @@ pic_init_port(pic_state *pic)
 
   /* string I/O */
   pic_defun(pic, "open-input-string", pic_port_open_input_string);
+  pic_defun(pic, "open-output-string", pic_port_open_output_string);
+  pic_defun(pic, "get-output-string", pic_port_get_output_string);
 
   /* input */
   pic_defun(pic, "read-char", pic_port_read_char);
