@@ -10,10 +10,17 @@ struct pic_string *
 pic_str_new(pic_state *pic, const char *cstr, size_t len)
 {
   struct pic_string *str;
+  char *copy;
+
+  if (cstr) {
+    copy = pic_strdup(pic, cstr);
+  } else {
+    copy = (char *)pic_alloc(pic, len);
+  }
 
   str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TT_STRING);
   str->len = len;
-  str->str = pic_strdup(pic, cstr);
+  str->str = copy;
   return str;
 }
 
