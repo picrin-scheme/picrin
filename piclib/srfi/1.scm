@@ -111,11 +111,65 @@
         x
         (drop (cdr x) (- i 1))))
 
+  (define (take-right flist i)
+    (let ((len (length flist)))
+      (drop flist (- len i))))
+
+  (define (drop-right flist i)
+    (let ((len (length flist)))
+      (take flist (- len i))))
+
+  (define (take! x i)
+    (let rec ((lis x) (n (- i 1)))
+      (if (zero? n)
+	  (begin (set-cdr! lis '()) x)
+	  (rec (cdr lis) (- n 1)))))
+  
+  (define (drop-right! flist i)
+    (let ((lead (drop flist i)))
+      (if (not-pair? lead)
+	  '()
+	  (let rec ((lis1 flist) (lead (cdr lead)))
+	    (if (pair? lis2)
+		(rec (cdr lis1) (cdr lis2))
+		(begin (set-cdr! lis1 '()) flist))))))
+    
   (define (split-at x i)
     (values (take x i) (drop x i)))
 
-  (export car cdr car+cdr
-          take drop)
+  (define (split-at! x i)
+    (values (take! x i) (drop x i)))
+
+  (define (last pair)
+    (car (take-right pair 1)))
+
+  (define (last-pair pair)
+    (take-right pair 1))
+  
+  (define first car)
+  (define second cadr)
+  (define third caddr)
+  (define fourth cadddr)
+  (define (fifth pair)
+    (list-ref pair 5))
+  (define (sixth pair)
+    (list-ref pair 6))
+  (define (seventh pair)
+    (list-ref pair 7))
+  (define (eighth pair)
+    (list-ref pair 8))
+  (define (ninth pair)
+    (list-ref pair 9))
+  (define (tenth pair)
+    (list-ref pair 10))
+  
+  (export car cdr car+cdr list-ref
+	  caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr
+	  caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar cdaadr
+	  cdadar cdaddr cddaar cddadr cdddar cddddr
+	  first second third fourth fifth sixth seventh eighth ninth tenth
+          take drop take-right drop-right take! drop-right!
+	  split-at split-at! last last-pair)
 
   ;; # Miscellaneous
   ;; length length+
@@ -133,7 +187,9 @@
   (define (append-reverse rev-head tail)
     (append (reverse rev-head) tail))
 
-  (export length append concatenate reverse zip)
+  
+
+  (export length append concatenate reverse zip append-reverse)
 
   ;; # Fold, unfold & map
   ;; map for-each
