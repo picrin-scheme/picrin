@@ -283,6 +283,24 @@ pic_port_get_output_string(pic_state *pic)
 }
 
 static pic_value
+pic_port_open_input_blob(pic_state *pic)
+{
+  struct pic_port *port;
+  struct pic_blob *blob;
+
+  pic_get_args(pic, "b", &blob);
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_IN | PIC_PORT_BINARY;
+  port->status = PIC_PORT_OPEN;
+
+  xfwrite(blob->data, 1, blob->len, port->file);
+
+  return pic_obj_value(port);
+}
+
+static pic_value
 pic_port_read_char(pic_state *pic)
 {
   char c;
@@ -448,6 +466,7 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "open-input-string", pic_port_open_input_string);
   pic_defun(pic, "open-output-string", pic_port_open_output_string);
   pic_defun(pic, "get-output-string", pic_port_get_output_string);
+  pic_defun(pic, "open-input-bytevector", pic_port_open_input_blob);
 
   /* input */
   pic_defun(pic, "read-char", pic_port_read_char);
