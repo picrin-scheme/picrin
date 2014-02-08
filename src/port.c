@@ -10,6 +10,7 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
+#include "picrin/blob.h"
 
 pic_value
 pic_eof_object()
@@ -287,6 +288,71 @@ pic_port_write_char(pic_state *pic)
 }
 
 static pic_value
+pic_port_write_string(pic_state *pic)
+{
+  char *str;
+  size_t len;
+  struct pic_port *port;
+  int start, end, n, i;
+
+  n = pic_get_args(pic, "s|pii", &str, &len, &port, &start, &end);
+  switch (n) {
+  case 2:
+    port = pic_stdout(pic);
+  case 3:
+    start = 0;
+  case 4:
+    end = len;
+  }
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "write-string");
+
+  for (i = start; i < end; ++i) {
+    xfputc(str[i], port->file);
+  }
+  return pic_none_value();
+}
+
+static pic_value
+pic_port_write_byte(pic_state *pic)
+{
+  int i;
+  struct pic_port *port = pic_stdout(pic);
+
+  pic_get_args(pic, "i|p", &i, &port);
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, PIC_PORT_OPEN, "write-u8");
+
+  xfputc(i, port->file);
+  return pic_none_value();
+}
+
+static pic_value
+pic_port_write_blob(pic_state *pic)
+{
+  struct pic_blob *blob;
+  struct pic_port *port;
+  int start, end, n, i;
+
+  n = pic_get_args(pic, "b|pii", &blob, &port, &start, &end);
+  switch (n) {
+  case 2:
+    port = pic_stdout(pic);
+  case 3:
+    start = 0;
+  case 4:
+    end = blob->len;
+  }
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, PIC_PORT_OPEN, "write-bytevector");
+
+  for (i = start; i < end; ++i) {
+    xfputc(blob->data[i], port->file);
+  }
+  return pic_none_value();
+}
+
+static pic_value
 pic_port_flush(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
@@ -326,5 +392,8 @@ pic_init_port(pic_state *pic)
   /* write */
   pic_defun(pic, "newline", pic_port_newline);
   pic_defun(pic, "write-char", pic_port_write_char);
+  pic_defun(pic, "write-string", pic_port_write_string);
+  pic_defun(pic, "write-u8", pic_port_write_byte);
+  pic_defun(pic, "write-bytevector", pic_port_write_blob);
   pic_defun(pic, "flush-output-port", pic_port_flush);
 }
