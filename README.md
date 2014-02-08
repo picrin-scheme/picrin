@@ -75,7 +75,9 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 6.10  Control features | yes | |
 | 6.11 Exceptions | yes | TODO: native error handling |
 | 6.12 Environments and evaluation | N/A | |
-| 6.13 Ports | incomplete | |
+| 6.13.1 Ports | incomplete | TODO: string I/O, bytevector I/O |
+| 6.13.2 Input | incomplete | |
+| 6.13.3 Output | yes | TODO: `write`, `write-shared` and `display` are unsafe against circular objects |
 | 6.14 System interface | yes | |
 
 1. Picrin provides hygienic macros in addition to so-called legacy macro (`define-macro`), such as syntactic closure, explicit renaming macro, and implicit renaming macro. As of now let-syntax and letrec-syntax are not provided.
