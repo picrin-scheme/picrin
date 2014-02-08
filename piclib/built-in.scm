@@ -1,3 +1,39 @@
+;;; Appendix A. Standard Libraries CxR
+(define-library (scheme cxr)
+  (import (scheme base))
+
+  (define (caaar p) (car (caar p)))
+  (define (caadr p) (car (cadr p)))
+  (define (cadar p) (car (cdar p)))
+  (define (caddr p) (car (cddr p)))
+  (define (cdaar p) (cdr (caar p)))
+  (define (cdadr p) (cdr (cadr p)))
+  (define (cddar p) (cdr (cdar p)))
+  (define (cdddr p) (cdr (cddr p)))
+  (define (caaaar p) (caar (caar p)))
+  (define (caaadr p) (caar (cadr p)))
+  (define (caadar p) (caar (cdar p)))
+  (define (caaddr p) (caar (cddr p)))
+  (define (cadaar p) (cadr (caar p)))
+  (define (cadadr p) (cadr (cadr p)))
+  (define (caddar p) (cadr (cdar p)))
+  (define (cadddr p) (cadr (cddr p)))
+  (define (cdaaar p) (cdar (caar p)))
+  (define (cdaadr p) (cdar (cadr p)))
+  (define (cdadar p) (cdar (cdar p)))
+  (define (cdaddr p) (cdar (cddr p)))
+  (define (cddaar p) (cddr (caar p)))
+  (define (cddadr p) (cddr (cadr p)))
+  (define (cdddar p) (cddr (cdar p)))
+  (define (cddddr p) (cddr (cddr p)))
+
+  (export caaar caadr cadar caddr
+          cdaar cdadr cddar cdddr
+          caaaar caaadr caadar caaddr
+          cadaar cadadr caddar cadddr
+          cdaaar cdaadr cdadar cdaddr
+          cddaar cddadr cdddar cddddr))
+
 ;;; hygienic macros
 (define-library (picrin macro)
   (import (scheme base))
@@ -13,21 +49,11 @@
   (export sc-macro-transformer
           rsc-macro-transformer))
 
-;;; bootstrap utilities
-(define-library (picrin bootstrap-tools)
-  (import (scheme base))
-
-  (define (cadar p) (car (cdar p)))
-  (define (caddr p) (car (cddr p)))
-  (define (cdddr p) (cdr (cddr p)))
-
-  (export cadar caddr cdddr))
-
 ;;; core syntaces
 (define-library (picrin core-syntax)
   (import (scheme base)
-          (picrin macro)
-          (picrin bootstrap-tools))
+          (scheme cxr)
+          (picrin macro))
 
   (define-syntax let
     (er-macro-transformer
@@ -222,9 +248,9 @@
 ;;; multiple value
 (define-library (picrin multiple-value)
   (import (scheme base)
+          (scheme cxr)
           (picrin macro)
-          (picrin core-syntax)
-          (picrin bootstrap-tools))
+          (picrin core-syntax))
 
   (define-syntax let*-values
     (er-macro-transformer
@@ -268,9 +294,9 @@
 ;;; parameter
 (define-library (picrin parameter)
   (import (scheme base)
+          (scheme cxr)
           (picrin macro)
-          (picrin core-syntax)
-          (picrin bootstrap-tools))
+          (picrin core-syntax))
 
   ;; reopen (pircin parameter)
   ;; see src/var.c
@@ -679,40 +705,3 @@
         (write obj port)))))
 
   (export write write-shared display))
-
-;;; Appendix A. Standard Libraries
-;; CxR
-(define-library (scheme cxr)
-  (import (scheme base))
-
-  (define (caaar p) (car (caar p)))
-  (define (caadr p) (car (cadr p)))
-  (define (cadar p) (car (cdar p)))
-  (define (caddr p) (car (cddr p)))
-  (define (cdaar p) (cdr (caar p)))
-  (define (cdadr p) (cdr (cadr p)))
-  (define (cddar p) (cdr (cdar p)))
-  (define (cdddr p) (cdr (cddr p)))
-  (define (caaaar p) (caar (caar p)))
-  (define (caaadr p) (caar (cadr p)))
-  (define (caadar p) (caar (cdar p)))
-  (define (caaddr p) (caar (cddr p)))
-  (define (cadaar p) (cadr (caar p)))
-  (define (cadadr p) (cadr (cadr p)))
-  (define (caddar p) (cadr (cdar p)))
-  (define (cadddr p) (cadr (cddr p)))
-  (define (cdaaar p) (cdar (caar p)))
-  (define (cdaadr p) (cdar (cadr p)))
-  (define (cdadar p) (cdar (cdar p)))
-  (define (cdaddr p) (cdar (cddr p)))
-  (define (cddaar p) (cddr (caar p)))
-  (define (cddadr p) (cddr (cadr p)))
-  (define (cdddar p) (cddr (cdar p)))
-  (define (cddddr p) (cddr (cddr p)))
-
-  (export caaar caadr cadar caddr
-          cdaar cdadr cddar cdddr
-          caaaar caaadr caadar caaddr
-          cadaar cadadr caddar cadddr
-          cdaaar cdaadr cdadar cdaddr
-          cddaar cddadr cdddar cddddr))
