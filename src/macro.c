@@ -588,6 +588,40 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   return v;
 }
 
+/* once read.c is implemented move there */
+static pic_value
+pic_macro_include(pic_state *pic)
+{
+  size_t argc, i;
+  pic_value *argv, exprs, body;
+  FILE *file;
+  int res;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  /* FIXME unhygienic */
+  body = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
+
+  for (i = 0; i < argc; ++i) {
+    char *filename;
+    if (! pic_str_p(argv[i])) {
+      pic_error(pic, "expected string");
+    }
+    filename = pic_str_ptr(argv[i])->str;
+    file = fopen(filename, "r");
+    if (file == NULL) {
+      pic_error(pic, "could not open file");
+    }
+    res = pic_parse_file(pic, file, &exprs);
+    if (res < 0) {
+      pic_error(pic, "parse error");
+    }
+    body = pic_append(pic, body, exprs);
+  }
+
+  return body;
+}
+
 static pic_value
 pic_macro_make_sc(pic_state *pic)
 {
@@ -860,6 +894,9 @@ pic_macro_ir_macro_transformer(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
+  pic_defmacro(pic, "include", pic_proc_new(pic, pic_macro_include));
+  pic_export(pic, pic_intern_cstr(pic, "include"));
+
   pic_deflibrary ("(picrin macro)") {
     pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
