@@ -262,11 +262,11 @@ pic_port_open_output_string(pic_state *pic)
 static pic_value
 pic_port_get_output_string(pic_state *pic)
 {
-  struct pic_port *port;
+  struct pic_port *port = pic_stdout(pic);;
   long endpos;
   char *buf;
 
-  pic_get_args(pic, "p", &port);
+  pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-char");
 
