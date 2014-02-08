@@ -316,11 +316,11 @@ pic_port_write_string(pic_state *pic)
 
   n = pic_get_args(pic, "s|pii", &str, &len, &port, &start, &end);
   switch (n) {
-  case 2:
+  case 1:
     port = pic_stdout(pic);
-  case 3:
+  case 2:
     start = 0;
-  case 4:
+  case 3:
     end = len;
   }
 
@@ -355,11 +355,11 @@ pic_port_write_blob(pic_state *pic)
 
   n = pic_get_args(pic, "b|pii", &blob, &port, &start, &end);
   switch (n) {
-  case 2:
+  case 1:
     port = pic_stdout(pic);
-  case 3:
+  case 2:
     start = 0;
-  case 4:
+  case 3:
     end = blob->len;
   }
 
