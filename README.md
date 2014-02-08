@@ -34,7 +34,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 4.1.4 Procedures | yes | |
 | 4.1.5 Conditionals | yes | In picrin `(if #f #f)` returns `#f` |
 | 4.1.6 Assignments | yes | |
-| 4.1.7 Inclusion | no | `include` and `include-ci` |
+| 4.1.7 Inclusion | incomplete | `include-ci`. TODO: Once `read` is implemented rewrite `include` macro with it. |
 | 4.2.1 Conditionals | incomplete | TODO: `cond-expand` |
 | 4.2.2 Binding constructs | yes | |
 | 4.2.3 Sequencing | yes | |
