@@ -8,17 +8,85 @@
   (define (xcons a b)
     (cons b a))
 
-  (export cons list xcons)
+  (define (cons* x . args)
+    (let rec ((acm '()) (x x) (lst args))
+      (if (null? lst)
+	  (append-reverse acm x)
+	  (rec (cons x acm) (car lst) (cdr lst)))))
+
+  (define (list-tabulate n init-proc)
+    (let rec ((acm '()) (n (- n 1)))
+      (if (zero? n)
+	  (cons n acm)
+	  (rec (cons n acm) (- n 1)))))
+
+  (define (circular-list elt . args)
+    (let ((lst (cons elt args)))
+      (let rec ((l lst))
+	(if (null? (cdr l))
+	    (set-cdr! l lst)
+	    (rec (cdr l))))
+      lst))
+
+  (define (iota count . lst)
+    (let ((start (if (pair? lst) (car lst) 0))
+	  (step (if (and (pair? lst) (pair? (cdr lst)))
+		    (cadr lst) 1)))
+      (let rec ((count (- count 1)) (acm '()))
+	(if (zero? count)
+	    (cons start acm)
+	    (rec (- count 1)
+		 (cons (+ start (* count step)) acm))))))
+
+  (export cons list xcons make-list list-tabulate list-copy circular-list iota)
 
   ;; # Predicates
   ;; pair? null?
-  ;; proper-list? cirtular-list? dotted-list?
+  ;; proper-list? circular-list? dotted-list?
   ;; not-pair? null-list?
   ;; list=
   (define (not-pair? x)
     (not (pair? x)))
 
-  (export pair? null? not-pair?)
+  (define (circular-list? x)
+    (and (pair? x)
+	 (let rec ((lst (cdr x)))
+	   (cond ((not-pair?) #f)
+		 ((null? lst) #f)
+		 ((eq? x lst) #t)
+		 (else (rec (cdr lst)))))))
+
+  (define (proper-list? x)
+    (if (not (circular-list? x))
+	(list? x)))
+
+  (define (dotted-list? x)
+    (and (pair? x)
+	 (not (proper-list? x))
+	 (not (circular-list? x))))
+
+  (define (null-list? x)
+    (cond ((pair? x) #f)
+	  ((null? x) #t)
+	  (else (error "null-list?: argument out of domain" x))))
+
+  (define (list= elt= . lists)
+    (or (null? lists)
+	(let rec1 ((list1 (car lists)) (others (cdr lists)))
+	  (or (null? others)
+	      (let ((list2 (car others))
+		    (others (cdr others)))
+		(if (eq? list1 list2)
+		    (rec1 list2 others)
+		    (let rec2 ((l1 list1) (l2 list2))
+		      (if (null-list? l1)
+			  (and (null-list? l2)
+			       (rec1 list2 others))
+			  (and (not (null-list? l2))
+			       (elt= (car l1) (car l2))
+			       (rec2 (cdr l1) (cdr l2)))))))))))
+
+  (export pair? null? not-pair? proper-list? circular-list? null-list? list=)
 
   ;; # Selectors
   ;; car cdr ... cddadr cddddr list-ref
@@ -62,6 +130,9 @@
   (define (zip . lists)
     (apply map list lists))
 
+  (define (append-reverse rev-head tail)
+    (append (reverse rev-head) tail))
+
   (export length append concatenate reverse zip)
 
   ;; # Fold, unfold & map
@@ -70,6 +141,7 @@
   ;; fold-right unfold-right pair-fold right reduce-right
   ;; append-map append-map!
   ;; map! pair-for-each filter-map map-in-order
+  
   (export map for-each)
 
   ;; # Filtering & partitioning
@@ -135,3 +207,4 @@
   ;; # Primitive side-effects
   ;; set-car! set-cdr!
   (export set-car! set-cdr!))
+
