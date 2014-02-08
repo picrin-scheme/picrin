@@ -476,14 +476,6 @@
       (string-copy! res 0 v start end)
       res)))
 
-(define (string-append . vs)
-  (define (string-append-2-inv w v)
-    (let ((res (make-string (+ (string-length v) (string-length w)))))
-      (string-copy! res 0 v)
-      (string-copy! res (string-length v) w)
-      res))
-  (fold string-append-2-inv #() vs))
-
 (define (string-fill! v fill . opts)
   (let ((start (if (pair? opts) (car opts) 0))
 	(end (if (>= (length opts) 2)

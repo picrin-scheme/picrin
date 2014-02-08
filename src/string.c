@@ -122,6 +122,29 @@ DEFINE_STRING_CMP(gt, >)
 DEFINE_STRING_CMP(le, <=)
 DEFINE_STRING_CMP(ge, >=)
 
+static pic_value
+pic_str_string_append(pic_state *pic)
+{
+  size_t argc, len, i;
+  pic_value *argv;
+  char *buf;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  len = 0;
+  buf = NULL;
+  for (i = 0; i < argc; ++i) {
+    if (! pic_str_p(argv[i])) {
+      pic_error(pic, "type error");
+    }
+    buf = pic_realloc(pic, buf, len + pic_str_ptr(argv[i])->len);
+    /* copy! */
+    memcpy(buf + len, pic_str_ptr(argv[i])->str, pic_str_ptr(argv[i])->len);
+    len += pic_str_ptr(argv[i])->len;
+  }
+  return pic_obj_value(pic_str_new(pic, buf, len));
+}
+
 void
 pic_init_str(pic_state *pic)
 {
@@ -135,4 +158,5 @@ pic_init_str(pic_state *pic)
   pic_defun(pic, "string>?", pic_str_string_gt);
   pic_defun(pic, "string<=?", pic_str_string_le);
   pic_defun(pic, "string>=?", pic_str_string_ge);
+  pic_defun(pic, "string-append", pic_str_string_append);
 }
