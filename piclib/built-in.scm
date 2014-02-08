@@ -693,6 +693,27 @@
 
 (export call-with-port)
 
+(define-library (scheme write)
+  (import (scheme base))
+
+  ;; FIXME
+  (define write write-simple)
+  (define write-shared write-simple)
+
+  (define (display obj . opts)
+    (let ((port (if (null? opts) (current-output-port) (car opts))))
+      (cond
+       ((string? obj)
+        (write-string obj port))
+       ((char? obj)
+        (write-char obj port))
+       ((symbol? obj)
+        (write-string (symbol->string obj) port))
+       (else
+        (write obj port)))))
+
+  (export write write-shared display))
+
 ;;; Appendix A. Standard Libraries
 ;; CxR
 (define-library (scheme cxr)
