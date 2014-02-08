@@ -227,7 +227,7 @@ pic_export(pic_state *pic, pic_sym sym)
 }
 
 static void
-pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
+defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
 {
   pic_sym sym;
   struct pic_syntax *stx;
@@ -246,10 +246,19 @@ pic_defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct p
   global_senv->xlen++;
 }
 
+static void
+defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
+{
+  defsyntax(pic, name, macro, NULL);
+}
+
 void
 pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
-  pic_defsyntax(pic, name, macro, NULL);
+  defmacro(pic, name, macro);
+
+  /* auto export! */
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 static pic_value
@@ -369,7 +378,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  abort();
 	}
 	assert(pic_proc_p(v));
-	pic_defsyntax(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v), senv);
+	defsyntax(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v), senv);
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
@@ -411,7 +420,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  abort();
 	}
 	assert(pic_proc_p(v));
-	pic_defmacro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
+	defmacro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
@@ -895,7 +904,6 @@ void
 pic_init_macro(pic_state *pic)
 {
   pic_defmacro(pic, "include", pic_proc_new(pic, pic_macro_include));
-  pic_export(pic, pic_intern_cstr(pic, "include"));
 
   pic_deflibrary ("(picrin macro)") {
     pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
