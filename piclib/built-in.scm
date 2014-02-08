@@ -457,38 +457,7 @@
 (define (list->string list)
   (apply string list))
 
-(define (string-copy! to at from . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (string-length from))))
-    (do ((i at (+ i 1))
-	 (j start (+ j 1)))
-	((= j end))
-      (string-set! to i (string-ref from j)))))
-
-(define (string-copy v . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (string-length v))))
-    (let ((res (make-string (string-length v))))
-      (string-copy! res 0 v start end)
-      res)))
-
-(define (string-fill! v fill . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (string-length v))))
-    (do ((i start (+ i 1)))
-	((= i end)
-	 #f)
-      (string-set! v i fill))))
-
-(export string string->list list->string
-        string-copy! string-copy
-        string-append string-fill!)
+(export string string->list list->string)
 
 ;;; 6.8. Vector
 

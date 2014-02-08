@@ -123,6 +123,52 @@ DEFINE_STRING_CMP(le, <=)
 DEFINE_STRING_CMP(ge, >=)
 
 static pic_value
+pic_str_string_copy(pic_state *pic)
+{
+  size_t len, start, end, i;
+  char *str;
+  int n;
+  struct pic_string *copy;
+
+  n = pic_get_args(pic, "s|ii", &str, &len, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = len;
+  }
+
+  copy = pic_str_new(pic, NULL, end - start);
+  for (i = 0; i < end - start; ++i) {
+    copy->str[i] = str[start + i];
+  }
+  return pic_obj_value(copy);
+}
+
+static pic_value
+pic_str_string_copy_ip(pic_state *pic)
+{
+  size_t to_len, from_len, at, start, end;
+  char *to_str, *from_str;
+  int n;
+
+  n = pic_get_args(pic, "sis|ii", &to_str, &to_len, &at, &from_str, &from_len, &start, &end);
+
+  switch (n) {
+  case 3:
+    start = 0;
+  case 4:
+    end = from_len;
+  }
+
+  while (start < end) {
+    to_str[at++] = from_str[start++];
+  }
+  return pic_none_value();
+}
+
+static pic_value
 pic_str_string_append(pic_state *pic)
 {
   size_t argc, len, i;
@@ -145,6 +191,28 @@ pic_str_string_append(pic_state *pic)
   return pic_obj_value(pic_str_new(pic, buf, len));
 }
 
+static pic_value
+pic_str_string_fill_ip(pic_state *pic)
+{
+  size_t len, start, end;
+  char *str, c;
+  int n;
+
+  n = pic_get_args(pic, "sc|ii", &str, &len, &c, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = len;
+  }
+
+  while (start < end) {
+    str[start++] = c;
+  }
+  return pic_none_value();
+}
+
 void
 pic_init_str(pic_state *pic)
 {
@@ -153,10 +221,15 @@ pic_init_str(pic_state *pic)
   pic_defun(pic, "string-length", pic_str_string_length);
   pic_defun(pic, "string-ref", pic_str_string_ref);
   pic_defun(pic, "string-set!", pic_str_string_set);
+
   pic_defun(pic, "string=?", pic_str_string_eq);
   pic_defun(pic, "string<?", pic_str_string_lt);
   pic_defun(pic, "string>?", pic_str_string_gt);
   pic_defun(pic, "string<=?", pic_str_string_le);
   pic_defun(pic, "string>=?", pic_str_string_ge);
+
+  pic_defun(pic, "string-copy", pic_str_string_copy);
+  pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
   pic_defun(pic, "string-append", pic_str_string_append);
+  pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
 }
