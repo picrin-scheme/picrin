@@ -268,7 +268,7 @@ pic_port_get_output_string(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-char");
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "get-output-string");
 
   /* get endpos */
   xfflush(port->file);
