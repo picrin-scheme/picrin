@@ -75,7 +75,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 6.10  Control features | yes | |
 | 6.11 Exceptions | yes | TODO: native error handling |
 | 6.12 Environments and evaluation | N/A | |
-| 6.13.1 Ports | incomplete | TODO: bytevector I/O |
+| 6.13.1 Ports | yes | |
 | 6.13.2 Input | incomplete | |
 | 6.13.3 Output | yes | TODO: `write`, `write-shared` and `display` are unsafe against circular objects |
 | 6.14 System interface | yes | |
