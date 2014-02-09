@@ -34,6 +34,7 @@ extern "C" {
 #include <stdio.h>
 
 #include "xhash/xhash.h"
+#include "xfile/xfile.h"
 
 #if __STDC_VERSION__ >= 201112L
 # define NORETURN _Noreturn

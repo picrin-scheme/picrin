@@ -9,9 +9,6 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
-#include "xfile/xfile.h"
-
 enum pic_port_flag {
   PIC_PORT_IN = 1,
   PIC_PORT_OUT = 2,
