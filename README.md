@@ -57,7 +57,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 5.6.1 Library Syntax | incomplete | In picrin, libraries can be reopend and can be nested. |
 | 5.6.2 Library example | N/A | |
 | 5.7 The REPL | yes | |
-| 6.1 Equivalence predicates | yes | |
+| 6.1 Equivalence predicates | yes | TODO: equal? must terminate if circular structure is given |
 | 6.2.1 Numerical types | yes | picrin has only two types of internal representation of numbers: fixnum and double float. It still comforms the R7RS spec. |
 | 6.2.2 Exactness | yes | |
 | 6.2.3 Implementation restrictions | yes | |
