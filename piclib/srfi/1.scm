@@ -9,16 +9,16 @@
     (cons b a))
 
   (define (cons* x . args)
-    (let rec ((acm '()) (x x) (lst args))
+    (let rec ((acc '()) (x x) (lst args))
       (if (null? lst)
-	  (append-reverse acm x)
-	  (rec (cons x acm) (car lst) (cdr lst)))))
+	  (append-reverse acc x)
+	  (rec (cons x acc) (car lst) (cdr lst)))))
 
   (define (list-tabulate n init-proc)
-    (let rec ((acm '()) (n (- n 1)))
+    (let rec ((acc '()) (n (- n 1)))
       (if (zero? n)
-	  (cons n acm)
-	  (rec (cons n acm) (- n 1)))))
+	  (cons n acc)
+	  (rec (cons n acc) (- n 1)))))
 
   (define (circular-list elt . args)
     (let ((lst (cons elt args)))
@@ -32,11 +32,11 @@
     (let ((start (if (pair? lst) (car lst) 0))
 	  (step (if (and (pair? lst) (pair? (cdr lst)))
 		    (cadr lst) 1)))
-      (let rec ((count (- count 1)) (acm '()))
+      (let rec ((count (- count 1)) (acc '()))
 	(if (zero? count)
-	    (cons start acm)
+	    (cons start acc)
 	    (rec (- count 1)
-		 (cons (+ start (* count step)) acm))))))
+		 (cons (+ start (* count step)) acc))))))
 
   (export cons list xcons make-list list-tabulate list-copy circular-list iota)
 
@@ -199,11 +199,11 @@
     (apply append! lists))
 
   (define (reverse! list)
-    (let rec ((lst list) (acm '()))
+    (let rec ((lst list) (acc '()))
       (if (null? lst)
-	  acm
+	  acc
 	  (let ((rst (cdr lst)))
-	    (set-cdr! lst acm)
+	    (set-cdr! lst acc)
 	    (rec rst lst)))))
   
   (define (append-reverse rev-head tail)
@@ -264,7 +264,142 @@
   ;; append-map append-map!
   ;; map! pair-for-each filter-map map-in-order
   
-  (export map for-each)
+  ;; means for inter-referential definition
+  (define every #f)
+  
+  (define (fold kons knil clist . clists)
+    (if (null? clists)
+	(let rec ((acc knil) (clist clist))
+	  (if (null? clist)
+	      acc
+	      (rec (kons (car clist) acc) (cdr clist))))
+	(let rec ((acc knil) (clists (cons clist clists)))
+	  (if (every pair? clists)
+	      (rec (apply kons (append (map car clists) (list acc)))
+		   (map cdr clists))
+	      acc))))
+
+  (define (fold-right kons knil clist . clists)
+    (if (null? clists)
+	(let rec ((clist clist) (cont values))
+	  (if (null? clist)
+	      (cont knil)
+	      (rec (cdr clist) (lambda (x) (cont (kons (car clist) x))))))
+	(let rec ((clists (cons clist clists)) (cont values))
+	  (if (every pair? clists)
+	      (rec (map cdr clists)
+		   (lambda (x)
+		     (cont (apply kons (append (map car clists) (list x))))))
+	      (cont knil)))))
+
+  (define (pair-fold kons knil clist . clists)
+    (if (null? clists)
+	(let rec ((acc knil) (clist clist))
+	  (if (null? clist)
+	      acc
+	      (let ((tail (cdr clist)))
+		(rec (kons clist acc) tail))))
+	(let rec ((acc knil) (clists (cons clist clists)))
+	  (if (every pair? clists)
+	      (let ((tail (map cdr clists)))
+		(rec (apply kons (append clists (list acc)))
+		     tail))
+	      acc))))
+
+  (define (pair-fold-right kons knil clist . clists)
+    (if (null? clists)
+	(let rec ((clist clist) (cont values))
+	  (if (null? clist)
+	      (cont knil)
+	      (let ((tail (map cdr clists)))
+		(rec tail (lambda (x) (cont (kons clist x)))))))
+	(let rec ((clists (cons clist clists)) (cont values))
+	  (if (every pair? clists)
+	      (let ((tail (map cdr clists)))
+		(rec tail
+		     (lambda (x)
+		       (cont (apply kons (append clists (list x)))))))
+	      (cont knil)))))
+
+  (define (reduce f ridentity list)
+    (if (null? list)
+	ridentity
+	(fold f (car list) (cdr list))))
+
+  (define (reduce-right f ridentity list)
+    (fold-right f ridentity list))
+  
+  (define (unfold p f g seed . tail-gen)
+    (let ((tail-gen (if (null? tail-gen)
+			(lambda (x) '())
+			(car tail-gen))))
+      (let rec ((seed seed) (cont values))
+	(if (p seed)
+	    (cont (tail-gen seed))
+	    (rec (g seed) (lambda (x) (cont (cons (f seed) x))))))))
+
+  (define (unfold-right p f g seed . tail)
+    (let rec ((seed seed) (lst tail))
+      (if (p seed)
+	  lst
+	  (rec (g seed) (cons (f seed) lst)))))
+
+  (define (append-map f . clists)
+    (apply append (apply map f clists)))
+
+  (define (append-map! f . clists)
+    (apply append! (apply map f clists)))
+
+  (define pair-for-each #f)
+  
+  (define (map! f list . lists)
+    (if (null? lists)
+	(pair-for-each (lambda (x) (set-car! x (f (car x)))) list)
+	(let rec ((list list) (lists lists))
+	  (if (pair? list)
+	      (let ((head (map car lists))
+		    (rest (map cdr lists)))
+		(set-car! list (apply f (car list) head))
+		(rec (cdr list) tail)))))
+    list1)
+
+  (define (map-in-order f clist . clists)
+    (if (null? clists)
+	(let rec ((clist clist) (acc '()))
+	  (if (null? clist)
+	      (reverse acc)
+	      (rec (cdr clist) (cons (f (car clist)) acc))))
+	(let rec ((clists (cons clist clists)) (acc '()))
+	  (if (every pair? clists)
+	      (rec (map cdr clists)
+		   (cons* (apply f (map car clists)) acc))
+	      (reverse acc)))))
+
+  (define (pair-for-each f clist . clists)
+    (if (null? clist)
+	(let rec ((clist clist))
+	  (if (pair? clist)
+	      (begin (f (car clist)) (rec (cdr clist)))))
+	(let rec ((clists (cons clist clists)))
+	  (if (every pair? clists)
+	      (begin (apply f (map car clists)) (rec (map cdr clists)))))))
+
+  (define (filter-map f clist . clists)
+    (if (null? clists)
+	(let rec ((clist clist) (cont values))
+	  (if (null? clist)
+	      (cont '())
+	      (rec (cdr clist)
+		   (let ((it (f (car clist))))
+		     (if it
+			 (lambda (x) (cont (cons it x)))
+			 (lambda (x) (cont x)))))))))
+  
+  (export map for-each
+	  fold unfold pair-fold reduce
+	  fold-right unfold-right pair-fold-right reduce-right
+	  append-map append-map!
+	  map! pair-for-each filter-map map-in-order)
 
   ;; # Filtering & partitioning
   ;; filter partition remove
@@ -329,4 +464,3 @@
   ;; # Primitive side-effects
   ;; set-car! set-cdr!
   (export set-car! set-cdr!))
-
