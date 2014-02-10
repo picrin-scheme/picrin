@@ -157,8 +157,14 @@ write(pic_state *pic, pic_value obj, XFILE *file)
 void
 pic_debug(pic_state *pic, pic_value obj)
 {
-  write(pic, obj, xstdout);
-  xfflush(xstdout);
+  pic_fdebug(pic, obj, xstdout);
+}
+
+void
+pic_fdebug(pic_state *pic, pic_value obj, XFILE *file)
+{
+  write(pic, obj, file);
+  xfflush(file);
 }
 
 static pic_value

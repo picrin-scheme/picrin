@@ -211,6 +211,7 @@ NORETURN void pic_errorf(pic_state *, const char *, size_t, ...);
 void pic_warn(pic_state *, const char *);
 
 void pic_debug(pic_state *, pic_value);
+void pic_fdebug(pic_state *, pic_value, XFILE *);
 
 #if defined(__cplusplus)
 }
