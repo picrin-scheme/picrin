@@ -245,6 +245,12 @@
 	    (map third list)
 	    (map fourth list)
 	    (map fifth list)))
+
+  (define (count pred . clists)
+    (let rec ((tflst (apply map pred clists)) (n 0))
+      (if (null? tflst)
+	  n
+	  (rec (cdr tflst) (if (car tflst) (+ n 1) n)))))
   
   (export length length+
 	  append append! concatenate concatenate!
