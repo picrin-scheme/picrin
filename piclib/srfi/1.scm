@@ -412,14 +412,37 @@
                   (filter pred (cdr list)))
             (filter pred (cdr list)))))
 
+  ;; means for inter-referential definition
+  (define remove #f)
+  
   (define (partition pred list)
     (values (filter pred list)
-            (filter (lambda (x) (not (pred x))) list)))
+            (remove pred list)))
 
   (define (remove pred list)
     (filter (lambda (x) (not (pred x))) list))
 
-  (export filter partition remove)
+  (define (filter! pred list)
+    (let rec ((lst list))
+      (if (null? lst)
+	  lst
+	  (if (pred (car lst))
+	      (begin (set-cdr! lst (rec (cdr lst)))
+		     lst)
+	      (rec (cdr lst))))))
+  
+  ;; means for inter-referential definition
+  (define remove! #f)
+  
+  (define (partition! pred list)
+    (values (filter! pred list)
+	    (remove! pred list)))
+
+  (define (remove! pred list)
+    (filter! (lambda (x) (net (pred x))) list))
+
+  (export filter partition remove
+	  filter! partition! remove!)
 
   ;; # Searching
   ;; member memq memv
