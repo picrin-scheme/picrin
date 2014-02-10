@@ -160,7 +160,7 @@ bool pic_interned_p(pic_state *, pic_sym);
 
 char *pic_strdup(pic_state *, const char *);
 char *pic_strndup(pic_state *, const char *, size_t);
-struct pic_string *pic_str_new(pic_state *, const char *, size_t);
+struct pic_string *pic_str_new(pic_state *, const char *, size_t); /* the 2nd arg may be NULL for empty string */
 struct pic_string *pic_str_new_cstr(pic_state *, const char *);
 
 struct pic_vector *pic_vec_new(pic_state *, size_t);

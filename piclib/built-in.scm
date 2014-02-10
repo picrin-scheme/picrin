@@ -1,3 +1,39 @@
+;;; Appendix A. Standard Libraries CxR
+(define-library (scheme cxr)
+  (import (scheme base))
+
+  (define (caaar p) (car (caar p)))
+  (define (caadr p) (car (cadr p)))
+  (define (cadar p) (car (cdar p)))
+  (define (caddr p) (car (cddr p)))
+  (define (cdaar p) (cdr (caar p)))
+  (define (cdadr p) (cdr (cadr p)))
+  (define (cddar p) (cdr (cdar p)))
+  (define (cdddr p) (cdr (cddr p)))
+  (define (caaaar p) (caar (caar p)))
+  (define (caaadr p) (caar (cadr p)))
+  (define (caadar p) (caar (cdar p)))
+  (define (caaddr p) (caar (cddr p)))
+  (define (cadaar p) (cadr (caar p)))
+  (define (cadadr p) (cadr (cadr p)))
+  (define (caddar p) (cadr (cdar p)))
+  (define (cadddr p) (cadr (cddr p)))
+  (define (cdaaar p) (cdar (caar p)))
+  (define (cdaadr p) (cdar (cadr p)))
+  (define (cdadar p) (cdar (cdar p)))
+  (define (cdaddr p) (cdar (cddr p)))
+  (define (cddaar p) (cddr (caar p)))
+  (define (cddadr p) (cddr (cadr p)))
+  (define (cdddar p) (cddr (cdar p)))
+  (define (cddddr p) (cddr (cddr p)))
+
+  (export caaar caadr cadar caddr
+          cdaar cdadr cddar cdddr
+          caaaar caaadr caadar caaddr
+          cadaar cadadr caddar cadddr
+          cdaaar cdaadr cdadar cdaddr
+          cddaar cddadr cdddar cddddr))
+
 ;;; hygienic macros
 (define-library (picrin macro)
   (import (scheme base))
@@ -13,21 +49,11 @@
   (export sc-macro-transformer
           rsc-macro-transformer))
 
-;;; bootstrap utilities
-(define-library (picrin bootstrap-tools)
-  (import (scheme base))
-
-  (define (cadar p) (car (cdar p)))
-  (define (caddr p) (car (cddr p)))
-  (define (cdddr p) (cdr (cddr p)))
-
-  (export cadar caddr cdddr))
-
 ;;; core syntaces
 (define-library (picrin core-syntax)
   (import (scheme base)
-          (picrin macro)
-          (picrin bootstrap-tools))
+          (scheme cxr)
+          (picrin macro))
 
   (define-syntax let
     (er-macro-transformer
@@ -222,9 +248,9 @@
 ;;; multiple value
 (define-library (picrin multiple-value)
   (import (scheme base)
+          (scheme cxr)
           (picrin macro)
-          (picrin core-syntax)
-          (picrin bootstrap-tools))
+          (picrin core-syntax))
 
   (define-syntax let*-values
     (er-macro-transformer
@@ -268,9 +294,9 @@
 ;;; parameter
 (define-library (picrin parameter)
   (import (scheme base)
+          (scheme cxr)
           (picrin macro)
-          (picrin core-syntax)
-          (picrin bootstrap-tools))
+          (picrin core-syntax))
 
   ;; reopen (pircin parameter)
   ;; see src/var.c
@@ -280,14 +306,19 @@
      (lambda (form r compare)
        (let ((bindings (cadr form))
              (body (cddr form)))
-         (let ((vars (map car bindings)))
+         (let ((vars (map car bindings))
+               (gensym (lambda (var)
+                         (string->symbol
+                          (string-append
+                           "parameterize-"
+                           (symbol->string var))))))
            `(,(r 'let) (,@(map (lambda (var)
-                                 `(,(r var) (,var)))
+                                 `(,(r (gensym var)) (,var)))
                             vars))
               ,@bindings
               (,(r 'let) ((,(r 'result) (begin ,@body)))
                 ,@(map (lambda (var)
-                         `(,(r 'parameter-set!) ,var ,(r var)))
+                         `(,(r 'parameter-set!) ,var ,(r (gensym var))))
                        vars)
                 ,(r 'result))))))))
 
@@ -434,15 +465,6 @@
 
 ;;; 6.7 String
 
-(define (string . objs)
-  (let ((len (length objs)))
-    (let ((v (make-string len)))
-      (do ((i 0 (+ i 1))
-	   (l objs (cdr l)))
-	  ((= i len)
-	   v)
-	(string-set! v i (car l))))))
-
 (define (string->list string . opts)
   (let ((start (if (pair? opts) (car opts) 0))
 	(end (if (>= (length opts) 2)
@@ -455,48 +477,18 @@
       (set! res (cons (string-ref string i) res)))))
 
 (define (list->string list)
-  (apply string list))
+  (let ((len (length list)))
+    (let ((v (make-string len)))
+      (do ((i 0 (+ i 1))
+	   (l list (cdr l)))
+	  ((= i len)
+	   v)
+	(string-set! v i (car l))))))
 
-(define (string-copy! to at from . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (string-length from))))
-    (do ((i at (+ i 1))
-	 (j start (+ j 1)))
-	((= j end))
-      (string-set! to i (string-ref from j)))))
+(define (string . objs)
+  (list->string objs))
 
-(define (string-copy v . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (string-length v))))
-    (let ((res (make-string (string-length v))))
-      (string-copy! res 0 v start end)
-      res)))
-
-(define (string-append . vs)
-  (define (string-append-2-inv w v)
-    (let ((res (make-string (+ (string-length v) (string-length w)))))
-      (string-copy! res 0 v)
-      (string-copy! res (string-length v) w)
-      res))
-  (fold string-append-2-inv #() vs))
-
-(define (string-fill! v fill . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (string-length v))))
-    (do ((i start (+ i 1)))
-	((= i end)
-	 #f)
-      (string-set! v i fill))))
-
-(export string string->list list->string
-        string-copy! string-copy
-        string-append string-fill!)
+(export string string->list list->string)
 
 ;;; 6.8. Vector
 
@@ -713,40 +705,3 @@
         (write obj port)))))
 
   (export write write-shared display))
-
-;;; Appendix A. Standard Libraries
-;; CxR
-(define-library (scheme cxr)
-  (import (scheme base))
-
-  (define (caaar  p) (car  (caar p)))
-  (define (caadr  p) (car  (cadr p)))
-  (define (cadar  p) (car  (cdar p)))
-  (define (caddr  p) (car  (cddr p)))
-  (define (cdaar  p) (cdr  (caar p)))
-  (define (cdadr  p) (cdr  (cadr p)))
-  (define (cddar  p) (cdr  (cdar p)))
-  (define (cdddr  p) (cdr  (cddr p)))
-  (define (caaaar p) (caar (caar p)))
-  (define (caaadr p) (caar (cadr p)))
-  (define (caadar p) (caar (cdar p)))
-  (define (caaddr p) (caar (cddr p)))
-  (define (cadaar p) (cadr (caar p)))
-  (define (cadadr p) (cadr (cadr p)))
-  (define (caddar p) (cadr (cdar p)))
-  (define (cadddr p) (cadr (cddr p)))
-  (define (cdaaar p) (cdar (caar p)))
-  (define (cdaadr p) (cdar (cadr p)))
-  (define (cdadar p) (cdar (cdar p)))
-  (define (cdaddr p) (cdar (cddr p)))
-  (define (cddaar p) (cddr (caar p)))
-  (define (cddadr p) (cddr (cadr p)))
-  (define (cdddar p) (cddr (cdar p)))
-  (define (cddddr p) (cddr (cddr p)))
-
-  (export caaar caadr cadar caddr
-          cdaar cdadr cddar cdddr
-          caaaar caaadr caadar caaddr
-          cadaar cadadr caddar cadddr
-          cdaaar cdaadr cdadar cdaddr
-          cddaar cddadr cdddar cddddr))

@@ -224,6 +224,121 @@ pic_port_close_port(pic_state *pic)
   } while (0)
 
 static pic_value
+pic_port_open_input_string(pic_state *pic)
+{
+  struct pic_port *port;
+  char *str;
+  size_t len;
+
+  pic_get_args(pic, "s", &str, &len);
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
+
+  xfputs(str, port->file);
+  xfflush(port->file);
+  xrewind(port->file);
+
+  return pic_obj_value(port);
+}
+
+static pic_value
+pic_port_open_output_string(pic_state *pic)
+{
+  struct pic_port *port;
+
+  pic_get_args(pic, "");
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
+
+  return pic_obj_value(port);
+}
+
+static pic_value
+pic_port_get_output_string(pic_state *pic)
+{
+  struct pic_port *port = pic_stdout(pic);;
+  long endpos;
+  char *buf;
+
+  pic_get_args(pic, "|p", &port);
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "get-output-string");
+
+  /* get endpos */
+  xfflush(port->file);
+  endpos = xftell(port->file);
+  xrewind(port->file);
+
+  /* copy to buf */
+  buf = (char *)pic_alloc(pic, endpos);
+  xfread(buf, 1, endpos, port->file);
+
+  return pic_obj_value(pic_str_new(pic, buf, endpos));
+}
+
+static pic_value
+pic_port_open_input_blob(pic_state *pic)
+{
+  struct pic_port *port;
+  struct pic_blob *blob;
+
+  pic_get_args(pic, "b", &blob);
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_IN | PIC_PORT_BINARY;
+  port->status = PIC_PORT_OPEN;
+
+  xfwrite(blob->data, 1, blob->len, port->file);
+
+  return pic_obj_value(port);
+}
+
+static pic_value
+pic_port_open_output_bytevector(pic_state *pic)
+{
+  struct pic_port *port;
+
+  pic_get_args(pic, "");
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_OUT | PIC_PORT_BINARY;
+  port->status = PIC_PORT_OPEN;
+
+  return pic_obj_value(port);
+}
+
+static pic_value
+pic_port_get_output_bytevector(pic_state *pic)
+{
+  struct pic_port *port = pic_stdout(pic);;
+  long endpos;
+  char *buf;
+
+  pic_get_args(pic, "|p", &port);
+
+  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, PIC_PORT_OPEN, "get-output-bytevector");
+
+  /* get endpos */
+  xfflush(port->file);
+  endpos = xftell(port->file);
+  xrewind(port->file);
+
+  /* copy to buf */
+  buf = (char *)pic_alloc(pic, endpos);
+  xfread(buf, 1, endpos, port->file);
+
+  return pic_obj_value(pic_blob_new(pic, buf, endpos));
+}
+
+static pic_value
 pic_port_read_char(pic_state *pic)
 {
   char c;
@@ -297,11 +412,11 @@ pic_port_write_string(pic_state *pic)
 
   n = pic_get_args(pic, "s|pii", &str, &len, &port, &start, &end);
   switch (n) {
-  case 2:
+  case 1:
     port = pic_stdout(pic);
-  case 3:
+  case 2:
     start = 0;
-  case 4:
+  case 3:
     end = len;
   }
 
@@ -336,11 +451,11 @@ pic_port_write_blob(pic_state *pic)
 
   n = pic_get_args(pic, "b|pii", &blob, &port, &start, &end);
   switch (n) {
-  case 2:
+  case 1:
     port = pic_stdout(pic);
-  case 3:
+  case 2:
     start = 0;
-  case 4:
+  case 3:
     end = blob->len;
   }
 
@@ -384,6 +499,14 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "close-port", pic_port_close_port);
   pic_defun(pic, "close-input-port", pic_port_close_port);
   pic_defun(pic, "close-output-port", pic_port_close_port);
+
+  /* string I/O */
+  pic_defun(pic, "open-input-string", pic_port_open_input_string);
+  pic_defun(pic, "open-output-string", pic_port_open_output_string);
+  pic_defun(pic, "get-output-string", pic_port_get_output_string);
+  pic_defun(pic, "open-input-bytevector", pic_port_open_input_blob);
+  pic_defun(pic, "open-output-bytevector", pic_port_open_output_bytevector);
+  pic_defun(pic, "get-output-bytevector", pic_port_get_output_bytevector);
 
   /* input */
   pic_defun(pic, "read-char", pic_port_read_char);
