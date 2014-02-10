@@ -124,7 +124,8 @@
       (if (zero? n)
 	  (begin (set-cdr! lis '()) x)
 	  (rec (cdr lis) (- n 1)))))
-  
+
+  ;;
   (define (drop-right! flist i)
     (let ((lead (drop flist i)))
       (if (not-pair? lead)
@@ -178,18 +179,77 @@
   ;; append-reverse append-reverse!
   ;; zip unzip1 unzip2 unzip3 unzip4 unzip5
   ;; count
+  (define (length+ lst)
+    (if (not (circular-list? lst))
+	(length lst)))
+  
   (define (concatenate lists)
     (apply append lists))
+
+  (define (append! . lists)
+    (if (null? lists)
+	'()
+	(let rec ((lst lists))
+	  (if (not-pair? (cdr lst))
+	      (car lst)
+	      (begin (set-cdr! (last-pair (car lst)) (cdr lst))
+		     (rec (cdr lst)))))))
+
+  (define (concatenate! lists)
+    (apply append! lists))
+
+  (define (reverse! list)
+    (let rec ((lst list) (acm '()))
+      (if (null? lst)
+	  acm
+	  (let ((rst (cdr lst)))
+	    (set-cdr! lst acm)
+	    (rec rst lst)))))
+  
+  (define (append-reverse rev-head tail)
+    (if (null? rev-head)
+	tail
+	(append-reverse (cdr rev-head) (cons (car rev-head) tail))))
+
+  (define (append-reverse! rev-head tail)
+    (let ((rst (cdr rev-head)))
+      (if (null? rev-head)
+	  tail
+	  (begin (set-cdr! rev-head tail)
+		 (append-reverse! rst rev-head)))))
 
   (define (zip . lists)
     (apply map list lists))
 
-  (define (append-reverse rev-head tail)
-    (append (reverse rev-head) tail))
+  (define (unzip1 list)
+    (map first list))
 
+  (define (unzip2 list)
+    (values (map first list)
+	    (map second list)))
+
+  (define (unzip3 list)
+    (values (map first list)
+	    (map second list)
+	    (map third list)))
+
+  (define (unzip4 list)
+    (values (map first list)
+	    (map second list)
+	    (map third list)
+	    (map fourth list)))
+
+  (define (unzip3 list)
+    (values (map first list)
+	    (map second list)
+	    (map third list)
+	    (map fourth list)
+	    (map fifth list)))
   
-
-  (export length append concatenate reverse zip append-reverse)
+  (export length length+
+	  append append! concatenate concatenate!
+	  reverse reverse! append-reverse append-reverse!
+	  zip unzip1 unzip2 unzip3 unzip4 unzip5)
 
   ;; # Fold, unfold & map
   ;; map for-each
