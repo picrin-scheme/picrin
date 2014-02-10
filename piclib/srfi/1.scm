@@ -451,12 +451,9 @@
   ;; list-index
   ;; take-while drop-while take-while!
   ;; span break span! break!
-  (define (find-tail pred list)
-    (if (null? list)
-        #f
-        (if (pred (car list))
-            list
-            (find-tail pred (cdr list)))))
+
+  ;; means for inter-referential definition
+  (define find-tail #f)
 
   (define (find pred list)
     (let ((tail (find-tail pred list)))
@@ -464,7 +461,103 @@
           (car tail)
           #f)))
 
-  (export member memq memv find-tail find)
+  (define (find-tail pred list)
+    (if (null? list)
+        #f
+        (if (pred (car list))
+            list
+            (find-tail pred (cdr list)))))
+
+  (define (take-while pred clist)
+    (let rec ((clist clist) (cont values))
+      (if (null? clist)
+	  (cont '())
+	  (if (pred (car clist))
+	      (rec (cdr clist)
+		   (lambda (x) (cont (cons (car clist) x))))
+	      (cont '())))))
+
+  (define (take-while! pred clist)
+    (let rec ((clist clist))
+      (if (null? clist)
+	  '()
+	  (if (pred (car clist))
+	      (begin (set-cdr! clist (rec (cdr clist)))
+		     clist)
+	      '()))))
+
+  (define (drop-while pred clist)
+    (let rec ((clist clist))
+      (if (null? clist)
+	  '()
+	  (if (pred (car clist))
+	      (rec (cdr clist))
+	      clist))))
+
+  (define (span pred clist)
+    (values (take-while pred clist)
+	    (drop-while pred clist)))
+
+  (define (span! pred clist)
+    (values (take-while! pred clist)
+	    (drop-while! pred clist)))
+
+  (define (break pred clist)
+    (values (take-while (lambda (x) (not (pred x))) clist)
+	    (drop-while (lambda (x) (not (pred x))) clist)))
+
+  (define (break! pred clist)
+    (values (take-while! (lambda (x) (not (pred x))) clist)
+	    (drop-while! (lambda (x) (not (pred x))) clist)))
+
+  ;; means for inter-referential definition
+  (define any #f)
+  
+  (define (any pred clist . clists)
+    (if (null? clists)
+	(let rec ((clist clist))
+	  (if (pair? clist)
+	      (if (pred (car clist))
+		  #t
+		  (rec (cdr clist)))))
+	(let rec ((clists (cons clist clists)))
+	  (if (every pair? clists)
+	      (if (apply pred (map car clists))
+		  #t
+		  (rec (map cdr clists)))))))
+
+  (define (every pred clist . clists)
+    (if (null? clists)
+	(let rec ((clist clist))
+	  (if (pair? clist)
+	      (if (pred (car clist))
+		  (rec (cdr clist)))
+	      #t))
+	(let rec ((clists (cons clist clists)))
+	  (if (every pair? clists)
+	      (if (apply pred (map car clists))
+		  (rec (map cdr clists)))
+	      #t))))
+
+  (define (list-index pred clist . clists)
+    (if (null? clists)
+	(let rec ((clist clist) (n 0))
+	  (if (pair? clist)
+	      (if (pred (car clist))
+		  n
+		  (rec (cdr clist) (+ n 1)))))
+	(let rec ((clists (cons clist clists)) (n 0))
+	  (if (every pair? clists)
+	      (if (apply pred (map car clists))
+		  n
+		  (rec (map cdr clists) (+ n 1)))))))
+  
+  (export member memq memv
+	  find find-tail
+	  any every
+	  list-index
+	  take-while drop-while take-while!
+	  span break span! break!)
 
   ;; # Deleting
   ;; delete delete-duplicates
