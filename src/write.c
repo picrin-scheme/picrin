@@ -154,17 +154,18 @@ write(pic_state *pic, pic_value obj, XFILE *file)
   }
 }
 
-void
+pic_value
 pic_debug(pic_state *pic, pic_value obj)
 {
-  pic_fdebug(pic, obj, xstdout);
+  return pic_fdebug(pic, obj, xstdout);
 }
 
-void
+pic_value
 pic_fdebug(pic_state *pic, pic_value obj, XFILE *file)
 {
   write(pic, obj, file);
   xfflush(file);
+  return obj;
 }
 
 static pic_value
