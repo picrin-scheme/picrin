@@ -585,7 +585,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 	if (ci->argc != proc->u.irep->argc) {
 	  if (! (proc->u.irep->varg && ci->argc >= proc->u.irep->argc)) {
-            pic_error(pic, "wrong number of arguments");
+            pic_errorf(pic, "wrong number of arguments (%d for %d%s)", ci->argc - 1, proc->u.irep->argc - 1, (proc->u.irep->varg ? "+" : ""));
 	  }
 	}
 	/* prepare rest args */
