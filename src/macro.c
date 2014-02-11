@@ -318,6 +318,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         /* proceed expressions in new library */
         pic_in_library(pic, pic_cadr(pic, expr));
         {
+          int ai = pic_gc_arena_preserve(pic);
           struct pic_proc *proc;
 
           pic_for_each (v, pic_cddr(pic, expr)) {
@@ -329,6 +330,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
             if (pic_undef_p(v)) {
               abort();
             }
+            pic_gc_arena_restore(pic, ai);
           }
         }
         pic_in_library(pic, prev->name);
