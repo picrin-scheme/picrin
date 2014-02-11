@@ -292,7 +292,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 
     depth = lookup_var(state, sym);
     if (depth == -1) {
-      pic_error(pic, "symbol: unbound variable");
+      pic_errorf(pic, "unbound variable %s", pic_symbol_name(pic, sym));
     }
     /* at this stage, lref/cref/gref are not distinguished */
     return new_ref(state, depth, sym);
@@ -301,7 +301,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     pic_value proc;
 
     if (! pic_list_p(pic, obj)) {
-      pic_error(pic, "invalid expression given");
+      pic_errorf(pic, "invalid expression given: ~S", obj);
     }
 
     proc = pic_list_ref(pic, obj, 0);
