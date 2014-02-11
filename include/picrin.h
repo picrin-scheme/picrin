@@ -110,7 +110,7 @@ typedef struct {
   struct pic_lib *lib;
 
   jmp_buf *jmp;
-  const char *errmsg;
+  struct pic_error *err;
 
   struct pic_heap *heap;
   struct pic_object *arena[PIC_ARENA_SIZE];
@@ -209,6 +209,8 @@ NORETURN void pic_raise(pic_state *, pic_value);
 NORETURN void pic_error(pic_state *, const char *);
 NORETURN void pic_errorf(pic_state *, const char *, size_t, ...);
 void pic_warn(pic_state *, const char *);
+
+const char *pic_errmsg(pic_state *);
 
 void pic_debug(pic_state *, pic_value);
 void pic_fdebug(pic_state *, pic_value, XFILE *);

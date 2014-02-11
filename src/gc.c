@@ -335,7 +335,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_ERROR: {
-    gc_mark(pic, ((struct pic_error *)obj)->irrs);
+    struct pic_error *err = (struct pic_error *)obj;
+    gc_mark_object(pic,(struct pic_object *)err->msg);
+    gc_mark(pic, err->irrs);
     break;
   }
   case PIC_TT_STRING: {
@@ -497,6 +499,11 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct pic_object *)pic->rescue[i]);
   }
 
+  /* error object */
+  if (pic->err) {
+    gc_mark_object(pic, (struct pic_object *)pic->err);
+  }
+
   /* arena */
   for (j = 0; j < pic->arena_idx; ++j) {
     gc_mark_object(pic, pic->arena[j]);
@@ -547,7 +554,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_ERROR: {
-    pic_free(pic, ((struct pic_error *)obj)->msg);
     break;
   }
   case PIC_TT_CONT: {

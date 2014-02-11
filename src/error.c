@@ -11,10 +11,25 @@
 #include "picrin/proc.h"
 #include "picrin/error.h"
 
+const char *
+pic_errmsg(pic_state *pic)
+{
+  assert(pic->err != NULL);
+
+  return pic->err->msg->str;
+}
+
 void
 pic_error(pic_state *pic, const char *msg)
 {
-  pic->errmsg = msg;
+  struct pic_error *e;
+
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e->type = PIC_ERROR_OTHER;
+  e->msg = pic_str_new_cstr(pic, msg);
+  e->irrs = pic_nil_value();
+
+  pic->err = e;
   if (! pic->jmp) {
     puts(msg);
     abort();
@@ -131,7 +146,7 @@ pic_error_error(pic_state *pic)
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = PIC_ERROR_OTHER;
-  e->msg = pic_strdup(pic, str);
+  e->msg = pic_str_new_cstr(pic, str);
   e->irrs = pic_list_by_array(pic, argc, argv);
 
   pic_raise(pic, pic_obj_value(e));
@@ -154,7 +169,7 @@ pic_error_error_object_message(pic_state *pic)
 
   pic_get_args(pic, "e", &e);
 
-  return pic_obj_value(pic_str_new_cstr(pic, e->msg));
+  return pic_obj_value(e->msg);
 }
 
 static pic_value

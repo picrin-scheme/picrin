@@ -539,8 +539,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 #if DEBUG
 	pic_debug(pic, x);
 #endif
-	pic->errmsg = "invalid application";
-	goto L_RAISE;
+	pic_error(pic, "invalid application");
       }
       proc = pic_proc_ptr(x);
 
@@ -586,8 +585,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 	if (ci->argc != proc->u.irep->argc) {
 	  if (! (proc->u.irep->varg && ci->argc >= proc->u.irep->argc)) {
-	    pic->errmsg = "wrong number of arguments";
-	    goto L_RAISE;
+            pic_error(pic, "wrong number of arguments");
 	  }
 	}
 	/* prepare rest args */
@@ -643,7 +641,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_value v;
       pic_callinfo *ci;
 
-      if (pic->errmsg) {
+      if (pic->err) {
 
       L_RAISE:
 	goto L_STOP;
@@ -726,8 +724,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	PUSH(pic_float_value(pic_float(a) op pic_int(b)));	\
       }								\
       else {							\
-	pic->errmsg = #op " got non-number operands";		\
-	goto L_RAISE;						\
+	pic_error(pic, #op " got non-number operands");		\
       }								\
       NEXT;							\
     }
@@ -747,7 +744,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	PUSH(pic_float_value(-pic_float(n)));
       }
       else {
-	pic->errmsg = "unary - got a non-number operand";
+	pic_error(pic, "unary - got a non-number operand");
       }
       NEXT;
     }
@@ -770,7 +767,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	PUSH(pic_bool_value(pic_float(a) op pic_int(b)));	\
       }								\
       else {							\
-	pic->errmsg = #op " got non-number operands";		\
+	pic_error(pic, #op " got non-number operands");		\
 	goto L_RAISE;						\
       }								\
       NEXT;							\
@@ -787,7 +784,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       val = POP();
 
       pic->jmp = prev_jmp;
-      if (pic->errmsg) {
+      if (pic->err) {
 	return pic_undef_value();
       }
 

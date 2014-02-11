@@ -42,7 +42,7 @@ pic_load_stdlib(pic_state *pic)
   else {
     /* error! */
     fputs("fatal error: failure in loading built-in.scm\n", stderr);
-    fputs(pic->errmsg, stderr);
+    fputs(pic_errmsg(pic), stderr);
     abort();
   }
 
