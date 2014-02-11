@@ -134,7 +134,7 @@
     (let ((lead (drop flist i)))
       (if (not-pair? lead)
 	  '()
-	  (let rec ((lis1 flist) (lead (cdr lead)))
+	  (let rec ((lis1 flist) (lis2 (cdr lead)))
 	    (if (pair? lis2)
 		(rec (cdr lis1) (cdr lis2))
 		(begin (set-cdr! lis1 '()) flist))))))
@@ -156,17 +156,18 @@
   (define third caddr)
   (define fourth cadddr)
   (define (fifth pair)
-    (list-ref pair 5))
+    (list-ref pair 4))
   (define (sixth pair)
-    (list-ref pair 6))
+    (list-ref pair 5))
   (define (seventh pair)
-    (list-ref pair 7))
+    (list-ref pair 6))
   (define (eighth pair)
-    (list-ref pair 8))
+    (list-ref pair 7))
   (define (ninth pair)
-    (list-ref pair 9))
+    (list-ref pair 8))
   (define (tenth pair)
-    (list-ref pair 10))
+    (list-ref pair 9))
+
   
   (export car cdr car+cdr list-ref
 	  caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr
@@ -758,7 +759,7 @@
 		(if (eq? head next)
 		    '()
 		    (rec (append! (remove! (lambda (x) (member x next =)) head)
-				 (remove! (lambda (x) (member x head =)) next))
+				  (remove! (lambda (x) (member x head =)) next))
 			 rest)))))))
 
   (define (lset-diff+intersection! = list . lists)
