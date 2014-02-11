@@ -244,7 +244,7 @@
 	    (map third list)
 	    (map fourth list)))
 
-  (define (unzip3 list)
+  (define (unzip5 list)
     (values (map first list)
 	    (map second list)
 	    (map third list)
@@ -260,7 +260,8 @@
   (export length length+
 	  append append! concatenate concatenate!
 	  reverse reverse! append-reverse append-reverse!
-	  zip unzip1 unzip2 unzip3 unzip4 unzip5)
+	  zip unzip1 unzip2 unzip3 unzip4 unzip5
+	  count)
 
   ;; # Fold, unfold & map
   ;; map for-each
@@ -355,6 +356,7 @@
   (define (append-map! f . clists)
     (apply append! (apply map f clists)))
 
+  ;; means for inter-referential definition
   (define pair-for-each #f)
   
   (define (map! f list . lists)
@@ -365,8 +367,8 @@
 	      (let ((head (map car lists))
 		    (rest (map cdr lists)))
 		(set-car! list (apply f (car list) head))
-		(rec (cdr list) tail)))))
-    list1)
+		(rec (cdr list) rest)))))
+    list)
 
   (define (map-in-order f clist . clists)
     (if (null? clists)
@@ -444,7 +446,7 @@
 	    (remove! pred list)))
 
   (define (remove! pred list)
-    (filter! (lambda (x) (net (pred x))) list))
+    (filter! (lambda (x) (not (pred x))) list))
 
   (export filter partition remove
 	  filter! partition! remove!)
@@ -505,7 +507,7 @@
 
   (define (span! pred clist)
     (values (take-while! pred clist)
-	    (drop-while! pred clist)))
+	    (drop-while pred clist)))
 
   (define (break pred clist)
     (values (take-while (lambda (x) (not (pred x))) clist)
@@ -513,7 +515,7 @@
 
   (define (break! pred clist)
     (values (take-while! (lambda (x) (not (pred x))) clist)
-	    (drop-while! (lambda (x) (not (pred x))) clist)))
+	    (drop-while (lambda (x) (not (pred x))) clist)))
 
   (define (any pred clist . clists)
     (if (null? clists)
