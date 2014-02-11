@@ -2,8 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdio.h>
-#include <assert.h>
 #include <string.h>
 
 #include "picrin.h"

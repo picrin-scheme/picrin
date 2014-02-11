@@ -18,8 +18,6 @@
 
 #if GC_DEBUG
 # include <string.h>
-# include <stdio.h>
-# include <assert.h>
 #endif
 
 void

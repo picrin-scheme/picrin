@@ -2,9 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdio.h>
-#include <assert.h>
-
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/irep.h"

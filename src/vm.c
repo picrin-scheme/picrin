@@ -2,7 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <limits.h>

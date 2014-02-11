@@ -6,8 +6,6 @@
 #include "picrin/proc.h"
 #include "picrin/var.h"
 
-#include <assert.h>
-
 #define UNREACHABLE (assert(false))
 
 struct pic_var *

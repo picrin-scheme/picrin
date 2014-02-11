@@ -32,6 +32,7 @@ extern "C" {
 #include <stdbool.h>
 #include <setjmp.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "xhash/xhash.h"
 #include "xfile/xfile.h"
