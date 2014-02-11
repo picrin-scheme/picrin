@@ -34,6 +34,7 @@ extern "C" {
 #include <stdio.h>
 
 #include "xhash/xhash.h"
+#include "xfile/xfile.h"
 
 #if __STDC_VERSION__ >= 201112L
 # define NORETURN _Noreturn
@@ -109,7 +110,7 @@ typedef struct {
   struct pic_lib *lib;
 
   jmp_buf *jmp;
-  const char *errmsg;
+  struct pic_error *err;
 
   struct pic_heap *heap;
   struct pic_object *arena[PIC_ARENA_SIZE];
@@ -206,10 +207,13 @@ void pic_export(pic_state *, pic_sym);
 NORETURN void pic_abort(pic_state *, const char *);
 NORETURN void pic_raise(pic_state *, pic_value);
 NORETURN void pic_error(pic_state *, const char *);
-NORETURN void pic_errorf(pic_state *, const char *, size_t, ...);
+NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warn(pic_state *, const char *);
 
-void pic_debug(pic_state *, pic_value);
+const char *pic_errmsg(pic_state *);
+
+pic_value pic_debug(pic_state *, pic_value);
+pic_value pic_fdebug(pic_state *, pic_value, XFILE *);
 
 #if defined(__cplusplus)
 }

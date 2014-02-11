@@ -368,13 +368,13 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	val = pic_cadr(pic, pic_cdr(pic, expr));
 	proc = pic_compile(pic, val);
-	if (pic->errmsg) {
-	  printf("macroexpand error: %s\n", pic->errmsg);
+	if (pic->err) {
+	  printf("macroexpand error: %s\n", pic_errmsg(pic));
 	  abort();
 	}
 	v = pic_apply(pic, proc, pic_nil_value());
-	if (pic->errmsg) {
-	  printf("macroexpand error: %s\n", pic->errmsg);
+	if (pic->err) {
+	  printf("macroexpand error: %s\n", pic_errmsg(pic));
 	  abort();
 	}
 	assert(pic_proc_p(v));
@@ -410,13 +410,13 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	}
 
 	proc = pic_compile(pic, val);
-	if (pic->errmsg) {
-	  printf("macroexpand error: %s\n", pic->errmsg);
+	if (pic->err) {
+	  printf("macroexpand error: %s\n", pic_errmsg(pic));
 	  abort();
 	}
 	v = pic_apply(pic, proc, pic_nil_value());
-	if (pic->errmsg) {
-	  printf("macroexpand error: %s\n", pic->errmsg);
+	if (pic->err) {
+	  printf("macroexpand error: %s\n", pic_errmsg(pic));
 	  abort();
 	}
 	assert(pic_proc_p(v));
@@ -428,15 +428,15 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       case PIC_STX_MACRO: {
 	if (pic_syntax(car)->senv == NULL) { /* legacy macro */
 	  v = pic_apply(pic, pic_syntax(car)->macro, pic_cdr(pic, expr));
-	  if (pic->errmsg) {
-	    printf("macroexpand error: %s\n", pic->errmsg);
+	  if (pic->err) {
+	    printf("macroexpand error: %s\n", pic_errmsg(pic));
 	    abort();
 	  }
 	}
 	else {
 	  v = pic_apply_argv(pic, pic_syntax(car)->macro, 3, expr, pic_obj_value(senv), pic_obj_value(pic_syntax(car)->senv));
-	  if (pic->errmsg) {
-	    printf("macroexpand error: %s\n", pic->errmsg);
+	  if (pic->err) {
+	    printf("macroexpand error: %s\n", pic_errmsg(pic));
 	    abort();
 	  }
 	}

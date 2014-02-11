@@ -14,9 +14,10 @@ struct pic_error {
   enum pic_error_kind {
     PIC_ERROR_OTHER,
     PIC_ERROR_FILE,
-    PIC_ERROR_READ
+    PIC_ERROR_READ,
+    PIC_ERROR_RAISED
   } type;
-  char *msg;
+  struct pic_string *msg;
   pic_value irrs;
 };
 

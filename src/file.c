@@ -6,7 +6,6 @@
 
 #include "picrin.h"
 #include "picrin/port.h"
-#include "xfile/xfile.h"
 
 static pic_value
 generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)

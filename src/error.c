@@ -5,28 +5,137 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/proc.h"
+#include "picrin/port.h"
 #include "picrin/error.h"
 
-void
-pic_error(pic_state *pic, const char *msg)
+const char *
+pic_errmsg(pic_state *pic)
 {
-  pic->errmsg = msg;
+  assert(pic->err != NULL);
+
+  return pic->err->msg->str;
+}
+
+static pic_value
+pic_vfformat(pic_state *pic, XFILE *file, const char *fmt, va_list ap)
+{
+  char c;
+  pic_value irrs = pic_nil_value();
+
+  while ((c = *fmt++)) {
+    switch (c) {
+    default:
+      xfputc(c, file);
+      break;
+    case '%':
+      c = *fmt++;
+      if (! c)
+        goto exit;
+      switch (c) {
+      default:
+        xfputc(c, file);
+        break;
+      case '%':
+        xfputc('%', file);
+        break;
+      case 'c':
+        xfprintf(file, "%c", va_arg(ap, int));
+        break;
+      case 's':
+        xfprintf(file, "%s", va_arg(ap, const char *));
+        break;
+      case 'd':
+        xfprintf(file, "%d", va_arg(ap, int));
+        break;
+      case 'p':
+        xfprintf(file, "%p", va_arg(ap, void *));
+        break;
+      case 'f':
+        xfprintf(file, "%f", va_arg(ap, double));
+        break;
+      }
+      break;
+    case '~':
+      c = *fmt++;
+      if (! c)
+        goto exit;
+      switch (c) {
+      default:
+        xfputc(c, file);
+        break;
+      case '~':
+        xfputc('~', file);
+        break;
+      case '%':
+        xfputc('\n', file);
+        break;
+      case 'S':
+        irrs = pic_cons(pic, pic_fdebug(pic, va_arg(ap, pic_value), file), irrs);
+        break;
+      }
+      break;
+    }
+  }
+ exit:
+
+  return pic_reverse(pic, irrs);
+}
+
+static pic_value
+pic_vformat(pic_state *pic, const char *fmt, va_list ap)
+{
+  struct pic_port *port;
+  pic_value irrs;
+
+  port = pic_open_output_string(pic);
+
+  irrs = pic_vfformat(pic, port->file, fmt, ap);
+  irrs = pic_cons(pic, pic_obj_value(pic_get_output_string(pic, port)), irrs);
+
+  pic_close_port(pic, port);
+  return irrs;
+}
+
+NORETURN static void
+error(pic_state *pic, struct pic_string *msg, pic_value irrs)
+{
+  struct pic_error *e;
+
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e->type = PIC_ERROR_OTHER;
+  e->msg = msg;
+  e->irrs = irrs;
+
+  pic->err = e;
   if (! pic->jmp) {
-    puts(msg);
+    puts(pic_errmsg(pic));
     abort();
   }
   longjmp(*pic->jmp, 1);
 }
 
 void
-pic_errorf(pic_state *pic, const char *msg, size_t n, ...)
+pic_error(pic_state *pic, const char *msg)
 {
-  UNUSED(n);
-  pic_error(pic, msg);
+  pic_errorf(pic, msg);
+}
+
+void
+pic_errorf(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  pic_value err_line;
+
+  va_start(ap, fmt);
+  err_line = pic_vformat(pic, fmt, ap);
+  va_end(ap);
+
+  error(pic, pic_str_ptr(pic_car(pic, err_line)), pic_cdr(pic, err_line));
 }
 
 void
@@ -131,7 +240,7 @@ pic_error_error(pic_state *pic)
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = PIC_ERROR_OTHER;
-  e->msg = pic_strdup(pic, str);
+  e->msg = pic_str_new_cstr(pic, str);
   e->irrs = pic_list_by_array(pic, argc, argv);
 
   pic_raise(pic, pic_obj_value(e));
@@ -154,7 +263,7 @@ pic_error_error_object_message(pic_state *pic)
 
   pic_get_args(pic, "e", &e);
 
-  return pic_obj_value(pic_str_new_cstr(pic, e->msg));
+  return pic_obj_value(e->msg);
 }
 
 static pic_value

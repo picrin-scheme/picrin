@@ -85,26 +85,40 @@
                        (cons (r 'begin) (cdar clauses))
                        (cons (r 'cond) (cdr clauses)))))))))
 
+  (define (single? list)
+    (if (pair? list)
+        (null? (cdr list))
+        #f))
+
   (define-syntax and
     (er-macro-transformer
      (lambda (expr r compare)
        (let ((exprs (cdr expr)))
-         (if (null? exprs)
-             #t
-             (list (r 'if) (car exprs)
-                   (cons (r 'and) (cdr exprs))
-                   #f))))))
+         (cond
+          ((null? exprs)
+           #t)
+          ((single? exprs)
+           (car exprs))
+          (else
+           (list (r 'let) (list (list (r 'it) (car exprs)))
+                 (list (r 'if) (r 'it)
+                       (cons (r 'and) (cdr exprs))
+                       (r 'it)))))))))
 
   (define-syntax or
     (er-macro-transformer
      (lambda (expr r compare)
        (let ((exprs (cdr expr)))
-         (if (null? exprs)
-             #f
-             (list (r 'let) (list (list (r 'it) (car exprs)))
-                   (list (r 'if) (r 'it)
-                         (r 'it)
-                         (cons (r 'or) (cdr exprs)))))))))
+         (cond
+          ((null? exprs)
+           #t)
+          ((single? exprs)
+           (car exprs))
+          (else
+           (list (r 'let) (list (list (r 'it) (car exprs)))
+                 (list (r 'if) (r 'it)
+                       (r 'it)
+                       (cons (r 'or) (cdr exprs))))))))))
 
   (define-syntax quasiquote
     (er-macro-transformer

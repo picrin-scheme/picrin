@@ -124,14 +124,14 @@ repl(pic_state *pic)
       /* eval */
       proc = pic_compile(pic, v);
       if (proc == NULL) {
-	printf("compilation error: %s\n", pic->errmsg);
-	pic->errmsg = NULL;
+	printf("compilation error: %s\n", pic_errmsg(pic));
+	pic->err = NULL;
 	goto next;
       }
       v = pic_apply(pic, proc, pic_nil_value());
       if (pic_undef_p(v)) {
-	printf("runtime error: %s\n", pic->errmsg);
-	pic->errmsg = NULL;
+	printf("runtime error: %s\n", pic_errmsg(pic));
+	pic->err = NULL;
 	goto next;
       }
 
@@ -185,14 +185,14 @@ exec_file(pic_state *pic, const char *fname)
 
     proc = pic_compile(pic, v);
     if (proc == NULL) {
-      fputs(pic->errmsg, stderr);
+      fputs(pic_errmsg(pic), stderr);
       fprintf(stderr, "fatal error: %s compilation failure\n", fname);
       goto abort;
     }
 
     v = pic_apply(pic, proc, pic_nil_value());
     if (pic_undef_p(v)) {
-      fputs(pic->errmsg, stderr);
+      fputs(pic_errmsg(pic), stderr);
       fprintf(stderr, "fatal error: %s evaluation failure\n", fname);
       goto abort;
     }
