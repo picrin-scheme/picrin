@@ -367,13 +367,13 @@
     (if (null? clists)
 	(let rec ((clist clist) (acc '()))
 	  (if (null? clist)
-	      (reverse acc)
+	      (reverse! acc)
 	      (rec (cdr clist) (cons (f (car clist)) acc))))
 	(let rec ((clists (cons clist clists)) (acc '()))
 	  (if (every pair? clists)
 	      (rec (map cdr clists)
 		   (cons* (apply f (map car clists)) acc))
-	      (reverse acc)))))
+	      (reverse! acc)))))
 
   (define (pair-for-each f clist . clists)
     (if (null? clist)
@@ -562,11 +562,46 @@
   ;; # Deleting
   ;; delete delete-duplicates
   ;; delete! delete-duplicates!
+  (define (delete x list . =)
+    (let ((= (if (null? =) equal? (car =))))
+      (remove (lambda (a) (= x a)) list)))
+
+  (define (delete! x list . =)
+    (let ((= (if (null? =) equal? (car =))))
+      (remove! (lambda (a) (= x a)) list)))
+
+  (define (delete-duplicates list . =)
+    (let ((= (if (null? =) equal? (car =))))
+      (let rec ((list list))
+	(if (null? list)
+	    list
+	    (let* ((x (car list))
+		   (rest (cdr list))
+		   (deleted (rec (delete x list =))))
+	      (if (eq? rest deleted) list (cons x deleted)))))))
+
+  (define (delete-duplicates! list . =)
+    (let ((= (if (null? =) equal? (car =))))
+      (let rec ((list list))
+	(if (null? list)
+	    list
+	    (let* ((x (car list))
+		   (rest (cdr list))
+		   (deleted (rec (delete! x list =))))
+	      (if (eq? rest deleted) list (cons x deleted)))))))
+
+  (export delete delete-duplicates
+	  delete! delete-duplicates!)
 
   ;; # Association lists
   ;; assoc assq assv
   ;; alist-cons alist-copy
   ;; alist-delete alist-delete!
+  (define (alist-cons key datum alist)
+    (cons (cons key datum) alist))
+
+  (define )
+
   (export assoc assq assv)
 
   ;; # Set operations on lists
