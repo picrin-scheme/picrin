@@ -1,5 +1,6 @@
 (define-library (srfi 1)
-  (import (scheme base))
+  (import (scheme base)
+	  (scheme cxr))
 
   ;; # Constructors
   ;; cons list
@@ -8,6 +9,9 @@
   (define (xcons a b)
     (cons b a))
 
+  ;; means for inter-referential definition
+  (define append-reverse #f)
+  
   (define (cons* x . args)
     (let rec ((acc '()) (x x) (lst args))
       (if (null? lst)
@@ -56,6 +60,7 @@
 		 ((eq? x lst) #t)
 		 (else (rec (cdr lst)))))))
 
+  ;; if list? is support circular list, (define proper-list? list?)
   (define (proper-list? x)
     (if (not (circular-list? x))
 	(list? x)))
@@ -125,7 +130,6 @@
 	  (begin (set-cdr! lis '()) x)
 	  (rec (cdr lis) (- n 1)))))
 
-  ;;
   (define (drop-right! flist i)
     (let ((lead (drop flist i)))
       (if (not-pair? lead)
@@ -510,34 +514,27 @@
     (values (take-while! (lambda (x) (not (pred x))) clist)
 	    (drop-while! (lambda (x) (not (pred x))) clist)))
 
-  ;; means for inter-referential definition
-  (define any #f)
-  
   (define (any pred clist . clists)
     (if (null? clists)
 	(let rec ((clist clist))
 	  (if (pair? clist)
-	      (if (pred (car clist))
-		  #t
+	      (or (pred (car clist))
 		  (rec (cdr clist)))))
 	(let rec ((clists (cons clist clists)))
 	  (if (every pair? clists)
-	      (if (apply pred (map car clists))
-		  #t
+	      (or (apply pred (map car clists))
 		  (rec (map cdr clists)))))))
 
   (define (every pred clist . clists)
     (if (null? clists)
 	(let rec ((clist clist))
-	  (if (pair? clist)
+	  (or (null? clist)
 	      (if (pred (car clist))
-		  (rec (cdr clist)))
-	      #t))
+		  (rec (cdr clist)))))
 	(let rec ((clists (cons clist clists)))
-	  (if (every pair? clists)
+	  (or (any null? clists)
 	      (if (apply pred (map car clists))
-		  (rec (map cdr clists)))
-	      #t))))
+		  (rec (map cdr clists)))))))
 
   (define (list-index pred clist . clists)
     (if (null? clists)
@@ -600,9 +597,20 @@
   (define (alist-cons key datum alist)
     (cons (cons key datum) alist))
 
-  (define )
+  (define (alist-copy alist)
+    (map (lambda (elt) (cons (car elt) (cdr elt))) alist))
 
-  (export assoc assq assv)
+  (define (alist-delete key alist . =)
+    (let ((= (if (null? =) equal? (car =))))
+      (remove (lambda (x) (= key (car x))) alist)))
+
+  (define (alist-delete! key alist . =)
+    (let ((= (if (null? =) equal? (car =))))
+      (remove! (lambda (x) (= key (car x))) alist)))
+
+  (export assoc assq assv
+	  alist-cons alist-copy
+	  alist-delete alist-delete!)
 
   ;; # Set operations on lists
   ;; lset<= lset= lset-adjoin
@@ -611,6 +619,151 @@
   ;; lset-difference lset-difference!
   ;; lset-xor lset-xor!
   ;; lset-diff+intersenction lset-diff+intersection!
+  (define (lset<= = . lists)
+    (or (null? lists)
+	(let rec ((head (car lists)) (rest (cdr lists)))
+	  (or (null? rest)
+	      (let ((next (car rest)) (rest (cdr rest)))
+		(and (or (eq? head next)
+			 (every (lambda (x) (member x next =)) head))
+		     (rec next rest)))))))
+
+  (define (lset= = . lists)
+    (or (null? lists)
+	(let rec ((head (car lists)) (rest (cdr lists)))
+	  (or (null? rest)
+	      (let ((next (car rest)) (rest (cdr rest)))
+		(and (or (eq? head next)
+			 (and (every (lambda (x) (member x next =)) head)
+			      (every (lambda (x) (member x head =)) next))
+			 (rec next rest))))))))
+
+  (define (lset-adjoin = list . elts)
+    (let rec ((list list) (elts elts))
+      (if (null? elts)
+	  list
+	  (if (member (car elts) list)
+	      (rec list (cdr elts))
+	      (rec (cons (car elts) list) (cdr elts))))))
+
+  (define (lset-union = . lists)
+    (if (null? lists)
+	lists
+	(let rec ((head (car lists)) (rest (cdr lists)))
+	  (if (null? rest)
+	      head
+	      (let ((next (car rest)) (rest (cdr rest)))
+		(if (eq? head next)
+		    (rec head rest)
+		    (rec (apply lset-adjoin = head next) rest)))))))
+
+  (define (lset-intersection = . lists)
+    (if (null? lists)
+	lists
+	(let rec ((head (car lists)) (rest (cdr lists)))
+	  (if (null? rest)
+	      head
+	      (let ((next (car rest)) (rest (cdr rest)))
+		(if (eq? head next)
+		    (rec head rest)
+		    (rec (filter (lambda (x) (member x next =)) head)
+			 rest)))))))
+
+  (define (lset-difference = list . lists)
+    (let rec ((head list) (rest lists))
+      (if (null? rest)
+	  head
+	  (let ((next (car rest)) (rest (cdr rest)))
+	    (if (eq? head next)
+		'()
+		(rec (remove (lambda (x) (member x next =)) head)
+		     rest))))))
+
+  (define (lset-xor = . lists)
+    (if (null? lists)
+	lists
+	(let rec ((head (car lists)) (rest (cdr lists)))
+	  (if (null? rest)
+	      head
+	      (let ((next (car rest)) (rest (cdr rest)))
+		(if (eq? head next)
+		    '()
+		    (rec (append (remove (lambda (x) (member x next =)) head)
+				 (remove (lambda (x) (member x head =)) next))
+			 rest)))))))
+
+  (define (lset-diff+intersection = list . lists)
+    (values (apply lset-difference = list lists)
+	    (lset-intersection = list (apply lset-union lists))))
+
+  (define (lset-adjoin! = list . elts)
+    (let rec ((list list) (elts elts))
+      (if (null? elts)
+	  list
+	  (if (member (car elts) list)
+	      (rec list (cdr elts))
+	      (let ((tail (cdr elts)))
+		(set-cdr! elts list)
+		(rec elts tail))))))
+
+  (define (lset-union! = . lists)
+    (letrec ((adjoin
+	      (lambda (lst1 lst2)
+		(if (null? lst2)
+		    lst1
+		    (if (member (car lst2) lst1 =)
+			(adjoin lst1 (cdr lst2))
+			(let ((tail (cdr lst2)))
+			  (set-cdr! lst2 lst1)
+			  (adjoin lst2 tail)))))))
+      (if (null? lists)
+	  lists
+	  (let rec ((head (car lists)) (rest (cdr lists)))
+	    (if (null? rest)
+		head
+		(let ((next (car rest)) (rest (cdr rest)))
+		  (if (eq? head next)
+		      (rec head rest)
+		      (rec (adjoin head next) rest))))))))
+
+  (define (lset-intersection! = . lists)
+    (if (null? lists)
+	lists
+	(let rec ((head (car lists)) (rest (cdr lists)))
+	  (if (null? rest)
+	      head
+	      (let ((next (car rest)) (rest (cdr rest)))
+		(if (eq? head next)
+		    (rec head rest)
+		    (rec (filter! (lambda (x) (member x next =)) head)
+			 rest)))))))
+
+  (define (lset-difference! = list . lists)
+    (let rec ((head list) (rest lists))
+      (if (null? rest)
+	  head
+	  (let ((next (car rest)) (rest (cdr rest)))
+	    (if (eq? head next)
+		'()
+		(rec (remove! (lambda (x) (member x next =)) head)
+		     rest))))))
+
+  (define (lset-xor! = . lists)
+    (if (null? lists)
+	lists
+	(let rec ((head (car lists)) (rest (cdr lists)))
+	  (if (null? rest)
+	      head
+	      (let ((next (car rest)) (rest (cdr rest)))
+		(if (eq? head next)
+		    '()
+		    (rec (append! (remove! (lambda (x) (member x next =)) head)
+				 (remove! (lambda (x) (member x head =)) next))
+			 rest)))))))
+
+  (define (lset-diff+intersection! = list . lists)
+    (values (apply lset-difference! = list lists)
+	    (lset-intersection! = list (apply lset-union! lists))))
 
   ;; # Primitive side-effects
   ;; set-car! set-cdr!
