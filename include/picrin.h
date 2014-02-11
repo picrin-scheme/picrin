@@ -207,7 +207,7 @@ void pic_export(pic_state *, pic_sym);
 NORETURN void pic_abort(pic_state *, const char *);
 NORETURN void pic_raise(pic_state *, pic_value);
 NORETURN void pic_error(pic_state *, const char *);
-NORETURN void pic_errorf(pic_state *, const char *, size_t, ...);
+NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warn(pic_state *, const char *);
 
 const char *pic_errmsg(pic_state *);
