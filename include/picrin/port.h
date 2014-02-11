@@ -37,6 +37,11 @@ struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
 struct pic_port *pic_stderr(pic_state *);
 
+struct pic_port *pic_open_output_string(pic_state *);
+struct pic_string *pic_get_output_string(pic_state *, struct pic_port *);
+
+void pic_close_port(pic_state *pic, struct pic_port *);
+
 #if defined(__cplusplus)
 }
 #endif

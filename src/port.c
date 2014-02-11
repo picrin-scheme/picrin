@@ -54,6 +54,46 @@ port_new_stdport(pic_state *pic, XFILE *file, short dir)
   return pic_obj_value(port);
 }
 
+struct pic_port *
+pic_open_output_string(pic_state *pic)
+{
+  struct pic_port *port;
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
+
+  return port;
+}
+
+struct pic_string *
+pic_get_output_string(pic_state *pic, struct pic_port *port)
+{
+  long endpos;
+  char *buf;
+
+  /* get endpos */
+  xfflush(port->file);
+  endpos = xftell(port->file);
+  xrewind(port->file);
+
+  /* copy to buf */
+  buf = (char *)pic_alloc(pic, endpos);
+  xfread(buf, 1, endpos, port->file);
+
+  return pic_str_new(pic, buf, endpos);
+}
+
+void
+pic_close_port(pic_state *pic, struct pic_port *port)
+{
+  if (xfclose(port->file) == EOF) {
+    pic_error(pic, "close-port: failure");
+  }
+  port->status = PIC_PORT_CLOSE;
+}
+
 static pic_value
 pic_port_input_port_p(pic_state *pic)
 {
@@ -188,10 +228,7 @@ pic_port_close_port(pic_state *pic)
 
   pic_get_args(pic, "p", &port);
 
-  if (xfclose(port->file) == EOF) {
-    pic_error(pic, "close-port: failure");
-  }
-  port->status = PIC_PORT_CLOSE;
+  pic_close_port(pic, port);
 
   return pic_none_value();
 }
@@ -251,10 +288,7 @@ pic_port_open_output_string(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
-  port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
-  port->status = PIC_PORT_OPEN;
+  port = pic_open_output_string(pic);
 
   return pic_obj_value(port);
 }
@@ -263,23 +297,12 @@ static pic_value
 pic_port_get_output_string(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);;
-  long endpos;
-  char *buf;
 
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "get-output-string");
 
-  /* get endpos */
-  xfflush(port->file);
-  endpos = xftell(port->file);
-  xrewind(port->file);
-
-  /* copy to buf */
-  buf = (char *)pic_alloc(pic, endpos);
-  xfread(buf, 1, endpos, port->file);
-
-  return pic_obj_value(pic_str_new(pic, buf, endpos));
+  return pic_obj_value(pic_get_output_string(pic, port));
 }
 
 static pic_value
