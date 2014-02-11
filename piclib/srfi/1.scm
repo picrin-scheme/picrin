@@ -765,6 +765,13 @@
     (values (apply lset-difference! = list lists)
 	    (lset-intersection! = list (apply lset-union! lists))))
 
+  (export lset<= lset= lset-adjoin
+	  lset-union lset-union!
+	  lset-intersection lset-intersection!
+	  lset-difference lset-difference!
+	  lset-xor lset-xor!
+	  lset-diff+intersection lset-diff+intersection!)
+
   ;; # Primitive side-effects
   ;; set-car! set-cdr!
   (export set-car! set-cdr!))
