@@ -262,6 +262,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
         return pic_none_value();
       }
+
       else if (tag == pic->sEXPORT) {
         pic_value spec;
         pic_for_each (spec, pic_cdr(pic, expr)) {
