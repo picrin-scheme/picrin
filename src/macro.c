@@ -62,12 +62,6 @@ pic_core_syntactic_env(pic_state *pic)
 #undef register_core_syntax
 
 static struct pic_senv *
-new_global_senv(pic_state *pic)
-{
-  return pic->lib->senv;
-}
-
-static struct pic_senv *
 new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
 {
   struct pic_senv *senv;
@@ -553,10 +547,7 @@ macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv)
 pic_value
 pic_macroexpand(pic_state *pic, pic_value expr)
 {
-  struct pic_senv *senv;
   pic_value v;
-
-  senv = new_global_senv(pic);
 
 #if DEBUG
   puts("before expand:");
@@ -564,7 +555,7 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   puts("");
 #endif
 
-  v = macroexpand(pic, expr, senv);
+  v = macroexpand(pic, expr, pic->lib->senv);
 
 #if DEBUG
   puts("after expand:");
