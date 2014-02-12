@@ -120,24 +120,55 @@
                        (r 'it)
                        (cons (r 'or) (cdr exprs))))))))))
 
+  (define (quasiquote? form compare?)
+    (and (pair? form) (compare? (car form) 'quasiquote)))
+
+  (define (unquote? form compare?)
+    (and (pair? form) (compare? (car form) 'unquote)))
+
+  (define (unquote-splicing? form compare?)
+    (and (pair? form) (pair? (car form)) (compare? (car (car form)) 'unquote-splicing)))
+
   (define-syntax quasiquote
-    (er-macro-transformer
-     (lambda (expr r compare?)
-       (let ((x (cadr expr)))
+    (ir-macro-transformer
+     (lambda (form inject compare)
+
+       (define (qq depth expr)
          (cond
-          ((symbol? x) (list (r 'quote) x))
-          ((pair? x) (cond
-                      ((compare? (r 'unquote) (car x))
-                       (cadr x))
-                      ((and (pair? (car x))
-                            (compare? (r 'unquote-splicing) (caar x)))
-                       (list (r 'append) (cadar x)
-                             (list (r 'quasiquote) (cdr x))))
-                      (#t
-                       (list (r 'cons)
-                             (list (r 'quasiquote) (car x))
-                             (list (r 'quasiquote) (cdr x))))))
-          (#t x))))))
+          ;; unquote
+          ((unquote? expr compare)
+           (if (= depth 1)
+               (car (cdr expr))
+               (list 'list
+                     (list 'quote (inject 'unquote))
+                     (qq (- depth 1) (car (cdr expr))))))
+          ;; unquote-splicing
+          ((unquote-splicing? expr compare)
+           (if (= depth 1)
+               (list 'append
+                     (car (cdr (car expr)))
+                     (qq depth (cdr expr)))
+               (list 'cons
+                     (list 'list
+                           (list 'quote (inject 'unquote-splicing))
+                           (qq (- depth 1) (car (cdr (car expr)))))
+                     (qq depth (cdr expr)))))
+          ;; quasiquote
+          ((quasiquote? expr compare)
+           (list 'list
+                 (list 'quote (inject 'quasiquote))
+                 (qq (+ depth 1) (car (cdr expr)))))
+          ;; list
+          ((pair? expr)
+           (list 'cons
+                 (qq depth (car expr))
+                 (qq depth (cdr expr))))
+          ;; simple datum
+          (else
+           (list 'quote expr))))
+
+       (let ((x (cadr form)))
+         (qq 1 x)))))
 
   #;
   (define-syntax let*
