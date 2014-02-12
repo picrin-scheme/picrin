@@ -656,19 +656,12 @@ er_macro_rename(pic_state *pic)
 {
   pic_sym sym;
   struct pic_senv *mac_env;
-  pic_value v;
 
   pic_get_args(pic, "m", &sym);
 
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
 
-  v = macroexpand(pic, pic_symbol_value(sym), mac_env);
-  if (pic_macro_p(v)) {
-    return pic_symbol_value(sym);
-  }
-  else {
-    return v;
-  }
+  return pic_symbol_value(symbol_rename(pic, sym, mac_env));
 }
 
 static pic_value
@@ -676,6 +669,7 @@ er_macro_compare(pic_state *pic)
 {
   pic_value a, b;
   struct pic_senv *use_env;
+  pic_sym m, n;
 
   pic_get_args(pic, "oo", &a, &b);
 
@@ -684,10 +678,10 @@ er_macro_compare(pic_state *pic)
 
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
 
-  a = macroexpand(pic, a, use_env);
-  b = macroexpand(pic, b, use_env);
+  m = symbol_rename(pic, pic_sym(a), use_env);
+  n = symbol_rename(pic, pic_sym(b), use_env);
 
-  return pic_bool_value(pic_eq_p(a, b));
+  return pic_bool_value(m == n);
 }
 
 static pic_value
@@ -739,19 +733,12 @@ ir_macro_inject(pic_state *pic)
 {
   pic_sym sym;
   struct pic_senv *use_env;
-  pic_value v;
 
   pic_get_args(pic, "m", &sym);
 
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
 
-  v = macroexpand(pic, pic_symbol_value(sym), use_env);
-  if (pic_macro_p(v)) {
-    return pic_symbol_value(sym);
-  }
-  else {
-    return v;
-  }
+  return pic_symbol_value(symbol_rename(pic, sym, use_env));
 }
 
 static pic_value
@@ -759,6 +746,7 @@ ir_macro_compare(pic_state *pic)
 {
   pic_value a, b;
   struct pic_senv *use_env;
+  pic_sym m, n;
 
   pic_get_args(pic, "oo", &a, &b);
 
@@ -767,10 +755,10 @@ ir_macro_compare(pic_state *pic)
 
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
 
-  a = macroexpand(pic, a, use_env);
-  b = macroexpand(pic, b, use_env);
+  m = symbol_rename(pic, pic_sym(a), use_env);
+  n = symbol_rename(pic, pic_sym(b), use_env);
 
-  return pic_bool_value(pic_eq_p(a, b));
+  return pic_bool_value(m == n);
 }
 
 static pic_value
