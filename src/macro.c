@@ -95,13 +95,13 @@ sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
 }
 
 static bool
-pic_identifier_p(pic_value obj)
+identifier_p(pic_value obj)
 {
   if (pic_sym_p(obj)) {
     return true;
   }
   if (pic_sc_p(obj)) {
-    return pic_identifier_p(pic_sc(obj)->expr);
+    return identifier_p(pic_sc(obj)->expr);
   }
   return false;
 }
@@ -626,7 +626,7 @@ pic_macro_identifier_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(pic_identifier_p(obj));
+  return pic_bool_value(identifier_p(obj));
 }
 
 static pic_value
@@ -646,7 +646,7 @@ pic_macro_identifier_eq_p(pic_state *pic)
   }
   e2 = pic_senv(f);
 
-  if (! (pic_identifier_p(x) && pic_identifier_p(y))) {
+  if (! (identifier_p(x) && identifier_p(y))) {
     return pic_false_value();
   }
 
