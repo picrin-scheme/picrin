@@ -59,15 +59,15 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
   return senv;
 }
 
-struct pic_syntax *
-syntax_new(pic_state *pic, struct pic_proc *proc, struct pic_senv *mac_env)
+struct pic_macro *
+macro_new(pic_state *pic, struct pic_proc *proc, struct pic_senv *mac_env)
 {
-  struct pic_syntax *stx;
+  struct pic_macro *mac;
 
-  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
-  stx->senv = mac_env;
-  stx->proc = proc;
-  return stx;
+  mac = (struct pic_macro *)pic_obj_alloc(pic, sizeof(struct pic_macro), PIC_TT_MACRO);
+  mac->senv = mac_env;
+  mac->proc = proc;
+  return mac;
 }
 
 static struct pic_sc *
@@ -148,14 +148,14 @@ pic_export(pic_state *pic, pic_sym sym)
 static void
 defsyntax(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct pic_senv *mac_env)
 {
-  struct pic_syntax *stx;
+  struct pic_macro *mac;
   pic_sym uniq;
 
-  stx = syntax_new(pic, macro, mac_env);
+  mac = macro_new(pic, macro, mac_env);
 
   uniq = pic_gensym(pic, sym);
   xh_put_int(pic->lib->senv->name, sym, uniq);
-  xh_put_int(pic->macros, uniq, (long)stx);
+  xh_put_int(pic->macros, uniq, (long)mac);
 }
 
 static void
@@ -432,16 +432,18 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       /* macro */
       if ((e = xh_get_int(pic->macros, tag)) != NULL) {
         pic_value v;
-        struct pic_syntax *stx = (struct pic_syntax *)e->val;
-	if (stx->senv == NULL) { /* legacy macro */
-	  v = pic_apply(pic, stx->proc, pic_cdr(pic, expr));
+        struct pic_macro *mac;
+
+        mac = (struct pic_macro *)e->val;
+	if (mac->senv == NULL) { /* legacy macro */
+	  v = pic_apply(pic, mac->proc, pic_cdr(pic, expr));
 	  if (pic->err) {
 	    printf("macroexpand error: %s\n", pic_errmsg(pic));
 	    abort();
 	  }
 	}
 	else {
-	  v = pic_apply_argv(pic, stx->proc, 3, expr, pic_obj_value(senv), pic_obj_value(stx->senv));
+	  v = pic_apply_argv(pic, mac->proc, 3, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
 	  if (pic->err) {
 	    printf("macroexpand error: %s\n", pic_errmsg(pic));
 	    abort();
@@ -483,7 +485,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
   case PIC_TT_CONT:
   case PIC_TT_UNDEF:
   case PIC_TT_SENV:
-  case PIC_TT_SYNTAX:
+  case PIC_TT_MACRO:
   case PIC_TT_LIB:
   case PIC_TT_VAR:
   case PIC_TT_IREP:
@@ -661,7 +663,7 @@ er_macro_rename(pic_state *pic)
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
 
   v = macroexpand(pic, pic_symbol_value(sym), mac_env);
-  if (pic_syntax_p(v)) {
+  if (pic_macro_p(v)) {
     return pic_symbol_value(sym);
   }
   else {
@@ -744,7 +746,7 @@ ir_macro_inject(pic_state *pic)
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
 
   v = macroexpand(pic, pic_symbol_value(sym), use_env);
-  if (pic_syntax_p(v)) {
+  if (pic_macro_p(v)) {
     return pic_symbol_value(sym);
   }
   else {
@@ -793,13 +795,13 @@ ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, pic_valu
 static pic_value
 ir_macro_unwrap(pic_state *pic, pic_value expr, struct pic_senv *mac_env, pic_value *assoc)
 {
-  if (pic_sym_p(expr) || pic_syntax_p(expr)) {
+  if (pic_sym_p(expr) || pic_macro_p(expr)) {
     pic_value r;
     if (pic_test(r = pic_assq(pic, expr, *assoc))) {
       return pic_cdr(pic, r);
     }
     r = macroexpand(pic, expr, mac_env);
-    if (pic_syntax_p(r)) {
+    if (pic_macro_p(r)) {
       return expr;
     }
     else {

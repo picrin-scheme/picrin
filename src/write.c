@@ -134,8 +134,8 @@ write(pic_state *pic, pic_value obj, XFILE *file)
   case PIC_TT_SENV:
     xfprintf(file, "#<senv %p>", pic_ptr(obj));
     break;
-  case PIC_TT_SYNTAX:
-    xfprintf(file, "#<syntax %p>", pic_ptr(obj));
+  case PIC_TT_MACRO:
+    xfprintf(file, "#<macro %p>", pic_ptr(obj));
     break;
   case PIC_TT_SC:
     xfprintf(file, "#<sc %p: ", pic_ptr(obj));

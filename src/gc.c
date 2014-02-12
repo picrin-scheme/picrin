@@ -387,14 +387,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, cont->results);
     break;
   }
-  case PIC_TT_SYNTAX: {
-    struct pic_syntax *stx = (struct pic_syntax *)obj;
+  case PIC_TT_MACRO: {
+    struct pic_macro *mac = (struct pic_macro *)obj;
 
-    if (stx->proc) {
-      gc_mark_object(pic, (struct pic_object *)stx->proc);
+    if (mac->proc) {
+      gc_mark_object(pic, (struct pic_object *)mac->proc);
     }
-    if (stx->senv) {
-      gc_mark_object(pic, (struct pic_object *)stx->senv);
+    if (mac->senv) {
+      gc_mark_object(pic, (struct pic_object *)mac->senv);
     }
     break;
   }
@@ -567,7 +567,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     xh_destroy(senv->name);
     break;
   }
-  case PIC_TT_SYNTAX: {
+  case PIC_TT_MACRO: {
     break;
   }
   case PIC_TT_SC: {
