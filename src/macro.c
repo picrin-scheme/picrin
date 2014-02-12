@@ -442,6 +442,12 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         pic_value v;
         struct pic_macro *mac;
 
+#if DEBUG
+	puts("before expand-1:");
+	pic_debug(pic, expr);
+	puts("");
+#endif
+
         mac = (struct pic_macro *)e->val;
 	if (mac->senv == NULL) { /* legacy macro */
 	  v = pic_apply(pic, mac->proc, pic_cdr(pic, expr));
