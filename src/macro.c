@@ -513,13 +513,36 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 static pic_value
 macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv)
 {
-  pic_value v;
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value v, vs;
 
-  if (! pic_pair_p(list))
-    return macroexpand(pic, list, senv);
+  /* macroexpand in order */
+  vs = pic_nil_value();
+  while (pic_pair_p(list)) {
+    v = pic_car(pic, list);
 
-  v = macroexpand(pic, pic_car(pic, list), senv);
-  return pic_cons(pic, v, macroexpand_list(pic, pic_cdr(pic, list), senv));
+    vs = pic_cons(pic, macroexpand(pic, v, senv), vs);
+    list = pic_cdr(pic, list);
+
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, vs);
+    pic_gc_protect(pic, list);
+  }
+
+  list = macroexpand(pic, list, senv);
+
+  /* reverse the result */
+  pic_for_each (v, vs) {
+    list = pic_cons(pic, v, list);
+
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, vs);
+    pic_gc_protect(pic, list);
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, list);
+  return list;
 }
 
 pic_value
