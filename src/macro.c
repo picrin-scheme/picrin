@@ -94,6 +94,19 @@ identifier_p(pic_value obj)
   return false;
 }
 
+static bool
+identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_value x, struct pic_senv *e2, pic_value y)
+{
+  if (! (identifier_p(x) && identifier_p(y))) {
+    return false;
+  }
+
+  x = macroexpand(pic, x, e1);
+  y = macroexpand(pic, y, e2);
+
+  return pic_eq_p(x, y);
+}
+
 void
 pic_import(pic_state *pic, pic_value spec)
 {
@@ -634,14 +647,7 @@ pic_macro_identifier_eq_p(pic_state *pic)
   }
   e2 = pic_senv(f);
 
-  if (! (identifier_p(x) && identifier_p(y))) {
-    return pic_false_value();
-  }
-
-  x = macroexpand(pic, x, e1);
-  y = macroexpand(pic, y, e2);
-
-  return pic_bool_value(pic_eq_p(x, y));
+  return pic_bool_value(identifier_eq_p(pic, e1, x, e2, y));
 }
 
 static pic_value
