@@ -60,19 +60,7 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
 }
 
 struct pic_syntax *
-pic_syntax_new(pic_state *pic, pic_sym sym, struct pic_proc *macro)
-{
-  struct pic_syntax *stx;
-
-  stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
-  stx->sym = sym;
-  stx->senv = NULL;
-  stx->macro = macro;
-  return stx;
-}
-
-struct pic_syntax *
-pic_syntax_new_macro(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct pic_senv *mac_env)
+pic_syntax_new(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct pic_senv *mac_env)
 {
   struct pic_syntax *stx;
 
@@ -152,7 +140,7 @@ defsyntax(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct pic_senv *
   pic_sym uniq;
 
   uniq = pic_gensym(pic, sym);
-  stx = pic_syntax_new_macro(pic, sym, macro, mac_env);
+  stx = pic_syntax_new(pic, sym, macro, mac_env);
 
   xh_put_int(pic->lib->senv->name, sym, uniq);
   xh_put_int(pic->macros, uniq, (long)stx);

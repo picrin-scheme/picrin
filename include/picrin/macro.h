@@ -42,8 +42,7 @@ struct pic_senv *pic_null_syntactic_env(pic_state *);
 struct pic_senv *pic_minimal_syntactic_env(pic_state *);
 struct pic_senv *pic_core_syntactic_env(pic_state *);
 
-struct pic_syntax *pic_syntax_new(pic_state *, pic_sym, struct pic_proc *);
-struct pic_syntax *pic_syntax_new_macro(pic_state *, pic_sym, struct pic_proc *, struct pic_senv *);
+struct pic_syntax *pic_syntax_new(pic_state *, pic_sym, struct pic_proc *, struct pic_senv *);
 
 #if defined(__cplusplus)
 }
