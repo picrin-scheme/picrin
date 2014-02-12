@@ -17,7 +17,7 @@ struct pic_senv {
 
 struct pic_syntax {
   PIC_OBJECT_HEADER
-  struct pic_proc *macro;
+  struct pic_proc *proc;
   struct pic_senv *senv;
 };
 

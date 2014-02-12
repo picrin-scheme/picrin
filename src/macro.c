@@ -60,13 +60,13 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
 }
 
 struct pic_syntax *
-syntax_new(pic_state *pic, struct pic_proc *macro, struct pic_senv *mac_env)
+syntax_new(pic_state *pic, struct pic_proc *proc, struct pic_senv *mac_env)
 {
   struct pic_syntax *stx;
 
   stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
   stx->senv = mac_env;
-  stx->macro = macro;
+  stx->proc = proc;
   return stx;
 }
 
@@ -434,14 +434,14 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         pic_value v;
         struct pic_syntax *stx = (struct pic_syntax *)e->val;
 	if (stx->senv == NULL) { /* legacy macro */
-	  v = pic_apply(pic, stx->macro, pic_cdr(pic, expr));
+	  v = pic_apply(pic, stx->proc, pic_cdr(pic, expr));
 	  if (pic->err) {
 	    printf("macroexpand error: %s\n", pic_errmsg(pic));
 	    abort();
 	  }
 	}
 	else {
-	  v = pic_apply_argv(pic, stx->macro, 3, expr, pic_obj_value(senv), pic_obj_value(stx->senv));
+	  v = pic_apply_argv(pic, stx->proc, 3, expr, pic_obj_value(senv), pic_obj_value(stx->senv));
 	  if (pic->err) {
 	    printf("macroexpand error: %s\n", pic_errmsg(pic));
 	    abort();
