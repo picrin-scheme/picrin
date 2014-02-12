@@ -10,6 +10,38 @@
 
 static void write(pic_state *, pic_value, XFILE *file);
 
+static bool
+is_quote(pic_state *pic, pic_value pair)
+{
+  return pic_list_p(pic, pair)
+    && pic_length(pic, pair) == 2
+    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUOTE));
+}
+
+static bool
+is_unquote(pic_state *pic, pic_value pair)
+{
+  return pic_list_p(pic, pair)
+    && pic_length(pic, pair) == 2
+    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sUNQUOTE));
+}
+
+static bool
+is_unquote_splicing(pic_state *pic, pic_value pair)
+{
+  return pic_list_p(pic, pair)
+    && pic_length(pic, pair) == 2
+    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sUNQUOTE_SPLICING));
+}
+
+static bool
+is_quasiquote(pic_state *pic, pic_value pair)
+{
+  return pic_list_p(pic, pair)
+    && pic_length(pic, pair) == 2
+    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUASIQUOTE));
+}
+
 static void
 write_pair(pic_state *pic, struct pic_pair *pair, XFILE *file)
 {
@@ -59,6 +91,26 @@ write(pic_state *pic, pic_value obj, XFILE *file)
       xfprintf(file, "#f");
     break;
   case PIC_TT_PAIR:
+    if (is_quote(pic, obj)) {
+      xfprintf(file, "'");
+      write(pic, pic_list_ref(pic, obj, 1), file);
+      break;
+    }
+    else if (is_unquote(pic, obj)) {
+      xfprintf(file, ",");
+      write(pic, pic_list_ref(pic, obj, 1), file);
+      break;
+    }
+    else if (is_unquote_splicing(pic, obj)) {
+      xfprintf(file, ",@");
+      write(pic, pic_list_ref(pic, obj, 1), file);
+      break;
+    }
+    else if (is_quasiquote(pic, obj)) {
+      xfprintf(file, "`");
+      write(pic, pic_list_ref(pic, obj, 1), file);
+      break;
+    }
     xfprintf(file, "(");
     write_pair(pic, pic_pair_ptr(obj), file);
     xfprintf(file, ")");
