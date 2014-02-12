@@ -159,15 +159,15 @@ defsyntax(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct pic_senv *
 }
 
 static void
-defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
+defmacro(pic_state *pic, pic_sym sym, struct pic_proc *macro)
 {
-  defsyntax(pic, pic_intern_cstr(pic, name), macro, NULL);
+  defsyntax(pic, sym, macro, NULL);
 }
 
 void
 pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
-  defmacro(pic, name, macro);
+  defmacro(pic, pic_intern_cstr(pic, name), macro);
 
   /* auto export! */
   pic_export(pic, pic_intern_cstr(pic, name));
@@ -343,7 +343,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  abort();
 	}
 	assert(pic_proc_p(v));
-	defmacro(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v));
+	defmacro(pic, pic_sym(var), pic_proc_ptr(v));
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
