@@ -13,53 +13,17 @@
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
 
-struct pic_senv *
-pic_null_syntactic_env(pic_state *pic)
+static struct pic_senv *
+new_senv(pic_state *pic, struct pic_senv *up)
 {
   struct pic_senv *senv;
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = NULL;
+  senv->up = up;
   senv->name = xh_new_int();
 
   return senv;
 }
-
-#define register_core_syntax(pic,senv,id) do {                          \
-    pic_sym sym = pic_intern_cstr(pic, id);                             \
-    xh_put_int(senv->name, sym, sym);                                   \
-  } while (0)
-
-struct pic_senv *
-pic_minimal_syntactic_env(pic_state *pic)
-{
-  struct pic_senv *senv = pic_null_syntactic_env(pic);
-
-  register_core_syntax(pic, senv, "define-library");
-  register_core_syntax(pic, senv, "import");
-  register_core_syntax(pic, senv, "export");
-
-  return senv;
-}
-
-struct pic_senv *
-pic_core_syntactic_env(pic_state *pic)
-{
-  struct pic_senv *senv = pic_minimal_syntactic_env(pic);
-
-  register_core_syntax(pic, senv, "define");
-  register_core_syntax(pic, senv, "set!");
-  register_core_syntax(pic, senv, "quote");
-  register_core_syntax(pic, senv, "lambda");
-  register_core_syntax(pic, senv, "if");
-  register_core_syntax(pic, senv, "begin");
-  register_core_syntax(pic, senv, "define-macro");
-  register_core_syntax(pic, senv, "define-syntax");
-
-  return senv;
-}
-
-#undef register_core_syntax
 
 static struct pic_senv *
 new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
@@ -68,9 +32,7 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
   pic_value a;
   pic_sym sym;
 
-  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = up;
-  senv->name = xh_new_int();
+  senv = new_senv(pic, up);
 
   for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
@@ -564,6 +526,46 @@ pic_macroexpand(pic_state *pic, pic_value expr)
 #endif
 
   return v;
+}
+
+struct pic_senv *
+pic_null_syntactic_env(pic_state *pic)
+{
+  return new_senv(pic, NULL);
+}
+
+#define register_core_syntax(pic,senv,id) do {                          \
+    pic_sym sym = pic_intern_cstr(pic, id);                             \
+    xh_put_int(senv->name, sym, sym);                                   \
+  } while (0)
+
+struct pic_senv *
+pic_minimal_syntactic_env(pic_state *pic)
+{
+  struct pic_senv *senv = pic_null_syntactic_env(pic);
+
+  register_core_syntax(pic, senv, "define-library");
+  register_core_syntax(pic, senv, "import");
+  register_core_syntax(pic, senv, "export");
+
+  return senv;
+}
+
+struct pic_senv *
+pic_core_syntactic_env(pic_state *pic)
+{
+  struct pic_senv *senv = pic_minimal_syntactic_env(pic);
+
+  register_core_syntax(pic, senv, "define");
+  register_core_syntax(pic, senv, "set!");
+  register_core_syntax(pic, senv, "quote");
+  register_core_syntax(pic, senv, "lambda");
+  register_core_syntax(pic, senv, "if");
+  register_core_syntax(pic, senv, "begin");
+  register_core_syntax(pic, senv, "define-macro");
+  register_core_syntax(pic, senv, "define-syntax");
+
+  return senv;
 }
 
 /* once read.c is implemented move there */
