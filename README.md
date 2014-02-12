@@ -42,7 +42,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 4.2.5 Delayed evaluation | N/A | |
 | 4.2.6 Dynamic bindings | yes | |
 | 4.2.7 Exception handling | no | `guard` syntax. |
-| 4.2.8 Quasiquotation | incomplete | nested is unsupported |
+| 4.2.8 Quasiquotation | yes | can be safely nested |
 | 4.2.9 Case-lambda | N/A | |
 | 4.3.1 Bindings constructs for syntactic keywords | incomplete | (*1) |
 | 4.3.2 Pattern language | no | `syntax-rules` |
