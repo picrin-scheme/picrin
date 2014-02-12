@@ -98,10 +98,10 @@ typedef struct {
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
 
-  xhash *sym_tbl;
-  const char **sym_pool;
-  size_t slen, scapa;
-  int uniq_sym_count;
+  xhash *syms;                  /* name to symbol */
+  xhash *sym_names;             /* symbol to name */
+  int sym_cnt;
+  int uniq_sym_cnt;
 
   xhash *global_tbl;
   pic_value *globals;

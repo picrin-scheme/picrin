@@ -14,32 +14,23 @@ pic_intern_cstr(pic_state *pic, const char *str)
   xh_entry *e;
   pic_sym id;
 
-  e = xh_get(pic->sym_tbl, str);
+  e = xh_get(pic->syms, str);
   if (e) {
     return e->val;
   }
 
   str = pic_strdup(pic, str);
 
-  if (pic->slen >= pic->scapa) {
-
-#if DEBUG
-    puts("sym_pool realloced");
-#endif
-
-    pic->scapa *= 2;
-    pic->sym_pool = pic_realloc(pic, pic->sym_pool, sizeof(const char *) * pic->scapa);
-  }
-  id = pic->slen++;
-  pic->sym_pool[id] = str;
-  xh_put(pic->sym_tbl, str, id);
+  id = pic->sym_cnt++;
+  xh_put(pic->syms, str, id);
+  xh_put_int(pic->sym_names, id, (long)str);
   return id;
 }
 
 pic_sym
 pic_gensym(pic_state *pic, pic_sym base)
 {
-  int s = ++pic->uniq_sym_count;
+  int s = ++pic->uniq_sym_cnt;
   char *str;
   pic_sym uniq;
 
@@ -47,12 +38,8 @@ pic_gensym(pic_state *pic, pic_sym base)
   sprintf(str, "%s@%d", pic_symbol_name(pic, base), s);
 
   /* don't put the symbol to pic->sym_tbl to keep it uninterned */
-  if (pic->slen >= pic->scapa) {
-    pic->scapa *= 2;
-    pic->sym_pool = pic_realloc(pic, pic->sym_pool, sizeof(const char *) * pic->scapa);
-  }
-  uniq = pic->slen++;
-  pic->sym_pool[uniq] = str;
+  uniq = pic->sym_cnt++;
+  xh_put_int(pic->sym_names, uniq, (long)str);
 
   return uniq;
 }
@@ -68,7 +55,7 @@ pic_interned_p(pic_state *pic, pic_sym sym)
 const char *
 pic_symbol_name(pic_state *pic, pic_sym sym)
 {
-  return pic->sym_pool[sym];
+  return (const char *)xh_get_int(pic->sym_names, sym)->val;
 }
 
 static pic_value
