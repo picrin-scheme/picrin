@@ -64,6 +64,9 @@ pic_open(int argc, char *argv[], char **envp)
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
 
+  /* macros */
+  pic->macros = xh_new_int();
+
   /* libraries */
   pic->lib_tbl = pic_nil_value();
   pic->lib = NULL;
@@ -142,8 +145,12 @@ pic_close(pic_state *pic)
   pic->arena_idx = 0;
   pic->lib_tbl = pic_undef_value();
 
+  xh_clear(pic->macros);
+
   /* free all values */
   pic_gc_run(pic);
+
+  xh_destroy(pic->macros);
 
   /* free heaps */
   finalize_heap(pic->heap);

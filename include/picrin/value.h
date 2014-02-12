@@ -99,7 +99,7 @@ enum pic_tt {
   PIC_TT_ENV,
   PIC_TT_CONT,
   PIC_TT_SENV,
-  PIC_TT_SYNTAX,
+  PIC_TT_MACRO,
   PIC_TT_SC,
   PIC_TT_LIB,
   PIC_TT_VAR,
@@ -248,8 +248,8 @@ pic_type_repr(enum pic_tt tt)
     return "sc";
   case PIC_TT_SENV:
     return "senv";
-  case PIC_TT_SYNTAX:
-    return "syntax";
+  case PIC_TT_MACRO:
+    return "macro";
   case PIC_TT_LIB:
     return "lib";
   case PIC_TT_VAR:

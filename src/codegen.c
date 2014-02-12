@@ -98,9 +98,9 @@ static void pop_scope(analyze_state *);
     state->slot = pic_intern_cstr(pic, name);           \
   } while (0)
 
-#define register_renamed_symbol(pic, state, slot, lib, name) do {       \
-    xh_entry *e;                                                 \
-    if (! (e = xh_get_int(lib->senv->tbl, pic_intern_cstr(pic, name)))) \
+#define register_renamed_symbol(pic, state, slot, lib, id) do {         \
+    xh_entry *e;                                                        \
+    if (! (e = xh_get_int(lib->senv->name, pic_intern_cstr(pic, id))))  \
       pic_error(pic, "internal error! native VM procedure not found");  \
     state->slot = e->val;                                               \
   } while (0)
@@ -561,7 +561,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_PORT:
   case PIC_TT_ERROR:
   case PIC_TT_SENV:
-  case PIC_TT_SYNTAX:
+  case PIC_TT_MACRO:
   case PIC_TT_SC:
   case PIC_TT_LIB:
   case PIC_TT_VAR:
@@ -1445,7 +1445,7 @@ global_ref(pic_state *pic, const char *name)
   pic_sym sym;
 
   sym = pic_intern_cstr(pic, name);
-  if (! (e = xh_get_int(pic->lib->senv->tbl, sym))) {
+  if (! (e = xh_get_int(pic->lib->senv->name, sym))) {
     return -1;
   }
   assert(e->val >= 0);
@@ -1470,7 +1470,7 @@ global_def(pic_state *pic, const char *name)
   gsym = pic_gensym(pic, sym);
 
   /* register to the senv */
-  xh_put_int(pic->lib->senv->tbl, sym, gsym);
+  xh_put_int(pic->lib->senv->name, sym, gsym);
 
   /* register to the global table */
   gidx = pic->glen++;

@@ -107,6 +107,8 @@ typedef struct {
   pic_value *globals;
   size_t glen, gcapa;
 
+  xhash *macros;
+
   pic_value lib_tbl;
   struct pic_lib *lib;
 

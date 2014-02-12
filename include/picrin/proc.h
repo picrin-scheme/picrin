@@ -43,6 +43,8 @@ int pic_proc_cv_size(pic_state *, struct pic_proc *);
 pic_value pic_proc_cv_ref(pic_state *, struct pic_proc *, size_t);
 void pic_proc_cv_set(pic_state *, struct pic_proc *, size_t, pic_value);
 
+struct pic_proc *pic_papply(pic_state *, struct pic_proc *, pic_value);
+
 #if defined(__cplusplus)
 }
 #endif
