@@ -404,13 +404,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (senv->up) {
       gc_mark_object(pic, (struct pic_object *)senv->up);
     }
-    if (senv->stx) {
-      size_t i;
-
-      for (i = 0; i < senv->xlen; ++i) {
-	gc_mark_object(pic, (struct pic_object *)senv->stx[i]);
-      }
-    }
     break;
   }
   case PIC_TT_SC: {
@@ -476,6 +469,7 @@ gc_mark_phase(pic_state *pic)
   pic_callinfo *ci;
   size_t i;
   int j;
+  xh_iter it;
 
   /* block */
   gc_mark_block(pic, pic->blk);
@@ -510,6 +504,11 @@ gc_mark_phase(pic_state *pic)
   /* global variables */
   for (i = 0; i < pic->glen; ++i) {
     gc_mark(pic, pic->globals[i]);
+  }
+
+  /* macro objects */
+  for (xh_begin(pic->macros, &it); ! xh_isend(&it); xh_next(&it)) {
+    gc_mark_object(pic, (struct pic_object *)it.e->val);
   }
 
   /* library table */
@@ -565,9 +564,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destroy(senv->tbl);
-    if (senv->stx)
-      pic_free(pic, senv->stx);
+    xh_destroy(senv->name);
     break;
   }
   case PIC_TT_SYNTAX: {

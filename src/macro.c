@@ -20,19 +20,14 @@ pic_null_syntactic_env(pic_state *pic)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = NULL;
-  senv->tbl = xh_new_int();
-  senv->stx = (struct pic_syntax **)pic_calloc(pic, PIC_MACROS_SIZE, sizeof(struct pic_syntax *));
-  senv->xlen = 0;
-  senv->xcapa = PIC_MACROS_SIZE;
+  senv->name = xh_new_int();
 
   return senv;
 }
 
-#define register_core_syntax(pic,senv,kind,name) do {			\
-    pic_sym sym = pic_intern_cstr(pic, name);                           \
-    senv->stx[senv->xlen] = pic_syntax_new(pic, kind, sym);             \
-    xh_put_int(senv->tbl, sym, ~senv->xlen);				\
-    senv->xlen++;							\
+#define register_core_syntax(pic,senv,id) do {                          \
+    pic_sym sym = pic_intern_cstr(pic, id);                             \
+    xh_put_int(senv->name, sym, sym);                                   \
   } while (0)
 
 struct pic_senv *
@@ -40,9 +35,9 @@ pic_minimal_syntactic_env(pic_state *pic)
 {
   struct pic_senv *senv = pic_null_syntactic_env(pic);
 
-  register_core_syntax(pic, senv, PIC_STX_DEFLIBRARY, "define-library");
-  register_core_syntax(pic, senv, PIC_STX_IMPORT, "import");
-  register_core_syntax(pic, senv, PIC_STX_EXPORT, "export");
+  register_core_syntax(pic, senv, "define-library");
+  register_core_syntax(pic, senv, "import");
+  register_core_syntax(pic, senv, "export");
 
   return senv;
 }
@@ -52,14 +47,14 @@ pic_core_syntactic_env(pic_state *pic)
 {
   struct pic_senv *senv = pic_minimal_syntactic_env(pic);
 
-  register_core_syntax(pic, senv, PIC_STX_DEFINE, "define");
-  register_core_syntax(pic, senv, PIC_STX_SET, "set!");
-  register_core_syntax(pic, senv, PIC_STX_QUOTE, "quote");
-  register_core_syntax(pic, senv, PIC_STX_LAMBDA, "lambda");
-  register_core_syntax(pic, senv, PIC_STX_IF, "if");
-  register_core_syntax(pic, senv, PIC_STX_BEGIN, "begin");
-  register_core_syntax(pic, senv, PIC_STX_DEFMACRO, "define-macro");
-  register_core_syntax(pic, senv, PIC_STX_DEFSYNTAX, "define-syntax");
+  register_core_syntax(pic, senv, "define");
+  register_core_syntax(pic, senv, "set!");
+  register_core_syntax(pic, senv, "quote");
+  register_core_syntax(pic, senv, "lambda");
+  register_core_syntax(pic, senv, "if");
+  register_core_syntax(pic, senv, "begin");
+  register_core_syntax(pic, senv, "define-macro");
+  register_core_syntax(pic, senv, "define-syntax");
 
   return senv;
 }
@@ -81,10 +76,7 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = up;
-  senv->tbl = xh_new_int();
-  senv->stx = NULL;
-  senv->xlen = 0;
-  senv->xcapa = 0;
+  senv->name = xh_new_int();
 
   for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
@@ -96,14 +88,14 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
       pic_error(pic, "syntax error");
     }
     sym = pic_sym(v);
-    xh_put_int(senv->tbl, sym, pic_gensym(pic, sym));
+    xh_put_int(senv->name, sym, pic_gensym(pic, sym));
   }
   if (! pic_sym_p(a)) {
     a = macroexpand(pic, a, up);
   }
   if (pic_sym_p(a)) {
     sym = pic_sym(a);
-    xh_put_int(senv->tbl, sym, pic_gensym(pic, sym));
+    xh_put_int(senv->name, sym, pic_gensym(pic, sym));
   }
   else if (! pic_nil_p(a)) {
     pic_error(pic, "syntax error");
@@ -112,15 +104,14 @@ new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
 }
 
 struct pic_syntax *
-pic_syntax_new(pic_state *pic, int kind, pic_sym sym)
+pic_syntax_new(pic_state *pic, pic_sym sym, struct pic_proc *macro)
 {
   struct pic_syntax *stx;
 
   stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
-  stx->kind = kind;
   stx->sym = sym;
-  stx->macro = NULL;
   stx->senv = NULL;
+  stx->macro = macro;
   return stx;
 }
 
@@ -130,10 +121,9 @@ pic_syntax_new_macro(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct
   struct pic_syntax *stx;
 
   stx = (struct pic_syntax *)pic_obj_alloc(pic, sizeof(struct pic_syntax), PIC_TT_SYNTAX);
-  stx->kind = PIC_STX_MACRO;
   stx->sym = sym;
-  stx->macro = macro;
   stx->senv = mac_env;
+  stx->macro = macro;
   return stx;
 }
 
@@ -160,20 +150,6 @@ pic_identifier_p(pic_value obj)
   return false;
 }
 
-static pic_value
-strip(pic_state *pic, pic_value expr)
-{
-  if (pic_sc_p(expr)) {
-    return strip(pic, pic_sc(expr)->expr);
-  }
-  else if (pic_pair_p(expr)) {
-    return pic_cons(pic,
-                    strip(pic, pic_car(pic, expr)),
-                    strip(pic, pic_cdr(pic, expr)));
-  }
-  return expr;
-}
-
 void
 pic_import(pic_state *pic, pic_value spec)
 {
@@ -185,30 +161,19 @@ pic_import(pic_state *pic, pic_value spec)
     pic_error(pic, "library not found");
   }
   for (xh_begin(lib->exports, &it); ! xh_isend(&it); xh_next(&it)) {
+
 #if DEBUG
     if (it.e->val >= 0) {
-      printf("* importing %s as %s\n", pic_symbol_name(pic, (long)it.e->key), pic_symbol_name(pic, it.e->val));
+      printf("* importing %s as %s\n",
+             pic_symbol_name(pic, (long)it.e->key),
+             pic_symbol_name(pic, it.e->val));
     }
     else {
       printf("* importing %s\n", pic_symbol_name(pic, (long)it.e->key));
     }
 #endif
-    if (it.e->val >= 0) {
-      xh_put_int(pic->lib->senv->tbl, (long)it.e->key, it.e->val);
-    }
-    else {                /* syntax object */
-      size_t idx;
-      struct pic_senv *senv = pic->lib->senv;
 
-      idx = senv->xlen;
-      if (idx >= senv->xcapa) {
-        pic_abort(pic, "macro table overflow");
-      }
-      /* bring macro object from imported lib */
-      senv->stx[idx] = lib->senv->stx[~it.e->val];
-      xh_put_int(senv->tbl, (long)it.e->key, ~idx);
-      senv->xlen++;
-    }
+    xh_put_int(pic->lib->senv->name, (long)it.e->key, it.e->val);
   }
 }
 
@@ -217,7 +182,7 @@ pic_export(pic_state *pic, pic_sym sym)
 {
   xh_entry *e;
 
-  e = xh_get_int(pic->lib->senv->tbl, sym);
+  e = xh_get_int(pic->lib->senv->name, sym);
   if (! e) {
     pic_error(pic, "symbol not defined");
   }
@@ -225,29 +190,22 @@ pic_export(pic_state *pic, pic_sym sym)
 }
 
 static void
-defsyntax(pic_state *pic, const char *name, struct pic_proc *macro, struct pic_senv *mac_env)
+defsyntax(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct pic_senv *mac_env)
 {
-  pic_sym sym;
   struct pic_syntax *stx;
-  struct pic_senv *global_senv = pic->lib->senv;
-  size_t idx;
+  pic_sym uniq;
 
-  sym = pic_intern_cstr(pic, name);
+  uniq = pic_gensym(pic, sym);
   stx = pic_syntax_new_macro(pic, sym, macro, mac_env);
 
-  idx = global_senv->xlen;
-  if (idx >= global_senv->xcapa) {
-    pic_abort(pic, "macro table overflow");
-  }
-  global_senv->stx[idx] = stx;
-  xh_put_int(global_senv->tbl, sym, ~idx);
-  global_senv->xlen++;
+  xh_put_int(pic->lib->senv->name, sym, uniq);
+  xh_put_int(pic->macros, uniq, (long)stx);
 }
 
 static void
 defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
-  defsyntax(pic, name, macro, NULL);
+  defsyntax(pic, pic_intern_cstr(pic, name), macro, NULL);
 }
 
 void
@@ -257,6 +215,28 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 
   /* auto export! */
   pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+static pic_sym
+symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
+{
+  xh_entry *e;
+  pic_sym uniq;
+
+  if (! pic_interned_p(pic, sym)) {
+    return sym;
+  }
+  while (true) {
+    if ((e = xh_get_int(senv->name, sym)) != NULL) {
+      return (pic_sym)e->val;
+    }
+    if (! senv->up)
+      break;
+    senv = senv->up;
+  }
+  uniq = pic_gensym(pic, sym);
+  xh_put_int(senv->name, sym, uniq);
+  return uniq;
 }
 
 static pic_value
@@ -278,34 +258,17 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
     return macroexpand(pic, sc->expr, sc->senv);
   }
   case PIC_TT_SYMBOL: {
-    xh_entry *e;
-    pic_sym uniq;
-
-    if (! pic_interned_p(pic, pic_sym(expr))) {
-      return expr;
-    }
-    while (true) {
-      if ((e = xh_get_int(senv->tbl, pic_sym(expr))) != NULL) {
-	if (e->val >= 0)
-	  return pic_symbol_value(e->val);
-	else
-	  return pic_obj_value(senv->stx[~e->val]);
-      }
-      if (! senv->up)
-        break;
-      senv = senv->up;
-    }
-    uniq = pic_gensym(pic, pic_sym(expr));
-    xh_put_int(senv->tbl, pic_sym(expr), uniq);
-    return pic_symbol_value(uniq);
+    return pic_symbol_value(symbol_rename(pic, pic_sym(expr), senv));
   }
   case PIC_TT_PAIR: {
     pic_value car, v;
+    xh_entry *e;
 
     car = macroexpand(pic, pic_car(pic, expr), senv);
-    if (pic_syntax_p(car)) {
-      switch (pic_syntax(car)->kind) {
-      case PIC_STX_DEFLIBRARY: {
+    if (pic_sym_p(car)) {
+      pic_sym tag = pic_sym(car);
+
+      if (tag == pic->sDEFINE_LIBRARY) {
         struct pic_lib *prev = pic->lib;
 
         if (pic_length(pic, expr) < 2) {
@@ -335,14 +298,15 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
         return pic_none_value();
       }
-      case PIC_STX_IMPORT: {
+
+      else if (tag == pic->sIMPORT) {
         pic_value spec;
         pic_for_each (spec, pic_cdr(pic, expr)) {
           pic_import(pic, spec);
         }
         return pic_none_value();
       }
-      case PIC_STX_EXPORT: {
+      else if (tag == pic->sEXPORT) {
         pic_value spec;
         pic_for_each (spec, pic_cdr(pic, expr)) {
           if (! pic_sym_p(spec)) {
@@ -353,7 +317,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
         return pic_none_value();
       }
-      case PIC_STX_DEFSYNTAX: {
+
+      else if (tag == pic->sDEFINE_SYNTAX) {
 	pic_value var, val;
 	struct pic_proc *proc;
 
@@ -361,7 +326,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  pic_error(pic, "syntax error");
 	}
 
-	var = strip(pic, pic_cadr(pic, expr));
+	var = pic_cadr(pic, expr);
 	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
@@ -378,12 +343,13 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  abort();
 	}
 	assert(pic_proc_p(v));
-	defsyntax(pic, pic_symbol_name(pic, pic_sym(var)), pic_proc_ptr(v), senv);
+	defsyntax(pic, pic_sym(var), pic_proc_ptr(v), senv);
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
       }
-      case PIC_STX_DEFMACRO: {
+
+      else if (tag == pic->sDEFINE_MACRO) {
 	pic_value var, val;
 	struct pic_proc *proc;
 
@@ -425,36 +391,11 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
       }
-      case PIC_STX_MACRO: {
-	if (pic_syntax(car)->senv == NULL) { /* legacy macro */
-	  v = pic_apply(pic, pic_syntax(car)->macro, pic_cdr(pic, expr));
-	  if (pic->err) {
-	    printf("macroexpand error: %s\n", pic_errmsg(pic));
-	    abort();
-	  }
-	}
-	else {
-	  v = pic_apply_argv(pic, pic_syntax(car)->macro, 3, expr, pic_obj_value(senv), pic_obj_value(pic_syntax(car)->senv));
-	  if (pic->err) {
-	    printf("macroexpand error: %s\n", pic_errmsg(pic));
-	    abort();
-	  }
-	}
-	pic_gc_arena_restore(pic, ai);
-	pic_gc_protect(pic, v);
 
-#if DEBUG
-	puts("after expand-1:");
-	pic_debug(pic, v);
-	puts("");
-#endif
-
-	return macroexpand(pic, v, senv);
-      }
-      case PIC_STX_LAMBDA: {
+      else if (tag == pic->sLAMBDA) {
 	struct pic_senv *in = new_local_senv(pic, pic_cadr(pic, expr), senv);
 
-	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
+	v = pic_cons(pic, car,
 		     pic_cons(pic,
 			      macroexpand_list(pic, pic_cadr(pic, expr), in),
 			      macroexpand_list(pic, pic_cddr(pic, expr), in)));
@@ -463,7 +404,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	pic_gc_protect(pic, v);
 	return v;
       }
-      case PIC_STX_DEFINE: {
+
+      else if (tag == pic->sDEFINE) {
 	pic_sym var;
 	pic_value formals;
 
@@ -485,11 +427,11 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	    pic_error(pic, "binding to non-symbol object");
 	  }
 	  var = pic_sym(a);
-	  xh_put_int(senv->tbl, var, pic_gensym(pic, var));
+	  xh_put_int(senv->name, var, pic_gensym(pic, var));
 
 	  /* binding value */
-	  v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym),
-		       pic_cons(pic,
+	  v = pic_cons(pic, car,
+                       pic_cons(pic,
 				macroexpand_list(pic, pic_cadr(pic, expr), in),
 				macroexpand_list(pic, pic_cddr(pic, expr), in)));
 
@@ -506,23 +448,59 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	}
         var = pic_sym(formals);
         /* do not make duplicate variable slot */
-        if (xh_get_int(senv->tbl, var) == NULL) {
-          xh_put_int(senv->tbl, var, pic_gensym(pic, var));
+        if (xh_get_int(senv->name, var) == NULL) {
+          xh_put_int(senv->name, var, pic_gensym(pic, var));
         }
+
+	v = pic_cons(pic, pic_symbol_value(tag),
+                     macroexpand_list(pic, pic_cdr(pic, expr), senv));
+	pic_gc_arena_restore(pic, ai);
+	pic_gc_protect(pic, v);
+	return v;
       }
-	FALLTHROUGH;
-      case PIC_STX_SET:
-      case PIC_STX_IF:
-      case PIC_STX_BEGIN:
-	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), macroexpand_list(pic, pic_cdr(pic, expr), senv));
+
+      else if (tag == pic->sSETBANG || tag == pic->sIF || tag == pic->sBEGIN) {
+	v = pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
 	pic_gc_arena_restore(pic, ai);
 	pic_gc_protect(pic, v);
 	return v;
-      case PIC_STX_QUOTE:
-	v = pic_cons(pic, pic_symbol_value(pic_syntax(car)->sym), pic_cdr(pic, expr));
+      }
+
+      else if (tag == pic->sQUOTE) {
+	v = pic_cons(pic, car, pic_cdr(pic, expr));
 	pic_gc_arena_restore(pic, ai);
 	pic_gc_protect(pic, v);
 	return v;
+      }
+
+      /* macro */
+      if ((e = xh_get_int(pic->macros, tag)) != NULL) {
+        pic_value v;
+        struct pic_syntax *stx = (struct pic_syntax *)e->val;
+	if (stx->senv == NULL) { /* legacy macro */
+	  v = pic_apply(pic, stx->macro, pic_cdr(pic, expr));
+	  if (pic->err) {
+	    printf("macroexpand error: %s\n", pic_errmsg(pic));
+	    abort();
+	  }
+	}
+	else {
+	  v = pic_apply_argv(pic, stx->macro, 3, expr, pic_obj_value(senv), pic_obj_value(stx->senv));
+	  if (pic->err) {
+	    printf("macroexpand error: %s\n", pic_errmsg(pic));
+	    abort();
+	  }
+	}
+	pic_gc_arena_restore(pic, ai);
+	pic_gc_protect(pic, v);
+
+#if DEBUG
+	puts("after expand-1:");
+	pic_debug(pic, v);
+	puts("");
+#endif
+
+	return macroexpand(pic, v, senv);
       }
     }
 
