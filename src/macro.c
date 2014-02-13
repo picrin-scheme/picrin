@@ -12,7 +12,7 @@ static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
 
 static struct pic_senv *
-new_senv(pic_state *pic, struct pic_senv *up)
+senv_new(pic_state *pic, struct pic_senv *up)
 {
   struct pic_senv *senv;
 
@@ -24,13 +24,13 @@ new_senv(pic_state *pic, struct pic_senv *up)
 }
 
 static struct pic_senv *
-new_local_senv(pic_state *pic, pic_value formals, struct pic_senv *up)
+senv_new_local(pic_state *pic, pic_value formals, struct pic_senv *up)
 {
   struct pic_senv *senv;
   pic_value a;
   pic_sym sym;
 
-  senv = new_senv(pic, up);
+  senv = senv_new(pic, up);
 
   for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
@@ -354,7 +354,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
 
       else if (tag == pic->sLAMBDA) {
-	struct pic_senv *in = new_local_senv(pic, pic_cadr(pic, expr), senv);
+	struct pic_senv *in = senv_new_local(pic, pic_cadr(pic, expr), senv);
 
 	v = pic_cons(pic, car,
 		     pic_cons(pic,
@@ -376,7 +376,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
 	formals = pic_cadr(pic, expr);
 	if (pic_pair_p(formals)) {
-	  struct pic_senv *in = new_local_senv(pic, pic_cdr(pic, formals), senv);
+	  struct pic_senv *in = senv_new_local(pic, pic_cdr(pic, formals), senv);
 	  pic_value a;
 
 	  /* defined symbol */
@@ -544,7 +544,7 @@ pic_macroexpand(pic_state *pic, pic_value expr)
 struct pic_senv *
 pic_null_syntactic_env(pic_state *pic)
 {
-  return new_senv(pic, NULL);
+  return senv_new(pic, NULL);
 }
 
 #define register_core_syntax(pic,senv,id) do {                          \
