@@ -143,29 +143,20 @@ pic_export(pic_state *pic, pic_sym sym)
   xh_put_int(pic->lib->exports, (long)e->key, e->val);
 }
 
-static void
-defsyntax(pic_state *pic, pic_sym sym, struct pic_proc *macro, struct pic_senv *mac_env)
-{
-  struct pic_macro *mac;
-  pic_sym uniq;
-
-  mac = macro_new(pic, macro, mac_env);
-
-  uniq = pic_gensym(pic, sym);
-  xh_put_int(pic->lib->senv->name, sym, uniq);
-  xh_put_int(pic->macros, uniq, (long)mac);
-}
-
-static void
-defmacro(pic_state *pic, pic_sym sym, struct pic_proc *macro)
-{
-  defsyntax(pic, sym, macro, NULL);
-}
-
 void
 pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
-  defmacro(pic, pic_intern_cstr(pic, name), macro);
+  struct pic_macro *mac;
+  pic_sym sym, uniq;
+
+  /* new macro */
+  mac = macro_new(pic, macro, NULL);
+
+  /* symbol registration */
+  sym = pic_intern_cstr(pic, name);
+  uniq = pic_gensym(pic, sym);
+  xh_put_int(pic->lib->senv->name, sym, uniq);
+  xh_put_int(pic->macros, uniq, (long)mac);
 
   /* auto export! */
   pic_export(pic, pic_intern_cstr(pic, name));
