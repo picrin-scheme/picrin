@@ -52,11 +52,10 @@ pic_open(int argc, char *argv[], char **envp)
   init_heap(pic->heap);
 
   /* symbol table */
-  pic->sym_tbl = xh_new_str();
-  pic->sym_pool = (const char **)calloc(PIC_SYM_POOL_SIZE, sizeof(const char *));
-  pic->slen = 0;
-  pic->scapa = pic->slen + PIC_SYM_POOL_SIZE;
-  pic->uniq_sym_count = 0;
+  pic->syms = xh_new_str();
+  pic->sym_names = xh_new_int();
+  pic->sym_cnt = 0;
+  pic->uniq_sym_cnt = 0;
 
   /* global variables */
   pic->global_tbl = xh_new_int();
@@ -129,7 +128,7 @@ pic_open(int argc, char *argv[], char **envp)
 void
 pic_close(pic_state *pic)
 {
-  size_t i;
+  xh_iter it;
 
   /* free global stacks */
   free(pic->stbase);
@@ -137,7 +136,7 @@ pic_close(pic_state *pic)
   free(pic->rescue);
   free(pic->globals);
 
-  xh_destroy(pic->sym_tbl);
+  xh_destroy(pic->syms);
   xh_destroy(pic->global_tbl);
 
   pic->glen = 0;
@@ -157,10 +156,10 @@ pic_close(pic_state *pic)
   free(pic->heap);
 
   /* free symbol names */
-  for (i = 0; i < pic->slen; ++i) {
-    free((void *)pic->sym_pool[i]);
+  for (xh_begin(pic->sym_names, &it); ! xh_isend(&it); xh_next(&it)) {
+    free((void *)it.e->val);
   }
-  free(pic->sym_pool);
+  free(pic->sym_names);
 
   PIC_BLK_DECREF(pic, pic->blk);
 
