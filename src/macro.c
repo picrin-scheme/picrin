@@ -159,7 +159,7 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
   xh_put_int(pic->macros, uniq, (long)mac);
 
   /* auto export! */
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_export(pic, sym);
 }
 
 static pic_sym

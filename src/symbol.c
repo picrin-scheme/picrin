@@ -48,8 +48,6 @@ pic_gensym(pic_state *pic, pic_sym base)
 bool
 pic_interned_p(pic_state *pic, pic_sym sym)
 {
-  assert(sym >= 0);
-
   return sym == pic_intern_cstr(pic, pic_symbol_name(pic, sym));
 }
 
