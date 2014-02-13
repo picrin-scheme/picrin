@@ -138,7 +138,7 @@ pic_export(pic_state *pic, pic_sym sym)
 
   e = xh_get_int(pic->lib->senv->name, sym);
   if (! e) {
-    pic_error(pic, "symbol not defined");
+    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
   }
   xh_put_int(pic->lib->exports, (long)e->key, e->val);
 }
