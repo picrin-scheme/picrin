@@ -30,12 +30,13 @@ pic_intern_cstr(pic_state *pic, const char *str)
 pic_sym
 pic_gensym(pic_state *pic, pic_sym base)
 {
-  int s = ++pic->uniq_sym_cnt;
+  int id;
   char *str;
   pic_sym uniq;
 
-  str = (char *)pic_alloc(pic, strlen(pic_symbol_name(pic, base)) + (int)log10(s) + 3);
-  sprintf(str, "%s@%d", pic_symbol_name(pic, base), s);
+  id = ++pic->uniq_sym_cnt;
+  str = (char *)pic_alloc(pic, strlen(pic_symbol_name(pic, base)) + (int)log10(id) + 3);
+  sprintf(str, "%s@%d", pic_symbol_name(pic, base), id);
 
   /* don't put the symbol to pic->syms to keep it uninterned */
   uniq = pic->sym_cnt++;
