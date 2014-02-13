@@ -37,7 +37,7 @@ pic_gensym(pic_state *pic, pic_sym base)
   str = (char *)pic_alloc(pic, strlen(pic_symbol_name(pic, base)) + (int)log10(s) + 3);
   sprintf(str, "%s@%d", pic_symbol_name(pic, base), s);
 
-  /* don't put the symbol to pic->sym_tbl to keep it uninterned */
+  /* don't put the symbol to pic->syms to keep it uninterned */
   uniq = pic->sym_cnt++;
   xh_put_int(pic->sym_names, uniq, (long)str);
 
