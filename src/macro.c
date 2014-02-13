@@ -598,7 +598,6 @@ pic_core_syntactic_env(pic_state *pic)
   register_core_syntax(pic, senv, "lambda");
   register_core_syntax(pic, senv, "if");
   register_core_syntax(pic, senv, "begin");
-  register_core_syntax(pic, senv, "define-macro");
   register_core_syntax(pic, senv, "define-syntax");
 
   return senv;
@@ -894,6 +893,11 @@ pic_init_macro(pic_state *pic)
   pic_defmacro(pic, "include", pic_proc_new(pic, pic_macro_include));
 
   pic_deflibrary ("(picrin macro)") {
+
+    /* export define-macro syntax */
+    xh_put_int(pic->lib->senv->name, pic->sDEFINE_MACRO, pic->sDEFINE_MACRO);
+    pic_export(pic, pic->sDEFINE_MACRO);
+
     pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);

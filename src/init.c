@@ -90,7 +90,6 @@ pic_init_core(pic_state *pic)
   pic_export(pic, pic_intern_cstr(pic, "lambda"));
   pic_export(pic, pic_intern_cstr(pic, "if"));
   pic_export(pic, pic_intern_cstr(pic, "begin"));
-  pic_export(pic, pic_intern_cstr(pic, "define-macro"));
   pic_export(pic, pic_intern_cstr(pic, "define-syntax"));
 
   pic_init_bool(pic); DONE;
