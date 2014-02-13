@@ -103,6 +103,10 @@ pic_system_getenvs(pic_state *pic)
 
   pic_get_args(pic, "");
 
+  if (! pic->envp) {
+    return pic_nil_value();
+  }
+
   for (envp = pic->envp; *envp; ++envp) {
     pic_value key, val;
     int i;
