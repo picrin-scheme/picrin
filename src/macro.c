@@ -316,6 +316,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       else if (tag == pic->sDEFINE_MACRO) {
 	pic_value var, val;
 	struct pic_proc *proc;
+        pic_sym uniq;
+        struct pic_macro *mac;
 
 	if (pic_length(pic, expr) < 2) {
 	  pic_error(pic, "syntax error");
@@ -338,6 +340,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
+        uniq = pic_gensym(pic, pic_sym(var));
+        xh_put_int(senv->name, pic_sym(var), uniq);
 
 	proc = pic_compile(pic, val);
 	if (pic->err) {
@@ -350,7 +354,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  abort();
 	}
 	assert(pic_proc_p(v));
-	defmacro(pic, pic_sym(var), pic_proc_ptr(v));
+
+        mac = macro_new(pic, pic_proc_ptr(v), NULL);
+        xh_put_int(pic->macros, uniq, (long)mac);
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
