@@ -793,7 +793,7 @@
 
   (define (record-set! record index value)
     (vector-set! record (+ index 1) value))
-  
+
   (define record-type% (make-record 3))
   (record-set! record-type% 0 record-type%)
   (record-set! record-type% 1 'record-type%)
@@ -819,13 +819,13 @@
     (let rec ((i 1) (tags (record-type-field-tags type)))
       (cond ((null? tags)
 	     (error "record type has no such field" type tag))
-	    ((eq? tag (car tag)) i)
+	    ((eq? tag (car tags)) i)
 	    (else (rec (+ i 1) (cdr tags))))))
 
   (define (record-constructor type tags)
     (let ((size (length (record-type-field-tags type)))
 	  (arg-count (length tags))
-	  (indexes (map (lambda (tag) (field-index tag)) tags)))
+	  (indexes (map (lambda (tag) (field-index type tag)) tags)))
       (lambda args
 	(if (= (length args) arg-count)
 	    (let ((new (make-record (+ size 1))))
@@ -864,7 +864,7 @@
        (let ((type (cadr form))
 	     (field-tag (caddr form))
 	     (acc-mod (cdddr form)))
-	 (if (= 2 (length acc-mod))
+	 (if (= 1 (length acc-mod))
 	     `(define ,(car acc-mod)
 		(record-accessor ,type ',field-tag))
 	     `(begin
@@ -892,27 +892,47 @@
 		 `(define-record-field ,type ,(car x) ,(cadr x) ,@(cddr x)))
 	       field-tag))))))
 
-  (export define-record-type define-record-field))
+  (export define-record-type))
 
 ;;; Appendix A. Standard Libraries Lazy
 (define-library (scheme lazy)
   (import (scheme base)
-	  (stibear record))
+	  (scheme record)
+	  (picrin macro))
 
   (define-record-type promise
-    (make-promise obj)
+    (make-promise% done obj)
     promise?
-    (obj force%))
+    (done promise-done? promise-done!)
+    (obj promise-value promise-value!))
 
+  (define-syntax delay-force
+    (ir-macro-transformer
+     (lambda (form rename compare?)
+       (let ((expr (cadr form)))
+	 `(make-promise% #f (lambda () ,expr))))))
+  
   (define-syntax delay
-    (er-macro-transformer
-     (lambda (exp rename compare?)
-       (let ((expression (cadr exp)))
-	 `(,(rename 'make-promise)
-	   (,(rename 'lambda) () ,expression))))))
+    (ir-macro-transformer
+     (lambda (form rename compare?)
+       (let ((expr (cadr form)))
+	 `(delay-force (make-promise% #t ,expr))))))
 
-  (define-syntax force
-    (er-macro-transformer
-     (lambda (exp rename compare?)
-       (let ((promise (cadr exp)))
-	 `(,(rename 'apply) (,(rename 'force%) ,promise)))))))
+  (define (promise-update! new old)
+    (promise-done! old (promise-done? new))
+    (promise-value! old (promise-value new)))
+  
+  (define (force promise)
+    (if (promise-done? promise)
+	(promise-value promise)
+	(let ((promise* ((promise-value promise))))
+	  (unless (promise-done? promise)
+		  (promise-update! promise* promise))
+	  (force promise))))
+
+  (define (make-promise obj)
+    (if (promise? obj)
+	obj
+	(make-promise% #f obj)))
+
+  (export delay-force delay force make-promise promise?))
