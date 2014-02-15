@@ -650,6 +650,16 @@ pic_macro_gensym(pic_state *pic)
 }
 
 static pic_value
+pic_macro_macroexpand(pic_state *pic)
+{
+  pic_value expr;
+
+  pic_get_args(pic, "o", &expr);
+
+  return pic_macroexpand(pic, expr);
+}
+
+static pic_value
 pic_macro_make_sc(pic_state *pic)
 {
   pic_value senv, free_vars, expr;
@@ -911,6 +921,7 @@ pic_init_macro(pic_state *pic)
     pic_export(pic, pic->sDEFINE_MACRO);
 
     pic_defun(pic, "gensym", pic_macro_gensym);
+    pic_defun(pic, "macroexpand", pic_macro_macroexpand);
     pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
