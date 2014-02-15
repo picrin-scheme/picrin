@@ -1,0 +1,81 @@
+7  SRFI 0: Feature-based conditional expansion construct
+y  SRFI 1: List Library
+   SRFI 2: AND-LET*: an AND with local bindings, a guarded LET* special form
+   SRFI 4: Homogeneous numeric vector datatypes
+   SRFI 5: A compatible let form with signatures and rest arguments
+7  SRFI 6: Basic String Ports
+   SRFI 7: Feature-based program configuration language
+   SRFI 8: receive: Binding to multiple values
+7  SRFI 9: Defining Record Types
+   SRFI 10: Sharp-Comma External Form
+7  SRFI 11: Syntax for receiving multiple values
+   SRFI 13: String Library
+   SRFI 14: Character-Set Library
+7  SRFI 16: Syntax for procedures of variable arity
+   SRFI 17: Generalized set!
+   SRFI 18: Multithreading support
+   SRFI 19: Time Data Types and Procedures
+   SRFI 21: Real-time multithreading support
+   SRFI 22: Running Scheme Scripts on Unix
+   SRFI 23: Error reporting mechanism
+   SRFI 25: Multi-dimensional Array Primitives
+   SRFI 26: Notation for Specializing Parameters without Currying
+   SRFI 27: Sources of Random Bits
+   SRFI 28: Basic Format Strings
+   SRFI 29: Localization
+7  SRFI 30: Nested Multi-line Comments
+   SRFI 31: A special form for recursive evaluation
+7  SRFI 34: Exception Handling for Programs
+   SRFI 35: Conditions
+   SRFI 36: I/O Conditions
+   SRFI 37: args-fold: a program argument processor
+7  SRFI 38: External Representation for Data With Shared Structure
+7  SRFI 39: Parameter objects
+   SRFI 40: A Library of Streams (deprecated)
+   SRFI 41: Streams
+   SRFI 42: Eager Comprehensions
+   SRFI 43: Vector Library
+   SRFI 44: Collections
+7  SRFI 45: Primitives for expressing iterative lazy algorithms
+7  SRFI 46: Basic Syntax-rules Extensions
+   SRFI 47: Array
+   SRFI 48: Intermediate Format Strings
+   SRFI 49: Indentation-sensitive syntax
+   SRFI 51: Handling rest list
+   SRFI 54: Formatting
+   SRFI 55: require-extension
+   SRFI 57: Records
+   SRFI 58: Array Notation
+   SRFI 59: Vicinity
+   SRFI 60: Integers as Bits
+   SRFI 61: A more general cond clause
+7  SRFI 62: S-expression comments
+   SRFI 63: Homogeneous and Heterogeneous Arrays
+   SRFI 64: A Scheme API for test suites
+   SRFI 66: Octet Vectors
+   SRFI 67: Compare Procedures
+   SRFI 69: Basic hash tables
+7  SRFI 70: Numbers
+   SRFI 71: LET-syntax for multiple values
+   SRFI 72: Simple hygienic macros
+   SRFI 74: Octet-Addressed Binary Blocks
+   SRFI 78: Lightweight testing
+   SRFI 86: MU and NU simulating VALUES & CALL-WITH-VALUES, and their related LET-syntax
+7  SRFI 87: => in case clauses
+   SRFI 88: Keyword Objects
+   SRFI 89: Optional and named parameters
+   SRFI 90: Extensible hash table constructor
+   SRFI 94: Type-Restricted Numerical Functions
+   SRFI 95: Sorting and Merging
+   SRFI 96: SLIB Prerequisites
+   SRFI 97: SRFI Libraries
+   SRFI 98: An interface to access environment variables
+   SRFI 99: ERR5RS Records
+   SRFI 100: define-lambda-object
+   SRFI 101: Purely Functional Random-Access Pairs and Lists
+   SRFI 105: Curly-infix-expressions
+   SRFI 106: Basic socket interface
+   SRFI 108: Named quasi-literal constructors
+   SRFI 109: Extended string quasi-literals
+   SRFI 110: Sweet-expressions (t-expressions)
+   SRFI 111: Boxes
