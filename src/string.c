@@ -5,6 +5,8 @@
 #include <string.h>
 
 #include "picrin.h"
+#include "picrin/pair.h"
+#include "picrin/port.h"
 
 struct pic_string *
 pic_str_new(pic_state *pic, const char *cstr, size_t len)
@@ -22,6 +24,99 @@ pic_str_new(pic_state *pic, const char *cstr, size_t len)
   str->len = len;
   str->str = copy;
   return str;
+}
+
+pic_value
+pic_vfformat(pic_state *pic, XFILE *file, const char *fmt, va_list ap)
+{
+  char c;
+  pic_value irrs = pic_nil_value();
+
+  while ((c = *fmt++)) {
+    switch (c) {
+    default:
+      xfputc(c, file);
+      break;
+    case '%':
+      c = *fmt++;
+      if (! c)
+        goto exit;
+      switch (c) {
+      default:
+        xfputc(c, file);
+        break;
+      case '%':
+        xfputc('%', file);
+        break;
+      case 'c':
+        xfprintf(file, "%c", va_arg(ap, int));
+        break;
+      case 's':
+        xfprintf(file, "%s", va_arg(ap, const char *));
+        break;
+      case 'd':
+        xfprintf(file, "%d", va_arg(ap, int));
+        break;
+      case 'p':
+        xfprintf(file, "%p", va_arg(ap, void *));
+        break;
+      case 'f':
+        xfprintf(file, "%f", va_arg(ap, double));
+        break;
+      }
+      break;
+    case '~':
+      c = *fmt++;
+      if (! c)
+        goto exit;
+      switch (c) {
+      default:
+        xfputc(c, file);
+        break;
+      case '~':
+        xfputc('~', file);
+        break;
+      case '%':
+        xfputc('\n', file);
+        break;
+      case 'S':
+        irrs = pic_cons(pic, pic_fdebug(pic, va_arg(ap, pic_value), file), irrs);
+        break;
+      }
+      break;
+    }
+  }
+ exit:
+
+  return pic_reverse(pic, irrs);
+}
+
+pic_value
+pic_vformat(pic_state *pic, const char *fmt, va_list ap)
+{
+  struct pic_port *port;
+  pic_value irrs;
+
+  port = pic_open_output_string(pic);
+
+  irrs = pic_vfformat(pic, port->file, fmt, ap);
+  irrs = pic_cons(pic, pic_obj_value(pic_get_output_string(pic, port)), irrs);
+
+  pic_close_port(pic, port);
+  return irrs;
+}
+
+pic_value
+pic_format(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  pic_value objs;
+
+  va_start(ap, fmt);
+  objs = pic_vformat(pic, fmt, ap);
+  va_end(ap);
+
+  return objs;
 }
 
 struct pic_string *
