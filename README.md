@@ -30,6 +30,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 
     - `define-macro`
     - `gensym`
+    - `macroexpand`
 
         Old-fashioned macro facility.
 
