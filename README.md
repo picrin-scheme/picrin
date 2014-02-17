@@ -18,36 +18,37 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 
 ## Libraries
 
-- `(scheme base)`
-- `(scheme write)`
-- `(scheme cxr)`
-- `(scheme file)`
-- `(scheme inexact)`
-- `(scheme time)`
-- `(scheme process-context)`
-- `(scheme load)`
-- `(picrin macro)`
-
-    - `define-macro`
-    - `gensym`
-    - `macroexpand`
-
-        Old-fashioned macro facility.
-
-    - `make-syntactic-closure`
-    - `identifier?`
-    - `identifier=?`
-
-        Syntactic closures.
-
-    - `er-macro-transformer`
-    - `ir-macro-transformer`
-
-        Explicit renaming macro families.
-
-- `(srfi 1)`
-
-    List manipulation library.
+    - `(scheme base)`
+    - `(scheme write)`
+    - `(scheme cxr)`
+    - `(scheme file)`
+    - `(scheme inexact)`
+    - `(scheme time)`
+    - `(scheme process-context)`
+    - `(scheme load)`
+    - `(picrin macro)`
+    
+        - `define-macro`
+        - `gensym`
+        - `macroexpand`
+    
+            Old-fashioned macro facility.
+    
+        - `make-syntactic-closure`
+        - `identifier?`
+        - `identifier=?`
+    
+            Syntactic closures.
+    
+        - `er-macro-transformer`
+        - `ir-macro-transformer`
+    
+            Explicit renaming macro families.
+    
+    - `(srfi 1)`
+    
+        List manipulation library.
+    
 
 ## Compliance with R7RS
 
