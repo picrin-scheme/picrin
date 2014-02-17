@@ -13,32 +13,28 @@ static void write(pic_state *, pic_value, XFILE *file);
 static bool
 is_quote(pic_state *pic, pic_value pair)
 {
-  return pic_list_p(pic, pair)
-    && pic_length(pic, pair) == 2
+  return pic_nil_p(pic_cddr(pic, pair))
     && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUOTE));
 }
 
 static bool
 is_unquote(pic_state *pic, pic_value pair)
 {
-  return pic_list_p(pic, pair)
-    && pic_length(pic, pair) == 2
+  return pic_nil_p(pic_cddr(pic, pair))
     && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sUNQUOTE));
 }
 
 static bool
 is_unquote_splicing(pic_state *pic, pic_value pair)
 {
-  return pic_list_p(pic, pair)
-    && pic_length(pic, pair) == 2
+  return pic_nil_p(pic_cddr(pic, pair))
     && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sUNQUOTE_SPLICING));
 }
 
 static bool
 is_quasiquote(pic_state *pic, pic_value pair)
 {
-  return pic_list_p(pic, pair)
-    && pic_length(pic, pair) == 2
+  return pic_nil_p(pic_cddr(pic, pair))
     && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUASIQUOTE));
 }
 
