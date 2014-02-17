@@ -32,7 +32,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
         - `gensym`
         - `macroexpand`
     
-            Old-fashioned macro facility.
+            Old-fashioned macro.
     
         - `make-syntactic-closure`
         - `identifier?`
@@ -43,7 +43,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
         - `er-macro-transformer`
         - `ir-macro-transformer`
     
-            Explicit renaming macro families.
+            Explicit renaming macro family.
     
     - `(srfi 1)`
     
