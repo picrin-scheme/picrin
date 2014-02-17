@@ -9,35 +9,35 @@
 #include "picrin/macro.h"
 
 static bool
-is_quote(pic_state *pic, pic_value pair)
+is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
 {
   return pic_pair_p(pic_cdr(pic, pair))
     && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUOTE));
+    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(tag));
+}
+
+static bool
+is_quote(pic_state *pic, pic_value pair)
+{
+  return is_tagged(pic, pic->sQUOTE, pair);
 }
 
 static bool
 is_unquote(pic_state *pic, pic_value pair)
 {
-  return pic_pair_p(pic_cdr(pic, pair))
-    && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sUNQUOTE));
+  return is_tagged(pic, pic->sUNQUOTE, pair);
 }
 
 static bool
 is_unquote_splicing(pic_state *pic, pic_value pair)
 {
-  return pic_pair_p(pic_cdr(pic, pair))
-    && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sUNQUOTE_SPLICING));
+  return is_tagged(pic, pic->sUNQUOTE_SPLICING, pair);
 }
 
 static bool
 is_quasiquote(pic_state *pic, pic_value pair)
 {
-  return pic_pair_p(pic_cdr(pic, pair))
-    && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUASIQUOTE));
+  return is_tagged(pic, pic->sQUASIQUOTE, pair);
 }
 
 struct writer_control {
