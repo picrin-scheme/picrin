@@ -63,6 +63,16 @@ writer_control_new(pic_state *pic, XFILE *file)
 }
 
 static void
+writer_control_destroy(struct writer_control *p)
+{
+  pic_state *pic = p->pic;
+
+  xh_destroy(p->labels);
+  xh_destroy(p->visited);
+  pic_free(pic, p);
+}
+
+static void
 traverse_shared(struct writer_control *p, pic_value obj)
 {
   xh_entry *e;
@@ -313,6 +323,8 @@ write_simple(pic_state *pic, pic_value obj, XFILE *file)
   /* no traverse here! */
 
   write_core(p, obj);
+
+  writer_control_destroy(p);
 }
 
 static void
@@ -325,6 +337,8 @@ write_shared(pic_state *pic, pic_value obj, XFILE *file)
   traverse_shared(p, obj);
 
   write_core(p, obj);
+
+  writer_control_destroy(p);
 }
 
 pic_value
