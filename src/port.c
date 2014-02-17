@@ -515,8 +515,6 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "port?", pic_port_port_p);
   pic_defun(pic, "input-port-open?", pic_port_input_port_open_p);
   pic_defun(pic, "output-port-open?", pic_port_output_port_open_p);
-  pic_defun(pic, "eof-object?", pic_port_eof_object_p);
-  pic_defun(pic, "eof-object", pic_port_eof_object);
   pic_defun(pic, "close-port", pic_port_close_port);
   pic_defun(pic, "close-input-port", pic_port_close_port);
   pic_defun(pic, "close-output-port", pic_port_close_port);
@@ -532,8 +530,18 @@ pic_init_port(pic_state *pic)
   /* input */
   pic_defun(pic, "read-char", pic_port_read_char);
   pic_defun(pic, "peek-char", pic_port_peek_char);
+  /* pic_defun(pic, "read-line", pic_port_read_line); */
+  pic_defun(pic, "eof-object?", pic_port_eof_object_p);
+  pic_defun(pic, "eof-object", pic_port_eof_object);
+  /* pic_defun(pic, "char-ready?", pic_port_char_ready_p); */
+  /* pic_defun(pic, "read-string", pic_port_read_string); */
+  /* pic_defun(pic, "read-u8", pic_port_read_byte); */
+  /* pic_defun(pic, "peek-u8", pic_port_peek_byte); */
+  /* pic_defun(pic, "u8-ready?", pic_port_byte_ready_p); */
+  /* pic_defun(pic, "read-bytevector", pic_port_read_blob); */
+  /* pic_defun(pic, "peek-bytevector!", pic_port_read_blob_ip); */
 
-  /* write */
+  /* output */
   pic_defun(pic, "newline", pic_port_newline);
   pic_defun(pic, "write-char", pic_port_write_char);
   pic_defun(pic, "write-string", pic_port_write_string);
