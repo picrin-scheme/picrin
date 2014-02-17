@@ -315,6 +315,18 @@ write_simple(pic_state *pic, pic_value obj, XFILE *file)
   write_core(p, obj);
 }
 
+static void
+write_shared(pic_state *pic, pic_value obj, XFILE *file)
+{
+  struct writer_control *p;
+
+  p = writer_control_new(pic, file);
+
+  traverse_shared(p, obj);
+
+  write_core(p, obj);
+}
+
 pic_value
 pic_debug(pic_state *pic, pic_value obj)
 {
@@ -324,7 +336,7 @@ pic_debug(pic_state *pic, pic_value obj)
 pic_value
 pic_fdebug(pic_state *pic, pic_value obj, XFILE *file)
 {
-  write(pic, obj, file);
+  write_shared(pic, obj, file);
   xfflush(file);
   return obj;
 }
@@ -340,10 +352,22 @@ pic_port_write_simple(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_port_write_shared(pic_state *pic)
+{
+  pic_value v;
+  struct pic_port *port = pic_stdout(pic);
+
+  pic_get_args(pic, "o|p", &v, &port);
+  write_shared(pic, v, port->file);
+  return pic_none_value();
+}
+
 void
 pic_init_write(pic_state *pic)
 {
   pic_deflibrary ("(scheme write)") {
     pic_defun(pic, "write-simple", pic_port_write_simple);
+    pic_defun(pic, "write-shared", pic_port_write_shared);
   }
 }

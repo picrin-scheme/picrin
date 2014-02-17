@@ -735,7 +735,6 @@
 
   ;; FIXME
   (define write write-simple)
-  (define write-shared write-simple)
 
   (define (display obj . opts)
     (let ((port (if (null? opts) (current-output-port) (car opts))))
