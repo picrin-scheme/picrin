@@ -8,7 +8,7 @@
 #include "picrin/blob.h"
 #include "picrin/macro.h"
 
-static void write(pic_state *, pic_value, XFILE *file);
+static void write_node(pic_state *, pic_value, XFILE *file);
 
 static bool
 is_quote(pic_state *pic, pic_value pair)
@@ -38,21 +38,31 @@ is_quasiquote(pic_state *pic, pic_value pair)
     && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUASIQUOTE));
 }
 
+static int write_depth;
+static const int write_max_depth = 50;
+
 static void
 write_pair(pic_state *pic, struct pic_pair *pair, XFILE *file)
 {
-  write(pic, pair->car, file);
+  if (write_depth >= write_max_depth) {
+    xfprintf(file, "...");
+    return;
+  }
+
+  write_node(pic, pair->car, file);
 
   if (pic_nil_p(pair->cdr)) {
     return;
   }
   if (pic_pair_p(pair->cdr)) {
     xfprintf(file, " ");
+    write_depth++;
     write_pair(pic, pic_pair_ptr(pair->cdr), file);
+    write_depth--;
     return;
   }
   xfprintf(file, " . ");
-  write(pic, pair->cdr, file);
+  write_node(pic, pair->cdr, file);
 }
 
 static void
@@ -72,9 +82,16 @@ write_str(pic_state *pic, struct pic_string *str, XFILE *file)
 }
 
 static void
-write(pic_state *pic, pic_value obj, XFILE *file)
+write_node(pic_state *pic, pic_value obj, XFILE *file)
 {
   size_t i;
+
+  if (write_depth >= write_max_depth) {
+    xfprintf(file, "...");
+    return;
+  }
+
+  write_depth++;
 
   switch (pic_type(obj)) {
   case PIC_TT_NIL:
@@ -89,22 +106,22 @@ write(pic_state *pic, pic_value obj, XFILE *file)
   case PIC_TT_PAIR:
     if (is_quote(pic, obj)) {
       xfprintf(file, "'");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_node(pic, pic_list_ref(pic, obj, 1), file);
       break;
     }
     else if (is_unquote(pic, obj)) {
       xfprintf(file, ",");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_node(pic, pic_list_ref(pic, obj, 1), file);
       break;
     }
     else if (is_unquote_splicing(pic, obj)) {
       xfprintf(file, ",@");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_node(pic, pic_list_ref(pic, obj, 1), file);
       break;
     }
     else if (is_quasiquote(pic, obj)) {
       xfprintf(file, "`");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_node(pic, pic_list_ref(pic, obj, 1), file);
       break;
     }
     xfprintf(file, "(");
@@ -153,7 +170,7 @@ write(pic_state *pic, pic_value obj, XFILE *file)
   case PIC_TT_VECTOR:
     xfprintf(file, "#(");
     for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-      write(pic, pic_vec_ptr(obj)->data[i], file);
+      write_node(pic, pic_vec_ptr(obj)->data[i], file);
       if (i + 1 < pic_vec_ptr(obj)->len) {
 	xfprintf(file, " ");
       }
@@ -187,7 +204,7 @@ write(pic_state *pic, pic_value obj, XFILE *file)
     break;
   case PIC_TT_SC:
     xfprintf(file, "#<sc %p: ", pic_ptr(obj));
-    write(pic, pic_sc(obj)->expr, file);
+    write_node(pic, pic_sc(obj)->expr, file);
     xfprintf(file, ">");
     break;
   case PIC_TT_LIB:
@@ -200,6 +217,15 @@ write(pic_state *pic, pic_value obj, XFILE *file)
     xfprintf(file, "#<irep %p>", pic_ptr(obj));
     break;
   }
+
+  write_depth--;
+}
+
+static void
+write(pic_state *pic, pic_value obj, XFILE *file)
+{
+  write_depth = 0;
+  write_node(pic, obj, file);
 }
 
 pic_value
