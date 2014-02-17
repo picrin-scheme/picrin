@@ -8,8 +8,6 @@
 #include "picrin/blob.h"
 #include "picrin/macro.h"
 
-static void write(pic_state *, pic_value, XFILE *file);
-
 static bool
 is_quote(pic_state *pic, pic_value pair)
 {
@@ -42,21 +40,103 @@ is_quasiquote(pic_state *pic, pic_value pair)
     && pic_eq_p(pic_car(pic, pair), pic_symbol_value(pic->sQUASIQUOTE));
 }
 
-static void
-write_pair(pic_state *pic, struct pic_pair *pair, XFILE *file)
+struct writer_control {
+  pic_state *pic;
+  XFILE *file;
+  xhash *labels;
+  xhash *visited;
+  int cnt;
+};
+
+static struct writer_control *
+writer_control_new(pic_state *pic, XFILE *file)
 {
-  write(pic, pair->car, file);
+  struct writer_control *p;
+
+  p = (struct writer_control *)pic_alloc(pic, sizeof(struct writer_control));
+  p->pic = pic;
+  p->file = file;
+  p->labels = xh_new_ptr();
+  p->visited = xh_new_ptr();
+  p->cnt = 0;
+  return p;
+}
+
+static void
+traverse_shared(struct writer_control *p, pic_value obj)
+{
+  xh_entry *e;
+  size_t i;
+
+  switch (pic_type(obj)) {
+  case PIC_TT_PAIR:
+  case PIC_TT_VECTOR:
+    e = xh_get(p->labels, pic_obj_ptr(obj));
+    if (e == NULL) {
+      xh_put(p->labels, pic_obj_ptr(obj), -1);
+    }
+    else if (e->val == -1) {
+      xh_put(p->labels, pic_obj_ptr(obj), p->cnt++);
+      break;
+    }
+    else {
+      break;
+    }
+
+    if (pic_pair_p(obj)) {
+      traverse_shared(p, pic_car(p->pic, obj));
+      traverse_shared(p, pic_cdr(p->pic, obj));
+    }
+    else {
+      for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
+        traverse_shared(p, pic_vec_ptr(obj)->data[i]);
+      }
+    }
+    break;
+  default:
+    /* pass */
+    break;
+  }
+}
+
+static void write_core(struct writer_control *p, pic_value);
+
+static void
+write_pair(struct writer_control *p, struct pic_pair *pair)
+{
+  xh_entry *e;
+
+  write_core(p, pair->car);
 
   if (pic_nil_p(pair->cdr)) {
     return;
   }
-  if (pic_pair_p(pair->cdr)) {
-    xfprintf(file, " ");
-    write_pair(pic, pic_pair_ptr(pair->cdr), file);
+  else if (pic_pair_p(pair->cdr)) {
+
+    /* shared objects */
+    if ((e = xh_get(p->labels, pic_obj_ptr(pair->cdr))) && e->val != -1) {
+      xfprintf(p->file, " . ");
+
+      if ((xh_get(p->visited, pic_obj_ptr(pair->cdr)))) {
+        xfprintf(p->file, "#%d#", e->val);
+        return;
+      }
+      else {
+        xfprintf(p->file, "#%d=", e->val);
+        xh_put(p->visited, pic_obj_ptr(pair->cdr), 1);
+      }
+    }
+    else {
+      xfprintf(p->file, " ");
+    }
+
+    write_pair(p, pic_pair_ptr(pair->cdr));
     return;
   }
-  xfprintf(file, " . ");
-  write(pic, pair->cdr, file);
+  else {
+    xfprintf(p->file, " . ");
+    write_core(p, pair->cdr);
+  }
 }
 
 static void
@@ -76,9 +156,26 @@ write_str(pic_state *pic, struct pic_string *str, XFILE *file)
 }
 
 static void
-write(pic_state *pic, pic_value obj, XFILE *file)
+write_core(struct writer_control *p, pic_value obj)
 {
+  pic_state *pic = p->pic;
+  XFILE *file = p->file;
   size_t i;
+  xh_entry *e;
+
+  /* shared objects */
+  if (pic_vtype(obj) == PIC_VTYPE_HEAP
+      && (e = xh_get(p->labels, pic_obj_ptr(obj)))
+      && e->val != -1) {
+    if ((xh_get(p->visited, pic_obj_ptr(obj)))) {
+      xfprintf(file, "#%d#", e->val);
+      return;
+    }
+    else {
+      xfprintf(file, "#%d=", e->val);
+      xh_put(p->visited, pic_obj_ptr(obj), 1);
+    }
+  }
 
   switch (pic_type(obj)) {
   case PIC_TT_NIL:
@@ -93,26 +190,26 @@ write(pic_state *pic, pic_value obj, XFILE *file)
   case PIC_TT_PAIR:
     if (is_quote(pic, obj)) {
       xfprintf(file, "'");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_core(p, pic_list_ref(pic, obj, 1));
       break;
     }
     else if (is_unquote(pic, obj)) {
       xfprintf(file, ",");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_core(p, pic_list_ref(pic, obj, 1));
       break;
     }
     else if (is_unquote_splicing(pic, obj)) {
       xfprintf(file, ",@");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_core(p, pic_list_ref(pic, obj, 1));
       break;
     }
     else if (is_quasiquote(pic, obj)) {
       xfprintf(file, "`");
-      write(pic, pic_list_ref(pic, obj, 1), file);
+      write_core(p, pic_list_ref(pic, obj, 1));
       break;
     }
     xfprintf(file, "(");
-    write_pair(pic, pic_pair_ptr(obj), file);
+    write_pair(p, pic_pair_ptr(obj));
     xfprintf(file, ")");
     break;
   case PIC_TT_SYMBOL:
@@ -157,7 +254,7 @@ write(pic_state *pic, pic_value obj, XFILE *file)
   case PIC_TT_VECTOR:
     xfprintf(file, "#(");
     for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-      write(pic, pic_vec_ptr(obj)->data[i], file);
+      write_core(p, pic_vec_ptr(obj)->data[i]);
       if (i + 1 < pic_vec_ptr(obj)->len) {
 	xfprintf(file, " ");
       }
@@ -191,7 +288,7 @@ write(pic_state *pic, pic_value obj, XFILE *file)
     break;
   case PIC_TT_SC:
     xfprintf(file, "#<sc %p: ", pic_ptr(obj));
-    write(pic, pic_sc(obj)->expr, file);
+    write_core(p, pic_sc(obj)->expr);
     xfprintf(file, ">");
     break;
   case PIC_TT_LIB:
@@ -204,6 +301,18 @@ write(pic_state *pic, pic_value obj, XFILE *file)
     xfprintf(file, "#<irep %p>", pic_ptr(obj));
     break;
   }
+}
+
+static void
+write_simple(pic_state *pic, pic_value obj, XFILE *file)
+{
+  struct writer_control *p;
+
+  p = writer_control_new(pic, file);
+
+  /* no traverse here! */
+
+  write_core(p, obj);
 }
 
 pic_value
@@ -227,7 +336,7 @@ pic_port_write_simple(pic_state *pic)
   struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write(pic, v, port->file);
+  write_simple(pic, v, port->file);
   return pic_none_value();
 }
 
