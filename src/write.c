@@ -410,7 +410,7 @@ pic_fdebug(pic_state *pic, pic_value obj, XFILE *file)
 }
 
 static pic_value
-pic_port_write(pic_state *pic)
+pic_write_write(pic_state *pic)
 {
   pic_value v;
   struct pic_port *port = pic_stdout(pic);
@@ -421,7 +421,7 @@ pic_port_write(pic_state *pic)
 }
 
 static pic_value
-pic_port_write_simple(pic_state *pic)
+pic_write_write_simple(pic_state *pic)
 {
   pic_value v;
   struct pic_port *port = pic_stdout(pic);
@@ -432,7 +432,7 @@ pic_port_write_simple(pic_state *pic)
 }
 
 static pic_value
-pic_port_write_shared(pic_state *pic)
+pic_write_write_shared(pic_state *pic)
 {
   pic_value v;
   struct pic_port *port = pic_stdout(pic);
@@ -446,8 +446,8 @@ void
 pic_init_write(pic_state *pic)
 {
   pic_deflibrary ("(scheme write)") {
-    pic_defun(pic, "write", pic_port_write);
-    pic_defun(pic, "write-simple", pic_port_write_simple);
-    pic_defun(pic, "write-shared", pic_port_write_shared);
+    pic_defun(pic, "write", pic_write_write);
+    pic_defun(pic, "write-simple", pic_write_write_simple);
+    pic_defun(pic, "write-shared", pic_write_write_shared);
   }
 }
