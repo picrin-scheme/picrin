@@ -109,6 +109,46 @@ traverse_shared(struct writer_control *p, pic_value obj)
   }
 }
 
+static void
+traverse_seq(struct writer_control *p, pic_value obj)
+{
+  xh_entry *e;
+  size_t i;
+
+  switch (pic_type(obj)) {
+  case PIC_TT_PAIR:
+  case PIC_TT_VECTOR:
+    e = xh_get(p->labels, pic_obj_ptr(obj));
+    if (e == NULL) {
+      xh_put(p->labels, pic_obj_ptr(obj), -1);
+    }
+    else if (e->val == -1) {
+      xh_put(p->labels, pic_obj_ptr(obj), p->cnt++);
+      break;
+    }
+    else {
+      break;
+    }
+
+    if (pic_pair_p(obj)) {
+      traverse_seq(p, pic_car(p->pic, obj));
+      traverse_seq(p, pic_cdr(p->pic, obj));
+    }
+    else {
+      for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
+        traverse_seq(p, pic_vec_ptr(obj)->data[i]);
+      }
+    }
+
+    xh_del(p->labels, pic_obj_ptr(obj));
+    assert(xh_get(p->labels, pic_obj_ptr(obj)) == NULL);
+    break;
+  default:
+    /* pass */
+    break;
+  }
+}
+
 static void write_core(struct writer_control *p, pic_value);
 
 static void
@@ -314,6 +354,20 @@ write_core(struct writer_control *p, pic_value obj)
 }
 
 static void
+write(pic_state *pic, pic_value obj, XFILE *file)
+{
+  struct writer_control *p;
+
+  p = writer_control_new(pic, file);
+
+  traverse_seq(p, obj);
+
+  write_core(p, obj);
+
+  writer_control_destroy(p);
+}
+
+static void
 write_simple(pic_state *pic, pic_value obj, XFILE *file)
 {
   struct writer_control *p;
@@ -350,9 +404,20 @@ pic_debug(pic_state *pic, pic_value obj)
 pic_value
 pic_fdebug(pic_state *pic, pic_value obj, XFILE *file)
 {
-  write_shared(pic, obj, file);
+  write(pic, obj, file);
   xfflush(file);
   return obj;
+}
+
+static pic_value
+pic_port_write(pic_state *pic)
+{
+  pic_value v;
+  struct pic_port *port = pic_stdout(pic);
+
+  pic_get_args(pic, "o|p", &v, &port);
+  write(pic, v, port->file);
+  return pic_none_value();
 }
 
 static pic_value
@@ -381,6 +446,7 @@ void
 pic_init_write(pic_state *pic)
 {
   pic_deflibrary ("(scheme write)") {
+    pic_defun(pic, "write", pic_port_write);
     pic_defun(pic, "write-simple", pic_port_write_simple);
     pic_defun(pic, "write-shared", pic_port_write_shared);
   }

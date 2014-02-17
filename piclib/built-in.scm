@@ -733,9 +733,6 @@
 (define-library (scheme write)
   (import (scheme base))
 
-  ;; FIXME
-  (define write write-simple)
-
   (define (display obj . opts)
     (let ((port (if (null? opts) (current-output-port) (car opts))))
       (cond
