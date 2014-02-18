@@ -796,7 +796,7 @@
       (record-set! new 1 name)
       (record-set! new 2 field-tags)
       new))
-  
+
   (define (record-type record)
     (record-ref record 0))
 
@@ -863,7 +863,7 @@
 		  (record-accessor ,type ',field-tag))
 		(define ,(cadr acc-mod)
 		  (record-modifier ,type ',field-tag))))))))
-  
+
   (define-syntax define-record-type
     (ir-macro-transformer
      (lambda (form inject compare?)
