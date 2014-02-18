@@ -109,46 +109,6 @@ traverse_shared(struct writer_control *p, pic_value obj)
   }
 }
 
-static void
-traverse_seq(struct writer_control *p, pic_value obj)
-{
-  xh_entry *e;
-  size_t i;
-
-  switch (pic_type(obj)) {
-  case PIC_TT_PAIR:
-  case PIC_TT_VECTOR:
-    e = xh_get(p->labels, pic_obj_ptr(obj));
-    if (e == NULL) {
-      xh_put(p->labels, pic_obj_ptr(obj), -1);
-    }
-    else if (e->val == -1) {
-      xh_put(p->labels, pic_obj_ptr(obj), p->cnt++);
-      break;
-    }
-    else {
-      break;
-    }
-
-    if (pic_pair_p(obj)) {
-      traverse_seq(p, pic_car(p->pic, obj));
-      traverse_seq(p, pic_cdr(p->pic, obj));
-    }
-    else {
-      for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-        traverse_seq(p, pic_vec_ptr(obj)->data[i]);
-      }
-    }
-
-    xh_del(p->labels, pic_obj_ptr(obj));
-    assert(xh_get(p->labels, pic_obj_ptr(obj)) == NULL);
-    break;
-  default:
-    /* pass */
-    break;
-  }
-}
-
 static void write_core(struct writer_control *p, pic_value);
 
 static void
@@ -360,7 +320,7 @@ write(pic_state *pic, pic_value obj, XFILE *file)
 
   p = writer_control_new(pic, file);
 
-  traverse_seq(p, obj);
+  traverse_shared(p, obj);      /* FIXME */
 
   write_core(p, obj);
 
