@@ -78,7 +78,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   else
     yylvalp->i--;
 }
-<BLOCK_COMMENT>.	{
+<BLOCK_COMMENT>.|\n	{
   /* skip block comment */
 }
 
