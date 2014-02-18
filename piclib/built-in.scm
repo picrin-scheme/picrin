@@ -745,4 +745,4 @@
        (else
         (write obj port)))))
 
-  (export write write-shared display))
+  (export display))
