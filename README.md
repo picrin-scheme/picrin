@@ -54,7 +54,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 
 | section | status | comments |
 | --- | --- | --- |
-| 2.2 Whitespace and comments | incomplete | block comments are not implemented |
+| 2.2 Whitespace and comments | yes | |
 | 2.3 Other notations | incomplete | #e #i #b #o #d #x |
 | 2.4 Datum labels | no | unsupported |
 | 3.1 Variables, syntactic keywords, and regions | | |
