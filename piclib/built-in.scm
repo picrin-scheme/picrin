@@ -763,11 +763,14 @@
 	     (not (eq? (vector-ref x 0)
 		       record-marker)))))
 
+  #|
+  ;; (scheme eval) is not provided for now
   (define eval
     (let ((real-eval eval))
       (lambda (exp env)
 	((real-eval `(lambda (vector?) ,exp))
 	 vector?))))
+  |#
 
   (define (record? x)
     (and (real-vector? x)
