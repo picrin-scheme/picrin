@@ -422,6 +422,18 @@ pic_port_read_line(pic_state *pic)
 }
 
 static pic_value
+pic_port_char_ready_p(pic_state *pic)
+{
+  struct pic_port *port = pic_stdin(pic);
+
+  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "char-ready?");
+
+  pic_get_args(pic, "|p", &port);
+
+  return pic_true_value();      /* FIXME: always returns #t */
+}
+
+static pic_value
 pic_port_newline(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
@@ -558,7 +570,7 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "read-line", pic_port_read_line);
   pic_defun(pic, "eof-object?", pic_port_eof_object_p);
   pic_defun(pic, "eof-object", pic_port_eof_object);
-  /* pic_defun(pic, "char-ready?", pic_port_char_ready_p); */
+  pic_defun(pic, "char-ready?", pic_port_char_ready_p);
   /* pic_defun(pic, "read-string", pic_port_read_string); */
   /* pic_defun(pic, "read-u8", pic_port_read_byte); */
   /* pic_defun(pic, "peek-u8", pic_port_peek_byte); */
