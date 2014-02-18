@@ -167,8 +167,7 @@ NORETURN static pic_value
 pic_error_error(pic_state *pic)
 {
   char *str;
-  int len;
-  size_t argc;
+  size_t len, argc;
   pic_value *argv;
   struct pic_error *e;
 
