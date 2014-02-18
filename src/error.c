@@ -80,19 +80,19 @@ pic_warn(pic_state *pic, const char *msg)
 }
 
 void
-pic_raise(pic_state *pic, pic_value obj)
+pic_raise(pic_state *pic, struct pic_error *e)
 {
   pic_value a;
   struct pic_proc *handler;
 
   if (pic->ridx == 0) {
-    pic_abort(pic, "logic flaw: no exception handler remains");
+    raise(pic, e);
   }
 
   handler = pic->rescue[--pic->ridx];
   pic_gc_protect(pic, pic_obj_value(handler));
 
-  a = pic_apply_argv(pic, handler, 1, obj);
+  a = pic_apply_argv(pic, handler, 1, pic_obj_value(e));
   /* when the handler returns */
   pic_errorf(pic, "handler returned", 2, pic_obj_value(handler), a);
 }
@@ -141,10 +141,16 @@ NORETURN static pic_value
 pic_error_raise(pic_state *pic)
 {
   pic_value v;
+  struct pic_error *e;
 
   pic_get_args(pic, "o", &v);
 
-  pic_raise(pic, v);
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e->type = PIC_ERROR_RAISED;
+  e->msg = pic_str_new_cstr(pic, "raised");
+  e->irrs = pic_list(pic, 1, v);
+
+  pic_raise(pic, e);
 }
 
 static pic_value
@@ -173,7 +179,7 @@ pic_error_error(pic_state *pic)
   e->msg = pic_str_new_cstr(pic, str);
   e->irrs = pic_list_by_array(pic, argc, argv);
 
-  pic_raise(pic, pic_obj_value(e));
+  pic_raise(pic, e);
 }
 
 static pic_value
