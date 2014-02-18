@@ -748,7 +748,7 @@
   (export display))
 
 ;;; Record Type
-(define-library (scheme record)
+(define-library (picrin record)
   (import (scheme base)
 	  (scheme cxr)
 	  (picrin macro))
