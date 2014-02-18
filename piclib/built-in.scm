@@ -886,4 +886,9 @@
 		 `(define-record-field ,type ,(car x) ,(cadr x) ,@(cddr x)))
 	       field-tag))))))
 
-  (export define-record-type))
+  (export define-record-type vector?))
+
+(import (picrin record))
+
+(export vector?                         ; override definition
+        define-record-type)
