@@ -19,6 +19,17 @@ pic_errmsg(pic_state *pic)
 }
 
 NORETURN static void
+raise(pic_state *pic, struct pic_error *e)
+{
+  pic->err = e;
+  if (! pic->jmp) {
+    puts(pic_errmsg(pic));
+    abort();
+  }
+  longjmp(*pic->jmp, 1);
+}
+
+NORETURN static void
 error(pic_state *pic, struct pic_string *msg, pic_value irrs)
 {
   struct pic_error *e;
@@ -28,12 +39,7 @@ error(pic_state *pic, struct pic_string *msg, pic_value irrs)
   e->msg = msg;
   e->irrs = irrs;
 
-  pic->err = e;
-  if (! pic->jmp) {
-    puts(pic_errmsg(pic));
-    abort();
-  }
-  longjmp(*pic->jmp, 1);
+  raise(pic, e);
 }
 
 void
