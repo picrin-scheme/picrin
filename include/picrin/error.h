@@ -24,6 +24,8 @@ struct pic_error {
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)
 #define pic_error_ptr(v) ((struct pic_error *)pic_ptr(v))
 
+pic_value pic_raise_continuable(pic_state *, pic_value);
+
 #if defined(__cplusplus)
 }
 #endif

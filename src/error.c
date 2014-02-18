@@ -91,6 +91,22 @@ pic_raise(pic_state *pic, pic_value obj)
   pic_errorf(pic, "handler returned", 2, pic_obj_value(handler), a);
 }
 
+pic_value
+pic_raise_continuable(pic_state *pic, pic_value obj)
+{
+  struct pic_proc *handler;
+
+  if (pic->ridx == 0) {
+    pic_abort(pic, "logic flaw: no exception handler remains");
+  }
+
+  handler = pic->rescue[--pic->ridx];
+  obj = pic_apply_argv(pic, handler, 1, obj);
+  pic->rescue[pic->ridx++] = handler;
+
+  return obj;
+}
+
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
@@ -128,20 +144,11 @@ pic_error_raise(pic_state *pic)
 static pic_value
 pic_error_raise_continuable(pic_state *pic)
 {
-  pic_value v, a;
-  struct pic_proc *handler;
+  pic_value obj;
 
-  pic_get_args(pic, "o", &v);
+  pic_get_args(pic, "o", &obj);
 
-  if (pic->ridx == 0) {
-    pic_abort(pic, "logic flaw: no exception handler remains");
-  }
-
-  handler = pic->rescue[--pic->ridx];
-  a = pic_apply_argv(pic, handler, 1, v);
-  pic->rescue[pic->ridx++] = handler;
-
-  return a;
+  return pic_raise_continuable(pic, obj);
 }
 
 NORETURN static pic_value
