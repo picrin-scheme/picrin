@@ -746,3 +746,141 @@
         (write obj port)))))
 
   (export display))
+
+;;; Record Type
+(define-library (scheme record)
+  (import (scheme base)
+	  (scheme cxr)
+	  (picrin macro))
+
+  (define record-marker (list 'record-marker))
+
+  (define real-vector? vector?)
+
+  (define (vector? x)
+    (and (real-vector? x)
+	 (or (= 0 (vector-length x))
+	     (not (eq? (vector-ref x 0)
+		       record-marker)))))
+
+  (define eval
+    (let ((real-eval eval))
+      (lambda (exp env)
+	((real-eval `(lambda (vector?) ,exp))
+	 vector?))))
+
+  (define (record? x)
+    (and (real-vector? x)
+	 (< 0 (vector-length x))
+	 (eq? (vector-ref x 0) record-marker)))
+
+  (define (make-record size)
+    (let ((new (make-vector (+ size 1))))
+      (vector-set! new 0 record-marker)
+      new))
+
+  (define (record-ref record index)
+    (vector-ref record (+ index 1)))
+
+  (define (record-set! record index value)
+    (vector-set! record (+ index 1) value))
+
+  (define record-type% (make-record 3))
+  (record-set! record-type% 0 record-type%)
+  (record-set! record-type% 1 'record-type%)
+  (record-set! record-type% 2 '(name field-tags))
+
+  (define (make-record-type name field-tags)
+    (let ((new (make-record 3)))
+      (record-set! new 0 record-type%)
+      (record-set! new 1 name)
+      (record-set! new 2 field-tags)
+      new))
+  
+  (define (record-type record)
+    (record-ref record 0))
+
+  (define (record-type-name record-type)
+    (record-ref record-type 1))
+
+  (define (record-type-field-tags record-type)
+    (record-ref record-type 2))
+
+  (define (field-index type tag)
+    (let rec ((i 1) (tags (record-type-field-tags type)))
+      (cond ((null? tags)
+	     (error "record type has no such field" type tag))
+	    ((eq? tag (car tags)) i)
+	    (else (rec (+ i 1) (cdr tags))))))
+
+  (define (record-constructor type tags)
+    (let ((size (length (record-type-field-tags type)))
+	  (arg-count (length tags))
+	  (indexes (map (lambda (tag) (field-index type tag)) tags)))
+      (lambda args
+	(if (= (length args) arg-count)
+	    (let ((new (make-record (+ size 1))))
+	      (record-set! new 0 type)
+	      (for-each (lambda (arg i) (record-set! new i arg)) args indexes)
+	      new)
+	    (error "wrong number of arguments to constructor" type args)))))
+
+  (define (record-predicate type)
+    (lambda (thing)
+      (and (record? thing)
+	   (eq? (record-type thing)
+		type))))
+
+  (define (record-accessor type tag)
+    (let ((index (field-index type tag)))
+      (lambda (thing)
+	(if (and (record? thing)
+		 (eq? (record-type thing)
+		      type))
+	    (record-ref thing index)
+	    (error "accessor applied to bad value" type tag thing)))))
+
+  (define (record-modifier type tag)
+    (let ((index (field-index type tag)))
+      (lambda (thing value)
+	(if (and (record? thing)
+		 (eq? (record-type thing)
+		      type))
+	    (record-set! thing index value)
+	    (error "modifier applied to bad value" type tag thing)))))
+
+  (define-syntax define-record-field
+    (ir-macro-transformer
+     (lambda (form inject compare?)
+       (let ((type (cadr form))
+	     (field-tag (caddr form))
+	     (acc-mod (cdddr form)))
+	 (if (= 1 (length acc-mod))
+	     `(define ,(car acc-mod)
+		(record-accessor ,type ',field-tag))
+	     `(begin
+		(define ,(car acc-mod)
+		  (record-accessor ,type ',field-tag))
+		(define ,(cadr acc-mod)
+		  (record-modifier ,type ',field-tag))))))))
+  
+  (define-syntax define-record-type
+    (ir-macro-transformer
+     (lambda (form inject compare?)
+       (let ((type (cadr form))
+	     (constructor (caddr form))
+	     (predicate (cadddr form))
+	     (field-tag (cddddr form)))
+	 `(begin
+	    (define ,type
+	      (make-record-type ',type ',(cdr constructor)))
+	    (define ,(car constructor)
+	      (record-constructor ,type ',(cdr constructor)))
+	    (define ,predicate
+	      (record-predicate ,type))
+	    ,@(map
+	       (lambda (x)
+		 `(define-record-field ,type ,(car x) ,(cadr x) ,@(cddr x)))
+	       field-tag))))))
+
+  (export define-record-type))
