@@ -397,6 +397,31 @@ pic_port_peek_char(pic_state *pic)
 }
 
 static pic_value
+pic_port_read_line(pic_state *pic)
+{
+  char c;
+  struct pic_port *port = pic_stdin(pic), *buf;
+  struct pic_string *str;
+
+  pic_get_args(pic, "|p", &port);
+
+  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-line");
+
+  buf = pic_open_output_string(pic);
+  while ((c = xfgetc(port->file)) != EOF && c != '\n') {
+    xfputc(c, buf->file);
+  }
+
+  str = pic_get_output_string(pic, buf);
+  if (str->len == 0 && c == EOF) {
+    return pic_eof_object();
+  }
+  else {
+    return pic_obj_value(str);
+  }
+}
+
+static pic_value
 pic_port_newline(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
@@ -530,7 +555,7 @@ pic_init_port(pic_state *pic)
   /* input */
   pic_defun(pic, "read-char", pic_port_read_char);
   pic_defun(pic, "peek-char", pic_port_peek_char);
-  /* pic_defun(pic, "read-line", pic_port_read_line); */
+  pic_defun(pic, "read-line", pic_port_read_line);
   pic_defun(pic, "eof-object?", pic_port_eof_object_p);
   pic_defun(pic, "eof-object", pic_port_eof_object);
   /* pic_defun(pic, "char-ready?", pic_port_char_ready_p); */
