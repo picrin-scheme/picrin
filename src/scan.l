@@ -57,10 +57,30 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   /* bytevector */
 %x BYTEVECTOR
 
+  /* block comment */
+%x BLOCK_COMMENT
+
 %%
 
 [ \t\n\r]	/* skip whitespace */
 {comment}	/* skip comment */
+
+"#|"		{
+  BEGIN(BLOCK_COMMENT);
+  yylvalp->i = 0;
+}
+<BLOCK_COMMENT>"#|" 	{
+  yylvalp->i++;
+}
+<BLOCK_COMMENT>"|#"	{
+  if (yylvalp->i == 0)
+    BEGIN(INITIAL);
+  else
+    yylvalp->i--;
+}
+<BLOCK_COMMENT>.	{
+  yymore();
+}
 
 "#;"		return tDATUM_COMMENT;
 "."		return tDOT;
