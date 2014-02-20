@@ -1367,51 +1367,51 @@ compile(pic_state *pic, pic_value obj)
   int ai = pic_gc_arena_preserve(pic);
 
 #if DEBUG
-  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
 
-  fprintf(stderr, "# input expression\n");
+  fprintf(stdout, "# input expression\n");
   pic_debug(pic, obj);
-  fprintf(stderr, "\n");
+  fprintf(stdout, "\n");
 
-  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* macroexpand */
   obj = pic_macroexpand(pic, obj);
 #if DEBUG
-  fprintf(stderr, "## macroexpand completed\n");
+  fprintf(stdout, "## macroexpand completed\n");
   pic_debug(pic, obj);
-  fprintf(stderr, "\n");
-  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "\n");
+  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* analyze */
   obj = pic_analyze(pic, obj);
 #if DEBUG
-  fprintf(stderr, "## analyzer completed\n");
+  fprintf(stdout, "## analyzer completed\n");
   pic_debug(pic, obj);
-  fprintf(stderr, "\n");
-  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "\n");
+  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* resolution */
   obj = pic_resolve(pic, obj);
 #if DEBUG
-  fprintf(stderr, "## resolver completed\n");
+  fprintf(stdout, "## resolver completed\n");
   pic_debug(pic, obj);
-  fprintf(stderr, "\n");
-  fprintf(stderr, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "\n");
+  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* codegen */
   irep = pic_codegen(pic, obj);
 #if DEBUG
-  fprintf(stderr, "## codegen completed\n");
+  fprintf(stdout, "## codegen completed\n");
   pic_dump_irep(pic, irep);
 #endif
 
 #if DEBUG
-  fprintf(stderr, "# compilation finished\n");
+  fprintf(stdout, "# compilation finished\n");
   puts("");
 #endif
 
