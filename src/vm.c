@@ -572,10 +572,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       if (pic_proc_cfunc_p(x)) {
 
         /* invoke! */
-	v = proc->u.cfunc(pic);
-        if (ci->retc == 1 && pic->sp == ci->fp + c.u.i) {
-          PUSH(v);
-        }
+	pic->sp[0] = proc->u.cfunc(pic);
+        pic->sp += ci->retc;
 
         pic_gc_arena_restore(pic, ai);
         goto L_RET;
@@ -656,11 +654,14 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     L_RET:
       retc = pic->ci->retc;
       retv = pic->sp - retc;
+      if (retc == 0) {
+        pic->ci->fp[0] = retv[0]; /* copy at least once */
+      }
       for (i = 0; i < retc; ++i) {
         pic->ci->fp[i] = retv[i];
       }
       ci = POPCI();
-      pic->sp = ci->fp + retc;
+      pic->sp = ci->fp + 1;     /* advance only one! */
       pic->ip = ci->ip;
 
       NEXT;

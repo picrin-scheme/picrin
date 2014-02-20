@@ -181,13 +181,13 @@ pic_values(pic_state *pic, size_t c, ...)
   va_start(ap, c);
 
   for (i = 0; i < c; ++i) {
-    *pic->sp++ = va_arg(ap, pic_value);
+    pic->sp[i] = va_arg(ap, pic_value);
   }
   pic->ci->retc = c;
 
   va_end(ap);
 
-  return c == 0 ? pic_none_value() : pic->sp[-c];
+  return c == 0 ? pic_none_value() : pic->sp[0];
 }
 
 pic_value
@@ -196,26 +196,26 @@ pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
   size_t i;
 
   for (i = 0; i < argc; ++i) {
-    *pic->sp++ = argv[i];
+    pic->sp[i] = argv[i];
   }
   pic->ci->retc = argc;
 
-  return argc == 0 ? pic_none_value() : pic->sp[-argc];
+  return argc == 0 ? pic_none_value() : pic->sp[0];
 }
 
 pic_value
 pic_values_by_list(pic_state *pic, pic_value list)
 {
   pic_value v;
-  size_t c;
+  size_t i;
 
-  c = pic_length(pic, list);
+  i = 0;
   pic_for_each (v, list) {
-    *pic->sp++ = v;
+    pic->sp[i++] = v;
   }
-  pic->ci->retc = c;
+  pic->ci->retc = i;
 
-  return pic_nil_p(list) ? pic_none_value() : pic->sp[-c];
+  return pic_nil_p(list) ? pic_none_value() : pic->sp[0];
 }
 
 size_t
