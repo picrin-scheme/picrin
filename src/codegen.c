@@ -1312,8 +1312,14 @@ codegen(codegen_state *state, pic_value obj)
     return;
   }
   else if (sym == state->sRETURN) {
-    codegen(state, pic_list_ref(pic, obj, 1));
+    int len = pic_length(pic, obj);
+    pic_value elt;
+
+    pic_for_each (elt, pic_cdr(pic, obj)) {
+      codegen(state, elt);
+    }
     cxt->code[cxt->clen].insn = OP_RET;
+    cxt->code[cxt->clen].u.i = len - 1;
     cxt->clen++;
     return;
   }
@@ -1581,7 +1587,7 @@ print_code(pic_state *pic, struct pic_code c)
     printf("OP_TAILCALL\t%d\n", c.u.i);
     break;
   case OP_RET:
-    puts("OP_RET");
+    printf("OP_RET\t%d\n", c.u.i);
     break;
   case OP_LAMBDA:
     printf("OP_LAMBDA\t%d\n", c.u.i);

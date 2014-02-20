@@ -624,20 +624,23 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_TAILCALL) {
       int i, argc;
       pic_value *argv;
+      pic_callinfo *ci;
 
       argc = c.u.i;
       argv = pic->sp - argc;
       for (i = 0; i < argc; ++i) {
 	pic->ci->fp[i] = argv[i];
       }
-      pic->sp = pic->ci->fp + argc;
-      pic->ip = POPCI()->ip;
+      ci = POPCI();
+      pic->sp = ci->fp + argc;
+      pic->ip = ci->ip;
 
       /* c is not changed */
       goto L_CALL;
     }
     CASE(OP_RET) {
-      pic_value v;
+      int i, retc;
+      pic_value *retv;
       pic_callinfo *ci;
 
       if (pic->err) {
@@ -645,13 +648,16 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       L_RAISE:
 	goto L_STOP;
       }
-      else {
-	v = POP();
-	ci = POPCI();
-	pic->ip = ci->ip;
-	pic->sp = ci->fp;
-	PUSH(v);
+
+      retc = c.u.i;
+      retv = pic->sp - retc;
+      for (i = 0; i < retc; ++i) {
+        pic->ci->fp[i] = retv[i];
       }
+      ci = POPCI();
+      pic->sp = ci->fp + retc;
+      pic->ip = ci->ip;
+
       NEXT;
     }
     CASE(OP_LAMBDA) {
