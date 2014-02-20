@@ -11,6 +11,69 @@
 #include "picrin/cont.h"
 #include "picrin/pair.h"
 
+pic_value
+pic_values(pic_state *pic, size_t c, ...)
+{
+  va_list ap;
+  size_t i;
+
+  va_start(ap, c);
+
+  for (i = 0; i < c; ++i) {
+    pic->sp[i] = va_arg(ap, pic_value);
+  }
+  pic->ci->retc = c;
+
+  va_end(ap);
+
+  return c == 0 ? pic_none_value() : pic->sp[0];
+}
+
+pic_value
+pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
+{
+  size_t i;
+
+  for (i = 0; i < argc; ++i) {
+    pic->sp[i] = argv[i];
+  }
+  pic->ci->retc = argc;
+
+  return argc == 0 ? pic_none_value() : pic->sp[0];
+}
+
+pic_value
+pic_values_by_list(pic_state *pic, pic_value list)
+{
+  pic_value v;
+  size_t i;
+
+  i = 0;
+  pic_for_each (v, list) {
+    pic->sp[i++] = v;
+  }
+  pic->ci->retc = i;
+
+  return pic_nil_p(list) ? pic_none_value() : pic->sp[0];
+}
+
+size_t
+pic_receive(pic_state *pic, size_t n, pic_value *argv)
+{
+  pic_callinfo *ci;
+  size_t i, retc;
+
+  /* take info from discarded frame */
+  ci = pic->ci + 1;
+  retc = ci->retc;
+
+  for (i = 0; i < retc && i < n; ++i) {
+    argv[i] = ci->fp[i];
+  }
+
+  return retc;
+}
+
 static void save_cont(pic_state *, struct pic_cont **);
 static void restore_cont(pic_state *, struct pic_cont *);
 
@@ -170,69 +233,6 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
 
     return pic_apply_argv(pic, proc, 1, pic_obj_value(c));
   }
-}
-
-pic_value
-pic_values(pic_state *pic, size_t c, ...)
-{
-  va_list ap;
-  size_t i;
-
-  va_start(ap, c);
-
-  for (i = 0; i < c; ++i) {
-    pic->sp[i] = va_arg(ap, pic_value);
-  }
-  pic->ci->retc = c;
-
-  va_end(ap);
-
-  return c == 0 ? pic_none_value() : pic->sp[0];
-}
-
-pic_value
-pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
-{
-  size_t i;
-
-  for (i = 0; i < argc; ++i) {
-    pic->sp[i] = argv[i];
-  }
-  pic->ci->retc = argc;
-
-  return argc == 0 ? pic_none_value() : pic->sp[0];
-}
-
-pic_value
-pic_values_by_list(pic_state *pic, pic_value list)
-{
-  pic_value v;
-  size_t i;
-
-  i = 0;
-  pic_for_each (v, list) {
-    pic->sp[i++] = v;
-  }
-  pic->ci->retc = i;
-
-  return pic_nil_p(list) ? pic_none_value() : pic->sp[0];
-}
-
-size_t
-pic_receive(pic_state *pic, size_t n, pic_value *argv)
-{
-  pic_callinfo *ci;
-  size_t i, retc;
-
-  /* take info from discarded frame */
-  ci = pic->ci + 1;
-  retc = ci->retc;
-
-  for (i = 0; i < retc && i < n; ++i) {
-    argv[i] = ci->fp[i];
-  }
-
-  return retc;
 }
 
 static pic_value

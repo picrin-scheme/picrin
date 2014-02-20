@@ -909,7 +909,7 @@
      (lambda (form rename compare?)
        (let ((expr (cadr form)))
 	 `(make-promise% #f (lambda () ,expr))))))
-  
+
   (define-syntax delay
     (ir-macro-transformer
      (lambda (form rename compare?)
@@ -919,7 +919,7 @@
   (define (promise-update! new old)
     (promise-done! old (promise-done? new))
     (promise-value! old (promise-value new)))
-  
+
   (define (force promise)
     (if (promise-done? promise)
 	(promise-value promise)
