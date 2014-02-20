@@ -534,6 +534,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
       struct pic_proc *proc;
 
+      if (c.u.i == -1) {
+        pic->sp += pic->ci[1].retc - 1;
+        c.u.i = pic->ci[1].retc + 1;
+      }
+
     L_CALL:
       x = pic->sp[-c.u.i];
       if (! pic_proc_p(x)) {
@@ -625,6 +630,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       int i, argc;
       pic_value *argv;
       pic_callinfo *ci;
+
+      if (c.u.i == -1) {
+        pic->sp += pic->ci[1].retc - 1;
+        c.u.i = pic->ci[1].retc + 1;
+      }
 
       argc = c.u.i;
       argv = pic->sp - argc;

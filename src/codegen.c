@@ -88,8 +88,9 @@ typedef struct analyze_state {
   pic_sym rCONS, rCAR, rCDR, rNILP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
-  pic_sym rVALUES;
-  pic_sym sCALL, sTAILCALL, sREF, sRETURN;
+  pic_sym rVALUES, rCALL_WITH_VALUES;
+  pic_sym sCALL, sTAILCALL, sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
+  pic_sym sREF, sRETURN;
 } analyze_state;
 
 static void push_scope(analyze_state *, pic_value);
@@ -136,9 +137,12 @@ new_analyze_state(pic_state *pic)
   register_renamed_symbol(pic, state, rGE, stdlib, ">=");
   register_renamed_symbol(pic, state, rNOT, stdlib, "not");
   register_renamed_symbol(pic, state, rVALUES, stdlib, "values");
+  register_renamed_symbol(pic, state, rCALL_WITH_VALUES, stdlib, "call-with-values");
 
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
+  register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
+  register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
   register_symbol(pic, state, sREF, "ref");
   register_symbol(pic, state, sRETURN, "return");
 
@@ -266,7 +270,7 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
 
   tag = pic_sym(pic_car(pic, res));
   if (tailpos) {
-    if (tag == pic->sIF || tag == pic->sBEGIN || tag == state->sTAILCALL || tag == state->sRETURN) {
+    if (tag == pic->sIF || tag == pic->sBEGIN || tag == state->sTAILCALL || tag == state->sTAILCALL_WITH_VALUES || tag == state->sRETURN) {
       /* pass through */
     }
     else {
@@ -550,6 +554,21 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
           seq = pic_cons(pic, analyze(state, v, false), seq);
         }
         return pic_reverse(pic, seq);
+      }
+      else if (sym == state->rCALL_WITH_VALUES) {
+        pic_value prod, cnsm;
+        pic_sym call;
+
+	ARGC_ASSERT(2);
+
+        if (! tailpos) {
+          call = state->sCALL_WITH_VALUES;
+        } else {
+          call = state->sTAILCALL_WITH_VALUES;
+        }
+        prod = analyze(state, pic_list_ref(pic, obj, 1), false);
+        cnsm = analyze(state, pic_list_ref(pic, obj, 2), false);
+        return pic_list(pic, 3, pic_symbol_value(call), prod, cnsm);
       }
     }
     return analyze_call(state, obj, tailpos);
@@ -950,6 +969,7 @@ typedef struct codegen_state {
   codegen_context *cxt;
   pic_sym sGREF, sCREF, sLREF;
   pic_sym sCALL, sTAILCALL, sRETURN;
+  pic_sym sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
   unsigned *cv_tbl, cv_num;
 } codegen_state;
 
@@ -971,6 +991,8 @@ new_codegen_state(pic_state *pic)
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
   register_symbol(pic, state, sRETURN, "return");
+  register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
+  register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
 
   push_codegen_context(state, pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 
@@ -1319,6 +1341,20 @@ codegen(codegen_state *state, pic_value obj)
     }
     cxt->code[cxt->clen].insn = (sym == state->sCALL) ? OP_CALL : OP_TAILCALL;
     cxt->code[cxt->clen].u.i = len - 1;
+    cxt->clen++;
+    return;
+  }
+  else if (sym == state->sCALL_WITH_VALUES || sym == state->sTAILCALL_WITH_VALUES) {
+    /* stack consumer at first */
+    codegen(state, pic_list_ref(pic, obj, 2));
+    codegen(state, pic_list_ref(pic, obj, 1));
+    /* call producer */
+    cxt->code[cxt->clen].insn = OP_CALL;
+    cxt->code[cxt->clen].u.i = 1;
+    cxt->clen++;
+    /* call consumer */
+    cxt->code[cxt->clen].insn = (sym == state->sCALL_WITH_VALUES) ? OP_CALL : OP_TAILCALL;
+    cxt->code[cxt->clen].u.i = -1;
     cxt->clen++;
     return;
   }
