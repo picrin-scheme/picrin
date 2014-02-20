@@ -570,8 +570,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
       if (pic_proc_cfunc_p(x)) {
-        int i, retc;
-        pic_value *retv;
 
         /* invoke! */
 	v = proc->u.cfunc(pic);
@@ -580,17 +578,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
           ci->retc = 1;
         }
 
-        retc = ci->retc;
-        retv = pic->sp - retc;
-        for (i = 0; i < retc; ++i) {
-          pic->ci->fp[i] = retv[i];
-        }
-        ci = POPCI();
-        pic->sp = ci->fp + retc;
-        pic->ip = ci->ip;
-
-	pic_gc_arena_restore(pic, ai);
-	NEXT;
+        pic_gc_arena_restore(pic, ai);
+        goto L_RET;
       }
       else {
 	int i;
@@ -665,7 +654,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       pic->ci->retc = c.u.i;
 
-      retc = c.u.i;
+    L_RET:
+      retc = pic->ci->retc;
       retv = pic->sp - retc;
       for (i = 0; i < retc; ++i) {
         pic->ci->fp[i] = retv[i];
