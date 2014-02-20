@@ -411,6 +411,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 #if VM_DEBUG
   puts("### booting VM... ###");
+  pic_value *stbase = pic->sp;
+  pic_callinfo *cibase = pic->ci;
 #endif
 
   PUSH(pic_obj_value(proc));
@@ -532,13 +534,15 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
       struct pic_proc *proc;
 
+      if (c.u.i == -1) {
+        pic->sp += pic->ci[1].retc - 1;
+        c.u.i = pic->ci[1].retc + 1;
+      }
+
     L_CALL:
       x = pic->sp[-c.u.i];
       if (! pic_proc_p(x)) {
-#if DEBUG
-	pic_debug(pic, x);
-#endif
-	pic_error(pic, "invalid application");
+	pic_errorf(pic, "invalid application: ~S", x);
       }
       proc = pic_proc_ptr(x);
 
@@ -566,17 +570,18 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       ci = PUSHCI();
       ci->argc = c.u.i;
+      ci->retc = 1;
       ci->ip = pic->ip;
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
       if (pic_proc_cfunc_p(x)) {
-	v = proc->u.cfunc(pic);
-	ci = POPCI();
-        pic->ip = ci->ip;
-	pic->sp = ci->fp;
-	PUSH(v);
-	pic_gc_arena_restore(pic, ai);
-	NEXT;
+
+        /* invoke! */
+	pic->sp[0] = proc->u.cfunc(pic);
+        pic->sp += ci->retc;
+
+        pic_gc_arena_restore(pic, ai);
+        goto L_RET;
       }
       else {
 	int i;
@@ -624,20 +629,28 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_TAILCALL) {
       int i, argc;
       pic_value *argv;
+      pic_callinfo *ci;
+
+      if (c.u.i == -1) {
+        pic->sp += pic->ci[1].retc - 1;
+        c.u.i = pic->ci[1].retc + 1;
+      }
 
       argc = c.u.i;
       argv = pic->sp - argc;
       for (i = 0; i < argc; ++i) {
 	pic->ci->fp[i] = argv[i];
       }
-      pic->sp = pic->ci->fp + argc;
-      pic->ip = POPCI()->ip;
+      ci = POPCI();
+      pic->sp = ci->fp + argc;
+      pic->ip = ci->ip;
 
       /* c is not changed */
       goto L_CALL;
     }
     CASE(OP_RET) {
-      pic_value v;
+      int i, retc;
+      pic_value *retv;
       pic_callinfo *ci;
 
       if (pic->err) {
@@ -645,13 +658,22 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       L_RAISE:
 	goto L_STOP;
       }
-      else {
-	v = POP();
-	ci = POPCI();
-	pic->ip = ci->ip;
-	pic->sp = ci->fp;
-	PUSH(v);
+
+      pic->ci->retc = c.u.i;
+
+    L_RET:
+      retc = pic->ci->retc;
+      retv = pic->sp - retc;
+      if (retc == 0) {
+        pic->ci->fp[0] = retv[0]; /* copy at least once */
       }
+      for (i = 0; i < retc; ++i) {
+        pic->ci->fp[i] = retv[i];
+      }
+      ci = POPCI();
+      pic->sp = ci->fp + 1;     /* advance only one! */
+      pic->ip = ci->ip;
+
       NEXT;
     }
     CASE(OP_LAMBDA) {
@@ -789,17 +811,17 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 #if VM_DEBUG
       puts("**VM END STATE**");
-      printf("stbase\t= %p\nsp\t= %p\n", (void *)pic->stbase, (void *)pic->sp);
-      printf("cibase\t= %p\nci\t= %p\n", (void *)pic->cibase, (void *)pic->ci);
-      if (pic->stbase < pic->sp) {
+      printf("stbase\t= %p\nsp\t= %p\n", (void *)stbase, (void *)pic->sp);
+      printf("cibase\t= %p\nci\t= %p\n", (void *)cibase, (void *)pic->ci);
+      if (stbase < pic->sp) {
 	pic_value *sp;
 	printf("* stack trace:");
-	for (sp = pic->stbase; pic->sp != sp; ++sp) {
+	for (sp = stbase; pic->sp != sp; ++sp) {
 	  pic_debug(pic, *sp);
 	  puts("");
 	}
       }
-      if (pic->stbase > pic->sp) {
+      if (stbase > pic->sp) {
 	puts("*** stack underflow!");
       }
 #endif
