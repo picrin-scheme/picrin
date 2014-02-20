@@ -181,13 +181,13 @@ pic_values(pic_state *pic, size_t c, ...)
   va_start(ap, c);
 
   for (i = 0; i < c; ++i) {
-    pic->ci->fp[i] = va_arg(ap, pic_value);
+    *pic->sp++ = va_arg(ap, pic_value);
   }
-  pic->ci->fp[i] = pic_undef_value();
+  pic->ci->retc = c;
 
   va_end(ap);
 
-  return c == 0 ? pic_none_value() : pic->ci->fp[0];
+  return c == 0 ? pic_none_value() : pic->sp[-c];
 }
 
 pic_value
@@ -196,45 +196,44 @@ pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
   size_t i;
 
   for (i = 0; i < argc; ++i) {
-    pic->ci->fp[i] = argv[i];
+    *pic->sp++ = argv[i];
   }
-  pic->ci->fp[i] = pic_undef_value();
+  pic->ci->retc = argc;
 
-  return argc == 0 ? pic_none_value() : pic->ci->fp[0];
+  return argc == 0 ? pic_none_value() : pic->sp[-argc];
 }
 
 pic_value
 pic_values_by_list(pic_state *pic, pic_value list)
 {
   pic_value v;
-  size_t i;
+  size_t c;
 
-  i = 0;
+  c = pic_length(pic, list);
   pic_for_each (v, list) {
-    pic->ci->fp[i++] = v;
+    *pic->sp++ = v;
   }
-  pic->ci->fp[i] = pic_undef_value();
+  pic->ci->retc = c;
 
-  return pic_nil_p(list) ? pic_none_value() : pic->ci->fp[0];
+  return pic_nil_p(list) ? pic_none_value() : pic->sp[-c];
 }
 
 size_t
 pic_receive(pic_state *pic, size_t n, pic_value *argv)
 {
   pic_callinfo *ci;
-  size_t i;
+  size_t i, retc;
 
-  /* take info from already discarded frame */
+  /* take info from discarded frame */
   ci = pic->ci + 1;
+  retc = ci->retc;
 
-  for (i = 0; ; ++i) {
-    if (pic_undef_p(ci->fp[i]))
-      break;
+  for (i = 0; i < retc; ++i) {
     if (i < n) {
       argv[i] = ci->fp[i];
     }
   }
-  return i;
+  return retc;
 }
 
 static pic_value

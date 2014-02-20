@@ -60,7 +60,7 @@ extern "C" {
 struct pic_code;
 
 typedef struct {
-  int argc;
+  int argc, retc;
   struct pic_code *ip;
   pic_value *fp;
   struct pic_env *env;
