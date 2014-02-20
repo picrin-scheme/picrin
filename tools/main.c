@@ -136,9 +136,9 @@ repl(pic_state *pic)
       }
 
       /* print */
-      printf("=> ");
+      printf("=> "); fflush(stdout);
       pic_debug(pic, v);
-      printf("\n");
+      printf("\n"); fflush(stdout);
 
       vs = pic_cdr(pic, vs);
     }

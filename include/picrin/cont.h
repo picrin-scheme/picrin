@@ -15,8 +15,8 @@ struct pic_cont {
 
   struct pic_block *blk;
 
-  size_t stk_len;
   pic_value *stk_pos, *stk_ptr;
+  size_t stk_len;
 
   pic_value *st_ptr;
   size_t sp_offset, st_len;
