@@ -26,6 +26,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
     - `(scheme time)`
     - `(scheme process-context)`
     - `(scheme load)`
+    - `(scheme lazy)`
     - `(picrin macro)`
     
         - `define-macro`
@@ -87,7 +88,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 5.3.2 Internal definitions | yes | TODO: interreferential definitions |
 | 5.3.3 Multiple-value definitions | yes | |
 | 5.4 Syntax definitions | yes | TODO: internal macro definition is not supported. |
-| 5.5 Recored-type definitions | no | |
+| 5.5 Recored-type definitions | yes | |
 | 5.6.1 Library Syntax | incomplete | In picrin, libraries can be reopend and can be nested. |
 | 5.6.2 Library example | N/A | |
 | 5.7 The REPL | yes | |
@@ -107,10 +108,10 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 6.8 Vectors | yes | |
 | 6.9 Bytevectors | yes | |
 | 6.10  Control features | yes | |
-| 6.11 Exceptions | yes | TODO: native error handling |
+| 6.11 Exceptions | yes | |
 | 6.12 Environments and evaluation | N/A | |
 | 6.13.1 Ports | yes | |
-| 6.13.2 Input | incomplete | |
+| 6.13.2 Input | incomplete | TODO: binary input |
 | 6.13.3 Output | yes | |
 | 6.14 System interface | yes | |
 
