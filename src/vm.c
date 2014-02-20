@@ -565,7 +565,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       ci = PUSHCI();
       ci->argc = c.u.i;
-      ci->retc = -1;
+      ci->retc = 1;
       ci->ip = pic->ip;
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
@@ -573,9 +573,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
         /* invoke! */
 	v = proc->u.cfunc(pic);
-        if (ci->retc == -1) {
+        if (ci->retc == 1 && pic->sp == ci->fp + c.u.i) {
           PUSH(v);
-          ci->retc = 1;
         }
 
         pic_gc_arena_restore(pic, ai);
