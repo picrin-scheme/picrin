@@ -88,6 +88,7 @@ typedef struct analyze_state {
   pic_sym rCONS, rCAR, rCDR, rNILP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
+  pic_sym rVALUES;
   pic_sym sCALL, sTAILCALL, sREF, sRETURN;
 } analyze_state;
 
@@ -134,6 +135,7 @@ new_analyze_state(pic_state *pic)
   register_renamed_symbol(pic, state, rGT, stdlib, ">");
   register_renamed_symbol(pic, state, rGE, stdlib, ">=");
   register_renamed_symbol(pic, state, rNOT, stdlib, "not");
+  register_renamed_symbol(pic, state, rVALUES, stdlib, "values");
 
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
@@ -539,6 +541,15 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
       else if (sym == state->rNOT) {
         ARGC_ASSERT(1);
         return CONSTRUCT_OP1(pic->sNOT);
+      }
+      else if (sym == state->rVALUES && tailpos) {
+	pic_value v, seq;
+
+        seq = pic_list(pic, 1, pic_symbol_value(state->sRETURN));
+        pic_for_each (v, pic_cdr(pic, obj)) {
+          seq = pic_cons(pic, analyze(state, v, false), seq);
+        }
+        return pic_reverse(pic, seq);
       }
     }
     return analyze_call(state, obj, tailpos);
