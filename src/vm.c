@@ -411,6 +411,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 #if VM_DEBUG
   puts("### booting VM... ###");
+  pic_value *stbase = pic->sp;
+  pic_callinfo *cibase = pic->ci;
 #endif
 
   PUSH(pic_obj_value(proc));
@@ -812,17 +814,17 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 #if VM_DEBUG
       puts("**VM END STATE**");
-      printf("stbase\t= %p\nsp\t= %p\n", (void *)pic->stbase, (void *)pic->sp);
-      printf("cibase\t= %p\nci\t= %p\n", (void *)pic->cibase, (void *)pic->ci);
-      if (pic->stbase < pic->sp) {
+      printf("stbase\t= %p\nsp\t= %p\n", (void *)stbase, (void *)pic->sp);
+      printf("cibase\t= %p\nci\t= %p\n", (void *)cibase, (void *)pic->ci);
+      if (stbase < pic->sp) {
 	pic_value *sp;
 	printf("* stack trace:");
-	for (sp = pic->stbase; pic->sp != sp; ++sp) {
+	for (sp = stbase; pic->sp != sp; ++sp) {
 	  pic_debug(pic, *sp);
 	  puts("");
 	}
       }
-      if (pic->stbase > pic->sp) {
+      if (stbase > pic->sp) {
 	puts("*** stack underflow!");
       }
 #endif
