@@ -24,6 +24,8 @@ struct pic_cont {
   pic_callinfo *ci_ptr;
   size_t ci_offset, ci_len;
 
+  struct pic_code *ip;
+
   struct pic_proc **rescue;
   size_t ridx, rlen;
 

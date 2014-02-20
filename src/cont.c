@@ -117,6 +117,8 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->ci_ptr = (pic_callinfo *)pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
 
+  cont->ip = pic->ip;
+
   cont->ridx = pic->ridx;
   cont->rlen = pic->rlen;
   cont->rescue = (struct pic_proc **)pic_alloc(pic, sizeof(struct pic_proc *) * cont->rlen);
@@ -163,6 +165,8 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   memcpy(pic->cibase, cont->ci_ptr, sizeof(pic_callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
+
+  pic->ip = cont->ip;
 
   pic->rescue = (struct pic_proc **)pic_realloc(pic, pic->rescue, sizeof(struct pic_proc *) * cont->rlen);
   memcpy(pic->rescue, cont->rescue, sizeof(struct pic_object *) * cont->rlen);
