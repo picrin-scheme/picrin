@@ -566,7 +566,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       ci = PUSHCI();
       ci->argc = c.u.i;
-      ci->retc = 1;
+      ci->retc = -1;
       ci->ip = pic->ip;
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
@@ -575,7 +575,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
         pic_value *retv;
 
         /* invoke! */
-	PUSH(proc->u.cfunc(pic));
+	v = proc->u.cfunc(pic);
+        if (ci->retc == -1) {
+          PUSH(v);
+          ci->retc = 1;
+        }
 
         retc = ci->retc;
         retv = pic->sp - retc;
