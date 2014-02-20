@@ -231,7 +231,6 @@ pic_receive(pic_state *pic, size_t n, pic_value *argv)
   for (i = 0; i < n; ++i) {
     argv[i] = ci->fp[i];
   }
-  ci->retc = 1;
 
   return retc;
 }
