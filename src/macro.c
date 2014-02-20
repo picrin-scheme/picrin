@@ -800,7 +800,7 @@ static pic_value
 ir_macro_compare(pic_state *pic)
 {
   pic_value a, b;
-  struct pic_senv *use_env;
+  struct pic_senv *mac_env;
   pic_sym m, n;
 
   pic_get_args(pic, "oo", &a, &b);
@@ -808,10 +808,10 @@ ir_macro_compare(pic_state *pic)
   if (! pic_sym_p(a) || ! pic_sym_p(b))
     return pic_false_value();   /* should be an error? */
 
-  use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
+  mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
 
-  m = symbol_rename(pic, pic_sym(a), use_env);
-  n = symbol_rename(pic, pic_sym(b), use_env);
+  m = symbol_rename(pic, pic_sym(a), mac_env);
+  n = symbol_rename(pic, pic_sym(b), mac_env);
 
   return pic_bool_value(m == n);
 }
