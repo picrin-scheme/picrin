@@ -164,8 +164,9 @@ bool pic_interned_p(pic_state *, pic_sym);
 
 char *pic_strdup(pic_state *, const char *);
 char *pic_strndup(pic_state *, const char *, size_t);
-struct pic_string *pic_str_new(pic_state *, const char *, size_t); /* the 2nd arg may be NULL for empty string */
-struct pic_string *pic_str_new_cstr(pic_state *, const char *);
+pic_str *pic_str_new(pic_state *, const char * /* nullable */, size_t);
+pic_str *pic_str_new_cstr(pic_state *, const char *);
+
 pic_value pic_format(pic_state *, const char *, ...);
 pic_value pic_vformat(pic_state *, const char *, va_list);
 pic_value pic_vfformat(pic_state *, XFILE *, const char *, va_list);

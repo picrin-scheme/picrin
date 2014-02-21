@@ -8,10 +8,10 @@
 #include "picrin/pair.h"
 #include "picrin/port.h"
 
-struct pic_string *
+pic_str *
 pic_str_new(pic_state *pic, const char *cstr, size_t len)
 {
-  struct pic_string *str;
+  pic_str *str;
   char *copy;
 
   if (cstr) {
@@ -20,10 +20,16 @@ pic_str_new(pic_state *pic, const char *cstr, size_t len)
     copy = (char *)pic_alloc(pic, len);
   }
 
-  str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TT_STRING);
+  str = (pic_str *)pic_obj_alloc(pic, sizeof(pic_str), PIC_TT_STRING);
   str->len = len;
   str->str = copy;
   return str;
+}
+
+pic_str *
+pic_str_new_cstr(pic_state *pic, const char *cstr)
+{
+  return pic_str_new(pic, cstr, strlen(cstr));
 }
 
 pic_value
@@ -117,15 +123,6 @@ pic_format(pic_state *pic, const char *fmt, ...)
   va_end(ap);
 
   return objs;
-}
-
-struct pic_string *
-pic_str_new_cstr(pic_state *pic, const char *cstr)
-{
-  size_t len;
-
-  len = strlen(cstr);
-  return pic_str_new(pic, cstr, len);
 }
 
 static pic_value
@@ -230,7 +227,7 @@ pic_str_string_copy(pic_state *pic)
   size_t len, start, end, i;
   char *str;
   int n;
-  struct pic_string *copy;
+  pic_str *copy;
 
   n = pic_get_args(pic, "s|ii", &str, &len, &start, &end);
 
