@@ -170,9 +170,11 @@ static inline pic_value pic_undef_value();
 static inline pic_value pic_obj_value(void *);
 static inline pic_value pic_float_value(double);
 static inline pic_value pic_int_value(int);
-static inline pic_value pic_symbol_value(pic_sym);
+static inline pic_value pic_sym_value(pic_sym);
 static inline pic_value pic_char_value(char c);
 static inline pic_value pic_none_value();
+
+#define pic_symbol_value(sym) pic_sym_value(sym)
 
 static inline bool pic_eq_p(pic_value, pic_value);
 static inline bool pic_eqv_p(pic_value, pic_value);
