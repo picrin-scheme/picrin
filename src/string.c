@@ -32,6 +32,45 @@ pic_str_new_cstr(pic_state *pic, const char *cstr)
   return pic_str_new(pic, cstr, strlen(cstr));
 }
 
+char
+pic_str_ref(pic_state *pic, pic_str *str, size_t n)
+{
+  UNUSED(pic);
+
+  return str->str[n];
+}
+
+pic_str *
+pic_strcat(pic_state *pic, pic_str *a, pic_str *b)
+{
+  size_t len;
+  char *buf;
+
+  len = a->len + b->len;
+  buf = pic_alloc(pic, len + 1);
+
+  memcpy(buf, a->str, a->len);
+  memcpy(buf + a->len, b->str, b->len);
+  buf[len] = '\0';
+
+  return pic_str_new(pic, buf, len);
+}
+
+pic_str *
+pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
+{
+  size_t len;
+  char *buf;
+
+  len = e - s;
+  buf = pic_alloc(pic, len + 1);
+
+  memcpy(buf, str->str + s, len);
+  buf[len] = '\0';
+
+  return pic_str_new(pic, buf, len);
+}
+
 pic_value
 pic_vfformat(pic_state *pic, XFILE *file, const char *fmt, va_list ap)
 {
