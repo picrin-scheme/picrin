@@ -113,23 +113,23 @@ struct pic_object {
   PIC_OBJECT_HEADER
 };
 
-struct pic_pair {
+typedef struct pic_pair {
   PIC_OBJECT_HEADER
   pic_value car;
   pic_value cdr;
-};
+} pic_pair;
 
-struct pic_string {
+typedef struct pic_string {
   PIC_OBJECT_HEADER
   char *str;
   size_t len;
-};
+} pic_str;
 
-struct pic_vector {
+typedef struct pic_vector {
   PIC_OBJECT_HEADER
   pic_value *data;
   size_t len;
-};
+} pic_vec;
 
 struct pic_proc;
 struct pic_port;
