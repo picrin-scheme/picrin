@@ -116,15 +116,16 @@ struct pic_object {
 struct pic_pair;
 struct pic_string;
 struct pic_vector;
+struct pic_blob;
 
 struct pic_proc;
 struct pic_port;
-struct pic_blob;
 
 /* set aliases to basic types */
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
+typedef struct pic_blob pic_blob;
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
