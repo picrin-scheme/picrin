@@ -8,6 +8,8 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/string.h"
+#include "picrin/vector.h"
 #include "picrin/blob.h"
 #include "picrin/parse.h"
 

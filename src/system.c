@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "picrin.h"
+#include "picrin/string.h"
 #include "picrin/pair.h"
 
 static pic_value

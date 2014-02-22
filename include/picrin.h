@@ -164,19 +164,6 @@ bool pic_interned_p(pic_state *, pic_sym);
 
 char *pic_strdup(pic_state *, const char *);
 char *pic_strndup(pic_state *, const char *, size_t);
-pic_str *pic_str_new(pic_state *, const char * /* nullable */, size_t);
-pic_str *pic_str_new_cstr(pic_state *, const char *);
-char pic_str_ref(pic_state *, pic_str *, size_t);
-pic_str *pic_strcat(pic_state *, pic_str *, pic_str *);
-pic_str *pic_substr(pic_state *, pic_str *, size_t, size_t);
-
-pic_value pic_format(pic_state *, const char *, ...);
-pic_value pic_vformat(pic_state *, const char *, va_list);
-pic_value pic_vfformat(pic_state *, XFILE *, const char *, va_list);
-
-struct pic_vector *pic_vec_new(pic_state *, size_t);
-struct pic_vector *pic_vec_new_from_list(pic_state *, pic_value);
-void pic_vec_extend_ip(pic_state *, struct pic_vector *, size_t);
 
 int pic_parse_file(pic_state *, FILE *, pic_value *);
 int pic_parse_cstr(pic_state *, const char *, pic_value *);

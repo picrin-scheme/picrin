@@ -6,6 +6,9 @@
 
 #include "picrin.h"
 #include "picrin/gc.h"
+#include "picrin/pair.h"
+#include "picrin/string.h"
+#include "picrin/vector.h"
 #include "picrin/irep.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"

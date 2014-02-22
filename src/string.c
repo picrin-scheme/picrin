@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "picrin.h"
+#include "picrin/string.h"
 #include "picrin/pair.h"
 #include "picrin/port.h"
 

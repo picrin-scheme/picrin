@@ -8,6 +8,7 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/string.h"
 #include "picrin/error.h"
 
 const char *
@@ -30,7 +31,7 @@ raise(pic_state *pic, struct pic_error *e)
 }
 
 NORETURN static void
-error(pic_state *pic, struct pic_string *msg, pic_value irrs)
+error(pic_state *pic, pic_str *msg, pic_value irrs)
 {
   struct pic_error *e;
 

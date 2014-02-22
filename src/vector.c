@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/vector.h"
 #include "picrin/pair.h"
 
 struct pic_vector *

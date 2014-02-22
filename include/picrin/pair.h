@@ -9,6 +9,15 @@
 extern "C" {
 #endif
 
+struct pic_pair {
+  PIC_OBJECT_HEADER
+  pic_value car;
+  pic_value cdr;
+};
+
+#define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
+#define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
+
 pic_value pic_cons(pic_state *, pic_value, pic_value);
 pic_value pic_car(pic_state *, pic_value);
 pic_value pic_cdr(pic_state *, pic_value);

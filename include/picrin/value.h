@@ -113,27 +113,18 @@ struct pic_object {
   PIC_OBJECT_HEADER
 };
 
-typedef struct pic_pair {
-  PIC_OBJECT_HEADER
-  pic_value car;
-  pic_value cdr;
-} pic_pair;
-
-typedef struct pic_string {
-  PIC_OBJECT_HEADER
-  char *str;
-  size_t len;
-} pic_str;
-
-typedef struct pic_vector {
-  PIC_OBJECT_HEADER
-  pic_value *data;
-  size_t len;
-} pic_vec;
+struct pic_pair;
+struct pic_string;
+struct pic_vector;
 
 struct pic_proc;
 struct pic_port;
 struct pic_blob;
+
+/* set aliases to basic types */
+typedef struct pic_pair pic_pair;
+typedef struct pic_string pic_str;
+typedef struct pic_vector pic_vec;
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
@@ -141,9 +132,6 @@ struct pic_blob;
 #define pic_char(v) ((v).u.c)
 
 #define pic_obj_ptr(o) ((struct pic_object *)pic_ptr(o))
-#define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
-#define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))
-#define pic_vec_ptr(o) ((struct pic_vector *)pic_ptr(o))
 
 #define pic_nil_p(v) (pic_vtype(v) == PIC_VTYPE_NIL)
 #define pic_true_p(v) (pic_vtype(v) == PIC_VTYPE_TRUE)
@@ -153,9 +141,6 @@ struct pic_blob;
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
 #define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
-#define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
-#define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
-#define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
 
 #define pic_test(v) (! pic_false_p(v))
 

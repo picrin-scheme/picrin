@@ -8,6 +8,7 @@
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
+#include "picrin/string.h"
 #include "picrin/blob.h"
 
 pic_value

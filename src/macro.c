@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/string.h"
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/lib.h"

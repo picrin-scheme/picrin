@@ -9,6 +9,8 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/string.h"
+#include "picrin/vector.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
 #include "picrin/irep.h"
