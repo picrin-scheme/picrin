@@ -23,8 +23,27 @@
 # include <string.h>
 #endif
 
+union header {
+  struct {
+    union header *ptr;
+    size_t size;
+    unsigned int mark : 1;
+  } s;
+  long alignment[4];
+};
+
+struct heap_page {
+  union header *basep, *endp;
+  struct heap_page *next;
+};
+
+struct pic_heap {
+  union header base, *freep;
+  struct heap_page *pages;
+};
+
 void
-init_heap(struct pic_heap *heap)
+heap_init(struct pic_heap *heap)
 {
   heap->base.s.ptr = &heap->base;
   heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
@@ -38,8 +57,18 @@ init_heap(struct pic_heap *heap)
 #endif
 }
 
+struct pic_heap *
+heap_open()
+{
+  struct pic_heap *heap;
+
+  heap = (struct pic_heap *)calloc(1, sizeof(struct pic_heap));
+  heap_init(heap);
+  return heap;
+}
+
 void
-finalize_heap(struct pic_heap *heap)
+heap_close(struct pic_heap *heap)
 {
   struct heap_page *page;
 

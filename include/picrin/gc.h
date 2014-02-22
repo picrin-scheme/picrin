@@ -12,27 +12,10 @@ extern "C" {
 #define PIC_GC_UNMARK 0
 #define PIC_GC_MARK 1
 
-union header {
-  struct {
-    union header *ptr;
-    size_t size;
-    unsigned int mark : 1;
-  } s;
-  long alignment[4];
-};
+struct pic_heap;
 
-struct heap_page {
-  union header *basep, *endp;
-  struct heap_page *next;
-};
-
-struct pic_heap {
-  union header base, *freep;
-  struct heap_page *pages;
-};
-
-void init_heap(struct pic_heap *);
-void finalize_heap(struct pic_heap *);
+struct pic_heap *heap_open();
+void heap_close(struct pic_heap *);
 
 #if defined(__cplusplus)
 }
