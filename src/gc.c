@@ -42,7 +42,7 @@ struct pic_heap {
   struct heap_page *pages;
 };
 
-void
+static void
 heap_init(struct pic_heap *heap)
 {
   heap->base.s.ptr = &heap->base;
@@ -58,7 +58,7 @@ heap_init(struct pic_heap *heap)
 }
 
 struct pic_heap *
-heap_open()
+pic_heap_open()
 {
   struct pic_heap *heap;
 
@@ -68,7 +68,7 @@ heap_open()
 }
 
 void
-heap_close(struct pic_heap *heap)
+pic_heap_close(struct pic_heap *heap)
 {
   struct heap_page *page;
 

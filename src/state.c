@@ -48,7 +48,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->rlen = PIC_RESCUE_SIZE;
 
   /* memory heap */
-  pic->heap = heap_open();
+  pic->heap = pic_heap_open();
 
   /* symbol table */
   pic->syms = xh_new_str();
@@ -151,7 +151,7 @@ pic_close(pic_state *pic)
   xh_destroy(pic->macros);
 
   /* free heaps */
-  heap_close(pic->heap);
+  pic_heap_close(pic->heap);
 
   /* free symbol names */
   for (xh_begin(pic->sym_names, &it); ! xh_isend(&it); xh_next(&it)) {

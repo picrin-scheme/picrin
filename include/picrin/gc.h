@@ -14,8 +14,8 @@ extern "C" {
 
 struct pic_heap;
 
-struct pic_heap *heap_open();
-void heap_close(struct pic_heap *);
+struct pic_heap *pic_heap_open();
+void pic_heap_close(struct pic_heap *);
 
 #if defined(__cplusplus)
 }
