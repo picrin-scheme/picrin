@@ -33,6 +33,21 @@ pic_str_new_cstr(pic_state *pic, const char *cstr)
   return pic_str_new(pic, cstr, strlen(cstr));
 }
 
+pic_str *
+pic_str_new_fill(pic_state *pic, size_t len, char fill)
+{
+  size_t i;
+  char *cstr;
+
+  cstr = (char *)pic_alloc(pic, len + 1);
+  for (i = 0; i < len; ++i) {
+    cstr[i] = fill;
+  }
+  cstr[len] = '\0';
+
+  return pic_str_new(pic, cstr, len);
+}
+
 char
 pic_str_ref(pic_state *pic, pic_str *str, size_t n)
 {
@@ -178,18 +193,12 @@ pic_str_string_p(pic_state *pic)
 static pic_value
 pic_str_make_string(pic_state *pic)
 {
-  int k, i;
-  char c = ' ', *cstr;
+  int len;
+  char c = ' ';
 
-  pic_get_args(pic, "i|c", &k, &c);
+  pic_get_args(pic, "i|c", &len, &c);
 
-  cstr = (char *)pic_alloc(pic, k + 1);
-  for (i = 0; i < k; ++i) {
-    cstr[i] = c;
-  }
-  cstr[k] = '\0';
-
-  return pic_obj_value(pic_str_new(pic, cstr, k));
+  return pic_obj_value(pic_str_new_fill(pic, len, c));
 }
 
 static pic_value
