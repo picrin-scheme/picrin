@@ -170,19 +170,33 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 's': {
+      pic_str **str;
+      pic_value v;
+
+      str = va_arg(ap, pic_str **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_str_p(v)) {
+          *str = pic_str_ptr(v);
+        }
+        else {
+          pic_error(pic, "pic_get_args: expected string");
+        }
+        i++;
+      }
+      break;
+    }
+    case 'z': {
       pic_value str;
       char **cstr;
-      size_t *len;
 
       cstr = va_arg(ap, char **);
-      len = va_arg(ap, size_t *);
       if (i < argc) {
         str = GET_OPERAND(pic,i);
         if (! pic_str_p(str)) {
           pic_error(pic, "pic_get_args: expected string");
         }
         *cstr = pic_str_ptr(str)->str;
-        *len = pic_str_ptr(str)->len;
         i++;
       }
       break;

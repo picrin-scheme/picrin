@@ -48,9 +48,8 @@ pic_load_load(pic_state *pic)
 {
   pic_value envid;
   char *fn;
-  size_t len;
 
-  pic_get_args(pic, "s|o", &fn, &len, &envid);
+  pic_get_args(pic, "z|o", &fn, &envid);
 
   return pic_load(pic, fn);
 }

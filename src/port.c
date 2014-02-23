@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "picrin.h"
 #include "picrin/proc.h"
@@ -264,9 +265,8 @@ pic_port_open_input_string(pic_state *pic)
 {
   struct pic_port *port;
   char *str;
-  size_t len;
 
-  pic_get_args(pic, "s", &str, &len);
+  pic_get_args(pic, "z", &str);
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
   port->file = xmopen();
@@ -465,23 +465,22 @@ static pic_value
 pic_port_write_string(pic_state *pic)
 {
   char *str;
-  size_t len;
   struct pic_port *port;
   int start, end, n, i;
 
-  n = pic_get_args(pic, "s|pii", &str, &len, &port, &start, &end);
+  n = pic_get_args(pic, "z|pii", &str, &port, &start, &end);
   switch (n) {
   case 1:
     port = pic_stdout(pic);
   case 2:
     start = 0;
   case 3:
-    end = len;
+    end = INT_MAX;
   }
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "write-string");
 
-  for (i = start; i < end; ++i) {
+  for (i = start; i < end && str[i] != '\0'; ++i) {
     xfputc(str[i], port->file);
   }
   return pic_none_value();

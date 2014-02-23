@@ -167,16 +167,16 @@ pic_error_raise_continuable(pic_state *pic)
 NORETURN static pic_value
 pic_error_error(pic_state *pic)
 {
-  char *str;
-  size_t len, argc;
+  pic_str *str;
+  size_t argc;
   pic_value *argv;
   struct pic_error *e;
 
-  pic_get_args(pic, "s*", &str, &len, &argc, &argv);
+  pic_get_args(pic, "s*", &str, &argc, &argv);
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = PIC_ERROR_OTHER;
-  e->msg = pic_str_new_cstr(pic, str);
+  e->msg = str;
   e->irrs = pic_list_by_array(pic, argc, argv);
 
   pic_raise(pic, e);

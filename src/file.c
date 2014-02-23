@@ -29,9 +29,8 @@ pic_file_open_input_file(pic_state *pic)
 {
   static const short flags = PIC_PORT_IN | PIC_PORT_TEXT;
   char *fname;
-  size_t size;
 
-  pic_get_args(pic, "s", &fname, &size);
+  pic_get_args(pic, "z", &fname);
 
   return generic_open_file(pic, fname, "r", flags);
 }
@@ -41,9 +40,8 @@ pic_file_open_input_binary_file(pic_state *pic)
 {
   static const short flags = PIC_PORT_IN | PIC_PORT_BINARY;
   char *fname;
-  size_t size;
 
-  pic_get_args(pic, "s", &fname, &size);
+  pic_get_args(pic, "z", &fname);
 
   return generic_open_file(pic, fname, "rb", flags);
 }
@@ -53,9 +51,8 @@ pic_file_open_output_file(pic_state *pic)
 {
   static const short flags = PIC_PORT_OUT | PIC_PORT_TEXT;
   char *fname;
-  size_t size;
 
-  pic_get_args(pic, "s", &fname, &size);
+  pic_get_args(pic, "z", &fname);
 
   return generic_open_file(pic, fname, "w", flags);
 }
@@ -65,9 +62,8 @@ pic_file_open_output_binary_file(pic_state *pic)
 {
   static const short flags = PIC_PORT_OUT | PIC_PORT_BINARY;
   char *fname;
-  size_t size;
 
-  pic_get_args(pic, "s", &fname, &size);
+  pic_get_args(pic, "z", &fname);
 
   return generic_open_file(pic, fname, "wb", flags);
 }
@@ -76,10 +72,9 @@ pic_value
 pic_file_exists_p(pic_state *pic)
 {
   char *fname;
-  size_t size;
   FILE *fp;
 
-  pic_get_args(pic, "s", &fname, &size);
+  pic_get_args(pic, "z", &fname);
 
   fp = fopen(fname, "r");
   if (fp) {
@@ -94,9 +89,8 @@ pic_value
 pic_file_delete(pic_state *pic)
 {
   char *fname;
-  size_t size;
 
-  pic_get_args(pic, "s", &fname, &size);
+  pic_get_args(pic, "z", &fname);
 
   if (remove(fname) != 0) {
     pic_error(pic, "file cannot be deleted");

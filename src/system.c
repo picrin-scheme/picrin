@@ -83,9 +83,8 @@ static pic_value
 pic_system_getenv(pic_state *pic)
 {
   char *str, *val;
-  size_t len;
 
-  pic_get_args(pic, "s", &str, &len);
+  pic_get_args(pic, "z", &str);
 
   val = getenv(str);
 
