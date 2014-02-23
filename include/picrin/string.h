@@ -28,6 +28,7 @@ void pic_str_set(pic_state *, pic_str *, size_t, char);
 
 pic_str *pic_strcat(pic_state *, pic_str *, pic_str *);
 pic_str *pic_substr(pic_state *, pic_str *, size_t, size_t);
+int pic_strcmp(pic_state *, pic_str *, pic_str *);
 
 pic_value pic_format(pic_state *, const char *, ...);
 pic_value pic_vformat(pic_state *, const char *, va_list);

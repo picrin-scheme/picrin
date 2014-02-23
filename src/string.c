@@ -103,6 +103,14 @@ pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
   return pic_str_new(pic, buf, len);
 }
 
+int
+pic_strcmp(pic_state *pic, pic_str *str1, pic_str *str2)
+{
+  UNUSED(pic);
+
+  return strcmp(str1->str, str2->str);
+}
+
 pic_value
 pic_vfformat(pic_state *pic, XFILE *file, const char *fmt, va_list ap)
 {
@@ -251,31 +259,29 @@ pic_str_string_set(pic_state *pic)
   return pic_none_value();
 }
 
-#define DEFINE_STRING_CMP(name, op)			\
-  static pic_value					\
-  pic_str_string_##name(pic_state *pic)			\
-  {							\
-    size_t argc;					\
-    pic_value *argv;					\
-    size_t i;						\
-							\
-    pic_get_args(pic, "*", &argc, &argv);		\
-							\
-    if (argc < 1 || ! pic_str_p(argv[0])) {		\
-      return pic_false_value();				\
-    }							\
-							\
-    for (i = 1; i < argc; ++i) {			\
-      if (! pic_str_p(argv[i])) {			\
-	return pic_false_value();			\
-      }							\
-      if (! (strcmp(pic_str_ptr(argv[i-1])->str,	\
-		    pic_str_ptr(argv[i])->str)		\
-	     op 0)) {					\
-	return pic_false_value();			\
-      }							\
-    }							\
-    return pic_true_value();				\
+#define DEFINE_STRING_CMP(name, op)                                     \
+  static pic_value                                                      \
+  pic_str_string_##name(pic_state *pic)                                 \
+  {                                                                     \
+    size_t argc;                                                        \
+    pic_value *argv;                                                    \
+    size_t i;                                                           \
+                                                                        \
+    pic_get_args(pic, "*", &argc, &argv);                               \
+                                                                        \
+    if (argc < 1 || ! pic_str_p(argv[0])) {                             \
+      return pic_false_value();                                         \
+    }                                                                   \
+                                                                        \
+    for (i = 1; i < argc; ++i) {                                        \
+      if (! pic_str_p(argv[i])) {                                       \
+	return pic_false_value();                                       \
+      }                                                                 \
+      if (! (pic_strcmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
+	return pic_false_value();                                       \
+      }                                                                 \
+    }                                                                   \
+    return pic_true_value();                                            \
   }
 
 DEFINE_STRING_CMP(eq, ==)
