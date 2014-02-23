@@ -264,9 +264,9 @@ DEFINE_STRING_CMP(ge, >=)
 static pic_value
 pic_str_string_copy(pic_state *pic)
 {
-  size_t len, start, end, i;
+  size_t len;
   char *str;
-  int n;
+  int n, start, end, i;
   pic_str *copy;
 
   n = pic_get_args(pic, "s|ii", &str, &len, &start, &end);
@@ -288,9 +288,9 @@ pic_str_string_copy(pic_state *pic)
 static pic_value
 pic_str_string_copy_ip(pic_state *pic)
 {
-  size_t to_len, from_len, at, start, end;
+  size_t to_len, from_len;
   char *to_str, *from_str;
-  int n;
+  int n, at, start, end;
 
   n = pic_get_args(pic, "sis|ii", &to_str, &to_len, &at, &from_str, &from_len, &start, &end);
 
@@ -333,9 +333,9 @@ pic_str_string_append(pic_state *pic)
 static pic_value
 pic_str_string_fill_ip(pic_state *pic)
 {
-  size_t len, start, end;
+  size_t len;
   char *str, c;
-  int n;
+  int n, start, end;
 
   n = pic_get_args(pic, "sc|ii", &str, &len, &c, &start, &end);
 

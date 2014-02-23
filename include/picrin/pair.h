@@ -48,7 +48,7 @@ pic_value pic_cadr(pic_state *, pic_value);
 pic_value pic_cdar(pic_state *, pic_value);
 pic_value pic_cddr(pic_state *, pic_value);
 
-pic_value pic_list_tail(pic_state *, pic_value ,int);
+pic_value pic_list_tail(pic_state *, pic_value, int);
 pic_value pic_list_ref(pic_state *, pic_value, int);
 void pic_list_set(pic_state *, pic_value, int, pic_value);
 pic_value pic_list_copy(pic_state *, pic_value);
