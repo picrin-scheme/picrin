@@ -1187,7 +1187,13 @@ codegen(codegen_state *state, pic_value obj)
   }
   else if (sym == pic->sBEGIN) {
     pic_value elt;
+    int i = 0;
+
     pic_for_each (elt, pic_cdr(pic, obj)) {
+      if (i++ != 0) {
+        cxt->code[cxt->clen].insn = OP_POP;
+        cxt->clen++;
+      }
       codegen(state, elt);
     }
     return;
