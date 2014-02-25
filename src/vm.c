@@ -480,7 +480,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
         pic_error(pic, "logic flaw");
       }
       irep = pic_proc_ptr(self)->u.irep;
-      if (pic_proc_cfunc_p(self)) {
+      if (! pic_proc_irep_p(pic_proc_ptr(self))) {
         pic_error(pic, "logic flaw");
       }
       PUSH(irep->pool[c.u.i]);
@@ -590,10 +590,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       ci->ip = pic->ip;
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
-      if (pic_proc_cfunc_p(x)) {
+      if (pic_proc_func_p(pic_proc_ptr(x))) {
 
         /* invoke! */
-	pic->sp[0] = proc->u.cfunc(pic);
+	pic->sp[0] = proc->u.func.f(pic);
         pic->sp += ci->retc;
 
         pic_gc_arena_restore(pic, ai);
@@ -702,7 +702,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
         pic_error(pic, "logic flaw");
       }
       irep = pic_proc_ptr(self)->u.irep;
-      if (pic_proc_cfunc_p(self)) {
+      if (! pic_proc_irep_p(pic_proc_ptr(self))) {
         pic_error(pic, "logic flaw");
       }
       proc = pic_proc_new_irep(pic, irep->irep[c.u.i], pic->ci->env);

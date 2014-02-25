@@ -356,7 +356,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (proc->env) {
       gc_mark_object(pic, (struct pic_object *)proc->env);
     }
-    if (! proc->cfunc_p) {
+    if (pic_proc_irep_p(proc)) {
       gc_mark_object(pic, (struct pic_object *)proc->u.irep);
     }
     break;

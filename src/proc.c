@@ -8,13 +8,14 @@
 #include "picrin/irep.h"
 
 struct pic_proc *
-pic_proc_new(pic_state *pic, pic_func_t cfunc)
+pic_proc_new(pic_state *pic, pic_func_t func)
 {
   struct pic_proc *proc;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->cfunc_p = true;
-  proc->u.cfunc = cfunc;
+  proc->kind = PIC_PROC_KIND_FUNC;
+  proc->u.func.f = func;
+  proc->u.func.name = pic_intern_cstr(pic, "(no name)");
   proc->env = NULL;
   return proc;
 }
@@ -25,7 +26,7 @@ pic_proc_new_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
   struct pic_proc *proc;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->cfunc_p = false;
+  proc->kind = PIC_PROC_KIND_IREP;
   proc->u.irep = irep;
   proc->env = env;
   return proc;

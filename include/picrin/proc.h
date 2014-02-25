@@ -9,6 +9,12 @@
 extern "C" {
 #endif
 
+/* native C function */
+struct pic_func {
+  pic_func_t f;
+  pic_sym name;
+};
+
 struct pic_env {
   PIC_OBJECT_HEADER
   pic_value *values;
@@ -18,21 +24,25 @@ struct pic_env {
 
 struct pic_proc {
   PIC_OBJECT_HEADER
-  bool cfunc_p;
+  char kind;
   union {
-    pic_func_t cfunc;
+    struct pic_func func;
     struct pic_irep *irep;
   } u;
   struct pic_env *env;
 };
+
+#define PIC_PROC_KIND_FUNC 1
+#define PIC_PROC_KIND_IREP 2
+
+#define pic_proc_func_p(proc) ((proc)->kind == PIC_PROC_KIND_FUNC)
+#define pic_proc_irep_p(proc) ((proc)->kind == PIC_PROC_KIND_IREP)
 
 #define pic_proc_p(o) (pic_type(o) == PIC_TT_PROC)
 #define pic_env_p(o) (pic_type(o) == PIC_TT_ENV)
 
 #define pic_proc_ptr(o) ((struct pic_proc *)pic_ptr(o))
 #define pic_env_ptr(o) ((struct pic_env *)pic_ptr(o))
-
-#define pic_proc_cfunc_p(o) (pic_proc_ptr(o)->cfunc_p)
 
 struct pic_proc *pic_proc_new(pic_state *, pic_func_t);
 struct pic_proc *pic_proc_new_irep(pic_state *, struct pic_irep *, struct pic_env *);

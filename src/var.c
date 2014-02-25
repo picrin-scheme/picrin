@@ -50,7 +50,10 @@ get_var_from_proc(pic_state *pic, struct pic_proc *proc)
 {
   pic_value v;
 
-  if (! proc->cfunc_p) {
+  if (! pic_proc_p(v)) {
+    goto typeerror;
+  }
+  if (! pic_proc_func_p(pic_proc_ptr(v))) {
     goto typeerror;
   }
   if (pic_proc_cv_size(pic, proc) != 1) {
