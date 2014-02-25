@@ -9,7 +9,7 @@ static pic_value
 generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
 {
   struct pic_port *port;
-  XFILE *file;
+  xFILE *file;
 
   file = xfopen(fname, mode);
   if (! file) {

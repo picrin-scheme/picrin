@@ -44,14 +44,14 @@ is_quasiquote(pic_state *pic, pic_value pair)
 
 struct writer_control {
   pic_state *pic;
-  XFILE *file;
+  xFILE *file;
   xhash *labels;
   xhash *visited;
   int cnt;
 };
 
 static struct writer_control *
-writer_control_new(pic_state *pic, XFILE *file)
+writer_control_new(pic_state *pic, xFILE *file)
 {
   struct writer_control *p;
 
@@ -152,7 +152,7 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
 }
 
 static void
-write_str(pic_state *pic, struct pic_string *str, XFILE *file)
+write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 {
   size_t i;
   const char *cstr = str->str;
@@ -171,7 +171,7 @@ static void
 write_core(struct writer_control *p, pic_value obj)
 {
   pic_state *pic = p->pic;
-  XFILE *file = p->file;
+  xFILE *file = p->file;
   size_t i;
   xh_entry *e;
 
@@ -316,7 +316,7 @@ write_core(struct writer_control *p, pic_value obj)
 }
 
 static void
-write(pic_state *pic, pic_value obj, XFILE *file)
+write(pic_state *pic, pic_value obj, xFILE *file)
 {
   struct writer_control *p;
 
@@ -330,7 +330,7 @@ write(pic_state *pic, pic_value obj, XFILE *file)
 }
 
 static void
-write_simple(pic_state *pic, pic_value obj, XFILE *file)
+write_simple(pic_state *pic, pic_value obj, xFILE *file)
 {
   struct writer_control *p;
 
@@ -344,7 +344,7 @@ write_simple(pic_state *pic, pic_value obj, XFILE *file)
 }
 
 static void
-write_shared(pic_state *pic, pic_value obj, XFILE *file)
+write_shared(pic_state *pic, pic_value obj, xFILE *file)
 {
   struct writer_control *p;
 
@@ -364,7 +364,7 @@ pic_debug(pic_state *pic, pic_value obj)
 }
 
 pic_value
-pic_fdebug(pic_state *pic, pic_value obj, XFILE *file)
+pic_fdebug(pic_state *pic, pic_value obj, xFILE *file)
 {
   write(pic, obj, file);
   xfflush(file);

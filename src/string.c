@@ -112,7 +112,7 @@ pic_strcmp(pic_state *pic, pic_str *str1, pic_str *str2)
 }
 
 pic_value
-pic_vfformat(pic_state *pic, XFILE *file, const char *fmt, va_list ap)
+pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 {
   char c;
   pic_value irrs = pic_nil_value();

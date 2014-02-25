@@ -23,7 +23,7 @@ enum pic_port_status {
 
 struct pic_port {
   PIC_OBJECT_HEADER
-  XFILE *file;
+  xFILE *file;
   int flags;
   int status;
 };

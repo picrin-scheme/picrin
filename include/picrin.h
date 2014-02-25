@@ -210,7 +210,7 @@ void pic_warn(pic_state *, const char *);
 const char *pic_errmsg(pic_state *);
 
 pic_value pic_debug(pic_state *, pic_value);
-pic_value pic_fdebug(pic_state *, pic_value, XFILE *);
+pic_value pic_fdebug(pic_state *, pic_value, xFILE *);
 
 #if defined(__cplusplus)
 }
