@@ -1497,7 +1497,7 @@ pic_compile(pic_state *pic, pic_value obj)
   return proc;
 }
 
-static int
+static size_t
 global_ref(pic_state *pic, const char *name)
 {
   xh_entry *e;
@@ -1505,23 +1505,23 @@ global_ref(pic_state *pic, const char *name)
 
   sym = pic_intern_cstr(pic, name);
   if (! (e = xh_get_int(pic->lib->senv->name, sym))) {
-    return -1;
+    return SIZE_MAX;
   }
   assert(e->val >= 0);
   if (! (e = xh_get_int(pic->global_tbl, e->val))) {
-    return -1;
+    return SIZE_MAX;
   }
   return e->val;
 }
 
-static int
+static size_t
 global_def(pic_state *pic, const char *name)
 {
   pic_sym sym, gsym;
   size_t gidx;
 
   sym = pic_intern_cstr(pic, name);
-  if ((gidx = global_ref(pic, name)) != -1) {
+  if ((gidx = global_ref(pic, name)) != SIZE_MAX) {
     pic_warn(pic, "redefining global");
     return gidx;
   }
@@ -1554,10 +1554,10 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 pic_value
 pic_ref(pic_state *pic, const char *name)
 {
-  int gid;
+  size_t gid;
 
   gid = global_ref(pic, name);
-  if (gid == -1) {
+  if (gid == SIZE_MAX) {
     pic_error(pic, "symbol not defined");
   }
   return pic->globals[gid];
@@ -1566,10 +1566,10 @@ pic_ref(pic_state *pic, const char *name)
 void
 pic_set(pic_state *pic, const char *name, pic_value value)
 {
-  int gid;
+  size_t gid;
 
   gid = global_ref(pic, name);
-  if (gid == -1) {
+  if (gid == SIZE_MAX) {
     pic_error(pic, "symbol not defined");
   }
   pic->globals[gid] = value;
