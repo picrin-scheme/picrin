@@ -49,10 +49,8 @@ pic_str_new_fill(pic_state *pic, size_t len, char fill)
 }
 
 size_t
-pic_strlen(pic_state *pic, pic_str *str)
+pic_strlen(pic_str *str)
 {
-  UNUSED(pic);
-
   return str->len;
 }
 
@@ -104,10 +102,8 @@ pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
 }
 
 int
-pic_strcmp(pic_state *pic, pic_str *str1, pic_str *str2)
+pic_strcmp(pic_str *str1, pic_str *str2)
 {
-  UNUSED(pic);
-
   return strcmp(str1->str, str2->str);
 }
 
@@ -232,7 +228,7 @@ pic_str_string_length(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_int_value(pic_strlen(pic, str));
+  return pic_int_value(pic_strlen(str));
 }
 
 static pic_value
@@ -277,7 +273,7 @@ pic_str_string_set(pic_state *pic)
       if (! pic_str_p(argv[i])) {                                       \
 	return pic_false_value();                                       \
       }                                                                 \
-      if (! (pic_strcmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
+      if (! (pic_strcmp(pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
 	return pic_false_value();                                       \
       }                                                                 \
     }                                                                   \
@@ -302,7 +298,7 @@ pic_str_string_copy(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_strlen(pic, str);
+    end = pic_strlen(str);
   }
 
   return pic_obj_value(pic_substr(pic, str, start, end));
@@ -320,7 +316,7 @@ pic_str_string_copy_ip(pic_state *pic)
   case 3:
     start = 0;
   case 4:
-    end = pic_strlen(pic, from);
+    end = pic_strlen(from);
   }
 
   while (start < end) {
@@ -361,7 +357,7 @@ pic_str_string_fill_ip(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_strlen(pic, str);
+    end = pic_strlen(str);
   }
 
   while (start < end) {
