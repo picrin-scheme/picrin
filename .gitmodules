@@ -4,3 +4,6 @@
 [submodule "extlib/xfile"]
 	path = extlib/xfile
 	url = git://github.com/wasabiz/xfile.git
+[submodule "extlib/xrope"]
+	path = extlib/xrope
+	url = git://github.com/wasabiz/xrope.git
