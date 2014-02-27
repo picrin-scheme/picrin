@@ -130,7 +130,8 @@ enum pic_parser_res {
   /* if parser is successfully done, return the number of exprs (>= 0) */
 };
 
-void *pic_alloc(pic_state *, size_t);
+void *pic_malloc(pic_state *, size_t);
+#define pic_alloc(pic,size) pic_malloc(pic,size) /* obsoleted */
 void *pic_realloc(pic_state *, void *, size_t);
 void *pic_calloc(pic_state *, size_t, size_t);
 struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);

@@ -42,6 +42,7 @@ struct pic_heap {
   struct heap_page *pages;
 };
 
+
 static void
 heap_init(struct pic_heap *heap)
 {
@@ -113,12 +114,28 @@ add_heap_page(pic_state *pic)
   pic->heap->pages = page;
 }
 
+static void *
+alloc(void *ptr, size_t size)
+{
+  if (size == 0) {
+    if (ptr) {
+      free(ptr);
+    }
+    return NULL;
+  }
+  if (ptr) {
+    return realloc(ptr, size);
+  } else {
+    return malloc(size);
+  }
+}
+
 void *
-pic_alloc(pic_state *pic, size_t size)
+pic_malloc(pic_state *pic, size_t size)
 {
   void *ptr;
 
-  ptr = malloc(size);
+  ptr = alloc(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_abort(pic, "memory exhausted");
   }
@@ -128,7 +145,7 @@ pic_alloc(pic_state *pic, size_t size)
 void *
 pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
-  ptr = realloc(ptr, size);
+  ptr = alloc(ptr, size);
   if (ptr == NULL && size > 0) {
     pic_abort(pic, "memory exhausted");
   }
@@ -140,10 +157,12 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
 {
   void *ptr;
 
-  ptr = calloc(count ,size);
+  size *= count;
+  ptr = alloc(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_abort(pic, "memory exhausted");
   }
+  memset(ptr, 0, size);
   return ptr;
 }
 
