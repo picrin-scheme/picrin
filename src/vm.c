@@ -574,12 +574,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
         pic_debug(pic, pic->sp[-c.u.i + i]);
       }
       puts(")");
-      if (! proc->cfunc_p) {
+      if (! pic_proc_func_p(proc)) {
 	printf("  irep = ");
 	pic_dump_irep(pic, proc->u.irep);
       }
       else {
-	printf("  cfunc = %p\n", (void *)proc->u.cfunc);
+	printf("  cfunc = %p\n", (void *)proc->u.func.f);
       }
       puts("== end\n");
 #endif
