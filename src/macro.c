@@ -619,11 +619,11 @@ pic_macro_include(pic_state *pic)
   body = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
 
   for (i = 0; i < argc; ++i) {
-    char *filename;
+    const char *filename;
     if (! pic_str_p(argv[i])) {
       pic_error(pic, "expected string");
     }
-    filename = pic_str_ptr(argv[i])->str;
+    filename = pic_str_cstr(pic_str_ptr(argv[i]));
     file = fopen(filename, "r");
     if (file == NULL) {
       pic_error(pic, "could not open file");

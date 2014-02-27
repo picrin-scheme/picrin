@@ -16,7 +16,7 @@ pic_errmsg(pic_state *pic)
 {
   assert(pic->err != NULL);
 
-  return pic->err->msg->str;
+  return pic_str_cstr(pic->err->msg);
 }
 
 NORETURN static void

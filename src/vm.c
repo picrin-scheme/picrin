@@ -188,15 +188,15 @@ pic_get_args(pic_state *pic, const char *format, ...)
     }
     case 'z': {
       pic_value str;
-      char **cstr;
+      const char **cstr;
 
-      cstr = va_arg(ap, char **);
+      cstr = va_arg(ap, const char **);
       if (i < argc) {
         str = GET_OPERAND(pic,i);
         if (! pic_str_p(str)) {
           pic_error(pic, "pic_get_args: expected string");
         }
-        *cstr = pic_str_ptr(str)->str;
+        *cstr = pic_str_cstr(pic_str_ptr(str));
         i++;
       }
       break;

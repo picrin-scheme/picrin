@@ -414,7 +414,7 @@ pic_port_read_line(pic_state *pic)
   }
 
   str = pic_get_output_string(pic, buf);
-  if (str->len == 0 && c == EOF) {
+  if (pic_strlen(str) == 0 && c == EOF) {
     return pic_eof_object();
   }
   else {

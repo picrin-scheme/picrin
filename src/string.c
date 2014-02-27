@@ -9,22 +9,23 @@
 #include "picrin/pair.h"
 #include "picrin/port.h"
 
-pic_str *
-pic_str_new(pic_state *pic, const char *cstr, size_t len)
+static pic_str *
+str_new_rope(pic_state *pic, xrope *rope)
 {
   pic_str *str;
-  char *copy;
-
-  if (cstr) {
-    copy = pic_strdup(pic, cstr);
-  } else {
-    copy = (char *)pic_alloc(pic, len);
-  }
 
   str = (pic_str *)pic_obj_alloc(pic, sizeof(pic_str), PIC_TT_STRING);
-  str->len = len;
-  str->str = copy;
+  str->rope = rope;             /* delegate ownership */
   return str;
+}
+
+pic_str *
+pic_str_new(pic_state *pic, const char *imbed, size_t len)
+{
+  if (imbed == NULL && len > 0) {
+    pic_errorf(pic, "zero length specified against NULL ptr");
+  }
+  return str_new_rope(pic, xr_new_volatile(imbed, len));
 }
 
 pic_str *
@@ -38,73 +39,100 @@ pic_str_new_fill(pic_state *pic, size_t len, char fill)
 {
   size_t i;
   char *cstr;
+  pic_str *str;
 
   cstr = (char *)pic_alloc(pic, len + 1);
+  cstr[len] = '\0';
   for (i = 0; i < len; ++i) {
     cstr[i] = fill;
   }
-  cstr[len] = '\0';
 
-  return pic_str_new(pic, cstr, len);
+  str = pic_str_new(pic, cstr, len);
+
+  pic_free(pic, cstr);
+  return str;
 }
 
 size_t
 pic_strlen(pic_str *str)
 {
-  return str->len;
+  return xr_len(str->rope);
 }
 
 char
-pic_str_ref(pic_state *pic, pic_str *str, size_t n)
+pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 {
-  UNUSED(pic);
+  char c;
 
-  return str->str[n];
+  c = xr_at(str->rope, i);
+  if (c == -1) {
+    pic_errorf(pic, "index out of range %d", i);
+  }
+  return c;
+}
+
+static xrope *
+xr_put(xrope *rope, size_t i, char c)
+{
+  xrope *x, *y;
+  char buf[1];
+
+  if (xr_len(rope) <= i) {
+    return NULL;
+  }
+
+  buf[0] = c;
+
+  x = xr_sub(rope, 0, i);
+  y = xr_new_volatile(buf, 1);
+  rope = xr_cat(x, y);
+  XROPE_DECREF(x);
+  XROPE_DECREF(y);
+
+  x = rope;
+  y = xr_sub(rope, i + 1, xr_len(rope));
+  rope = xr_cat(x, y);
+  XROPE_DECREF(x);
+  XROPE_DECREF(y);
+
+  return rope;
 }
 
 void
 pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
 {
-  UNUSED(pic);
+  xrope *x;
 
-  str->str[i] = c;
+  x = xr_put(str->rope, i, c);
+  if (x == NULL) {
+    pic_errorf(pic, "index out of range %d", i);
+  }
+  XROPE_DECREF(str->rope);
+  str->rope = x;
 }
 
 pic_str *
 pic_strcat(pic_state *pic, pic_str *a, pic_str *b)
 {
-  size_t len;
-  char *buf;
-
-  len = a->len + b->len;
-  buf = pic_alloc(pic, len + 1);
-
-  memcpy(buf, a->str, a->len);
-  memcpy(buf + a->len, b->str, b->len);
-  buf[len] = '\0';
-
-  return pic_str_new(pic, buf, len);
+  return str_new_rope(pic, xr_cat(a->rope, b->rope));
 }
 
 pic_str *
 pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
 {
-  size_t len;
-  char *buf;
-
-  len = e - s;
-  buf = pic_alloc(pic, len + 1);
-
-  memcpy(buf, str->str + s, len);
-  buf[len] = '\0';
-
-  return pic_str_new(pic, buf, len);
+  return str_new_rope(pic, xr_sub(str->rope, s, e));
 }
 
 int
 pic_strcmp(pic_str *str1, pic_str *str2)
 {
-  return strcmp(str1->str, str2->str);
+  return strcmp(xr_cstr(str1->rope), xr_cstr(str2->rope));
+}
+
+const char *
+pic_str_cstr(pic_str *str)
+{
+  return xr_cstr(str->rope);
 }
 
 pic_value

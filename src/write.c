@@ -155,11 +155,11 @@ static void
 write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 {
   size_t i;
-  const char *cstr = str->str;
+  const char *cstr = pic_str_cstr(str);
 
   UNUSED(pic);
 
-  for (i = 0; i < str->len; ++i) {
+  for (i = 0; i < pic_strlen(str); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       xfputc('\\', file);
     }

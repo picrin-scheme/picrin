@@ -93,7 +93,7 @@ pic_symbol_string_to_symbol(pic_state *pic)
     pic_error(pic, "string->symbol: expected string");
   }
 
-  return pic_symbol_value(pic_intern_cstr(pic, pic_str_ptr(v)->str));
+  return pic_symbol_value(pic_intern_cstr(pic, pic_str_cstr(pic_str_ptr(v))));
 }
 
 void

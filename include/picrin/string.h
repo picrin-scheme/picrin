@@ -11,8 +11,7 @@ extern "C" {
 
 struct pic_string {
   PIC_OBJECT_HEADER
-  char *str;
-  size_t len;
+  xrope *rope;
 };
 
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
@@ -29,6 +28,8 @@ void pic_str_set(pic_state *, pic_str *, size_t, char);
 pic_str *pic_strcat(pic_state *, pic_str *, pic_str *);
 pic_str *pic_substr(pic_state *, pic_str *, size_t, size_t);
 int pic_strcmp(pic_str *, pic_str *);
+
+const char *pic_str_cstr(pic_str *);
 
 pic_value pic_format(pic_state *, const char *, ...);
 pic_value pic_vformat(pic_state *, const char *, va_list);

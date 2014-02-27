@@ -94,8 +94,7 @@ yy_str_new_cstr(struct parser_control *p, const char *cstr)
   struct pic_string *str;
 
   str = (struct pic_string *)yy_obj_alloc(p, sizeof(struct pic_string), PIC_TT_STRING);
-  str->len = strlen(cstr);
-  str->str = pic_strdup(p->pic, cstr);
+  str->rope = xr_new_volatile(cstr, strlen(cstr));
 
   return pic_obj_value(str);
 }
