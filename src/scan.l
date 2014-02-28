@@ -173,23 +173,20 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 %%
 
-#undef yyextra
-#define yyextra ((struct yyguts_t *)yyscanner)->yyextra_r
-
 void *
 yyalloc(size_t bytes, yyscan_t yyscanner)
 {
-  return pic_alloc(yyextra->pic, bytes);
+  return pic_alloc(yyget_extra(yyscanner)->pic, bytes);
 }
 
 void *
 yyrealloc(void *ptr, size_t bytes, yyscan_t yyscanner)
 {
-  return pic_realloc(yyextra->pic, ptr, bytes);
+  return pic_realloc(yyget_extra(yyscanner)->pic, ptr, bytes);
 }
 
 void
 yyfree(void * ptr, yyscan_t yyscanner)
 {
-  return pic_free(yyextra->pic, ptr);
+  return pic_free(yyget_extra(yyscanner)->pic, ptr);
 }
