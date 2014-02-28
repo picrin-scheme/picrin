@@ -164,7 +164,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   yylvalp->blob.dat[yylvalp->blob.len++] = (char)i;
   if (yylvalp->blob.len > yylvalp->blob.capa) {
     yylvalp->blob.capa *= 2;
-    yylvalp->blob.dat = realloc(yylvalp->blob.dat, yylvalp->blob.capa);
+    yylvalp->blob.dat = yyrealloc(yylvalp->blob.dat, yylvalp->blob.capa, yyscanner);
   }
 }
 <BYTEVECTOR>")"	{

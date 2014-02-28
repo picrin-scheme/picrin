@@ -145,7 +145,7 @@ void yyerror(struct parser_control *, const char *);
   char c;
   struct {
     char *dat;
-    int len, capa;
+    size_t len, capa;
   } blob;
   pic_value datum;
 }
