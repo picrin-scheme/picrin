@@ -23,7 +23,9 @@
 #define YY_EXIT_FAILURE ( (void)yyscanner, 2 )
 %}
 
-%option noyyalloc noyyrealloc noyyfree
+%option noyyalloc
+%option noyyrealloc
+%option noyyfree
 %option reentrant
 %option noinput
 %option nounput
@@ -114,15 +116,17 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   return tSYMBOL;
 }
 
-"\""		BEGIN(STRING);
-<STRING>{
-	[^\\"]*		yymore();
-	"\""		{
-			  yytext[yyleng-1] = '\0';
-			  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
-			  BEGIN(INITIAL);
-			  return tSTRING;
-			}
+"\""		{
+  BEGIN(STRING);
+}
+<STRING>[^\\"]*	{
+  yymore();
+}
+<STRING>"\""	{
+  yytext[yyleng-1] = '\0';
+  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
+  BEGIN(INITIAL);
+  return tSTRING;
 }
 
 #\\		{
@@ -135,7 +139,7 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 <CHAR>newline	{ yylvalp->c = '\n'; BEGIN(INITIAL); return tCHAR; }
 <CHAR>null	{ yylvalp->c = '\0'; BEGIN(INITIAL); return tCHAR; }
 <CHAR>return	{ yylvalp->c = '\r'; BEGIN(INITIAL); return tCHAR; }
-<CHAR>space	{ yylvalp->c = ' '; BEGIN(INITIAL); return tCHAR; }
+<CHAR>space	{ yylvalp->c = ' ';  BEGIN(INITIAL); return tCHAR; }
 <CHAR>tab	{ yylvalp->c = '\t'; BEGIN(INITIAL); return tCHAR; }
 <CHAR>.		{ yylvalp->c = yytext[0]; BEGIN(INITIAL); return tCHAR; }
 
@@ -145,7 +149,9 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   yylvalp->blob.capa = 10;
   yylvalp->blob.dat = calloc(10, 1);
 }
-<BYTEVECTOR>[ \r\n\t]
+<BYTEVECTOR>[ \r\n\t]	{
+  /* skip whitespace */
+}
 <BYTEVECTOR>{uinteger}	{
   int i = atoi(yytext);
   if (0 > i || i > 255)
