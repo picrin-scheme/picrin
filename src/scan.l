@@ -23,13 +23,16 @@
 #define YY_EXIT_FAILURE ( (void)yyscanner, 2 )
 %}
 
+%option reentrant
+
 %option noyyalloc
 %option noyyrealloc
 %option noyyfree
-%option reentrant
 %option noinput
 %option nounput
 %option extra-type="struct parser_control *"
+%option noyywrap
+
 %option header-file="lex.yy.h"
 %option never-interactive
 
@@ -189,14 +192,4 @@ void
 yyfree(void * ptr, yyscan_t yyscanner)
 {
   return pic_free(yyextra->pic, ptr);
-}
-
-#define UNUSED(v) ((void)(v))
-
-int
-yywrap(yyscan_t yyscanner)
-{
-  UNUSED(yyscanner);
-
-  return 1;
 }
