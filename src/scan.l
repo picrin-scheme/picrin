@@ -3,9 +3,6 @@
  */
 
 %{
-#include <stdlib.h>
-#include <string.h>
-
 #include "picrin.h"
 #include "picrin/parse.h"
 #include "y.tab.h"
