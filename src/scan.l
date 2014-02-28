@@ -116,7 +116,8 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 }
 
 {identifier}	{
-  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
+  yylvalp->str.buf = yytext;
+  yylvalp->str.len = yyleng;
   return tSYMBOL;
 }
 
@@ -127,8 +128,8 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   yymore();
 }
 <STRING>"\""	{
-  yytext[yyleng-1] = '\0';
-  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
+  yylvalp->str.buf = yytext;
+  yylvalp->str.len = yyleng - 1;
   BEGIN(INITIAL);
   return tSTRING;
 }

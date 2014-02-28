@@ -89,12 +89,12 @@ yy_abbrev(struct parser_control *p, pic_sym sym, pic_value datum)
 }
 
 pic_value
-yy_str_new_cstr(struct parser_control *p, const char *cstr)
+yy_str_new(struct parser_control *p, const char *buf, size_t len)
 {
-  struct pic_string *str;
+  pic_str *str;
 
   str = (struct pic_string *)yy_obj_alloc(p, sizeof(struct pic_string), PIC_TT_STRING);
-  str->rope = xr_new_volatile(cstr, strlen(cstr));
+  str->rope = xr_new_volatile(buf, len);
 
   return pic_obj_value(str);
 }
@@ -138,7 +138,10 @@ void yyerror(struct parser_control *, const char *);
 %union {
   int i;
   double f;
-  char *cstr;
+  struct {
+    char *buf;
+    size_t len;
+  } str;
   char c;
   struct {
     char *dat;
@@ -152,7 +155,7 @@ void yyerror(struct parser_control *, const char *);
 %token tQUOTE tQUASIQUOTE tUNQUOTE tUNQUOTE_SPLICING
 %token <i> tINT tBOOLEAN
 %token <f> tFLOAT
-%token <cstr> tSYMBOL tSTRING
+%token <str> tSYMBOL tSTRING
 %token <c> tCHAR
 %token <blob> tBYTEVECTOR
 
@@ -210,13 +213,11 @@ datum
 simple_datum
 	: tSYMBOL
 	{
-	  $$ = pic_symbol_value(pic_intern_cstr(p->pic, $1));
-	  free($1);
+	  $$ = pic_symbol_value(pic_intern(p->pic, $1.buf, $1.len));
 	}
 	| tSTRING
 	{
-	  $$ = yy_str_new_cstr(p, $1);
-	  free($1);
+	  $$ = yy_str_new(p, $1.buf, $1.len);
 	}
 	| tINT
 	{
