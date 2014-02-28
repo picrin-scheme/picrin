@@ -160,6 +160,7 @@ void pic_defvar(pic_state *, const char *, pic_value);
 
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
+pic_sym pic_intern(pic_state *, const char *, size_t);
 pic_sym pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym);
 pic_sym pic_gensym(pic_state *, pic_sym);
