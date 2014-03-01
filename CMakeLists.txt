@@ -14,3 +14,6 @@ include_directories(include extlib)
 link_directories(${PROJECT_SOURCE_DIR}/lib)
 include(src/CMakeLists.txt)
 include(tools/CMakeLists.txt)
+
+# copy runtime files
+file(COPY piclib DESTINATION .)
