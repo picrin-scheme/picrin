@@ -176,11 +176,11 @@ read_one(yyscan_t scanner)
   return read(tok, scanner);
 }
 
-pic_value
+pic_list
 read_many(yyscan_t scanner)
 {
   int tok;
-  pic_value val;
+  pic_value vals;
 
   if (setjmp(yyjmp) != 0) {
     if (yymsg) {
@@ -189,11 +189,11 @@ read_many(yyscan_t scanner)
     return pic_undef_value();   /* incomplete string */
   }
 
-  val = pic_nil_value();
+  vals = pic_nil_value();
   while ((tok = gettok(scanner)) != tEOF) {
-    val = pic_cons(pic, read(tok, scanner), val);
+    vals = pic_cons(pic, read(tok, scanner), vals);
   }
-  return pic_reverse(pic, val);
+  return pic_reverse(pic, vals);
 }
 
 #undef pic
@@ -216,38 +216,38 @@ pic_read(pic_state *pic, const char *cstr)
   return val;
 }
 
-pic_value
+pic_list
 pic_read_file(pic_state *pic, FILE *file)
 {
   yyscan_t scanner;
   struct parser_control ctrl;
-  pic_value val;
+  pic_value vals;
 
   ctrl.pic = pic;
   yylex_init_extra(&ctrl, &scanner);
   yyset_in(file, scanner);
 
-  val = read_many(scanner);
+  vals = read_many(scanner);
 
   yylex_destroy(scanner);
 
-  return val;
+  return vals;
 }
 
-pic_value
+pic_list
 pic_read_cstr(pic_state *pic, const char *cstr)
 {
   yyscan_t scanner;
   struct parser_control ctrl;
-  pic_value val;
+  pic_value vals;
 
   ctrl.pic = pic;
   yylex_init_extra(&ctrl, &scanner);
   yy_scan_string(cstr, scanner);
 
-  val = read_many(scanner);
+  vals = read_many(scanner);
 
   yylex_destroy(scanner);
 
-  return val;
+  return vals;
 }

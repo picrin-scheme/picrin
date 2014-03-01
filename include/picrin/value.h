@@ -122,6 +122,7 @@ struct pic_proc;
 struct pic_port;
 
 /* set aliases to basic types */
+typedef pic_value pic_list;
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
