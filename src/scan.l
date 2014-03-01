@@ -151,15 +151,17 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   BEGIN(BYTEVECTOR);
   yylval.blob.len = 0;
   yylval.blob.capa = 10;
-  yylval.blob.dat = calloc(10, 1);
+  yylval.blob.dat = yyalloc(10, yyscanner);
 }
 <BYTEVECTOR>[ \r\n\t]	{
   /* skip whitespace */
 }
 <BYTEVECTOR>{uinteger}	{
   int i = atoi(yytext);
-  if (0 > i || i > 255)
+  if (0 > i || i > 255) {
+    yyfree(yylval.blob.dat, yyscanner);
     REJECT;
+  }
   yylval.blob.dat[yylval.blob.len++] = (char)i;
   if (yylval.blob.len > yylval.blob.capa) {
     yylval.blob.capa *= 2;
