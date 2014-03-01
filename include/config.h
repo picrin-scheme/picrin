@@ -2,9 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#ifndef CONFIG_H__
-#define CONFIG_H__
-
 /** switch normal VM and direct threaded VM */
 /* #define PIC_DIRECT_THREADED_VM 1 */
 
@@ -106,6 +103,4 @@
 # define VM_DEBUG 1
 # define GC_DEBUG 0
 # define GC_DEBUG_DETAIL 0
-#endif
-
 #endif
