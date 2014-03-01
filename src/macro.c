@@ -615,7 +615,7 @@ pic_macro_include(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   /* FIXME unhygienic */
-  body = pic_list(pic, 1, pic_symbol_value(pic->sBEGIN));
+  body = pic_list1(pic, pic_symbol_value(pic->sBEGIN));
 
   for (i = 0; i < argc; ++i) {
     const char *filename;

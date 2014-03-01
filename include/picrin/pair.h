@@ -23,7 +23,12 @@ pic_value pic_car(pic_state *, pic_value);
 pic_value pic_cdr(pic_state *, pic_value);
 
 bool pic_list_p(pic_state *, pic_value);
-pic_value pic_list(pic_state *, size_t, ...);
+pic_value pic_list1(pic_state *, pic_value);
+pic_value pic_list2(pic_state *, pic_value, pic_value);
+pic_value pic_list3(pic_state *, pic_value, pic_value, pic_value);
+pic_value pic_list4(pic_state *, pic_value, pic_value, pic_value, pic_value);
+pic_value pic_list5(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value);
+pic_value pic_list6(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_list_by_array(pic_state *, size_t, pic_value *);
 pic_value pic_make_list(pic_state *, int, pic_value);
 

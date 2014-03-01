@@ -58,25 +58,74 @@ pic_list_p(pic_state *pic, pic_value obj)
 }
 
 pic_value
-pic_list(pic_state *pic, size_t c, ...)
+pic_list1(pic_state *pic, pic_value obj1)
+{
+  return pic_cons(pic, obj1, pic_nil_value());
+}
+
+pic_value
+pic_list2(pic_state *pic, pic_value obj1, pic_value obj2)
 {
   int ai = pic_gc_arena_preserve(pic);
-  va_list ap;
-  pic_value v;
+  pic_value val;
 
-  va_start(ap, c);
-
-  v = pic_nil_value();
-  while (c--) {
-    v = pic_cons(pic, va_arg(ap, pic_value), v);
-  }
-
-  va_end(ap);
+  val = pic_cons(pic, obj1, pic_list1(pic, obj2));
 
   pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, v);
+  pic_gc_protect(pic, val);
+  return val;
+}
 
-  return pic_reverse(pic, v);
+pic_value
+pic_list3(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3)
+{
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value val;
+
+  val = pic_cons(pic, obj1, pic_list2(pic, obj2, obj3));
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, val);
+  return val;
+}
+
+pic_value
+pic_list4(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4)
+{
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value val;
+
+  val = pic_cons(pic, obj1, pic_list3(pic, obj2, obj3, obj4));
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, val);
+  return val;
+}
+
+pic_value
+pic_list5(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4, pic_value obj5)
+{
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value val;
+
+  val = pic_cons(pic, obj1, pic_list4(pic, obj2, obj3, obj4, obj5));
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, val);
+  return val;
+}
+
+pic_value
+pic_list6(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4, pic_value obj5, pic_value obj6)
+{
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value val;
+
+  val = pic_cons(pic, obj1, pic_list5(pic, obj2, obj3, obj4, obj5, obj6));
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, val);
+  return val;
 }
 
 pic_value
