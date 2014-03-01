@@ -17,3 +17,6 @@ include(tools/CMakeLists.txt)
 
 # copy runtime files
 file(COPY piclib DESTINATION .)
+
+# $ make run
+add_custom_target(run bin/picrin DEPENDS repl)
