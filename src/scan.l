@@ -5,11 +5,8 @@
 %{
 #include "picrin.h"
 #include "picrin/parse.h"
-#include "y.tab.h"
 
-#define YY_DECL int yylex_(YYSTYPE *yylvalp, yyscan_t yyscanner)
-
-#define yylval (*yylvalp)
+#define yylval (yyextra->yylval)
 
 /* NOTE:
  *  An internal function `yy_fatal_error` takes yyscanner for its second

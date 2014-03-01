@@ -38,7 +38,7 @@ import_repllib(pic_state *pic)
 {
   int ai = pic_gc_arena_preserve(pic);
 
-  pic_import(pic, pic_parse(pic, "(scheme base)"));
+  pic_import(pic, pic_read(pic, "(scheme base)"));
 
 #if DEBUG
   puts("* imported repl libraries");
@@ -54,9 +54,9 @@ repl(pic_state *pic)
 {
   char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
   char *prompt;
-  pic_value v, vs;
   struct pic_proc *proc;
-  int ai, n, i;
+  pic_value v, exprs;
+  int ai;
 
 #if PIC_ENABLE_READLINE
   char *read_line;
@@ -103,17 +103,13 @@ repl(pic_state *pic)
     strcat(code, line);
 
     /* read */
-    n = pic_parse_cstr(pic, code, &vs);
-    if (n == PIC_PARSER_INCOMPLETE) {		/* wait for more input */
+    exprs = pic_read_cstr(pic, code);
+    if (pic_undef_p(exprs)) {   /* wait for more input */
       goto next;
     }
     code[0] = '\0';
-    if (n == PIC_PARSER_ERROR) {		/* parse error */
-      goto next;
-    }
 
-    for (i = 0; i < n; ++i) {
-      v = pic_car(pic, vs);
+    pic_for_each (v, exprs) {
 
 #if DEBUG
       printf("[read: ");
@@ -140,7 +136,6 @@ repl(pic_state *pic)
       pic_debug(pic, v);
       printf("\n"); fflush(stdout);
 
-      vs = pic_cdr(pic, vs);
     }
 
   next:
@@ -162,8 +157,7 @@ void
 exec_file(pic_state *pic, const char *fname)
 {
   FILE *file;
-  int n, i;
-  pic_value vs;
+  pic_value v, exprs;
   struct pic_proc *proc;
 
   file = fopen(fname, "r");
@@ -172,16 +166,13 @@ exec_file(pic_state *pic, const char *fname)
     goto abort;
   }
 
-  n = pic_parse_file(pic, file, &vs);
-  if (n <= 0) {
+  exprs = pic_read_file(pic, file);
+  if (pic_undef_p(exprs)) {
     fprintf(stderr, "fatal error: %s broken\n", fname);
     goto abort;
   }
 
-  for (i = 0; i < n; ++i) {
-    pic_value v;
-
-    v = pic_car(pic, vs);
+  pic_for_each (v, exprs) {
 
     proc = pic_compile(pic, v);
     if (proc == NULL) {
@@ -197,7 +188,6 @@ exec_file(pic_state *pic, const char *fname)
       goto abort;
     }
 
-    vs = pic_cdr(pic, vs);
   }
 
   return;
@@ -210,18 +200,17 @@ exec_file(pic_state *pic, const char *fname)
 void
 exec_string(pic_state *pic, const char *str)
 {
-  int n, i;
-  pic_value vs, v;
+  pic_value v, exprs;
   struct pic_proc *proc;
-  int ai = pic_gc_arena_preserve(pic);
+  int ai;
 
-  n = pic_parse_cstr(pic, str, &vs);
-  if (n < 0) {
+  exprs = pic_read_cstr(pic, str);
+  if (pic_undef_p(exprs)) {
     goto abort;
   }
 
-  for (i = 0; i < n; ++i) {
-    v = pic_car(pic, vs);
+  ai = pic_gc_arena_preserve(pic);
+  pic_for_each (v, exprs) {
 
     proc = pic_compile(pic, v);
     if (proc == NULL) {
@@ -231,8 +220,6 @@ exec_string(pic_state *pic, const char *str)
     if (pic_undef_p(v)) {
       goto abort;
     }
-
-    vs = pic_cdr(pic, vs);
 
     pic_gc_arena_restore(pic, ai);
   }

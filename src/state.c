@@ -118,8 +118,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic_init_core(pic);
 
   /* set library */
-  pic_make_library(pic, pic_parse(pic, "(picrin user)"));
-  pic_in_library(pic, pic_parse(pic, "(picrin user)"));
+  pic_make_library(pic, pic_read(pic, "(picrin user)"));
+  pic_in_library(pic, pic_read(pic, "(picrin user)"));
 
   return pic;
 }

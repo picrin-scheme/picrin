@@ -611,7 +611,6 @@ pic_macro_include(pic_state *pic)
   size_t argc, i;
   pic_value *argv, exprs, body;
   FILE *file;
-  int res;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -628,8 +627,8 @@ pic_macro_include(pic_state *pic)
     if (file == NULL) {
       pic_error(pic, "could not open file");
     }
-    res = pic_parse_file(pic, file, &exprs);
-    if (res < 0) {
+    exprs = pic_read_file(pic, file);
+    if (pic_undef_p(exprs)) {
       pic_error(pic, "parse error");
     }
     body = pic_append(pic, body, exprs);

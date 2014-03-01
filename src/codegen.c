@@ -119,7 +119,7 @@ new_analyze_state(pic_state *pic)
   state->pic = pic;
   state->scope = NULL;
 
-  stdlib = pic_find_library(pic, pic_parse(pic, "(scheme base)"));
+  stdlib = pic_find_library(pic, pic_read(pic, "(scheme base)"));
 
   /* native VM procedures */
   register_renamed_symbol(pic, state, rCONS, stdlib, "cons");

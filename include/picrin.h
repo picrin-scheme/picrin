@@ -126,12 +126,6 @@ typedef struct {
 
 typedef pic_value (*pic_func_t)(pic_state *);
 
-enum pic_parser_res {
-  PIC_PARSER_INCOMPLETE = -1,
-  PIC_PARSER_ERROR = -2
-  /* if parser is successfully done, return the number of exprs (>= 0) */
-};
-
 void *pic_malloc(pic_state *, size_t);
 #define pic_alloc(pic,size) pic_malloc(pic,size) /* obsoleted */
 void *pic_realloc(pic_state *, void *, size_t);
@@ -169,9 +163,9 @@ bool pic_interned_p(pic_state *, pic_sym);
 char *pic_strdup(pic_state *, const char *);
 char *pic_strndup(pic_state *, const char *, size_t);
 
-int pic_parse_file(pic_state *, FILE *, pic_value *);
-int pic_parse_cstr(pic_state *, const char *, pic_value *);
-pic_value pic_parse(pic_state *, const char *);
+pic_value pic_read(pic_state *, const char *);
+pic_value pic_read_file(pic_state *, FILE *); /* returns a list of read data. When input string is incomplete, returns undef. */
+pic_value pic_read_cstr(pic_state *, const char *);
 
 pic_value pic_load(pic_state *, const char *);
 
@@ -187,8 +181,8 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define PIC_DEFLIBRARY_HELPER2(tmp1, tmp2, tmp3, spec)                  \
   for (struct pic_lib *tmp1 = pic->lib,                                 \
-         *tmp2 = (pic_make_library(pic, pic_parse(pic, spec)),          \
-                  pic_in_library(pic, pic_parse(pic, spec)),            \
+         *tmp2 = (pic_make_library(pic, pic_read(pic, spec)),           \
+                  pic_in_library(pic, pic_read(pic, spec)),             \
                   NULL);                                                \
        tmp3 < 1;                                                        \
        (pic->lib = tmp1), ((void)tmp2), ++tmp3)
