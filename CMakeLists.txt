@@ -4,6 +4,7 @@ project(picrin)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
+set(CMAKE_C_FLAGS "-std=c99")
 
 # external libraries
 add_library(xfile SHARED extlib/xfile/xfile.c)
