@@ -155,9 +155,7 @@ https://github.com/wasabiz/picrin
 picrin scheme depends on some external libraries to build the binary:
 
 - lex (preferably, flex)
-- make
-- gcc
-- readline
+- readline (optional)
 
 The compilation is tested only on Mac OSX. I think (or hope) it'll be ok to compile and run on other operating systems such as Linux or Windows, but there's no guarantee :(
 
