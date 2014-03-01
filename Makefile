@@ -27,12 +27,11 @@ build-main:
 
 build-lib:
 	cd src; \
-	  yacc -d parse.y; \
 	  flex scan.l
 	$(CC) $(CFLAGS) -shared -fPIC src/*.c -o lib/$(PICRIN_LIB) -I./include -I./extlib -L./lib -lm -lxfile
 
 clean:
-	rm -f src/y.tab.c src/y.tab.h src/lex.yy.c
+	rm -f src/lex.yy.c src/lex.yy.h
 	rm -f lib/$(PICRIN_LIB)
 	rm -f bin/picrin
 

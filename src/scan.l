@@ -3,14 +3,10 @@
  */
 
 %{
-#include <stdlib.h>
-#include <string.h>
-
 #include "picrin.h"
 #include "picrin/parse.h"
-#include "y.tab.h"
 
-#define YY_DECL int yylex_(YYSTYPE *yylvalp, yyscan_t yyscanner)
+#define yylval (yyextra->yylval)
 
 /* NOTE:
  *  An internal function `yy_fatal_error` takes yyscanner for its second
@@ -23,11 +19,17 @@
 #define YY_EXIT_FAILURE ( (void)yyscanner, 2 )
 %}
 
-%option noyyalloc noyyrealloc noyyfree
 %option reentrant
+
+%option noyyalloc
+%option noyyrealloc
+%option noyyfree
 %option noinput
 %option nounput
+%option noyywrap
+
 %option extra-type="struct parser_control *"
+%option header-file="lex.yy.h"
 %option never-interactive
 
   /* comment */
@@ -67,16 +69,16 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 "#|"		{
   BEGIN(BLOCK_COMMENT);
-  yylvalp->i = 0;
+  yylval.i = 0;
 }
 <BLOCK_COMMENT>"#|" 	{
-  yylvalp->i++;
+  yylval.i++;
 }
 <BLOCK_COMMENT>"|#"	{
-  if (yylvalp->i == 0)
+  if (yylval.i == 0)
     BEGIN(INITIAL);
   else
-    yylvalp->i--;
+    yylval.i--;
 }
 <BLOCK_COMMENT>.|\n	{
   /* skip block comment */
@@ -95,65 +97,72 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 ",@"		return tUNQUOTE_SPLICING;
 
 {boolean}	{
-  yylvalp->i = (yytext[1] == 't');
+  yylval.i = (yytext[1] == 't');
   return tBOOLEAN;
 }
 
 {integer}	{
-  yylvalp->i = atoi(yytext);
+  yylval.i = atoi(yytext);
   return tINT;
 }
 
 {real} 		{
-  yylvalp->f = atof(yytext);
+  yylval.f = atof(yytext);
   return tFLOAT;
 }
 
 {identifier}	{
-  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
+  yylval.str.buf = yytext;
+  yylval.str.len = yyleng;
   return tSYMBOL;
 }
 
-"\""		BEGIN(STRING);
-<STRING>{
-	[^\\"]*		yymore();
-	"\""		{
-			  yytext[yyleng-1] = '\0';
-			  yylvalp->cstr = pic_strdup(yyextra->pic, yytext);
-			  BEGIN(INITIAL);
-			  return tSTRING;
-			}
+"\""		{
+  BEGIN(STRING);
+}
+<STRING>[^\\"]*	{
+  yymore();
+}
+<STRING>"\""	{
+  yylval.str.buf = yytext;
+  yylval.str.len = yyleng - 1;
+  BEGIN(INITIAL);
+  return tSTRING;
 }
 
 #\\		{
   BEGIN(CHAR);
 }
-<CHAR>alarm	{ yylvalp->c = '\a'; BEGIN(INITIAL); return tCHAR; }
-<CHAR>backspace	{ yylvalp->c = '\b'; BEGIN(INITIAL); return tCHAR; }
-<CHAR>delete	{ yylvalp->c = 0x7f; BEGIN(INITIAL); return tCHAR; }
-<CHAR>escape	{ yylvalp->c = 0x1b; BEGIN(INITIAL); return tCHAR; }
-<CHAR>newline	{ yylvalp->c = '\n'; BEGIN(INITIAL); return tCHAR; }
-<CHAR>null	{ yylvalp->c = '\0'; BEGIN(INITIAL); return tCHAR; }
-<CHAR>return	{ yylvalp->c = '\r'; BEGIN(INITIAL); return tCHAR; }
-<CHAR>space	{ yylvalp->c = ' '; BEGIN(INITIAL); return tCHAR; }
-<CHAR>tab	{ yylvalp->c = '\t'; BEGIN(INITIAL); return tCHAR; }
-<CHAR>.		{ yylvalp->c = yytext[0]; BEGIN(INITIAL); return tCHAR; }
+<CHAR>alarm	{ yylval.c = '\a'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>backspace	{ yylval.c = '\b'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>delete	{ yylval.c = 0x7f; BEGIN(INITIAL); return tCHAR; }
+<CHAR>escape	{ yylval.c = 0x1b; BEGIN(INITIAL); return tCHAR; }
+<CHAR>newline	{ yylval.c = '\n'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>null	{ yylval.c = '\0'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>return	{ yylval.c = '\r'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>space	{ yylval.c = ' ';  BEGIN(INITIAL); return tCHAR; }
+<CHAR>tab	{ yylval.c = '\t'; BEGIN(INITIAL); return tCHAR; }
+<CHAR>.		{ yylval.c = yytext[0]; BEGIN(INITIAL); return tCHAR; }
 
 "#u8("		{
   BEGIN(BYTEVECTOR);
-  yylvalp->blob.len = 0;
-  yylvalp->blob.capa = 10;
-  yylvalp->blob.dat = calloc(10, 1);
+  yylval.blob.len = 0;
+  yylval.blob.capa = 10;
+  yylval.blob.dat = yyalloc(10, yyscanner);
 }
-<BYTEVECTOR>[ \r\n\t]
+<BYTEVECTOR>[ \r\n\t]	{
+  /* skip whitespace */
+}
 <BYTEVECTOR>{uinteger}	{
   int i = atoi(yytext);
-  if (0 > i || i > 255)
+  if (0 > i || i > 255) {
+    yyfree(yylval.blob.dat, yyscanner);
     REJECT;
-  yylvalp->blob.dat[yylvalp->blob.len++] = (char)i;
-  if (yylvalp->blob.len > yylvalp->blob.capa) {
-    yylvalp->blob.capa *= 2;
-    yylvalp->blob.dat = realloc(yylvalp->blob.dat, yylvalp->blob.capa);
+  }
+  yylval.blob.dat[yylval.blob.len++] = (char)i;
+  if (yylval.blob.len > yylval.blob.capa) {
+    yylval.blob.capa *= 2;
+    yylval.blob.dat = yyrealloc(yylval.blob.dat, yylval.blob.capa, yyscanner);
   }
 }
 <BYTEVECTOR>")"	{
@@ -163,33 +172,20 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 %%
 
-#undef yyextra
-#define yyextra ((struct yyguts_t *)yyscanner)->yyextra_r
-
 void *
 yyalloc(size_t bytes, yyscan_t yyscanner)
 {
-  return pic_alloc(yyextra->pic, bytes);
+  return pic_alloc(yyget_extra(yyscanner)->pic, bytes);
 }
 
 void *
 yyrealloc(void *ptr, size_t bytes, yyscan_t yyscanner)
 {
-  return pic_realloc(yyextra->pic, ptr, bytes);
+  return pic_realloc(yyget_extra(yyscanner)->pic, ptr, bytes);
 }
 
 void
 yyfree(void * ptr, yyscan_t yyscanner)
 {
-  return pic_free(yyextra->pic, ptr);
-}
-
-#define UNUSED(v) ((void)(v))
-
-int
-yywrap(yyscan_t yyscanner)
-{
-  UNUSED(yyscanner);
-
-  return 1;
+  return pic_free(yyget_extra(yyscanner)->pic, ptr);
 }

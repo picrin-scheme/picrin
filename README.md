@@ -154,8 +154,7 @@ https://github.com/wasabiz/picrin
 
 picrin scheme depends on some external libraries to build the binary:
 
-- bison
-- yacc
+- lex (preferably, flex)
 - make
 - gcc
 - readline

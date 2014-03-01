@@ -79,40 +79,41 @@ pic_init_core(pic_state *pic)
 {
   int ai = pic_gc_arena_preserve(pic);
 
-  pic_make_library(pic, pic_parse(pic, "(scheme base)"));
-  pic_in_library(pic, pic_parse(pic, "(scheme base)"));
+  pic_deflibrary ("(scheme base)") {
 
-  /* load core syntaces */
-  pic->lib->senv = pic_core_syntactic_env(pic);
-  pic_export(pic, pic_intern_cstr(pic, "define"));
-  pic_export(pic, pic_intern_cstr(pic, "set!"));
-  pic_export(pic, pic_intern_cstr(pic, "quote"));
-  pic_export(pic, pic_intern_cstr(pic, "lambda"));
-  pic_export(pic, pic_intern_cstr(pic, "if"));
-  pic_export(pic, pic_intern_cstr(pic, "begin"));
-  pic_export(pic, pic_intern_cstr(pic, "define-syntax"));
+    /* load core syntaces */
+    pic->lib->senv = pic_core_syntactic_env(pic);
+    pic_export(pic, pic_intern_cstr(pic, "define"));
+    pic_export(pic, pic_intern_cstr(pic, "set!"));
+    pic_export(pic, pic_intern_cstr(pic, "quote"));
+    pic_export(pic, pic_intern_cstr(pic, "lambda"));
+    pic_export(pic, pic_intern_cstr(pic, "if"));
+    pic_export(pic, pic_intern_cstr(pic, "begin"));
+    pic_export(pic, pic_intern_cstr(pic, "define-syntax"));
 
-  pic_init_bool(pic); DONE;
-  pic_init_pair(pic); DONE;
-  pic_init_port(pic); DONE;
-  pic_init_number(pic); DONE;
-  pic_init_time(pic); DONE;
-  pic_init_system(pic); DONE;
-  pic_init_file(pic); DONE;
-  pic_init_proc(pic); DONE;
-  pic_init_symbol(pic); DONE;
-  pic_init_vector(pic); DONE;
-  pic_init_blob(pic); DONE;
-  pic_init_cont(pic); DONE;
-  pic_init_char(pic); DONE;
-  pic_init_error(pic); DONE;
-  pic_init_str(pic); DONE;
-  pic_init_macro(pic); DONE;
-  pic_init_var(pic); DONE;
-  pic_init_load(pic); DONE;
-  pic_init_write(pic); DONE;
+    pic_init_bool(pic); DONE;
+    pic_init_pair(pic); DONE;
+    pic_init_port(pic); DONE;
+    pic_init_number(pic); DONE;
+    pic_init_time(pic); DONE;
+    pic_init_system(pic); DONE;
+    pic_init_file(pic); DONE;
+    pic_init_proc(pic); DONE;
+    pic_init_symbol(pic); DONE;
+    pic_init_vector(pic); DONE;
+    pic_init_blob(pic); DONE;
+    pic_init_cont(pic); DONE;
+    pic_init_char(pic); DONE;
+    pic_init_error(pic); DONE;
+    pic_init_str(pic); DONE;
+    pic_init_macro(pic); DONE;
+    pic_init_var(pic); DONE;
+    pic_init_load(pic); DONE;
+    pic_init_write(pic); DONE;
 
-  pic_load_stdlib(pic); DONE;
+    pic_load_stdlib(pic); DONE;
 
-  pic_defun(pic, "features", pic_features);
+    pic_defun(pic, "features", pic_features);
+
+  }
 }

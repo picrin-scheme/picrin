@@ -9,14 +9,37 @@
 extern "C" {
 #endif
 
+enum {
+  tEOF = 0,
+  tDATUM_COMMENT,
+  tLPAREN, tRPAREN, tLBRACKET, tRBRACKET, tDOT, tVPAREN,
+  tQUOTE, tQUASIQUOTE, tUNQUOTE, tUNQUOTE_SPLICING,
+  tINT, tBOOLEAN,
+  tFLOAT,
+  tSYMBOL, tSTRING,
+  tCHAR,
+  tBYTEVECTOR,
+};
+
+typedef union YYSTYPE {
+  int i;
+  double f;
+  struct {
+    char *buf;
+    size_t len;
+  } str;
+  char c;
+  struct {
+    char *dat;
+    size_t len, capa;
+  } blob;
+} YYSTYPE;
+
 struct parser_control {
   pic_state *pic;
-  void *yyscanner;
-  pic_value value;
-  bool incomp;
-  int yynerrs;
-  struct pic_vector *yy_arena;
-  size_t yy_arena_idx;
+  YYSTYPE yylval;
+  jmp_buf jmp;
+  const char *msg;
 };
 
 #if defined(__cplusplus)
