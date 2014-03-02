@@ -126,13 +126,22 @@ https://github.com/wasabiz/picrin
 
 ## How to use it
 
+- make `Makefile`
+
+	Change directory to `build` then run `cmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin.
+
+		$ cd build
+        $ cmake ..
+
+	Of course you don't need to move to `build` directory before running `cmake` (in that case `$ cmake .`), but I strongly recommend to follow above instruction.
+    
 - build
 
-	A built executable binary will be under bin/ directory and a shared library `libpicrin.so` under lib/.
-	
-		$ make
+ 	A built executable binary will be under bin/ directory and shared libraries under lib/.
 
-	If you want to build picrin on other systems than x86_64, make sure PIC_NAN_BOXING flag is turned off (see include/config.h for detail).
+        $ make
+
+	If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is automatically turned on (see include/config.h for detail).
 
 - run
 
@@ -140,15 +149,15 @@ https://github.com/wasabiz/picrin
 
 		$ make run
 
-- debug-run
+- debug
 
-	When `make` command is called with an argument `debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
+	If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
 
-		$ make debug
+		$ cmake -DCMAKE_BUILD_TYPE=Debug ..
 	
 - install
 
-	As of now picrin does not provide a command automatically installs the binary. If you want to place picrin library and binary in a parmanent directory, please do it by hand.
+	As of this writing picrin does not provide a command automatically installs the binary. If you want to place picrin library and binary in a parmanent directory, please do it by hand. (TODO)
 
 ## Requirement
 
@@ -157,7 +166,7 @@ picrin scheme depends on some external libraries to build the binary:
 - lex (preferably, flex)
 - readline (optional)
 
-The compilation is tested only on Mac OSX. I think (or hope) it'll be ok to compile and run on other operating systems such as Linux or Windows, but there's no guarantee :(
+The compilation is tested only on Mac OSX and Ubuntu. I think (or hope) it'll be ok to compile and run on other operating systems such as Arch or Windows, but I don't guarantee :(
 
 ## Authors
 
