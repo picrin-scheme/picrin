@@ -46,6 +46,10 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
         - `ir-macro-transformer`
     
             Explicit renaming macro family.
+
+	- `(picrin user)`
+
+		When you start the REPL, you are dropped in here.
     
     - `(srfi 1)`
     
