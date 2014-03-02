@@ -171,6 +171,7 @@ picrin scheme depends on some external libraries to build the binary:
 - getopt
 - readline (optional)
 
+Optional libraries are, if cmake detected them, automatically enabled.
 The compilation is tested only on Mac OSX and Ubuntu. I think (or hope) it'll be ok to compile and run on other operating systems such as Arch or Windows, but I don't guarantee :(
 
 ## Authors
