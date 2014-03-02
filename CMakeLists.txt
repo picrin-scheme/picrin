@@ -22,6 +22,16 @@ include(tools/CMakeLists.txt)
 
 # copy runtime files
 file(COPY piclib DESTINATION .)
+file(COPY etc DESTINATION .)
 
 # $ make run
 add_custom_target(run bin/picrin DEPENDS repl)
+
+# $ make no-act
+add_custom_target(no-act bin/picrin -e '' > /dev/null DEPENDS repl)
+
+# $ make tak
+add_custom_target(tak bin/picrin etc/tak.scm DEPENDS repl)
+
+# $ make lines
+add_custom_target(lines find . -name "*.[chyl]" | xargs wc -l WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
