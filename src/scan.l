@@ -29,7 +29,6 @@
 %option noyywrap
 
 %option extra-type="struct parser_control *"
-%option header-file="lex.yy.h"
 %option never-interactive
 
   /* comment */
