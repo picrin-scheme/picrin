@@ -56,6 +56,7 @@ repl(pic_state *pic)
   char *prompt;
   struct pic_proc *proc;
   pic_value v, exprs;
+  jmp_buf jmp;
   int ai;
 
 #if PIC_ENABLE_READLINE
@@ -101,6 +102,17 @@ repl(pic_state *pic)
     if (strlen(code) + strlen(line) >= CODE_MAX_LENGTH)
       goto overflow;
     strcat(code, line);
+
+    if (setjmp(jmp) == 0) {
+      pic->jmp = &jmp;
+    }
+    else {
+      /* error occured */
+      printf("%s\n", pic_errmsg(pic));
+      code[0] = '\0';
+      pic->err = NULL;
+      goto next;
+    }
 
     /* read */
     exprs = pic_read_cstr(pic, code);
