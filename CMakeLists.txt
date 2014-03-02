@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 2.8)
 
 project(picrin)
 
+# git submodule update --init
+execute_process(
+  COMMAND ${GIT_EXECUTABLE} submodule update --init
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  )
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 set(CMAKE_C_FLAGS "-std=c99")
@@ -11,7 +17,6 @@ add_library(xfile SHARED extlib/xfile/xfile.c)
 
 # build picrin
 include_directories(include extlib)
-link_directories(${PROJECT_SOURCE_DIR}/lib)
 include(src/CMakeLists.txt)
 include(tools/CMakeLists.txt)
 
