@@ -25,7 +25,7 @@ pic_str_new(pic_state *pic, const char *imbed, size_t len)
   if (imbed == NULL && len > 0) {
     pic_errorf(pic, "zero length specified against NULL ptr");
   }
-  return str_new_rope(pic, xr_new_volatile(imbed, len));
+  return str_new_rope(pic, xr_new_copy(imbed, len));
 }
 
 pic_str *
@@ -84,7 +84,7 @@ xr_put(xrope *rope, size_t i, char c)
   buf[0] = c;
 
   x = xr_sub(rope, 0, i);
-  y = xr_new_volatile(buf, 1);
+  y = xr_new_copy(buf, 1);
   rope = xr_cat(x, y);
   XROPE_DECREF(x);
   XROPE_DECREF(y);
