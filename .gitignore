@@ -1,9 +1,6 @@
-bin/*
+build/*
 src/lex.yy.c
 src/lex.yy.h
-src/y.tab.c
-src/y.tab.h
-lib/*
 .dir-locals.el
 GPATH
 GRTAGS

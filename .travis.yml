@@ -2,6 +2,8 @@ language: c
 compiler:
   - gcc
   - clang
+before_script:
+  - cd build
 script:
-  - make && make no-act
-  - make debug && make no-act
+  - cmake .. && make && make no-act
+  - cmake -DCMAKE_BUILD_TYPE=Debug .. && make && make no-act
