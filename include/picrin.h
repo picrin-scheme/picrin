@@ -146,6 +146,15 @@ void pic_define(pic_state *, const char *, pic_value); /* symbol is automaticall
 pic_value pic_ref(pic_state *, const char *);
 void pic_set(pic_state *, const char *, pic_value);
 
+#define pic_try                                                         \
+  pic_try_helper__(GENSYM(pic_try_i__), GENSYM(pic_try_jmp__), GENSYM(pic_try_prev_jmp__))
+#define pic_try_helper__(i, here, prev_jmp)                             \
+  for (int i = 0; ! i; )                                                \
+    for (jmp_buf here, *prev_jmp = pic->jmp; ! i; )                     \
+      for (pic->jmp = &here; ! i++; pic->jmp = prev_jmp)                \
+        if (setjmp(here) == 0)
+#define pic_catch else
+
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
@@ -179,13 +188,12 @@ void pic_in_library(pic_state *, pic_value);
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
+#define pic_deflibrary(spec)                                            \
+  pic_deflibrary_helper__(GENSYM(pic_deflib_i__), GENSYM(pic_deflib_prev_lib__), spec)
 #define pic_deflibrary_helper__(i, prev_lib, spec)                      \
   for (int i = 0; ! i; )                                                \
     for (struct pic_lib *prev_lib; ! i; )                               \
-      for ((prev_lib = pic->lib), pic_make_library(pic, pic_read(pic, spec)), pic_in_library(pic, pic_read(pic, spec)); ! i++; pic->lib = prev_lib) \
-
-#define pic_deflibrary(spec)                                            \
-  pic_deflibrary_helper__(GENSYM(pic_deflib_i__), GENSYM(pic_deflib_prev_lib__), spec)
+      for ((prev_lib = pic->lib), pic_make_library(pic, pic_read(pic, spec)), pic_in_library(pic, pic_read(pic, spec)); ! i++; pic->lib = prev_lib)
 
 void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
