@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 
 PROJECT(picrin)
+
+# load extra cmake modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
+# ----
 
 # git submodule update --init
 execute_process(
@@ -25,6 +29,8 @@ include(tools/CMakeLists.txt)
 # copy runtime files
 file(COPY piclib DESTINATION .)
 file(COPY etc DESTINATION .)
+
+# ----
 
 # $ make run
 add_custom_target(run bin/picrin DEPENDS repl)
