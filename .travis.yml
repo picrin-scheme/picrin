@@ -3,5 +3,5 @@ compiler:
   - gcc
   - clang
 script:
-  - make && make no-act
-  - make debug && make no-act
+  - cd build && cmake .. && make && make no-act
+  - cd build && cmake -DCMAKE_BULD_TYPE=Debug .. && make && make no-act
