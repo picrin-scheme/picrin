@@ -1,5 +1,5 @@
 find_package(FLEX REQUIRED)
-flex_target(scan src/scan.l src/lex.yy.c COMPILE_FLAGS --header-file="src/lex.yy.h")
+flex_target(scan src/scan.l ${PROJECT_SOURCE_DIR}/src/lex.yy.c COMPILE_FLAGS --header-file="src/lex.yy.h")
 
 add_library(picrin SHARED
   src/blob.c src/bool.c src/char.c src/codegen.c src/cont.c src/error.c
