@@ -371,6 +371,22 @@ pic_fdebug(pic_state *pic, pic_value obj, xFILE *file)
   return obj;
 }
 
+void
+pic_printf(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  pic_str *str;
+
+  va_start(ap, fmt);
+
+  str = pic_str_ptr(pic_car(pic, pic_vformat(pic, fmt, ap)));
+
+  va_end(ap);
+
+  printf("%s", pic_str_cstr(str));
+  fflush(stdout);
+}
+
 static pic_value
 pic_write_write(pic_state *pic)
 {

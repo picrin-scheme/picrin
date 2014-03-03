@@ -209,6 +209,7 @@ const char *pic_errmsg(pic_state *);
 
 pic_value pic_debug(pic_state *, pic_value);
 pic_value pic_fdebug(pic_state *, pic_value, xFILE *);
+void pic_printf(pic_state *, const char *, ...);
 
 #if defined(__cplusplus)
 }
