@@ -1413,8 +1413,8 @@ pic_codegen(pic_state *pic, pic_value obj)
   return destroy_codegen_state(state);
 }
 
-static struct pic_irep *
-compile(pic_state *pic, pic_value obj)
+struct pic_proc *
+pic_compile(pic_state *pic, pic_value obj)
 {
   struct pic_irep *irep;
   int ai = pic_gc_arena_preserve(pic);
@@ -1471,30 +1471,7 @@ compile(pic_state *pic, pic_value obj)
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, pic_obj_value(irep));
 
-  return irep;
-}
-
-struct pic_proc *
-pic_compile(pic_state *pic, pic_value obj)
-{
-  struct pic_proc *proc;
-  jmp_buf jmp, *prev_jmp = pic->jmp;
-
-  if (setjmp(jmp) == 0) {
-    pic->jmp = &jmp;
-  }
-  else {
-    /* error occured */
-    proc = NULL;
-    goto exit;
-  }
-
-  proc = pic_proc_new_irep(pic, compile(pic, obj), NULL);
-
- exit:
-  pic->jmp = prev_jmp;
-
-  return proc;
+  return pic_proc_new_irep(pic, irep, NULL);
 }
 
 static size_t
