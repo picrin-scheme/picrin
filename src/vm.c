@@ -855,7 +855,7 @@ static struct pic_code trampoline_iseq[] = {
 };
 
 pic_value
-pic_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
+pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   pic_value v, call_list, *fp = pic->ci->fp;
   pic_callinfo *ci;

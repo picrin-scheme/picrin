@@ -257,7 +257,7 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
     pic_proc_cv_init(pic, c, 1);
     pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
 
-    return pic_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
+    return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
   }
 }
 
@@ -328,7 +328,7 @@ pic_cont_call_with_values(pic_state *pic)
 
   argc = pic_receive(pic, 256, args);
 
-  return pic_trampoline(pic, consumer, pic_list_by_array(pic, argc, args));
+  return pic_apply_trampoline(pic, consumer, pic_list_by_array(pic, argc, args));
 }
 
 void
