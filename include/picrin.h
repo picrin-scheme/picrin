@@ -207,9 +207,14 @@ void pic_warn(pic_state *, const char *);
 
 const char *pic_errmsg(pic_state *);
 
-pic_value pic_debug(pic_state *, pic_value);
-pic_value pic_fdebug(pic_state *, pic_value, xFILE *);
+pic_value pic_write(pic_state *, pic_value); /* returns given obj */
+pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
 void pic_printf(pic_state *, const char *, ...);
+pic_value pic_display(pic_state *, pic_value);
+pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
+/* obsoleted macros */
+#define pic_debug(pic,obj) pic_write(pic,obj)
+#define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
 
 #if defined(__cplusplus)
 }

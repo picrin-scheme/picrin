@@ -385,15 +385,29 @@ display(pic_state *pic, pic_value obj, xFILE *file)
 }
 
 pic_value
-pic_debug(pic_state *pic, pic_value obj)
+pic_write(pic_state *pic, pic_value obj)
 {
-  return pic_fdebug(pic, obj, xstdout);
+  return pic_fwrite(pic, obj, xstdout);
 }
 
 pic_value
-pic_fdebug(pic_state *pic, pic_value obj, xFILE *file)
+pic_fwrite(pic_state *pic, pic_value obj, xFILE *file)
 {
   write(pic, obj, file);
+  xfflush(file);
+  return obj;
+}
+
+pic_value
+pic_display(pic_state *pic, pic_value obj)
+{
+  return pic_fdisplay(pic, obj, xstdout);
+}
+
+pic_value
+pic_fdisplay(pic_state *pic, pic_value obj, xFILE *file)
+{
+  display(pic, obj, file);
   xfflush(file);
   return obj;
 }
