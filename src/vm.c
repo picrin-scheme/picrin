@@ -558,7 +558,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     L_CALL:
       x = pic->sp[-c.u.i];
       if (! pic_proc_p(x)) {
-	pic_errorf(pic, "invalid application: ~S", x);
+	pic_errorf(pic, "invalid application: ~s", x);
       }
       proc = pic_proc_ptr(x);
 

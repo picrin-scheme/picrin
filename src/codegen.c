@@ -304,7 +304,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     pic_value proc;
 
     if (! pic_list_p(pic, obj)) {
-      pic_errorf(pic, "invalid expression given: ~S", obj);
+      pic_errorf(pic, "invalid expression given: ~s", obj);
     }
 
     proc = pic_list_ref(pic, obj, 0);
