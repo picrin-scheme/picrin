@@ -13,7 +13,7 @@
 #define YY_NO_UNISTD_H
 #include "lex.yy.h"
 
-static pic_value read(int tok, yyscan_t scanner);
+static pic_value read(int, yyscan_t);
 
 #define pic (yyget_extra(scanner)->pic)
 #define yylval (yyget_extra(scanner)->yylval)
@@ -159,7 +159,6 @@ read(int tok, yyscan_t scanner)
   pic_gc_protect(pic, val);
   return val;
 }
-
 
 pic_value
 read_one(yyscan_t scanner)
