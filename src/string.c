@@ -188,8 +188,11 @@ pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
       case '%':
         xfputc('\n', file);
         break;
+      case 'a':
+        irrs = pic_cons(pic, pic_fdisplay(pic, va_arg(ap, pic_value), file), irrs);
+        break;
       case 's':
-        irrs = pic_cons(pic, pic_fdebug(pic, va_arg(ap, pic_value), file), irrs);
+        irrs = pic_cons(pic, pic_fwrite(pic, va_arg(ap, pic_value), file), irrs);
         break;
       }
       break;
