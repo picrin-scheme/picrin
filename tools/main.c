@@ -104,7 +104,7 @@ repl(pic_state *pic)
     pic_try {
 
       /* read */
-      exprs = pic_read_cstr(pic, code);
+      exprs = pic_parse_cstr(pic, code);
 
       if (pic_undef_p(exprs)) {
         /* wait for more input */
@@ -155,7 +155,7 @@ exec_file(pic_state *pic, const char *fname)
     goto abort;
   }
 
-  exprs = pic_read_file(pic, file);
+  exprs = pic_parse_file(pic, file);
   if (pic_undef_p(exprs)) {
     fprintf(stderr, "fatal error: %s broken\n", fname);
     goto abort;
@@ -193,7 +193,7 @@ exec_string(pic_state *pic, const char *str)
   struct pic_proc *proc;
   int ai;
 
-  exprs = pic_read_cstr(pic, str);
+  exprs = pic_parse_cstr(pic, str);
   if (pic_undef_p(exprs)) {
     goto abort;
   }

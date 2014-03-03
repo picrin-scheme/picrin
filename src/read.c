@@ -216,7 +216,7 @@ pic_read(pic_state *pic, const char *cstr)
 }
 
 pic_list
-pic_read_file(pic_state *pic, FILE *file)
+pic_parse_file(pic_state *pic, FILE *file)
 {
   yyscan_t scanner;
   struct parser_control ctrl;
@@ -234,7 +234,7 @@ pic_read_file(pic_state *pic, FILE *file)
 }
 
 pic_list
-pic_read_cstr(pic_state *pic, const char *cstr)
+pic_parse_cstr(pic_state *pic, const char *cstr)
 {
   yyscan_t scanner;
   struct parser_control ctrl;

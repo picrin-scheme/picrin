@@ -173,8 +173,8 @@ char *pic_strdup(pic_state *, const char *);
 char *pic_strndup(pic_state *, const char *, size_t);
 
 pic_value pic_read(pic_state *, const char *);
-pic_list pic_read_file(pic_state *, FILE *); /* When input string is incomplete, returns undef. */
-pic_list pic_read_cstr(pic_state *, const char *);
+pic_list pic_parse_file(pic_state *, FILE *); /* #f for incomplete input */
+pic_list pic_parse_cstr(pic_state *, const char *);
 
 pic_value pic_load(pic_state *, const char *);
 

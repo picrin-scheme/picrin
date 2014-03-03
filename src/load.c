@@ -18,7 +18,7 @@ pic_load(pic_state *pic, const char *fn)
     pic_error(pic, "load: could not read file");
   }
 
-  exprs = pic_read_file(pic, file);
+  exprs = pic_parse_file(pic, file);
   if (pic_undef_p(exprs)) {
     pic_error(pic, "load: unexpected EOF");
   }

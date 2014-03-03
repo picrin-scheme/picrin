@@ -627,7 +627,7 @@ pic_macro_include(pic_state *pic)
     if (file == NULL) {
       pic_error(pic, "could not open file");
     }
-    exprs = pic_read_file(pic, file);
+    exprs = pic_parse_file(pic, file);
     if (pic_undef_p(exprs)) {
       pic_error(pic, "parse error");
     }
