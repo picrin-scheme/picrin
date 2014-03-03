@@ -54,9 +54,7 @@ repl(pic_state *pic)
 {
   char code[CODE_MAX_LENGTH] = "", line[LINE_MAX_LENGTH];
   char *prompt;
-  struct pic_proc *proc;
   pic_value v, exprs;
-  jmp_buf jmp;
   int ai;
 
 #if PIC_ENABLE_READLINE
@@ -103,54 +101,33 @@ repl(pic_state *pic)
       goto overflow;
     strcat(code, line);
 
-    if (setjmp(jmp) == 0) {
-      pic->jmp = &jmp;
+    pic_try {
+
+      /* read */
+      exprs = pic_read_cstr(pic, code);
+
+      if (pic_undef_p(exprs)) {
+        /* wait for more input */
+      }
+      else {
+        code[0] = '\0';
+
+        pic_for_each (v, exprs) {
+
+          /* eval */
+          v = pic_eval(pic, v);
+
+          /* print */
+          pic_printf(pic, "=> ~s\n", v);
+        }
+      }
     }
-    else {
-      /* error occured */
-      printf("%s\n", pic_errmsg(pic));
-      code[0] = '\0';
+    pic_catch {
+      printf("error: %s\n", pic_errmsg(pic));
       pic->err = NULL;
-      goto next;
+      code[0] = '\0';
     }
 
-    /* read */
-    exprs = pic_read_cstr(pic, code);
-    if (pic_undef_p(exprs)) {   /* wait for more input */
-      goto next;
-    }
-    code[0] = '\0';
-
-    pic_for_each (v, exprs) {
-
-#if DEBUG
-      printf("[read: ");
-      pic_debug(pic, v);
-      printf("]\n");
-#endif
-
-      /* eval */
-      proc = pic_compile(pic, v);
-      if (proc == NULL) {
-	printf("compilation error: %s\n", pic_errmsg(pic));
-	pic->err = NULL;
-	goto next;
-      }
-      v = pic_apply(pic, proc, pic_nil_value());
-      if (pic_undef_p(v)) {
-	printf("runtime error: %s\n", pic_errmsg(pic));
-	pic->err = NULL;
-	goto next;
-      }
-
-      /* print */
-      printf("=> "); fflush(stdout);
-      pic_debug(pic, v);
-      printf("\n"); fflush(stdout);
-
-    }
-
-  next:
     pic_gc_arena_restore(pic, ai);
   }
 
