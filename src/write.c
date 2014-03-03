@@ -45,19 +45,24 @@ is_quasiquote(pic_state *pic, pic_value pair)
 struct writer_control {
   pic_state *pic;
   xFILE *file;
+  int mode;
   xhash *labels;
   xhash *visited;
   int cnt;
 };
 
+#define WRITE_MODE 1
+#define DISPLAY_MODE 2
+
 static struct writer_control *
-writer_control_new(pic_state *pic, xFILE *file)
+writer_control_new(pic_state *pic, xFILE *file, int mode)
 {
   struct writer_control *p;
 
   p = (struct writer_control *)pic_alloc(pic, sizeof(struct writer_control));
   p->pic = pic;
   p->file = file;
+  p->mode = mode;
   p->labels = xh_new_ptr();
   p->visited = xh_new_ptr();
   p->cnt = 0;
@@ -228,6 +233,10 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, "%s", pic_symbol_name(pic, pic_sym(obj)));
     break;
   case PIC_TT_CHAR:
+    if (p->mode == DISPLAY_MODE) {
+      xfputc(pic_char(obj), file);
+      break;
+    }
     switch (pic_char(obj)) {
     default: xfprintf(file, "#\\%c", pic_char(obj)); break;
     case '\a': xfprintf(file, "#\\alarm"); break;
@@ -259,6 +268,10 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, "#<port %p>", pic_ptr(obj));
     break;
   case PIC_TT_STRING:
+    if (p->mode == DISPLAY_MODE) {
+      xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(obj)));
+      break;
+    }
     xfprintf(file, "\"");
     write_str(pic, pic_str_ptr(obj), file);
     xfprintf(file, "\"");
@@ -320,7 +333,7 @@ write(pic_state *pic, pic_value obj, xFILE *file)
 {
   struct writer_control *p;
 
-  p = writer_control_new(pic, file);
+  p = writer_control_new(pic, file, WRITE_MODE);
 
   traverse_shared(p, obj);      /* FIXME */
 
@@ -334,7 +347,7 @@ write_simple(pic_state *pic, pic_value obj, xFILE *file)
 {
   struct writer_control *p;
 
-  p = writer_control_new(pic, file);
+  p = writer_control_new(pic, file, WRITE_MODE);
 
   /* no traverse here! */
 
@@ -348,9 +361,23 @@ write_shared(pic_state *pic, pic_value obj, xFILE *file)
 {
   struct writer_control *p;
 
-  p = writer_control_new(pic, file);
+  p = writer_control_new(pic, file, WRITE_MODE);
 
   traverse_shared(p, obj);
+
+  write_core(p, obj);
+
+  writer_control_destroy(p);
+}
+
+static void
+display(pic_state *pic, pic_value obj, xFILE *file)
+{
+  struct writer_control *p;
+
+  p = writer_control_new(pic, file, DISPLAY_MODE);
+
+  traverse_shared(p, obj);      /* FIXME */
 
   write_core(p, obj);
 
@@ -420,6 +447,17 @@ pic_write_write_shared(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_write_display(pic_state *pic)
+{
+  pic_value v;
+  struct pic_port *port = pic_stdout(pic);
+
+  pic_get_args(pic, "o|p", &v, &port);
+  display(pic, v, port->file);
+  return pic_none_value();
+}
+
 void
 pic_init_write(pic_state *pic)
 {
@@ -427,5 +465,6 @@ pic_init_write(pic_state *pic)
     pic_defun(pic, "write", pic_write_write);
     pic_defun(pic, "write-simple", pic_write_write_simple);
     pic_defun(pic, "write-shared", pic_write_write_shared);
+    pic_defun(pic, "display", pic_write_display);
   }
 }

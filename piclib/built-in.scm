@@ -876,23 +876,6 @@
 
 (export call-with-port)
 
-(define-library (scheme write)
-  (import (scheme base))
-
-  (define (display obj . opts)
-    (let ((port (if (null? opts) (current-output-port) (car opts))))
-      (cond
-       ((string? obj)
-        (write-string obj port))
-       ((char? obj)
-        (write-char obj port))
-       ((symbol? obj)
-        (write-string (symbol->string obj) port))
-       (else
-        (write obj port)))))
-
-  (export display))
-
 ;;; Appendix A. Standard Libraries Lazy
 (define-library (scheme lazy)
   (import (scheme base)
