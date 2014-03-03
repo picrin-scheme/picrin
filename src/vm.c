@@ -873,3 +873,13 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   ci->fp = fp - 1;         /* the last argument is pushed by the VM */
   return v;
 }
+
+pic_value
+pic_eval(pic_state *pic, pic_value program)
+{
+  struct pic_proc *proc;
+
+  proc = pic_compile(pic, program);
+
+  return pic_apply(pic, proc, pic_nil_value());
+}
