@@ -167,7 +167,7 @@ read_one(yyscan_t scanner)
   int tok;
 
   if (setjmp(yyjmp) != 0) {
-    pic_errorf(pic, "read-error: %s", yymsg ? yymsg : "unexpected EOF");
+    pic_errorf(pic, "%s", yymsg ? yymsg : "unexpected EOF");
   }
 
   if ((tok = gettok(scanner)) == tEOF) {
@@ -184,7 +184,7 @@ read_many(yyscan_t scanner)
 
   if (setjmp(yyjmp) != 0) {
     if (yymsg) {
-      pic_errorf(pic, "read-error: %s", yymsg);
+      pic_errorf(pic, "%s", yymsg);
     }
     return pic_undef_value();   /* incomplete string */
   }
