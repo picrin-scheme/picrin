@@ -131,7 +131,7 @@ alloc(void *ptr, size_t size)
 }
 
 void *
-pic_malloc(pic_state *pic, size_t size)
+pic_alloc(pic_state *pic, size_t size)
 {
   void *ptr;
 
