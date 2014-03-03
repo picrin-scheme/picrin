@@ -167,7 +167,6 @@ static pic_sym
 symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 {
   xh_entry *e;
-  pic_sym uniq;
 
   if (! pic_interned_p(pic, sym)) {
     return sym;
@@ -180,9 +179,7 @@ symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
       break;
     senv = senv->up;
   }
-  uniq = pic_gensym(pic, sym);
-  xh_put_int(senv->name, sym, uniq);
-  return uniq;
+  return sym;
 }
 
 static pic_value
