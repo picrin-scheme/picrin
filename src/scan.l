@@ -111,34 +111,34 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 }
 
 {identifier}	{
-  yylval.str.buf = yytext;
-  yylval.str.len = yyleng;
+  yylval.buf.dat = yytext;
+  yylval.buf.len = yyleng;
   return tSYMBOL;
 }
 
 "\""		{
   BEGIN(STRING);
-  yylval.str.len = 0;
-  yylval.str.buf = yyalloc(yylval.str.len + 1, yyscanner);
-  strcpy(yylval.str.buf, "");
+  yylval.buf.len = 0;
+  yylval.buf.dat = yyalloc(yylval.buf.len + 1, yyscanner);
+  strcpy(yylval.buf.dat, "");
 }
 <STRING>[^\\"]+	{
-  yylval.str.len += yyleng;
-  yylval.str.buf = yyrealloc(yylval.str.buf, yylval.str.len + 1, yyscanner);
-  strcpy(yylval.str.buf + yylval.str.len - yyleng, yytext);
+  yylval.buf.len += yyleng;
+  yylval.buf.dat = yyrealloc(yylval.buf.dat, yylval.buf.len + 1, yyscanner);
+  strcpy(yylval.buf.dat + yylval.buf.len - yyleng, yytext);
 }
 <STRING>\\.	{
-  yylval.str.len += 1;
-  yylval.str.buf = yyrealloc(yylval.str.buf, yylval.str.len + 1, yyscanner);
-  yylval.str.buf[yylval.str.len] = '\0';
+  yylval.buf.len += 1;
+  yylval.buf.dat = yyrealloc(yylval.buf.dat, yylval.buf.len + 1, yyscanner);
+  yylval.buf.dat[yylval.buf.len] = '\0';
 
   switch (yytext[yyleng - 1]) {
-  case 'a': yylval.str.buf[yylval.str.len - 1] = '\a'; break;
-  case 'b': yylval.str.buf[yylval.str.len - 1] = '\b'; break;
-  case 't': yylval.str.buf[yylval.str.len - 1] = '\t'; break;
-  case 'n': yylval.str.buf[yylval.str.len - 1] = '\n'; break;
-  case 'r': yylval.str.buf[yylval.str.len - 1] = '\r'; break;
-  default: yylval.str.buf[yylval.str.len - 1] = yytext[yyleng - 1]; break;
+  case 'a': yylval.buf.dat[yylval.buf.len - 1] = '\a'; break;
+  case 'b': yylval.buf.dat[yylval.buf.len - 1] = '\b'; break;
+  case 't': yylval.buf.dat[yylval.buf.len - 1] = '\t'; break;
+  case 'n': yylval.buf.dat[yylval.buf.len - 1] = '\n'; break;
+  case 'r': yylval.buf.dat[yylval.buf.len - 1] = '\r'; break;
+  default: yylval.buf.dat[yylval.buf.len - 1] = yytext[yyleng - 1]; break;
   }
 }
 <STRING>\\[:blank:]*\n[:blank:]* {
@@ -165,9 +165,8 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 "#u8("		{
   BEGIN(BYTEVECTOR);
-  yylval.blob.len = 0;
-  yylval.blob.capa = 10;
-  yylval.blob.dat = yyalloc(10, yyscanner);
+  yylval.buf.len = 0;
+  yylval.buf.dat = NULL;
 }
 <BYTEVECTOR>[ \r\n\t]	{
   /* skip whitespace */
@@ -175,14 +174,12 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 <BYTEVECTOR>{uinteger}	{
   int i = atoi(yytext);
   if (0 > i || i > 255) {
-    yyfree(yylval.blob.dat, yyscanner);
+    yyfree(yylval.buf.dat, yyscanner);
     REJECT;
   }
-  yylval.blob.dat[yylval.blob.len++] = (char)i;
-  if (yylval.blob.len > yylval.blob.capa) {
-    yylval.blob.capa *= 2;
-    yylval.blob.dat = yyrealloc(yylval.blob.dat, yylval.blob.capa, yyscanner);
-  }
+  yylval.buf.len += 1;
+  yylval.buf.dat = yyrealloc(yylval.buf.dat, yylval.buf.len, yyscanner);
+  yylval.buf.dat[yylval.buf.len - 1] = (char)i;
 }
 <BYTEVECTOR>")"	{
   BEGIN(INITIAL);

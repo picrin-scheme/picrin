@@ -25,14 +25,10 @@ typedef union YYSTYPE {
   int i;
   double f;
   struct {
-    char *buf;
-    size_t len;
-  } str;
-  char c;
-  struct {
     char *dat;
-    size_t len, capa;
-  } blob;
+    size_t len;
+  } buf;
+  char c;
 } YYSTYPE;
 
 struct parser_control {

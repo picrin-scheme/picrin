@@ -89,7 +89,7 @@ read_datum(int tok, yyscan_t scanner)
 
   switch (tok) {
   case tSYMBOL:
-    return pic_symbol_value(pic_intern(pic, yylval.str.buf, yylval.str.len));
+    return pic_symbol_value(pic_intern(pic, yylval.buf.dat, yylval.buf.len));
 
   case tINT:
     return pic_int_value(yylval.i);
@@ -104,13 +104,13 @@ read_datum(int tok, yyscan_t scanner)
     return pic_char_value(yylval.c);
 
   case tSTRING:
-    val = pic_obj_value(pic_str_new(pic, yylval.str.buf, yylval.str.len));
-    pic_free(pic, yylval.str.buf);
+    val = pic_obj_value(pic_str_new(pic, yylval.buf.dat, yylval.buf.len));
+    pic_free(pic, yylval.buf.dat);
     return val;
 
   case tBYTEVECTOR:
-    val = pic_obj_value(pic_blob_new(pic, yylval.blob.dat, yylval.blob.len));
-    pic_free(pic, yylval.blob.dat);
+    val = pic_obj_value(pic_blob_new(pic, yylval.buf.dat, yylval.buf.len));
+    pic_free(pic, yylval.buf.dat);
     return val;
 
   case tLPAREN:
