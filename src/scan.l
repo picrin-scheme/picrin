@@ -118,13 +118,33 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
 "\""		{
   BEGIN(STRING);
+  yylval.str.len = 0;
+  yylval.str.buf = yyalloc(yylval.str.len + 1, yyscanner);
+  strcpy(yylval.str.buf, "");
 }
-<STRING>[^\\"]*	{
-  yymore();
+<STRING>[^\\"]+	{
+  yylval.str.len += yyleng;
+  yylval.str.buf = yyrealloc(yylval.str.buf, yylval.str.len + 1, yyscanner);
+  strcpy(yylval.str.buf + yylval.str.len - yyleng, yytext);
 }
-<STRING>"\""	{
-  yylval.str.buf = yytext;
-  yylval.str.len = yyleng - 1;
+<STRING>\\.	{
+  yylval.str.len += 1;
+  yylval.str.buf = yyrealloc(yylval.str.buf, yylval.str.len + 1, yyscanner);
+  yylval.str.buf[yylval.str.len] = '\0';
+
+  switch (yytext[yyleng - 1]) {
+  case 'a': yylval.str.buf[yylval.str.len - 1] = '\a'; break;
+  case 'b': yylval.str.buf[yylval.str.len - 1] = '\b'; break;
+  case 't': yylval.str.buf[yylval.str.len - 1] = '\t'; break;
+  case 'n': yylval.str.buf[yylval.str.len - 1] = '\n'; break;
+  case 'r': yylval.str.buf[yylval.str.len - 1] = '\r'; break;
+  default: yylval.str.buf[yylval.str.len - 1] = yytext[yyleng - 1]; break;
+  }
+}
+<STRING>\\[:blank:]*\n[:blank:]* {
+  /* skip intraline whitespaces */
+}
+<STRING>\"	{
   BEGIN(INITIAL);
   return tSTRING;
 }
