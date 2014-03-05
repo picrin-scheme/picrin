@@ -5,5 +5,5 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_SOURCE
 
 # build!
 file(GLOB C_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
-add_library(picrin SHARED ${C_SOURCES} ${FLEX_scan_OUTPUTS})
-target_link_libraries(picrin m xfile)
+add_library(picrin SHARED ${C_SOURCES} ${FLEX_scan_OUTPUTS} $<TARGET_OBJECTS:xfile>)
+target_link_libraries(picrin m)

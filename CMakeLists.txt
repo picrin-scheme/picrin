@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.8)
 
 PROJECT(picrin)
 
@@ -15,12 +15,11 @@ execute_process(
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 set(CMAKE_C_FLAGS "-Wall -Wextra -std=c99")
 set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG=1")
 
 # external libraries
-add_library(xfile STATIC extlib/xfile/xfile.c)
+add_library(xfile OBJECT extlib/xfile/xfile.c)
 
 # build picrin
 include_directories(include extlib)
