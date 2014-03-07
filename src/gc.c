@@ -318,7 +318,7 @@ static void gc_mark(pic_state *, pic_value);
 static void gc_mark_object(pic_state *pic, struct pic_object *obj);
 
 static void
-gc_mark_block(pic_state *pic, struct pic_block *blk)
+gc_mark_block(pic_state *pic, pic_block *blk)
 {
   while (blk) {
     if (blk->in)

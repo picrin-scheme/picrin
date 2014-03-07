@@ -182,7 +182,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 }
 
 static void
-walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
+walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
 {
   if (here == there)
     return;
@@ -282,10 +282,10 @@ pic_cont_dynamic_wind(pic_state *pic)
   /* enter */
   pic_apply_argv(pic, in, 0);
   {
-    struct pic_block *here;
+    pic_block *here;
 
     here = pic->blk;
-    pic->blk = (struct pic_block *)pic_alloc(pic, sizeof(struct pic_block));
+    pic->blk = (pic_block *)pic_alloc(pic, sizeof(pic_block));
     pic->blk->prev = here;
     pic->blk->depth = here->depth + 1;
     pic->blk->in = in;

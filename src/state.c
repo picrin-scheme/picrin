@@ -28,7 +28,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->envp = envp;
 
   /* root block */
-  pic->blk = (struct pic_block *)malloc(sizeof(struct pic_block));
+  pic->blk = (pic_block *)malloc(sizeof(pic_block));
   pic->blk->prev = NULL;
   pic->blk->depth = 0;
   pic->blk->in = pic->blk->out = NULL;

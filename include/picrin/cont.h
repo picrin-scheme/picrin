@@ -13,7 +13,7 @@ struct pic_cont {
   PIC_OBJECT_HEADER
   jmp_buf jmp;
 
-  struct pic_block *blk;
+  pic_block *blk;
 
   pic_value *stk_pos, *stk_ptr;
   size_t stk_len;
@@ -40,7 +40,7 @@ struct pic_cont {
   } while (0)
 
 #define PIC_BLK_DECREF(pic,blk) do {			\
-    struct pic_block *_a = (blk), *_b;			\
+    pic_block *_a = (blk), *_b;			\
     while (_a) {					\
       if (! --_a->refcnt) {				\
 	_b = _a->prev;					\

@@ -31,7 +31,7 @@ pic_system_exit(pic_state *pic)
 {
   pic_value v;
   int argc, status = EXIT_SUCCESS;
-  struct pic_block *blk;
+  pic_block *blk;
 
   argc = pic_get_args(pic, "|o", &v);
   if (argc == 1) {
