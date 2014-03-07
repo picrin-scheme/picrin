@@ -948,7 +948,7 @@ typedef struct codegen_context {
   /* closed variable table */
   unsigned *cv_tbl, cv_num;
   /* actual bit code sequence */
-  struct pic_code *code;
+  pic_code *code;
   size_t clen, ccapa;
   /* child ireps */
   struct pic_irep **irep;
@@ -1045,7 +1045,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
 
   xh_destroy(vars);
 
-  cxt->code = (struct pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
+  cxt->code = (pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
 
@@ -1074,7 +1074,7 @@ pop_codegen_context(codegen_state *state)
   irep->localc = state->cxt->localc;
   irep->cv_tbl = state->cxt->cv_tbl;
   irep->cv_num = state->cxt->cv_num;
-  irep->code = pic_realloc(pic, state->cxt->code, sizeof(struct pic_code) * state->cxt->clen);
+  irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);
   irep->ilen = state->cxt->ilen;
@@ -1553,7 +1553,7 @@ pic_set(pic_state *pic, const char *name, pic_value value)
 }
 
 void
-print_code(pic_state *pic, struct pic_code c)
+print_code(pic_state *pic, pic_code c)
 {
   UNUSED(pic);
 

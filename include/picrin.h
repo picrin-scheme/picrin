@@ -59,11 +59,11 @@ extern "C" {
 #include "config.h"
 #include "picrin/value.h"
 
-struct pic_code;
+typedef struct pic_code pic_code;
 
 typedef struct {
   int argc, retc;
-  struct pic_code *ip;
+  pic_code *ip;
   pic_value *fp;
   struct pic_env *env;
 } pic_callinfo;
@@ -87,7 +87,7 @@ typedef struct {
   pic_callinfo *ci;
   pic_callinfo *cibase, *ciend;
 
-  struct pic_code *ip;
+  pic_code *ip;
 
   struct pic_proc **rescue;
   size_t ridx, rlen;
