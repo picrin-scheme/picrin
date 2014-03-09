@@ -33,26 +33,23 @@ void
 pic_load_stdlib(pic_state *pic)
 {
   static const char *filename = "piclib/built-in.scm";
-  jmp_buf jmp, *prev_jmp = pic->jmp;
 
-  if (setjmp(jmp) == 0) {
-    pic->jmp = &jmp;
+  pic_try {
+
+    /* load 'built-in.scm' */
+    pic_load(pic, filename);
+
+#if DEBUG
+    puts("successfully loaded stdlib");
+#endif
+
   }
-  else {
+  pic_catch {
     /* error! */
     fputs("fatal error: failure in loading built-in.scm\n", stderr);
     fputs(pic_errmsg(pic), stderr);
     abort();
   }
-
-  /* load 'built-in.scm' */
-  pic_load(pic, filename);
-
-#if DEBUG
-  puts("successfully loaded stdlib");
-#endif
-
-  pic->jmp = prev_jmp;
 }
 
 #define PUSH_SYM(pic, lst, name)		\
