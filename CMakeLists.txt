@@ -8,6 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 # ----
 
 # git submodule update --init
+find_package(Git)
 execute_process(
   COMMAND ${GIT_EXECUTABLE} submodule update --init
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
