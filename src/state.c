@@ -15,7 +15,7 @@ void pic_init_core(pic_state *);
 pic_state *
 pic_open(int argc, char *argv[], char **envp)
 {
-  pic_value t;
+  char t;
 
   pic_state *pic;
   int ai;

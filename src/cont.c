@@ -78,9 +78,9 @@ static void save_cont(pic_state *, struct pic_cont **);
 static void restore_cont(pic_state *, struct pic_cont *);
 
 static size_t
-native_stack_length(pic_state *pic, pic_value **pos)
+native_stack_length(pic_state *pic, char **pos)
 {
-  pic_value t;
+  char t;
 
   *pos = (pic->native_stack_start > &t)
     ? &t
@@ -95,7 +95,7 @@ static void
 save_cont(pic_state *pic, struct pic_cont **c)
 {
   struct pic_cont *cont;
-  pic_value *pos;
+  char *pos;
 
   cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
@@ -142,7 +142,7 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
 NORETURN static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
-  pic_value v;
+  char v;
   struct pic_cont *tmp = cont;
 
   if (&v < pic->native_stack_start) {
