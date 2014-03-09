@@ -129,37 +129,41 @@ pic_close(pic_state *pic)
 {
   xh_iter it;
 
-  /* free global stacks */
-  free(pic->stbase);
-  free(pic->cibase);
-  free(pic->rescue);
-  free(pic->globals);
+  /* invoke exit handlers */
+  PIC_BLK_EXIT(pic);
 
-  xh_destroy(pic->syms);
-  xh_destroy(pic->global_tbl);
-
-  pic->glen = 0;
-  pic->rlen = 0;
+  /* clear out root objects */
+  pic->sp = pic->stbase;
+  pic->ci = pic->cibase;
+  pic->ridx = 0;
   pic->arena_idx = 0;
-  pic->lib_tbl = pic_undef_value();
-
+  pic->err = NULL;
+  pic->glen = 0;
   xh_clear(pic->macros);
+  pic->lib_tbl = pic_nil_value();
 
-  /* free all values */
+  /* free all heap objects */
   pic_gc_run(pic);
-
-  xh_destroy(pic->macros);
 
   /* free heaps */
   pic_heap_close(pic->heap);
+
+  /* free runtime context */
+  free(pic->stbase);
+  free(pic->cibase);
+  free(pic->rescue);
+
+  /* free global stacks */
+  free(pic->globals);
+  xh_destroy(pic->syms);
+  xh_destroy(pic->global_tbl);
+  xh_destroy(pic->macros);
 
   /* free symbol names */
   for (xh_begin(pic->sym_names, &it); ! xh_isend(&it); xh_next(&it)) {
     free((void *)it.e->val);
   }
   free(pic->sym_names);
-
-  PIC_BLK_DECREF(pic, pic->blk);
 
   free(pic);
 }
