@@ -40,7 +40,7 @@ struct pic_cont {
   } while (0)
 
 #define PIC_BLK_DECREF(pic,blk) do {			\
-    pic_block *_a = (blk), *_b;			\
+    pic_block *_a = (blk), *_b;                         \
     while (_a) {					\
       if (! --_a->refcnt) {				\
 	_b = _a->prev;					\
@@ -50,6 +50,17 @@ struct pic_cont {
 	break;						\
       }							\
     }							\
+  } while (0)
+
+#define PIC_BLK_EXIT(pic) do {                           \
+    pic_block *_a;                                       \
+    while (pic->blk) {                                   \
+      if (pic->blk->out)                                 \
+        pic_apply_argv(pic, pic->blk->out, 0);           \
+      _a = pic->blk->prev;                               \
+      PIC_BLK_DECREF(pic, pic->blk);                     \
+      pic->blk = _a;                                     \
+    }                                                    \
   } while (0)
 
 pic_value pic_values(pic_state *, size_t, ...);
