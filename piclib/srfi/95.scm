@@ -26,8 +26,8 @@
         (else (set-cdr! arg2 (rec arg1 (cdr arg2))) arg2))))
   (define (merge! ls1 ls2 less? . opt-key)
     (let ((key (if (null? opt-key) identity (car opt-key)))
-      (c1 (car ls1)) (c2 (car ls2)))
-      (if (less? (key c2) (key c1)) (begin (set-car! ls1 c2) (set-car! ls2 c1)))
+      (c1 (car ls1)) (c2 (car ls2)) (d1 (cdr ls1)) (d2 (cdr ls2)))
+      (if (less? (key c2) (key c1)) (begin (set-car! ls1 c2) (set-car! ls2 c1) (set-cdr! ls1 d2) (set-cdr! ls2 d1))) 
       (merge-sub! ls1 ls2 less? key))) 
    (define (merge-sort ls less?)
     (if (<= (length ls) 1) ls
