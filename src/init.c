@@ -32,17 +32,10 @@ void pic_init_write(pic_state *);
 void
 pic_load_stdlib(pic_state *pic)
 {
-  static const char *filename = "piclib/built-in.scm";
-
   pic_try {
-
-    /* load 'built-in.scm' */
-    pic_load(pic, filename);
-
-#if DEBUG
-    puts("successfully loaded stdlib");
-#endif
-
+    pic_load(pic, "piclib/built-in.scm");
+    pic_load(pic, "piclib/srfi/1.scm");
+    pic_load(pic, "piclib/srfi/95.scm");
   }
   pic_catch {
     /* error! */
@@ -50,6 +43,11 @@ pic_load_stdlib(pic_state *pic)
     fputs(pic_errmsg(pic), stderr);
     abort();
   }
+
+#if DEBUG
+    puts("successfully loaded stdlib");
+#endif
+
 }
 
 #define PUSH_SYM(pic, lst, name)		\

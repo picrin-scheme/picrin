@@ -1,10 +1,7 @@
 (define-library (srfi 95)
   (import (scheme base)
-          (scheme load))
-
-  ;; this hack works only if the current directory is the root of picrin.
-  (load "piclib/srfi/1.scm")
-  (import (srfi 1))
+          (scheme load)
+          (srfi 1))
 
   (define (list-sorted? ls less?)
     (let loop ((cur ls))
