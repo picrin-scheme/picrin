@@ -49,12 +49,24 @@ bool
 pic_list_p(pic_state *pic, pic_value obj)
 {
   UNUSED(pic);
+  pic_value twice=obj;
 
-  while (pic_pair_p(obj)) {
+  while (1) {
+    int i;
+    /* variable twice are scanned twice as fast as obj */
+    for(i=0;i<2;i++){
+      if(pic_pair_p(twice)){
+        twice=pic_pair_ptr(twice)->cdr;
+       }
+      else{
+        return pic_nil_p(twice);
+      }
+    }
     obj = pic_pair_ptr(obj)->cdr;
+    if(pic_eq_p(obj,twice)){ /* circular list */
+      return false;
+    }
   }
-
-  return pic_nil_p(obj);
 }
 
 pic_value
