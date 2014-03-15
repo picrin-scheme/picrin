@@ -15,7 +15,7 @@ pic_load(pic_state *pic, const char *fn)
 
   file = fopen(fn, "r");
   if (file == NULL) {
-    pic_error(pic, "load: could not read file");
+    pic_errorf(pic, "load: could not read file \"%s\"", fn);
   }
 
   exprs = pic_parse_file(pic, file);
