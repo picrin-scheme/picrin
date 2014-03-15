@@ -55,7 +55,11 @@
 #endif
 
 #ifndef PIC_ENABLE_READLINE
-# define PIC_ENABLE_READLINE 0
+# if PIC_READLINE_FOUND
+#  define PIC_ENABLE_READLINE 1
+# else
+#  define PIC_ENABLE_READLINE 0
+# endif
 #endif
 
 #ifndef PIC_NONE_IS_FALSE
