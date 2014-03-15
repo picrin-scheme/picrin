@@ -54,6 +54,10 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
     - `(srfi 1)`
     
         List manipulation library.
+
+    - `(srfi 95)`
+
+        Sorting and Marging.
     
 
 ## Compliance with R7RS
