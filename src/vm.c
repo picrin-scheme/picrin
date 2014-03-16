@@ -822,7 +822,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       pic->jmp = prev_jmp;
       if (pic->err) {
-	return pic_undef_value();
+	longjmp(*pic->jmp, 1);
       }
 
 #if VM_DEBUG
