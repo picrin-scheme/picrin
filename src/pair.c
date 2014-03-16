@@ -177,6 +177,10 @@ pic_length(pic_state *pic, pic_value obj)
 {
   int c = 0;
 
+  if (! pic_list_p(obj)) {
+    pic_errorf(pic, "length: expected list, but got ~s", obj);
+  }
+
   while (! pic_nil_p(obj)) {
     obj = pic_cdr(pic, obj);
     ++c;
