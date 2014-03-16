@@ -46,12 +46,10 @@ pic_cdr(pic_state *pic, pic_value obj)
 }
 
 bool
-pic_list_p(pic_state *pic, pic_value obj)
+pic_list_p(pic_value obj)
 {
   pic_value local, rapid;
   int i;
-
-  UNUSED(pic);
 
   /* Floyd's cycle-finding algorithm. */
 
@@ -443,7 +441,7 @@ pic_pair_list_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_list_p(pic, v));
+  return pic_bool_value(pic_list_p(v));
 }
 
 static pic_value

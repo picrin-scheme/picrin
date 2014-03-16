@@ -22,7 +22,7 @@ pic_value pic_cons(pic_state *, pic_value, pic_value);
 pic_value pic_car(pic_state *, pic_value);
 pic_value pic_cdr(pic_state *, pic_value);
 
-bool pic_list_p(pic_state *, pic_value);
+bool pic_list_p(pic_value);
 pic_value pic_list1(pic_state *, pic_value);
 pic_value pic_list2(pic_state *, pic_value, pic_value);
 pic_value pic_list3(pic_state *, pic_value, pic_value, pic_value);

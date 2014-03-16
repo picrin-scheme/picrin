@@ -303,7 +303,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_PAIR: {
     pic_value proc;
 
-    if (! pic_list_p(pic, obj)) {
+    if (! pic_list_p(obj)) {
       pic_errorf(pic, "invalid expression given: ~s", obj);
     }
 
