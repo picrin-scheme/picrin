@@ -48,27 +48,33 @@ pic_cdr(pic_state *pic, pic_value obj)
 bool
 pic_list_p(pic_state *pic, pic_value obj)
 {
-  UNUSED(pic);
-  pic_value twice=obj;
+  pic_value local, rapid;
+  int i;
 
-  /* This code checks whether obj is a circular list
-     using Floyd's cycle-finding algorithm. */
-  while ( 1 ) { /* loops until a cycle is detected or an object other than a pair is found */
-    int i;
+  UNUSED(pic);
+
+  /* Floyd's cycle-finding algorithm. */
+
+  local = rapid = obj;
+  while (true) {
+
+    /* advance rapid fast-forward; runs 2x faster than local */
     for (i = 0; i < 2; ++i) {
-      if (pic_pair_p(twice)) {
-        twice = pic_pair_ptr(twice)->cdr;
-       }
+      if (pic_pair_p(rapid)) {
+        rapid = pic_pair_ptr(rapid)->cdr;
+      }
       else {
-        return pic_nil_p(twice);
+        return pic_nil_p(rapid);
       }
     }
-    obj = pic_pair_ptr(obj)->cdr; /* Since obj progresses slower than twice, it is guaranteed that obj is a pair. */
-    if (pic_eq_p(obj,twice)) { /* obj is a circular list */
+
+    /* advance local */
+    local = pic_pair_ptr(local)->cdr;
+
+    if (pic_eq_p(local, rapid)) {
       return false;
     }
   }
-  /* unreachable */
 }
 
 pic_value
