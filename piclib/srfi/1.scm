@@ -51,19 +51,16 @@
   ;; list=
   (define (not-pair? x)
     (not (pair? x)))
-
+  ;; detects circular list using Floyd's cycle-finding algorithm
   (define (circular-list? x)
-    (and (pair? x)
-	 (let rec ((lst (cdr x)))
-	   (cond ((not-pair? lst) #f)
-		 ((null? lst) #f)
-		 ((eq? x lst) #t)
-		 (else (rec (cdr lst)))))))
+    (let rec ((rapid x) (local x))
+      (if (and (pair? rapid) (pair? (cdr rapid)))
+        (if (eq? (cddr rapid) (cdr local))
+          #t
+          (rec (cddr rapid) (cdr local)))
+        #f)))
 
-  ;; if list? is support circular list, (define proper-list? list?)
-  (define (proper-list? x)
-    (if (not (circular-list? x))
-	(list? x)))
+  (define proper-list? list?)
 
   (define (dotted-list? x)
     (and (pair? x)
