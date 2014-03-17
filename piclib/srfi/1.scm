@@ -55,7 +55,7 @@
   (define (circular-list? x)
     (and (pair? x)
 	 (let rec ((lst (cdr x)))
-	   (cond ((not-pair?) #f)
+	   (cond ((not-pair? lst) #f)
 		 ((null? lst) #f)
 		 ((eq? x lst) #t)
 		 (else (rec (cdr lst)))))))
