@@ -139,7 +139,7 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
   restore_cont(pic, cont);
 }
 
-NORETURN static void
+noreturn static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
   char v;
@@ -197,7 +197,7 @@ walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
   }
 }
 
-NORETURN static pic_value
+noreturn static pic_value
 cont_call(pic_state *pic)
 {
   struct pic_proc *proc;

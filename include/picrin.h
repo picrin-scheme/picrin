@@ -40,9 +40,9 @@ extern "C" {
 #include "xrope/xrope.h"
 
 #if __STDC_VERSION__ >= 201112L
-# define NORETURN _Noreturn
+# define noreturn _Noreturn
 #elif __GNUC__ || __clang__
-# define NORETURN __attribute__((noreturn))
+# define noreturn __attribute__((noreturn))
 #endif
 
 #define FALLTHROUGH ((void)0)
@@ -199,10 +199,10 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
 void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
 
-NORETURN void pic_abort(pic_state *, const char *);
-NORETURN void pic_raise(pic_state *, struct pic_error *);
-NORETURN void pic_error(pic_state *, const char *); /* obsoleted */
-NORETURN void pic_errorf(pic_state *, const char *, ...);
+noreturn void pic_abort(pic_state *, const char *);
+noreturn void pic_raise(pic_state *, struct pic_error *);
+noreturn void pic_error(pic_state *, const char *); /* obsoleted */
+noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warn(pic_state *, const char *);
 
 const char *pic_errmsg(pic_state *);

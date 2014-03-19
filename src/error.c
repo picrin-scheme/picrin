@@ -19,7 +19,7 @@ pic_errmsg(pic_state *pic)
   return pic_str_cstr(pic->err->msg);
 }
 
-NORETURN static void
+noreturn static void
 raise(pic_state *pic, struct pic_error *e)
 {
   pic->err = e;
@@ -30,7 +30,7 @@ raise(pic_state *pic, struct pic_error *e)
   longjmp(*pic->jmp, 1);
 }
 
-NORETURN static void
+noreturn static void
 error(pic_state *pic, pic_str *msg, pic_value irrs)
 {
   struct pic_error *e;
@@ -138,7 +138,7 @@ pic_error_with_exception_handler(pic_state *pic)
   return v;
 }
 
-NORETURN static pic_value
+noreturn static pic_value
 pic_error_raise(pic_state *pic)
 {
   pic_value v;
@@ -164,7 +164,7 @@ pic_error_raise_continuable(pic_state *pic)
   return pic_raise_continuable(pic, obj);
 }
 
-NORETURN static pic_value
+noreturn static pic_value
 pic_error_error(pic_state *pic)
 {
   pic_str *str;
