@@ -464,7 +464,6 @@ pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
 
 #define PUSH(v) ((pic->sp >= pic->stend) ? abort() : (*pic->sp++ = (v)))
 #define POP() (*--pic->sp)
-#define POPN(i) (pic->sp -= (i))
 
 #define PUSHCI() (++pic->ci)
 #define POPCI() (pic->ci--)
@@ -526,7 +525,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_POP) {
-      POPN(1);
+      POP();
       NEXT;
     }
     CASE(OP_PUSHNIL) {
