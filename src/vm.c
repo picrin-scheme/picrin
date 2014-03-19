@@ -16,6 +16,8 @@
 #include "picrin/irep.h"
 #include "picrin/blob.h"
 #include "picrin/var.h"
+#include "picrin/lib.h"
+#include "picrin/macro.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -324,6 +326,84 @@ pic_get_args(pic_state *pic, const char *format, ...)
   }
   va_end(ap);
   return i - 1;
+}
+
+static size_t
+global_ref(pic_state *pic, const char *name)
+{
+  xh_entry *e;
+  pic_sym sym;
+
+  sym = pic_intern_cstr(pic, name);
+  if (! (e = xh_get_int(pic->lib->senv->name, sym))) {
+    return SIZE_MAX;
+  }
+  assert(e->val >= 0);
+  if (! (e = xh_get_int(pic->global_tbl, e->val))) {
+    return SIZE_MAX;
+  }
+  return e->val;
+}
+
+static size_t
+global_def(pic_state *pic, const char *name)
+{
+  pic_sym sym, gsym;
+  size_t gidx;
+
+  sym = pic_intern_cstr(pic, name);
+  if ((gidx = global_ref(pic, name)) != SIZE_MAX) {
+    pic_warn(pic, "redefining global");
+    return gidx;
+  }
+
+  gsym = pic_gensym(pic, sym);
+
+  /* register to the senv */
+  xh_put_int(pic->lib->senv->name, sym, gsym);
+
+  /* register to the global table */
+  gidx = pic->glen++;
+  if (pic->glen >= pic->gcapa) {
+    pic_error(pic, "global table overflow");
+  }
+  xh_put_int(pic->global_tbl, gsym, gidx);
+
+  return gidx;
+}
+
+void
+pic_define(pic_state *pic, const char *name, pic_value val)
+{
+  /* push to the global arena */
+  pic->globals[global_def(pic, name)] = val;
+
+  /* export! */
+  pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+pic_value
+pic_ref(pic_state *pic, const char *name)
+{
+  size_t gid;
+
+  gid = global_ref(pic, name);
+  if (gid == SIZE_MAX) {
+    pic_error(pic, "symbol not defined");
+  }
+  return pic->globals[gid];
+}
+
+void
+pic_set(pic_state *pic, const char *name, pic_value value)
+{
+  size_t gid;
+
+  gid = global_ref(pic, name);
+  if (gid == SIZE_MAX) {
+    pic_error(pic, "symbol not defined");
+  }
+  pic->globals[gid] = value;
 }
 
 void
