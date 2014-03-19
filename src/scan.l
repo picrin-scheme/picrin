@@ -8,6 +8,8 @@
 
 #define yylval (yyextra->yylval)
 
+#define YY_NO_UNISTD_H
+
 /* NOTE:
  *  An internal function `yy_fatal_error` takes yyscanner for its second
  * argument but doesn't use it. This invokes a `unused variable` compiler
