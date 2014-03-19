@@ -10,9 +10,11 @@ extern "C" {
 #endif
 
 #if __STDC_VERSION__ >= 201112L
-# define noreturn _Noreturn
+# include <stdnoreturn.h>
 #elif __GNUC__ || __clang__
 # define noreturn __attribute__((noreturn))
+#else
+# define noreturn
 #endif
 
 #define FALLTHROUGH ((void)0)
