@@ -33,7 +33,7 @@ pic_value pic_list_by_array(pic_state *, size_t, pic_value *);
 pic_value pic_make_list(pic_state *, int, pic_value);
 
 #define pic_for_each(var, list)                                 \
-  pic_for_each_helper__(var, GENSYM(pic_for_each_tmp__), list)
+  pic_for_each_helper__(var, GENSYM(tmp), list)
 #define pic_for_each_helper__(var, tmp, list)                           \
   for (pic_value tmp = (list);                                          \
        pic_nil_p(tmp) ? false : ((var = pic_car(pic, tmp)), true);      \

@@ -130,8 +130,8 @@ void pic_define(pic_state *, const char *, pic_value); /* automatic export */
 pic_value pic_ref(pic_state *, const char *);
 void pic_set(pic_state *, const char *, pic_value);
 
-#define pic_try                                                         \
-  pic_try_helper__(GENSYM(pic_try_i__), GENSYM(pic_try_jmp__), GENSYM(pic_try_prev_jmp__))
+#define pic_try                                                 \
+  pic_try_helper__(GENSYM(i), GENSYM(here), GENSYM(prev_jmp))
 #define pic_try_helper__(i, here, prev_jmp)                             \
   for (int i = 0; ! i; )                                                \
     for (jmp_buf here, *prev_jmp = pic->jmp; ! i; )                     \
@@ -174,7 +174,7 @@ struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define pic_deflibrary(spec)                                            \
-  pic_deflibrary_helper__(GENSYM(pic_deflib_i__), GENSYM(pic_deflib_prev_lib__), spec)
+  pic_deflibrary_helper__(GENSYM(i), GENSYM(prev_lib), spec)
 #define pic_deflibrary_helper__(i, prev_lib, spec)                      \
   for (int i = 0; ! i; )                                                \
     for (struct pic_lib *prev_lib; ! i; )                               \
