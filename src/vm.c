@@ -443,7 +443,7 @@ pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
 }
 
 #if VM_DEBUG
-# define OPCODE_EXEC_HOOK pic_dump_code(pic, c)
+# define OPCODE_EXEC_HOOK pic_dump_code(c)
 #else
 # define OPCODE_EXEC_HOOK ((void)0)
 #endif
@@ -654,7 +654,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       puts(")");
       if (! pic_proc_func_p(proc)) {
 	printf("  irep = ");
-	pic_dump_irep(pic, proc->u.irep);
+	pic_dump_irep(proc->u.irep);
       }
       else {
 	printf("  cfunc = %p\n", (void *)proc->u.func.f);

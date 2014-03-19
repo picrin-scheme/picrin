@@ -1460,7 +1460,7 @@ pic_compile(pic_state *pic, pic_value obj)
   irep = pic_codegen(pic, obj);
 #if DEBUG
   fprintf(stdout, "## codegen completed\n");
-  pic_dump_irep(pic, irep);
+  pic_dump_irep(irep);
 #endif
 
 #if DEBUG

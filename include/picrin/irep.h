@@ -72,11 +72,9 @@ struct pic_irep {
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
 
-inline void
-pic_dump_code(pic_state *pic, pic_code c)
+static inline void
+pic_dump_code(pic_code c)
 {
-  UNUSED(pic);
-
   printf("[%2d] ", c.insn);
   switch (c.insn) {
   case OP_NOP:
@@ -184,8 +182,8 @@ pic_dump_code(pic_state *pic, pic_code c)
   }
 }
 
-inline void
-pic_dump_irep(pic_state *pic, struct pic_irep *irep)
+static inline void
+pic_dump_irep(struct pic_irep *irep)
 {
   unsigned i;
 
@@ -197,11 +195,11 @@ pic_dump_irep(pic_state *pic, struct pic_irep *irep)
   }
   for (i = 0; i < irep->clen; ++i) {
     printf("%02x ", i);
-    pic_dump_code(pic, irep->code[i]);
+    pic_dump_code(irep->code[i]);
   }
 
   for (i = 0; i < irep->ilen; ++i) {
-    pic_dump_irep(pic, irep->irep[i]);
+    pic_dump_irep(irep->irep[i]);
   }
 }
 
