@@ -20,12 +20,12 @@ extern "C" {
 #define FALLTHROUGH ((void)0)
 #define UNUSED(v) ((void)(v))
 
-#define GENSYM2__(x,y) x##y
+#define GENSYM2__(x,y) G##x##_##y##__
 #define GENSYM1__(x,y) GENSYM2__(x,y)
 #if defined(__COUNTER__)
-# define GENSYM(x) GENSYM1__(x,__COUNTER__)
+# define GENSYM(x) GENSYM1__(__COUNTER__,x)
 #else
-# define GENSYM(x) GENSYM1__(x,__LINE__)
+# define GENSYM(x) GENSYM1__(__LINE__,x)
 #endif
 
 #if __GNUC__ || __clang__
