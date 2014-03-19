@@ -39,31 +39,8 @@ extern "C" {
 #include "xfile/xfile.h"
 #include "xrope/xrope.h"
 
-#if __STDC_VERSION__ >= 201112L
-# define noreturn _Noreturn
-#elif __GNUC__ || __clang__
-# define noreturn __attribute__((noreturn))
-#endif
-
-#define FALLTHROUGH ((void)0)
-#define UNUSED(v) ((void)(v))
-
-#define GENSYM2__(x,y) x##y
-#define GENSYM1__(x,y) GENSYM2__(x,y)
-#if defined(__COUNTER__)
-# define GENSYM(x) GENSYM1__(x,__COUNTER__)
-#else
-# define GENSYM(x) GENSYM1__(x,__LINE__)
-#endif
-
-#if __GNUC__ || __clang__
-# define UNREACHABLE() (__builtin_unreachable())
-#else
-# include <assert.h>
-# define UNREACHABLE() (assert(false))
-#endif
-
 #include "config.h"
+#include "picrin/util.h"
 #include "picrin/value.h"
 
 typedef struct pic_code pic_code;
