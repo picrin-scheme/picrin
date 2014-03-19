@@ -56,6 +56,13 @@ extern "C" {
 # define GENSYM(x) GENSYM1__(x,__LINE__)
 #endif
 
+#if __GNUC__ || __clang__
+# define UNREACHABLE() (__builtin_unreachable())
+#else
+# include <assert.h>
+# define UNREACHABLE() (assert(false))
+#endif
+
 #include "config.h"
 #include "picrin/value.h"
 
