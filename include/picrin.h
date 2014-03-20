@@ -35,6 +35,7 @@ extern "C" {
 #include <stdint.h>
 #include <assert.h>
 
+#include "xvect/xvect.h"
 #include "xhash/xhash.h"
 #include "xfile/xfile.h"
 #include "xrope/xrope.h"
