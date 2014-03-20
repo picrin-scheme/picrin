@@ -88,13 +88,9 @@ xv_pop(xvect *x, void *dst)
 }
 
 typedef struct analyze_scope {
-  /* rest args variable is counted by localc */
   bool varg;
-  int argc, localc;
-  /* if variable v is captured, then xh_get(var_tbl, v) == 1 */
-  xhash *var_tbl;
-  pic_sym *vars;
-
+  xvect args, locals;  /* rest args variable is counted as a local */
+  xhash *captures;
   struct analyze_scope *up;
 } analyze_scope;
 
@@ -167,7 +163,8 @@ new_analyze_state(pic_state *pic)
 
   global_tbl = pic->global_tbl;
   for (xh_begin(global_tbl, &it); ! xh_isend(&it); xh_next(&it)) {
-    xh_put_int(state->scope->var_tbl, (long)it.e->key, 0);
+    xv_push(&state->scope->locals, &it.e->key);
+    xh_put_int(state->scope->captures, (long)&it.e->key, 0);
   }
 
   return state;
@@ -180,73 +177,72 @@ destroy_analyze_state(analyze_state *state)
   pic_free(state->pic, state);
 }
 
-static pic_sym *
-analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
+static bool
+analyze_args(pic_state *pic, pic_value formals, bool *varg, xvect *args, xvect *locals)
 {
-  pic_sym *syms = (pic_sym *)pic_alloc(pic, sizeof(pic_sym));
-  int i = 1, l = 0;
-  pic_value v;
+  pic_value v, sym;
 
-  *varg = false;
-  for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
-    pic_value sym;
-
+  for (v = formals; pic_pair_p(v); v = pic_cdr(pic, v)) {
     sym = pic_car(pic, v);
     if (! pic_sym_p(sym)) {
-      pic_free(pic, syms);
-      return NULL;
+      return false;
     }
-    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
-    syms[i] = pic_sym(sym);
-    i++;
+    xv_push(args, &pic_sym(sym));
   }
   if (pic_nil_p(v)) {
-    /* pass */
+    *varg = false;
   }
   else if (pic_sym_p(v)) {
     *varg = true;
-    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
-    syms[i] = pic_sym(v);
-    l++;
+    xv_push(locals, &pic_sym(v));
   }
   else {
-    pic_free(pic, syms);
-    return NULL;
-  }
-  *argc = i;
-  *localc = l;
-
-  return syms;
-}
-
-static bool
-push_scope(analyze_state *state, pic_value args)
-{
-  pic_state *pic = state->pic;
-  analyze_scope *scope;
-  bool varg = false;
-  int argc, localc, i;
-  pic_sym *vars;
-
-  if ((vars = analyze_args(pic, args, &varg, &argc, &localc)) == NULL) {
     return false;
   }
 
-  scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
-  scope->up = state->scope;
-  scope->var_tbl = xh_new_int();
-  scope->varg = varg;
-  scope->argc = argc;
-  scope->localc = localc;
-  scope->vars = vars;
-
-  for (i = 1; i < scope->argc + scope->localc; ++i) {
-    xh_put_int(scope->var_tbl, scope->vars[i], 0);
-  }
-
-  state->scope = scope;
-
   return true;
+}
+
+static bool
+push_scope(analyze_state *state, pic_value formals)
+{
+  pic_state *pic = state->pic;
+  analyze_scope *scope;
+  bool varg;
+  xvect args, locals;
+  size_t i;
+  pic_sym var;
+
+  xv_init(&args, sizeof(pic_sym));
+  xv_init(&locals, sizeof(pic_sym));
+
+  if (analyze_args(pic, formals, &varg, &args, &locals)) {
+    scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
+    scope->up = state->scope;
+    scope->varg = varg;
+    scope->args = args;
+    scope->locals = locals;
+    scope->captures = xh_new_int();
+
+    for (i = 0; i < scope->args.size; ++i) {
+      xv_get(&scope->args, i, &var);
+      xh_put_int(scope->captures, var, 0);
+    }
+
+    for (i = 0; i < scope->locals.size; ++i) {
+      xv_get(&scope->locals, i, &var);
+      xh_put_int(scope->captures, var, 0);
+    }
+
+    state->scope = scope;
+
+    return true;
+  }
+  else {
+    xv_destroy(&args);
+    xv_destroy(&locals);
+    return false;
+  }
 }
 
 static void
@@ -255,26 +251,46 @@ pop_scope(analyze_state *state)
   analyze_scope *scope;
 
   scope = state->scope;
-  xh_destroy(scope->var_tbl);
-  pic_free(state->pic, scope->vars);
+  xv_destroy(&scope->args);
+  xv_destroy(&scope->locals);
+  xh_destroy(scope->captures);
 
   scope = scope->up;
   pic_free(state->pic, state->scope);
   state->scope = scope;
 }
 
+static bool
+lookup_scope(analyze_scope *scope, pic_sym sym)
+{
+  pic_sym arg, local;
+  size_t i;
+
+  /* args */
+  for (i = 0; i < scope->args.size; ++i) {
+    xv_get(&scope->args, i, &arg);
+    if (arg == sym)
+      return true;
+  }
+  /* locals */
+  for (i = 0; i < scope->locals.size; ++i) {
+    xv_get(&scope->locals, i, &local);
+    if (local == sym)
+      return true;
+  }
+  return false;
+}
+
 static int
-lookup_var(analyze_state *state, pic_sym sym)
+find_var(analyze_state *state, pic_sym sym)
 {
   analyze_scope *scope = state->scope;
-  xh_entry *e;
   int depth = 0;
 
   while (scope) {
-    e = xh_get_int(scope->var_tbl, sym);
-    if (e) {
-      if (depth > 0) {            /* mark dirty */
-        xh_put_int(scope->var_tbl, sym, 1);
+    if (lookup_scope(scope, sym)) {
+      if (depth > 0) {
+        xh_put_int(scope->captures, sym, 1); /* mark dirty */
       }
       return depth;
     }
@@ -289,18 +305,14 @@ define_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
   analyze_scope *scope = state->scope;
-  xh_entry *e;
 
-  if ((e = xh_get_int(scope->var_tbl, sym))) {
+  if (lookup_scope(scope, sym)) {
     pic_warn(pic, "redefining variable");
     return;
   }
 
-  xh_put_int(scope->var_tbl, sym, 0);
-
-  scope->localc++;
-  scope->vars = (pic_sym *)pic_realloc(pic, scope->vars, sizeof(pic_sym) * (scope->argc + scope->localc));
-  scope->vars[scope->argc + scope->localc - 1] = sym;
+  xv_push(&scope->locals, &sym);
+  xh_put_int(scope->captures, sym, 0);
 }
 
 static pic_value
@@ -347,10 +359,10 @@ analyze_var(analyze_state *state, pic_value obj)
   int depth;
 
   sym = pic_sym(obj);
-  if ((depth = lookup_var(state, sym)) == -1) {
+  if ((depth = find_var(state, sym)) == -1) {
     pic_errorf(pic, "unbound variable %s", pic_symbol_name(pic, sym));
   }
-  return new_ref(state, depth, sym); /* at this stage, lref/cref/gref are not distinguished */
+  return new_ref(state, depth, sym);
 }
 
 static pic_value
@@ -474,49 +486,50 @@ analyze_quote(analyze_state *state, pic_value obj)
   return obj;
 }
 
+#define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
+
 static pic_value
 analyze_lambda(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  pic_value args, body, locals, varg, closes;
+  pic_value formals, args, locals, varg, captures, body;
 
   if (pic_length(pic, obj) < 2) {
     pic_error(pic, "syntax error");
   }
 
-  args = pic_car(pic, pic_cdr(pic, obj));
+  formals = pic_car(pic, pic_cdr(pic, obj));
 
-  if (push_scope(state, args)) {
+  if (push_scope(state, formals)) {
     analyze_scope *scope = state->scope;
-    int i;
+    pic_sym sym;
+    size_t i;
+    xh_iter it;
 
-    /* analyze body in inner environment */
-    body = pic_cdr(pic, pic_cdr(pic, obj));
-    body = pic_cons(pic, pic_symbol_value(pic->sBEGIN), body);
-    body = analyze(state, body, true);
+    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), pic_list_tail(pic, obj, 2)), true);
 
     args = pic_nil_value();
-    for (i = 1; i < scope->argc; ++i) {
-      args = pic_cons(pic, pic_symbol_value(scope->vars[i]), args);
+    for (i = scope->args.size; i > 0; --i) {
+      xv_get(&scope->args, i - 1, &sym);
+      pic_push(pic, pic_sym_value(sym), args);
     }
-    args = pic_reverse(pic, args);
 
     locals = pic_nil_value();
-    for (i = 0; i < scope->localc; ++i) {
-      locals = pic_cons(pic, pic_symbol_value(scope->vars[scope->argc + i]), locals);
+    for (i = scope->locals.size; i > 0; --i) {
+      xv_get(&scope->locals, i - 1, &sym);
+      pic_push(pic, pic_sym_value(sym), locals);
     }
-    locals = pic_reverse(pic, locals);
 
-    varg = scope->varg ? pic_true_value() : pic_false_value();
+    varg = scope->varg
+      ? pic_true_value()
+      : pic_false_value();
 
-    closes = pic_nil_value();
-    for (i = 1; i < scope->argc + scope->localc; ++i) {
-      pic_sym var = scope->vars[i];
-      if (xh_get_int(scope->var_tbl, var)->val == 1) {
-        closes = pic_cons(pic, pic_symbol_value(var), closes);
+    captures = pic_nil_value();
+    for (xh_begin(scope->captures, &it); ! xh_isend(&it); xh_next(&it)) {
+      if (it.e->val == 1) {
+        pic_push(pic, pic_sym_value((long)it.e->key), captures);
       }
     }
-    closes = pic_reverse(pic, closes);
 
     pop_scope(state);
   }
@@ -524,7 +537,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
     pic_errorf(pic, "invalid formal syntax: ~s", args);
   }
 
-  return pic_list6(pic, pic_sym_value(pic->sLAMBDA), args, locals, varg, closes, body);
+  return pic_list6(pic, pic_sym_value(pic->sLAMBDA), args, locals, varg, captures, body);
 }
 
 #define ARGC_ASSERT_GE(n) do {				\
