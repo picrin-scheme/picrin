@@ -54,23 +54,6 @@ analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
   return syms;
 }
 
-static bool
-valid_formal(pic_state *pic, pic_value formal)
-{
-  bool varg;
-  int argc, localc;
-  pic_sym *syms;
-
-  syms = analyze_args(pic, formal, &varg, &argc, &localc);
-  if (syms == NULL) {
-    return false;
-  }
-  else {
-    pic_free(pic, syms);
-    return true;
-  }
-}
-
 typedef struct analyze_scope {
   /* rest args variable is counted by localc */
   bool varg;
@@ -93,7 +76,7 @@ typedef struct analyze_state {
   pic_sym sREF, sRETURN;
 } analyze_state;
 
-static void push_scope(analyze_state *, pic_value);
+static bool push_scope(analyze_state *, pic_value);
 static void pop_scope(analyze_state *);
 
 #define register_symbol(pic, state, slot, name) do {    \
@@ -164,28 +147,34 @@ destroy_analyze_state(analyze_state *state)
   pic_free(state->pic, state);
 }
 
-static void
+static bool
 push_scope(analyze_state *state, pic_value args)
 {
   pic_state *pic = state->pic;
   analyze_scope *scope;
-  int i;
+  bool varg = false;
+  int argc, localc, i;
+  pic_sym *vars;
+
+  if ((vars = analyze_args(pic, args, &varg, &argc, &localc)) == NULL) {
+    return false;
+  }
 
   scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
   scope->up = state->scope;
   scope->var_tbl = xh_new_int();
-  scope->varg = false;
-  scope->vars = analyze_args(pic, args, &scope->varg, &scope->argc, &scope->localc);
-
-  if (scope->vars == NULL) {
-    pic_error(pic, "logic flaw");
-  }
+  scope->varg = varg;
+  scope->argc = argc;
+  scope->localc = localc;
+  scope->vars = vars;
 
   for (i = 1; i < scope->argc + scope->localc; ++i) {
     xh_put_int(scope->var_tbl, scope->vars[i], 0);
   }
 
   state->scope = scope;
+
+  return true;
 }
 
 static void
@@ -427,14 +416,9 @@ analyze_lambda(analyze_state *state, pic_value obj)
     pic_error(pic, "syntax error");
   }
 
-  /* formal arguments */
   args = pic_car(pic, pic_cdr(pic, obj));
-  if (! valid_formal(pic, args)) {
-    pic_error(pic, "syntax error");
-  }
 
-  push_scope(state, args);
-  {
+  if (push_scope(state, args)) {
     analyze_scope *scope = state->scope;
     int i;
 
@@ -465,8 +449,12 @@ analyze_lambda(analyze_state *state, pic_value obj)
       }
     }
     closes = pic_reverse(pic, closes);
+
+    pop_scope(state);
   }
-  pop_scope(state);
+  else {
+    pic_errorf(pic, "invalid formal syntax: ~s", args);
+  }
 
   obj = pic_list6(pic, pic_symbol_value(pic->sLAMBDA), args, locals, varg, closes, body);
   pic_gc_arena_restore(pic, ai);
