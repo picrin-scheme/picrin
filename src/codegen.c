@@ -439,23 +439,24 @@ analyze_lambda(analyze_state *state, pic_value obj)
     size_t i;
     xh_iter it;
 
-    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), pic_list_tail(pic, obj, 2)), true);
-
     args = pic_nil_value();
     for (i = scope->args.size; i > 0; --i) {
       var = xv_get(&scope->args, i - 1);
       pic_push(pic, pic_sym_value(*var), args);
     }
 
+    varg = scope->varg
+      ? pic_true_value()
+      : pic_false_value();
+
+    /* To know what kind of local variables are defined, analyze body at first. */
+    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), pic_list_tail(pic, obj, 2)), true);
+
     locals = pic_nil_value();
     for (i = scope->locals.size; i > 0; --i) {
       var = xv_get(&scope->locals, i - 1);
       pic_push(pic, pic_sym_value(*var), locals);
     }
-
-    varg = scope->varg
-      ? pic_true_value()
-      : pic_false_value();
 
     captures = pic_nil_value();
     for (xh_begin(scope->captures, &it); ! xh_isend(&it); xh_next(&it)) {
