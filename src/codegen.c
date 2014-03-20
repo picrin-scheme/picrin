@@ -15,6 +15,11 @@
 # error enable PIC_NONE_IS_FALSE
 #endif
 
+enum {
+  LOCAL,
+  CAPTURED,
+};
+
 typedef struct analyze_scope {
   bool varg;
   xvect args, locals;  /* rest args variable is counted as a local */
@@ -92,7 +97,7 @@ new_analyze_state(pic_state *pic)
   global_tbl = pic->global_tbl;
   for (xh_begin(global_tbl, &it); ! xh_isend(&it); xh_next(&it)) {
     xv_push(&state->scope->locals, &it.e->key);
-    xh_put_int(state->scope->captures, (long)&it.e->key, 0);
+    xh_put_int(state->scope->captures, (long)&it.e->key, LOCAL);
   }
 
   return state;
@@ -154,12 +159,12 @@ push_scope(analyze_state *state, pic_value formals)
 
     for (i = 0; i < scope->args.size; ++i) {
       var = xv_get(&scope->args, i);
-      xh_put_int(scope->captures, *var, 0);
+      xh_put_int(scope->captures, *var, LOCAL);
     }
 
     for (i = 0; i < scope->locals.size; ++i) {
       var = xv_get(&scope->locals, i);
-      xh_put_int(scope->captures, *var, 0);
+      xh_put_int(scope->captures, *var, LOCAL);
     }
 
     state->scope = scope;
@@ -218,7 +223,7 @@ find_var(analyze_state *state, pic_sym sym)
   while (scope) {
     if (lookup_scope(scope, sym)) {
       if (depth > 0) {
-        xh_put_int(scope->captures, sym, 1); /* mark dirty */
+        xh_put_int(scope->captures, sym, CAPTURED); /* mark dirty */
       }
       return depth;
     }
@@ -240,7 +245,7 @@ define_var(analyze_state *state, pic_sym sym)
   }
 
   xv_push(&scope->locals, &sym);
-  xh_put_int(scope->captures, sym, 0);
+  xh_put_int(scope->captures, sym, LOCAL);
 }
 
 static pic_value
@@ -454,7 +459,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
 
     captures = pic_nil_value();
     for (xh_begin(scope->captures, &it); ! xh_isend(&it); xh_next(&it)) {
-      if (it.e->val == 1) {
+      if (it.e->val == CAPTURED) {
         pic_push(pic, pic_sym_value((long)it.e->key), captures);
       }
     }
