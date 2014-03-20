@@ -25,12 +25,12 @@ static inline void xv_destroy(xvect *);
 
 static inline void xv_reserve(xvect *, size_t);
 
-static inline void xv_get(xvect *, size_t, void *);
+static inline void *xv_get(xvect *, size_t);
 static inline void xv_set(xvect *, size_t, void *);
 
 static inline void xv_push(xvect *, void *);
-static inline void xv_peek(xvect *, void *);
-static inline void xv_pop(xvect *, void *);
+static inline void *xv_peek(xvect *);
+static inline void *xv_pop(xvect *);
 
 static inline void
 xv_init(xvect *x, size_t width)
@@ -54,10 +54,10 @@ xv_reserve(xvect *x, size_t newcapa)
   x->capa = newcapa;
 }
 
-static inline void
-xv_get(xvect *x, size_t i, void *dst)
+static inline void *
+xv_get(xvect *x, size_t i)
 {
-  memcpy(dst, x->data + i * x->width, x->width);
+  return x->data + i * x->width;
 }
 
 static inline void
@@ -75,16 +75,16 @@ xv_push(xvect *x, void *src)
   xv_set(x, x->size++, src);
 }
 
-static inline void
-xv_peek(xvect *x, void *dst)
+static inline void *
+xv_peek(xvect *x)
 {
-  xv_get(x, x->size, dst);
+  return xv_get(x, x->size);
 }
 
-static inline void
-xv_pop(xvect *x, void *dst)
+static inline void *
+xv_pop(xvect *x)
 {
-  xv_get(x, --x->size, dst);
+  return xv_get(x, --x->size);
 }
 
 typedef struct analyze_scope {
@@ -211,7 +211,7 @@ push_scope(analyze_state *state, pic_value formals)
   bool varg;
   xvect args, locals;
   size_t i;
-  pic_sym var;
+  pic_sym *var;
 
   xv_init(&args, sizeof(pic_sym));
   xv_init(&locals, sizeof(pic_sym));
@@ -225,13 +225,13 @@ push_scope(analyze_state *state, pic_value formals)
     scope->captures = xh_new_int();
 
     for (i = 0; i < scope->args.size; ++i) {
-      xv_get(&scope->args, i, &var);
-      xh_put_int(scope->captures, var, 0);
+      var = xv_get(&scope->args, i);
+      xh_put_int(scope->captures, *var, 0);
     }
 
     for (i = 0; i < scope->locals.size; ++i) {
-      xv_get(&scope->locals, i, &var);
-      xh_put_int(scope->captures, var, 0);
+      var = xv_get(&scope->locals, i);
+      xh_put_int(scope->captures, *var, 0);
     }
 
     state->scope = scope;
@@ -263,19 +263,19 @@ pop_scope(analyze_state *state)
 static bool
 lookup_scope(analyze_scope *scope, pic_sym sym)
 {
-  pic_sym arg, local;
+  pic_sym *arg, *local;
   size_t i;
 
   /* args */
   for (i = 0; i < scope->args.size; ++i) {
-    xv_get(&scope->args, i, &arg);
-    if (arg == sym)
+    arg = xv_get(&scope->args, i);
+    if (*arg == sym)
       return true;
   }
   /* locals */
   for (i = 0; i < scope->locals.size; ++i) {
-    xv_get(&scope->locals, i, &local);
-    if (local == sym)
+    local = xv_get(&scope->locals, i);
+    if (*local == sym)
       return true;
   }
   return false;
@@ -502,7 +502,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
 
   if (push_scope(state, formals)) {
     analyze_scope *scope = state->scope;
-    pic_sym sym;
+    pic_sym *var;
     size_t i;
     xh_iter it;
 
@@ -510,14 +510,14 @@ analyze_lambda(analyze_state *state, pic_value obj)
 
     args = pic_nil_value();
     for (i = scope->args.size; i > 0; --i) {
-      xv_get(&scope->args, i - 1, &sym);
-      pic_push(pic, pic_sym_value(sym), args);
+      var = xv_get(&scope->args, i - 1);
+      pic_push(pic, pic_sym_value(*var), args);
     }
 
     locals = pic_nil_value();
     for (i = scope->locals.size; i > 0; --i) {
-      xv_get(&scope->locals, i - 1, &sym);
-      pic_push(pic, pic_sym_value(sym), locals);
+      var = xv_get(&scope->locals, i - 1);
+      pic_push(pic, pic_sym_value(*var), locals);
     }
 
     varg = scope->varg
