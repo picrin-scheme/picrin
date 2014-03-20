@@ -409,7 +409,6 @@ static pic_value
 analyze_lambda(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  int ai = pic_gc_arena_preserve(pic);
   pic_value args, body, locals, varg, closes;
 
   if (pic_length(pic, obj) < 2) {
@@ -456,10 +455,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
     pic_errorf(pic, "invalid formal syntax: ~s", args);
   }
 
-  obj = pic_list6(pic, pic_symbol_value(pic->sLAMBDA), args, locals, varg, closes, body);
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, obj);
-  return obj;
+  return pic_list6(pic, pic_sym_value(pic->sLAMBDA), args, locals, varg, closes, body);
 }
 
 #define ARGC_ASSERT_GE(n) do {				\
@@ -555,7 +551,6 @@ static pic_value
 analyze_call(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  int ai = pic_gc_arena_preserve(pic);
   pic_value seq, elt;
   pic_sym call;
 
@@ -568,11 +563,7 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
   pic_for_each (elt, obj) {
     seq = pic_cons(pic, analyze(state, elt, false), seq);
   }
-  seq = pic_reverse(pic, seq);
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, seq);
-  return seq;
+  return pic_reverse(pic, seq);
 }
 
 static pic_value
