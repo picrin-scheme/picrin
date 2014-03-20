@@ -7,3 +7,6 @@
 [submodule "extlib/xrope"]
 	path = extlib/xrope
 	url = git://github.com/wasabiz/xrope.git
+[submodule "extlib/xvect"]
+	path = extlib/xvect
+	url = git://github.com/wasabiz/xvect.git
