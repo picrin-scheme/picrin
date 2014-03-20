@@ -282,6 +282,20 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
 }
 
 static pic_value
+analyze_var(analyze_state *state, pic_value obj)
+{
+  pic_state *pic = state->pic;
+  pic_sym sym;
+  int depth;
+
+  sym = pic_sym(obj);
+  if ((depth = lookup_var(state, sym)) == -1) {
+    pic_errorf(pic, "unbound variable %s", pic_symbol_name(pic, sym));
+  }
+  return new_ref(state, depth, sym); /* at this stage, lref/cref/gref are not distinguished */
+}
+
+static pic_value
 analyze_define(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
@@ -635,15 +649,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
-    pic_sym sym = pic_sym(obj);
-    int depth;
-
-    depth = lookup_var(state, sym);
-    if (depth == -1) {
-      pic_errorf(pic, "unbound variable %s", pic_symbol_name(pic, sym));
-    }
-    /* at this stage, lref/cref/gref are not distinguished */
-    return new_ref(state, depth, sym);
+    return analyze_var(state, obj);
   }
   case PIC_TT_PAIR: {
     pic_value proc;
