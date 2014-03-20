@@ -15,45 +15,6 @@
 # error enable PIC_NONE_IS_FALSE
 #endif
 
-static pic_sym *
-analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
-{
-  pic_sym *syms = (pic_sym *)pic_alloc(pic, sizeof(pic_sym));
-  int i = 1, l = 0;
-  pic_value v;
-
-  *varg = false;
-  for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
-    pic_value sym;
-
-    sym = pic_car(pic, v);
-    if (! pic_sym_p(sym)) {
-      pic_free(pic, syms);
-      return NULL;
-    }
-    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
-    syms[i] = pic_sym(sym);
-    i++;
-  }
-  if (pic_nil_p(v)) {
-    /* pass */
-  }
-  else if (pic_sym_p(v)) {
-    *varg = true;
-    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
-    syms[i] = pic_sym(v);
-    l++;
-  }
-  else {
-    pic_free(pic, syms);
-    return NULL;
-  }
-  *argc = i;
-  *localc = l;
-
-  return syms;
-}
-
 typedef struct analyze_scope {
   /* rest args variable is counted by localc */
   bool varg;
@@ -147,6 +108,45 @@ destroy_analyze_state(analyze_state *state)
   pic_free(state->pic, state);
 }
 
+static pic_sym *
+analyze_args(pic_state *pic, pic_value args, bool *varg, int *argc, int *localc)
+{
+  pic_sym *syms = (pic_sym *)pic_alloc(pic, sizeof(pic_sym));
+  int i = 1, l = 0;
+  pic_value v;
+
+  *varg = false;
+  for (v = args; pic_pair_p(v); v = pic_cdr(pic, v)) {
+    pic_value sym;
+
+    sym = pic_car(pic, v);
+    if (! pic_sym_p(sym)) {
+      pic_free(pic, syms);
+      return NULL;
+    }
+    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
+    syms[i] = pic_sym(sym);
+    i++;
+  }
+  if (pic_nil_p(v)) {
+    /* pass */
+  }
+  else if (pic_sym_p(v)) {
+    *varg = true;
+    syms = (pic_sym *)pic_realloc(pic, syms, sizeof(pic_sym) * (i + 1));
+    syms[i] = pic_sym(v);
+    l++;
+  }
+  else {
+    pic_free(pic, syms);
+    return NULL;
+  }
+  *argc = i;
+  *localc = l;
+
+  return syms;
+}
+
 static bool
 push_scope(analyze_state *state, pic_value args)
 {
@@ -198,19 +198,16 @@ lookup_var(analyze_state *state, pic_sym sym)
   xh_entry *e;
   int depth = 0;
 
- enter:
-
-  e = xh_get_int(scope->var_tbl, sym);
-  if (e) {
-    if (depth > 0) {            /* mark dirty */
-      xh_put_int(scope->var_tbl, sym, 1);
+  while (scope) {
+    e = xh_get_int(scope->var_tbl, sym);
+    if (e) {
+      if (depth > 0) {            /* mark dirty */
+        xh_put_int(scope->var_tbl, sym, 1);
+      }
+      return depth;
     }
-    return depth;
-  }
-  if (scope->up) {
+    depth++;
     scope = scope->up;
-    ++depth;
-    goto enter;
   }
   return -1;
 }
