@@ -400,8 +400,6 @@ analyze_quote(analyze_state *state, pic_value obj)
   return obj;
 }
 
-#define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
-
 static pic_value
 analyze_lambda(analyze_state *state, pic_value obj)
 {

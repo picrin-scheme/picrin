@@ -39,6 +39,9 @@ pic_value pic_make_list(pic_state *, int, pic_value);
        pic_nil_p(tmp) ? false : ((var = pic_car(pic, tmp)), true);      \
        tmp = pic_cdr(pic, tmp))
 
+#define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
+#define pic_pop(pic, place) (place = pic_cdr(pic, place))
+
 int pic_length(pic_state *, pic_value);
 pic_value pic_reverse(pic_state *, pic_value);
 pic_value pic_append(pic_state *, pic_value, pic_value);
