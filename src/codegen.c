@@ -196,6 +196,23 @@ lookup_scope(analyze_scope *scope, pic_sym sym)
   return false;
 }
 
+static void
+capture_var(analyze_scope *scope, pic_sym sym)
+{
+  pic_sym *var;
+  size_t i;
+
+  for (i = 0; i < scope->captures.size; ++i) {
+    var = xv_get(&scope->captures, i);
+    if (*var == sym) {
+      break;
+    }
+  }
+  if (i == scope->captures.size) {
+    xv_push(&scope->captures, &sym);
+  }
+}
+
 static int
 find_var(analyze_state *state, pic_sym sym)
 {
@@ -205,7 +222,7 @@ find_var(analyze_state *state, pic_sym sym)
   while (scope) {
     if (lookup_scope(scope, sym)) {
       if (depth > 0) {
-        xv_push(&scope->captures, &sym);
+        capture_var(scope, sym);
       }
       return depth;
     }
