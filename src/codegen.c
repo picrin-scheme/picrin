@@ -15,15 +15,9 @@
 # error enable PIC_NONE_IS_FALSE
 #endif
 
-enum {
-  LOCAL,
-  CAPTURED,
-};
-
 typedef struct analyze_scope {
   bool varg;
-  xvect args, locals;  /* rest args variable is counted as a local */
-  xhash *captures;
+  xvect args, locals, captures; /* rest args variable is counted as a local */
   struct analyze_scope *up;
 } analyze_scope;
 
@@ -97,7 +91,6 @@ new_analyze_state(pic_state *pic)
   global_tbl = pic->global_tbl;
   for (xh_begin(global_tbl, &it); ! xh_isend(&it); xh_next(&it)) {
     xv_push(&state->scope->locals, &it.e->key);
-    xh_put_int(state->scope->captures, (long)&it.e->key, LOCAL);
   }
 
   return state;
@@ -142,12 +135,11 @@ push_scope(analyze_state *state, pic_value formals)
   pic_state *pic = state->pic;
   analyze_scope *scope;
   bool varg;
-  xvect args, locals;
-  size_t i;
-  pic_sym *var;
+  xvect args, locals, captures;
 
   xv_init(&args, sizeof(pic_sym));
   xv_init(&locals, sizeof(pic_sym));
+  xv_init(&captures, sizeof(pic_sym));
 
   if (analyze_args(pic, formals, &varg, &args, &locals)) {
     scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
@@ -155,17 +147,7 @@ push_scope(analyze_state *state, pic_value formals)
     scope->varg = varg;
     scope->args = args;
     scope->locals = locals;
-    scope->captures = xh_new_int();
-
-    for (i = 0; i < scope->args.size; ++i) {
-      var = xv_get(&scope->args, i);
-      xh_put_int(scope->captures, *var, LOCAL);
-    }
-
-    for (i = 0; i < scope->locals.size; ++i) {
-      var = xv_get(&scope->locals, i);
-      xh_put_int(scope->captures, *var, LOCAL);
-    }
+    scope->captures = captures;
 
     state->scope = scope;
 
@@ -186,7 +168,7 @@ pop_scope(analyze_state *state)
   scope = state->scope;
   xv_destroy(&scope->args);
   xv_destroy(&scope->locals);
-  xh_destroy(scope->captures);
+  xv_destroy(&scope->captures);
 
   scope = scope->up;
   pic_free(state->pic, state->scope);
@@ -214,6 +196,23 @@ lookup_scope(analyze_scope *scope, pic_sym sym)
   return false;
 }
 
+static void
+capture_var(analyze_scope *scope, pic_sym sym)
+{
+  pic_sym *var;
+  size_t i;
+
+  for (i = 0; i < scope->captures.size; ++i) {
+    var = xv_get(&scope->captures, i);
+    if (*var == sym) {
+      break;
+    }
+  }
+  if (i == scope->captures.size) {
+    xv_push(&scope->captures, &sym);
+  }
+}
+
 static int
 find_var(analyze_state *state, pic_sym sym)
 {
@@ -223,7 +222,7 @@ find_var(analyze_state *state, pic_sym sym)
   while (scope) {
     if (lookup_scope(scope, sym)) {
       if (depth > 0) {
-        xh_put_int(scope->captures, sym, CAPTURED); /* mark dirty */
+        capture_var(scope, sym);
       }
       return depth;
     }
@@ -245,7 +244,6 @@ define_var(analyze_state *state, pic_sym sym)
   }
 
   xv_push(&scope->locals, &sym);
-  xh_put_int(scope->captures, sym, LOCAL);
 }
 
 static pic_value
@@ -419,8 +417,6 @@ analyze_quote(analyze_state *state, pic_value obj)
   return obj;
 }
 
-#define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
-
 static pic_value
 analyze_lambda(analyze_state *state, pic_value obj)
 {
@@ -437,7 +433,6 @@ analyze_lambda(analyze_state *state, pic_value obj)
     analyze_scope *scope = state->scope;
     pic_sym *var;
     size_t i;
-    xh_iter it;
 
     args = pic_nil_value();
     for (i = scope->args.size; i > 0; --i) {
@@ -459,10 +454,9 @@ analyze_lambda(analyze_state *state, pic_value obj)
     }
 
     captures = pic_nil_value();
-    for (xh_begin(scope->captures, &it); ! xh_isend(&it); xh_next(&it)) {
-      if (it.e->val == CAPTURED) {
-        pic_push(pic, pic_sym_value((long)it.e->key), captures);
-      }
+    for (i = scope->captures.size; i > 0; --i) {
+      var = xv_get(&scope->captures, i - 1);
+      pic_push(pic, pic_sym_value(*var), captures);
     }
 
     pop_scope(state);
