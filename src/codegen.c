@@ -1018,7 +1018,7 @@ pic_resolve(pic_state *pic, pic_value obj)
 
 typedef struct codegen_context {
   bool varg;
-  /* rest args variable is counted by localc */
+  /* rest args variable is counted as a local */
   int argc, localc;
   /* closed variable table */
   unsigned *cv_tbl, cv_num;
