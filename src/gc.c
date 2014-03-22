@@ -634,7 +634,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_IREP: {
     struct pic_irep *irep = (struct pic_irep *)obj;
     pic_free(pic, irep->code);
-    pic_free(pic, irep->cv_tbl);
     pic_free(pic, irep->irep);
     pic_free(pic, irep->pool);
     break;
