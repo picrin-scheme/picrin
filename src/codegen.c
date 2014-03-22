@@ -1044,7 +1044,6 @@ typedef struct codegen_state {
   pic_sym sGREF, sCREF, sLREF;
   pic_sym sCALL, sTAILCALL, sRETURN;
   pic_sym sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
-  unsigned *cv_tbl, cv_num;
 } codegen_state;
 
 static void push_codegen_context(codegen_state *, pic_value, pic_value, bool, pic_value);
