@@ -424,6 +424,23 @@ pic_defvar(pic_state *pic, const char *name, pic_value init)
   pic_define(pic, name, pic_obj_value(pic_wrap_var(pic, var)));
 }
 
+static void
+vm_tear_off(pic_state *pic)
+{
+  struct pic_env *env;
+  int i;
+
+  env = pic->ci->env;
+
+  if (env->values == env->storage)
+    return;
+
+  for (i = 0; i < env->valuec; ++i) {
+    env->storage[i] = env->values[i];
+  }
+  env->values = env->storage;
+}
+
 pic_value
 pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
 {
@@ -707,13 +724,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	}
 
 	/* prepare env */
-        ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+        ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * irep->capturec, PIC_TT_ENV);
         ci->env->up = proc->env;
         ci->env->valuec = irep->capturec;
-        ci->env->values = pic_calloc(pic, ci->env->valuec, sizeof(pic_value));
-        for (i = 0; i < ci->env->valuec; ++i) {
-          ci->env->values[i] = ci->fp[irep->cv_tbl[i]];
-        }
+        ci->env->values = ci->fp + irep->argc + irep->localc;
 
 	pic->ip = irep->code;
 	pic_gc_arena_restore(pic, ai);
@@ -783,6 +797,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       if (! pic_proc_irep_p(pic_proc_ptr(self))) {
         pic_error(pic, "logic flaw");
       }
+
+      vm_tear_off(pic);
+
       proc = pic_proc_new_irep(pic, irep->irep[c.u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);

@@ -20,6 +20,7 @@ struct pic_env {
   pic_value *values;
   int valuec;
   struct pic_env *up;
+  pic_value storage[];
 };
 
 struct pic_proc {
