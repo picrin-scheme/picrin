@@ -895,9 +895,14 @@ static pic_value
 resolve_lref(resolver_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
+  xh_entry *e;
   int i;
 
-  i = xh_get_int(state->scope->lvs, sym)->val;
+  if ((e = xh_get_int(state->scope->cvs, sym)) != NULL) {
+    i = e->val;
+  } else {
+    i = xh_get_int(state->scope->lvs, sym)->val;
+  }
 
   return pic_list2(pic, pic_symbol_value(state->sLREF), pic_int_value(i));
 }
@@ -1087,7 +1092,7 @@ destroy_codegen_state(codegen_state *state)
 static void
 create_cv_table(pic_state *pic, codegen_context *cxt)
 {
-  size_t i;
+  size_t i, n;
   xhash *regs;
   pic_sym *var;
   size_t offset;
@@ -1110,7 +1115,17 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
   cxt->cv_tbl = pic_calloc(pic, cxt->captures.size, sizeof(unsigned));
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    cxt->cv_tbl[i] = xh_get_int(regs, *var)->val;
+    if ((n = xh_get_int(regs, *var)->val) <= cxt->args.size) {
+      /* copy arguments to capture variable area */
+      cxt->code[cxt->clen].insn = OP_LREF;
+      cxt->code[cxt->clen].u.i = n;
+      cxt->clen++;
+    } else {
+      /* otherwise, just extend the stack */
+      cxt->code[cxt->clen].insn = OP_PUSHNONE;
+      cxt->clen++;
+    }
+    cxt->cv_tbl[i] = n;
   }
 
   xh_destroy(regs);
@@ -1141,8 +1156,6 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
     xv_push(&cxt->captures, &pic_sym(var));
   }
 
-  create_cv_table(pic, cxt);
-
   cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
@@ -1156,6 +1169,8 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   cxt->pcapa = PIC_POOL_SIZE;
 
   state->cxt = cxt;
+
+  create_cv_table(pic, cxt);
 }
 
 static struct pic_irep *
