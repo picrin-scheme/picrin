@@ -881,7 +881,7 @@ destroy_codegen_state(codegen_state *state)
 }
 
 static void
-create_cv_table(pic_state *pic, codegen_context *cxt)
+create_activation(codegen_context *cxt)
 {
   size_t i, n;
   xhash *regs;
@@ -890,7 +890,6 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
 
   regs = xh_new_int();
 
-  /* number local variables */
   offset = 1;
   for (i = 0; i < cxt->args.size; ++i) {
     var = xv_get(&cxt->args, i);
@@ -902,7 +901,6 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
     xh_put_int(regs, *var, i + offset);
   }
 
-  /* closed variables */
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
     if ((n = xh_get_int(regs, *var)->val) <= cxt->args.size) {
@@ -959,7 +957,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
 
   state->cxt = cxt;
 
-  create_cv_table(pic, cxt);
+  create_activation(cxt);
 }
 
 static struct pic_irep *
