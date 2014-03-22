@@ -1019,7 +1019,7 @@ pic_resolve(pic_state *pic, pic_value obj)
 typedef struct codegen_context {
   bool varg;
   /* rest args variable is counted as a local */
-  xvect args, locals;
+  xvect args, locals, captures;
   /* closed variable table */
   unsigned *cv_tbl, cv_num;
   /* actual bit code sequence */
@@ -1087,12 +1087,45 @@ destroy_codegen_state(codegen_state *state)
 }
 
 static void
-push_codegen_context(codegen_state *state, pic_value args, pic_value locals, bool varg, pic_value closes)
+create_cv_table(pic_state *pic, codegen_context *cxt)
+{
+  size_t i;
+  xhash *vars;
+  pic_sym *var;
+  size_t offset;
+
+  vars = xh_new_int();
+
+  /* number local variables */
+  offset = 1;
+  for (i = 0; i < cxt->args.size; ++i) {
+    var = xv_get(&cxt->args, i);
+    xh_put_int(vars, *var, i + offset);
+  }
+  offset += i;
+  for (i = 0; i < cxt->locals.size; ++i) {
+    var = xv_get(&cxt->locals, i);
+    xh_put_int(vars, *var, i + offset);
+  }
+
+  /* closed variables */
+  cxt->cv_tbl = NULL;
+  cxt->cv_num = 0;
+  for (i = 0; i < cxt->captures.size; ++i) {
+    var = xv_get(&cxt->captures, i);
+    i = cxt->cv_num++;
+    cxt->cv_tbl = pic_realloc(pic, cxt->cv_tbl, sizeof(unsigned) * cxt->cv_num);
+    cxt->cv_tbl[i] = xh_get_int(vars, *var)->val;
+  }
+
+  xh_destroy(vars);
+}
+
+static void
+push_codegen_context(codegen_state *state, pic_value args, pic_value locals, bool varg, pic_value captures)
 {
   pic_state *pic = state->pic;
   codegen_context *cxt;
-  size_t i, c;
-  xhash *vars;
   pic_value var;
 
   cxt = (codegen_context *)pic_alloc(pic, sizeof(codegen_context));
@@ -1101,6 +1134,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
 
   xv_init(&cxt->args, sizeof(pic_sym));
   xv_init(&cxt->locals, sizeof(pic_sym));
+  xv_init(&cxt->captures, sizeof(pic_sym));
 
   pic_for_each (var, args) {
     xv_push(&cxt->args, &pic_sym(var));
@@ -1108,26 +1142,11 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   pic_for_each (var, locals) {
     xv_push(&cxt->locals, &pic_sym(var));
   }
-
-  /* number local variables */
-  vars = xh_new_int();
-  for (i = 0; i < cxt->args.size; ++i) {
-    xh_put_int(vars, pic_sym(pic_list_ref(pic, args, i)), i + 1);
-  }
-  for (i = 0; i < cxt->locals.size; ++i) {
-    xh_put_int(vars, pic_sym(pic_list_ref(pic, locals, i)), i + 1 + cxt->args.size);
+  pic_for_each (var, captures) {
+    xv_push(&cxt->captures, &pic_sym(var));
   }
 
-  /* closed variables */
-  cxt->cv_tbl = NULL;
-  cxt->cv_num = 0;
-  for (i = 0, c = pic_length(pic, closes); i < c; ++i) {
-    i = cxt->cv_num++;
-    cxt->cv_tbl = pic_realloc(pic, cxt->cv_tbl, sizeof(unsigned) * cxt->cv_num);
-    cxt->cv_tbl[i] = xh_get_int(vars, pic_sym(pic_list_ref(pic, closes, i)))->val;
-  }
-
-  xh_destroy(vars);
+  create_cv_table(pic, cxt);
 
   cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
   cxt->clen = 0;
@@ -1168,6 +1187,7 @@ pop_codegen_context(codegen_state *state)
   /* finalize */
   xv_destroy(&cxt->args);
   xv_destroy(&cxt->locals);
+  xv_destroy(&cxt->captures);
 
   /* destroy context */
   cxt = cxt->up;
