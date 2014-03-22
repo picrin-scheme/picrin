@@ -1088,32 +1088,32 @@ static void
 create_cv_table(pic_state *pic, codegen_context *cxt)
 {
   size_t i;
-  xhash *vars;
+  xhash *regs;
   pic_sym *var;
   size_t offset;
 
-  vars = xh_new_int();
+  regs = xh_new_int();
 
   /* number local variables */
   offset = 1;
   for (i = 0; i < cxt->args.size; ++i) {
     var = xv_get(&cxt->args, i);
-    xh_put_int(vars, *var, i + offset);
+    xh_put_int(regs, *var, i + offset);
   }
   offset += i;
   for (i = 0; i < cxt->locals.size; ++i) {
     var = xv_get(&cxt->locals, i);
-    xh_put_int(vars, *var, i + offset);
+    xh_put_int(regs, *var, i + offset);
   }
 
   /* closed variables */
   cxt->cv_tbl = pic_calloc(pic, cxt->captures.size, sizeof(unsigned));
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    cxt->cv_tbl[i] = xh_get_int(vars, *var)->val;
+    cxt->cv_tbl[i] = xh_get_int(regs, *var)->val;
   }
 
-  xh_destroy(vars);
+  xh_destroy(regs);
 }
 
 static void
