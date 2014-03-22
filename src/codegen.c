@@ -774,9 +774,8 @@ pic_analyze(pic_state *pic, pic_value obj)
 typedef struct resolver_scope {
   int depth;
   bool varg;
-  int argc, localc;
+  int argc, localc, capturec;
   xhash *cvs, *lvs;
-  unsigned cv_num;
 
   struct resolver_scope *up;
 } resolver_scope;
@@ -818,11 +817,11 @@ destroy_resolver_state(resolver_state *state)
 }
 
 static void
-push_resolver_scope(resolver_state *state, pic_value args, pic_value locals, bool varg, pic_value closes)
+push_resolver_scope(resolver_state *state, pic_value args, pic_value locals, bool varg, pic_value captures)
 {
   pic_state *pic = state->pic;
   resolver_scope *scope;
-  int i, c;
+  int i;
 
   scope = (resolver_scope *)pic_alloc(pic, sizeof(resolver_scope));
   scope->up = state->scope;
@@ -831,6 +830,7 @@ push_resolver_scope(resolver_state *state, pic_value args, pic_value locals, boo
   scope->cvs = xh_new_int();
   scope->argc = pic_length(pic, args) + 1;
   scope->localc = pic_length(pic, locals);
+  scope->capturec = pic_length(pic, captures);
   scope->varg = varg;
 
   /* arguments */
@@ -844,9 +844,8 @@ push_resolver_scope(resolver_state *state, pic_value args, pic_value locals, boo
   }
 
   /* closed variables */
-  scope->cv_num = 0;
-  for (i = 0, c = pic_length(pic, closes); i < c; ++i) {
-    xh_put_int(scope->cvs, pic_sym(pic_list_ref(pic, closes, i)), scope->cv_num++);
+  for (i = 0; i < scope->capturec; ++i) {
+    xh_put_int(scope->cvs, pic_sym(pic_list_ref(pic, captures, i)), i);
   }
 
   state->scope = scope;
@@ -1021,7 +1020,7 @@ typedef struct codegen_context {
   /* rest args variable is counted as a local */
   xvect args, locals, captures;
   /* closed variable table */
-  unsigned *cv_tbl, cv_num;
+  unsigned *cv_tbl;
   /* actual bit code sequence */
   pic_code *code;
   size_t clen, ccapa;
@@ -1109,8 +1108,7 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
   }
 
   /* closed variables */
-  cxt->cv_num = cxt->captures.size;
-  cxt->cv_tbl = pic_calloc(pic, cxt->cv_num, sizeof(unsigned));
+  cxt->cv_tbl = pic_calloc(pic, cxt->captures.size, sizeof(unsigned));
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
     cxt->cv_tbl[i] = xh_get_int(vars, *var)->val;
@@ -1173,8 +1171,8 @@ pop_codegen_context(codegen_state *state)
   irep->varg = state->cxt->varg;
   irep->argc = state->cxt->args.size + 1;
   irep->localc = state->cxt->locals.size;
+  irep->capturec = state->cxt->captures.size;
   irep->cv_tbl = state->cxt->cv_tbl;
-  irep->cv_num = state->cxt->cv_num;
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);

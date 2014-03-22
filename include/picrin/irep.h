@@ -61,8 +61,8 @@ struct pic_code {
 struct pic_irep {
   PIC_OBJECT_HEADER
   pic_code *code;
-  int argc, localc;
-  unsigned *cv_tbl, cv_num;
+  int argc, localc, capturec;
+  unsigned *cv_tbl;
   bool varg;
   struct pic_irep **irep;
   pic_value *pool;
@@ -188,9 +188,9 @@ pic_dump_irep(struct pic_irep *irep)
   unsigned i;
 
   printf("## irep %p\n", (void *)irep);
-  printf("[clen = %zd, argc = %d, localc = %d]\n", irep->clen, irep->argc, irep->localc);
-  printf(":: cv_num = %d\n", irep->cv_num);
-  for (i = 0; i < irep->cv_num; ++i) {
+  printf("[clen = %zd, argc = %d, localc = %d, capturec = %d]\n", irep->clen, irep->argc, irep->localc, irep->capturec);
+  printf(":: cv_tbl\n");
+  for (i = 0; i < (unsigned)irep->capturec; ++i) {
     printf(": %d -> %d\n", irep->cv_tbl[i], i);
   }
   for (i = 0; i < irep->clen; ++i) {
