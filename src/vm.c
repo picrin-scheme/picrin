@@ -677,27 +677,28 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
         goto L_RET;
       }
       else {
+        struct pic_irep *irep = proc->u.irep;
 	int i;
 	pic_value rest;
 
-	if (ci->argc != proc->u.irep->argc) {
-	  if (! (proc->u.irep->varg && ci->argc >= proc->u.irep->argc)) {
-            pic_errorf(pic, "wrong number of arguments (%d for %d%s)", ci->argc - 1, proc->u.irep->argc - 1, (proc->u.irep->varg ? "+" : ""));
+	if (ci->argc != irep->argc) {
+	  if (! (irep->varg && ci->argc >= irep->argc)) {
+            pic_errorf(pic, "wrong number of arguments (%d for %d%s)", ci->argc - 1, irep->argc - 1, (irep->varg ? "+" : ""));
 	  }
 	}
 	/* prepare rest args */
-	if (proc->u.irep->varg) {
+	if (irep->varg) {
 	  rest = pic_nil_value();
-	  for (i = 0; i < ci->argc - proc->u.irep->argc; ++i) {
+	  for (i = 0; i < ci->argc - irep->argc; ++i) {
 	    pic_gc_protect(pic, v = POP());
 	    rest = pic_cons(pic, v, rest);
 	  }
 	  PUSH(rest);
 	}
 	/* prepare local variable area */
-	if (proc->u.irep->localc > 0) {
-	  int l = proc->u.irep->localc;
-	  if (proc->u.irep->varg) {
+	if (irep->localc > 0) {
+	  int l = irep->localc;
+	  if (irep->varg) {
 	    --l;
 	  }
 	  for (i = 0; i < l; ++i) {
@@ -708,13 +709,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	/* prepare env */
         ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
         ci->env->up = proc->env;
-        ci->env->valuec = proc->u.irep->cv_num;
+        ci->env->valuec = irep->cv_num;
         ci->env->values = (pic_value *)pic_calloc(pic, ci->env->valuec, sizeof(pic_value));
         for (i = 0; i < ci->env->valuec; ++i) {
-          ci->env->values[i] = ci->fp[proc->u.irep->cv_tbl[i]];
+          ci->env->values[i] = ci->fp[irep->cv_tbl[i]];
         }
 
-	pic->ip = proc->u.irep->code;
+	pic->ip = irep->code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
       }
