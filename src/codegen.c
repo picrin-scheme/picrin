@@ -1114,21 +1114,21 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   cxt->cv_num = 0;
   for (i = 0, c = pic_length(pic, closes); i < c; ++i) {
     i = cxt->cv_num++;
-    cxt->cv_tbl = (unsigned *)pic_realloc(pic, cxt->cv_tbl, sizeof(unsigned) * cxt->cv_num);
+    cxt->cv_tbl = pic_realloc(pic, cxt->cv_tbl, sizeof(unsigned) * cxt->cv_num);
     cxt->cv_tbl[i] = xh_get_int(vars, pic_sym(pic_list_ref(pic, closes, i)))->val;
   }
 
   xh_destroy(vars);
 
-  cxt->code = (pic_code *)pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
+  cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
 
-  cxt->irep = (struct pic_irep **)pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
+  cxt->irep = pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
   cxt->ilen = 0;
   cxt->icapa = PIC_IREP_SIZE;
 
-  cxt->pool = (pic_value *)pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
+  cxt->pool = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
@@ -1230,7 +1230,7 @@ codegen(codegen_state *state, pic_value obj)
 
     if (cxt->ilen >= cxt->icapa) {
       cxt->icapa *= 2;
-      cxt->irep = (struct pic_irep **)pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->icapa);
+      cxt->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->icapa);
     }
     k = cxt->ilen++;
     cxt->code[cxt->clen].insn = OP_LAMBDA;
@@ -1303,7 +1303,7 @@ codegen(codegen_state *state, pic_value obj)
     default:
       if (cxt->plen >= cxt->pcapa) {
         cxt->pcapa *= 2;
-        cxt->pool = (pic_value *)pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->pcapa);
+        cxt->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->pcapa);
       }
       pidx = cxt->plen++;
       cxt->pool[pidx] = obj;
