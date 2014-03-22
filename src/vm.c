@@ -431,6 +431,10 @@ vm_tear_off(pic_state *pic)
   int i;
 
   env = pic->ci->env;
+
+  if (env->values == env->storage)
+    return;
+
   for (i = 0; i < env->valuec; ++i) {
     env->storage[i] = env->values[i];
   }
@@ -735,8 +739,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_value *argv;
       pic_callinfo *ci;
 
-      vm_tear_off(pic);
-
       if (c.u.i == -1) {
         pic->sp += pic->ci[1].retc - 1;
         c.u.i = pic->ci[1].retc + 1;
@@ -764,8 +766,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       L_RAISE:
 	goto L_STOP;
       }
-
-      vm_tear_off(pic);
 
       pic->ci->retc = c.u.i;
 
@@ -797,6 +797,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       if (! pic_proc_irep_p(pic_proc_ptr(self))) {
         pic_error(pic, "logic flaw");
       }
+
+      vm_tear_off(pic);
+
       proc = pic_proc_new_irep(pic, irep->irep[c.u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
