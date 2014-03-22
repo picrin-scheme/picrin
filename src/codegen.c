@@ -902,14 +902,9 @@ static pic_value
 resolve_lref(resolver_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
-  xh_entry *e;
   int i;
 
-  if ((e = xh_get_int(state->scope->cvs, sym)) != NULL) {
-    i = e->val;
-  } else {
-    i = xh_get_int(state->scope->lvs, sym)->val;
-  }
+  i = xh_get_int(state->scope->lvs, sym)->val;
 
   return pic_list2(pic, pic_symbol_value(state->sLREF), pic_int_value(i));
 }
