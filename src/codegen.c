@@ -1019,7 +1019,7 @@ pic_resolve(pic_state *pic, pic_value obj)
 typedef struct codegen_context {
   bool varg;
   /* rest args variable is counted as a local */
-  int argc, localc;
+  xvect args, locals;
   /* closed variable table */
   unsigned *cv_tbl, cv_num;
   /* actual bit code sequence */
@@ -1091,22 +1091,31 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
 {
   pic_state *pic = state->pic;
   codegen_context *cxt;
-  int i, c;
+  size_t i, c;
   xhash *vars;
+  pic_value var;
 
   cxt = (codegen_context *)pic_alloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
-  cxt->argc = pic_length(pic, args) + 1;
-  cxt->localc = pic_length(pic, locals);
   cxt->varg = varg;
+
+  xv_init(&cxt->args, sizeof(pic_sym));
+  xv_init(&cxt->locals, sizeof(pic_sym));
+
+  pic_for_each (var, args) {
+    xv_push(&cxt->args, &pic_sym(var));
+  }
+  pic_for_each (var, locals) {
+    xv_push(&cxt->locals, &pic_sym(var));
+  }
 
   /* number local variables */
   vars = xh_new_int();
-  for (i = 1; i < cxt->argc; ++i) {
-    xh_put_int(vars, pic_sym(pic_list_ref(pic, args, i - 1)), i);
+  for (i = 0; i < cxt->args.size; ++i) {
+    xh_put_int(vars, pic_sym(pic_list_ref(pic, args, i)), i + 1);
   }
-  for (i = 0; i < cxt->localc; ++i) {
-    xh_put_int(vars, pic_sym(pic_list_ref(pic, locals, i)), cxt->argc + i);
+  for (i = 0; i < cxt->locals.size; ++i) {
+    xh_put_int(vars, pic_sym(pic_list_ref(pic, locals, i)), i + 1 + cxt->args.size);
   }
 
   /* closed variables */
@@ -1145,8 +1154,8 @@ pop_codegen_context(codegen_state *state)
   /* create irep */
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
   irep->varg = state->cxt->varg;
-  irep->argc = state->cxt->argc;
-  irep->localc = state->cxt->localc;
+  irep->argc = state->cxt->args.size + 1;
+  irep->localc = state->cxt->locals.size;
   irep->cv_tbl = state->cxt->cv_tbl;
   irep->cv_num = state->cxt->cv_num;
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
@@ -1155,6 +1164,10 @@ pop_codegen_context(codegen_state *state)
   irep->ilen = state->cxt->ilen;
   irep->pool = pic_realloc(pic, state->cxt->pool, sizeof(pic_value) * state->cxt->plen);
   irep->plen = state->cxt->plen;
+
+  /* finalize */
+  xv_destroy(&cxt->args);
+  xv_destroy(&cxt->locals);
 
   /* destroy context */
   cxt = cxt->up;
