@@ -1109,12 +1109,10 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
   }
 
   /* closed variables */
-  cxt->cv_tbl = NULL;
-  cxt->cv_num = 0;
+  cxt->cv_num = cxt->captures.size;
+  cxt->cv_tbl = pic_calloc(pic, cxt->cv_num, sizeof(unsigned));
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    i = cxt->cv_num++;
-    cxt->cv_tbl = pic_realloc(pic, cxt->cv_tbl, sizeof(unsigned) * cxt->cv_num);
     cxt->cv_tbl[i] = xh_get_int(vars, *var)->val;
   }
 
