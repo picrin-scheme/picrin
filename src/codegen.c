@@ -16,6 +16,7 @@
 #endif
 
 typedef struct analyze_scope {
+  int depth;
   bool varg;
   xvect args, locals, captures; /* rest args variable is counted as a local */
   struct analyze_scope *up;
@@ -29,7 +30,7 @@ typedef struct analyze_state {
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
   pic_sym rVALUES, rCALL_WITH_VALUES;
   pic_sym sCALL, sTAILCALL, sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
-  pic_sym sREF, sRETURN;
+  pic_sym sREF, sGREF, sRETURN;
 } analyze_state;
 
 static bool push_scope(analyze_state *, pic_value);
@@ -83,6 +84,7 @@ new_analyze_state(pic_state *pic)
   register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
   register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
   register_symbol(pic, state, sREF, "ref");
+  register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sRETURN, "return");
 
   /* push initial scope */
@@ -144,6 +146,7 @@ push_scope(analyze_state *state, pic_value formals)
   if (analyze_args(pic, formals, &varg, &args, &locals)) {
     scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
     scope->up = state->scope;
+    scope->depth = scope->up ? scope->up->depth + 1 : 0;
     scope->varg = varg;
     scope->args = args;
     scope->locals = locals;
@@ -283,6 +286,26 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
 }
 
 static pic_value
+analyze_global_var(analyze_state *state, pic_sym sym)
+{
+  pic_state *pic = state->pic;
+  xh_entry *e;
+  size_t i;
+
+  if ((e = xh_get_int(pic->global_tbl, sym))) {
+    i = e->val;
+  }
+  else {
+    i = pic->glen++;
+    if (i >= pic->gcapa) {
+      pic_error(pic, "global table overflow");
+    }
+    xh_put_int(pic->global_tbl, sym, i);
+  }
+  return pic_list2(pic, pic_symbol_value(state->sGREF), pic_int_value(i));
+}
+
+static pic_value
 analyze_var(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
@@ -292,6 +315,10 @@ analyze_var(analyze_state *state, pic_value obj)
   sym = pic_sym(obj);
   if ((depth = find_var(state, sym)) == -1) {
     pic_errorf(pic, "unbound variable %s", pic_symbol_name(pic, sym));
+  }
+
+  if (depth == state->scope->depth) {
+    return analyze_global_var(state, sym);
   }
   return new_ref(state, depth, sym);
 }
@@ -872,26 +899,6 @@ is_closed(resolver_state *state, pic_sym sym)
 }
 
 static pic_value
-resolve_gref(resolver_state *state, pic_sym sym)
-{
-  pic_state *pic = state->pic;
-  xh_entry *e;
-  size_t i;
-
-  if ((e = xh_get_int(pic->global_tbl, sym))) {
-    i = e->val;
-  }
-  else {
-    i = pic->glen++;
-    if (i >= pic->gcapa) {
-      pic_error(pic, "global table overflow");
-    }
-    xh_put_int(pic->global_tbl, sym, i);
-  }
-  return pic_list2(pic, pic_symbol_value(state->sGREF), pic_int_value(i));
-}
-
-static pic_value
 resolve_lref(resolver_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
@@ -940,7 +947,6 @@ static pic_value
 resolve_reference_node(resolver_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  resolver_scope *scope = state->scope;
   pic_sym tag;
 
   if (! pic_pair_p(obj))
@@ -953,10 +959,7 @@ resolve_reference_node(resolver_state *state, pic_value obj)
 
     depth = pic_int(pic_list_ref(pic, obj, 1));
     sym = pic_sym(pic_list_ref(pic, obj, 2));
-    if (depth == scope->depth) {
-      return resolve_gref(state, sym);
-    }
-    else if (depth == 0 && ! is_closed(state, sym)) {
+    if (depth == 0 && ! is_closed(state, sym)) {
       return resolve_lref(state, sym);
     }
     else {
