@@ -1024,8 +1024,6 @@ typedef struct codegen_context {
   bool varg;
   /* rest args variable is counted as a local */
   xvect args, locals, captures;
-  /* closed variable table */
-  unsigned *cv_tbl;
   /* actual bit code sequence */
   pic_code *code;
   size_t clen, ccapa;
@@ -1112,7 +1110,6 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
   }
 
   /* closed variables */
-  cxt->cv_tbl = pic_calloc(pic, cxt->captures.size, sizeof(unsigned));
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
     if ((n = xh_get_int(regs, *var)->val) <= cxt->args.size) {
@@ -1125,7 +1122,6 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
       cxt->code[cxt->clen].insn = OP_PUSHNONE;
       cxt->clen++;
     }
-    cxt->cv_tbl[i] = n;
   }
 
   xh_destroy(regs);
@@ -1186,7 +1182,6 @@ pop_codegen_context(codegen_state *state)
   irep->argc = state->cxt->args.size + 1;
   irep->localc = state->cxt->locals.size;
   irep->capturec = state->cxt->captures.size;
-  irep->cv_tbl = state->cxt->cv_tbl;
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);
