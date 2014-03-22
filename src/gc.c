@@ -580,7 +580,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_ENV: {
-    pic_free(pic, ((struct pic_env *)obj)->values);
     break;
   }
   case PIC_TT_PROC: {
