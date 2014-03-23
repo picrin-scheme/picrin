@@ -30,7 +30,7 @@ typedef struct analyze_state {
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
   pic_sym rVALUES, rCALL_WITH_VALUES;
   pic_sym sCALL, sTAILCALL, sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
-  pic_sym sREF, sGREF, sRETURN;
+  pic_sym sGREF, sLREF, sCREF, sRETURN;
 } analyze_state;
 
 static bool push_scope(analyze_state *, pic_value);
@@ -83,8 +83,9 @@ new_analyze_state(pic_state *pic)
   register_symbol(pic, state, sTAILCALL, "tail-call");
   register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
   register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
-  register_symbol(pic, state, sREF, "ref");
   register_symbol(pic, state, sGREF, "gref");
+  register_symbol(pic, state, sLREF, "lref");
+  register_symbol(pic, state, sCREF, "cref");
   register_symbol(pic, state, sRETURN, "return");
 
   /* push initial scope */
@@ -249,15 +250,6 @@ define_var(analyze_state *state, pic_sym sym)
   xv_push(&scope->locals, &sym);
 }
 
-static pic_value
-new_ref(analyze_state *state, int depth, pic_sym sym)
-{
-  return pic_list3(state->pic,
-                   pic_symbol_value(state->sREF),
-                   pic_int_value(depth),
-                   pic_symbol_value(sym));
-}
-
 static pic_value analyze_node(analyze_state *, pic_value, bool);
 
 static pic_value
@@ -306,6 +298,22 @@ analyze_global_var(analyze_state *state, pic_sym sym)
 }
 
 static pic_value
+analyze_local_var(analyze_state *state, pic_sym sym)
+{
+  pic_state *pic = state->pic;
+
+  return pic_list2(pic, pic_symbol_value(state->sLREF), pic_sym_value(sym));
+}
+
+static pic_value
+analyze_free_var(analyze_state *state, pic_sym sym, int depth)
+{
+  pic_state *pic = state->pic;
+
+  return pic_list3(pic, pic_symbol_value(state->sCREF), pic_int_value(depth), pic_sym_value(sym));
+}
+
+static pic_value
 analyze_var(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
@@ -319,8 +327,11 @@ analyze_var(analyze_state *state, pic_value obj)
 
   if (depth == state->scope->depth) {
     return analyze_global_var(state, sym);
+  } else if (depth == 0) {
+    return analyze_local_var(state, sym);
+  } else {
+    return analyze_free_var(state, sym, depth);
   }
-  return new_ref(state, depth, sym);
 }
 
 static pic_value
@@ -810,7 +821,6 @@ typedef struct resolver_scope {
 typedef struct resolver_state {
   pic_state *pic;
   resolver_scope *scope;
-  pic_sym sREF;
   pic_sym sGREF, sCREF, sLREF;
 } resolver_state;
 
@@ -826,7 +836,6 @@ new_resolver_state(pic_state *pic)
   state->pic = pic;
   state->scope = NULL;
 
-  register_symbol(pic, state, sREF, "ref");
   register_symbol(pic, state, sGREF, "gref");
   register_symbol(pic, state, sLREF, "lref");
   register_symbol(pic, state, sCREF, "cref");
@@ -953,18 +962,24 @@ resolve_reference_node(resolver_state *state, pic_value obj)
     return obj;
 
   tag = pic_sym(pic_car(pic, obj));
-  if (tag == state->sREF) {
+  if (tag == state->sLREF) {
+    pic_sym sym;
+
+    sym = pic_sym(pic_list_ref(pic, obj, 1));
+    if (! is_closed(state, sym)) {
+      return resolve_lref(state, sym);
+    }
+    else {
+      return resolve_cref(state, 0, sym);
+    }
+  }
+  else if (tag == state->sCREF) {
     int depth;
     pic_sym sym;
 
     depth = pic_int(pic_list_ref(pic, obj, 1));
     sym = pic_sym(pic_list_ref(pic, obj, 2));
-    if (depth == 0 && ! is_closed(state, sym)) {
-      return resolve_lref(state, sym);
-    }
-    else {
-      return resolve_cref(state, depth, sym);
-    }
+    return resolve_cref(state, depth, sym);
   }
   else if (tag == pic->sLAMBDA) {
     pic_value args, locals, closes, body;
