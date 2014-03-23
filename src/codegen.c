@@ -1053,7 +1053,6 @@ codegen(codegen_state *state, pic_value obj)
     pic_sym name;
     int depth;
 
-  CREF:
     depth = pic_int(pic_list_ref(pic, obj, 1));
     name  = pic_sym(pic_list_ref(pic, obj, 2));
     cxt->code[cxt->clen].insn = OP_CREF;
@@ -1063,11 +1062,14 @@ codegen(codegen_state *state, pic_value obj)
     return;
   } else if (sym == state->sLREF) {
     pic_sym name;
+    int i;
 
     name = pic_sym(pic_list_ref(pic, obj, 1));
-    if (index_capture(state, name, 0) != -1) {
-      obj = pic_list3(pic, pic_sym_value(state->sCREF), pic_int_value(0), pic_sym_value(name));
-      goto CREF;
+    if ((i = index_capture(state, name, 0)) != -1) {
+      cxt->code[cxt->clen].insn = OP_LREF;
+      cxt->code[cxt->clen].u.i = i + cxt->args.size + cxt->locals.size + 1;
+      cxt->clen++;
+      return;
     }
     cxt->code[cxt->clen].insn = OP_LREF;
     cxt->code[cxt->clen].u.i = index_local(state, name);
@@ -1094,7 +1096,6 @@ codegen(codegen_state *state, pic_value obj)
       pic_sym name;
       int depth;
 
-    CSET:
       depth = pic_int(pic_list_ref(pic, var, 1));
       name  = pic_sym(pic_list_ref(pic, var, 2));
       cxt->code[cxt->clen].insn = OP_CSET;
@@ -1107,11 +1108,16 @@ codegen(codegen_state *state, pic_value obj)
     }
     else if (type == state->sLREF) {
       pic_sym name;
+      int i;
 
       name = pic_sym(pic_list_ref(pic, var, 1));
-      if (index_capture(state, name, 0) != -1) {
-        var = pic_list3(pic, pic_sym_value(state->sCREF), pic_int_value(0), pic_sym_value(name));
-        goto CSET;
+      if ((i = index_capture(state, name, 0)) != -1) {
+        cxt->code[cxt->clen].insn = OP_LSET;
+        cxt->code[cxt->clen].u.i = i + cxt->args.size + cxt->locals.size + 1;
+        cxt->clen++;
+        cxt->code[cxt->clen].insn = OP_PUSHNONE;
+        cxt->clen++;
+        return;
       }
       cxt->code[cxt->clen].insn = OP_LSET;
       cxt->code[cxt->clen].u.i = index_local(state, name);
