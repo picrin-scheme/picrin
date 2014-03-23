@@ -431,10 +431,10 @@ vm_tear_off(pic_state *pic)
   int i;
 
   env = pic->ci->env;
-  for (i = 0; i < env->valuec; ++i) {
-    env->storage[i] = env->values[i];
+  for (i = 0; i < env->regc; ++i) {
+    env->storage[i] = env->regs[i];
   }
-  env->values = env->storage;
+  env->regs = env->storage;
 }
 
 pic_value
@@ -600,7 +600,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       while (depth--) {
 	env = env->up;
       }
-      PUSH(env->values[c.u.r.idx]);
+      PUSH(env->regs[c.u.r.idx]);
       NEXT;
     }
     CASE(OP_CSET) {
@@ -611,7 +611,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       while (depth--) {
 	env = env->up;
       }
-      env->values[c.u.r.idx] = POP();
+      env->regs[c.u.r.idx] = POP();
       NEXT;
     }
     CASE(OP_JMP) {
@@ -722,8 +722,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	/* prepare env */
         ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * irep->capturec, PIC_TT_ENV);
         ci->env->up = proc->env;
-        ci->env->valuec = irep->capturec;
-        ci->env->values = ci->fp + irep->argc + irep->localc;
+        ci->env->regc = irep->capturec;
+        ci->env->regs = ci->fp + irep->argc + irep->localc;
 
 	pic->ip = irep->code;
 	pic_gc_arena_restore(pic, ai);
