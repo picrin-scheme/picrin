@@ -809,226 +809,6 @@ pic_analyze(pic_state *pic, pic_value obj)
   return obj;
 }
 
-typedef struct resolver_scope {
-  int depth;
-  bool varg;
-  int argc, localc, capturec;
-  xhash *cvs, *lvs;
-
-  struct resolver_scope *up;
-} resolver_scope;
-
-typedef struct resolver_state {
-  pic_state *pic;
-  resolver_scope *scope;
-  pic_sym sGREF, sCREF, sLREF;
-} resolver_state;
-
-static void push_resolver_scope(resolver_state *, pic_value, pic_value, bool, pic_value);
-static void pop_resolver_scope(resolver_state *);
-
-static resolver_state *
-new_resolver_state(pic_state *pic)
-{
-  resolver_state *state;
-
-  state = (resolver_state *)pic_alloc(pic, sizeof(resolver_state));
-  state->pic = pic;
-  state->scope = NULL;
-
-  register_symbol(pic, state, sGREF, "gref");
-  register_symbol(pic, state, sLREF, "lref");
-  register_symbol(pic, state, sCREF, "cref");
-
-  push_resolver_scope(state, pic_nil_value(), pic_nil_value(), false, pic_nil_value());
-
-  return state;
-}
-
-static void
-destroy_resolver_state(resolver_state *state)
-{
-  pop_resolver_scope(state);
-  pic_free(state->pic, state);
-}
-
-static void
-push_resolver_scope(resolver_state *state, pic_value args, pic_value locals, bool varg, pic_value captures)
-{
-  pic_state *pic = state->pic;
-  resolver_scope *scope;
-  int i;
-
-  scope = (resolver_scope *)pic_alloc(pic, sizeof(resolver_scope));
-  scope->up = state->scope;
-  scope->depth = scope->up ? scope->up->depth + 1 : 0;
-  scope->lvs = xh_new_int();
-  scope->cvs = xh_new_int();
-  scope->argc = pic_length(pic, args) + 1;
-  scope->localc = pic_length(pic, locals);
-  scope->capturec = pic_length(pic, captures);
-  scope->varg = varg;
-
-  /* arguments */
-  for (i = 1; i < scope->argc; ++i) {
-    xh_put_int(scope->lvs, pic_sym(pic_list_ref(pic, args, i - 1)), i);
-  }
-
-  /* locals */
-  for (i = 0; i < scope->localc; ++i) {
-    xh_put_int(scope->lvs, pic_sym(pic_list_ref(pic, locals, i)), scope->argc + i);
-  }
-
-  /* closed variables */
-  for (i = 0; i < scope->capturec; ++i) {
-    xh_put_int(scope->cvs, pic_sym(pic_list_ref(pic, captures, i)), i);
-  }
-
-  state->scope = scope;
-}
-
-static void
-pop_resolver_scope(resolver_state *state)
-{
-  resolver_scope *scope;
-
-  scope = state->scope;
-  xh_destroy(scope->cvs);
-  xh_destroy(scope->lvs);
-
-  scope = scope->up;
-  pic_free(state->pic, state->scope);
-  state->scope = scope;
-}
-
-static bool
-is_closed(resolver_state *state, pic_sym sym)
-{
-  return xh_get_int(state->scope->cvs, sym) != NULL;
-}
-
-static pic_value
-resolve_lref(resolver_state *state, pic_sym sym)
-{
-  pic_state *pic = state->pic;
-  int i;
-
-  i = xh_get_int(state->scope->lvs, sym)->val;
-
-  return pic_list2(pic, pic_symbol_value(state->sLREF), pic_int_value(i));
-}
-
-static pic_value
-resolve_cref(resolver_state *state, int depth, pic_sym sym)
-{
-  pic_state *pic = state->pic;
-  resolver_scope *scope = state->scope;
-  int i, d;
-
-  d = depth;
-  while (d-- > 0) {
-    scope = scope->up;
-  }
-
-  i = xh_get_int(scope->cvs, sym)->val;
-
-  return pic_list3(pic,
-                   pic_symbol_value(state->sCREF),
-                   pic_int_value(depth),
-                   pic_int_value(i));
-}
-
-static pic_value resolve_reference_node(resolver_state *state, pic_value obj);
-
-static pic_value
-resolve_reference(resolver_state *state, pic_value obj)
-{
-  int ai = pic_gc_arena_preserve(state->pic);
-
-  obj = resolve_reference_node(state, obj);
-
-  pic_gc_arena_restore(state->pic, ai);
-  pic_gc_protect(state->pic, obj);
-  return obj;
-}
-
-static pic_value
-resolve_reference_node(resolver_state *state, pic_value obj)
-{
-  pic_state *pic = state->pic;
-  pic_sym tag;
-
-  if (! pic_pair_p(obj))
-    return obj;
-
-  tag = pic_sym(pic_car(pic, obj));
-  if (tag == state->sLREF) {
-    pic_sym sym;
-
-    sym = pic_sym(pic_list_ref(pic, obj, 1));
-    if (! is_closed(state, sym)) {
-      return resolve_lref(state, sym);
-    }
-    else {
-      return resolve_cref(state, 0, sym);
-    }
-  }
-  else if (tag == state->sCREF) {
-    int depth;
-    pic_sym sym;
-
-    depth = pic_int(pic_list_ref(pic, obj, 1));
-    sym = pic_sym(pic_list_ref(pic, obj, 2));
-    return resolve_cref(state, depth, sym);
-  }
-  else if (tag == pic->sLAMBDA) {
-    pic_value args, locals, closes, body;
-    bool varg;
-
-    args = pic_list_ref(pic, obj, 1);
-    locals = pic_list_ref(pic, obj, 2);
-    varg = pic_true_p(pic_list_ref(pic, obj, 3));
-    closes = pic_list_ref(pic, obj, 4);
-    body = pic_list_ref(pic, obj, 5);
-
-    push_resolver_scope(state, args, locals, varg, closes);
-    {
-      body = resolve_reference(state, body);
-    }
-    pop_resolver_scope(state);
-
-    return pic_list6(pic, pic_symbol_value(pic->sLAMBDA), args, locals, pic_bool_value(varg), closes, body);
-  }
-  else if (tag == pic->sQUOTE) {
-    return obj;
-  }
-  else {
-    int ai = pic_gc_arena_preserve(pic);
-    pic_value seq = pic_list1(pic, pic_symbol_value(tag)), elt;
-
-    pic_for_each (elt, pic_cdr(pic, obj)) {
-      seq = pic_cons(pic, resolve_reference(state, elt), seq);
-
-      pic_gc_arena_restore(pic, ai);
-      pic_gc_protect(pic, seq);
-    }
-    return pic_reverse(pic, seq);
-  }
-}
-
-static pic_value
-pic_resolve(pic_state *pic, pic_value obj)
-{
-  resolver_state *state;
-
-  state = new_resolver_state(pic);
-
-  obj = resolve_reference(state, obj);
-
-  destroy_resolver_state(state);
-  return obj;
-}
-
 /**
  * scope object
  */
@@ -1210,6 +990,47 @@ pop_codegen_context(codegen_state *state)
   return irep;
 }
 
+static int
+index_capture(codegen_state *state, pic_sym sym, int depth)
+{
+  codegen_context *cxt = state->cxt;
+  size_t i;
+  pic_sym *var;
+
+  while (depth-- > 0) {
+    cxt = cxt->up;
+  }
+
+  for (i = 0; i < cxt->captures.size; ++i) {
+    var = xv_get(&cxt->captures, i);
+    if (*var == sym)
+      return i;
+  }
+  return -1;
+}
+
+static int
+index_local(codegen_state *state, pic_sym sym)
+{
+  codegen_context *cxt = state->cxt;
+  size_t i, offset;
+  pic_sym *var;
+
+  offset = 1;
+  for (i = 0; i < cxt->args.size; ++i) {
+    var = xv_get(&cxt->args, i);
+    if (*var == sym)
+      return i + offset;
+  }
+  offset += i;
+  for (i = 0; i < cxt->locals.size; ++i) {
+    var = xv_get(&cxt->locals, i);
+    if (*var == sym)
+      return i + offset;
+  }
+  return -1;
+}
+
 static struct pic_irep *codegen_lambda(codegen_state *, pic_value);
 
 static void
@@ -1226,14 +1047,27 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   } else if (sym == state->sCREF) {
+    pic_sym name;
+    int depth;
+
+  CREF:
+    depth = pic_int(pic_list_ref(pic, obj, 1));
+    name  = pic_sym(pic_list_ref(pic, obj, 2));
     cxt->code[cxt->clen].insn = OP_CREF;
-    cxt->code[cxt->clen].u.r.depth = pic_int(pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].u.r.idx = pic_int(pic_list_ref(pic, obj, 2));
+    cxt->code[cxt->clen].u.r.depth = depth;
+    cxt->code[cxt->clen].u.r.idx = index_capture(state, name, depth);
     cxt->clen++;
     return;
   } else if (sym == state->sLREF) {
+    pic_sym name;
+
+    name = pic_sym(pic_list_ref(pic, obj, 1));
+    if (index_capture(state, name, 0) != -1) {
+      obj = pic_list3(pic, pic_sym_value(state->sCREF), pic_int_value(0), pic_sym_value(name));
+      goto CREF;
+    }
     cxt->code[cxt->clen].insn = OP_LREF;
-    cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, obj, 1));
+    cxt->code[cxt->clen].u.i = index_local(state, name);
     cxt->clen++;
     return;
   } else if (sym == pic->sSETBANG) {
@@ -1254,17 +1088,30 @@ codegen(codegen_state *state, pic_value obj)
       return;
     }
     else if (type == state->sCREF) {
+      pic_sym name;
+      int depth;
+
+    CSET:
+      depth = pic_int(pic_list_ref(pic, var, 1));
+      name  = pic_sym(pic_list_ref(pic, var, 2));
       cxt->code[cxt->clen].insn = OP_CSET;
-      cxt->code[cxt->clen].u.r.depth = pic_int(pic_list_ref(pic, var, 1));
-      cxt->code[cxt->clen].u.r.idx = pic_int(pic_list_ref(pic, var, 2));
+      cxt->code[cxt->clen].u.r.depth = depth;
+      cxt->code[cxt->clen].u.r.idx = index_capture(state, name, depth);
       cxt->clen++;
       cxt->code[cxt->clen].insn = OP_PUSHNONE;
       cxt->clen++;
       return;
     }
     else if (type == state->sLREF) {
+      pic_sym name;
+
+      name = pic_sym(pic_list_ref(pic, var, 1));
+      if (index_capture(state, name, 0) != -1) {
+        var = pic_list3(pic, pic_sym_value(state->sCREF), pic_int_value(0), pic_sym_value(name));
+        goto CSET;
+      }
       cxt->code[cxt->clen].insn = OP_LSET;
-      cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, var, 1));
+      cxt->code[cxt->clen].u.i = index_local(state, name);
       cxt->clen++;
       cxt->code[cxt->clen].insn = OP_PUSHNONE;
       cxt->clen++;
@@ -1563,15 +1410,6 @@ pic_compile(pic_state *pic, pic_value obj)
   obj = pic_analyze(pic, obj);
 #if DEBUG
   fprintf(stdout, "## analyzer completed\n");
-  pic_debug(pic, obj);
-  fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
-#endif
-
-  /* resolution */
-  obj = pic_resolve(pic, obj);
-#if DEBUG
-  fprintf(stdout, "## resolver completed\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
