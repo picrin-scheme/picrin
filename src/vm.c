@@ -425,16 +425,29 @@ pic_defvar(pic_state *pic, const char *name, pic_value init)
 }
 
 static void
+vm_push_env(pic_state *pic)
+{
+  pic_callinfo *ci = pic->ci;
+
+  ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * ci->regc, PIC_TT_ENV);
+  ci->env->up = ci->up;
+  ci->env->regc = ci->regc;
+  ci->env->regs = ci->regs;
+}
+
+static void
 vm_tear_off(pic_state *pic)
 {
   struct pic_env *env;
   int i;
 
+  assert(pic->ci->env != NULL);
+
   env = pic->ci->env;
-  for (i = 0; i < env->valuec; ++i) {
-    env->storage[i] = env->values[i];
+  for (i = 0; i < env->regc; ++i) {
+    env->storage[i] = env->regs[i];
   }
-  env->values = env->storage;
+  env->regs = env->storage;
 }
 
 pic_value
@@ -596,22 +609,22 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       int depth = c.u.r.depth;
       struct pic_env *env;
 
-      env = pic->ci->env;
-      while (depth--) {
+      env = pic->ci->up;
+      while (--depth) {
 	env = env->up;
       }
-      PUSH(env->values[c.u.r.idx]);
+      PUSH(env->regs[c.u.r.idx]);
       NEXT;
     }
     CASE(OP_CSET) {
       int depth = c.u.r.depth;
       struct pic_env *env;
 
-      env = pic->ci->env;
-      while (depth--) {
+      env = pic->ci->up;
+      while (--depth) {
 	env = env->up;
       }
-      env->values[c.u.r.idx] = POP();
+      env->regs[c.u.r.idx] = POP();
       NEXT;
     }
     CASE(OP_JMP) {
@@ -720,10 +733,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	}
 
 	/* prepare env */
-        ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * irep->capturec, PIC_TT_ENV);
-        ci->env->up = proc->env;
-        ci->env->valuec = irep->capturec;
-        ci->env->values = ci->fp + irep->argc + irep->localc;
+        ci->up = proc->env;
+        ci->regc = irep->capturec;
+        ci->regs = ci->fp + irep->argc + irep->localc;
 
 	pic->ip = irep->code;
 	pic_gc_arena_restore(pic, ai);
@@ -735,7 +747,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_value *argv;
       pic_callinfo *ci;
 
-      vm_tear_off(pic);
+      if (pic->ci->env != NULL) {
+        vm_tear_off(pic);
+      }
 
       if (c.u.i == -1) {
         pic->sp += pic->ci[1].retc - 1;
@@ -765,7 +779,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	goto L_STOP;
       }
 
-      vm_tear_off(pic);
+      if (pic->ci->env != NULL) {
+        vm_tear_off(pic);
+      }
 
       pic->ci->retc = c.u.i;
 
@@ -797,6 +813,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       if (! pic_proc_irep_p(pic_proc_ptr(self))) {
         pic_error(pic, "logic flaw");
       }
+
+      if (pic->ci->env == NULL) {
+        vm_push_env(pic);
+      }
+
       proc = pic_proc_new_irep(pic, irep->irep[c.u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);

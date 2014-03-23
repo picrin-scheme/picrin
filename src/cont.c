@@ -208,7 +208,7 @@ cont_call(pic_state *pic)
   proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
 
-  cont = (struct pic_cont *)pic_ptr(proc->env->values[0]);
+  cont = (struct pic_cont *)pic_ptr(pic_proc_cv_ref(pic, proc, 0));
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */

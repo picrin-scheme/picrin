@@ -17,8 +17,8 @@ struct pic_func {
 
 struct pic_env {
   PIC_OBJECT_HEADER
-  pic_value *values;
-  int valuec;
+  pic_value *regs;
+  int regc;
   struct pic_env *up;
   pic_value storage[];
 };

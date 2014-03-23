@@ -51,6 +51,9 @@ typedef struct {
   pic_code *ip;
   pic_value *fp;
   struct pic_env *env;
+  int regc;
+  pic_value *regs;
+  struct pic_env *up;
 } pic_callinfo;
 
 typedef struct pic_block {

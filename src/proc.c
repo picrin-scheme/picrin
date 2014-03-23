@@ -41,8 +41,8 @@ pic_proc_cv_init(pic_state *pic, struct pic_proc *proc, size_t cv_size)
     pic_error(pic, "env slot already in use");
   }
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-  env->valuec = cv_size;
-  env->values = (pic_value *)pic_calloc(pic, cv_size, sizeof(pic_value));
+  env->regc = cv_size;
+  env->regs = (pic_value *)pic_calloc(pic, cv_size, sizeof(pic_value));
   env->up = NULL;
 
   proc->env = env;
@@ -52,7 +52,7 @@ int
 pic_proc_cv_size(pic_state *pic, struct pic_proc *proc)
 {
   UNUSED(pic);
-  return proc->env ? proc->env->valuec : 0;
+  return proc->env ? proc->env->regc : 0;
 }
 
 pic_value
@@ -61,7 +61,7 @@ pic_proc_cv_ref(pic_state *pic, struct pic_proc *proc, size_t i)
   if (proc->env == NULL) {
     pic_error(pic, "no closed env");
   }
-  return proc->env->values[i];
+  return proc->env->regs[i];
 }
 
 void
@@ -70,7 +70,7 @@ pic_proc_cv_set(pic_state *pic, struct pic_proc *proc, size_t i, pic_value v)
   if (proc->env == NULL) {
     pic_error(pic, "no closed env");
   }
-  proc->env->values[i] = v;
+  proc->env->regs[i] = v;
 }
 
 static pic_value
