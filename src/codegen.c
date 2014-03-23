@@ -817,8 +817,6 @@ typedef struct codegen_context {
   bool varg;
   /* rest args variable is counted as a local */
   xvect args, locals, captures;
-  /* closed variable table */
-  unsigned *cv_tbl;
   /* actual bit code sequence */
   pic_code *code;
   size_t clen, ccapa;
@@ -883,16 +881,15 @@ destroy_codegen_state(codegen_state *state)
 }
 
 static void
-create_cv_table(pic_state *pic, codegen_context *cxt)
+create_activation(codegen_context *cxt)
 {
-  size_t i;
+  size_t i, n;
   xhash *regs;
   pic_sym *var;
   size_t offset;
 
   regs = xh_new_int();
 
-  /* number local variables */
   offset = 1;
   for (i = 0; i < cxt->args.size; ++i) {
     var = xv_get(&cxt->args, i);
@@ -904,11 +901,18 @@ create_cv_table(pic_state *pic, codegen_context *cxt)
     xh_put_int(regs, *var, i + offset);
   }
 
-  /* closed variables */
-  cxt->cv_tbl = pic_calloc(pic, cxt->captures.size, sizeof(unsigned));
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    cxt->cv_tbl[i] = xh_get_int(regs, *var)->val;
+    if ((n = xh_get_int(regs, *var)->val) <= cxt->args.size) {
+      /* copy arguments to capture variable area */
+      cxt->code[cxt->clen].insn = OP_LREF;
+      cxt->code[cxt->clen].u.i = n;
+      cxt->clen++;
+    } else {
+      /* otherwise, just extend the stack */
+      cxt->code[cxt->clen].insn = OP_PUSHNONE;
+      cxt->clen++;
+    }
   }
 
   xh_destroy(regs);
@@ -939,8 +943,6 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
     xv_push(&cxt->captures, &pic_sym(var));
   }
 
-  create_cv_table(pic, cxt);
-
   cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
@@ -954,6 +956,8 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   cxt->pcapa = PIC_POOL_SIZE;
 
   state->cxt = cxt;
+
+  create_activation(cxt);
 }
 
 static struct pic_irep *
@@ -969,7 +973,6 @@ pop_codegen_context(codegen_state *state)
   irep->argc = state->cxt->args.size + 1;
   irep->localc = state->cxt->locals.size;
   irep->capturec = state->cxt->captures.size;
-  irep->cv_tbl = state->cxt->cv_tbl;
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);
@@ -1050,7 +1053,6 @@ codegen(codegen_state *state, pic_value obj)
     pic_sym name;
     int depth;
 
-  CREF:
     depth = pic_int(pic_list_ref(pic, obj, 1));
     name  = pic_sym(pic_list_ref(pic, obj, 2));
     cxt->code[cxt->clen].insn = OP_CREF;
@@ -1060,11 +1062,14 @@ codegen(codegen_state *state, pic_value obj)
     return;
   } else if (sym == state->sLREF) {
     pic_sym name;
+    int i;
 
     name = pic_sym(pic_list_ref(pic, obj, 1));
-    if (index_capture(state, name, 0) != -1) {
-      obj = pic_list3(pic, pic_sym_value(state->sCREF), pic_int_value(0), pic_sym_value(name));
-      goto CREF;
+    if ((i = index_capture(state, name, 0)) != -1) {
+      cxt->code[cxt->clen].insn = OP_LREF;
+      cxt->code[cxt->clen].u.i = i + cxt->args.size + cxt->locals.size + 1;
+      cxt->clen++;
+      return;
     }
     cxt->code[cxt->clen].insn = OP_LREF;
     cxt->code[cxt->clen].u.i = index_local(state, name);
@@ -1091,7 +1096,6 @@ codegen(codegen_state *state, pic_value obj)
       pic_sym name;
       int depth;
 
-    CSET:
       depth = pic_int(pic_list_ref(pic, var, 1));
       name  = pic_sym(pic_list_ref(pic, var, 2));
       cxt->code[cxt->clen].insn = OP_CSET;
@@ -1104,11 +1108,16 @@ codegen(codegen_state *state, pic_value obj)
     }
     else if (type == state->sLREF) {
       pic_sym name;
+      int i;
 
       name = pic_sym(pic_list_ref(pic, var, 1));
-      if (index_capture(state, name, 0) != -1) {
-        var = pic_list3(pic, pic_sym_value(state->sCREF), pic_int_value(0), pic_sym_value(name));
-        goto CSET;
+      if ((i = index_capture(state, name, 0)) != -1) {
+        cxt->code[cxt->clen].insn = OP_LSET;
+        cxt->code[cxt->clen].u.i = i + cxt->args.size + cxt->locals.size + 1;
+        cxt->clen++;
+        cxt->code[cxt->clen].insn = OP_PUSHNONE;
+        cxt->clen++;
+        return;
       }
       cxt->code[cxt->clen].insn = OP_LSET;
       cxt->code[cxt->clen].u.i = index_local(state, name);
