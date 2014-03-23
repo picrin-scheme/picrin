@@ -15,12 +15,20 @@
 # error enable PIC_NONE_IS_FALSE
 #endif
 
+/**
+ * scope object
+ */
+
 typedef struct analyze_scope {
   int depth;
   bool varg;
   xvect args, locals, captures; /* rest args variable is counted as a local */
   struct analyze_scope *up;
 } analyze_scope;
+
+/**
+ * global analyzer state
+ */
 
 typedef struct analyze_state {
   pic_state *pic;
