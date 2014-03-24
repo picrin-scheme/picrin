@@ -18,6 +18,7 @@
 #include "picrin/var.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
+#include "picrin/error.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -499,7 +500,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
   pic_code c;
   int ai = pic_gc_arena_preserve(pic);
-  jmp_buf jmp, *prev_jmp = pic->jmp;
   size_t argc, i;
   pic_code boot[2];
 
@@ -514,13 +514,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
 #endif
-
-  if (setjmp(jmp) == 0) {
-    pic->jmp = &jmp;
-  }
-  else {
-    goto L_RAISE;
-  }
 
   if (! pic_list_p(argv)) {
     pic_error(pic, "argv must be a proper list");
@@ -773,12 +766,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_value *retv;
       pic_callinfo *ci;
 
-      if (pic->err) {
-
-      L_RAISE:
-	goto L_STOP;
-      }
-
       if (pic->ci->env != NULL) {
         vm_tear_off(pic);
       }
@@ -918,7 +905,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }								\
       else {							\
 	pic_error(pic, #op " got non-number operands");		\
-	goto L_RAISE;						\
       }								\
       NEXT;							\
     }
@@ -928,21 +914,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     DEFINE_COMP_OP(OP_LE, <=);
 
     CASE(OP_STOP) {
-      pic_value val;
-
-    L_STOP:
-      val = POP();
-
-      pic->jmp = prev_jmp;
-      if (pic->err) {
-	longjmp(*pic->jmp, 1);
-      }
 
 #if VM_DEBUG
       puts("**VM END STATE**");
       printf("stbase\t= %p\nsp\t= %p\n", (void *)stbase, (void *)pic->sp);
       printf("cibase\t= %p\nci\t= %p\n", (void *)cibase, (void *)pic->ci);
-      if (stbase < pic->sp) {
+      if (stbase < pic->sp - 1) {
 	pic_value *sp;
 	printf("* stack trace:");
 	for (sp = stbase; pic->sp != sp; ++sp) {
@@ -950,14 +927,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	  puts("");
 	}
       }
-      if (stbase > pic->sp) {
+      if (stbase > pic->sp - 1) {
 	puts("*** stack underflow!");
       }
 #endif
 
-      pic_gc_protect(pic, val);
-
-      return val;
+      return pic_gc_protect(pic, POP());
     }
   } VM_LOOP_END;
 }

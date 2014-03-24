@@ -15,6 +15,8 @@ struct pic_jmpbuf {
   struct pic_jmpbuf *prev;
 };
 
+/* do not return from try block! */
+
 #define pic_try                                 \
   pic_push_try(pic);                            \
   if (setjmp(*pic->jmp) == 0)                   \
@@ -26,6 +28,8 @@ struct pic_jmpbuf {
 
 void pic_push_try(pic_state *);
 void pic_pop_try(pic_state *);
+
+noreturn void pic_throw(pic_state *, struct pic_error *);
 
 struct pic_error {
   PIC_OBJECT_HEADER
@@ -41,8 +45,6 @@ struct pic_error {
 
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)
 #define pic_error_ptr(v) ((struct pic_error *)pic_ptr(v))
-
-pic_value pic_raise_continuable(pic_state *, pic_value);
 
 #if defined(__cplusplus)
 }

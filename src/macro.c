@@ -224,17 +224,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
           pic_in_library(pic, pic_cadr(pic, expr));
 
           pic_for_each (v, pic_cddr(pic, expr)) {
-            struct pic_proc *proc;
             int ai = pic_gc_arena_preserve(pic);
 
-            proc = pic_compile(pic, v);
-            if (proc == NULL) {
-              abort();
-            }
-            pic_apply_argv(pic, proc, 0);
-            if (pic_undef_p(v)) {
-              abort();
-            }
+            pic_eval(pic, v);
+
             pic_gc_arena_restore(pic, ai);
           }
 
@@ -243,7 +236,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         pic_catch {
           /* restores pic->lib even if an error occurs */
           pic_in_library(pic, prev->name);
-          longjmp(*pic->jmp, 1);
+          pic_throw(pic, pic->err);
         }
 
         return pic_none_value();
@@ -271,7 +264,6 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       else if (tag == pic->sDEFINE_SYNTAX) {
 	pic_value var, val;
-	struct pic_proc *proc;
         pic_sym uniq;
         struct pic_macro *mac;
 
@@ -290,17 +282,16 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         xh_put_int(senv->name, pic_sym(var), uniq);
 
 	val = pic_cadr(pic, pic_cdr(pic, expr));
-	proc = pic_compile(pic, val);
-	if (pic->err) {
-	  printf("macroexpand error: %s\n", pic_errmsg(pic));
-	  abort();
-	}
-	v = pic_apply(pic, proc, pic_nil_value());
-	if (pic->err) {
-	  printf("macroexpand error: %s\n", pic_errmsg(pic));
-	  abort();
-	}
-	assert(pic_proc_p(v));
+
+        pic_try {
+          v = pic_eval(pic, val);
+        } pic_catch {
+	  pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+        }
+
+        if (! pic_proc_p(v)) {
+          pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+        }
 
         mac = macro_new(pic, pic_proc_ptr(v), senv);
         xh_put_int(pic->macros, uniq, (long)mac);
@@ -311,7 +302,6 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       else if (tag == pic->sDEFINE_MACRO) {
 	pic_value var, val;
-	struct pic_proc *proc;
         pic_sym uniq;
         struct pic_macro *mac;
 
@@ -339,17 +329,15 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         uniq = pic_gensym(pic, pic_sym(var));
         xh_put_int(senv->name, pic_sym(var), uniq);
 
-	proc = pic_compile(pic, val);
-	if (pic->err) {
-	  printf("macroexpand error: %s\n", pic_errmsg(pic));
-	  abort();
-	}
-	v = pic_apply(pic, proc, pic_nil_value());
-	if (pic->err) {
-	  printf("macroexpand error: %s\n", pic_errmsg(pic));
-	  abort();
-	}
-	assert(pic_proc_p(v));
+        pic_try {
+          v = pic_eval(pic, val);
+        } pic_catch {
+	  pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+        }
+
+        if (! pic_proc_p(v)) {
+          pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+        }
 
         mac = macro_new(pic, pic_proc_ptr(v), NULL);
         xh_put_int(pic->macros, uniq, (long)mac);
@@ -441,7 +429,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       /* macro */
       if ((e = xh_get_int(pic->macros, tag)) != NULL) {
-        pic_value v;
+        pic_value v, args;
         struct pic_macro *mac;
 
 #if DEBUG
@@ -452,19 +440,17 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
         mac = (struct pic_macro *)e->val;
 	if (mac->senv == NULL) { /* legacy macro */
-	  v = pic_apply(pic, mac->proc, pic_cdr(pic, expr));
-	  if (pic->err) {
-	    printf("macroexpand error: %s\n", pic_errmsg(pic));
-	    abort();
-	  }
-	}
-	else {
-	  v = pic_apply_argv(pic, mac->proc, 3, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
-	  if (pic->err) {
-	    printf("macroexpand error: %s\n", pic_errmsg(pic));
-	    abort();
-	  }
-	}
+          args = pic_cdr(pic, expr);
+        }
+        else {
+          args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
+        }
+
+        pic_try {
+          v = pic_apply(pic, mac->proc, args);
+        } pic_catch {
+          pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+        }
 	pic_gc_arena_restore(pic, ai);
 	pic_gc_protect(pic, v);
 
@@ -508,8 +494,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_error(pic, "unexpected value type");
     return pic_undef_value();	/* unreachable */
   }
-  /* suppress warnings, never be called */
-  abort();
+  UNREACHABLE();
 }
 
 static pic_value

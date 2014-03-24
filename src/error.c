@@ -12,6 +12,24 @@
 #include "picrin/error.h"
 
 void
+pic_abort(pic_state *pic, const char *msg)
+{
+  UNUSED(pic);
+
+  fprintf(stderr, "abort: %s\n", msg);
+  fflush(stderr);
+  abort();
+}
+
+void
+pic_warn(pic_state *pic, const char *msg)
+{
+  UNUSED(pic);
+
+  fprintf(stderr, "warn: %s\n", msg);
+}
+
+void
 pic_push_try(pic_state *pic)
 {
   struct pic_jmpbuf *try_jmp;
@@ -39,16 +57,8 @@ pic_pop_try(pic_state *pic)
   pic->try_jmps = prev;
 }
 
-const char *
-pic_errmsg(pic_state *pic)
-{
-  assert(pic->err != NULL);
-
-  return pic_str_cstr(pic->err->msg);
-}
-
-noreturn static void
-raise(pic_state *pic, struct pic_error *e)
+noreturn void
+pic_throw(pic_state *pic, struct pic_error *e)
 {
   pic->err = e;
   if (! pic->jmp) {
@@ -58,23 +68,12 @@ raise(pic_state *pic, struct pic_error *e)
   longjmp(*pic->jmp, 1);
 }
 
-noreturn static void
-error(pic_state *pic, pic_str *msg, pic_value irrs)
+const char *
+pic_errmsg(pic_state *pic)
 {
-  struct pic_error *e;
+  assert(pic->err != NULL);
 
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
-  e->type = PIC_ERROR_OTHER;
-  e->msg = msg;
-  e->irrs = irrs;
-
-  raise(pic, e);
-}
-
-void
-pic_error(pic_state *pic, const char *msg)
-{
-  pic_errorf(pic, msg);
+  return pic_str_cstr(pic->err->msg);
 }
 
 void
@@ -82,64 +81,18 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
   pic_value err_line;
+  struct pic_error *e;
 
   va_start(ap, fmt);
   err_line = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  error(pic, pic_str_ptr(pic_car(pic, err_line)), pic_cdr(pic, err_line));
-}
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e->type = PIC_ERROR_OTHER;
+  e->msg = pic_str_ptr(pic_car(pic, err_line));
+  e->irrs = pic_cdr(pic, err_line);
 
-void
-pic_abort(pic_state *pic, const char *msg)
-{
-  UNUSED(pic);
-
-  fprintf(stderr, "abort: %s\n", msg);
-  fflush(stderr);
-  abort();
-}
-
-void
-pic_warn(pic_state *pic, const char *msg)
-{
-  UNUSED(pic);
-
-  fprintf(stderr, "warn: %s\n", msg);
-}
-
-void
-pic_raise(pic_state *pic, struct pic_error *e)
-{
-  pic_value a;
-  struct pic_proc *handler;
-
-  if (pic->ridx == 0) {
-    raise(pic, e);
-  }
-
-  handler = pic->rescue[--pic->ridx];
-  pic_gc_protect(pic, pic_obj_value(handler));
-
-  a = pic_apply_argv(pic, handler, 1, pic_obj_value(e));
-  /* when the handler returns */
-  pic_errorf(pic, "handler returned", 2, pic_obj_value(handler), a);
-}
-
-pic_value
-pic_raise_continuable(pic_state *pic, pic_value obj)
-{
-  struct pic_proc *handler;
-
-  if (pic->ridx == 0) {
-    pic_abort(pic, "logic flaw: no exception handler remains");
-  }
-
-  handler = pic->rescue[--pic->ridx];
-  obj = pic_apply_argv(pic, handler, 1, obj);
-  pic->rescue[pic->ridx++] = handler;
-
-  return obj;
+  pic_throw(pic, e);
 }
 
 static pic_value
@@ -150,19 +103,16 @@ pic_error_with_exception_handler(pic_state *pic)
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  if (pic->ridx >= pic->rlen) {
-
-#if DEBUG
-    puts("rescue realloced");
-#endif
-
-    pic->rlen *= 2;
-    pic->rescue = (struct pic_proc **)pic_realloc(pic, pic->rescue, sizeof(struct pic_proc *) * pic->rlen);
+  pic_try {
+    v = pic_apply_argv(pic, thunk, 0);
   }
-  pic->rescue[pic->ridx++] = handler;
+  pic_catch {
+    struct pic_error *e = pic->err;
 
-  v = pic_apply_argv(pic, thunk, 0);
-  pic->ridx--;
+    pic->err = NULL;
+    v = pic_apply_argv(pic, handler, 1, pic_obj_value(e));
+    pic_errorf(pic, "error handler returned ~s, by error ~s", v, pic_obj_value(e));
+  }
   return v;
 }
 
@@ -179,17 +129,7 @@ pic_error_raise(pic_state *pic)
   e->msg = pic_str_new_cstr(pic, "raised");
   e->irrs = pic_list1(pic, v);
 
-  pic_raise(pic, e);
-}
-
-static pic_value
-pic_error_raise_continuable(pic_state *pic)
-{
-  pic_value obj;
-
-  pic_get_args(pic, "o", &obj);
-
-  return pic_raise_continuable(pic, obj);
+  pic_throw(pic, e);
 }
 
 noreturn static pic_value
@@ -207,7 +147,7 @@ pic_error_error(pic_state *pic)
   e->msg = str;
   e->irrs = pic_list_by_array(pic, argc, argv);
 
-  pic_raise(pic, e);
+  pic_throw(pic, e);
 }
 
 static pic_value
@@ -277,7 +217,6 @@ pic_init_error(pic_state *pic)
 {
   pic_defun(pic, "with-exception-handler", pic_error_with_exception_handler);
   pic_defun(pic, "raise", pic_error_raise);
-  pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
   pic_defun(pic, "error", pic_error_error);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);

@@ -117,7 +117,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 6.8 Vectors | yes | |
 | 6.9 Bytevectors | yes | |
 | 6.10  Control features | yes | |
-| 6.11 Exceptions | yes | |
+| 6.11 Exceptions | yes | `raise-continuable` is not supported |
 | 6.12 Environments and evaluation | N/A | |
 | 6.13.1 Ports | yes | |
 | 6.13.2 Input | incomplete | TODO: binary input |

@@ -77,9 +77,6 @@ typedef struct {
 
   pic_code *ip;
 
-  struct pic_proc **rescue;
-  size_t ridx, rlen;
-
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;
@@ -124,7 +121,7 @@ struct pic_object *pic_obj_alloc_unsafe(pic_state *, size_t, enum pic_tt);
 void pic_free(pic_state *, void *);
 
 void pic_gc_run(pic_state *);
-void pic_gc_protect(pic_state *, pic_value);
+pic_value pic_gc_protect(pic_state *, pic_value);
 int pic_gc_arena_preserve(pic_state *);
 void pic_gc_arena_restore(pic_state *, int);
 
@@ -180,10 +177,14 @@ void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
 
 noreturn void pic_abort(pic_state *, const char *);
-noreturn void pic_raise(pic_state *, struct pic_error *);
-noreturn void pic_error(pic_state *, const char *); /* obsoleted */
 noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warn(pic_state *, const char *);
+
+/* obsoleted */
+noreturn static inline void pic_error(pic_state *pic, const char *msg)
+{
+  pic_errorf(pic, msg);
+}
 
 const char *pic_errmsg(pic_state *);
 
