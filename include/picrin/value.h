@@ -56,8 +56,15 @@ typedef struct {
 } pic_value;
 
 #define pic_ptr(v) ((void *)((uint64_t)0xffffffffffff & (uint64_t)(v).u.data))
-#define pic_vtype(v) (((uint32_t)0xfff00000 >= (v).u.type_) ? PIC_VTYPE_FLOAT : (((v).u.type_ & 0xf0000)>>16))
 #define pic_init_value(v,vtype) (((v).u.type_ = (((uint32_t)0xfff00000)|((uint32_t)((vtype)<<16)))), (v).u.i = 0)
+
+static inline enum pic_vtype
+pic_vtype(pic_value v)
+{
+  return 0xfff00000 >= v.u.type_
+    ? PIC_VTYPE_FLOAT
+    : (v.u.type_ & 0xf0000)>>16;
+}
 
 #else
 
