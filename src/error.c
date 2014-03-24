@@ -127,19 +127,16 @@ pic_error_with_exception_handler(pic_state *pic)
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  if (pic->ridx >= pic->rlen) {
-
-#if DEBUG
-    puts("rescue realloced");
-#endif
-
-    pic->rlen *= 2;
-    pic->rescue = (struct pic_proc **)pic_realloc(pic, pic->rescue, sizeof(struct pic_proc *) * pic->rlen);
+  pic_try {
+    v = pic_apply_argv(pic, thunk, 0);
   }
-  pic->rescue[pic->ridx++] = handler;
+  pic_catch {
+    struct pic_error *e = pic->err;
 
-  v = pic_apply_argv(pic, thunk, 0);
-  pic->ridx--;
+    pic->err = NULL;
+    v = pic_apply_argv(pic, handler, 1, pic_obj_value(e));
+    pic_errorf(pic, "error handler returned ~s, by error ~s", v, pic_obj_value(e));
+  }
   return v;
 }
 
