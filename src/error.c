@@ -39,16 +39,8 @@ pic_pop_try(pic_state *pic)
   pic->try_jmps = prev;
 }
 
-const char *
-pic_errmsg(pic_state *pic)
-{
-  assert(pic->err != NULL);
-
-  return pic_str_cstr(pic->err->msg);
-}
-
-noreturn static void
-raise(pic_state *pic, struct pic_error *e)
+noreturn void
+pic_throw(pic_state *pic, struct pic_error *e)
 {
   pic->err = e;
   if (! pic->jmp) {
@@ -56,6 +48,14 @@ raise(pic_state *pic, struct pic_error *e)
     abort();
   }
   longjmp(*pic->jmp, 1);
+}
+
+const char *
+pic_errmsg(pic_state *pic)
+{
+  assert(pic->err != NULL);
+
+  return pic_str_cstr(pic->err->msg);
 }
 
 noreturn static void
@@ -68,7 +68,7 @@ error(pic_state *pic, pic_str *msg, pic_value irrs)
   e->msg = msg;
   e->irrs = irrs;
 
-  raise(pic, e);
+  pic_throw(pic, e);
 }
 
 void
@@ -115,7 +115,7 @@ pic_raise(pic_state *pic, struct pic_error *e)
   struct pic_proc *handler;
 
   if (pic->ridx == 0) {
-    raise(pic, e);
+    pic_throw(pic, e);
   }
 
   handler = pic->rescue[--pic->ridx];

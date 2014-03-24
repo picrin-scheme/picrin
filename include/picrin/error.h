@@ -27,6 +27,8 @@ struct pic_jmpbuf {
 void pic_push_try(pic_state *);
 void pic_pop_try(pic_state *);
 
+noreturn void pic_throw(pic_state *, struct pic_error *);
+
 struct pic_error {
   PIC_OBJECT_HEADER
   enum pic_error_kind {

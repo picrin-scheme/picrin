@@ -18,6 +18,7 @@
 #include "picrin/var.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
+#include "picrin/error.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -935,7 +936,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       pic->jmp = prev_jmp;
       if (pic->err) {
-	longjmp(*pic->jmp, 1);
+        pic_throw(pic, pic->err);
       }
 
 #if VM_DEBUG

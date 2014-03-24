@@ -243,7 +243,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         pic_catch {
           /* restores pic->lib even if an error occurs */
           pic_in_library(pic, prev->name);
-          longjmp(*pic->jmp, 1);
+          pic_throw(pic, pic->err);
         }
 
         return pic_none_value();
