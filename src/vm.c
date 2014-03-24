@@ -914,15 +914,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     DEFINE_COMP_OP(OP_LE, <=);
 
     CASE(OP_STOP) {
-      pic_value val;
-
-      val = POP();
 
 #if VM_DEBUG
       puts("**VM END STATE**");
       printf("stbase\t= %p\nsp\t= %p\n", (void *)stbase, (void *)pic->sp);
       printf("cibase\t= %p\nci\t= %p\n", (void *)cibase, (void *)pic->ci);
-      if (stbase < pic->sp) {
+      if (stbase < pic->sp - 1) {
 	pic_value *sp;
 	printf("* stack trace:");
 	for (sp = stbase; pic->sp != sp; ++sp) {
@@ -930,14 +927,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	  puts("");
 	}
       }
-      if (stbase > pic->sp) {
+      if (stbase > pic->sp - 1) {
 	puts("*** stack underflow!");
       }
 #endif
 
-      pic_gc_protect(pic, val);
-
-      return val;
+      return pic_gc_protect(pic, POP());
     }
   } VM_LOOP_END;
 }
