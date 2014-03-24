@@ -77,9 +77,6 @@ typedef struct {
 
   pic_code *ip;
 
-  struct pic_proc **rescue;
-  size_t ridx, rlen;
-
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;

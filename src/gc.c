@@ -406,8 +406,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_cont *cont = (struct pic_cont *)obj;
     pic_value *stack;
     pic_callinfo *ci;
-    size_t i;
-    int j;
+    int i;
 
     /* block */
     gc_mark_block(pic, cont->blk);
@@ -424,14 +423,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       }
     }
 
-    /* exception handlers */
-    for (i = 0; i < cont->ridx; ++i) {
-      gc_mark_object(pic, (struct pic_object *)cont->rescue[i]);
-    }
-
     /* arena */
-    for (j = 0; j < cont->arena_idx; ++j) {
-      gc_mark_object(pic, cont->arena[j]);
+    for (i = 0; i < cont->arena_idx; ++i) {
+      gc_mark_object(pic, cont->arena[i]);
     }
 
     /* result values */
@@ -537,11 +531,6 @@ gc_mark_phase(pic_state *pic)
     }
   }
 
-  /* exception handlers */
-  for (i = 0; i < pic->ridx; ++i) {
-    gc_mark_object(pic, (struct pic_object *)pic->rescue[i]);
-  }
-
   /* error object */
   if (pic->err) {
     gc_mark_object(pic, (struct pic_object *)pic->err);
@@ -608,7 +597,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->stk_ptr);
     pic_free(pic, cont->st_ptr);
     pic_free(pic, cont->ci_ptr);
-    pic_free(pic, cont->rescue);
     PIC_BLK_DECREF(pic, cont->blk);
     break;
   }

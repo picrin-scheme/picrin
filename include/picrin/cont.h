@@ -26,9 +26,6 @@ struct pic_cont {
 
   pic_code *ip;
 
-  struct pic_proc **rescue;
-  size_t ridx, rlen;
-
   struct pic_object *arena[PIC_ARENA_SIZE];
   int arena_idx;
 

@@ -42,11 +42,6 @@ pic_open(int argc, char *argv[], char **envp)
   pic->cibase = pic->ci = (pic_callinfo *)calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
-  /* exception handlers */
-  pic->rescue = (struct pic_proc **)calloc(PIC_RESCUE_SIZE, sizeof(struct pic_proc *));
-  pic->ridx = 0;
-  pic->rlen = PIC_RESCUE_SIZE;
-
   /* memory heap */
   pic->heap = pic_heap_open();
 
@@ -136,7 +131,6 @@ pic_close(pic_state *pic)
   /* clear out root objects */
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
-  pic->ridx = 0;
   pic->arena_idx = 0;
   pic->err = NULL;
   pic->glen = 0;
@@ -152,7 +146,6 @@ pic_close(pic_state *pic)
   /* free runtime context */
   free(pic->stbase);
   free(pic->cibase);
-  free(pic->rescue);
 
   /* free global stacks */
   free(pic->globals);
