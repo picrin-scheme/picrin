@@ -488,8 +488,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_error(pic, "unexpected value type");
     return pic_undef_value();	/* unreachable */
   }
-  /* suppress warnings, never be called */
-  abort();
+  UNREACHABLE();
 }
 
 static pic_value
