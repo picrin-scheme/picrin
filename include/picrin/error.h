@@ -24,6 +24,15 @@ struct pic_error {
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)
 #define pic_error_ptr(v) ((struct pic_error *)pic_ptr(v))
 
+#define pic_try                                                 \
+  pic_try_helper__(GENSYM(i), GENSYM(here), GENSYM(prev_jmp))
+#define pic_try_helper__(i, here, prev_jmp)                             \
+  for (int i = 0; ! i; )                                                \
+    for (jmp_buf here, *prev_jmp = pic->jmp; ! i; )                     \
+      for (pic->jmp = &here; ! i++; pic->jmp = prev_jmp)                \
+        if (setjmp(here) == 0)
+#define pic_catch else
+
 pic_value pic_raise_continuable(pic_state *, pic_value);
 
 #if defined(__cplusplus)
