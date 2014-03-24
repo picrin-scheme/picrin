@@ -59,12 +59,6 @@ pic_errmsg(pic_state *pic)
 }
 
 void
-pic_error(pic_state *pic, const char *msg)
-{
-  pic_errorf(pic, msg);
-}
-
-void
 pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
