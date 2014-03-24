@@ -12,6 +12,24 @@
 #include "picrin/error.h"
 
 void
+pic_abort(pic_state *pic, const char *msg)
+{
+  UNUSED(pic);
+
+  fprintf(stderr, "abort: %s\n", msg);
+  fflush(stderr);
+  abort();
+}
+
+void
+pic_warn(pic_state *pic, const char *msg)
+{
+  UNUSED(pic);
+
+  fprintf(stderr, "warn: %s\n", msg);
+}
+
+void
 pic_push_try(pic_state *pic)
 {
   struct pic_jmpbuf *try_jmp;
@@ -75,24 +93,6 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   e->irrs = pic_cdr(pic, err_line);
 
   pic_throw(pic, e);
-}
-
-void
-pic_abort(pic_state *pic, const char *msg)
-{
-  UNUSED(pic);
-
-  fprintf(stderr, "abort: %s\n", msg);
-  fflush(stderr);
-  abort();
-}
-
-void
-pic_warn(pic_state *pic, const char *msg)
-{
-  UNUSED(pic);
-
-  fprintf(stderr, "warn: %s\n", msg);
 }
 
 static pic_value
