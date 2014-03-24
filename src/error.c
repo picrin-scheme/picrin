@@ -101,24 +101,6 @@ pic_warn(pic_state *pic, const char *msg)
   fprintf(stderr, "warn: %s\n", msg);
 }
 
-void
-pic_raise(pic_state *pic, struct pic_error *e)
-{
-  pic_value a;
-  struct pic_proc *handler;
-
-  if (pic->ridx == 0) {
-    pic_throw(pic, e);
-  }
-
-  handler = pic->rescue[--pic->ridx];
-  pic_gc_protect(pic, pic_obj_value(handler));
-
-  a = pic_apply_argv(pic, handler, 1, pic_obj_value(e));
-  /* when the handler returns */
-  pic_errorf(pic, "handler returned", 2, pic_obj_value(handler), a);
-}
-
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
@@ -153,7 +135,7 @@ pic_error_raise(pic_state *pic)
   e->msg = pic_str_new_cstr(pic, "raised");
   e->irrs = pic_list1(pic, v);
 
-  pic_raise(pic, e);
+  pic_throw(pic, e);
 }
 
 noreturn static pic_value
@@ -171,7 +153,7 @@ pic_error_error(pic_state *pic)
   e->msg = str;
   e->irrs = pic_list_by_array(pic, argc, argv);
 
-  pic_raise(pic, e);
+  pic_throw(pic, e);
 }
 
 static pic_value

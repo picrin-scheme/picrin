@@ -180,7 +180,6 @@ void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
 
 noreturn void pic_abort(pic_state *, const char *);
-noreturn void pic_raise(pic_state *, struct pic_error *);
 noreturn void pic_error(pic_state *, const char *); /* obsoleted */
 noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warn(pic_state *, const char *);
