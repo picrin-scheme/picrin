@@ -288,7 +288,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         } pic_catch {
 	  pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
         }
-	assert(pic_proc_p(v));
+
+        if (! pic_proc_p(v)) {
+          pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+        }
 
         mac = macro_new(pic, pic_proc_ptr(v), senv);
         xh_put_int(pic->macros, uniq, (long)mac);
@@ -331,7 +334,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         } pic_catch {
 	  pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
         }
-	assert(pic_proc_p(v));
+
+        if (! pic_proc_p(v)) {
+          pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+        }
 
         mac = macro_new(pic, pic_proc_ptr(v), NULL);
         xh_put_int(pic->macros, uniq, (long)mac);
