@@ -500,7 +500,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
   pic_code c;
   int ai = pic_gc_arena_preserve(pic);
-  jmp_buf jmp, *prev_jmp = pic->jmp;
   size_t argc, i;
   pic_code boot[2];
 
@@ -515,13 +514,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
 #endif
-
-  if (setjmp(jmp) == 0) {
-    pic->jmp = &jmp;
-  }
-  else {
-    goto L_RAISE;
-  }
 
   if (! pic_list_p(argv)) {
     pic_error(pic, "argv must be a proper list");
@@ -774,12 +766,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_value *retv;
       pic_callinfo *ci;
 
-      if (pic->err) {
-
-      L_RAISE:
-	goto L_STOP;
-      }
-
       if (pic->ci->env != NULL) {
         vm_tear_off(pic);
       }
@@ -919,7 +905,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }								\
       else {							\
 	pic_error(pic, #op " got non-number operands");		\
-	goto L_RAISE;						\
       }								\
       NEXT;							\
     }
@@ -931,13 +916,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_STOP) {
       pic_value val;
 
-    L_STOP:
       val = POP();
-
-      pic->jmp = prev_jmp;
-      if (pic->err) {
-        pic_throw(pic, pic->err);
-      }
 
 #if VM_DEBUG
       puts("**VM END STATE**");
