@@ -183,17 +183,19 @@ gc_protect(pic_state *pic, struct pic_object *obj)
   pic->arena[pic->arena_idx++] = obj;
 }
 
-void
+pic_value
 pic_gc_protect(pic_state *pic, pic_value v)
 {
   struct pic_object *obj;
 
   if (pic_vtype(v) != PIC_VTYPE_HEAP) {
-    return;
+    return v;
   }
   obj = pic_obj_ptr(v);
 
   gc_protect(pic, obj);
+
+  return v;
 }
 
 int
