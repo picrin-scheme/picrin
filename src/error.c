@@ -58,19 +58,6 @@ pic_errmsg(pic_state *pic)
   return pic_str_cstr(pic->err->msg);
 }
 
-noreturn static void
-error(pic_state *pic, pic_str *msg, pic_value irrs)
-{
-  struct pic_error *e;
-
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
-  e->type = PIC_ERROR_OTHER;
-  e->msg = msg;
-  e->irrs = irrs;
-
-  pic_throw(pic, e);
-}
-
 void
 pic_error(pic_state *pic, const char *msg)
 {
@@ -82,12 +69,18 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
   pic_value err_line;
+  struct pic_error *e;
 
   va_start(ap, fmt);
   err_line = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  error(pic, pic_str_ptr(pic_car(pic, err_line)), pic_cdr(pic, err_line));
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e->type = PIC_ERROR_OTHER;
+  e->msg = pic_str_ptr(pic_car(pic, err_line));
+  e->irrs = pic_cdr(pic, err_line);
+
+  pic_throw(pic, e);
 }
 
 void
