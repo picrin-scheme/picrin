@@ -15,6 +15,8 @@ struct pic_jmpbuf {
   struct pic_jmpbuf *prev;
 };
 
+/* do not return from try block! */
+
 #define pic_try                                 \
   pic_push_try(pic);                            \
   if (setjmp(*pic->jmp) == 0)                   \
