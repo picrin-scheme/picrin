@@ -50,14 +50,14 @@ typedef struct {
 	pic_sym sym;
 	char c;
       };
-      unsigned int type_;
+      uint32_t type_;
     };
   } u;
 } pic_value;
 
-#define pic_ptr(v) ((void *)((long long)0xffffffffffff & (long long)(v).u.data))
-#define pic_vtype(v) (((unsigned)0xfff00000 >= (v).u.type_) ? PIC_VTYPE_FLOAT : (((v).u.type_ & 0xf0000)>>16))
-#define pic_init_value(v,vtype) (((v).u.type_ = ((unsigned int)0xfff00000|(unsigned int)((vtype)<<16))), (v).u.i = 0)
+#define pic_ptr(v) ((void *)((uint64_t)0xffffffffffff & (uint64_t)(v).u.data))
+#define pic_vtype(v) (((uint32_t)0xfff00000 >= (v).u.type_) ? PIC_VTYPE_FLOAT : (((v).u.type_ & 0xf0000)>>16))
+#define pic_init_value(v,vtype) (((v).u.type_ = (((uint32_t)0xfff00000)|((uint32_t)((vtype)<<16)))), (v).u.i = 0)
 
 #else
 
