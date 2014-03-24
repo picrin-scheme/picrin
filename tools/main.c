@@ -9,6 +9,7 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/error.h"
 
 #if PIC_ENABLE_READLINE
 # include <readline/readline.h>

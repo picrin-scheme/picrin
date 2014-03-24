@@ -72,6 +72,7 @@ pic_open(int argc, char *argv[], char **envp)
   /* error handling */
   pic->jmp = NULL;
   pic->err = NULL;
+  pic->try_jmps = NULL;
 
   /* GC arena */
   pic->arena_idx = 0;

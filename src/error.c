@@ -11,6 +11,34 @@
 #include "picrin/string.h"
 #include "picrin/error.h"
 
+void
+pic_push_try(pic_state *pic)
+{
+  struct pic_jmpbuf *try_jmp;
+
+  try_jmp = pic_alloc(pic, sizeof(struct pic_jmpbuf));
+
+  try_jmp->prev_jmp = pic->jmp;
+  pic->jmp = &try_jmp->here;
+
+  try_jmp->prev = pic->try_jmps;
+  pic->try_jmps = try_jmp;
+}
+
+void
+pic_pop_try(pic_state *pic)
+{
+  struct pic_jmpbuf *prev;
+
+  assert(pic->jmp == &pic->try_jmps->here);
+
+  pic->jmp = pic->try_jmps->prev_jmp;
+
+  prev = pic->try_jmps->prev;
+  pic_free(pic, pic->try_jmps);
+  pic->try_jmps = prev;
+}
+
 const char *
 pic_errmsg(pic_state *pic)
 {

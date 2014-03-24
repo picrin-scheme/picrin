@@ -8,6 +8,7 @@
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/lib.h"
+#include "picrin/error.h"
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
@@ -213,47 +214,38 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       if (tag == pic->sDEFINE_LIBRARY) {
         struct pic_lib *prev = pic->lib;
-        jmp_buf jmp, *prevjmp = pic->jmp;
-        bool name_restored = false;
 
-        /* restores pic->lib even if an error occurs */
-        if (setjmp(jmp) == 0) {
-          pic->jmp = &jmp;
-          if (pic_length(pic, expr) < 2) {
-            pic_error(pic, "syntax error");
-          }
-          pic_make_library(pic, pic_cadr(pic, expr));
+        if (pic_length(pic, expr) < 2) {
+          pic_error(pic, "syntax error");
+        }
+        pic_make_library(pic, pic_cadr(pic, expr));
 
-          /* proceed expressions in new library */
+        pic_try {
           pic_in_library(pic, pic_cadr(pic, expr));
-          {
-            int ai = pic_gc_arena_preserve(pic);
-            struct pic_proc *proc;
 
-            pic_for_each (v, pic_cddr(pic, expr)) {
-              proc = pic_compile(pic, v);
-              if (proc == NULL) {
-                abort();
-              }
-              pic_apply_argv(pic, proc, 0);
-              if (pic_undef_p(v)) {
-                abort();
-              }
-              pic_gc_arena_restore(pic, ai);
+          pic_for_each (v, pic_cddr(pic, expr)) {
+            struct pic_proc *proc;
+            int ai = pic_gc_arena_preserve(pic);
+
+            proc = pic_compile(pic, v);
+            if (proc == NULL) {
+              abort();
             }
+            pic_apply_argv(pic, proc, 0);
+            if (pic_undef_p(v)) {
+              abort();
+            }
+            pic_gc_arena_restore(pic, ai);
           }
+
           pic_in_library(pic, prev->name);
-          name_restored = true;
         }
-        else {
-          if (! name_restored) {
-            pic_in_library(pic, prev->name);
-          }
-        }
-        pic->jmp = prevjmp;
-        if (pic->err) {
+        pic_catch {
+          /* restores pic->lib even if an error occurs */
+          pic_in_library(pic, prev->name);
           longjmp(*pic->jmp, 1);
         }
+
         return pic_none_value();
       }
 

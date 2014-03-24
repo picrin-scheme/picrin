@@ -9,6 +9,24 @@
 extern "C" {
 #endif
 
+struct pic_jmpbuf {
+  jmp_buf here;
+  jmp_buf *prev_jmp;
+  struct pic_jmpbuf *prev;
+};
+
+#define pic_try                                 \
+  pic_push_try(pic);                            \
+  if (setjmp(*pic->jmp) == 0)                   \
+    do
+#define pic_catch                               \
+    while (pic_pop_try(pic), 0);                \
+  else                                          \
+    if (pic_pop_try(pic), 1)
+
+void pic_push_try(pic_state *);
+void pic_pop_try(pic_state *);
+
 struct pic_error {
   PIC_OBJECT_HEADER
   enum pic_error_kind {
