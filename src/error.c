@@ -119,22 +119,6 @@ pic_raise(pic_state *pic, struct pic_error *e)
   pic_errorf(pic, "handler returned", 2, pic_obj_value(handler), a);
 }
 
-pic_value
-pic_raise_continuable(pic_state *pic, pic_value obj)
-{
-  struct pic_proc *handler;
-
-  if (pic->ridx == 0) {
-    pic_abort(pic, "logic flaw: no exception handler remains");
-  }
-
-  handler = pic->rescue[--pic->ridx];
-  obj = pic_apply_argv(pic, handler, 1, obj);
-  pic->rescue[pic->ridx++] = handler;
-
-  return obj;
-}
-
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
@@ -173,16 +157,6 @@ pic_error_raise(pic_state *pic)
   e->irrs = pic_list1(pic, v);
 
   pic_raise(pic, e);
-}
-
-static pic_value
-pic_error_raise_continuable(pic_state *pic)
-{
-  pic_value obj;
-
-  pic_get_args(pic, "o", &obj);
-
-  return pic_raise_continuable(pic, obj);
 }
 
 noreturn static pic_value
@@ -270,7 +244,6 @@ pic_init_error(pic_state *pic)
 {
   pic_defun(pic, "with-exception-handler", pic_error_with_exception_handler);
   pic_defun(pic, "raise", pic_error_raise);
-  pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
   pic_defun(pic, "error", pic_error_error);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);
