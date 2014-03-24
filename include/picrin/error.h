@@ -9,6 +9,24 @@
 extern "C" {
 #endif
 
+struct pic_jmpbuf {
+  jmp_buf here;
+  jmp_buf *prev_jmp;
+  struct pic_jmpbuf *prev;
+};
+
+#define pic_try                                 \
+  pic_push_try(pic);                            \
+  if (setjmp(*pic->jmp) == 0)                   \
+    do
+#define pic_catch                               \
+    while (pic_pop_try(pic), 0);                \
+  else                                          \
+    if (pic_pop_try(pic), 1)
+
+void pic_push_try(pic_state *);
+void pic_pop_try(pic_state *);
+
 struct pic_error {
   PIC_OBJECT_HEADER
   enum pic_error_kind {
@@ -23,15 +41,6 @@ struct pic_error {
 
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)
 #define pic_error_ptr(v) ((struct pic_error *)pic_ptr(v))
-
-#define pic_try                                                 \
-  pic_try_helper__(GENSYM(i), GENSYM(here), GENSYM(prev_jmp))
-#define pic_try_helper__(i, here, prev_jmp)                             \
-  for (int i = 0; ! i; )                                                \
-    for (jmp_buf here, *prev_jmp = pic->jmp; ! i; )                     \
-      for (pic->jmp = &here; ! i++; pic->jmp = prev_jmp)                \
-        if (setjmp(here) == 0)
-#define pic_catch else
 
 pic_value pic_raise_continuable(pic_state *, pic_value);
 

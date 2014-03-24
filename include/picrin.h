@@ -104,6 +104,7 @@ typedef struct {
 
   jmp_buf *jmp;
   struct pic_error *err;
+  struct pic_jmpbuf *try_jmps;
 
   struct pic_heap *heap;
   struct pic_object *arena[PIC_ARENA_SIZE];
