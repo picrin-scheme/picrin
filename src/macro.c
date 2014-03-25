@@ -25,7 +25,7 @@ pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym renam
 {
   UNUSED(pic);
 
-  xh_put_int(senv->name, sym, rename);
+  xh_put_int(senv->renames, sym, rename);
 }
 
 pic_sym
@@ -35,7 +35,7 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 
   UNUSED(pic);
 
-  if ((e = xh_get_int(senv->name, sym)) == NULL) {
+  if ((e = xh_get_int(senv->renames, sym)) == NULL) {
     return 0;
   }
   return e->val;
@@ -51,7 +51,7 @@ senv_new(pic_state *pic, struct pic_senv *up)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = up;
-  senv->name = xh_new_int();
+  senv->renames = xh_new_int();
 
   return senv;
 }
