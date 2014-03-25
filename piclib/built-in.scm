@@ -380,11 +380,12 @@
 
   (define real-vector? vector?)
 
-  (define (vector? x)
-    (and (real-vector? x)
-	 (or (= 0 (vector-length x))
-	     (not (eq? (vector-ref x 0)
-		       record-marker)))))
+  (set! vector?
+        (lambda (x)
+          (and (real-vector? x)
+               (or (= 0 (vector-length x))
+                   (not (eq? (vector-ref x 0)
+                             record-marker))))))
 
   #|
   ;; (scheme eval) is not provided for now

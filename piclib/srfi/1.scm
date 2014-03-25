@@ -208,10 +208,11 @@
 	    (set-cdr! lst acc)
 	    (rec rst lst)))))
 
-  (define (append-reverse rev-head tail)
-    (if (null? rev-head)
-	tail
-	(append-reverse (cdr rev-head) (cons (car rev-head) tail))))
+  (set! append-reverse
+        (lambda (rev-head tail)
+          (if (null? rev-head)
+              tail
+              (append-reverse (cdr rev-head) (cons (car rev-head) tail)))))
 
   (define (append-reverse! rev-head tail)
     (let ((rst (cdr rev-head)))
@@ -353,8 +354,14 @@
   (define (append-map! f . clists)
     (apply append! (apply map f clists)))
 
-  ;; means for inter-referential definition
-  (define pair-for-each #f)
+  (define (pair-for-each f clist . clists)
+    (if (null? clist)
+	(let rec ((clist clist))
+	  (if (pair? clist)
+	      (begin (f (car clist)) (rec (cdr clist)))))
+	(let rec ((clists (cons clist clists)))
+	  (if (every pair? clists)
+	      (begin (apply f (map car clists)) (rec (map cdr clists)))))))
 
   (define (map! f list . lists)
     (if (null? lists)
@@ -378,15 +385,6 @@
 	      (rec (map cdr clists)
 		   (cons* (apply f (map car clists)) acc))
 	      (reverse! acc)))))
-
-  (define (pair-for-each f clist . clists)
-    (if (null? clist)
-	(let rec ((clist clist))
-	  (if (pair? clist)
-	      (begin (f (car clist)) (rec (cdr clist)))))
-	(let rec ((clists (cons clist clists)))
-	  (if (every pair? clists)
-	      (begin (apply f (map car clists)) (rec (map cdr clists)))))))
 
   (define (filter-map f clist . clists)
     (if (null? clists)
@@ -416,15 +414,12 @@
                   (filter pred (cdr list)))
             (filter pred (cdr list)))))
 
-  ;; means for inter-referential definition
-  (define remove #f)
+  (define (remove pred list)
+    (filter (lambda (x) (not (pred x))) list))
 
   (define (partition pred list)
     (values (filter pred list)
             (remove pred list)))
-
-  (define (remove pred list)
-    (filter (lambda (x) (not (pred x))) list))
 
   (define (filter! pred list)
     (let rec ((lst list))
@@ -435,15 +430,12 @@
 		     lst)
 	      (rec (cdr lst))))))
 
-  ;; means for inter-referential definition
-  (define remove! #f)
+  (define (remove! pred list)
+    (filter! (lambda (x) (not (pred x))) list))
 
   (define (partition! pred list)
     (values (filter! pred list)
 	    (remove! pred list)))
-
-  (define (remove! pred list)
-    (filter! (lambda (x) (not (pred x))) list))
 
   (export filter partition remove
 	  filter! partition! remove!)
@@ -456,21 +448,18 @@
   ;; take-while drop-while take-while!
   ;; span break span! break!
 
-  ;; means for inter-referential definition
-  (define find-tail #f)
-
-  (define (find pred list)
-    (let ((tail (find-tail pred list)))
-      (if tail
-          (car tail)
-          #f)))
-
   (define (find-tail pred list)
     (if (null? list)
         #f
         (if (pred (car list))
             list
             (find-tail pred (cdr list)))))
+
+  (define (find pred list)
+    (let ((tail (find-tail pred list)))
+      (if tail
+          (car tail)
+          #f)))
 
   (define (take-while pred clist)
     (let rec ((clist clist) (cont values))
@@ -525,16 +514,17 @@
 	      (or (apply pred (map car clists))
 		  (rec (map cdr clists)))))))
 
-  (define (every pred clist . clists)
-    (if (null? clists)
-	(let rec ((clist clist))
-	  (or (null? clist)
-	      (if (pred (car clist))
-		  (rec (cdr clist)))))
-	(let rec ((clists (cons clist clists)))
-	  (or (any null? clists)
-	      (if (apply pred (map car clists))
-		  (rec (map cdr clists)))))))
+  (set! every
+        (lambda (pred clist . clists)
+          (if (null? clists)
+              (let rec ((clist clist))
+                (or (null? clist)
+                    (if (pred (car clist))
+                        (rec (cdr clist)))))
+              (let rec ((clists (cons clist clists)))
+                (or (any null? clists)
+                    (if (apply pred (map car clists))
+                        (rec (map cdr clists))))))))
 
   (define (list-index pred clist . clists)
     (if (null? clists)
