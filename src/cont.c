@@ -179,10 +179,10 @@ walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
 
   if (here->depth < there->depth) {
     walk_to_block(pic, here, there->prev);
-    pic_apply_argv(pic, there->in, 0);
+    pic_apply0(pic, there->in);
   }
   else {
-    pic_apply_argv(pic, there->out, 0);
+    pic_apply0(pic, there->out);
     walk_to_block(pic, here->prev, there);
   }
 }
@@ -225,7 +225,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
     pic_proc_cv_init(pic, c, 1);
     pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
 
-    return pic_apply_argv(pic, proc, 1, pic_obj_value(c));
+    return pic_apply1(pic, proc, pic_obj_value(c));
   }
 }
 
@@ -270,7 +270,7 @@ pic_cont_dynamic_wind(pic_state *pic)
   pic_get_args(pic, "lll", &in, &thunk, &out);
 
   /* enter */
-  pic_apply_argv(pic, in, 0);
+  pic_apply0(pic, in);
   {
     pic_block *here;
 
@@ -283,13 +283,13 @@ pic_cont_dynamic_wind(pic_state *pic)
     pic->blk->refcnt = 1;
     PIC_BLK_INCREF(pic, here);
 
-    v = pic_apply_argv(pic, thunk, 0);
+    v = pic_apply0(pic, thunk);
 
     PIC_BLK_DECREF(pic, pic->blk);
     pic->blk = here;
   }
   /* exit */
-  pic_apply_argv(pic, out, 0);
+  pic_apply0(pic, out);
 
   return v;
 }

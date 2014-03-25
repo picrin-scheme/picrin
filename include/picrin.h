@@ -157,7 +157,6 @@ pic_list pic_parse_cstr(pic_state *, const char *);
 pic_value pic_load(pic_state *, const char *);
 
 pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
-pic_value pic_apply_argv(pic_state *, struct pic_proc *, size_t, ...);
 pic_value pic_apply0(pic_state *, struct pic_proc *);
 pic_value pic_apply1(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply2(pic_state *, struct pic_proc *, pic_value, pic_value);

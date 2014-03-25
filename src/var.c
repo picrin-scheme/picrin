@@ -31,7 +31,7 @@ void
 pic_var_set(pic_state *pic, struct pic_var *var, pic_value value)
 {
   if (var->conv) {
-    value = pic_apply_argv(pic, var->conv, 1, value);
+    value = pic_apply1(pic, var->conv, value);
   }
   pic_var_set_force(pic, var, value);
 }

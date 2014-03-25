@@ -109,13 +109,13 @@ pic_error_with_exception_handler(pic_state *pic)
   pic_get_args(pic, "ll", &handler, &thunk);
 
   pic_try {
-    v = pic_apply_argv(pic, thunk, 0);
+    v = pic_apply0(pic, thunk);
   }
   pic_catch {
     struct pic_error *e = pic->err;
 
     pic->err = NULL;
-    v = pic_apply_argv(pic, handler, 1, pic_obj_value(e));
+    v = pic_apply1(pic, handler, pic_obj_value(e));
     pic_errorf(pic, "error handler returned ~s, by error ~s", v, pic_obj_value(e));
   }
   return v;

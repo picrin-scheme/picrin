@@ -774,7 +774,7 @@ er_macro_call(pic_state *pic)
 
   cb = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
 
-  return pic_apply_argv(pic, cb, 3, expr, pic_obj_value(rename), pic_obj_value(compare));
+  return pic_apply3(pic, cb, expr, pic_obj_value(rename), pic_obj_value(compare));
 }
 
 static pic_value
@@ -898,7 +898,7 @@ ir_macro_call(pic_state *pic)
   cb = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
 
   expr = ir_macro_wrap(pic, expr, pic_senv_ptr(use_env), &assoc);
-  expr = pic_apply_argv(pic, cb, 3, expr, pic_obj_value(inject), pic_obj_value(compare));
+  expr = pic_apply3(pic, cb, expr, pic_obj_value(inject), pic_obj_value(compare));
   expr = ir_macro_unwrap(pic, expr, pic_senv_ptr(mac_env), &assoc);
   return expr;
 }

@@ -484,24 +484,6 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
   return pic_apply(pic, proc, pic_list5(pic, arg1, arg2, arg3, arg4, arg5));
 }
 
-pic_value
-pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
-{
-  va_list ap;
-  pic_value v;
-
-  va_start(ap, argc);
-
-  v = pic_nil_value();
-  while (argc--) {
-    v = pic_cons(pic, va_arg(ap, pic_value), v);
-  }
-  v = pic_reverse(pic, v);
-
-  va_end(ap);
-  return pic_apply(pic, proc, v);
-}
-
 #if VM_DEBUG
 # define OPCODE_EXEC_HOOK pic_dump_code(c)
 #else

@@ -53,7 +53,7 @@ struct pic_cont {
     pic_block *_a;                                       \
     while (pic->blk) {                                   \
       if (pic->blk->out)                                 \
-        pic_apply_argv(pic, pic->blk->out, 0);           \
+        pic_apply0(pic, pic->blk->out);                  \
       _a = pic->blk->prev;                               \
       PIC_BLK_DECREF(pic, pic->blk);                     \
       pic->blk = _a;                                     \
