@@ -86,16 +86,16 @@ typedef struct {
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
 
-  xhash *syms;                  /* name to symbol */
-  xhash *sym_names;             /* symbol to name */
+  xhash syms;                   /* name to symbol */
+  xhash sym_names;              /* symbol to name */
   int sym_cnt;
   int uniq_sym_cnt;
 
-  xhash *global_tbl;
+  xhash global_tbl;
   pic_value *globals;
   size_t glen, gcapa;
 
-  xhash *macros;
+  xhash macros;
 
   pic_value lib_tbl;
   struct pic_lib *lib;

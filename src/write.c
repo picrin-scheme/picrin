@@ -46,8 +46,8 @@ struct writer_control {
   pic_state *pic;
   xFILE *file;
   int mode;
-  xhash *labels;
-  xhash *visited;
+  xhash labels;                 /* object -> int */
+  xhash visited;                /* object -> int */
   int cnt;
 };
 
@@ -63,9 +63,9 @@ writer_control_new(pic_state *pic, xFILE *file, int mode)
   p->pic = pic;
   p->file = file;
   p->mode = mode;
-  p->labels = xh_new_ptr();
-  p->visited = xh_new_ptr();
   p->cnt = 0;
+  xh_init_ptr(&p->labels, sizeof(int));
+  xh_init_ptr(&p->visited, sizeof(int));
   return p;
 }
 
@@ -74,8 +74,8 @@ writer_control_destroy(struct writer_control *p)
 {
   pic_state *pic = p->pic;
 
-  xh_destroy(p->labels);
-  xh_destroy(p->visited);
+  xh_destroy(&p->labels);
+  xh_destroy(&p->visited);
   pic_free(pic, p);
 }
 
@@ -84,16 +84,19 @@ traverse_shared(struct writer_control *p, pic_value obj)
 {
   xh_entry *e;
   size_t i;
+  int c;
 
   switch (pic_type(obj)) {
   case PIC_TT_PAIR:
   case PIC_TT_VECTOR:
-    e = xh_get(p->labels, pic_obj_ptr(obj));
+    e = xh_get(&p->labels, pic_obj_ptr(obj));
     if (e == NULL) {
-      xh_put(p->labels, pic_obj_ptr(obj), -1);
+      c = -1;
+      xh_put(&p->labels, pic_obj_ptr(obj), &c);
     }
-    else if (e->val == -1) {
-      xh_put(p->labels, pic_obj_ptr(obj), p->cnt++);
+    else if (xh_val(e, int) == -1) {
+      c = p->cnt++;
+      xh_put(&p->labels, pic_obj_ptr(obj), &c);
       break;
     }
     else {
@@ -122,6 +125,7 @@ static void
 write_pair(struct writer_control *p, struct pic_pair *pair)
 {
   xh_entry *e;
+  int c;
 
   write_core(p, pair->car);
 
@@ -131,16 +135,17 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
   else if (pic_pair_p(pair->cdr)) {
 
     /* shared objects */
-    if ((e = xh_get(p->labels, pic_obj_ptr(pair->cdr))) && e->val != -1) {
+    if ((e = xh_get(&p->labels, pic_obj_ptr(pair->cdr))) && xh_val(e, int) != -1) {
       xfprintf(p->file, " . ");
 
-      if ((xh_get(p->visited, pic_obj_ptr(pair->cdr)))) {
-        xfprintf(p->file, "#%d#", e->val);
+      if ((xh_get(&p->visited, pic_obj_ptr(pair->cdr)))) {
+        xfprintf(p->file, "#%d#", xh_val(e, int));
         return;
       }
       else {
-        xfprintf(p->file, "#%d=", e->val);
-        xh_put(p->visited, pic_obj_ptr(pair->cdr), 1);
+        xfprintf(p->file, "#%d=", xh_val(e, int));
+        c = 1;
+        xh_put(&p->visited, pic_obj_ptr(pair->cdr), &c);
       }
     }
     else {
@@ -179,18 +184,20 @@ write_core(struct writer_control *p, pic_value obj)
   xFILE *file = p->file;
   size_t i;
   xh_entry *e;
+  int c;
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
-      && (e = xh_get(p->labels, pic_obj_ptr(obj)))
-      && e->val != -1) {
-    if ((xh_get(p->visited, pic_obj_ptr(obj)))) {
-      xfprintf(file, "#%d#", e->val);
+      && (e = xh_get(&p->labels, pic_obj_ptr(obj)))
+      && xh_val(e, int) != -1) {
+    if ((xh_get(&p->visited, pic_obj_ptr(obj)))) {
+      xfprintf(file, "#%d#", xh_val(e, int));
       return;
     }
     else {
-      xfprintf(file, "#%d=", e->val);
-      xh_put(p->visited, pic_obj_ptr(obj), 1);
+      xfprintf(file, "#%d=", xh_val(e, int));
+      c = 1;
+      xh_put(&p->visited, pic_obj_ptr(obj), &c);
     }
   }
 
