@@ -209,11 +209,24 @@ symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
   return sym;
 }
 
+static pic_value macroexpand_node(pic_state *, pic_value, struct pic_senv *);
+
 static pic_value
 macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   int ai = pic_gc_arena_preserve(pic);
+  pic_value v;
 
+  v = macroexpand_node(pic, expr, senv);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, v);
+  return v;
+}
+
+static pic_value
+macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
 #if DEBUG
   printf("[macroexpand] expanding... ");
   pic_debug(pic, expr);
@@ -324,7 +337,6 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         mac = macro_new(pic, pic_proc_ptr(v), senv);
         xh_put(&pic->macros, rename, &mac);
 
-	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
       }
 
@@ -372,21 +384,16 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         mac = macro_new(pic, pic_proc_ptr(v), NULL);
         xh_put(&pic->macros, rename, &mac);
 
-	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
       }
 
       else if (tag == pic->sLAMBDA) {
 	struct pic_senv *in = senv_new_local(pic, pic_cadr(pic, expr), senv);
 
-	v = pic_cons(pic, car,
+	return pic_cons(pic, car,
 		     pic_cons(pic,
 			      macroexpand_list(pic, pic_cadr(pic, expr), in),
 			      macroexpand_list(pic, pic_cddr(pic, expr), in)));
-
-	pic_gc_arena_restore(pic, ai);
-	pic_gc_protect(pic, v);
-	return v;
       }
 
       else if (tag == pic->sDEFINE) {
@@ -416,14 +423,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
           }
 
 	  /* binding value */
-	  v = pic_cons(pic, car,
+	  return pic_cons(pic, car,
                        pic_cons(pic,
 				macroexpand_list(pic, pic_cadr(pic, expr), in),
 				macroexpand_list(pic, pic_cddr(pic, expr), in)));
-
-	  pic_gc_arena_restore(pic, ai);
-	  pic_gc_protect(pic, v);
-	  return v;
 	}
 
         if (! pic_sym_p(formals)) {
@@ -437,25 +440,15 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
           pic_add_rename(pic, senv, sym);
         }
 
-	v = pic_cons(pic, pic_symbol_value(tag),
-                     macroexpand_list(pic, pic_cdr(pic, expr), senv));
-	pic_gc_arena_restore(pic, ai);
-	pic_gc_protect(pic, v);
-	return v;
+	return pic_cons(pic, pic_symbol_value(tag), macroexpand_list(pic, pic_cdr(pic, expr), senv));
       }
 
       else if (tag == pic->sSETBANG || tag == pic->sIF || tag == pic->sBEGIN) {
-	v = pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
-	pic_gc_arena_restore(pic, ai);
-	pic_gc_protect(pic, v);
-	return v;
+	return pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
       }
 
       else if (tag == pic->sQUOTE) {
-	v = pic_cons(pic, car, pic_cdr(pic, expr));
-	pic_gc_arena_restore(pic, ai);
-	pic_gc_protect(pic, v);
-	return v;
+	return pic_cons(pic, car, pic_cdr(pic, expr));
       }
 
       /* macro */
@@ -482,8 +475,6 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         } pic_catch {
           pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
         }
-	pic_gc_arena_restore(pic, ai);
-	pic_gc_protect(pic, v);
 
 #if DEBUG
 	puts("after expand-1:");
@@ -495,10 +486,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
     }
 
-    v = pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, v);
-    return v;
+    return pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
   }
   case PIC_TT_EOF:
   case PIC_TT_NIL:
