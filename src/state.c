@@ -46,19 +46,19 @@ pic_open(int argc, char *argv[], char **envp)
   pic->heap = pic_heap_open();
 
   /* symbol table */
-  pic->syms = xh_new_str();
-  pic->sym_names = xh_new_int();
+  xh_init_str(&pic->syms, sizeof(pic_sym));
+  xh_init_int(&pic->sym_names, sizeof(const char *));
   pic->sym_cnt = 0;
   pic->uniq_sym_cnt = 0;
 
   /* global variables */
-  pic->global_tbl = xh_new_int();
+  xh_init_int(&pic->global_tbl, sizeof(size_t));
   pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
   pic->glen = 0;
   pic->gcapa = PIC_GLOBALS_SIZE;
 
   /* macros */
-  pic->macros = xh_new_int();
+  xh_init_int(&pic->macros, sizeof(struct pic_macro *));
 
   /* libraries */
   pic->lib_tbl = pic_nil_value();
@@ -76,7 +76,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->native_stack_start = &t;
 
   /* symbol 0 is reserved for system */
-  xh_put_int(pic->sym_names, pic->sym_cnt++, (long)"<system-reserved-symbol>");
+  xh_put(&pic->sym_names, pic->sym_cnt++, &"<system-reserved-symbol>");
 
 #define register_core_symbol(pic,slot,name) do {	\
     pic->slot = pic_intern_cstr(pic, name);		\
@@ -137,7 +137,7 @@ pic_close(pic_state *pic)
   pic->arena_idx = 0;
   pic->err = NULL;
   pic->glen = 0;
-  xh_clear(pic->macros);
+  xh_clear(&pic->macros);
   pic->lib_tbl = pic_nil_value();
 
   /* free all heap objects */
@@ -152,17 +152,18 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   free(pic->globals);
-  xh_destroy(pic->syms);
-  xh_destroy(pic->global_tbl);
-  xh_destroy(pic->macros);
+  xh_destroy(&pic->syms);
+  xh_destroy(&pic->global_tbl);
+  xh_destroy(&pic->macros);
 
   /* free symbol names */
-  for (xh_begin(pic->sym_names, &it); ! xh_isend(&it); xh_next(&it)) {
-    if (it.e->key == 0)
+  xh_begin(&it, &pic->sym_names);
+  while (xh_next(&it)) {
+    if (xh_key(it.e, pic_sym) == 0)
       continue;
-    free((void *)it.e->val);
+    free(xh_val(it.e, char *));
   }
-  free(pic->sym_names);
+  xh_destroy(&pic->sym_names);
 
   free(pic);
 }

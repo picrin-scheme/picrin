@@ -28,8 +28,8 @@ pic_make_library(pic_state *pic, pic_value name)
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->senv = senv;
-  lib->exports = xh_new_int();
   lib->name = name;
+  xh_init_int(&lib->exports, sizeof(pic_sym));
 
   /* register! */
   pic->lib_tbl = pic_acons(pic, name, pic_obj_value(lib), pic->lib_tbl);

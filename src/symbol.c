@@ -20,14 +20,14 @@ pic_intern(pic_state *pic, const char *str, size_t len)
   cstr[len] = '\0';
   memcpy(cstr, str, len);
 
-  e = xh_get(pic->syms, cstr);
+  e = xh_get(&pic->syms, cstr);
   if (e) {
-    return e->val;
+    return xh_val(e, pic_sym);
   }
 
   id = pic->sym_cnt++;
-  xh_put(pic->syms, cstr, id);
-  xh_put_int(pic->sym_names, id, (long)cstr);
+  xh_put(&pic->syms, cstr, &id);
+  xh_put(&pic->sym_names, id, &cstr);
   return id;
 }
 
@@ -50,7 +50,7 @@ pic_gensym(pic_state *pic, pic_sym base)
 
   /* don't put the symbol to pic->syms to keep it uninterned */
   uniq = pic->sym_cnt++;
-  xh_put_int(pic->sym_names, uniq, (long)str);
+  xh_put(&pic->sym_names, uniq, &str);
 
   return uniq;
 }
@@ -64,7 +64,7 @@ pic_interned_p(pic_state *pic, pic_sym sym)
 const char *
 pic_symbol_name(pic_state *pic, pic_sym sym)
 {
-  return (const char *)xh_get_int(pic->sym_names, sym)->val;
+  return xh_val(xh_get(&pic->sym_names, sym), const char *);
 }
 
 static pic_value

@@ -25,7 +25,7 @@ pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym renam
 {
   UNUSED(pic);
 
-  xh_put_int(senv->renames, sym, rename);
+  xh_put(&senv->renames, sym, &rename);
 }
 
 pic_sym
@@ -35,10 +35,10 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 
   UNUSED(pic);
 
-  if ((e = xh_get_int(senv->renames, sym)) == NULL) {
+  if ((e = xh_get(&senv->renames, sym)) == NULL) {
     return 0;
   }
-  return e->val;
+  return xh_val(e, pic_sym);
 }
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
@@ -51,7 +51,7 @@ senv_new(pic_state *pic, struct pic_senv *up)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = up;
-  senv->renames = xh_new_int();
+  xh_init_int(&senv->renames, sizeof(pic_sym));
 
   return senv;
 }
@@ -144,16 +144,14 @@ pic_import(pic_state *pic, pic_value spec)
   if (! lib) {
     pic_error(pic, "library not found");
   }
-  for (xh_begin(lib->exports, &it); ! xh_isend(&it); xh_next(&it)) {
+  xh_begin(&it, &lib->exports);
+  while (xh_next(&it)) {
 
 #if DEBUG
-    assert(it.e->val >= 0);
-    printf("* importing %s as %s\n",
-           pic_symbol_name(pic, (long)it.e->key),
-           pic_symbol_name(pic, it.e->val));
+    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, xh_val(it.e, pic_sym)));
 #endif
 
-    pic_put_rename(pic, pic->lib->senv, (long)it.e->key, it.e->val);
+    pic_put_rename(pic, pic->lib->senv, xh_key(it.e, pic_sym), xh_val(it.e, pic_sym));
   }
 }
 
@@ -166,7 +164,12 @@ pic_export(pic_state *pic, pic_sym sym)
   if (rename == 0) {
     pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
   }
-  xh_put_int(pic->lib->exports, sym, rename);
+
+#if DEBUG
+  printf("* exporting %s as %s\n", pic_symbol_name(pic, sym), pic_symbol_name(pic, rename));
+#endif
+
+  xh_put(&pic->lib->exports, sym, &rename);
 }
 
 void
@@ -181,7 +184,7 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
   /* symbol registration */
   sym = pic_intern_cstr(pic, name);
   rename = pic_add_rename(pic, pic->lib->senv, sym);
-  xh_put_int(pic->macros, rename, (long)mac);
+  xh_put(&pic->macros, rename, &mac);
 
   /* auto export! */
   pic_export(pic, sym);
@@ -319,7 +322,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
 
         mac = macro_new(pic, pic_proc_ptr(v), senv);
-        xh_put_int(pic->macros, rename, (long)mac);
+        xh_put(&pic->macros, rename, &mac);
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
@@ -367,7 +370,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
 
         mac = macro_new(pic, pic_proc_ptr(v), NULL);
-        xh_put_int(pic->macros, rename, (long)mac);
+        xh_put(&pic->macros, rename, &mac);
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
@@ -456,7 +459,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
 
       /* macro */
-      if ((e = xh_get_int(pic->macros, tag)) != NULL) {
+      if ((e = xh_get(&pic->macros, tag)) != NULL) {
         pic_value v, args;
         struct pic_macro *mac;
 
@@ -466,7 +469,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	puts("");
 #endif
 
-        mac = (struct pic_macro *)e->val;
+        mac = xh_val(e, struct pic_macro *);
 	if (mac->senv == NULL) { /* legacy macro */
           args = pic_cdr(pic, expr);
         }
@@ -590,7 +593,7 @@ pic_null_syntactic_env(pic_state *pic)
 
 #define register_core_syntax(pic,senv,id) do {                          \
     pic_sym sym = pic_intern_cstr(pic, id);                             \
-    pic_put_rename(pic, senv, sym, sym);                           \
+    pic_put_rename(pic, senv, sym, sym);                                \
   } while (0)
 
 struct pic_senv *

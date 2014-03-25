@@ -61,7 +61,6 @@ static analyze_state *
 new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
-  xhash *global_tbl;
   xh_iter it;
   struct pic_lib *stdlib;
 
@@ -101,9 +100,10 @@ new_analyze_state(pic_state *pic)
   /* push initial scope */
   push_scope(state, pic_nil_value());
 
-  global_tbl = pic->global_tbl;
-  for (xh_begin(global_tbl, &it); ! xh_isend(&it); xh_next(&it)) {
-    xv_push(&state->scope->locals, &it.e->key);
+  xh_begin(&it, &pic->global_tbl);
+  while (xh_next(&it)) {
+    pic_sym sym = xh_key(it.e, pic_sym);
+    xv_push(&state->scope->locals, &sym);
   }
 
   return state;
@@ -294,15 +294,15 @@ analyze_global_var(analyze_state *state, pic_sym sym)
   xh_entry *e;
   size_t i;
 
-  if ((e = xh_get_int(pic->global_tbl, sym))) {
-    i = e->val;
+  if ((e = xh_get(&pic->global_tbl, sym))) {
+    i = xh_val(e, size_t);
   }
   else {
     i = pic->glen++;
     if (i >= pic->gcapa) {
       pic_error(pic, "global table overflow");
     }
-    xh_put_int(pic->global_tbl, sym, i);
+    xh_put(&pic->global_tbl, sym, &i);
   }
   return pic_list2(pic, pic_symbol_value(state->sGREF), pic_int_value(i));
 }
@@ -894,26 +894,28 @@ static void
 create_activation(codegen_context *cxt)
 {
   size_t i, n;
-  xhash *regs;
+  xhash regs;
   pic_sym *var;
   size_t offset;
 
-  regs = xh_new_int();
+  xh_init_int(&regs, sizeof(size_t));
 
   offset = 1;
   for (i = 0; i < cxt->args.size; ++i) {
     var = xv_get(&cxt->args, i);
-    xh_put_int(regs, *var, i + offset);
+    n = i + offset;
+    xh_put(&regs, *var, &n);
   }
   offset += i;
   for (i = 0; i < cxt->locals.size; ++i) {
     var = xv_get(&cxt->locals, i);
-    xh_put_int(regs, *var, i + offset);
+    n = i + offset;
+    xh_put(&regs, *var, &n);
   }
 
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    if ((n = xh_get_int(regs, *var)->val) <= cxt->args.size) {
+    if ((n = xh_val(xh_get(&regs, *var), size_t)) <= cxt->args.size) {
       /* copy arguments to capture variable area */
       cxt->code[cxt->clen].insn = OP_LREF;
       cxt->code[cxt->clen].u.i = n;
@@ -925,7 +927,7 @@ create_activation(codegen_context *cxt)
     }
   }
 
-  xh_destroy(regs);
+  xh_destroy(&regs);
 }
 
 static void

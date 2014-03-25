@@ -549,8 +549,9 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* macro objects */
-  for (xh_begin(pic->macros, &it); ! xh_isend(&it); xh_next(&it)) {
-    gc_mark_object(pic, (struct pic_object *)it.e->val);
+  xh_begin(&it, &pic->macros);
+  while (xh_next(&it)) {
+    gc_mark_object(pic, xh_val(it.e, struct pic_object *));
   }
 
   /* library table */
@@ -604,7 +605,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destroy(senv->renames);
+    xh_destroy(&senv->renames);
     break;
   }
   case PIC_TT_MACRO: {
@@ -615,7 +616,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_LIB: {
     struct pic_lib *lib = (struct pic_lib *)obj;
-    xh_destroy(lib->exports);
+    xh_destroy(&lib->exports);
     break;
   }
   case PIC_TT_VAR: {
