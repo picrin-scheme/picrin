@@ -158,6 +158,12 @@ pic_value pic_load(pic_state *, const char *);
 
 pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply_argv(pic_state *, struct pic_proc *, size_t, ...);
+pic_value pic_apply0(pic_state *, struct pic_proc *);
+pic_value pic_apply1(pic_state *, struct pic_proc *, pic_value);
+pic_value pic_apply2(pic_state *, struct pic_proc *, pic_value, pic_value);
+pic_value pic_apply3(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value);
+pic_value pic_apply4(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value);
+pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value);
 struct pic_proc *pic_compile(pic_state *, pic_value);

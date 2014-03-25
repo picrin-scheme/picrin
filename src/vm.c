@@ -449,6 +449,42 @@ vm_tear_off(pic_state *pic)
 }
 
 pic_value
+pic_apply0(pic_state *pic, struct pic_proc *proc)
+{
+  return pic_apply(pic, proc, pic_nil_value());
+}
+
+pic_value
+pic_apply1(pic_state *pic, struct pic_proc *proc, pic_value arg1)
+{
+  return pic_apply(pic, proc, pic_list1(pic, arg1));
+}
+
+pic_value
+pic_apply2(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2)
+{
+  return pic_apply(pic, proc, pic_list2(pic, arg1, arg2));
+}
+
+pic_value
+pic_apply3(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3)
+{
+  return pic_apply(pic, proc, pic_list3(pic, arg1, arg2, arg3));
+}
+
+pic_value
+pic_apply4(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
+{
+  return pic_apply(pic, proc, pic_list4(pic, arg1, arg2, arg3, arg4));
+}
+
+pic_value
+pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
+{
+  return pic_apply(pic, proc, pic_list5(pic, arg1, arg2, arg3, arg4, arg5));
+}
+
+pic_value
 pic_apply_argv(pic_state *pic, struct pic_proc *proc, size_t argc, ...)
 {
   va_list ap;
