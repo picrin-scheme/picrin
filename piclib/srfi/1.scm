@@ -11,7 +11,7 @@
 
   ;; means for inter-referential definition
   (define append-reverse #f)
-  
+
   (define (cons* x . args)
     (let rec ((acc '()) (x x) (lst args))
       (if (null? lst)
@@ -135,7 +135,7 @@
 	    (if (pair? lis2)
 		(rec (cdr lis1) (cdr lis2))
 		(begin (set-cdr! lis1 '()) flist))))))
-    
+
   (define (split-at x i)
     (values (take x i) (drop x i)))
 
@@ -147,7 +147,7 @@
 
   (define (last-pair pair)
     (take-right pair 1))
-  
+
   (define first car)
   (define second cadr)
   (define third caddr)
@@ -165,7 +165,7 @@
   (define (tenth pair)
     (list-ref pair 9))
 
-  
+
   (export car cdr car+cdr list-ref
 	  caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr
 	  caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar cdaadr
@@ -184,7 +184,7 @@
   (define (length+ lst)
     (if (not (circular-list? lst))
 	(length lst)))
-  
+
   (define (concatenate lists)
     (apply append lists))
 
@@ -207,7 +207,7 @@
 	  (let ((rst (cdr lst)))
 	    (set-cdr! lst acc)
 	    (rec rst lst)))))
-  
+
   (define (append-reverse rev-head tail)
     (if (null? rev-head)
 	tail
@@ -253,7 +253,7 @@
       (if (null? tflst)
 	  n
 	  (rec (cdr tflst) (if (car tflst) (+ n 1) n)))))
-  
+
   (export length length+
 	  append append! concatenate concatenate!
 	  reverse reverse! append-reverse append-reverse!
@@ -266,10 +266,10 @@
   ;; fold-right unfold-right pair-fold right reduce-right
   ;; append-map append-map!
   ;; map! pair-for-each filter-map map-in-order
-  
+
   ;; means for inter-referential definition
   (define every #f)
-  
+
   (define (fold kons knil clist . clists)
     (if (null? clists)
 	(let rec ((acc knil) (clist clist))
@@ -331,7 +331,7 @@
 
   (define (reduce-right f ridentity list)
     (fold-right f ridentity list))
-  
+
   (define (unfold p f g seed . tail-gen)
     (let ((tail-gen (if (null? tail-gen)
 			(lambda (x) '())
@@ -355,7 +355,7 @@
 
   ;; means for inter-referential definition
   (define pair-for-each #f)
-  
+
   (define (map! f list . lists)
     (if (null? lists)
 	(pair-for-each (lambda (x) (set-car! x (f (car x)))) list)
@@ -398,7 +398,7 @@
 		     (if it
 			 (lambda (x) (cont (cons it x)))
 			 (lambda (x) (cont x)))))))))
-  
+
   (export map for-each
 	  fold unfold pair-fold reduce
 	  fold-right unfold-right pair-fold-right reduce-right
@@ -418,7 +418,7 @@
 
   ;; means for inter-referential definition
   (define remove #f)
-  
+
   (define (partition pred list)
     (values (filter pred list)
             (remove pred list)))
@@ -434,10 +434,10 @@
 	      (begin (set-cdr! lst (rec (cdr lst)))
 		     lst)
 	      (rec (cdr lst))))))
-  
+
   ;; means for inter-referential definition
   (define remove! #f)
-  
+
   (define (partition! pred list)
     (values (filter! pred list)
 	    (remove! pred list)))
@@ -548,7 +548,7 @@
 	      (if (apply pred (map car clists))
 		  n
 		  (rec (map cdr clists) (+ n 1)))))))
-  
+
   (export member memq memv
 	  find find-tail
 	  any every
