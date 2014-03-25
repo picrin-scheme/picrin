@@ -179,12 +179,16 @@ void pic_export(pic_state *, pic_sym);
 
 noreturn void pic_abort(pic_state *, const char *);
 noreturn void pic_errorf(pic_state *, const char *, ...);
-void pic_warn(pic_state *, const char *);
+void pic_warnf(pic_state *, const char *, ...);
 
 /* obsoleted */
 noreturn static inline void pic_error(pic_state *pic, const char *msg)
 {
   pic_errorf(pic, msg);
+}
+static inline void pic_warn(pic_state *pic, const char *msg)
+{
+  pic_warnf(pic, msg);
 }
 
 const char *pic_errmsg(pic_state *);

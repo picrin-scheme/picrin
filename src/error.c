@@ -22,11 +22,16 @@ pic_abort(pic_state *pic, const char *msg)
 }
 
 void
-pic_warn(pic_state *pic, const char *msg)
+pic_warnf(pic_state *pic, const char *fmt, ...)
 {
-  UNUSED(pic);
+  va_list ap;
+  pic_value err_line;
 
-  fprintf(stderr, "warn: %s\n", msg);
+  va_start(ap, fmt);
+  err_line = pic_vformat(pic, fmt, ap);
+  va_end(ap);
+
+  fprintf(stderr, "warn: %s\n", pic_str_cstr(pic_str_ptr(pic_car(pic, err_line))));
 }
 
 void
