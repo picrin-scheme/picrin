@@ -10,6 +10,37 @@
 #include "picrin/lib.h"
 #include "picrin/error.h"
 
+pic_sym
+pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+{
+  pic_sym rename;
+
+  rename = pic_gensym(pic, sym);
+  pic_put_rename(pic, senv, sym, rename);
+  return rename;
+}
+
+void
+pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rename)
+{
+  UNUSED(pic);
+
+  xh_put_int(senv->name, sym, rename);
+}
+
+pic_sym
+pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+{
+  xh_entry *e;
+
+  UNUSED(pic);
+
+  if ((e = xh_get_int(senv->name, sym)) == NULL) {
+    return 0;
+  }
+  return e->val;
+}
+
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *);
 
@@ -30,7 +61,6 @@ senv_new_local(pic_state *pic, pic_value formals, struct pic_senv *up)
 {
   struct pic_senv *senv;
   pic_value a;
-  pic_sym sym;
 
   senv = senv_new(pic, up);
 
@@ -43,15 +73,13 @@ senv_new_local(pic_state *pic, pic_value formals, struct pic_senv *up)
     if (! pic_sym_p(v)) {
       pic_error(pic, "syntax error");
     }
-    sym = pic_sym(v);
-    xh_put_int(senv->name, sym, pic_gensym(pic, sym));
+    pic_add_rename(pic, senv, pic_sym(v));
   }
   if (! pic_sym_p(a)) {
     a = macroexpand(pic, a, up);
   }
   if (pic_sym_p(a)) {
-    sym = pic_sym(a);
-    xh_put_int(senv->name, sym, pic_gensym(pic, sym));
+    pic_add_rename(pic, senv, pic_sym(a));
   }
   else if (! pic_nil_p(a)) {
     pic_error(pic, "syntax error");
@@ -119,46 +147,41 @@ pic_import(pic_state *pic, pic_value spec)
   for (xh_begin(lib->exports, &it); ! xh_isend(&it); xh_next(&it)) {
 
 #if DEBUG
-    if (it.e->val >= 0) {
-      printf("* importing %s as %s\n",
-             pic_symbol_name(pic, (long)it.e->key),
-             pic_symbol_name(pic, it.e->val));
-    }
-    else {
-      printf("* importing %s\n", pic_symbol_name(pic, (long)it.e->key));
-    }
+    assert(it.e->val >= 0);
+    printf("* importing %s as %s\n",
+           pic_symbol_name(pic, (long)it.e->key),
+           pic_symbol_name(pic, it.e->val));
 #endif
 
-    xh_put_int(pic->lib->senv->name, (long)it.e->key, it.e->val);
+    pic_put_rename(pic, pic->lib->senv, (long)it.e->key, it.e->val);
   }
 }
 
 void
 pic_export(pic_state *pic, pic_sym sym)
 {
-  xh_entry *e;
+  pic_sym rename;
 
-  e = xh_get_int(pic->lib->senv->name, sym);
-  if (! e) {
+  rename = pic_find_rename(pic, pic->lib->senv, sym);
+  if (rename == 0) {
     pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
   }
-  xh_put_int(pic->lib->exports, (long)e->key, e->val);
+  xh_put_int(pic->lib->exports, sym, rename);
 }
 
 void
 pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
   struct pic_macro *mac;
-  pic_sym sym, uniq;
+  pic_sym sym, rename;
 
   /* new macro */
   mac = macro_new(pic, macro, NULL);
 
   /* symbol registration */
   sym = pic_intern_cstr(pic, name);
-  uniq = pic_gensym(pic, sym);
-  xh_put_int(pic->lib->senv->name, sym, uniq);
-  xh_put_int(pic->macros, uniq, (long)mac);
+  rename = pic_add_rename(pic, pic->lib->senv, sym);
+  xh_put_int(pic->macros, rename, (long)mac);
 
   /* auto export! */
   pic_export(pic, sym);
@@ -167,14 +190,14 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 static pic_sym
 symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 {
-  xh_entry *e;
+  pic_sym rename;
 
   if (! pic_interned_p(pic, sym)) {
     return sym;
   }
   while (true) {
-    if ((e = xh_get_int(senv->name, sym)) != NULL) {
-      return (pic_sym)e->val;
+    if ((rename = pic_find_rename(pic, senv, sym)) != 0) {
+      return rename;
     }
     if (! senv->up)
       break;
@@ -264,7 +287,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       else if (tag == pic->sDEFINE_SYNTAX) {
 	pic_value var, val;
-        pic_sym uniq;
+        pic_sym rename;
         struct pic_macro *mac;
 
 	if (pic_length(pic, expr) != 3) {
@@ -278,8 +301,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         if (! pic_sym_p(var)) {
           pic_error(pic, "binding to non-symbol object");
         }
-        uniq = pic_gensym(pic, pic_sym(var));
-        xh_put_int(senv->name, pic_sym(var), uniq);
+        rename = pic_add_rename(pic, senv, pic_sym(var));
 
 	val = pic_cadr(pic, pic_cdr(pic, expr));
 
@@ -294,7 +316,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
 
         mac = macro_new(pic, pic_proc_ptr(v), senv);
-        xh_put_int(pic->macros, uniq, (long)mac);
+        xh_put_int(pic->macros, rename, (long)mac);
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
@@ -302,7 +324,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       else if (tag == pic->sDEFINE_MACRO) {
 	pic_value var, val;
-        pic_sym uniq;
+        pic_sym rename;
         struct pic_macro *mac;
 
 	if (pic_length(pic, expr) < 2) {
@@ -326,8 +348,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
-        uniq = pic_gensym(pic, pic_sym(var));
-        xh_put_int(senv->name, pic_sym(var), uniq);
+        rename = pic_add_rename(pic, senv, pic_sym(var));
 
         pic_try {
           v = pic_eval(pic, val);
@@ -340,7 +361,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         }
 
         mac = macro_new(pic, pic_proc_ptr(v), NULL);
-        xh_put_int(pic->macros, uniq, (long)mac);
+        xh_put_int(pic->macros, rename, (long)mac);
 
 	pic_gc_arena_restore(pic, ai);
 	return pic_none_value();
@@ -380,8 +401,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  if (! pic_sym_p(a)) {
 	    pic_error(pic, "binding to non-symbol object");
 	  }
-	  var = pic_sym(a);
-	  xh_put_int(senv->name, var, pic_gensym(pic, var));
+          pic_add_rename(pic, senv, pic_sym(a));
 
 	  /* binding value */
 	  v = pic_cons(pic, car,
@@ -402,8 +422,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	}
         var = pic_sym(formals);
         /* do not make duplicate variable slot */
-        if (xh_get_int(senv->name, var) == NULL) {
-          xh_put_int(senv->name, var, pic_gensym(pic, var));
+        if (pic_find_rename(pic, senv, var) == 0) {
+          pic_add_rename(pic, senv, var);
         }
 
 	v = pic_cons(pic, pic_symbol_value(tag),
@@ -562,7 +582,7 @@ pic_null_syntactic_env(pic_state *pic)
 
 #define register_core_syntax(pic,senv,id) do {                          \
     pic_sym sym = pic_intern_cstr(pic, id);                             \
-    xh_put_int(senv->name, sym, sym);                                   \
+    pic_put_rename(pic, senv, sym, sym);                           \
   } while (0)
 
 struct pic_senv *
@@ -906,7 +926,7 @@ pic_init_macro(pic_state *pic)
   pic_deflibrary ("(picrin macro)") {
 
     /* export define-macro syntax */
-    xh_put_int(pic->lib->senv->name, pic->sDEFINE_MACRO, pic->sDEFINE_MACRO);
+    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE_MACRO, pic->sDEFINE_MACRO);
     pic_export(pic, pic->sDEFINE_MACRO);
 
     pic_defun(pic, "gensym", pic_macro_gensym);

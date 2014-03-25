@@ -333,14 +333,13 @@ static size_t
 global_ref(pic_state *pic, const char *name)
 {
   xh_entry *e;
-  pic_sym sym;
+  pic_sym sym, rename;
 
   sym = pic_intern_cstr(pic, name);
-  if (! (e = xh_get_int(pic->lib->senv->name, sym))) {
+  if ((rename = pic_find_rename(pic, pic->lib->senv, sym)) == 0) {
     return SIZE_MAX;
   }
-  assert(e->val >= 0);
-  if (! (e = xh_get_int(pic->global_tbl, e->val))) {
+  if (! (e = xh_get_int(pic->global_tbl, rename))) {
     return SIZE_MAX;
   }
   return e->val;
@@ -349,7 +348,7 @@ global_ref(pic_state *pic, const char *name)
 static size_t
 global_def(pic_state *pic, const char *name)
 {
-  pic_sym sym, gsym;
+  pic_sym sym, rename;
   size_t gidx;
 
   sym = pic_intern_cstr(pic, name);
@@ -358,17 +357,15 @@ global_def(pic_state *pic, const char *name)
     return gidx;
   }
 
-  gsym = pic_gensym(pic, sym);
-
   /* register to the senv */
-  xh_put_int(pic->lib->senv->name, sym, gsym);
+  rename = pic_add_rename(pic, pic->lib->senv, sym);
 
   /* register to the global table */
   gidx = pic->glen++;
   if (pic->glen >= pic->gcapa) {
     pic_error(pic, "global table overflow");
   }
-  xh_put_int(pic->global_tbl, gsym, gidx);
+  xh_put_int(pic->global_tbl, rename, gidx);
 
   return gidx;
 }

@@ -9,7 +9,14 @@
 extern "C" {
 #endif
 
-typedef int pic_sym;
+/**
+ * pic_sym is just an alias to unsigned int.
+ * the value 0 for pic_sym is guaranteed to resolve to no symbol.
+ * if you are defining a function that returns optional<pic_sym>,
+ * the zero symbol would be useful for such situation.
+ */
+
+typedef unsigned pic_sym;
 
 /**
  * `undef` values never seen from user-end: that is,
