@@ -33,6 +33,7 @@ extern "C" {
 #include <setjmp.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <limits.h>
 #include <assert.h>
 
 #include "xvect/xvect.h"
