@@ -9,6 +9,13 @@
 extern "C" {
 #endif
 
+/**
+ * pic_sym is just an alias to int.
+ * the value 0 for pic_sym is guaranteed to resolve to no symbol.
+ * if you are defining a function that returns optional<pic_sym>,
+ * the zero symbol would be useful for such situation.
+ */
+
 typedef int pic_sym;
 
 /**
