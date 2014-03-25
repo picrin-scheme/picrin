@@ -20,10 +20,10 @@ gcd(int a, int b)
   return b;
 }
 
-static int
+static double
 lcm(int a, int b)
 {
-  return abs(a * b) / gcd(a, b);
+  return fabs((double)a * b) / gcd(a, b);
 }
 
 static pic_value
@@ -439,7 +439,7 @@ pic_number_lcm(pic_state *pic)
 {
   size_t argc;
   pic_value *args;
-  int r;
+  double r;
   bool e = true;
 
   pic_get_args(pic, "*", &argc, &args);
@@ -457,7 +457,7 @@ pic_number_lcm(pic_state *pic)
       pic_error(pic, "lcm: number required");
     }
   }
-  return e ? pic_int_value(r) : pic_float_value(r);
+  return e && pic_valid_int(r) ? pic_int_value(r) : pic_float_value(r);
 }
 
 static pic_value
