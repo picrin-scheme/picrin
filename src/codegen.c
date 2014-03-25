@@ -253,7 +253,7 @@ define_var(analyze_state *state, pic_sym sym)
   analyze_scope *scope = state->scope;
 
   if (lookup_scope(scope, sym)) {
-    pic_warn(pic, "redefining variable");
+    pic_warnf(pic, "redefining variable: ~s", pic_sym_value(sym));
     return;
   }
 
