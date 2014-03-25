@@ -287,7 +287,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       else if (tag == pic->sDEFINE_SYNTAX) {
 	pic_value var, val;
-        pic_sym rename;
+        pic_sym sym, rename;
         struct pic_macro *mac;
 
 	if (pic_length(pic, expr) != 3) {
@@ -301,7 +301,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
         if (! pic_sym_p(var)) {
           pic_error(pic, "binding to non-symbol object");
         }
-        rename = pic_add_rename(pic, senv, pic_sym(var));
+        sym = pic_sym(var);
+        if ((rename = pic_find_rename(pic, senv, sym)) == 0) {
+          rename = pic_add_rename(pic, senv, sym);
+        }
 
 	val = pic_cadr(pic, pic_cdr(pic, expr));
 
@@ -324,7 +327,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
       else if (tag == pic->sDEFINE_MACRO) {
 	pic_value var, val;
-        pic_sym rename;
+        pic_sym sym, rename;
         struct pic_macro *mac;
 
 	if (pic_length(pic, expr) < 2) {
@@ -348,7 +351,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	if (! pic_sym_p(var)) {
 	  pic_error(pic, "syntax error");
 	}
-        rename = pic_add_rename(pic, senv, pic_sym(var));
+        sym = pic_sym(var);
+        if ((rename = pic_find_rename(pic, senv, sym)) == 0) {
+          rename = pic_add_rename(pic, senv, sym);
+        }
 
         pic_try {
           v = pic_eval(pic, val);
@@ -381,7 +387,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
 
       else if (tag == pic->sDEFINE) {
-	pic_sym var;
+	pic_sym sym;
 	pic_value formals;
 
 	if (pic_length(pic, expr) < 2) {
@@ -401,7 +407,10 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  if (! pic_sym_p(a)) {
 	    pic_error(pic, "binding to non-symbol object");
 	  }
-          pic_add_rename(pic, senv, pic_sym(a));
+          sym = pic_sym(a);
+          if (pic_find_rename(pic, senv, sym) == 0) {
+            pic_add_rename(pic, senv, sym);
+          }
 
 	  /* binding value */
 	  v = pic_cons(pic, car,
@@ -420,10 +429,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	if (! pic_sym_p(formals)) {
 	  pic_error(pic, "binding to non-symbol object");
 	}
-        var = pic_sym(formals);
-        /* do not make duplicate variable slot */
-        if (pic_find_rename(pic, senv, var) == 0) {
-          pic_add_rename(pic, senv, var);
+        sym = pic_sym(formals);
+        if (pic_find_rename(pic, senv, sym) == 0) {
+          pic_add_rename(pic, senv, sym);
         }
 
 	v = pic_cons(pic, pic_symbol_value(tag),
