@@ -84,3 +84,5 @@ include ( FindPackageHandleStandardArgs )
 # handle the QUIETLY and REQUIRED arguments and set READLINE_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args ( readline DEFAULT_MSG READLINE_LIBRARY READLINE_INCLUDE_DIR )
+
+mark_as_advanced ( READLINE_INCLUDE_DIR READLINE_LIBRARY )
