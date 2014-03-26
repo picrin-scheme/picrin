@@ -691,6 +691,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
       else {
 	printf("  cfunc = %p\n", (void *)proc->u.func.f);
+	printf("  name = %s\n", pic_symbol_name(pic, proc->u.func.name));
       }
       puts("== end\n");
 #endif
