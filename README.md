@@ -59,6 +59,10 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 
         Sorting and Marging.
     
+    - `(srfi 111)`
+
+        Boxes.
+
 
 ## Compliance with R7RS
 
