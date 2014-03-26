@@ -11,27 +11,15 @@
 #include "picrin/error.h"
 
 static pic_sym
-gensym(pic_state *pic, pic_sym base)
+gensym(pic_state *pic, pic_sym sym)
 {
+  const char *base = pic_symbol_name(pic, sym);
   int uid = pic->uniq_sym_cnt++, len;
-  char *str;
-  pic_sym uniq;
+  char str[strlen(base) + 50];
 
-  len = snprintf(NULL, 0, "%s@%d", pic_symbol_name(pic, base), uid);
-  str = pic_alloc(pic, len + 1);
-  sprintf(str, "%s@%d", pic_symbol_name(pic, base), uid);
+  len = sprintf(str, "%s@%d", base, uid);
 
-  /* don't put the symbol to pic->syms to keep it uninterned */
-  uniq = pic->sym_cnt++;
-  xh_put(&pic->sym_names, uniq, &str);
-
-  return uniq;
-}
-
-static bool
-interned_p(pic_state *pic, pic_sym sym)
-{
-  return sym == pic_intern_cstr(pic, pic_symbol_name(pic, sym));
+  return pic_intern(pic, str, len);
 }
 
 pic_sym
@@ -221,9 +209,6 @@ symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 {
   pic_sym rename;
 
-  if (! interned_p(pic, sym)) {
-    return sym;
-  }
   while (true) {
     if (pic_find_rename(pic, senv, sym, &rename)) {
       return rename;
