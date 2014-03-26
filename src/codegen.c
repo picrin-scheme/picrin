@@ -915,7 +915,7 @@ create_activation(codegen_context *cxt)
 
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    if ((n = xh_val(xh_get(&regs, *var), size_t)) <= cxt->args.size) {
+    if ((n = xh_val(xh_get(&regs, *var), size_t)) <= cxt->args.size || (cxt->varg && n == cxt->args.size + 1)) {
       /* copy arguments to capture variable area */
       cxt->code[cxt->clen].insn = OP_LREF;
       cxt->code[cxt->clen].u.i = n;
