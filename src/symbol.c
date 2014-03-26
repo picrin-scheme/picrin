@@ -37,30 +37,6 @@ pic_intern_cstr(pic_state *pic, const char *str)
   return pic_intern(pic, str, strlen(str));
 }
 
-pic_sym
-pic_gensym(pic_state *pic, pic_sym base)
-{
-  int uid = pic->uniq_sym_cnt++, len;
-  char *str;
-  pic_sym uniq;
-
-  len = snprintf(NULL, 0, "%s@%d", pic_symbol_name(pic, base), uid);
-  str = pic_alloc(pic, len + 1);
-  sprintf(str, "%s@%d", pic_symbol_name(pic, base), uid);
-
-  /* don't put the symbol to pic->syms to keep it uninterned */
-  uniq = pic->sym_cnt++;
-  xh_put(&pic->sym_names, uniq, &str);
-
-  return uniq;
-}
-
-bool
-pic_interned_p(pic_state *pic, pic_sym sym)
-{
-  return sym == pic_intern_cstr(pic, pic_symbol_name(pic, sym));
-}
-
 const char *
 pic_symbol_name(pic_state *pic, pic_sym sym)
 {

@@ -10,12 +10,36 @@
 #include "picrin/lib.h"
 #include "picrin/error.h"
 
+static pic_sym
+gensym(pic_state *pic, pic_sym base)
+{
+  int uid = pic->uniq_sym_cnt++, len;
+  char *str;
+  pic_sym uniq;
+
+  len = snprintf(NULL, 0, "%s@%d", pic_symbol_name(pic, base), uid);
+  str = pic_alloc(pic, len + 1);
+  sprintf(str, "%s@%d", pic_symbol_name(pic, base), uid);
+
+  /* don't put the symbol to pic->syms to keep it uninterned */
+  uniq = pic->sym_cnt++;
+  xh_put(&pic->sym_names, uniq, &str);
+
+  return uniq;
+}
+
+static bool
+interned_p(pic_state *pic, pic_sym sym)
+{
+  return sym == pic_intern_cstr(pic, pic_symbol_name(pic, sym));
+}
+
 pic_sym
 pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 {
   pic_sym rename;
 
-  rename = pic_gensym(pic, sym);
+  rename = gensym(pic, sym);
   pic_put_rename(pic, senv, sym, rename);
   return rename;
 }
@@ -197,7 +221,7 @@ symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 {
   pic_sym rename;
 
-  if (! pic_interned_p(pic, sym)) {
+  if (! interned_p(pic, sym)) {
     return sym;
   }
   while (true) {
@@ -648,18 +672,6 @@ pic_macro_include(pic_state *pic)
 }
 
 static pic_value
-pic_macro_gensym(pic_state *pic)
-{
-  static const char skel[] = ".g";
-  pic_sym uniq;
-
-  pic_get_args(pic, "");
-
-  uniq = pic_gensym(pic, pic_intern_cstr(pic, skel));
-  return pic_symbol_value(uniq);
-}
-
-static pic_value
 pic_macro_macroexpand(pic_state *pic)
 {
   pic_value expr;
@@ -930,7 +942,6 @@ pic_init_macro(pic_state *pic)
     pic_put_rename(pic, pic->lib->senv, pic->sDEFINE_MACRO, pic->sDEFINE_MACRO);
     pic_export(pic, pic->sDEFINE_MACRO);
 
-    pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
     pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
