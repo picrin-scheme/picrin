@@ -409,7 +409,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
   struct pic_proc *proc;
 
-  proc = pic_proc_new(pic, cfunc);
+  proc = pic_proc_new(pic, cfunc, name);
   pic_define(pic, name, pic_obj_value(proc));
 }
 
