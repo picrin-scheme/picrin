@@ -147,6 +147,19 @@ pic_list6(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_va
 }
 
 pic_value
+pic_list7(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4, pic_value obj5, pic_value obj6, pic_value obj7)
+{
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value val;
+
+  val = pic_cons(pic, obj1, pic_list6(pic, obj2, obj3, obj4, obj5, obj6, obj7));
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, val);
+  return val;
+}
+
+pic_value
 pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
 {
   pic_value v;

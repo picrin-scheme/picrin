@@ -29,6 +29,7 @@ pic_value pic_list3(pic_state *, pic_value, pic_value, pic_value);
 pic_value pic_list4(pic_state *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_list5(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_list6(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value, pic_value);
+pic_value pic_list7(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_list_by_array(pic_state *, size_t, pic_value *);
 pic_value pic_make_list(pic_state *, int, pic_value);
 
