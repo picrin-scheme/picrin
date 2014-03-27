@@ -75,9 +75,6 @@ pic_open(int argc, char *argv[], char **envp)
   /* native stack marker */
   pic->native_stack_start = &t;
 
-  /* symbol 0 is reserved for system */
-  xh_put(&pic->sym_names, pic->sym_cnt++, &"<system-reserved-symbol>");
-
 #define register_core_symbol(pic,slot,name) do {	\
     pic->slot = pic_intern_cstr(pic, name);		\
   } while (0)
@@ -159,8 +156,6 @@ pic_close(pic_state *pic)
   /* free symbol names */
   xh_begin(&it, &pic->sym_names);
   while (xh_next(&it)) {
-    if (xh_key(it.e, pic_sym) == 0)
-      continue;
     free(xh_val(it.e, char *));
   }
   xh_destroy(&pic->sym_names);
