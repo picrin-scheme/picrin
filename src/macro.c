@@ -28,17 +28,20 @@ pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym renam
   xh_put(&senv->renames, sym, &rename);
 }
 
-pic_sym
-pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+bool
+pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *rename)
 {
   xh_entry *e;
 
   UNUSED(pic);
 
   if ((e = xh_get(&senv->renames, sym)) == NULL) {
-    return 0;
+    return false;
   }
-  return xh_val(e, pic_sym);
+  if (rename != NULL) {
+    *rename = xh_val(e, pic_sym);
+  }
+  return true;
 }
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
@@ -160,8 +163,7 @@ pic_export(pic_state *pic, pic_sym sym)
 {
   pic_sym rename;
 
-  rename = pic_find_rename(pic, pic->lib->senv, sym);
-  if (rename == 0) {
+  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
     pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
   }
 
@@ -199,7 +201,7 @@ symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv)
     return sym;
   }
   while (true) {
-    if ((rename = pic_find_rename(pic, senv, sym)) != 0) {
+    if (pic_find_rename(pic, senv, sym, &rename)) {
       return rename;
     }
     if (! senv->up)
@@ -318,7 +320,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
           pic_error(pic, "binding to non-symbol object");
         }
         sym = pic_sym(var);
-        if ((rename = pic_find_rename(pic, senv, sym)) == 0) {
+        if (! pic_find_rename(pic, senv, sym, &rename)) {
           rename = pic_add_rename(pic, senv, sym);
         }
 
@@ -367,7 +369,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  pic_error(pic, "syntax error");
 	}
         sym = pic_sym(var);
-        if ((rename = pic_find_rename(pic, senv, sym)) == 0) {
+        if (! pic_find_rename(pic, senv, sym, &rename)) {
           rename = pic_add_rename(pic, senv, sym);
         }
 
@@ -418,7 +420,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	    pic_error(pic, "binding to non-symbol object");
 	  }
           sym = pic_sym(a);
-          if (pic_find_rename(pic, senv, sym) == 0) {
+          if (! pic_find_rename(pic, senv, sym, NULL)) {
             pic_add_rename(pic, senv, sym);
           }
 
@@ -436,7 +438,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	  pic_error(pic, "binding to non-symbol object");
 	}
         sym = pic_sym(formals);
-        if (pic_find_rename(pic, senv, sym) == 0) {
+        if (! pic_find_rename(pic, senv, sym, NULL)) {
           pic_add_rename(pic, senv, sym);
         }
 

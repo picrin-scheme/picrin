@@ -336,7 +336,7 @@ global_ref(pic_state *pic, const char *name)
   pic_sym sym, rename;
 
   sym = pic_intern_cstr(pic, name);
-  if ((rename = pic_find_rename(pic, pic->lib->senv, sym)) == 0) {
+  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
     return SIZE_MAX;
   }
   if (! (e = xh_get(&pic->global_tbl, rename))) {
