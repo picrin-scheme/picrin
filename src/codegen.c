@@ -324,13 +324,11 @@ analyze_free_var(analyze_state *state, pic_sym sym, int depth)
 }
 
 static pic_value
-analyze_var(analyze_state *state, pic_value obj)
+analyze_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
-  pic_sym sym;
   int depth;
 
-  sym = pic_sym(obj);
   if ((depth = find_var(state, sym)) == -1) {
     pic_errorf(pic, "unbound variable %s", pic_symbol_name(pic, sym));
   }
@@ -410,7 +408,7 @@ analyze_declare(analyze_state *state, pic_sym var)
 {
   define_var(state, var);
 
-  return analyze_var(state, pic_sym_value(var));
+  return analyze_var(state, var);
 }
 
 static pic_value
@@ -708,7 +706,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
-    return analyze_var(state, obj);
+    return analyze_var(state, pic_sym(obj));
   }
   case PIC_TT_PAIR: {
     pic_value proc;
