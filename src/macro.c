@@ -848,18 +848,12 @@ ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, pic_valu
 static pic_value
 ir_macro_unwrap(pic_state *pic, pic_value expr, struct pic_senv *mac_env, pic_value *assoc)
 {
-  if (pic_sym_p(expr) || pic_macro_p(expr)) {
+  if (pic_sym_p(expr)) {
     pic_value r;
     if (pic_test(r = pic_assq(pic, expr, *assoc))) {
       return pic_cdr(pic, r);
     }
-    r = macroexpand(pic, expr, mac_env);
-    if (pic_macro_p(r)) {
-      return expr;
-    }
-    else {
-      return r;
-    }
+    return pic_sym_value(symbol_rename(pic, pic_sym(expr), mac_env));
   }
   else if (pic_pair_p(expr)) {
     return pic_cons(pic,
