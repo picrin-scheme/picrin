@@ -64,7 +64,7 @@ new_analyze_state(pic_state *pic)
   xh_iter it;
   struct pic_lib *stdlib;
 
-  state = (analyze_state *)pic_alloc(pic, sizeof(analyze_state));
+  state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
   state->scope = NULL;
 
@@ -155,7 +155,7 @@ push_scope(analyze_state *state, pic_value formals)
   xv_init(&captures, sizeof(pic_sym));
 
   if (analyze_args(pic, formals, &varg, &args, &locals)) {
-    scope = (analyze_scope *)pic_alloc(pic, sizeof(analyze_scope));
+    scope = pic_alloc(pic, sizeof(analyze_scope));
     scope->up = state->scope;
     scope->depth = scope->up ? scope->up->depth + 1 : 0;
     scope->varg = varg;
@@ -880,7 +880,7 @@ new_codegen_state(pic_state *pic)
 {
   codegen_state *state;
 
-  state = (codegen_state *)pic_alloc(pic, sizeof(codegen_state));
+  state = pic_alloc(pic, sizeof(codegen_state));
   state->pic = pic;
   state->cxt = NULL;
 
@@ -957,7 +957,7 @@ push_codegen_context(codegen_state *state, pic_value args, pic_value locals, boo
   codegen_context *cxt;
   pic_value var;
 
-  cxt = (codegen_context *)pic_alloc(pic, sizeof(codegen_context));
+  cxt = pic_alloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
   cxt->varg = varg;
 
