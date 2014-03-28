@@ -831,7 +831,7 @@ ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, pic_valu
 {
   if (pic_sym_p(expr)) {
     pic_value ren;
-    ren = macroexpand(pic, expr, use_env);
+    ren = pic_sym_value(symbol_rename(pic, pic_sym(expr), use_env));
     *assoc = pic_acons(pic, ren, expr, *assoc);
     return ren;
   }
