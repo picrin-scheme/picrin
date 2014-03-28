@@ -8,14 +8,16 @@
 #include "picrin/irep.h"
 
 struct pic_proc *
-pic_proc_new(pic_state *pic, pic_func_t func)
+pic_proc_new(pic_state *pic, pic_func_t func, const char *name)
 {
   struct pic_proc *proc;
+
+  assert(name != NULL);
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
   proc->kind = PIC_PROC_KIND_FUNC;
   proc->u.func.f = func;
-  proc->u.func.name = pic_intern_cstr(pic, "(no name)");
+  proc->u.func.name = pic_intern_cstr(pic, name);
   proc->env = NULL;
   return proc;
 }
@@ -30,6 +32,18 @@ pic_proc_new_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
   proc->u.irep = irep;
   proc->env = env;
   return proc;
+}
+
+pic_sym
+pic_proc_name(struct pic_proc *proc)
+{
+  switch (proc->kind) {
+  case PIC_PROC_KIND_FUNC:
+    return proc->u.func.name;
+  case PIC_PROC_KIND_IREP:
+    return proc->u.irep->name;
+  }
+  UNREACHABLE();
 }
 
 void
@@ -95,7 +109,7 @@ pic_papply(pic_state *pic, struct pic_proc *proc, pic_value arg)
 {
   struct pic_proc *pa_proc;
 
-  pa_proc = pic_proc_new(pic, papply_call);
+  pa_proc = pic_proc_new(pic, papply_call, "<partial-applied-procedure>");
   pic_proc_cv_init(pic, pa_proc, 2);
   pic_proc_cv_set(pic, pa_proc, 0, pic_obj_value(proc));
   pic_proc_cv_set(pic, pa_proc, 1, arg);

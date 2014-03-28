@@ -100,7 +100,7 @@ pic_wrap_var(pic_state *pic, struct pic_var *var)
 {
   struct pic_proc *proc;
 
-  proc = pic_proc_new(pic, var_call);
+  proc = pic_proc_new(pic, var_call, "<var-procedure>");
   pic_proc_cv_init(pic, proc, 1);
   pic_proc_cv_set(pic, proc, 0, pic_obj_value(var));
   return proc;

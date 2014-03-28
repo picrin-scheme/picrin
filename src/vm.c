@@ -409,7 +409,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
   struct pic_proc *proc;
 
-  proc = pic_proc_new(pic, cfunc);
+  proc = pic_proc_new(pic, cfunc, name);
   pic_define(pic, name, pic_obj_value(proc));
 }
 
@@ -686,11 +686,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
       puts(")");
       if (! pic_proc_func_p(proc)) {
-	printf("  irep = ");
+	printf("  irep = %p\n", proc->u.irep);
+	printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc)));
 	pic_dump_irep(proc->u.irep);
       }
       else {
 	printf("  cfunc = %p\n", (void *)proc->u.func.f);
+	printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc)));
       }
       puts("== end\n");
 #endif

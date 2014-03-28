@@ -764,12 +764,12 @@ er_macro_call(pic_state *pic)
     pic_error(pic, "unexpected type of argument 3");
   }
 
-  rename = pic_proc_new(pic, er_macro_rename);
+  rename = pic_proc_new(pic, er_macro_rename, "<er-macro-renamer>");
   pic_proc_cv_init(pic, rename, 2);
   pic_proc_cv_set(pic, rename, 0, use_env);
   pic_proc_cv_set(pic, rename, 1, mac_env);
 
-  compare = pic_proc_new(pic, er_macro_compare);
+  compare = pic_proc_new(pic, er_macro_compare, "<er-macro-comparator>");
   pic_proc_cv_init(pic, compare, 2);
   pic_proc_cv_set(pic, compare, 0, use_env);
   pic_proc_cv_set(pic, compare, 1, mac_env);
@@ -786,7 +786,7 @@ pic_macro_er_macro_transformer(pic_state *pic)
 
   pic_get_args(pic, "l", &cb);
 
-  proc = pic_proc_new(pic, er_macro_call);
+  proc = pic_proc_new(pic, er_macro_call, "<er-macro-procedure>");
   pic_proc_cv_init(pic, proc, 1);
   pic_proc_cv_set(pic, proc, 0, pic_obj_value(cb));
 
@@ -887,12 +887,12 @@ ir_macro_call(pic_state *pic)
     pic_error(pic, "unexpected type of argument 3");
   }
 
-  inject = pic_proc_new(pic, ir_macro_inject);
+  inject = pic_proc_new(pic, ir_macro_inject, "<ir-macro-injecter>");
   pic_proc_cv_init(pic, inject, 2);
   pic_proc_cv_set(pic, inject, 0, use_env);
   pic_proc_cv_set(pic, inject, 1, mac_env);
 
-  compare = pic_proc_new(pic, ir_macro_compare);
+  compare = pic_proc_new(pic, ir_macro_compare, "<ir-macro-comparator>");
   pic_proc_cv_init(pic, compare, 2);
   pic_proc_cv_set(pic, compare, 0, use_env);
   pic_proc_cv_set(pic, compare, 1, mac_env);
@@ -912,7 +912,7 @@ pic_macro_ir_macro_transformer(pic_state *pic)
 
   pic_get_args(pic, "l", &cb);
 
-  proc = pic_proc_new(pic, ir_macro_call);
+  proc = pic_proc_new(pic, ir_macro_call, "<ir-macro-procedure>");
   pic_proc_cv_init(pic, proc, 1);
   pic_proc_cv_set(pic, proc, 0, pic_obj_value(cb));
 
@@ -922,7 +922,7 @@ pic_macro_ir_macro_transformer(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
-  pic_defmacro(pic, "include", pic_proc_new(pic, pic_macro_include));
+  pic_defmacro(pic, "include", pic_proc_new(pic, pic_macro_include, "<include-procedure>"));
 
   pic_deflibrary ("(picrin macro)") {
 

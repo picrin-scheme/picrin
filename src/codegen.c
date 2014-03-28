@@ -343,10 +343,12 @@ analyze_var(analyze_state *state, pic_sym sym)
 }
 
 static pic_value
-analyze_procedure(analyze_state *state, pic_value formals, pic_value body_exprs)
+analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_value body_exprs)
 {
   pic_state *pic = state->pic;
   pic_value args, locals, varg, captures, body;
+
+  assert(pic_sym_p(name) || pic_false_p(name));
 
   if (push_scope(state, formals)) {
     analyze_scope *scope = state->scope;
@@ -384,7 +386,7 @@ analyze_procedure(analyze_state *state, pic_value formals, pic_value body_exprs)
     pic_errorf(pic, "invalid formal syntax: ~s", args);
   }
 
-  return pic_list6(pic, pic_sym_value(pic->sLAMBDA), args, locals, varg, captures, body);
+  return pic_list7(pic, pic_sym_value(pic->sLAMBDA), name, args, locals, varg, captures, body);
 }
 
 static pic_value
@@ -400,7 +402,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
   formals = pic_list_ref(pic, obj, 1);
   body_exprs = pic_list_tail(pic, obj, 2);
 
-  return analyze_procedure(state, formals, body_exprs);
+  return analyze_procedure(state, pic_false_value(), formals, body_exprs);
 }
 
 static pic_value
@@ -439,7 +441,7 @@ analyze_define(analyze_state *state, pic_value obj)
     formals = pic_list_tail(pic, pic_list_ref(pic, obj, 1), 1);
     body_exprs = pic_list_tail(pic, obj, 2);
 
-    val = analyze_procedure(state, formals, body_exprs);
+    val = analyze_procedure(state, pic_sym_value(sym), formals, body_exprs);
   } else {
     if (pic_length(pic, obj) != 3) {
       pic_error(pic, "syntax error");
@@ -844,8 +846,9 @@ pic_analyze(pic_state *pic, pic_value obj)
  */
 
 typedef struct codegen_context {
-  bool varg;
+  pic_sym name;
   /* rest args variable is counted as a local */
+  bool varg;
   xvect args, locals, captures;
   /* actual bit code sequence */
   pic_code *code;
@@ -872,7 +875,7 @@ typedef struct codegen_state {
   pic_sym sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
 } codegen_state;
 
-static void push_codegen_context(codegen_state *, pic_value, pic_value, bool, pic_value);
+static void push_codegen_context(codegen_state *, pic_value, pic_value, pic_value, bool, pic_value);
 static struct pic_irep *pop_codegen_context(codegen_state *);
 
 static codegen_state *
@@ -893,7 +896,7 @@ new_codegen_state(pic_state *pic)
   register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
   register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
 
-  push_codegen_context(state, pic_nil_value(), pic_nil_value(), false, pic_nil_value());
+  push_codegen_context(state, pic_false_value(), pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 
   return state;
 }
@@ -951,14 +954,19 @@ create_activation(codegen_context *cxt)
 }
 
 static void
-push_codegen_context(codegen_state *state, pic_value args, pic_value locals, bool varg, pic_value captures)
+push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_value locals, bool varg, pic_value captures)
 {
   pic_state *pic = state->pic;
   codegen_context *cxt;
   pic_value var;
 
+  assert(pic_sym_p(name) || pic_false_p(name));
+
   cxt = pic_alloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
+  cxt->name = pic_false_p(name)
+    ? pic_intern_cstr(pic, "(anonymous lambda)")
+    : pic_sym(name);
   cxt->varg = varg;
 
   xv_init(&cxt->args, sizeof(pic_sym));
@@ -1001,6 +1009,7 @@ pop_codegen_context(codegen_state *state)
 
   /* create irep */
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
+  irep->name = state->cxt->name;
   irep->varg = state->cxt->varg;
   irep->argc = state->cxt->args.size + 1;
   irep->localc = state->cxt->locals.size;
@@ -1392,17 +1401,18 @@ static struct pic_irep *
 codegen_lambda(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  pic_value args, locals, closes, body;
+  pic_value name, args, locals, closes, body;
   bool varg;
 
-  args = pic_list_ref(pic, obj, 1);
-  locals = pic_list_ref(pic, obj, 2);
-  varg = pic_true_p(pic_list_ref(pic, obj, 3));
-  closes = pic_list_ref(pic, obj, 4);
-  body = pic_list_ref(pic, obj, 5);
+  name = pic_list_ref(pic, obj, 1);
+  args = pic_list_ref(pic, obj, 2);
+  locals = pic_list_ref(pic, obj, 3);
+  varg = pic_true_p(pic_list_ref(pic, obj, 4));
+  closes = pic_list_ref(pic, obj, 5);
+  body = pic_list_ref(pic, obj, 6);
 
   /* inner environment */
-  push_codegen_context(state, args, locals, varg, closes);
+  push_codegen_context(state, name, args, locals, varg, closes);
   {
     /* body */
     codegen(state, body);
