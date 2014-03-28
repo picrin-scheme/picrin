@@ -345,6 +345,57 @@ analyze_var(analyze_state *state, pic_value obj)
 }
 
 static pic_value
+analyze_lambda(analyze_state *state, pic_value obj)
+{
+  pic_state *pic = state->pic;
+  pic_value formals, args, locals, varg, captures, body;
+
+  if (pic_length(pic, obj) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  formals = pic_car(pic, pic_cdr(pic, obj));
+
+  if (push_scope(state, formals)) {
+    analyze_scope *scope = state->scope;
+    pic_sym *var;
+    size_t i;
+
+    args = pic_nil_value();
+    for (i = scope->args.size; i > 0; --i) {
+      var = xv_get(&scope->args, i - 1);
+      pic_push(pic, pic_sym_value(*var), args);
+    }
+
+    varg = scope->varg
+      ? pic_true_value()
+      : pic_false_value();
+
+    /* To know what kind of local variables are defined, analyze body at first. */
+    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), pic_list_tail(pic, obj, 2)), true);
+
+    locals = pic_nil_value();
+    for (i = scope->locals.size; i > 0; --i) {
+      var = xv_get(&scope->locals, i - 1);
+      pic_push(pic, pic_sym_value(*var), locals);
+    }
+
+    captures = pic_nil_value();
+    for (i = scope->captures.size; i > 0; --i) {
+      var = xv_get(&scope->captures, i - 1);
+      pic_push(pic, pic_sym_value(*var), captures);
+    }
+
+    pop_scope(state);
+  }
+  else {
+    pic_errorf(pic, "invalid formal syntax: ~s", args);
+  }
+
+  return pic_list6(pic, pic_sym_value(pic->sLAMBDA), args, locals, varg, captures, body);
+}
+
+static pic_value
 analyze_declare(analyze_state *state, pic_sym var)
 {
   define_var(state, var);
@@ -473,57 +524,6 @@ analyze_quote(analyze_state *state, pic_value obj)
     pic_error(pic, "syntax error");
   }
   return obj;
-}
-
-static pic_value
-analyze_lambda(analyze_state *state, pic_value obj)
-{
-  pic_state *pic = state->pic;
-  pic_value formals, args, locals, varg, captures, body;
-
-  if (pic_length(pic, obj) < 2) {
-    pic_error(pic, "syntax error");
-  }
-
-  formals = pic_car(pic, pic_cdr(pic, obj));
-
-  if (push_scope(state, formals)) {
-    analyze_scope *scope = state->scope;
-    pic_sym *var;
-    size_t i;
-
-    args = pic_nil_value();
-    for (i = scope->args.size; i > 0; --i) {
-      var = xv_get(&scope->args, i - 1);
-      pic_push(pic, pic_sym_value(*var), args);
-    }
-
-    varg = scope->varg
-      ? pic_true_value()
-      : pic_false_value();
-
-    /* To know what kind of local variables are defined, analyze body at first. */
-    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), pic_list_tail(pic, obj, 2)), true);
-
-    locals = pic_nil_value();
-    for (i = scope->locals.size; i > 0; --i) {
-      var = xv_get(&scope->locals, i - 1);
-      pic_push(pic, pic_sym_value(*var), locals);
-    }
-
-    captures = pic_nil_value();
-    for (i = scope->captures.size; i > 0; --i) {
-      var = xv_get(&scope->captures, i - 1);
-      pic_push(pic, pic_sym_value(*var), captures);
-    }
-
-    pop_scope(state);
-  }
-  else {
-    pic_errorf(pic, "invalid formal syntax: ~s", args);
-  }
-
-  return pic_list6(pic, pic_sym_value(pic->sLAMBDA), args, locals, varg, captures, body);
 }
 
 #define ARGC_ASSERT_GE(n) do {				\
