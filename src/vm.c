@@ -686,7 +686,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
       puts(")");
       if (! pic_proc_func_p(proc)) {
-	printf("  irep = ");
+	printf("  irep = %p\n", proc->u.irep);
+	printf("  name = %s\n", pic_symbol_name(pic, proc->u.irep->name));
 	pic_dump_irep(proc->u.irep);
       }
       else {
