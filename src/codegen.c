@@ -345,6 +345,14 @@ analyze_var(analyze_state *state, pic_value obj)
 }
 
 static pic_value
+analyze_declare(analyze_state *state, pic_sym var)
+{
+  define_var(state, var);
+
+  return analyze_var(state, pic_sym_value(var));
+}
+
+static pic_value
 analyze_define(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
@@ -364,10 +372,7 @@ analyze_define(analyze_state *state, pic_value obj)
   } else {
     sym = pic_sym(var);
   }
-
-  define_var(state, sym);
-
-  var = analyze(state, var, false);
+  var = analyze_declare(state, sym);
 
   if (pic_pair_p(pic_list_ref(pic, obj, 1))) {
     val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
