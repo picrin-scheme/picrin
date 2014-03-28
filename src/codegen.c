@@ -345,16 +345,10 @@ analyze_var(analyze_state *state, pic_value obj)
 }
 
 static pic_value
-analyze_lambda(analyze_state *state, pic_value obj)
+analyze_procedure(analyze_state *state, pic_value formals, pic_value body_exprs)
 {
   pic_state *pic = state->pic;
-  pic_value formals, args, locals, varg, captures, body;
-
-  if (pic_length(pic, obj) < 2) {
-    pic_error(pic, "syntax error");
-  }
-
-  formals = pic_car(pic, pic_cdr(pic, obj));
+  pic_value args, locals, varg, captures, body;
 
   if (push_scope(state, formals)) {
     analyze_scope *scope = state->scope;
@@ -372,7 +366,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
       : pic_false_value();
 
     /* To know what kind of local variables are defined, analyze body at first. */
-    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), pic_list_tail(pic, obj, 2)), true);
+    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), body_exprs), true);
 
     locals = pic_nil_value();
     for (i = scope->locals.size; i > 0; --i) {
@@ -393,6 +387,22 @@ analyze_lambda(analyze_state *state, pic_value obj)
   }
 
   return pic_list6(pic, pic_sym_value(pic->sLAMBDA), args, locals, varg, captures, body);
+}
+
+static pic_value
+analyze_lambda(analyze_state *state, pic_value obj)
+{
+  pic_state *pic = state->pic;
+  pic_value formals, body_exprs;
+
+  if (pic_length(pic, obj) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  formals = pic_list_ref(pic, obj, 1);
+  body_exprs = pic_list_tail(pic, obj, 2);
+
+  return analyze_procedure(state, formals, body_exprs);
 }
 
 static pic_value
@@ -426,16 +436,18 @@ analyze_define(analyze_state *state, pic_value obj)
   var = analyze_declare(state, sym);
 
   if (pic_pair_p(pic_list_ref(pic, obj, 1))) {
-    val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
-                   pic_cons(pic, pic_list_tail(pic, pic_list_ref(pic, obj, 1), 1),
-                            pic_list_tail(pic, obj, 2)));
+    pic_value formals, body_exprs;
+
+    formals = pic_list_tail(pic, pic_list_ref(pic, obj, 1), 1);
+    body_exprs = pic_list_tail(pic, obj, 2);
+
+    val = analyze_procedure(state, formals, body_exprs);
   } else {
     if (pic_length(pic, obj) != 3) {
       pic_error(pic, "syntax error");
     }
-    val = pic_list_ref(pic, obj, 2);
+    val = analyze(state, pic_list_ref(pic, obj, 2), false);
   }
-  val = analyze(state, val, false);
 
   return pic_list3(pic, pic_symbol_value(pic->sSETBANG), var, val);
 }
