@@ -687,12 +687,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       puts(")");
       if (! pic_proc_func_p(proc)) {
 	printf("  irep = %p\n", proc->u.irep);
-	printf("  name = %s\n", pic_symbol_name(pic, proc->u.irep->name));
+	printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc)));
 	pic_dump_irep(proc->u.irep);
       }
       else {
 	printf("  cfunc = %p\n", (void *)proc->u.func.f);
-	printf("  name = %s\n", pic_symbol_name(pic, proc->u.func.name));
+	printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc)));
       }
       puts("== end\n");
 #endif

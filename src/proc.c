@@ -34,6 +34,18 @@ pic_proc_new_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
   return proc;
 }
 
+pic_sym
+pic_proc_name(struct pic_proc *proc)
+{
+  switch (proc->kind) {
+  case PIC_PROC_KIND_FUNC:
+    return proc->u.func.name;
+  case PIC_PROC_KIND_IREP:
+    return proc->u.irep->name;
+  }
+  UNREACHABLE();
+}
+
 void
 pic_proc_cv_init(pic_state *pic, struct pic_proc *proc, size_t cv_size)
 {
