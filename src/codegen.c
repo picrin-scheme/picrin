@@ -349,6 +349,7 @@ analyze_define(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   pic_value var, val;
+  pic_sym sym;
 
   if (pic_length(pic, obj) < 2) {
     pic_error(pic, "syntax error");
@@ -356,24 +357,28 @@ analyze_define(analyze_state *state, pic_value obj)
 
   var = pic_list_ref(pic, obj, 1);
   if (pic_pair_p(var)) {
-    val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
-                   pic_cons(pic, pic_list_tail(pic, var, 1),
-                            pic_list_tail(pic, obj, 2)));
     var = pic_list_ref(pic, var, 0);
   }
-  else {
+  if (! pic_sym_p(var)) {
+    pic_error(pic, "syntax error");
+  } else {
+    sym = pic_sym(var);
+  }
+
+  define_var(state, sym);
+
+  var = analyze(state, var, false);
+
+  if (pic_pair_p(pic_list_ref(pic, obj, 1))) {
+    val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
+                   pic_cons(pic, pic_list_tail(pic, pic_list_ref(pic, obj, 1), 1),
+                            pic_list_tail(pic, obj, 2)));
+  } else {
     if (pic_length(pic, obj) != 3) {
       pic_error(pic, "syntax error");
     }
     val = pic_list_ref(pic, obj, 2);
   }
-  if (! pic_sym_p(var)) {
-    pic_error(pic, "syntax error");
-  }
-
-  define_var(state, pic_sym(var));
-
-  var = analyze(state, var, false);
   val = analyze(state, val, false);
 
   return pic_list3(pic, pic_symbol_value(pic->sSETBANG), var, val);
