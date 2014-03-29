@@ -115,7 +115,8 @@ enum pic_tt {
   PIC_TT_LIB,
   PIC_TT_VAR,
   PIC_TT_IREP,
-  PIC_TT_DATA
+  PIC_TT_DATA,
+  PIC_TT_BOX
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -266,8 +267,10 @@ pic_type_repr(enum pic_tt tt)
     return "irep";
   case PIC_TT_DATA:
     return "data";
+  case PIC_TT_BOX:
+    return "box";
   }
-  return 0;                     /* logic flaw */
+  UNREACHABLE();
 }
 
 static inline bool
