@@ -445,10 +445,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 	return pic_cons(pic, pic_symbol_value(tag), macroexpand_list(pic, pic_cdr(pic, expr), senv));
       }
 
-      else if (tag == pic->sSETBANG || tag == pic->sIF || tag == pic->sBEGIN) {
-	return pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
-      }
-
       else if (tag == pic->sQUOTE) {
 	return pic_cons(pic, car, pic_cdr(pic, expr));
       }
