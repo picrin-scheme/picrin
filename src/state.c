@@ -59,6 +59,8 @@ pic_open(int argc, char *argv[], char **envp)
 
   /* macros */
   xh_init_int(&pic->macros, sizeof(struct pic_macro *));
+  pic->macroexpand_cnt = 0;
+  xh_init_int(&pic->unresolved_symbols, sizeof(xhash));
 
   /* libraries */
   pic->lib_tbl = pic_nil_value();
@@ -159,6 +161,12 @@ pic_close(pic_state *pic)
     free(xh_val(it.e, char *));
   }
   xh_destroy(&pic->sym_names);
+
+  xh_begin(&it, &pic->unresolved_symbols);
+  while (xh_next(&it)) {
+    xh_destroy(&xh_val(it.e, xhash));
+  }
+  xh_destroy(&pic->unresolved_symbols);
 
   free(pic);
 }
