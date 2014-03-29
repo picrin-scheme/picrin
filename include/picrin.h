@@ -96,6 +96,8 @@ typedef struct {
   size_t glen, gcapa;
 
   xhash macros;
+  int macroexpand_cnt;
+  xhash unresolved_symbols;
 
   pic_value lib_tbl;
   struct pic_lib *lib;
