@@ -185,6 +185,7 @@ void pic_export(pic_state *, pic_sym);
 noreturn void pic_abort(pic_state *, const char *);
 noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
+pic_str *pic_get_backtrace(pic_state *);
 
 /* obsoleted */
 noreturn static inline void pic_error(pic_state *pic, const char *msg)

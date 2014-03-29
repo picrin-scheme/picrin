@@ -131,7 +131,7 @@ pic_error_raise(pic_state *pic)
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = PIC_ERROR_RAISED;
-  e->msg = pic_str_new_cstr(pic, "raised");
+  e->msg = pic_str_new_cstr(pic, "object is raised");
   e->irrs = pic_list1(pic, v);
 
   pic_throw(pic, e);

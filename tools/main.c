@@ -9,6 +9,7 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/string.h"
 #include "picrin/error.h"
 
 #if PIC_ENABLE_READLINE
@@ -124,7 +125,7 @@ repl(pic_state *pic)
       }
     }
     pic_catch {
-      printf("error: %s\n", pic_errmsg(pic));
+      printf("%s\n", pic_str_cstr(pic_get_backtrace(pic)));
       pic->err = NULL;
       code[0] = '\0';
     }
