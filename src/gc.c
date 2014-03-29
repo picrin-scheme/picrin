@@ -18,6 +18,7 @@
 #include "picrin/macro.h"
 #include "picrin/lib.h"
 #include "picrin/var.h"
+#include "picrin/data.h"
 
 #if GC_DEBUG
 # include <string.h>
@@ -485,6 +486,16 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_DATA: {
+    struct pic_data *data = (struct pic_data *)obj;
+    xh_iter it;
+
+    xh_begin(&it, &data->storage);
+    while (xh_next(&it)) {
+      gc_mark(pic, xh_val(it.e, pic_value));
+    }
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -627,6 +638,12 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, irep->code);
     pic_free(pic, irep->irep);
     pic_free(pic, irep->pool);
+    break;
+  }
+  case PIC_TT_DATA: {
+    struct pic_data *data = (struct pic_data *)obj;
+    data->type->dtor(pic, data->data);
+    xh_destroy(&data->storage);
     break;
   }
   case PIC_TT_NIL:

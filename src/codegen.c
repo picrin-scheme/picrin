@@ -823,6 +823,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_LIB:
   case PIC_TT_VAR:
   case PIC_TT_IREP:
+  case PIC_TT_DATA:
     pic_errorf(pic, "invalid expression given: ~s", obj);
   }
   UNREACHABLE();

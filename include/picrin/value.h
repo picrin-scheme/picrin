@@ -114,7 +114,8 @@ enum pic_tt {
   PIC_TT_SC,
   PIC_TT_LIB,
   PIC_TT_VAR,
-  PIC_TT_IREP
+  PIC_TT_IREP,
+  PIC_TT_DATA
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -258,6 +259,8 @@ pic_type_repr(enum pic_tt tt)
     return "var";
   case PIC_TT_IREP:
     return "irep";
+  case PIC_TT_DATA:
+    return "data";
   }
   return 0;                     /* logic flaw */
 }
