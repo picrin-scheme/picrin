@@ -517,8 +517,8 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, int id)
   case PIC_TT_VAR:
   case PIC_TT_IREP:
   case PIC_TT_DATA:
+  case PIC_TT_BOX:
     pic_error(pic, "unexpected value type");
-    return pic_undef_value();	/* unreachable */
   }
   UNREACHABLE();
 }

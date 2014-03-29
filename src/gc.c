@@ -19,6 +19,7 @@
 #include "picrin/lib.h"
 #include "picrin/var.h"
 #include "picrin/data.h"
+#include "picrin/box.h"
 
 #if GC_DEBUG
 # include <string.h>
@@ -496,6 +497,11 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_BOX: {
+    struct pic_box *box = (struct pic_box *)obj;
+    gc_mark(pic, box->value);
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -644,6 +650,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     struct pic_data *data = (struct pic_data *)obj;
     data->type->dtor(pic, data->data);
     xh_destroy(&data->storage);
+    break;
+  }
+  case PIC_TT_BOX: {
     break;
   }
   case PIC_TT_NIL:
