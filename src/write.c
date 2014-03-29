@@ -332,6 +332,9 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_IREP:
     xfprintf(file, "#<irep %p>", pic_ptr(obj));
     break;
+  case PIC_TT_DATA:
+    xfprintf(file, "#<data %p>", pic_ptr(obj));
+    break;
   }
 }
 
