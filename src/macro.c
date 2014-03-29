@@ -826,10 +826,10 @@ static pic_value
 ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, pic_value *assoc)
 {
   if (pic_sym_p(expr)) {
-    pic_value ren;
-    ren = pic_sym_value(symbol_rename(pic, pic_sym(expr), use_env));
-    *assoc = pic_acons(pic, ren, expr, *assoc);
-    return ren;
+    pic_value r;
+    r = pic_sym_value(symbol_rename(pic, pic_sym(expr), use_env));
+    *assoc = pic_acons(pic, r, expr, *assoc);
+    return r;
   }
   else if (pic_pair_p(expr)) {
     return pic_cons(pic,
