@@ -161,6 +161,11 @@ typedef struct pic_blob pic_blob;
 static inline enum pic_tt pic_type(pic_value);
 static inline const char *pic_type_repr(enum pic_tt);
 
+#define pic_assert_type(pic, v, type)                           \
+  if (! pic_##type##_p(v)) {                                    \
+    pic_errorf(pic, "expected " #type ", but got ~s", v);       \
+  }
+
 static inline bool pic_valid_int(double);
 
 static inline pic_value pic_nil_value();
