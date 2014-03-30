@@ -12,21 +12,39 @@
 #include "picrin/pair.h"
 
 pic_value
-pic_values(pic_state *pic, size_t c, ...)
+pic_values0(pic_state *pic)
 {
-  va_list ap;
-  size_t i;
+  return pic_values_by_list(pic, pic_nil_value());
+}
 
-  va_start(ap, c);
+pic_value
+pic_values1(pic_state *pic, pic_value arg1)
+{
+  return pic_values_by_list(pic, pic_list1(pic, arg1));
+}
 
-  for (i = 0; i < c; ++i) {
-    pic->sp[i] = va_arg(ap, pic_value);
-  }
-  pic->ci->retc = c;
+pic_value
+pic_values2(pic_state *pic, pic_value arg1, pic_value arg2)
+{
+  return pic_values_by_list(pic, pic_list2(pic, arg1, arg2));
+}
 
-  va_end(ap);
+pic_value
+pic_values3(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3)
+{
+  return pic_values_by_list(pic, pic_list3(pic, arg1, arg2, arg3));
+}
 
-  return c == 0 ? pic_none_value() : pic->sp[0];
+pic_value
+pic_values4(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
+{
+  return pic_values_by_list(pic, pic_list4(pic, arg1, arg2, arg3, arg4));
+}
+
+pic_value
+pic_values5(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
+{
+  return pic_values_by_list(pic, pic_list5(pic, arg1, arg2, arg3, arg4, arg5));
 }
 
 pic_value
