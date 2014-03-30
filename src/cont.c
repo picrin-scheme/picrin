@@ -77,7 +77,7 @@ pic_receive(pic_state *pic, size_t n, pic_value *argv)
 static void save_cont(pic_state *, struct pic_cont **);
 static void restore_cont(pic_state *, struct pic_cont *);
 
-static size_t
+static ptrdiff_t
 native_stack_length(pic_state *pic, char **pos)
 {
   char t;
@@ -87,8 +87,8 @@ native_stack_length(pic_state *pic, char **pos)
     : pic->native_stack_start;
 
   return (pic->native_stack_start > &t)
-    ? (size_t)(pic->native_stack_start - &t)
-    : (size_t)(&t - pic->native_stack_start + 1);
+    ? pic->native_stack_start - &t
+    : &t - pic->native_stack_start;
 }
 
 static void
@@ -104,8 +104,9 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
-  cont->stk_ptr = pic_alloc(pic, sizeof(pic_value) * cont->stk_len);
-  memcpy(cont->stk_ptr, cont->stk_pos, sizeof(pic_value) * cont->stk_len);
+  assert(cont->stk_len > 0);
+  cont->stk_ptr = pic_alloc(pic, cont->stk_len);
+  memcpy(cont->stk_ptr, cont->stk_pos, cont->stk_len);
 
   cont->sp_offset = pic->sp - pic->stbase;
   cont->st_len = pic->stend - pic->stbase;
@@ -166,7 +167,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
   pic->arena_idx = cont->arena_idx;
 
-  memcpy(cont->stk_pos, cont->stk_ptr, sizeof(pic_value) * cont->stk_len);
+  memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);
 
   longjmp(tmp->jmp, 1);
 }
