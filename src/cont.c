@@ -104,9 +104,9 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
-  cont->stk_ptr = pic_alloc(pic, sizeof(pic_value) * cont->stk_len);
-  memcpy(cont->stk_ptr, cont->stk_pos, sizeof(pic_value) * cont->stk_len);
   assert(cont->stk_len > 0);
+  cont->stk_ptr = pic_alloc(pic, cont->stk_len);
+  memcpy(cont->stk_ptr, cont->stk_pos, cont->stk_len);
 
   cont->sp_offset = pic->sp - pic->stbase;
   cont->st_len = pic->stend - pic->stbase;
@@ -167,7 +167,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
   pic->arena_idx = cont->arena_idx;
 
-  memcpy(cont->stk_pos, cont->stk_ptr, sizeof(pic_value) * cont->stk_len);
+  memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);
 
   longjmp(tmp->jmp, 1);
 }
