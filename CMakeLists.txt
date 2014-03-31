@@ -21,6 +21,7 @@ set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG=1")
 include_directories(include extlib)
 
 # build picrin
+include(contrib/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(tools/CMakeLists.txt)
 

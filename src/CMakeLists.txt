@@ -7,6 +7,6 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_SOURCE
 set(XFILE_SOURCES extlib/xfile/xfile.c)
 
 # build!
-file(GLOB C_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
-add_library(picrin SHARED ${C_SOURCES} ${FLEX_scan_OUTPUTS} ${XFILE_SOURCES})
-target_link_libraries(picrin m)
+file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
+add_library(picrin SHARED ${PICRIN_SOURCES} ${FLEX_scan_OUTPUTS} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES})
+target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})

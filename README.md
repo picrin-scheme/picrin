@@ -47,6 +47,20 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
     
             Explicit renaming macro family.
 
+    - `(picrin regexp)`
+
+        - `(regexp? obj)`
+        - `(regexp ptrn [flags])`
+
+            Compiles pattern string into a regexp object. A string `flags` may contain any of #\g, #\i, #\m.
+
+        - `(regexp-match re input)`
+
+            Returns two values: a list of match strings, and a list of match indeces.
+
+        - `(regexp-replace re input txt)`
+        - `(regexp-split re input)`
+
 	- `(picrin user)`
 
 		When you start the REPL, you are dropped in here.

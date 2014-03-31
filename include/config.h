@@ -2,6 +2,9 @@
  * See Copyright Notice in picrin.h
  */
 
+/** contribution libraries */
+/* #define PIC_CONTRIB_INITS */
+
 /** switch normal VM and direct threaded VM */
 /* #define PIC_DIRECT_THREADED_VM 1 */
 
@@ -41,6 +44,10 @@
 /* #define VM_DEBUG 1 */
 /* #define GC_DEBUG 1 */
 /* #define GC_DEBUG_DETAIL 1 */
+
+#ifndef PIC_CONTRIB_INITS
+# define PIC_CONTRIB_INITS
+#endif
 
 #ifndef PIC_DIRECT_THREADED_VM
 # if defined(__GNUC__) || defined(__CLANG__)
