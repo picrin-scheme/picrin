@@ -51,6 +51,12 @@ pic_load_stdlib(pic_state *pic)
 
 }
 
+void
+pic_init_contrib(pic_state *pic)
+{
+  PIC_CONTRIB_INITS
+}
+
 #define PUSH_SYM(pic, lst, name)		\
   lst = pic_cons(pic, pic_symbol_value(pic_intern_cstr(pic, name)), lst)
 
@@ -108,6 +114,8 @@ pic_init_core(pic_state *pic)
     pic_init_write(pic); DONE;
 
     pic_load_stdlib(pic); DONE;
+
+    pic_init_contrib(pic); DONE;
 
     pic_defun(pic, "features", pic_features);
 
