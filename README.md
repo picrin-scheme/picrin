@@ -63,7 +63,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 
 	- `(picrin user)`
 
-		When you start the REPL, you are dropped in here.
+		When you start the REPL, you are dropped into here.
     
     - `(srfi 1)`
     
@@ -183,7 +183,7 @@ https://github.com/wasabiz/picrin
 
 ## Requirement
 
-picrin scheme depends on some external libraries to build the binary:
+Picrin scheme depends on some external libraries to build the binary:
 
 - lex (preferably, flex)
 - getopt
