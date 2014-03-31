@@ -124,7 +124,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 6.2.6 Numerical operations | yes | `denominator`, `numerator`, and `rationalize` are not supported for now. Also, picrin does not provide complex library procedures. |
 | 6.2.7 Numerical input and output | no | |
 | 6.3 Booleans | yes | |
-| 6.4 Pairs and lists | yes | |
+| 6.4 Pairs and lists | yes | `list?` is safe for using against circular list. |
 | 6.5 Symbols | yes | |
 | 6.6 Characters | yes | |
 | 6.7 Strings | yes | `substring` is not provided |
