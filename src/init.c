@@ -36,6 +36,7 @@ pic_load_stdlib(pic_state *pic)
   pic_try {
     pic_load(pic, "piclib/built-in.scm");
     pic_load(pic, "piclib/srfi/1.scm");
+    pic_load(pic, "piclib/srfi/26.scm");
     pic_load(pic, "piclib/srfi/95.scm");
   }
   pic_catch {
