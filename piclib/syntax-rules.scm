@@ -255,9 +255,6 @@
 
      (define (check-vars vars-pattern vars-template)
        ;;fixme
-       (display vars-pattern) (newline)
-       (display vars-template) (newline)
-       (flush-output-port)
        #t)
 
      (define (compile-rule ellipsis literals rule)
