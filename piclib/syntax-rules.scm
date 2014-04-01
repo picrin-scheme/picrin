@@ -225,17 +225,9 @@
 			 (values
 			  `(,_quasiquote (,@(reverse expands) . (,_unquote ,expand1)))
 			  (append vars vars1))))
-		      ;; (hoge . poyo)
-		      ((not (pair? (cdr template)))
-		       (let*-values (((expand1 vars1)
-				      (compile-expand-base (car template) ellipsis-valid))
-				     ((expand2 vars2)
-				      (compile-expand-base (cdr template) ellipsis-valid)))
-			 (values
-			  `(,_quasiquote (,@(reverse expands) (,_unquote ,expand1) . (,_unquote ,expand2)))
-			  (append (append vars vars1) vars2))))
 		      ;; (a ... rest syms)
 		      ((and ellipsis-valid
+			    (pair? (cdr template))
 			    (eq? (cadr template) ellipsis))
 		       (let-values (((expand1 vars1)
 				     (compile-expand-base (car template) ellipsis-valid)))
