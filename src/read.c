@@ -17,6 +17,7 @@ static pic_value read(int, yyscan_t);
 
 #define pic (yyget_extra(scanner)->pic)
 #define yylval (yyget_extra(scanner)->yylval)
+#define yylabels (yyget_extra(scanner)->labels)
 #define yymsg (yyget_extra(scanner)->msg)
 #define yyjmp (yyget_extra(scanner)->jmp)
 
@@ -36,6 +37,65 @@ gettok(yyscan_t scanner)
     read(gettok(scanner), scanner); /* discard */
   }
   return tok;
+}
+
+static pic_value
+read_label_set(int i, yyscan_t scanner)
+{
+  int tok;
+  pic_value val;
+
+  switch (tok = gettok(scanner)) {
+  case tLPAREN:
+  case tLBRACKET:
+    {
+      pic_value tmp;
+
+      val = pic_cons(pic, pic_none_value(), pic_none_value());
+
+      xh_put(&yylabels, i, &val);
+
+      tmp = read(tok, scanner);
+      pic_pair_ptr(val)->car = pic_car(pic, tmp);
+      pic_pair_ptr(val)->cdr = pic_cdr(pic, tmp);
+
+      return val;
+    }
+  case tVPAREN:
+    {
+      pic_vec *tmp;
+
+      val = pic_obj_value(pic_vec_new(pic, 0));
+
+      xh_put(&yylabels, i, &val);
+
+      tmp = pic_vec_ptr(read(tok, scanner));
+      SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
+      SWAP(size_t, tmp->len, pic_vec_ptr(val)->len);
+
+      return val;
+    }
+  default:
+    {
+      val = read(tok, scanner);
+
+      xh_put(&yylabels, i, &val);
+
+      return val;
+    }
+  }
+}
+
+static pic_value
+read_label_ref(int i, yyscan_t scanner)
+{
+  xh_entry *e;
+
+  e = xh_get(&yylabels, i);
+  if (! e) {
+    error("label of given index not defined", scanner);
+  }
+  return xh_val(e, pic_value);
 }
 
 static pic_value
@@ -88,6 +148,12 @@ read_datum(int tok, yyscan_t scanner)
   pic_value val;
 
   switch (tok) {
+  case tLABEL_SET:
+    return read_label_set(yylval.i, scanner);
+
+  case tLABEL_REF:
+    return read_label_ref(yylval.i, scanner);
+
   case tSYMBOL:
     return pic_symbol_value(pic_intern(pic, yylval.buf.dat, yylval.buf.len));
 
@@ -207,12 +273,14 @@ pic_read(pic_state *pic, const char *cstr)
   pic_value val;
 
   ctrl.pic = pic;
+  xh_init_int(&ctrl.labels, sizeof(pic_value));
   yylex_init_extra(&ctrl, &scanner);
   yy_scan_string(cstr, scanner);
 
   val = read_one(scanner);
 
   yylex_destroy(scanner);
+  xh_destroy(&ctrl.labels);
 
   return val;
 }
@@ -225,12 +293,14 @@ pic_parse_file(pic_state *pic, FILE *file)
   pic_value vals;
 
   ctrl.pic = pic;
+  xh_init_int(&ctrl.labels, sizeof(pic_value));
   yylex_init_extra(&ctrl, &scanner);
   yyset_in(file, scanner);
 
   vals = read_many(scanner);
 
   yylex_destroy(scanner);
+  xh_destroy(&ctrl.labels);
 
   return vals;
 }
@@ -243,12 +313,14 @@ pic_parse_cstr(pic_state *pic, const char *cstr)
   pic_value vals;
 
   ctrl.pic = pic;
+  xh_init_int(&ctrl.labels, sizeof(pic_value));
   yylex_init_extra(&ctrl, &scanner);
   yy_scan_string(cstr, scanner);
 
   vals = read_many(scanner);
 
   yylex_destroy(scanner);
+  xh_destroy(&ctrl.labels);
 
   return vals;
 }
