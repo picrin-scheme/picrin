@@ -80,7 +80,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | --- | --- | --- |
 | 2.2 Whitespace and comments | yes | |
 | 2.3 Other notations | incomplete | #e #i #b #o #d #x |
-| 2.4 Datum labels | no | unsupported |
+| 2.4 Datum labels | yes | |
 | 3.1 Variables, syntactic keywords, and regions | | |
 | 3.2 Disjointness of types | yes | |
 | 3.3 External representations | | |
