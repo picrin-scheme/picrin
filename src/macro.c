@@ -262,6 +262,10 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
     pic_value car, v;
     xh_entry *e;
 
+    if (! pic_list_p(expr)) {
+      pic_errorf(pic, "cannot macroexpand improper list: ~s", expr);
+    }
+
     car = macroexpand(pic, pic_car(pic, expr), senv, assoc_box);
     if (pic_sym_p(car)) {
       pic_sym tag = pic_sym(car);
