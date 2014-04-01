@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "picrin.h"
+#include "picrin/string.h"
 
 static int
 gcd(int a, int b)
@@ -679,6 +680,57 @@ pic_number_exact(pic_state *pic)
   return pic_int_value((int)round(f));
 }
 
+static pic_value
+pic_number_number_to_string(pic_state *pic)
+{
+  double f;
+  bool e;
+  int radix = 10;
+
+  pic_get_args(pic, "F|i", &f, &e, &radix);
+
+  if (e) {
+    char buf[snprintf(NULL, 0, "%d", (int)f) + 1];
+
+    snprintf(buf, sizeof buf, "%d", (int)f);
+
+    return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+  }
+  else {
+    char buf[snprintf(NULL, 0, "%a", f) + 1];
+
+    snprintf(buf, sizeof buf, "%a", f);
+
+    return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+  }
+}
+
+static pic_value
+pic_number_string_to_number(pic_state *pic)
+{
+  const char *str;
+  int radix = 10;
+  long num;
+  char *eptr;
+  double flo;
+
+  pic_get_args(pic, "z|i", &str, &radix);
+
+  num = strtol(str, &eptr, radix);
+  if (*eptr == '\0') {
+    return pic_valid_int(num)
+      ? pic_int_value(num)
+      : pic_float_value(num);
+  }
+
+  flo = strtod(str, &eptr);
+  if (*eptr == '\0') {
+    return pic_float_value(flo);
+  }
+
+  pic_errorf(pic, "invalid string given: %s", str);
+}
+
 void
 pic_init_number(pic_state *pic)
 {
@@ -743,6 +795,10 @@ pic_init_number(pic_state *pic)
 
   pic_defun(pic, "inexact", pic_number_inexact);
   pic_defun(pic, "exact", pic_number_exact);
+  pic_gc_arena_restore(pic, ai);
+
+  pic_defun(pic, "number->string", pic_number_number_to_string);
+  pic_defun(pic, "string->number", pic_number_string_to_number);
   pic_gc_arena_restore(pic, ai);
 
   pic_deflibrary ("(scheme inexact)") {
