@@ -1,12 +1,13 @@
 (import (scheme base)
 	(scheme cxr)
-	(picrin macro))
+	(picrin macro)
+	(scheme write))
 
   ;;; utility functions
 (define (reverse* l)
-  ;; (reverse* '(a b c d . e)) => (e d c b . a)
-  (let loop ((a (car l))
-	     (d (cdr l)))
+  ;; (reverse* '(a b c d . e)) => (e d c b a)
+  (let loop ((a '())
+	     (d l))
     (if (pair? d)
 	(loop (cons (car d) a) (cdr d))
 	(cons d a))))
@@ -117,7 +118,11 @@
 		       (let-values (((match-r vars-r) (compile-match-list-reverse pattern)))
 			 (values
 			  `(,_begin ,@(reverse matches)
-				    (,_let ((expr (reverse* ,accessor)))
+				    (,_let ((expr (,_let loop ((a ())
+							       (d expr))
+							 (,_if (,_pair? d)
+							       (loop (,_cons (,_car d) a) (,_cdr d))
+							       (,_cons d a)))))
 					   ,match-r))
 			  (append vars vars-r))))
 		      (else
@@ -138,16 +143,16 @@
 			      (vars '())
 			      (accessor 'expr))
 		     (cond ((eq? (car pattern) ellipsis)
-			    (let-values (((match1 vars1) (compile-match-ellipsis (cdr pattern))))
+			    (let-values (((match1 vars1) (compile-match-ellipsis (cadr pattern))))
 			      (values
 			       `(,_begin ,@(reverse matches)
-					 (,_let ((expr (reverse* (,_cons '() ,accessor))))
+					 (,_let ((expr ,accessor))
 						,match1))
 			       (append vars vars1))))
 			   (else
 			    (let-values (((match1 vars1) (compile-match-base (car pattern))))
 			      (loop (cdr pattern)
-				    (cons `(,_let ((expr (,_car expr))) ,match1) matches)
+				    (cons `(,_let ((expr (,_car ,accessor))) ,match1) matches)
 				    (append vars vars1)
 				    `(,_cdr ,accessor))))))))
 
@@ -250,6 +255,9 @@
 
      (define (check-vars vars-pattern vars-template)
        ;;fixme
+       (display vars-pattern) (newline)
+       (display vars-template) (newline)
+       (flush-output-port)
        #t)
 
      (define (compile-rule ellipsis literals rule)
@@ -307,12 +315,6 @@
 				 rules)))
 	       `(,_er-macro-transformer
 		 (,_lambda (expr rename cmp)
-			   (,_define (reverse* l)
-				     (,_let loop ((a (,_car l))
-						  (d (,_cdr l)))
-					    (,_if (,_pair? d)
-						  (loop (,_cons (,_car l) a) (,_cdr d))
-						  (,_cons d a))))
 			   ,(expand-clauses clauses r)))))
 
 	   `(,_syntax-error "malformed syntax-rules"))))))
@@ -322,7 +324,13 @@
 
 (define-syntax hoge
   (syntax-rules ()
-    ((hoge a) 'a)))
+    ((hoge (a ...) ...) '((a ...) ...))
+    ((hoge (a b) ...) '(a ...))
+    ((hoge a b ... c . d) 'c)))
 
-(display (hoge a))
+(display (hoge (1 2 3) (3 4 5) (5 6 7)))
+(newline)
+(display (hoge (a b) (c d) (e f)))
+(newline)
+(display (hoge a b c))
 (newline)
