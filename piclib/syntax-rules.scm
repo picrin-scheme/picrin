@@ -63,6 +63,8 @@
      (define _symbol? (r 'symbol?))
      (define _eqv? (r 'eqv?))
      (define _map (r 'map))
+     (define _vector->list (r 'vector->list))
+     (define _list->vector (r 'list->vector))
      (define _quote (r 'quote))
      (define _quasiquote (r 'quasiquote))
      (define _unquote (r 'unquote))
@@ -177,7 +179,11 @@
 
 		(compile-match-vector
 		 (lambda (pattern)
-		   (values '() '()))))
+		   (let-values (((match vars) (compile-match-list (vector->list pattern))))
+		     (values
+		      `(,_let ((expr (,_vector->list expr)))
+			      ,match)
+		      vars)))))
 
 	 (let-values (((match vars) (compile-match-base (cdr pattern))))
 	   (values `(,_let ((expr (,_cdr expr)))
@@ -250,8 +256,11 @@
 			       (append vars vars1))))))))
 
 		(compile-expand-vector
-		 (lambda (template elliipsis-valid)
-		   (values '() '()))))
+		 (lambda (template ellipsis-valid)
+		   (let-values (((expand1 vars1)
+				 (compile-expand-list (vector->list template) ellipsis-valid)))
+		     `(,_list->vector ,expand1)
+		     vars1))))
 
 	 (compile-expand-base template #t)))
 
