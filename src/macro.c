@@ -91,6 +91,46 @@ senv_new_local(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value
   return senv;
 }
 
+static void
+senv_add_core(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+{
+  pic_put_rename(pic, senv, sym, sym);
+}
+
+struct pic_senv *
+pic_null_syntactic_env(pic_state *pic)
+{
+  return senv_new(pic, NULL);
+}
+
+struct pic_senv *
+pic_minimal_syntactic_env(pic_state *pic)
+{
+  struct pic_senv *senv = pic_null_syntactic_env(pic);
+
+  senv_add_core(pic, senv, pic->sDEFINE_LIBRARY);
+  senv_add_core(pic, senv, pic->sIMPORT);
+  senv_add_core(pic, senv, pic->sEXPORT);
+
+  return senv;
+}
+
+struct pic_senv *
+pic_core_syntactic_env(pic_state *pic)
+{
+  struct pic_senv *senv = pic_minimal_syntactic_env(pic);
+
+  senv_add_core(pic, senv, pic->sDEFINE);
+  senv_add_core(pic, senv, pic->sSETBANG);
+  senv_add_core(pic, senv, pic->sQUOTE);
+  senv_add_core(pic, senv, pic->sLAMBDA);
+  senv_add_core(pic, senv, pic->sIF);
+  senv_add_core(pic, senv, pic->sBEGIN);
+  senv_add_core(pic, senv, pic->sDEFINE_SYNTAX);
+
+  return senv;
+}
+
 struct pic_macro *
 macro_new(pic_state *pic, struct pic_proc *proc, struct pic_senv *mac_env)
 {
@@ -591,45 +631,6 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   return v;
 }
 
-struct pic_senv *
-pic_null_syntactic_env(pic_state *pic)
-{
-  return senv_new(pic, NULL);
-}
-
-#define register_core_syntax(pic,senv,id) do {                          \
-    pic_sym sym = pic_intern_cstr(pic, id);                             \
-    pic_put_rename(pic, senv, sym, sym);                                \
-  } while (0)
-
-struct pic_senv *
-pic_minimal_syntactic_env(pic_state *pic)
-{
-  struct pic_senv *senv = pic_null_syntactic_env(pic);
-
-  register_core_syntax(pic, senv, "define-library");
-  register_core_syntax(pic, senv, "import");
-  register_core_syntax(pic, senv, "export");
-
-  return senv;
-}
-
-struct pic_senv *
-pic_core_syntactic_env(pic_state *pic)
-{
-  struct pic_senv *senv = pic_minimal_syntactic_env(pic);
-
-  register_core_syntax(pic, senv, "define");
-  register_core_syntax(pic, senv, "set!");
-  register_core_syntax(pic, senv, "quote");
-  register_core_syntax(pic, senv, "lambda");
-  register_core_syntax(pic, senv, "if");
-  register_core_syntax(pic, senv, "begin");
-  register_core_syntax(pic, senv, "define-syntax");
-
-  return senv;
-}
-
 /* once read.c is implemented move there */
 static pic_value
 pic_macro_include(pic_state *pic)
@@ -954,7 +955,7 @@ pic_init_macro(pic_state *pic)
   pic_deflibrary ("(picrin macro)") {
 
     /* export define-macro syntax */
-    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE_MACRO, pic->sDEFINE_MACRO);
+    senv_add_core(pic, pic->lib->senv, pic->sDEFINE_MACRO);
     pic_export(pic, pic->sDEFINE_MACRO);
 
     pic_defun(pic, "gensym", pic_macro_gensym);
