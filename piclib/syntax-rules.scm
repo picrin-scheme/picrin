@@ -78,13 +78,13 @@
        (letrec ((compile-match-base
 		 (lambda (pattern)
 		   (cond ((compare pattern (r '_)) (values #f '()))
-			 ((member pattern literals)
+			 ((member pattern literals compare)
 			  (values
 			   `(,_if (,_and (,_symbol? expr) (cmp expr (rename ',pattern)))
 				  #f
 				  (exit #f))
 			   '()))
-			 ((eq? pattern ellipsis)
+			 ((compare pattern ellipsis)
 			  (values `(,_syntax-error "invalid pattern") '()))
 			 ((symbol? pattern)
 			  (values `(,_set! ,(var->sym pattern) expr) (list pattern)))
@@ -124,7 +124,7 @@
 					  (exit #f)))
 			  (append vars (append vars1 vars2)))))
 		      ;; (hoge ... rest args)
-		      ((eq? (cadr pattern) ellipsis)
+		      ((compare (cadr pattern) ellipsis)
 		       (let-values (((match-r vars-r) (compile-match-list-reverse pattern)))
 			 (values
 			  `(,_begin ,@(reverse matches)
@@ -152,7 +152,7 @@
 			      (matches '())
 			      (vars '())
 			      (accessor 'expr))
-		     (cond ((eq? (car pattern) ellipsis)
+		     (cond ((compare (car pattern) ellipsis)
 			    (let-values (((match1 vars1) (compile-match-ellipsis (cadr pattern))))
 			      (values
 			       `(,_begin ,@(reverse matches)
@@ -201,7 +201,7 @@
      (define (compile-expand ellipsis reserved template)
        (letrec ((compile-expand-base
 		 (lambda (template ellipsis-valid)
-		   (cond ((member template reserved)
+		   (cond ((member template reserved compare)
 			  (values (var->sym template) (list template)))
 			 ((symbol? template)
 			  (values `(rename ',template) '()))
@@ -220,7 +220,7 @@
 		     (cond ;; (... hoge)
 		      ((and ellipsis-valid
 			    (pair? template)
-			    (eq? (car template) ellipsis))
+			    (compare (car template) ellipsis))
 		       (if (and (pair? (cdr template)) (null? (cddr template)))
 			   (compile-expand-base (cadr template) #f)
 			   (values '(,_syntax-error "invalid template") '())))
@@ -234,7 +234,7 @@
 		      ;; (a ... rest syms)
 		      ((and ellipsis-valid
 			    (pair? (cdr template))
-			    (eq? (cadr template) ellipsis))
+			    (compare (cadr template) ellipsis))
 		       (let-values (((expand1 vars1)
 				     (compile-expand-base (car template) ellipsis-valid)))
 			 (loop (cddr template)
@@ -280,7 +280,7 @@
      (define (expand-clauses clauses rename)
        (cond ((null? clauses)
 	      `(,_quote (syntax-error "no matching pattern")))
-	     ((eq? (car clauses) 'mismatch)
+	     ((compare (car clauses) 'mismatch)
 	      `(,_syntax-error "invalid rule"))
 	     (else
 	      (let ((vars (car (car clauses)))
