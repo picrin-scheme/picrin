@@ -62,6 +62,7 @@
      (define _null? (r 'null?))
      (define _symbol? (r 'symbol?))
      (define _eqv? (r 'eqv?))
+     (define _string=? (r 'string=?))
      (define _map (r 'map))
      (define _vector->list (r 'vector->list))
      (define _list->vector (r 'list->vector))
@@ -91,6 +92,11 @@
 			  (compile-match-list pattern))
 			 ((vector? pattern)
 			  (compile-match-vector pattern))
+			 ((string? pattern)
+			  (values
+			   `(,_if (,_not (,_string=? ',pattern expr))
+				  (exit #f))
+			   '()))
 			 (else
 			  (values
 			   `(,_if (,_not (,_eqv? ',pattern expr))
