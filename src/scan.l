@@ -63,6 +63,10 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
   /* block comment */
 %x BLOCK_COMMENT
 
+  /* datum label */
+label		#{uinteger}
+%x DATUM_LABEL
+
 %%
 
 [ \t\n\r]	/* skip whitespace */
@@ -83,6 +87,19 @@ infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 }
 <BLOCK_COMMENT>.|\n	{
   /* skip block comment */
+}
+
+{label}		{
+  BEGIN(DATUM_LABEL);
+  yylval.i = atoi(yytext + 1);
+}
+<DATUM_LABEL>=	{
+  BEGIN(INITIAL);
+  return tLABEL_SET;
+}
+<DATUM_LABEL>#	{
+  BEGIN(INITIAL);
+  return tLABEL_REF;
 }
 
 "#;"		return tDATUM_COMMENT;

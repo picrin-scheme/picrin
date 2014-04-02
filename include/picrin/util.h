@@ -35,6 +35,15 @@ extern "C" {
 # define UNREACHABLE() (assert(false))
 #endif
 
+#define SWAP(type,a,b)                          \
+  SWAP_HELPER__(type,GENSYM(tmp),a,b)
+#define SWAP_HELPER__(type,tmp,a,b)             \
+  do {                                          \
+    type tmp = (a);                             \
+    (a) = (b);                                  \
+    (b) = tmp;                                  \
+  } while (0)
+
 #if defined(__cplusplus)
 }
 #endif

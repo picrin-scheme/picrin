@@ -11,7 +11,7 @@ extern "C" {
 
 enum {
   tEOF = 0,
-  tDATUM_COMMENT,
+  tLABEL_SET, tLABEL_REF, tDATUM_COMMENT,
   tLPAREN, tRPAREN, tLBRACKET, tRBRACKET, tDOT, tVPAREN,
   tQUOTE, tQUASIQUOTE, tUNQUOTE, tUNQUOTE_SPLICING,
   tINT, tBOOLEAN,
@@ -34,6 +34,7 @@ typedef union YYSTYPE {
 struct parser_control {
   pic_state *pic;
   YYSTYPE yylval;
+  xhash labels;
   jmp_buf jmp;
   const char *msg;
 };
