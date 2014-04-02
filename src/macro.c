@@ -237,8 +237,23 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
   pic_export(pic, sym);
 }
 
+static pic_value macroexpand_node(pic_state *, pic_value, struct pic_senv *, pic_value);
+
+static pic_value
+macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
+{
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value v;
+
+  v = macroexpand_node(pic, expr, senv, assoc_box);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, v);
+  return v;
+}
+
 static pic_sym
-symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv, pic_value assoc_box)
+macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv, pic_value assoc_box)
 {
   pic_sym rename;
   pic_value x;
@@ -264,21 +279,6 @@ symbol_rename(pic_state *pic, pic_sym sym, struct pic_senv *senv, pic_value asso
   }
 }
 
-static pic_value macroexpand_node(pic_state *, pic_value, struct pic_senv *, pic_value);
-
-static pic_value
-macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
-{
-  int ai = pic_gc_arena_preserve(pic);
-  pic_value v;
-
-  v = macroexpand_node(pic, expr, senv, assoc_box);
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, v);
-  return v;
-}
-
 static pic_value
 macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
 {
@@ -296,7 +296,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
     return macroexpand(pic, sc->expr, sc->senv, assoc_box);
   }
   case PIC_TT_SYMBOL: {
-    return pic_symbol_value(symbol_rename(pic, pic_sym(expr), senv, assoc_box));
+    return pic_symbol_value(macroexpand_symbol(pic, pic_sym(expr), senv, assoc_box));
   }
   case PIC_TT_PAIR: {
     pic_value car, v;
@@ -745,7 +745,7 @@ er_macro_rename(pic_state *pic)
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
   assoc_box = pic_proc_cv_ref(pic, pic_get_proc(pic), 2);
 
-  return pic_symbol_value(symbol_rename(pic, sym, mac_env, assoc_box));
+  return pic_symbol_value(macroexpand_symbol(pic, sym, mac_env, assoc_box));
 }
 
 static pic_value
@@ -764,8 +764,8 @@ er_macro_compare(pic_state *pic)
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
   assoc_box = pic_proc_cv_ref(pic, pic_get_proc(pic), 2);
 
-  m = symbol_rename(pic, pic_sym(a), use_env, assoc_box);
-  n = symbol_rename(pic, pic_sym(b), use_env, assoc_box);
+  m = macroexpand_symbol(pic, pic_sym(a), use_env, assoc_box);
+  n = macroexpand_symbol(pic, pic_sym(b), use_env, assoc_box);
 
   return pic_bool_value(m == n);
 }
@@ -830,7 +830,7 @@ ir_macro_inject(pic_state *pic)
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
   assoc_box = pic_proc_cv_ref(pic, pic_get_proc(pic), 2);
 
-  return pic_symbol_value(symbol_rename(pic, sym, use_env, assoc_box));
+  return pic_symbol_value(macroexpand_symbol(pic, sym, use_env, assoc_box));
 }
 
 static pic_value
@@ -849,8 +849,8 @@ ir_macro_compare(pic_state *pic)
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
   assoc_box = pic_proc_cv_ref(pic, pic_get_proc(pic), 2);
 
-  m = symbol_rename(pic, pic_sym(a), mac_env, assoc_box);
-  n = symbol_rename(pic, pic_sym(b), mac_env, assoc_box);
+  m = macroexpand_symbol(pic, pic_sym(a), mac_env, assoc_box);
+  n = macroexpand_symbol(pic, pic_sym(b), mac_env, assoc_box);
 
   return pic_bool_value(m == n);
 }
@@ -860,7 +860,7 @@ ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, pic_valu
 {
   if (pic_sym_p(expr)) {
     pic_value r;
-    r = pic_sym_value(symbol_rename(pic, pic_sym(expr), use_env, assoc_box));
+    r = pic_sym_value(macroexpand_symbol(pic, pic_sym(expr), use_env, assoc_box));
     *ir = pic_acons(pic, r, expr, *ir);
     return r;
   }
@@ -882,7 +882,7 @@ ir_macro_unwrap(pic_state *pic, pic_value expr, struct pic_senv *mac_env, pic_va
     if (pic_test(r = pic_assq(pic, expr, *ir))) {
       return pic_cdr(pic, r);
     }
-    return pic_sym_value(symbol_rename(pic, pic_sym(expr), mac_env, assoc_box));
+    return pic_sym_value(macroexpand_symbol(pic, pic_sym(expr), mac_env, assoc_box));
   }
   else if (pic_pair_p(expr)) {
     return pic_cons(pic,
