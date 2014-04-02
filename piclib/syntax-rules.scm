@@ -12,15 +12,6 @@
 	(loop (cons (car d) a) (cdr d))
 	(cons d a))))
 
-(define (number->string n)
-  ;; fixme
-  (case n
-    ((0) "0")
-    ((1) "1")
-    ((2) "2")
-    ((3) "3")
-    (else "hogee")))
-
 (define (var->sym v)
   (let loop ((cnt 0)
 	     (v v))
