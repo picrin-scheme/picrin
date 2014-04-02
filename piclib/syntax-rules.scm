@@ -84,7 +84,7 @@
 				  #f
 				  (exit #f))
 			   '()))
-			 ((compare pattern ellipsis)
+			 ((and ellipsis (compare pattern ellipsis))
 			  (values `(,_syntax-error "invalid pattern") '()))
 			 ((symbol? pattern)
 			  (values `(,_set! ,(var->sym pattern) expr) (list pattern)))
@@ -124,7 +124,7 @@
 					  (exit #f)))
 			  (append vars (append vars1 vars2)))))
 		      ;; (hoge ... rest args)
-		      ((compare (cadr pattern) ellipsis)
+		      ((and ellipsis (compare (cadr pattern) ellipsis))
 		       (let-values (((match-r vars-r) (compile-match-list-reverse pattern)))
 			 (values
 			  `(,_begin ,@(reverse matches)
@@ -152,7 +152,7 @@
 			      (matches '())
 			      (vars '())
 			      (accessor 'expr))
-		     (cond ((compare (car pattern) ellipsis)
+		     (cond ((and ellipsis (compare (car pattern) ellipsis))
 			    (let-values (((match1 vars1) (compile-match-ellipsis (cadr pattern))))
 			      (values
 			       `(,_begin ,@(reverse matches)
@@ -260,7 +260,7 @@
 		     `(,_list->vector ,expand1)
 		     vars1))))
 
-	 (compile-expand-base template #t)))
+	 (compile-expand-base template ellipsis)))
 
      (define (check-vars vars-pattern vars-template)
        ;;fixme
@@ -308,7 +308,9 @@
 		      (every? symbol? literals)
 		      (list? rules)
 		      (every? (lambda (l) (and (list? l) (= (length l) 2))) rules))
-		 `(syntax-rules ,ellipsis ,literals ,@rules)
+		 (if (member ellipsis literals compare)
+		     `(syntax-rules #f ,literals ,@rules)
+		     `(syntax-rules ,ellipsis ,literals ,@rules))
 		 #f))
 	   #f))
 
