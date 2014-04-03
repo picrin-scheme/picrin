@@ -131,7 +131,7 @@ pic_core_syntactic_env(pic_state *pic)
   return senv;
 }
 
-struct pic_macro *
+static struct pic_macro *
 macro_new(pic_state *pic, struct pic_proc *proc, struct pic_senv *mac_env)
 {
   struct pic_macro *mac;
@@ -141,6 +141,24 @@ macro_new(pic_state *pic, struct pic_proc *proc, struct pic_senv *mac_env)
   mac->proc = proc;
   return mac;
 }
+
+static void
+add_macro(pic_state *pic, pic_sym rename, struct pic_macro *mac)
+{
+  xh_put(&pic->macros, rename, &mac);
+}
+
+static struct pic_macro *
+find_macro(pic_state *pic, pic_sym rename)
+{
+  xh_entry *e;
+
+  if ((e = xh_get(&pic->macros, rename)) == NULL) {
+    return NULL;
+  }
+  return xh_val(e, struct pic_macro *);
+}
+
 
 static struct pic_sc *
 sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
@@ -231,7 +249,7 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
   /* symbol registration */
   sym = pic_intern_cstr(pic, name);
   rename = pic_add_rename(pic, pic->lib->senv, sym);
-  xh_put(&pic->macros, rename, &mac);
+  add_macro(pic, rename, mac);
 
   /* auto export! */
   pic_export(pic, sym);
@@ -346,7 +364,6 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, pic
 {
   pic_value var, val;
   pic_sym sym, rename;
-  struct pic_macro *mac;
 
   if (pic_length(pic, expr) != 3) {
     pic_error(pic, "syntax error");
@@ -376,8 +393,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, pic
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
   }
 
-  mac = macro_new(pic, pic_proc_ptr(val), senv);
-  xh_put(&pic->macros, rename, &mac);
+  add_macro(pic, rename, macro_new(pic, pic_proc_ptr(val), senv));
 
   return pic_none_value();
 }
@@ -387,7 +403,6 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   pic_value var, val;
   pic_sym sym, rename;
-  struct pic_macro *mac;
 
   if (pic_length(pic, expr) < 2) {
     pic_error(pic, "syntax error");
@@ -425,8 +440,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
   }
 
-  mac = macro_new(pic, pic_proc_ptr(val), NULL);
-  xh_put(&pic->macros, rename, &mac);
+  add_macro(pic, rename, macro_new(pic, pic_proc_ptr(val), NULL));
 
   return pic_none_value();
 }
@@ -492,6 +506,39 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_va
 }
 
 static pic_value
+macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
+{
+  pic_value v, args;
+
+#if DEBUG
+  puts("before expand-1:");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
+  if (mac->senv == NULL) { /* legacy macro */
+    args = pic_cdr(pic, expr);
+  }
+  else {
+    args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
+  }
+
+  pic_try {
+    v = pic_apply(pic, mac->proc, args);
+  } pic_catch {
+    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+  }
+
+#if DEBUG
+  puts("after expand-1:");
+  pic_debug(pic, v);
+  puts("");
+#endif
+
+  return macroexpand(pic, v, senv, assoc_box);
+}
+
+static pic_value
 macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
 {
 #if DEBUG
@@ -509,7 +556,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
   }
   case PIC_TT_PAIR: {
     pic_value car;
-    xh_entry *e;
+    struct pic_macro *mac;
 
     if (! pic_list_p(expr)) {
       pic_errorf(pic, "cannot macroexpand improper list: ~s", expr);
@@ -522,67 +569,30 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
       if (tag == pic->sDEFINE_LIBRARY) {
         return macroexpand_deflibrary(pic, expr);
       }
-
       else if (tag == pic->sIMPORT) {
         return macroexpand_import(pic, expr);
       }
-
       else if (tag == pic->sEXPORT) {
         return macroexpand_export(pic, expr);
       }
-
       else if (tag == pic->sDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, senv, assoc_box);
       }
-
       else if (tag == pic->sDEFINE_MACRO) {
         return macroexpand_defmacro(pic, expr, senv);
       }
-
       else if (tag == pic->sLAMBDA) {
         return macroexpand_lambda(pic, expr, senv, assoc_box);
       }
-
       else if (tag == pic->sDEFINE) {
         return macroexpand_define(pic, expr, senv, assoc_box);
       }
-
       else if (tag == pic->sQUOTE) {
 	return pic_cons(pic, car, pic_cdr(pic, expr));
       }
 
-      /* macro */
-      if ((e = xh_get(&pic->macros, tag)) != NULL) {
-        pic_value v, args;
-        struct pic_macro *mac;
-
-#if DEBUG
-	puts("before expand-1:");
-	pic_debug(pic, expr);
-	puts("");
-#endif
-
-        mac = xh_val(e, struct pic_macro *);
-	if (mac->senv == NULL) { /* legacy macro */
-          args = pic_cdr(pic, expr);
-        }
-        else {
-          args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
-        }
-
-        pic_try {
-          v = pic_apply(pic, mac->proc, args);
-        } pic_catch {
-          pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
-        }
-
-#if DEBUG
-	puts("after expand-1:");
-	pic_debug(pic, v);
-	puts("");
-#endif
-
-	return macroexpand(pic, v, senv, assoc_box);
+      if ((mac = find_macro(pic, tag)) != NULL) {
+        return macroexpand_macro(pic, mac, expr, senv, assoc_box);
       }
     }
 
