@@ -91,12 +91,6 @@ senv_new_local(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value
   return senv;
 }
 
-static void
-senv_add_core(pic_state *pic, struct pic_senv *senv, pic_sym sym)
-{
-  pic_put_rename(pic, senv, sym, sym);
-}
-
 struct pic_senv *
 pic_null_syntactic_env(pic_state *pic)
 {
@@ -108,9 +102,9 @@ pic_minimal_syntactic_env(pic_state *pic)
 {
   struct pic_senv *senv = pic_null_syntactic_env(pic);
 
-  senv_add_core(pic, senv, pic->sDEFINE_LIBRARY);
-  senv_add_core(pic, senv, pic->sIMPORT);
-  senv_add_core(pic, senv, pic->sEXPORT);
+  pic_put_rename(pic, senv, pic->sDEFINE_LIBRARY, pic->sDEFINE_LIBRARY);
+  pic_put_rename(pic, senv, pic->sIMPORT, pic->sIMPORT);
+  pic_put_rename(pic, senv, pic->sEXPORT, pic->sEXPORT);
 
   return senv;
 }
@@ -120,13 +114,13 @@ pic_core_syntactic_env(pic_state *pic)
 {
   struct pic_senv *senv = pic_minimal_syntactic_env(pic);
 
-  senv_add_core(pic, senv, pic->sDEFINE);
-  senv_add_core(pic, senv, pic->sSETBANG);
-  senv_add_core(pic, senv, pic->sQUOTE);
-  senv_add_core(pic, senv, pic->sLAMBDA);
-  senv_add_core(pic, senv, pic->sIF);
-  senv_add_core(pic, senv, pic->sBEGIN);
-  senv_add_core(pic, senv, pic->sDEFINE_SYNTAX);
+  pic_put_rename(pic, senv, pic->sDEFINE, pic->sDEFINE);
+  pic_put_rename(pic, senv, pic->sSETBANG, pic->sSETBANG);
+  pic_put_rename(pic, senv, pic->sQUOTE, pic->sQUOTE);
+  pic_put_rename(pic, senv, pic->sLAMBDA, pic->sLAMBDA);
+  pic_put_rename(pic, senv, pic->sIF, pic->sIF);
+  pic_put_rename(pic, senv, pic->sBEGIN, pic->sBEGIN);
+  pic_put_rename(pic, senv, pic->sDEFINE_SYNTAX, pic->sDEFINE_SYNTAX);
 
   return senv;
 }
@@ -1010,7 +1004,7 @@ pic_init_macro(pic_state *pic)
   pic_deflibrary ("(picrin macro)") {
 
     /* export define-macro syntax */
-    senv_add_core(pic, pic->lib->senv, pic->sDEFINE_MACRO);
+    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE_MACRO, pic->sDEFINE_MACRO);
     pic_export(pic, pic->sDEFINE_MACRO);
 
     pic_defun(pic, "gensym", pic_macro_gensym);
