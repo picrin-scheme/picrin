@@ -280,6 +280,218 @@ macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv, pic_value
 }
 
 static pic_value
+macroexpand_deflibrary(pic_state *pic, pic_value expr)
+{
+  struct pic_lib *prev = pic->lib;
+  pic_value v;
+
+  if (pic_length(pic, expr) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  pic_make_library(pic, pic_cadr(pic, expr));
+
+  pic_try {
+    pic_in_library(pic, pic_cadr(pic, expr));
+
+    pic_for_each (v, pic_cddr(pic, expr)) {
+      int ai = pic_gc_arena_preserve(pic);
+
+      pic_eval(pic, v);
+
+      pic_gc_arena_restore(pic, ai);
+    }
+
+    pic_in_library(pic, prev->name);
+  }
+  pic_catch {
+    /* restores pic->lib even if an error occurs */
+    pic_in_library(pic, prev->name);
+    pic_throw(pic, pic->err);
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_import(pic_state *pic, pic_value expr)
+{
+  pic_value spec;
+
+  pic_for_each (spec, pic_cdr(pic, expr)) {
+    pic_import(pic, spec);
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_export(pic_state *pic, pic_value expr)
+{
+  pic_value spec;
+
+  pic_for_each (spec, pic_cdr(pic, expr)) {
+    if (! pic_sym_p(spec)) {
+      pic_error(pic, "syntax error");
+    }
+    /* TODO: warn if symbol is shadowed by local variable */
+    pic_export(pic, pic_sym(spec));
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
+{
+  pic_value var, val;
+  pic_sym sym, rename;
+  struct pic_macro *mac;
+
+  if (pic_length(pic, expr) != 3) {
+    pic_error(pic, "syntax error");
+  }
+
+  var = pic_cadr(pic, expr);
+  if (! pic_sym_p(var)) {
+    var = macroexpand(pic, var, senv, assoc_box);
+  }
+  if (! pic_sym_p(var)) {
+    pic_error(pic, "binding to non-symbol object");
+  }
+  sym = pic_sym(var);
+  if (! pic_find_rename(pic, senv, sym, &rename)) {
+    rename = pic_add_rename(pic, senv, sym);
+  }
+
+  val = pic_cadr(pic, pic_cdr(pic, expr));
+
+  pic_try {
+    val = pic_eval(pic, val);
+  } pic_catch {
+    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+  }
+
+  if (! pic_proc_p(val)) {
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+  }
+
+  mac = macro_new(pic, pic_proc_ptr(val), senv);
+  xh_put(&pic->macros, rename, &mac);
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
+  pic_value var, val;
+  pic_sym sym, rename;
+  struct pic_macro *mac;
+
+  if (pic_length(pic, expr) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  var = pic_car(pic, pic_cdr(pic, expr));
+  if (pic_pair_p(var)) {
+    /* FIXME: unhygienic */
+    val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
+                   pic_cons(pic, pic_cdr(pic, var),
+                            pic_cdr(pic, pic_cdr(pic, expr))));
+    var = pic_car(pic, var);
+  }
+  else {
+    if (pic_length(pic, expr) != 3) {
+      pic_error(pic, "syntax_error");
+    }
+    val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, expr)));
+  }
+  if (! pic_sym_p(var)) {
+    pic_error(pic, "syntax error");
+  }
+  sym = pic_sym(var);
+  if (! pic_find_rename(pic, senv, sym, &rename)) {
+    rename = pic_add_rename(pic, senv, sym);
+  }
+
+  pic_try {
+    val = pic_eval(pic, val);
+  } pic_catch {
+    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+  }
+
+  if (! pic_proc_p(val)) {
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+  }
+
+  mac = macro_new(pic, pic_proc_ptr(val), NULL);
+  xh_put(&pic->macros, rename, &mac);
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
+{
+  pic_sym sym;
+  pic_value formals;
+
+  if (pic_length(pic, expr) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  formals = pic_cadr(pic, expr);
+  if (pic_pair_p(formals)) {
+    struct pic_senv *in = senv_new_local(pic, pic_cdr(pic, formals), senv, assoc_box);
+    pic_value a;
+
+    /* defined symbol */
+    a = pic_car(pic, formals);
+    if (! pic_sym_p(a)) {
+      a = macroexpand(pic, a, senv, assoc_box);
+    }
+    if (! pic_sym_p(a)) {
+      pic_error(pic, "binding to non-symbol object");
+    }
+    sym = pic_sym(a);
+    if (! pic_find_rename(pic, senv, sym, NULL)) {
+      pic_add_rename(pic, senv, sym);
+    }
+
+    /* binding value */
+    return pic_cons(pic, pic_sym_value(pic->sDEFINE),
+                    pic_cons(pic,
+                             macroexpand_list(pic, pic_cadr(pic, expr), in, assoc_box),
+                             macroexpand_list(pic, pic_cddr(pic, expr), in, assoc_box)));
+  }
+
+  if (! pic_sym_p(formals)) {
+    formals = macroexpand(pic, formals, senv, assoc_box);
+  }
+  if (! pic_sym_p(formals)) {
+    pic_error(pic, "binding to non-symbol object");
+  }
+  sym = pic_sym(formals);
+  if (! pic_find_rename(pic, senv, sym, NULL)) {
+    pic_add_rename(pic, senv, sym);
+  }
+
+  return pic_cons(pic, pic_symbol_value(pic->sDEFINE), macroexpand_list(pic, pic_cdr(pic, expr), senv, assoc_box));
+}
+
+static pic_value
+macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
+{
+  struct pic_senv *in = senv_new_local(pic, pic_cadr(pic, expr), senv, assoc_box);
+
+  return pic_cons(pic, pic_sym_value(pic->sLAMBDA),
+                  pic_cons(pic,
+                           macroexpand_list(pic, pic_cadr(pic, expr), in, assoc_box),
+                           macroexpand_list(pic, pic_cddr(pic, expr), in, assoc_box)));
+}
+
+static pic_value
 macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
 {
 #if DEBUG
@@ -290,16 +502,13 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
 
   switch (pic_type(expr)) {
   case PIC_TT_SC: {
-    struct pic_sc *sc;
-
-    sc = pic_sc(expr);
-    return macroexpand(pic, sc->expr, sc->senv, assoc_box);
+    return macroexpand(pic, pic_sc(expr)->expr, pic_sc(expr)->senv, assoc_box);
   }
   case PIC_TT_SYMBOL: {
     return pic_symbol_value(macroexpand_symbol(pic, pic_sym(expr), senv, assoc_box));
   }
   case PIC_TT_PAIR: {
-    pic_value car, v;
+    pic_value car;
     xh_entry *e;
 
     if (! pic_list_p(expr)) {
@@ -311,195 +520,31 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
       pic_sym tag = pic_sym(car);
 
       if (tag == pic->sDEFINE_LIBRARY) {
-        struct pic_lib *prev = pic->lib;
-
-        if (pic_length(pic, expr) < 2) {
-          pic_error(pic, "syntax error");
-        }
-        pic_make_library(pic, pic_cadr(pic, expr));
-
-        pic_try {
-          pic_in_library(pic, pic_cadr(pic, expr));
-
-          pic_for_each (v, pic_cddr(pic, expr)) {
-            int ai = pic_gc_arena_preserve(pic);
-
-            pic_eval(pic, v);
-
-            pic_gc_arena_restore(pic, ai);
-          }
-
-          pic_in_library(pic, prev->name);
-        }
-        pic_catch {
-          /* restores pic->lib even if an error occurs */
-          pic_in_library(pic, prev->name);
-          pic_throw(pic, pic->err);
-        }
-
-        return pic_none_value();
+        return macroexpand_deflibrary(pic, expr);
       }
 
       else if (tag == pic->sIMPORT) {
-        pic_value spec;
-        pic_for_each (spec, pic_cdr(pic, expr)) {
-          pic_import(pic, spec);
-        }
-        return pic_none_value();
+        return macroexpand_import(pic, expr);
       }
 
       else if (tag == pic->sEXPORT) {
-        pic_value spec;
-        pic_for_each (spec, pic_cdr(pic, expr)) {
-          if (! pic_sym_p(spec)) {
-            pic_error(pic, "syntax error");
-          }
-          /* TODO: warn if symbol is shadowed by local variable */
-          pic_export(pic, pic_sym(spec));
-        }
-        return pic_none_value();
+        return macroexpand_export(pic, expr);
       }
 
       else if (tag == pic->sDEFINE_SYNTAX) {
-	pic_value var, val;
-        pic_sym sym, rename;
-        struct pic_macro *mac;
-
-	if (pic_length(pic, expr) != 3) {
-	  pic_error(pic, "syntax error");
-	}
-
-	var = pic_cadr(pic, expr);
-	if (! pic_sym_p(var)) {
-	  var = macroexpand(pic, var, senv, assoc_box);
-	}
-        if (! pic_sym_p(var)) {
-          pic_error(pic, "binding to non-symbol object");
-        }
-        sym = pic_sym(var);
-        if (! pic_find_rename(pic, senv, sym, &rename)) {
-          rename = pic_add_rename(pic, senv, sym);
-        }
-
-	val = pic_cadr(pic, pic_cdr(pic, expr));
-
-        pic_try {
-          v = pic_eval(pic, val);
-        } pic_catch {
-	  pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
-        }
-
-        if (! pic_proc_p(v)) {
-          pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
-        }
-
-        mac = macro_new(pic, pic_proc_ptr(v), senv);
-        xh_put(&pic->macros, rename, &mac);
-
-	return pic_none_value();
+        return macroexpand_defsyntax(pic, expr, senv, assoc_box);
       }
 
       else if (tag == pic->sDEFINE_MACRO) {
-	pic_value var, val;
-        pic_sym sym, rename;
-        struct pic_macro *mac;
-
-	if (pic_length(pic, expr) < 2) {
-	  pic_error(pic, "syntax error");
-	}
-
-	var = pic_car(pic, pic_cdr(pic, expr));
-	if (pic_pair_p(var)) {
-	  /* FIXME: unhygienic */
-	  val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
-			 pic_cons(pic, pic_cdr(pic, var),
-				  pic_cdr(pic, pic_cdr(pic, expr))));
-	  var = pic_car(pic, var);
-	}
-	else {
-	  if (pic_length(pic, expr) != 3) {
-	    pic_error(pic, "syntax_error");
-	  }
-	  val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, expr)));
-	}
-	if (! pic_sym_p(var)) {
-	  pic_error(pic, "syntax error");
-	}
-        sym = pic_sym(var);
-        if (! pic_find_rename(pic, senv, sym, &rename)) {
-          rename = pic_add_rename(pic, senv, sym);
-        }
-
-        pic_try {
-          v = pic_eval(pic, val);
-        } pic_catch {
-	  pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
-        }
-
-        if (! pic_proc_p(v)) {
-          pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
-        }
-
-        mac = macro_new(pic, pic_proc_ptr(v), NULL);
-        xh_put(&pic->macros, rename, &mac);
-
-	return pic_none_value();
+        return macroexpand_defmacro(pic, expr, senv);
       }
 
       else if (tag == pic->sLAMBDA) {
-	struct pic_senv *in = senv_new_local(pic, pic_cadr(pic, expr), senv, assoc_box);
-
-	return pic_cons(pic, car,
-		     pic_cons(pic,
-			      macroexpand_list(pic, pic_cadr(pic, expr), in, assoc_box),
-			      macroexpand_list(pic, pic_cddr(pic, expr), in, assoc_box)));
+        return macroexpand_lambda(pic, expr, senv, assoc_box);
       }
 
       else if (tag == pic->sDEFINE) {
-	pic_sym sym;
-	pic_value formals;
-
-	if (pic_length(pic, expr) < 2) {
-	  pic_error(pic, "syntax error");
-	}
-
-	formals = pic_cadr(pic, expr);
-	if (pic_pair_p(formals)) {
-	  struct pic_senv *in = senv_new_local(pic, pic_cdr(pic, formals), senv, assoc_box);
-	  pic_value a;
-
-	  /* defined symbol */
-	  a = pic_car(pic, formals);
-          if (! pic_sym_p(a)) {
-            a = macroexpand(pic, a, senv, assoc_box);
-          }
-	  if (! pic_sym_p(a)) {
-	    pic_error(pic, "binding to non-symbol object");
-	  }
-          sym = pic_sym(a);
-          if (! pic_find_rename(pic, senv, sym, NULL)) {
-            pic_add_rename(pic, senv, sym);
-          }
-
-	  /* binding value */
-	  return pic_cons(pic, car,
-                       pic_cons(pic,
-				macroexpand_list(pic, pic_cadr(pic, expr), in, assoc_box),
-				macroexpand_list(pic, pic_cddr(pic, expr), in, assoc_box)));
-	}
-
-        if (! pic_sym_p(formals)) {
-          formals = macroexpand(pic, formals, senv, assoc_box);
-        }
-	if (! pic_sym_p(formals)) {
-	  pic_error(pic, "binding to non-symbol object");
-	}
-        sym = pic_sym(formals);
-        if (! pic_find_rename(pic, senv, sym, NULL)) {
-          pic_add_rename(pic, senv, sym);
-        }
-
-	return pic_cons(pic, pic_symbol_value(tag), macroexpand_list(pic, pic_cdr(pic, expr), senv, assoc_box));
+        return macroexpand_define(pic, expr, senv, assoc_box);
       }
 
       else if (tag == pic->sQUOTE) {
