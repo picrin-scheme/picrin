@@ -127,6 +127,7 @@ repl(pic_state *pic)
     pic_catch {
       printf("%s\n", pic_str_cstr(pic_get_backtrace(pic)));
       pic->err = NULL;
+      pic->ci = pic->cibase;
       code[0] = '\0';
     }
 
