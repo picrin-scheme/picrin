@@ -500,6 +500,12 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_va
 }
 
 static pic_value
+macroexpand_quote(pic_state *pic, pic_value expr)
+{
+  return pic_cons(pic, pic_sym_value(pic->sQUOTE), pic_cdr(pic, expr));
+}
+
+static pic_value
 macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
 {
   pic_value v, args;
@@ -582,7 +588,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
         return macroexpand_define(pic, expr, senv, assoc_box);
       }
       else if (tag == pic->sQUOTE) {
-	return pic_cons(pic, car, pic_cdr(pic, expr));
+        return macroexpand_quote(pic, expr);
       }
 
       if ((mac = find_macro(pic, tag)) != NULL) {
