@@ -48,22 +48,16 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, pic_value);
 static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *, pic_value);
 
-static struct pic_senv *
-senv_new(pic_state *pic, struct pic_senv *up)
+struct pic_senv *
+pic_null_syntactic_env(pic_state *pic)
 {
   struct pic_senv *senv;
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = up;
+  senv->up = NULL;
   xh_init_int(&senv->renames, sizeof(pic_sym));
 
   return senv;
-}
-
-struct pic_senv *
-pic_null_syntactic_env(pic_state *pic)
-{
-  return senv_new(pic, NULL);
 }
 
 struct pic_senv *
@@ -100,7 +94,9 @@ push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value ass
   struct pic_senv *senv;
   pic_value a;
 
-  senv = senv_new(pic, up);
+  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  senv->up = up;
+  xh_init_int(&senv->renames, sizeof(pic_sym));
 
   for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
