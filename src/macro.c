@@ -142,6 +142,12 @@ add_macro(pic_state *pic, pic_sym rename, struct pic_macro *mac)
   xh_put(&pic->macros, rename, &mac);
 }
 
+static void
+define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_senv *senv)
+{
+  add_macro(pic, rename, macro_new(pic, proc, senv));
+}
+
 static struct pic_macro *
 find_macro(pic_state *pic, pic_sym rename)
 {
@@ -233,16 +239,12 @@ pic_export(pic_state *pic, pic_sym sym)
 void
 pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 {
-  struct pic_macro *mac;
   pic_sym sym, rename;
-
-  /* new macro */
-  mac = macro_new(pic, macro, NULL);
 
   /* symbol registration */
   sym = pic_intern_cstr(pic, name);
   rename = pic_add_rename(pic, pic->lib->senv, sym);
-  add_macro(pic, rename, mac);
+  define_macro(pic, rename, macro, NULL);
 
   /* auto export! */
   pic_export(pic, sym);
@@ -386,7 +388,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, pic
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
   }
 
-  add_macro(pic, rename, macro_new(pic, pic_proc_ptr(val), senv));
+  define_macro(pic, rename, pic_proc_ptr(val), senv);
 
   return pic_none_value();
 }
@@ -433,7 +435,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
   }
 
-  add_macro(pic, rename, macro_new(pic, pic_proc_ptr(val), NULL));
+  define_macro(pic, rename, pic_proc_ptr(val), NULL);
 
   return pic_none_value();
 }
