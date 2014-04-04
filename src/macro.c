@@ -143,46 +143,6 @@ find_macro(pic_state *pic, pic_sym rename)
   return xh_val(e, struct pic_macro *);
 }
 
-static struct pic_sc *
-sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
-{
-  struct pic_sc *sc;
-
-  sc = (struct pic_sc *)pic_obj_alloc(pic, sizeof(struct pic_sc), PIC_TT_SC);
-  sc->expr = expr;
-  sc->senv = senv;
-  return sc;
-}
-
-static bool
-identifier_p(pic_value obj)
-{
-  if (pic_sym_p(obj)) {
-    return true;
-  }
-  if (pic_sc_p(obj)) {
-    return identifier_p(pic_sc_ptr(obj)->expr);
-  }
-  return false;
-}
-
-static bool
-identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_value x, struct pic_senv *e2, pic_value y)
-{
-  pic_value box;
-
-  if (! (identifier_p(x) && identifier_p(y))) {
-    return false;
-  }
-
-  box = pic_box(pic, pic_nil_value());
-
-  x = macroexpand(pic, x, e1, box);
-  y = macroexpand(pic, y, e2, box);
-
-  return pic_eq_p(x, y);
-}
-
 void
 pic_import(pic_state *pic, pic_value spec)
 {
@@ -726,6 +686,46 @@ pic_macro_macroexpand(pic_state *pic)
   return pic_macroexpand(pic, expr);
 }
 
+static struct pic_sc *
+sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
+  struct pic_sc *sc;
+
+  sc = (struct pic_sc *)pic_obj_alloc(pic, sizeof(struct pic_sc), PIC_TT_SC);
+  sc->expr = expr;
+  sc->senv = senv;
+  return sc;
+}
+
+static bool
+sc_identifier_p(pic_value obj)
+{
+  if (pic_sym_p(obj)) {
+    return true;
+  }
+  if (pic_sc_p(obj)) {
+    return sc_identifier_p(pic_sc_ptr(obj)->expr);
+  }
+  return false;
+}
+
+static bool
+sc_identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_value x, struct pic_senv *e2, pic_value y)
+{
+  pic_value box;
+
+  if (! (sc_identifier_p(x) && sc_identifier_p(y))) {
+    return false;
+  }
+
+  box = pic_box(pic, pic_nil_value());
+
+  x = macroexpand(pic, x, e1, box);
+  y = macroexpand(pic, y, e2, box);
+
+  return pic_eq_p(x, y);
+}
+
 static pic_value
 pic_macro_make_sc(pic_state *pic)
 {
@@ -750,7 +750,7 @@ pic_macro_identifier_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(identifier_p(obj));
+  return pic_bool_value(sc_identifier_p(obj));
 }
 
 static pic_value
@@ -770,7 +770,7 @@ pic_macro_identifier_eq_p(pic_state *pic)
   }
   e2 = pic_senv_ptr(f);
 
-  return pic_bool_value(identifier_eq_p(pic, e1, x, e2, y));
+  return pic_bool_value(sc_identifier_eq_p(pic, e1, x, e2, y));
 }
 
 static pic_value
