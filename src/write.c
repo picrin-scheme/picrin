@@ -320,7 +320,7 @@ write_core(struct writer_control *p, pic_value obj)
     break;
   case PIC_TT_SC:
     xfprintf(file, "#<sc %p: ", pic_ptr(obj));
-    write_core(p, pic_sc(obj)->expr);
+    write_core(p, pic_sc_ptr(obj)->expr);
     xfprintf(file, ">");
     break;
   case PIC_TT_LIB:
