@@ -125,27 +125,16 @@ pic_core_syntactic_env(pic_state *pic)
   return senv;
 }
 
-static struct pic_macro *
-macro_new(pic_state *pic, struct pic_proc *proc, struct pic_senv *mac_env)
+static void
+define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_senv *senv)
 {
   struct pic_macro *mac;
 
   mac = (struct pic_macro *)pic_obj_alloc(pic, sizeof(struct pic_macro), PIC_TT_MACRO);
-  mac->senv = mac_env;
+  mac->senv = senv;
   mac->proc = proc;
-  return mac;
-}
 
-static void
-add_macro(pic_state *pic, pic_sym rename, struct pic_macro *mac)
-{
   xh_put(&pic->macros, rename, &mac);
-}
-
-static void
-define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_senv *senv)
-{
-  add_macro(pic, rename, macro_new(pic, proc, senv));
 }
 
 static struct pic_macro *
