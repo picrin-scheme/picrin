@@ -27,13 +27,12 @@ struct pic_sc {
   struct pic_senv *senv;
 };
 
-#define pic_sc(v) ((struct pic_sc *)pic_ptr(v))
 #define pic_sc_p(v) (pic_type(v) == PIC_TT_SC)
+#define pic_sc_ptr(v) ((struct pic_sc *)pic_ptr(v))
 
-#define pic_macro(v) ((struct pic_macro *)pic_ptr(v))
 #define pic_macro_p(v) (pic_type(v) == PIC_TT_MACRO)
+#define pic_macro_ptr(v) ((struct pic_macro *)pic_ptr(v))
 
-#define pic_senv(v) ((struct pic_senv *)pic_ptr(v))
 #define pic_senv_p(v) (pic_type(v) == PIC_TT_SENV)
 #define pic_senv_ptr(v) ((struct pic_senv *)pic_ptr(v))
 
