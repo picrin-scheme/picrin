@@ -85,14 +85,21 @@ pic_init_core(pic_state *pic)
   pic_deflibrary ("(scheme base)") {
 
     /* load core syntaces */
-    pic->lib->senv = pic_core_syntactic_env(pic);
-    pic_export(pic, pic_intern_cstr(pic, "define"));
-    pic_export(pic, pic_intern_cstr(pic, "set!"));
-    pic_export(pic, pic_intern_cstr(pic, "quote"));
-    pic_export(pic, pic_intern_cstr(pic, "lambda"));
-    pic_export(pic, pic_intern_cstr(pic, "if"));
-    pic_export(pic, pic_intern_cstr(pic, "begin"));
-    pic_export(pic, pic_intern_cstr(pic, "define-syntax"));
+    pic->lib->senv = pic_null_syntactic_env(pic);
+    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE, pic->sDEFINE);
+    pic_put_rename(pic, pic->lib->senv, pic->sSETBANG, pic->sSETBANG);
+    pic_put_rename(pic, pic->lib->senv, pic->sQUOTE, pic->sQUOTE);
+    pic_put_rename(pic, pic->lib->senv, pic->sLAMBDA, pic->sLAMBDA);
+    pic_put_rename(pic, pic->lib->senv, pic->sIF, pic->sIF);
+    pic_put_rename(pic, pic->lib->senv, pic->sBEGIN, pic->sBEGIN);
+    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE_SYNTAX, pic->sDEFINE_SYNTAX);
+    pic_export(pic, pic->sDEFINE);
+    pic_export(pic, pic->sSETBANG);
+    pic_export(pic, pic->sQUOTE);
+    pic_export(pic, pic->sLAMBDA);
+    pic_export(pic, pic->sIF);
+    pic_export(pic, pic->sBEGIN);
+    pic_export(pic, pic->sDEFINE_SYNTAX);
 
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;

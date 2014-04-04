@@ -20,69 +20,10 @@ pic_null_syntactic_env(pic_state *pic)
   senv->up = NULL;
   xh_init_int(&senv->renames, sizeof(pic_sym));
 
-  return senv;
-}
-
-struct pic_senv *
-pic_minimal_syntactic_env(pic_state *pic)
-{
-  struct pic_senv *senv = pic_null_syntactic_env(pic);
-
   pic_put_rename(pic, senv, pic->sDEFINE_LIBRARY, pic->sDEFINE_LIBRARY);
   pic_put_rename(pic, senv, pic->sIMPORT, pic->sIMPORT);
   pic_put_rename(pic, senv, pic->sEXPORT, pic->sEXPORT);
 
-  return senv;
-}
-
-struct pic_senv *
-pic_core_syntactic_env(pic_state *pic)
-{
-  struct pic_senv *senv = pic_minimal_syntactic_env(pic);
-
-  pic_put_rename(pic, senv, pic->sDEFINE, pic->sDEFINE);
-  pic_put_rename(pic, senv, pic->sSETBANG, pic->sSETBANG);
-  pic_put_rename(pic, senv, pic->sQUOTE, pic->sQUOTE);
-  pic_put_rename(pic, senv, pic->sLAMBDA, pic->sLAMBDA);
-  pic_put_rename(pic, senv, pic->sIF, pic->sIF);
-  pic_put_rename(pic, senv, pic->sBEGIN, pic->sBEGIN);
-  pic_put_rename(pic, senv, pic->sDEFINE_SYNTAX, pic->sDEFINE_SYNTAX);
-
-  return senv;
-}
-
-static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, pic_value);
-
-static struct pic_senv *
-push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value assoc_box)
-{
-  struct pic_senv *senv;
-  pic_value a;
-
-  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = up;
-  xh_init_int(&senv->renames, sizeof(pic_sym));
-
-  for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
-    pic_value v = pic_car(pic, a);
-
-    if (! pic_sym_p(v)) {
-      v = macroexpand(pic, v, up, assoc_box);
-    }
-    if (! pic_sym_p(v)) {
-      pic_error(pic, "syntax error");
-    }
-    pic_add_rename(pic, senv, pic_sym(v));
-  }
-  if (! pic_sym_p(a)) {
-    a = macroexpand(pic, a, up, assoc_box);
-  }
-  if (pic_sym_p(a)) {
-    pic_add_rename(pic, senv, pic_sym(a));
-  }
-  else if (! pic_nil_p(a)) {
-    pic_error(pic, "syntax error");
-  }
   return senv;
 }
 
@@ -207,6 +148,39 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value ass
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, v);
   return v;
+}
+
+static struct pic_senv *
+push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value assoc_box)
+{
+  struct pic_senv *senv;
+  pic_value a;
+
+  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  senv->up = up;
+  xh_init_int(&senv->renames, sizeof(pic_sym));
+
+  for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
+    pic_value v = pic_car(pic, a);
+
+    if (! pic_sym_p(v)) {
+      v = macroexpand(pic, v, up, assoc_box);
+    }
+    if (! pic_sym_p(v)) {
+      pic_error(pic, "syntax error");
+    }
+    pic_add_rename(pic, senv, pic_sym(v));
+  }
+  if (! pic_sym_p(a)) {
+    a = macroexpand(pic, a, up, assoc_box);
+  }
+  if (pic_sym_p(a)) {
+    pic_add_rename(pic, senv, pic_sym(a));
+  }
+  else if (! pic_nil_p(a)) {
+    pic_error(pic, "syntax error");
+  }
+  return senv;
 }
 
 static pic_value
