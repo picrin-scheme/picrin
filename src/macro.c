@@ -385,7 +385,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
   var = pic_car(pic, pic_cdr(pic, expr));
   if (pic_pair_p(var)) {
     /* FIXME: unhygienic */
-    val = pic_cons(pic, pic_symbol_value(pic->sLAMBDA),
+    val = pic_cons(pic, pic_sym_value(pic->sLAMBDA),
                    pic_cons(pic, pic_cdr(pic, var),
                             pic_cdr(pic, pic_cdr(pic, expr))));
     var = pic_car(pic, var);
@@ -465,7 +465,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_va
     pic_add_rename(pic, senv, sym);
   }
 
-  return pic_cons(pic, pic_symbol_value(pic->sDEFINE), macroexpand_list(pic, pic_cdr(pic, expr), senv, assoc_box));
+  return pic_cons(pic, pic_sym_value(pic->sDEFINE), macroexpand_list(pic, pic_cdr(pic, expr), senv, assoc_box));
 }
 
 static pic_value
@@ -532,7 +532,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
     return macroexpand(pic, pic_sc_ptr(expr)->expr, pic_sc_ptr(expr)->senv, assoc_box);
   }
   case PIC_TT_SYMBOL: {
-    return pic_symbol_value(macroexpand_symbol(pic, pic_sym(expr), senv, assoc_box));
+    return pic_sym_value(macroexpand_symbol(pic, pic_sym(expr), senv, assoc_box));
   }
   case PIC_TT_PAIR: {
     pic_value car;
@@ -642,7 +642,7 @@ pic_macro_include(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   /* FIXME unhygienic */
-  body = pic_list1(pic, pic_symbol_value(pic->sBEGIN));
+  body = pic_list1(pic, pic_sym_value(pic->sBEGIN));
 
   for (i = 0; i < argc; ++i) {
     const char *filename;
@@ -673,7 +673,7 @@ pic_macro_gensym(pic_state *pic)
   pic_get_args(pic, "");
 
   uniq = pic_gensym(pic, pic_intern_cstr(pic, skel));
-  return pic_symbol_value(uniq);
+  return pic_sym_value(uniq);
 }
 
 static pic_value
@@ -785,7 +785,7 @@ er_macro_rename(pic_state *pic)
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
   assoc_box = pic_proc_cv_ref(pic, pic_get_proc(pic), 2);
 
-  return pic_symbol_value(macroexpand_symbol(pic, sym, mac_env, assoc_box));
+  return pic_sym_value(macroexpand_symbol(pic, sym, mac_env, assoc_box));
 }
 
 static pic_value
@@ -870,7 +870,7 @@ ir_macro_inject(pic_state *pic)
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
   assoc_box = pic_proc_cv_ref(pic, pic_get_proc(pic), 2);
 
-  return pic_symbol_value(macroexpand_symbol(pic, sym, use_env, assoc_box));
+  return pic_sym_value(macroexpand_symbol(pic, sym, use_env, assoc_box));
 }
 
 static pic_value
