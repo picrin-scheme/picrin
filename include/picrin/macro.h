@@ -42,6 +42,8 @@ pic_sym pic_add_rename(pic_state *, struct pic_senv *, pic_sym);
 bool pic_find_rename(pic_state *, struct pic_senv *, pic_sym, pic_sym * /* = NULL */);
 void pic_put_rename(pic_state *, struct pic_senv *, pic_sym, pic_sym);
 
+void pic_define_syntactic_keyword(pic_state *, struct pic_senv *, pic_sym);
+
 #if defined(__cplusplus)
 }
 #endif

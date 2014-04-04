@@ -86,20 +86,13 @@ pic_init_core(pic_state *pic)
 
     /* load core syntaces */
     pic->lib->senv = pic_null_syntactic_environment(pic);
-    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE, pic->sDEFINE);
-    pic_put_rename(pic, pic->lib->senv, pic->sSETBANG, pic->sSETBANG);
-    pic_put_rename(pic, pic->lib->senv, pic->sQUOTE, pic->sQUOTE);
-    pic_put_rename(pic, pic->lib->senv, pic->sLAMBDA, pic->sLAMBDA);
-    pic_put_rename(pic, pic->lib->senv, pic->sIF, pic->sIF);
-    pic_put_rename(pic, pic->lib->senv, pic->sBEGIN, pic->sBEGIN);
-    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE_SYNTAX, pic->sDEFINE_SYNTAX);
-    pic_export(pic, pic->sDEFINE);
-    pic_export(pic, pic->sSETBANG);
-    pic_export(pic, pic->sQUOTE);
-    pic_export(pic, pic->sLAMBDA);
-    pic_export(pic, pic->sIF);
-    pic_export(pic, pic->sBEGIN);
-    pic_export(pic, pic->sDEFINE_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sSETBANG);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sQUOTE);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLAMBDA);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sIF);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sBEGIN);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_SYNTAX);
 
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;

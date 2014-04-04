@@ -20,11 +20,21 @@ pic_null_syntactic_environment(pic_state *pic)
   senv->up = NULL;
   xh_init_int(&senv->renames, sizeof(pic_sym));
 
-  pic_put_rename(pic, senv, pic->sDEFINE_LIBRARY, pic->sDEFINE_LIBRARY);
-  pic_put_rename(pic, senv, pic->sIMPORT, pic->sIMPORT);
-  pic_put_rename(pic, senv, pic->sEXPORT, pic->sEXPORT);
+  pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY);
+  pic_define_syntactic_keyword(pic, senv, pic->sIMPORT);
+  pic_define_syntactic_keyword(pic, senv, pic->sEXPORT);
 
   return senv;
+}
+
+void
+pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+{
+  pic_put_rename(pic, senv, sym, sym);
+
+  if (pic->lib && pic->lib->senv == senv) {
+    pic_export(pic, sym);
+  }
 }
 
 pic_sym
@@ -969,8 +979,7 @@ pic_init_macro(pic_state *pic)
   pic_deflibrary ("(picrin macro)") {
 
     /* export define-macro syntax */
-    pic_put_rename(pic, pic->lib->senv, pic->sDEFINE_MACRO, pic->sDEFINE_MACRO);
-    pic_export(pic, pic->sDEFINE_MACRO);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_MACRO);
 
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
