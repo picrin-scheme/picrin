@@ -153,7 +153,6 @@ find_macro(pic_state *pic, pic_sym rename)
   return xh_val(e, struct pic_macro *);
 }
 
-
 static struct pic_sc *
 sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
