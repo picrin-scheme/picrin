@@ -40,9 +40,9 @@ struct pic_proc {
 #define pic_proc_irep_p(proc) ((proc)->kind == PIC_PROC_KIND_IREP)
 
 #define pic_proc_p(o) (pic_type(o) == PIC_TT_PROC)
-#define pic_env_p(o) (pic_type(o) == PIC_TT_ENV)
-
 #define pic_proc_ptr(o) ((struct pic_proc *)pic_ptr(o))
+
+#define pic_env_p(o) (pic_type(o) == PIC_TT_ENV)
 #define pic_env_ptr(o) ((struct pic_env *)pic_ptr(o))
 
 struct pic_proc *pic_proc_new(pic_state *, pic_func_t, const char *);
