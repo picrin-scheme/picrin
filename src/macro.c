@@ -166,7 +166,7 @@ identifier_p(pic_value obj)
     return true;
   }
   if (pic_sc_p(obj)) {
-    return identifier_p(pic_sc(obj)->expr);
+    return identifier_p(pic_sc_ptr(obj)->expr);
   }
   return false;
 }
@@ -539,7 +539,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
 
   switch (pic_type(expr)) {
   case PIC_TT_SC: {
-    return macroexpand(pic, pic_sc(expr)->expr, pic_sc(expr)->senv, assoc_box);
+    return macroexpand(pic, pic_sc_ptr(expr)->expr, pic_sc_ptr(expr)->senv, assoc_box);
   }
   case PIC_TT_SYMBOL: {
     return pic_symbol_value(macroexpand_symbol(pic, pic_sym(expr), senv, assoc_box));
@@ -743,7 +743,7 @@ pic_macro_make_sc(pic_state *pic)
     pic_error(pic, "make-syntactic-closure: senv required");
 
   /* just ignore free_vars for now */
-  sc = sc_new(pic, expr, pic_senv(senv));
+  sc = sc_new(pic, expr, pic_senv_ptr(senv));
 
   return pic_obj_value(sc);
 }
@@ -769,11 +769,11 @@ pic_macro_identifier_eq_p(pic_state *pic)
   if (! pic_senv_p(e)) {
     pic_error(pic, "unexpected type of argument 1");
   }
-  e1 = pic_senv(e);
+  e1 = pic_senv_ptr(e);
   if (! pic_senv_p(f)) {
     pic_error(pic, "unexpected type of argument 3");
   }
-  e2 = pic_senv(f);
+  e2 = pic_senv_ptr(f);
 
   return pic_bool_value(identifier_eq_p(pic, e1, x, e2, y));
 }
