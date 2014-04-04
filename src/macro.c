@@ -45,9 +45,6 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
   return true;
 }
 
-static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, pic_value);
-static pic_value macroexpand_list(pic_state *, pic_value, struct pic_senv *, pic_value);
-
 struct pic_senv *
 pic_null_syntactic_env(pic_state *pic)
 {
@@ -87,6 +84,8 @@ pic_core_syntactic_env(pic_state *pic)
 
   return senv;
 }
+
+static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, pic_value);
 
 static struct pic_senv *
 push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value assoc_box)
@@ -248,6 +247,41 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value ass
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, v);
   return v;
+}
+
+static pic_value
+macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv, pic_value assoc_box)
+{
+  int ai = pic_gc_arena_preserve(pic);
+  pic_value v, vs;
+
+  /* macroexpand in order */
+  vs = pic_nil_value();
+  while (pic_pair_p(list)) {
+    v = pic_car(pic, list);
+
+    vs = pic_cons(pic, macroexpand(pic, v, senv, assoc_box), vs);
+    list = pic_cdr(pic, list);
+
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, vs);
+    pic_gc_protect(pic, list);
+  }
+
+  list = macroexpand(pic, list, senv, assoc_box);
+
+  /* reverse the result */
+  pic_for_each (v, vs) {
+    list = pic_cons(pic, v, list);
+
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, vs);
+    pic_gc_protect(pic, list);
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, list);
+  return list;
 }
 
 static pic_sym
@@ -611,41 +645,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
     pic_errorf(pic, "unexpected value type: ~s", expr);
   }
   UNREACHABLE();
-}
-
-static pic_value
-macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv, pic_value assoc_box)
-{
-  int ai = pic_gc_arena_preserve(pic);
-  pic_value v, vs;
-
-  /* macroexpand in order */
-  vs = pic_nil_value();
-  while (pic_pair_p(list)) {
-    v = pic_car(pic, list);
-
-    vs = pic_cons(pic, macroexpand(pic, v, senv, assoc_box), vs);
-    list = pic_cdr(pic, list);
-
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, vs);
-    pic_gc_protect(pic, list);
-  }
-
-  list = macroexpand(pic, list, senv, assoc_box);
-
-  /* reverse the result */
-  pic_for_each (v, vs) {
-    list = pic_cons(pic, v, list);
-
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, vs);
-    pic_gc_protect(pic, list);
-  }
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, list);
-  return list;
 }
 
 pic_value
