@@ -11,40 +11,6 @@
 #include "picrin/error.h"
 #include "picrin/box.h"
 
-pic_sym
-pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
-{
-  pic_sym rename;
-
-  rename = pic_gensym(pic, sym);
-  pic_put_rename(pic, senv, sym, rename);
-  return rename;
-}
-
-void
-pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rename)
-{
-  UNUSED(pic);
-
-  xh_put(&senv->renames, sym, &rename);
-}
-
-bool
-pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *rename)
-{
-  xh_entry *e;
-
-  UNUSED(pic);
-
-  if ((e = xh_get(&senv->renames, sym)) == NULL) {
-    return false;
-  }
-  if (rename != NULL) {
-    *rename = xh_val(e, pic_sym);
-  }
-  return true;
-}
-
 struct pic_senv *
 pic_null_syntactic_env(pic_state *pic)
 {
@@ -120,27 +86,38 @@ push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value ass
   return senv;
 }
 
-static void
-define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_senv *senv)
+pic_sym
+pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 {
-  struct pic_macro *mac;
+  pic_sym rename;
 
-  mac = (struct pic_macro *)pic_obj_alloc(pic, sizeof(struct pic_macro), PIC_TT_MACRO);
-  mac->senv = senv;
-  mac->proc = proc;
-
-  xh_put(&pic->macros, rename, &mac);
+  rename = pic_gensym(pic, sym);
+  pic_put_rename(pic, senv, sym, rename);
+  return rename;
 }
 
-static struct pic_macro *
-find_macro(pic_state *pic, pic_sym rename)
+void
+pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rename)
+{
+  UNUSED(pic);
+
+  xh_put(&senv->renames, sym, &rename);
+}
+
+bool
+pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *rename)
 {
   xh_entry *e;
 
-  if ((e = xh_get(&pic->macros, rename)) == NULL) {
-    return NULL;
+  UNUSED(pic);
+
+  if ((e = xh_get(&senv->renames, sym)) == NULL) {
+    return false;
   }
-  return xh_val(e, struct pic_macro *);
+  if (rename != NULL) {
+    *rename = xh_val(e, pic_sym);
+  }
+  return true;
 }
 
 void
@@ -178,6 +155,29 @@ pic_export(pic_state *pic, pic_sym sym)
 #endif
 
   xh_put(&pic->lib->exports, sym, &rename);
+}
+
+static void
+define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_senv *senv)
+{
+  struct pic_macro *mac;
+
+  mac = (struct pic_macro *)pic_obj_alloc(pic, sizeof(struct pic_macro), PIC_TT_MACRO);
+  mac->senv = senv;
+  mac->proc = proc;
+
+  xh_put(&pic->macros, rename, &mac);
+}
+
+static struct pic_macro *
+find_macro(pic_state *pic, pic_sym rename)
+{
+  xh_entry *e;
+
+  if ((e = xh_get(&pic->macros, rename)) == NULL) {
+    return NULL;
+  }
+  return xh_val(e, struct pic_macro *);
 }
 
 void
