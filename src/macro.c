@@ -12,7 +12,7 @@
 #include "picrin/box.h"
 
 struct pic_senv *
-pic_null_syntactic_env(pic_state *pic)
+pic_null_syntactic_environment(pic_state *pic)
 {
   struct pic_senv *senv;
 

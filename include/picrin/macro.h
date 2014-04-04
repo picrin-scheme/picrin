@@ -36,7 +36,7 @@ struct pic_sc {
 #define pic_senv_p(v) (pic_type(v) == PIC_TT_SENV)
 #define pic_senv_ptr(v) ((struct pic_senv *)pic_ptr(v))
 
-struct pic_senv *pic_null_syntactic_env(pic_state *);
+struct pic_senv *pic_null_syntactic_environment(pic_state *);
 
 pic_sym pic_add_rename(pic_state *, struct pic_senv *, pic_sym);
 bool pic_find_rename(pic_state *, struct pic_senv *, pic_sym, pic_sym * /* = NULL */);

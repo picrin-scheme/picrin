@@ -85,7 +85,7 @@ pic_init_core(pic_state *pic)
   pic_deflibrary ("(scheme base)") {
 
     /* load core syntaces */
-    pic->lib->senv = pic_null_syntactic_env(pic);
+    pic->lib->senv = pic_null_syntactic_environment(pic);
     pic_put_rename(pic, pic->lib->senv, pic->sDEFINE, pic->sDEFINE);
     pic_put_rename(pic, pic->lib->senv, pic->sSETBANG, pic->sSETBANG);
     pic_put_rename(pic, pic->lib->senv, pic->sQUOTE, pic->sQUOTE);

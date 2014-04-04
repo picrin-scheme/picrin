@@ -24,7 +24,7 @@ pic_make_library(pic_state *pic, pic_value name)
     return lib;
   }
 
-  senv = pic_null_syntactic_env(pic);
+  senv = pic_null_syntactic_environment(pic);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->senv = senv;
