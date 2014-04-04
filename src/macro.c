@@ -60,37 +60,6 @@ senv_new(pic_state *pic, struct pic_senv *up)
   return senv;
 }
 
-static struct pic_senv *
-senv_new_local(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value assoc_box)
-{
-  struct pic_senv *senv;
-  pic_value a;
-
-  senv = senv_new(pic, up);
-
-  for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
-    pic_value v = pic_car(pic, a);
-
-    if (! pic_sym_p(v)) {
-      v = macroexpand(pic, v, up, assoc_box);
-    }
-    if (! pic_sym_p(v)) {
-      pic_error(pic, "syntax error");
-    }
-    pic_add_rename(pic, senv, pic_sym(v));
-  }
-  if (! pic_sym_p(a)) {
-    a = macroexpand(pic, a, up, assoc_box);
-  }
-  if (pic_sym_p(a)) {
-    pic_add_rename(pic, senv, pic_sym(a));
-  }
-  else if (! pic_nil_p(a)) {
-    pic_error(pic, "syntax error");
-  }
-  return senv;
-}
-
 struct pic_senv *
 pic_null_syntactic_env(pic_state *pic)
 {
@@ -122,6 +91,37 @@ pic_core_syntactic_env(pic_state *pic)
   pic_put_rename(pic, senv, pic->sBEGIN, pic->sBEGIN);
   pic_put_rename(pic, senv, pic->sDEFINE_SYNTAX, pic->sDEFINE_SYNTAX);
 
+  return senv;
+}
+
+static struct pic_senv *
+push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value assoc_box)
+{
+  struct pic_senv *senv;
+  pic_value a;
+
+  senv = senv_new(pic, up);
+
+  for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
+    pic_value v = pic_car(pic, a);
+
+    if (! pic_sym_p(v)) {
+      v = macroexpand(pic, v, up, assoc_box);
+    }
+    if (! pic_sym_p(v)) {
+      pic_error(pic, "syntax error");
+    }
+    pic_add_rename(pic, senv, pic_sym(v));
+  }
+  if (! pic_sym_p(a)) {
+    a = macroexpand(pic, a, up, assoc_box);
+  }
+  if (pic_sym_p(a)) {
+    pic_add_rename(pic, senv, pic_sym(a));
+  }
+  else if (! pic_nil_p(a)) {
+    pic_error(pic, "syntax error");
+  }
   return senv;
 }
 
@@ -441,7 +441,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_va
 
   formals = pic_cadr(pic, expr);
   if (pic_pair_p(formals)) {
-    struct pic_senv *in = senv_new_local(pic, pic_cdr(pic, formals), senv, assoc_box);
+    struct pic_senv *in = push_scope(pic, pic_cdr(pic, formals), senv, assoc_box);
     pic_value a;
 
     /* defined symbol */
@@ -481,7 +481,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_va
 static pic_value
 macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
 {
-  struct pic_senv *in = senv_new_local(pic, pic_cadr(pic, expr), senv, assoc_box);
+  struct pic_senv *in = push_scope(pic, pic_cadr(pic, expr), senv, assoc_box);
 
   return pic_cons(pic, pic_sym_value(pic->sLAMBDA),
                   pic_cons(pic,
