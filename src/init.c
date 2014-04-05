@@ -31,7 +31,7 @@ void pic_init_load(pic_state *);
 void pic_init_write(pic_state *);
 
 void
-pic_load_stdlib(pic_state *pic)
+pic_load_piclib(pic_state *pic)
 {
   pic_try {
     pic_load(pic, "piclib/built-in.scm");
@@ -114,7 +114,7 @@ pic_init_core(pic_state *pic)
     pic_init_load(pic); DONE;
     pic_init_write(pic); DONE;
 
-    pic_load_stdlib(pic); DONE;
+    pic_load_piclib(pic); DONE;
 
     pic_init_contrib(pic); DONE;
 
