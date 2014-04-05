@@ -30,27 +30,7 @@ void pic_init_var(pic_state *);
 void pic_init_load(pic_state *);
 void pic_init_write(pic_state *);
 
-void
-pic_load_stdlib(pic_state *pic)
-{
-  pic_try {
-    pic_load(pic, "piclib/built-in.scm");
-    pic_load(pic, "piclib/srfi/1.scm");
-    pic_load(pic, "piclib/srfi/26.scm");
-    pic_load(pic, "piclib/srfi/95.scm");
-  }
-  pic_catch {
-    /* error! */
-    fputs("fatal error: failure in loading built-in.scm\n", stderr);
-    fputs(pic_errmsg(pic), stderr);
-    abort();
-  }
-
-#if DEBUG
-    puts("successfully loaded stdlib");
-#endif
-
-}
+void pic_load_piclib(pic_state *);
 
 void
 pic_init_contrib(pic_state *pic)
@@ -114,7 +94,7 @@ pic_init_core(pic_state *pic)
     pic_init_load(pic); DONE;
     pic_init_write(pic); DONE;
 
-    pic_load_stdlib(pic); DONE;
+    pic_load_piclib(pic); DONE;
 
     pic_init_contrib(pic); DONE;
 
