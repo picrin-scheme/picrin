@@ -6,6 +6,12 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_SOURCE
 # xfile
 set(XFILE_SOURCES extlib/xfile/xfile.c)
 
+# piclib
+execute_process(
+  COMMAND python etc/libemb.py
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  )
+
 # build!
 file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
 add_library(picrin SHARED ${PICRIN_SOURCES} ${FLEX_scan_OUTPUTS} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES})
