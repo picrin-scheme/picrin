@@ -103,7 +103,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 | 4.2.8 Quasiquotation | yes | can be safely nested. TODO: multiple argument for unquote |
 | 4.2.9 Case-lambda | N/A | |
 | 4.3.1 Bindings constructs for syntactic keywords | incomplete | (*1) |
-| 4.3.2 Pattern language | no | `syntax-rules` |
+| 4.3.2 Pattern language | yes | `syntax-rules` |
 | 4.3.3 Signaling errors in macro transformers | yes | |
 | 5.1 Programs | yes | |
 | 5.2 Import declarations | incomplete | only simple import declarations, no support for import with renaming. |
