@@ -25,10 +25,6 @@ include(contrib/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(tools/CMakeLists.txt)
 
-# copy runtime files
-file(COPY piclib DESTINATION .)
-file(COPY etc DESTINATION .)
-
 # ----
 
 # $ make run
