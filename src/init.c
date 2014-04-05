@@ -85,14 +85,14 @@ pic_init_core(pic_state *pic)
   pic_deflibrary ("(scheme base)") {
 
     /* load core syntaces */
-    pic->lib->senv = pic_core_syntactic_env(pic);
-    pic_export(pic, pic_intern_cstr(pic, "define"));
-    pic_export(pic, pic_intern_cstr(pic, "set!"));
-    pic_export(pic, pic_intern_cstr(pic, "quote"));
-    pic_export(pic, pic_intern_cstr(pic, "lambda"));
-    pic_export(pic, pic_intern_cstr(pic, "if"));
-    pic_export(pic, pic_intern_cstr(pic, "begin"));
-    pic_export(pic, pic_intern_cstr(pic, "define-syntax"));
+    pic->lib->senv = pic_null_syntactic_environment(pic);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sSETBANG);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sQUOTE);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLAMBDA);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sIF);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sBEGIN);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_SYNTAX);
 
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
