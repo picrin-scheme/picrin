@@ -211,8 +211,7 @@ read_datum(int tok, yyscan_t scanner)
     error(NULL, scanner);
   }
 
-  /* unreachable */
-  return pic_undef_value();
+  UNREACHABLE();
 }
 
 static pic_value

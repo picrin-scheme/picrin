@@ -74,6 +74,20 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
         Sorting and Marging.
     
 
+## The REPL
+
+At the REPL start-up time, some usuful built-in libraries listed below will be automatically imported.
+
+- `(scheme base)`
+- `(scheme load)`
+- `(scheme process-context)`
+- `(scheme write)`
+- `(scheme file)`
+- `(scheme inexact)`
+- `(scheme cxr)`
+- `(scheme lazy)`
+- `(scheme time)`
+
 ## Compliance with R7RS
 
 | section | status | comments |
