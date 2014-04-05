@@ -75,6 +75,14 @@ repl(pic_state *pic)
   int char_index;
 #endif
 
+#if PIC_ENABLE_READLINE
+  using_history();
+
+  char histfile[snprintf(NULL, 0, "%s/.picrin_history", getenv("HOME")) + 1];
+  sprintf(histfile, "%s/.picrin_history", getenv("HOME"));
+  read_history(histfile);
+#endif
+
   ai = pic_gc_arena_preserve(pic);
 
   while (1) {
@@ -145,6 +153,9 @@ repl(pic_state *pic)
  eof:
   puts("");
   exit_status = 0;
+#if PIC_ENABLE_READLINE
+  write_history(histfile);
+#endif
   return;
 
  overflow:
