@@ -146,6 +146,10 @@ Currently picrin is hosted on Github. You can freely send a bug report or pull-r
 
 https://github.com/wasabiz/picrin
 
+## IRC
+
+There is a chat room on chat.freenode.org, channel #picrin.
+
 ## How to use it
 
 - make `Makefile`
