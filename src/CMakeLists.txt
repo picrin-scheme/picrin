@@ -18,3 +18,7 @@ add_custom_command(
 file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
 add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCES} ${FLEX_scan_OUTPUTS} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES})
 target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
+
+# install
+install(TARGETS picrin LIBRARY DESTINATION lib)
+install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.h")
