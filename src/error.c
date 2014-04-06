@@ -41,6 +41,10 @@ pic_push_try(pic_state *pic)
 
   try_jmp = pic_alloc(pic, sizeof(struct pic_jmpbuf));
 
+  try_jmp->ci = pic->ci;
+  try_jmp->sp = pic->sp;
+  try_jmp->ip = pic->ip;
+
   try_jmp->prev_jmp = pic->jmp;
   pic->jmp = &try_jmp->here;
 
@@ -54,6 +58,10 @@ pic_pop_try(pic_state *pic)
   struct pic_jmpbuf *prev;
 
   assert(pic->jmp == &pic->try_jmps->here);
+
+  pic->ci = pic->try_jmps->ci;
+  pic->sp = pic->try_jmps->sp;
+  pic->ip = pic->try_jmps->ip;
 
   pic->jmp = pic->try_jmps->prev_jmp;
 
@@ -96,6 +104,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   e->type = PIC_ERROR_OTHER;
   e->msg = pic_str_ptr(pic_car(pic, err_line));
   e->irrs = pic_cdr(pic, err_line);
+  e->stack = pic_get_backtrace(pic);
 
   pic_throw(pic, e);
 }
@@ -133,6 +142,7 @@ pic_error_raise(pic_state *pic)
   e->type = PIC_ERROR_RAISED;
   e->msg = pic_str_new_cstr(pic, "object is raised");
   e->irrs = pic_list1(pic, v);
+  e->stack = pic_get_backtrace(pic);
 
   pic_throw(pic, e);
 }
@@ -151,6 +161,7 @@ pic_error_error(pic_state *pic)
   e->type = PIC_ERROR_OTHER;
   e->msg = str;
   e->irrs = pic_list_by_array(pic, argc, argv);
+  e->stack = pic_get_backtrace(pic);
 
   pic_throw(pic, e);
 }
