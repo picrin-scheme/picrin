@@ -4,14 +4,22 @@ from collections import OrderedDict
 
 outfn = 'src/load_piclib.c'
 
+libs = [
+    'piclib/built-in.scm',
+    'piclib/srfi/1.scm',
+    'piclib/srfi/26.scm',
+    'piclib/srfi/95.scm',
+]
+
 if os.path.exists(outfn):
     os.remove(outfn)
 
 piclibs = OrderedDict()
-piclibs['piclib/built-in.scm'] = 'piclib_built_in'
-piclibs['piclib/srfi/1.scm'] = 'piclib_srfi_1'
-piclibs['piclib/srfi/26.scm'] = 'piclib_srfi_26'
-piclibs['piclib/srfi/95.scm'] = 'piclib_srfi_95'
+for lib in libs:
+    vname = lib[:-4]
+    vname = re.sub(r'/', r'_', vname)
+    vname = re.sub(r'-', r'_', vname)
+    piclibs[lib] = vname
 
 def escape_scm(infn, outfn, vname):
     with open(outfn, 'a') as output:
