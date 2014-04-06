@@ -65,7 +65,7 @@ pic_print_backtrace(pic_state *pic, struct pic_error *e)
   /* TODO: print error irritants */
 
   trace = pic_strcat(pic, trace, pic_str_new(pic, "\n", 1));
-  trace = pic_strcat(pic, trace, pic_get_backtrace(pic));
+  trace = pic_strcat(pic, trace, e->stack);
 
   /* print! */
   printf("%s", pic_str_cstr(trace));

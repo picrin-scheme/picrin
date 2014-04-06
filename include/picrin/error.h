@@ -41,6 +41,7 @@ struct pic_error {
   } type;
   struct pic_string *msg;
   pic_value irrs;
+  pic_str *stack;
 };
 
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)

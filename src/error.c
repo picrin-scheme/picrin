@@ -96,6 +96,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   e->type = PIC_ERROR_OTHER;
   e->msg = pic_str_ptr(pic_car(pic, err_line));
   e->irrs = pic_cdr(pic, err_line);
+  e->stack = pic_get_backtrace(pic);
 
   pic_throw(pic, e);
 }
@@ -133,6 +134,7 @@ pic_error_raise(pic_state *pic)
   e->type = PIC_ERROR_RAISED;
   e->msg = pic_str_new_cstr(pic, "object is raised");
   e->irrs = pic_list1(pic, v);
+  e->stack = pic_get_backtrace(pic);
 
   pic_throw(pic, e);
 }
@@ -151,6 +153,7 @@ pic_error_error(pic_state *pic)
   e->type = PIC_ERROR_OTHER;
   e->msg = str;
   e->irrs = pic_list_by_array(pic, argc, argv);
+  e->stack = pic_get_backtrace(pic);
 
   pic_throw(pic, e);
 }

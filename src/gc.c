@@ -391,6 +391,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_error *err = (struct pic_error *)obj;
     gc_mark_object(pic,(struct pic_object *)err->msg);
     gc_mark(pic, err->irrs);
+    gc_mark_object(pic, (struct pic_object *)err->stack);
     break;
   }
   case PIC_TT_STRING: {
