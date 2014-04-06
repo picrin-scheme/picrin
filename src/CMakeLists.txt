@@ -7,7 +7,7 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_SOURCE
 set(XFILE_SOURCES extlib/xfile/xfile.c)
 
 # piclib
-set(PICLIB_SOURCES src/load_piclib.c)
+set(PICLIB_SOURCES ${PROJECT_SOURCE_DIR}/src/load_piclib.c)
 add_custom_command(
   OUTPUT ${PICLIB_SOURCES}
   COMMAND python etc/libemb.py
