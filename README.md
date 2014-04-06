@@ -141,7 +141,7 @@ At the REPL start-up time, some usuful built-in libraries listed below will be a
 | 6.4 Pairs and lists | yes | `list?` is safe for using against circular list. |
 | 6.5 Symbols | yes | |
 | 6.6 Characters | yes | |
-| 6.7 Strings | yes | `substring` is not provided |
+| 6.7 Strings | yes | |
 | 6.8 Vectors | yes | |
 | 6.9 Bytevectors | yes | |
 | 6.10  Control features | yes | |
