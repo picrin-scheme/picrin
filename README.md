@@ -173,7 +173,7 @@ There is a chat room on chat.freenode.org, channel #picrin.
 		$ cd build
         $ cmake ..
 
-	Of course you don't need to move to `build` directory before running `cmake` (in that case `$ cmake .`), but I strongly recommend to follow above instruction.
+	Actually you don't necessarily need to move to `build` directory before running `cmake` (in that case `$ cmake .`), but I strongly recommend to follow above instruction.
     
 - build
 
@@ -183,21 +183,24 @@ There is a chat room on chat.freenode.org, channel #picrin.
 
 	If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is automatically turned on (see include/config.h for detail).
 
+- install
+
+	Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via ccmake.
+
+		$ make install
+
 - run
 
-	Simply directly run the binary `bin/picrin` from terminal, or you can use `make` to execute it like this.
+	Before installing picrin, you can try picrin without breaking any of your system. Simply directly run the binary `bin/picrin` from terminal, or you can use `make` to execute it like this.
 
 		$ make run
 
-- debug
+- debug run
 
 	If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
 
 		$ cmake -DCMAKE_BUILD_TYPE=Debug ..
 	
-- install
-
-	As of this writing picrin does not provide a command automatically installs the binary. If you want to place picrin library and binary in a parmanent directory, please do it by hand. (TODO)
 
 ## Requirement
 
