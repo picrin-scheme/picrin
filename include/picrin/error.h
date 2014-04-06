@@ -11,6 +11,9 @@ extern "C" {
 
 struct pic_jmpbuf {
   jmp_buf here;
+  pic_callinfo *ci;
+  pic_value *sp;
+  pic_code *ip;
   jmp_buf *prev_jmp;
   struct pic_jmpbuf *prev;
 };

@@ -41,6 +41,10 @@ pic_push_try(pic_state *pic)
 
   try_jmp = pic_alloc(pic, sizeof(struct pic_jmpbuf));
 
+  try_jmp->ci = pic->ci;
+  try_jmp->sp = pic->sp;
+  try_jmp->ip = pic->ip;
+
   try_jmp->prev_jmp = pic->jmp;
   pic->jmp = &try_jmp->here;
 
@@ -54,6 +58,10 @@ pic_pop_try(pic_state *pic)
   struct pic_jmpbuf *prev;
 
   assert(pic->jmp == &pic->try_jmps->here);
+
+  pic->ci = pic->try_jmps->ci;
+  pic->sp = pic->try_jmps->sp;
+  pic->ip = pic->try_jmps->ip;
 
   pic->jmp = pic->try_jmps->prev_jmp;
 
