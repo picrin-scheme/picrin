@@ -144,6 +144,7 @@ repl(pic_state *pic)
     pic_catch {
       pic_print_backtrace(pic, pic->err);
       pic->err = NULL;
+      pic->ci = pic->cibase;
       code[0] = '\0';
     }
 
