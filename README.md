@@ -181,7 +181,7 @@ There is a chat room on chat.freenode.org, channel #picrin.
 
         $ make
 
-	If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is automatically turned on (see include/config.h for detail).
+	If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is automatically turned on (see include/picrin/config.h for detail).
 
 - install
 

@@ -41,7 +41,7 @@ extern "C" {
 #include "xfile/xfile.h"
 #include "xrope/xrope.h"
 
-#include "config.h"
+#include "picrin/config.h"
 #include "picrin/util.h"
 #include "picrin/value.h"
 
