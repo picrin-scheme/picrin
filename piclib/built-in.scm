@@ -81,9 +81,16 @@
              #f
              (if (compare (r 'else) (caar clauses))
                  (cons (r 'begin) (cdar clauses))
-                 (list (r 'if) (caar clauses)
-                       (cons (r 'begin) (cdar clauses))
-                       (cons (r 'cond) (cdr clauses)))))))))
+                 (if (if (>= (length (car clauses)) 2)
+                         (compare (r '=>) (cadar clauses))
+                         #f)
+                     (list (r 'let) (list (list 'x (caar clauses)))
+                           (list (r 'if) 'x
+                                 (list (caddar clauses) 'x)
+                                 (cons (r 'cond) (cdr clauses))))
+                     (list (r 'if) (caar clauses)
+                           (cons (r 'begin) (cdar clauses))
+                           (cons (r 'cond) (cdr clauses))))))))))
 
   (define (single? list)
     (if (pair? list)
