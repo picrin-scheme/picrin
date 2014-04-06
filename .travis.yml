@@ -5,5 +5,6 @@ compiler:
 before_script:
   - cd build
 script:
+  - python --version
   - cmake .. && make && make no-act
   - cmake -DCMAKE_BUILD_TYPE=Debug .. && make && make no-act
