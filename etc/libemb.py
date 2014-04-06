@@ -20,8 +20,8 @@ def escape_scm(infn, outfn, vname):
             for line in input:
                 output.write('"')
                 line = line.strip('\n')
-                line = re.sub('\\\\', '\\\\', line)
-                line = re.sub('\"', '\\"', line)
+                line = re.sub(r'\\', r'\\\\', line)
+                line = re.sub(r'"', r'\"', line)
                 output.write(line)
                 output.write('\\n"\n')
         output.write(';\n\n')
