@@ -70,6 +70,23 @@ pic_pop_try(pic_state *pic)
   pic->try_jmps = prev;
 }
 
+static struct pic_error *
+error_new(pic_state *pic, short type, pic_str *msg, pic_value irrs)
+{
+  struct pic_error *e;
+  pic_str *stack;
+
+  stack = pic_get_backtrace(pic);
+
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e->type = type;
+  e->msg = msg;
+  e->irrs = irrs;
+  e->stack = stack;
+
+  return e;
+}
+
 noreturn void
 pic_throw(pic_state *pic, struct pic_error *e)
 {
@@ -94,19 +111,12 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
   pic_value err_line;
-  struct pic_error *e;
 
   va_start(ap, fmt);
   err_line = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
-  e->type = PIC_ERROR_OTHER;
-  e->msg = pic_str_ptr(pic_car(pic, err_line));
-  e->irrs = pic_cdr(pic, err_line);
-  e->stack = pic_get_backtrace(pic);
-
-  pic_throw(pic, e);
+  pic_throw(pic, error_new(pic, PIC_ERROR_OTHER, pic_str_ptr(pic_car(pic, err_line)), pic_cdr(pic, err_line)));
 }
 
 static pic_value
@@ -134,17 +144,10 @@ noreturn static pic_value
 pic_error_raise(pic_state *pic)
 {
   pic_value v;
-  struct pic_error *e;
 
   pic_get_args(pic, "o", &v);
 
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
-  e->type = PIC_ERROR_RAISED;
-  e->msg = pic_str_new_cstr(pic, "object is raised");
-  e->irrs = pic_list1(pic, v);
-  e->stack = pic_get_backtrace(pic);
-
-  pic_throw(pic, e);
+  pic_throw(pic, error_new(pic, PIC_ERROR_RAISED, pic_str_new_cstr(pic, "object is raised"), pic_list1(pic, v)));
 }
 
 noreturn static pic_value
@@ -153,17 +156,10 @@ pic_error_error(pic_state *pic)
   pic_str *str;
   size_t argc;
   pic_value *argv;
-  struct pic_error *e;
 
   pic_get_args(pic, "s*", &str, &argc, &argv);
 
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
-  e->type = PIC_ERROR_OTHER;
-  e->msg = str;
-  e->irrs = pic_list_by_array(pic, argc, argv);
-  e->stack = pic_get_backtrace(pic);
-
-  pic_throw(pic, e);
+  pic_throw(pic, error_new(pic, PIC_ERROR_OTHER, str, pic_list_by_array(pic, argc, argv)));
 }
 
 static pic_value
