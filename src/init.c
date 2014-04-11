@@ -38,21 +38,21 @@ pic_init_contrib(pic_state *pic)
   PIC_CONTRIB_INITS
 }
 
-#define PUSH_SYM(pic, lst, name)		\
-  lst = pic_cons(pic, pic_symbol_value(pic_intern_cstr(pic, name)), lst)
+#define push_sym(pic, name, list)                                       \
+  pic_push(pic, pic_symbol_value(pic_intern_cstr(pic, name)), list)
 
 static pic_value
 pic_features(pic_state *pic)
 {
-  pic_value fs = pic_nil_value();
+  pic_value features = pic_nil_value();
 
   pic_get_args(pic, "");
 
-  PUSH_SYM(pic, fs, "r7rs");
-  PUSH_SYM(pic, fs, "ieee-float");
-  PUSH_SYM(pic, fs, "picrin");
+  push_sym(pic, "r7rs", features);
+  push_sym(pic, "ieee-float", features);
+  push_sym(pic, "picrin", features);
 
-  return fs;
+  return features;
 }
 
 #define DONE pic_gc_arena_restore(pic, ai);
