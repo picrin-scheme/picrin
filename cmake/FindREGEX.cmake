@@ -2,6 +2,7 @@
 #
 #  FindRegex.cmake: Try to find Regex
 #
+#  Copyright (C) 2014-     Yuichi Nishiwaki
 #  Copyright (C) 2005-2013 EDF-EADS-Phimeca
 #
 #  This library is free software: you can redistribute it and/or modify
@@ -20,7 +21,6 @@
 #  @author dutka
 #  @date   2010-02-04 16:44:49 +0100 (Thu, 04 Feb 2010)
 #
-#
 # - Try to find Regex
 # Once done this will define
 #
@@ -28,6 +28,17 @@
 #  REGEX_INCLUDE_DIR - The Regex include directory
 #  REGEX_LIBRARIES - The libraries needed to use Regex
 #  REGEX_DEFINITIONS - Compiler switches required for using Regex
+#
+#
+#  ChangeLogs:
+#
+#  2014/05/07 - Yuichi Nishiwaki
+#    On Mac, it finds /System/Library/Frameworks/Ruby.framework/Headers/regex.h,
+#   which was a part of superold version of glibc when POSIX standard didn't exist.
+#   To avoid this behavior, we call find_path twice, searching /usr/include and
+#   /usr/local/include first and if nothing was found then searching $PATH in the
+#   second stage.
+#
 
 IF (REGEX_INCLUDE_DIR AND REGEX_LIBRARIES)
    # in cache already
@@ -43,11 +54,18 @@ ENDIF (REGEX_INCLUDE_DIR AND REGEX_LIBRARIES)
 #ENDIF (NOT WIN32)
 
 FIND_PATH(REGEX_INCLUDE_DIR regex.h
-   HINTS
-   ${REGEX_INCLUDEDIR}
-   ${PC_LIBXML_INCLUDE_DIRS}
-   PATH_SUFFIXES regex
-   )
+  PATHS /usr/include /usr/local/include
+  NO_DEFAULT_PATH
+  )
+
+IF (NOT REGEX_INCLUDE_DIR)
+  FIND_PATH(REGEX_INCLUDE_DIR regex.h
+    HINTS
+    ${REGEX_INCLUDEDIR}
+    ${PC_LIBXML_INCLUDE_DIRS}
+    PATH_SUFFIXES regex
+    )
+ENDIF()
 
 FIND_LIBRARY(REGEX_LIBRARIES NAMES c regex
    HINTS
@@ -57,7 +75,7 @@ FIND_LIBRARY(REGEX_LIBRARIES NAMES c regex
 
 INCLUDE(FindPackageHandleStandardArgs)
 
-# handle the QUIETLY and REQUIRED arguments and set REGEX_FOUND to TRUE if 
+# handle the QUIETLY and REQUIRED arguments and set REGEX_FOUND to TRUE if
 # all listed variables are TRUE
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(Regex DEFAULT_MSG REGEX_LIBRARIES REGEX_INCLUDE_DIR)
 
