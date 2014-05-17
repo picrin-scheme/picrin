@@ -6,3 +6,6 @@ src/load_piclib.c
 GPATH
 GRTAGS
 GTAGS
+_build
+_static
+_template
