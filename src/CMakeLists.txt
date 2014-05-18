@@ -22,5 +22,5 @@ add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCES} ${FLEX_scan_OUTPUT
 target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
 
 # install
-install(TARGETS picrin LIBRARY DESTINATION lib)
+install(TARGETS picrin DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.h")
