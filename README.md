@@ -61,6 +61,15 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
         - `(regexp-replace re input txt)`
         - `(regexp-split re input)`
 
+    - `(picrin control)`
+
+        - `(reset h)`
+        - `(shift k)`
+        - `(prompt h)`
+        - `(control k)`
+
+            delimited control operators
+
 	- `(picrin user)`
 
 		When you start the REPL, you are dropped into here.
