@@ -56,7 +56,7 @@ print <<EOL;
 EOL
 
 sub escape_v {
-    my ($_) = @_;
+    ($_) = @_;
     s/\.scm$//g;
     s/[\/-]/_/g;
     $_;
