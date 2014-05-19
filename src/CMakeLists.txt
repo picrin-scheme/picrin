@@ -8,10 +8,11 @@ set(XFILE_SOURCES extlib/xfile/xfile.c)
 
 # piclib
 find_package(Perl REQUIRED)
+file(GLOB_RECURSE PICLIB_SCHEME_LIBS ${PROJECT_SOURCE_DIR}/piclib/*.scm)
 set(PICLIB_SOURCES ${PROJECT_SOURCE_DIR}/src/load_piclib.c)
 add_custom_command(
   OUTPUT ${PICLIB_SOURCES}
-  COMMAND ${PERL_EXECUTABLE} etc/mkloader.pl > ${PROJECT_SOURCE_DIR}/src/load_piclib.c
+  COMMAND ${PERL_EXECUTABLE} etc/mkloader.pl ${PICLIBS} > ${PROJECT_SOURCE_DIR}/src/load_piclib.c
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 

@@ -2,20 +2,13 @@
 
 use strict;
 
-my @files = (
-    'piclib/built-in.scm',
-    'piclib/srfi/1.scm',
-    'piclib/srfi/26.scm',
-    'piclib/srfi/95.scm'
-    );
-
 print <<EOL;
 #include "picrin.h"
 #include "picrin/error.h"
 
 EOL
 
-foreach my $file (@files) {
+foreach my $file (@ARGV) {
     my $var = &escape_v($file);
     print "const char *$var =\n";
 
@@ -37,7 +30,7 @@ pic_load_piclib(pic_state *pic)
   pic_try {
 EOL
 
-foreach my $file (@files) {
+foreach my $file (@ARGV) {
     my $var = &escape_v($file);
     print "    pic_load_cstr(pic, $var);\n";
 }
@@ -60,6 +53,6 @@ EOL
 sub escape_v {
     ($_) = @_;
     s/\.scm$//g;
-    s/[\/-]/_/g;
+    s/[^[A-Za-z0-9_]/_/g;
     $_;
 }
