@@ -22,7 +22,7 @@ foreach my $file (@files) {
         chomp;
         s/\\/\\\\/g;
         s/"/\\"/g;
-        print "\"$_\"\n";
+        print "\"$_\\n\"\n";
     }
     print ";\n\n";
 }
