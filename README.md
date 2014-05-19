@@ -206,6 +206,7 @@ There is a chat room on chat.freenode.org, channel #picrin.
 
 Picrin scheme depends on some external libraries to build the binary:
 
+- perl
 - lex (preferably, flex)
 - getopt
 - readline (optional)
