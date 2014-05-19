@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
-@files = (
+use strict;
+
+my @files = (
     'piclib/built-in.scm',
     'piclib/srfi/1.scm',
     'piclib/srfi/26.scm',
