@@ -65,8 +65,6 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 
         - `(reset h)`
         - `(shift k)`
-        - `(prompt h)`
-        - `(control k)`
 
             delimited control operators
 
