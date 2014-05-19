@@ -1,6 +1,8 @@
 (define-library (picrin control)
   (import (scheme base))
 
+  ; based on paper "Representing Monads" (Filinski 1994)
+
   (define m #f)
 
   (define (reset t)
