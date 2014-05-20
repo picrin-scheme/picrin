@@ -54,5 +54,5 @@ sub escape_v {
     ($_) = @_;
     s/\.scm$//g;
     s/[^[A-Za-z0-9_]/_/g;
-    $_;
+    "piclib_src_" . $_;
 }
