@@ -15,6 +15,7 @@ set(PICLIB_SOURCES ${PROJECT_SOURCE_DIR}/src/load_piclib.c)
 add_custom_command(
   OUTPUT ${PICLIB_SOURCES}
   COMMAND ${PERL_EXECUTABLE} etc/mkloader.pl ${PICLIBS} > ${PROJECT_SOURCE_DIR}/src/load_piclib.c
+  DEPENDS ${PICLIBS}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 
