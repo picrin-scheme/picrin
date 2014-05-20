@@ -10,7 +10,7 @@ EOL
 
 foreach my $file (@ARGV) {
     my $var = &escape_v($file);
-    print "const char *$var =\n";
+    print "static const char *$var =\n";
 
     open IN, $file;
     while (<IN>) {
