@@ -44,7 +44,7 @@ pic_in_library(pic_state *pic, pic_value spec)
 
   lib = pic_find_library(pic, spec);
   if (! lib) {
-    pic_error(pic, "library not found");
+    pic_errorf(pic, "library not found: ~a", spec);
   }
   pic->lib = lib;
 }

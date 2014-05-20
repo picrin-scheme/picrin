@@ -79,7 +79,7 @@ pic_import(pic_state *pic, pic_value spec)
 
   lib = pic_find_library(pic, spec);
   if (! lib) {
-    pic_error(pic, "library not found");
+    pic_errorf(pic, "library not found: ~a", spec);
   }
   xh_begin(&it, &lib->exports);
   while (xh_next(&it)) {
