@@ -21,16 +21,17 @@ Installation
 
 - make `Makefile`
 
-Change directory to `build` then run `cmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin.
+Change directory to `build` then run `cmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin::
 
   $ cd build
+
   $ cmake ..
 
 Actually you don't necessarily need to move to `build` directory before running `cmake` (in that case `$ cmake .`), but I strongly recommend to follow above instruction.
 
 - build
 
-A built executable binary will be under bin/ directory and shared libraries under lib/.
+A built executable binary will be under bin/ directory and shared libraries under lib/::
 
   $ make
 
@@ -38,19 +39,19 @@ If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is 
 
 - install
 
-Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via ccmake.
+Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via ccmake::
 
   $ make install
 
 - run
 
-Before installing picrin, you can try picrin without breaking any of your system. Simply directly run the binary `bin/picrin` from terminal, or you can use `make` to execute it like this.
+Before installing picrin, you can try picrin without breaking any of your system. Simply directly run the binary `bin/picrin` from terminal, or you can use `make` to execute it like this::
 
   $ make run
 
 - debug run
 
-If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
+If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG)::
 
   $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 
