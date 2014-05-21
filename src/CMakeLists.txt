@@ -22,5 +22,6 @@ add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${FLEX_scan_OUTPUTS
 target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
 
 # install
+set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS picrin DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.h")
