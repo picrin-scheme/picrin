@@ -11,7 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-
+   intro.rst
 
 Indices and tables
 ==================
