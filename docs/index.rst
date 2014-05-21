@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    intro.rst
+   lang.rst
 
 Indices and tables
 ==================
