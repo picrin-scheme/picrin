@@ -511,21 +511,15 @@ static pic_value
 pic_port_read_blob(pic_state *pic){
   struct pic_port *port = pic_stdin(pic);
   int k, i;
-  char c, *buf;
+  char *buf;
 
   pic_get_args(pic, "i|p", &k,  &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector");
 
   buf = pic_calloc(pic, k, sizeof(char));
-  for(i = 0; i < k; i++){
-    c = xfgetc(port->file);
-    if( c == EOF ){
-      break;
-    }
-    buf[i] = c;
-  }
-  if ( i == 0 && c == EOF) {
+  i = xfread(buf, sizeof(char), k, port->file);
+  if ( i == 0 ) {
     return pic_eof_object();
   }
   else {
@@ -538,8 +532,8 @@ static pic_value
 pic_port_read_blob_ip(pic_state *pic){
   struct pic_port *port;
   struct pic_blob *bv;
-  int i, n, start, end;
-  char c;
+  int i, n, start, end, len;
+  char *buf;
 
   n = pic_get_args(pic, "b|pii", &bv, &port, &start, &end);
   switch (n) {
@@ -552,19 +546,18 @@ pic_port_read_blob_ip(pic_state *pic){
   }
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector!");
+  len = end - start;
 
-  for(i = start; i < end; i++){
-    c = xfgetc(port->file);
-    if( c == EOF ){
-      break;
-    }
-    bv->data[i] = c;
-  }
-  if ( i == start && c == EOF) {
+  buf = pic_calloc(pic, len, sizeof(char));
+  i = xfread(buf, sizeof(char), len, port->file);
+  memcpy(bv->data + start, buf, i);
+  pic_free(pic, buf);
+  
+  if ( i == 0) {
     return pic_eof_object();
   }
   else {
-    return pic_int_value(i - start);
+    return pic_int_value(i);
   }
 }
 
@@ -708,7 +701,7 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "read-string", pic_port_read_string);
   pic_defun(pic, "read-u8", pic_port_read_byte);
   pic_defun(pic, "peek-u8", pic_port_peek_byte);
-  /* pic_defun(pic, "u8-ready?", pic_port_byte_ready_p); */
+  pic_defun(pic, "u8-ready?", pic_port_byte_ready_p);
   pic_defun(pic, "read-bytevector", pic_port_read_blob);
   pic_defun(pic, "read-bytevector!", pic_port_read_blob_ip);
 
