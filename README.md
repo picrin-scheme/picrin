@@ -155,7 +155,7 @@ At the REPL start-up time, some usuful built-in libraries listed below will be a
 | 6.11 Exceptions | yes | `raise-continuable` is not supported |
 | 6.12 Environments and evaluation | N/A | |
 | 6.13.1 Ports | yes | |
-| 6.13.2 Input | incomplete | TODO: binary input |
+| 6.13.2 Input | yes | |
 | 6.13.3 Output | yes | |
 | 6.14 System interface | yes | |
 
