@@ -734,7 +734,7 @@ pic_number_string_to_number(pic_state *pic)
 void
 pic_init_number(pic_state *pic)
 {
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
 
   pic_defun(pic, "number?", pic_number_real_p);
   pic_defun(pic, "complex?", pic_number_real_p);

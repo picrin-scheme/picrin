@@ -8,7 +8,7 @@
 pic_value
 pic_load_cstr(pic_state *pic, const char *src)
 {
-  int ai;
+  size_t ai;
   pic_value v, exprs;
   struct pic_proc *proc;
 
@@ -37,7 +37,7 @@ pic_value
 pic_load(pic_state *pic, const char *fn)
 {
   FILE *file;
-  int ai;
+  size_t ai;
   pic_value v, exprs;
   struct pic_proc *proc;
 

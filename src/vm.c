@@ -514,7 +514,7 @@ pic_value
 pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
   pic_code c;
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   size_t argc, i;
   pic_code boot[2];
 

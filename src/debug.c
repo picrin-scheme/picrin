@@ -10,7 +10,7 @@
 pic_str *
 pic_get_backtrace(pic_state *pic)
 {
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_callinfo *ci;
   pic_str *trace;
 
@@ -38,7 +38,7 @@ pic_get_backtrace(pic_state *pic)
 void
 pic_print_backtrace(pic_state *pic, struct pic_error *e)
 {
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_str *trace;
 
   assert(pic->err != NULL);

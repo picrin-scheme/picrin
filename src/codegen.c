@@ -266,7 +266,7 @@ static pic_value
 analyze(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_value res;
   pic_sym tag;
 
@@ -1438,7 +1438,7 @@ struct pic_proc *
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct pic_irep *irep;
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
 
 #if DEBUG
   fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));

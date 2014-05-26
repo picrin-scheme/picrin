@@ -201,14 +201,14 @@ pic_gc_protect(pic_state *pic, pic_value v)
   return v;
 }
 
-int
+size_t
 pic_gc_arena_preserve(pic_state *pic)
 {
   return pic->arena_idx;
 }
 
 void
-pic_gc_arena_restore(pic_state *pic, int state)
+pic_gc_arena_restore(pic_state *pic, size_t state)
 {
   pic->arena_idx = state;
 }

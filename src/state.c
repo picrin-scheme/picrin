@@ -18,7 +18,7 @@ pic_open(int argc, char *argv[], char **envp)
   char t;
 
   pic_state *pic;
-  int ai;
+  size_t ai;
 
   pic = (pic_state *)malloc(sizeof(pic_state));
 
