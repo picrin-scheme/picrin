@@ -26,7 +26,8 @@ struct pic_cont {
 
   pic_code *ip;
 
-  struct pic_object *arena[PIC_ARENA_SIZE];
+  struct pic_object **arena;
+  size_t arena_size;
   int arena_idx;
 
   pic_value results;

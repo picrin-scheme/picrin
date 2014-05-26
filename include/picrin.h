@@ -105,8 +105,8 @@ typedef struct {
   struct pic_jmpbuf *try_jmps;
 
   struct pic_heap *heap;
-  struct pic_object *arena[PIC_ARENA_SIZE];
-  int arena_idx;
+  struct pic_object **arena;
+  size_t arena_size, arena_idx;
 
   char *native_stack_start;
 } pic_state;
@@ -123,8 +123,8 @@ void pic_free(pic_state *, void *);
 
 void pic_gc_run(pic_state *);
 pic_value pic_gc_protect(pic_state *, pic_value);
-int pic_gc_arena_preserve(pic_state *);
-void pic_gc_arena_restore(pic_state *, int);
+size_t pic_gc_arena_preserve(pic_state *);
+void pic_gc_arena_restore(pic_state *, size_t);
 
 pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);

@@ -217,7 +217,7 @@ read_datum(int tok, yyscan_t scanner)
 static pic_value
 read(int tok, yyscan_t scanner)
 {
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_value val;
 
   val = read_datum(tok, scanner);

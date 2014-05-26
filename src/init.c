@@ -60,7 +60,7 @@ pic_features(pic_state *pic)
 void
 pic_init_core(pic_state *pic)
 {
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
 
   pic_deflibrary ("(scheme base)") {
 
