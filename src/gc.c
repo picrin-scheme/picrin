@@ -180,7 +180,8 @@ static void
 gc_protect(pic_state *pic, struct pic_object *obj)
 {
   if (pic->arena_idx >= pic->arena_size) {
-    pic_abort(pic, "arena overflow");
+    pic->arena_size = pic->arena_size * 2 + 1;
+    pic->arena = pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
   }
   pic->arena[pic->arena_idx++] = obj;
 }
