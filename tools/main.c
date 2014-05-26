@@ -13,8 +13,7 @@
 #include "picrin/error.h"
 
 #if PIC_ENABLE_READLINE
-# include <readline/readline.h>
-# include <readline/history.h>
+# include <editline/readline.h>
 #endif
 
 #define CODE_MAX_LENGTH 1024
