@@ -151,5 +151,6 @@ section                                          status     comments
 6.13.2 Input                                     incomplete TODO: binary input
 6.13.3 Output                                    yes
 6.14 System interface                            yes
+================================================ ========== ==========================================================================================================================
 
 .. [#] Picrin provides hygienic macros in addition to so-called legacy macro (``define-macro``), such as syntactic closure, explicit renaming macro, and implicit renaming macro. As of now let-syntax and letrec-syntax are not provided.
