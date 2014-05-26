@@ -216,7 +216,7 @@ Picrin scheme depends on some external libraries to build the binary:
 - perl
 - lex (preferably, flex)
 - getopt
-- readline (optional)
+- libedit (optional)
 - regex.h of POSIX.1 (optional)
 
 Optional libraries are, if cmake detected them, automatically enabled.
