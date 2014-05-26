@@ -105,7 +105,8 @@ typedef struct {
   struct pic_jmpbuf *try_jmps;
 
   struct pic_heap *heap;
-  struct pic_object *arena[PIC_ARENA_SIZE];
+  struct pic_object **arena;
+  size_t arena_size;
   int arena_idx;
 
   char *native_stack_start;

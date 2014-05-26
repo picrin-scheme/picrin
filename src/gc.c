@@ -179,7 +179,7 @@ pic_free(pic_state *pic, void *ptr)
 static void
 gc_protect(pic_state *pic, struct pic_object *obj)
 {
-  if (pic->arena_idx >= PIC_ARENA_SIZE) {
+  if (pic->arena_idx >= pic->arena_size) {
     pic_abort(pic, "arena overflow");
   }
   pic->arena[pic->arena_idx++] = obj;
@@ -618,6 +618,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->stk_ptr);
     pic_free(pic, cont->st_ptr);
     pic_free(pic, cont->ci_ptr);
+    pic_free(pic, cont->arena);
     PIC_BLK_DECREF(pic, cont->blk);
     break;
   }
