@@ -150,7 +150,7 @@ static pic_value macroexpand_node(pic_state *, pic_value, struct pic_senv *, pic
 static pic_value
 macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_value assoc_box)
 {
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_value v;
 
   v = macroexpand_node(pic, expr, senv, assoc_box);
@@ -196,7 +196,7 @@ push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, pic_value ass
 static pic_value
 macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv, pic_value assoc_box)
 {
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_value v, vs;
 
   /* macroexpand in order */
@@ -271,7 +271,7 @@ macroexpand_deflibrary(pic_state *pic, pic_value expr)
     pic_in_library(pic, pic_cadr(pic, expr));
 
     pic_for_each (v, pic_cddr(pic, expr)) {
-      int ai = pic_gc_arena_preserve(pic);
+      size_t ai = pic_gc_arena_preserve(pic);
 
       pic_eval(pic, v);
 

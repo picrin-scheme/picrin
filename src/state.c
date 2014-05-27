@@ -18,7 +18,7 @@ pic_open(int argc, char *argv[], char **envp)
   char t;
 
   pic_state *pic;
-  int ai;
+  size_t ai;
 
   pic = (pic_state *)malloc(sizeof(pic_state));
 
@@ -70,6 +70,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic->try_jmps = NULL;
 
   /* GC arena */
+  pic->arena = (struct pic_object **)calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
   /* native stack marker */
@@ -152,6 +154,9 @@ pic_close(pic_state *pic)
   xh_destroy(&pic->syms);
   xh_destroy(&pic->global_tbl);
   xh_destroy(&pic->macros);
+
+  /* free GC arena */
+  free(pic->arena);
 
   /* free symbol names */
   xh_begin(&it, &pic->sym_names);

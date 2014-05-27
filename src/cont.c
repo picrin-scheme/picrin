@@ -139,7 +139,9 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->ip = pic->ip;
 
   cont->arena_idx = pic->arena_idx;
-  memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
+  cont->arena_size = pic->arena_size;
+  cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
+  memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
   cont->results = pic_undef_value();
 }
@@ -182,7 +184,9 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 
   pic->ip = cont->ip;
 
-  memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * PIC_ARENA_SIZE);
+  pic->arena = (struct pic_object **)pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * cont->arena_size);
+  memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
+  pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
 
   memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);

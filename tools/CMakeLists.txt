@@ -1,10 +1,10 @@
 list(APPEND REPL_LIBRARIES picrin)
 
-find_package(READLINE)
-if (READLINE_FOUND)
-  include_directories(${READLINE_INCLUDE_DIRS})
-  add_definitions(${READLINE_DEFINITIONS} -DPIC_READLINE_FOUND=1)
-  list(APPEND REPL_LIBRARIES ${READLINE_LIBRARIES})
+find_package(LIBEDIT)
+if (Libedit_FOUND)
+  include_directories(${Libedit_INCLUDE_DIRS})
+  add_definitions(${Libedit_DEFINITIONS} -DPIC_READLINE_FOUND=1)
+  list(APPEND REPL_LIBRARIES ${Libedit_LIBRARIES})
 endif()
 
 # build

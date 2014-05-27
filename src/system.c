@@ -18,7 +18,7 @@ pic_system_cmdline(pic_state *pic)
   pic_get_args(pic, "");
 
   for (i = 0; i < pic->argc; ++i) {
-    int ai = pic_gc_arena_preserve(pic);
+    size_t ai = pic_gc_arena_preserve(pic);
 
     v = pic_cons(pic, pic_obj_value(pic_str_new_cstr(pic, pic->argv[i])), v);
     pic_gc_arena_restore(pic, ai);
@@ -95,7 +95,7 @@ pic_system_getenvs(pic_state *pic)
 {
   char **envp;
   pic_value data = pic_nil_value();
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
 
   pic_get_args(pic, "");
 

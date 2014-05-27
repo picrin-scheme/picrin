@@ -266,7 +266,7 @@ static pic_value
 analyze(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_value res;
   pic_sym tag;
 
@@ -561,7 +561,7 @@ analyze_add(analyze_state *state, pic_value obj, bool tailpos)
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
   case 1:
-    return pic_int_value(0);
+    return pic_list2(pic, pic_symbol_value(pic->sQUOTE), pic_int_value(0));
   case 2:
     return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
   default:
@@ -598,7 +598,7 @@ analyze_mul(analyze_state *state, pic_value obj, bool tailpos)
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
   case 1:
-    return pic_int_value(1);
+    return pic_list2(pic, pic_symbol_value(pic->sQUOTE), pic_int_value(1));
   case 2:
     return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
   default:
@@ -1438,7 +1438,7 @@ struct pic_proc *
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct pic_irep *irep;
-  int ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_gc_arena_preserve(pic);
 
 #if DEBUG
   fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
