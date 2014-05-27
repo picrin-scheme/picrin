@@ -6,6 +6,9 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/vector.h"
+#include "picrin/blob.h"
+#include "picrin/string.h"
 
 bool
 pic_equal_p(pic_state *pic, pic_value x, pic_value y)
@@ -22,6 +25,27 @@ pic_equal_p(pic_state *pic, pic_value x, pic_value y)
   case PIC_TT_PAIR:
     return pic_equal_p(pic, pic_car(pic, x), pic_car(pic, y))
       && pic_equal_p(pic, pic_cdr(pic, x), pic_cdr(pic, y));
+  case PIC_TT_BLOB: {
+    int i;
+    struct pic_blob *v1 = pic_blob_ptr(x), *v2 = pic_blob_ptr(y);
+    for(i = 0; i < v1->len; ++i){
+      if(v1->data[i] != v2->data[i])
+        return false;
+    }
+    return true;
+  }
+  case PIC_TT_VECTOR:{
+    size_t i;
+    struct pic_vector *v1 = pic_vec_ptr(x), *v2 = pic_vec_ptr(y);
+    
+    for(i = 0; i < v1->len; ++i){
+      if(! pic_equal_p(pic, v1->data[i], v2->data[i]))
+        return false;
+    }
+    return true;
+  }
+  case PIC_TT_STRING:
+    return pic_strcmp(pic_str_ptr(x), pic_str_ptr(y)) == 0;
   default:
     return false;
   }
