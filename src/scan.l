@@ -19,6 +19,7 @@
  * at least once avoiding get flex affected in any condition.
  */
 #define YY_EXIT_FAILURE ( (void)yyscanner, 2 )
+int yyreadint(char *);
 %}
 
 %option reentrant
@@ -44,11 +45,18 @@ identifier	[a-z0-9A-Z+/*!$%&:@^~?<=>_.-]+
 
   /* number */
 digit		[0-9]
+bit		[01]
+octal		[0-7]
+hexadecimal	[0-9a-f]
 real		{sign}{ureal}|{infnan}
 ureal		{uinteger}|\.{digit}+|{digit}+\.{digit}*
-integer		{sign}{uinteger}
+integer		{bitprefix}{sign}{bit}+|{octalprefix}{sign}{octal}+|{hexadecimalprefix}{sign}{hexadecimal}+|{exactness}?{sign}{uinteger}
 uinteger	{digit}+
 sign		[+-]?
+exactness       "#e"|"#i"
+bitprefix       {exactness}?"#b"|"#b"{exactness}?
+octalprefix     {exactness}?"#o"|"#o"{exactness}?
+hexadecimalprefix  {exactness}?"#x"|"#x"{exactness}?
 infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
   /* char */
@@ -120,7 +128,7 @@ label		#{uinteger}
 }
 
 {integer}	{
-  yylval.i = atoi(yytext);
+  yylval.i = yyreadint(yytext);
   return tINT;
 }
 
@@ -224,3 +232,59 @@ yyfree(void * ptr, yyscan_t yyscanner)
 {
   return pic_free(yyget_extra(yyscanner)->pic, ptr);
 }
+
+int
+yyreadint(char *str){
+  int dstart = 0;
+  bool exact = true;
+#define check_exact                              \
+  if(str[dstart] == 'e' || str[dstart] == 'i'){  \
+    exact = str[dstart] == 'e'? true : false;    \
+    dstart +=2;                                  \
+  }                                              \
+
+  if(str[dstart] == '#'){
+    dstart += 1;
+    check_exact;
+    if(str[dstart] == 'd'){
+      dstart += 1;
+      check_exact;
+    }
+    else{
+      check_exact;      
+      int res = 0; int shamt;int i;
+      switch(str[dstart]){
+      case 'b':
+        shamt = 1; break;
+      case 'o':
+        shamt = 3; break;
+      case 'x':
+        shamt = 4; break;
+      }
+      dstart += 1;
+      i = dstart;
+      if(str[i] == '-' || str[i] == '+'){
+        ++i;
+      }
+      while(1){
+        if(str[i] == '\0'){
+          break;
+        }
+
+        res <<= shamt;
+        res += ((int) str[i]) <= ((int) '9') ?
+              ((int) str[i])-((int) '0') :
+              ((int) str[i])-((int) 'a') + 10;
+        ++i;
+      }
+      if(str[dstart] == '-'){
+        res *= -1;
+      }
+      return res;
+    }
+  }
+  else{
+    return atoi(str+dstart);
+  }
+}
+
