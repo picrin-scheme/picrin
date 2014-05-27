@@ -269,7 +269,7 @@
                                      ,@(map (lambda (x) `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
                                             (caar clauses))))
                      ,(if (compare (r '=>) (cadar clauses))
-                          `(,(r 'begin) ,@(cddar clauses))
+                          `(,(caddar clauses) ,(r 'key))
                           `(,(r 'begin) ,@(cdar clauses)))
                         ,(loop (cdr clauses))))))))))
 
