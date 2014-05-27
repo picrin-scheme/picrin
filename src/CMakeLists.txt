@@ -6,6 +6,19 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_SOURCE
 # xfile
 set(XFILE_SOURCES extlib/xfile/xfile.c)
 
+# DLL load
+find_path(DL_INCLUDE_DIR NAMES dlfcn.h)
+find_library(DL_LIBRARIES NAMES dl)
+if(DL_INCLUDE_DIR AND DL_LIBRARIES)
+  set(DL_FOUND true)
+endif(DL_INCLUDE_DIR AND DL_LIBRARIES)
+if(DL_FOUND)
+  set(DLLLOAD dl)
+  message(${DL_INCLUDE_DIR})
+  include_directories(${DL_INCLUDE_DIR})
+  add_definitions(-DDLLLOAD_ENABLED)
+endif(DL_FOUND)
+
 # piclib
 find_package(Perl REQUIRED)
 set(PICLIB_SOURCE ${PROJECT_SOURCE_DIR}/src/load_piclib.c)
@@ -19,7 +32,7 @@ add_custom_command(
 # build!
 file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
 add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${FLEX_scan_OUTPUTS} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES})
-target_link_libraries(picrin m dl ${PICRIN_CONTRIB_LIBRARIES})
+target_link_libraries(picrin m ${DLLLOAD} ${PICRIN_CONTRIB_LIBRARIES})
 
 # install
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)

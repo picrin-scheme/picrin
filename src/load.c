@@ -4,9 +4,12 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+
+#ifdef DLLLOAD_ENABLED
 #include <dlfcn.h>
 #include <string.h>
 #include <libgen.h>
+#endif
 
 pic_value
 pic_load_cstr(pic_state *pic, const char *src)
@@ -36,6 +39,7 @@ pic_load_cstr(pic_state *pic, const char *src)
   return pic_none_value();
 }
 
+#ifdef DLLLOAD_ENABLED
 bool
 strends(const char *str, char *suffix){
   int len1 = strlen(str);
@@ -77,7 +81,7 @@ pic_load_dll(pic_state *pic, const char *fn )
   
   return pic_none_value();
 }
-
+#endif
 
 pic_value
 pic_load(pic_state *pic, const char *fn)
@@ -121,9 +125,13 @@ pic_load_load(pic_state *pic)
 
   pic_get_args(pic, "z|o", &fn, &envid);
 
+#ifdef DLLLOAD_ENABLED
   return  strends(fn, ".so") ?
     pic_load_dll(pic, fn) :
     pic_load(pic, fn);
+#else
+  return pic_load(pic, fn);
+#endif
 }
 
 void
