@@ -28,6 +28,9 @@ pic_equal_p(pic_state *pic, pic_value x, pic_value y)
   case PIC_TT_BLOB: {
     int i;
     struct pic_blob *v1 = pic_blob_ptr(x), *v2 = pic_blob_ptr(y);
+    if(v1->len != v2->len){
+      return false;
+    }
     for(i = 0; i < v1->len; ++i){
       if(v1->data[i] != v2->data[i])
         return false;
@@ -38,6 +41,9 @@ pic_equal_p(pic_state *pic, pic_value x, pic_value y)
     size_t i;
     struct pic_vector *v1 = pic_vec_ptr(x), *v2 = pic_vec_ptr(y);
     
+    if(v1->len != v2->len){
+      return false;
+    }
     for(i = 0; i < v1->len; ++i){
       if(! pic_equal_p(pic, v1->data[i], v2->data[i]))
         return false;
