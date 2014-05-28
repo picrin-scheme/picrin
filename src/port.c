@@ -499,9 +499,9 @@ pic_port_byte_ready_p(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "char-ready?");
-
   pic_get_args(pic, "|p", &port);
+
+  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "u8-ready?");
 
   return pic_true_value();      /* FIXME: always returns #t */
 }
