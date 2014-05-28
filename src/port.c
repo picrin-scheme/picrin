@@ -499,7 +499,7 @@ pic_port_byte_ready_p(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "char-ready?");
+  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "u8-ready?");
 
   pic_get_args(pic, "|p", &port);
 
