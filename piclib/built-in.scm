@@ -798,7 +798,7 @@
       (bytevector-copy! res 0 v)
       (bytevector-copy! res (bytevector-length v) w)
       res))
-  (fold bytevector-append-2-inv #() vs))
+  (fold bytevector-append-2-inv #u8() vs))
 
 (define (bytevector->list v start end)
     (do ((i start (+ i 1))
