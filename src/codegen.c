@@ -1,5 +1,5 @@
 /**
- * ee Copyright Notice in picrin.h
+ * See Copyright Notice in picrin.h
  */
 
 #include "picrin.h"
