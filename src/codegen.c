@@ -1,5 +1,5 @@
 /**
- * See Copyright Notice in picrin.h
+ * ee Copyright Notice in picrin.h
  */
 
 #include "picrin.h"
@@ -482,7 +482,7 @@ static pic_value
 analyze_begin(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  pic_value seq;
+  pic_value seq, head;
   bool tail;
 
   switch (pic_length(pic, obj)) {
@@ -491,16 +491,18 @@ analyze_begin(analyze_state *state, pic_value obj, bool tailpos)
   case 2:
     return analyze(state, pic_list_ref(pic, obj, 1), tailpos);
   default:
-    seq = pic_list1(pic, pic_symbol_value(pic->sBEGIN));
+    head = seq = pic_list1(pic, pic_symbol_value(pic->sBEGIN));
     for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
       if (pic_nil_p(pic_cdr(pic, obj))) {
         tail = tailpos;
       } else {
         tail = false;
       }
-      seq = pic_cons(pic, analyze(state, pic_car(pic, obj), tail), seq);
+      /* seq = pic_cons(pic, analyze(state, pic_car(pic, obj), tail), seq); */
+      seq = (pic_pair_ptr(seq)->cdr = pic_cons(pic, analyze(state, pic_car(pic, obj), tail), pic_nil_value()));
     }
-    return pic_reverse(pic, seq);
+    /* return pic_reverse(pic, seq); */
+    return head;
   }
 }
 
@@ -631,7 +633,7 @@ static pic_value
 analyze_call(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  pic_value seq, elt;
+  pic_value seq, head, elt;
   pic_sym call;
 
   if (! tailpos) {
@@ -639,28 +641,32 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
   } else {
     call = state->sTAILCALL;
   }
-  seq = pic_list1(pic, pic_symbol_value(call));
+  head = seq = pic_list1(pic, pic_symbol_value(call));
   pic_for_each (elt, obj) {
-    seq = pic_cons(pic, analyze(state, elt, false), seq);
+    /* seq = pic_cons(pic, analyze(state, elt, false), seq); */
+    seq = (pic_pair_ptr(seq)->cdr = pic_cons(pic, analyze(state, elt, false), pic_nil_value()));
   }
-  return pic_reverse(pic, seq);
+  /* return pic_reverse(pic, seq); */
+  return head;
 }
 
 static pic_value
 analyze_values(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  pic_value v, seq;
+  pic_value v, seq, head;
 
   if (! tailpos) {
     return analyze_call(state, obj, false);
   }
 
-  seq = pic_list1(pic, pic_symbol_value(state->sRETURN));
+  head = seq = pic_list1(pic, pic_symbol_value(state->sRETURN));
   pic_for_each (v, pic_cdr(pic, obj)) {
-    seq = pic_cons(pic, analyze(state, v, false), seq);
+    /* seq = pic_cons(pic, analyze(state, v, false), seq); */
+    seq = (pic_pair_ptr(seq)->cdr = pic_cons(pic, analyze(state, v, false), pic_nil_value()));
   }
-  return pic_reverse(pic, seq);
+  /* return pic_reverse(pic, seq); */
+  return head;
 }
 
 static pic_value

@@ -127,13 +127,13 @@ static pic_vec *
 read_vect(yyscan_t scanner)
 {
   int tok;
-  pic_value val;
+  pic_value head, tail;
 
-  val = pic_nil_value();
+  head = tail = pic_cons(pic, pic_nil_value(), pic_nil_value());
   while ((tok = gettok(scanner)) != tRPAREN) {
-    val = pic_cons(pic, read(tok, scanner), val);
+    tail = (pic_pair_ptr(tail)->cdr = pic_cons(pic, read(tok, scanner), pic_nil_value()));
   }
-  return pic_vec_new_from_list(pic, pic_reverse(pic, val));
+  return pic_vec_new_from_list(pic, pic_pair_ptr(head)->cdr);
 }
 
 static pic_value

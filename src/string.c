@@ -139,7 +139,8 @@ pic_value
 pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 {
   char c;
-  pic_value irrs = pic_nil_value();
+  pic_value head, tail;
+  head = tail = pic_cons(pic, pic_nil_value(), pic_nil_value());
 
   while ((c = *fmt++)) {
     switch (c) {
@@ -189,10 +190,10 @@ pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
         xfputc('\n', file);
         break;
       case 'a':
-        irrs = pic_cons(pic, pic_fdisplay(pic, va_arg(ap, pic_value), file), irrs);
+        tail = (pic_pair_ptr(tail)->cdr = pic_cons(pic, pic_fdisplay(pic, va_arg(ap, pic_value), file), pic_nil_value()));
         break;
       case 's':
-        irrs = pic_cons(pic, pic_fwrite(pic, va_arg(ap, pic_value), file), irrs);
+        tail = (pic_pair_ptr(tail)->cdr = pic_cons(pic, va_arg(ap, pic_value), pic_nil_value()));
         break;
       }
       break;
@@ -200,7 +201,7 @@ pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
   }
  exit:
 
-  return pic_reverse(pic, irrs);
+  return pic_pair_ptr(head)->cdr;
 }
 
 pic_value

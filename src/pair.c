@@ -223,16 +223,17 @@ pic_append(pic_state *pic, pic_value xs, pic_value ys)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value x;
-
-  xs = pic_reverse(pic, xs);
+  pic_value head, tail;
+  
+  head = tail = pic_cons(pic, pic_nil_value(), pic_nil_value());
   pic_for_each (x, xs) {
-    ys = pic_cons(pic, x, ys);
-
+    tail = (pic_pair_ptr(tail)->cdr = pic_cons(pic, x, pic_nil_value()));
     pic_gc_arena_restore(pic, ai);
     pic_gc_protect(pic, xs);
-    pic_gc_protect(pic, ys);
+    pic_gc_protect(pic, tail);
   }
-  return ys;
+  pic_pair_ptr(tail)->cdr = ys;
+  return pic_pair_ptr(head)->cdr;
 }
 
 pic_value

@@ -156,11 +156,11 @@ pic_proc_map(pic_state *pic)
   size_t argc;
   pic_value *args;
   int i;
-  pic_value cars, ret;
+  pic_value cars, head, tail;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
-  ret = pic_nil_value();
+  head = tail = pic_cons(pic, pic_nil_value(), pic_nil_value());
   do {
     cars = pic_nil_value();
     for (i = argc - 1; i >= 0; --i) {
@@ -172,10 +172,10 @@ pic_proc_map(pic_state *pic)
     }
     if (i >= 0)
       break;
-    ret = pic_cons(pic, pic_apply(pic, proc, cars), ret);
+    tail = (pic_pair_ptr(tail)->cdr = pic_cons(pic, pic_apply(pic, proc, cars), pic_nil_value()));
   } while (1);
 
-  return pic_reverse(pic, ret);
+  return pic_pair_ptr(head)->cdr;
 }
 
 static pic_value
