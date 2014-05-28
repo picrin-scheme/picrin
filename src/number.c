@@ -777,6 +777,9 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
   pic_defun(pic, "truncate-quotient", pic_number_trunc_quotient);
   pic_defun(pic, "truncate-remainder", pic_number_trunc_remainder);
+  pic_defun(pic, "modulo", pic_number_floor_remainder);
+  pic_defun(pic, "quotient", pic_number_trunc_quotient);
+  pic_defun(pic, "remainder", pic_number_trunc_remainder);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "gcd", pic_number_gcd);
