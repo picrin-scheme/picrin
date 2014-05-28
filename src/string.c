@@ -388,7 +388,6 @@ pic_str_string_fill_ip(pic_state *pic)
   case 3:
     end = pic_strlen(str);
   }
-  printf("end %i\n", end);
   while (start < end) {
     pic_str_set(pic, str, start++, c);
   }
