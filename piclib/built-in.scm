@@ -733,7 +733,7 @@
 	(end (if (>= (length opts) 2)
 		 (cadr opts)
 		 (vector-length v))))
-    (let ((res (make-vector (vector-length v))))
+    (let ((res (make-vector (- end start))))
       (vector-copy! res 0 v start end)
       res)))
 
@@ -792,7 +792,7 @@
 	(end (if (>= (length opts) 2)
 		 (cadr opts)
 		 (bytevector-length v))))
-    (let ((res (make-bytevector (bytevector-length v))))
+    (let ((res (make-bytevector (- end start))))
       (bytevector-copy! res 0 v start end)
       res)))
 

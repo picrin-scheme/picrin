@@ -467,12 +467,15 @@ pic_port_read_string(pic_state *pic){
 static pic_value
 pic_port_read_byte(pic_state *pic){
   struct pic_port *port = pic_stdin(pic);
-
+  char c;
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-u8");
+  if ((c = xfgetc(port->file)) == EOF) {
+    return pic_eof_object();
+  }
 
-  return pic_int_value((char) xfgetc(port->file));
+  return pic_int_value(c);
 }
 
 static pic_value
