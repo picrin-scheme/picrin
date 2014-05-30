@@ -21,13 +21,13 @@ Installation
 
 - make `Makefile`
 
-Change directory to `build` then run `cmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin::
+Change directory to `build` then run `ccmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin::
 
   $ cd build
 
-  $ cmake ..
+  $ ccmake ..
 
-Actually you don't necessarily need to move to `build` directory before running `cmake` (in that case `$ cmake .`), but I strongly recommend to follow above instruction.
+Actually you don't necessarily need to move to `build` directory before running `ccmake` (in that case `$ ccmake .`), but I strongly recommend to follow above instruction.
 
 - build
 

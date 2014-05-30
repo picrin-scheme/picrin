@@ -45,6 +45,10 @@
 /* #define GC_DEBUG 1 */
 /* #define GC_DEBUG_DETAIL 1 */
 
+#if __STDC_VERSION__ < 199901L
+# error please activate c99 features
+#endif
+
 #ifndef PIC_CONTRIB_INITS
 # define PIC_CONTRIB_INITS
 #endif
@@ -56,7 +60,7 @@
 #endif
 
 #ifndef PIC_NAN_BOXING
-# if __x86_64__
+# if __x86_64__ && __STDC_VERSION__ >= 201112L
 #  define PIC_NAN_BOXING 1
 # endif
 #endif
