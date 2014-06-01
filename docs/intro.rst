@@ -80,7 +80,7 @@ https://github.com/wasabiz/picrin
 IRC
 ---
 
-There is a chat room on chat.freenode.org, channel #picrin.
+There is a chat room on chat.freenode.org, channel #picrin. IRC logs here: https://botbot.me/freenode/picrin/
 
 LICENSE
 -------
