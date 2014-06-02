@@ -44,19 +44,34 @@ boolean		#t|#f|#true|#false
 identifier	[a-z0-9A-Z+/*!$%&:@^~?<=>_.-]+
 
   /* number */
-digit		[0-9]
 bit		[01]
 octal		[0-7]
+digit		[0-9]
 hexadecimal	[0-9a-f]
-real		{sign}{ureal}|{infnan}
-ureal		{uinteger}|\.{digit}+|{digit}+\.{digit}*
-integer		{bitprefix}{sign}{bit}+|{octalprefix}{sign}{octal}+|{hexadecimalprefix}{sign}{hexadecimal}+|{exactness}?{sign}{uinteger}
+real		{exponential}|{float}|{integer}|{infnan}
+exponential	{radix2expt}|{radix8expt}|{radix10expt}|{radix16expt}
+radix2expt	{radix2flt}{exptmark}{sign}{bit}+
+radix8expt	{radix8flt}{exptmark}{sign}{octal}+
+radix10expt	{radix10flt}{exptmark}{sign}{digit}+
+radix16expt	{radix16flt}{exptmark}{sign}{hexadecimal}+
+float		{radix2flt}|{radix8flt}|{radix10flt}|{radix16flt}|
+radix2flt	{bitprefix}\.{bit}+|{bitprefix}{bit}+\.{bit}*
+radix8flt	{octalprefix}\.{octal}+|{octalprefix}{octal}+\.{octal}*
+radix10flt	{digitprefix}\.{digit}+|{digitprefix}{digit}+\.{digit}*
+radix16flt	{hexadecimalprefix}\.{hexadecimal}+|{hexadecimalprefix}{hexadecimal}+\.{hexadecimal}*
+integer		{radix2int}|{radix8int}|{radix10int}|{radix16int}|
+radix2int	{bitprefix}{sign}{bit}+
+radix8int	{octalprefix}{sign}{octal}+
+radix10int	{digitprefix}{sign}{uinteger}
+radix16int	{hexadecimalprefix}{sign}{hexadecimal}+
 uinteger	{digit}+
 sign		[+-]?
+exptmark	"e"
 exactness       "#e"|"#i"
-bitprefix       {exactness}?"#b"|"#b"{exactness}?
-octalprefix     {exactness}?"#o"|"#o"{exactness}?
-hexadecimalprefix  {exactness}?"#x"|"#x"{exactness}?
+bitprefix       {exactness}"#b"|"#b"{exactness}|"#b"
+octalprefix     {exactness}"#o"|"#o"{exactness}|"#o"
+digitprefix	{exactness}"#d"|"#d"{exactness}|"#d"?
+hexadecimalprefix  {exactness}"#x"|"#x"{exactness}|"#x"
 infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
   /* char */
