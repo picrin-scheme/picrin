@@ -97,3 +97,19 @@ pic_export(pic_state *pic, pic_sym sym)
 
   xh_put(&pic->lib->exports, sym, &rename);
 }
+
+void
+pic_export_as(pic_state *pic, pic_sym sym, pic_sym as)
+{
+  pic_sym rename;
+
+  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
+    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
+  }
+
+#if DEBUG
+  printf("* exporting %s as %s\n", pic_symbol_name(pic, as), pic_symbol_name(pic, rename));
+#endif
+
+  xh_put(&pic->lib->exports, as, &rename);
+}
