@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#include <gmp.h>    
 /**
  * pic_sym is just an alias to unsigned int.
  */
@@ -104,6 +105,8 @@ enum pic_tt {
   PIC_TT_STRING,
   PIC_TT_VECTOR,
   PIC_TT_BLOB,
+  PIC_TT_BIGINT,
+  PIC_TT_RATIONAL,
   PIC_TT_PROC,
   PIC_TT_PORT,
   PIC_TT_ERROR,
@@ -135,12 +138,24 @@ struct pic_blob;
 struct pic_proc;
 struct pic_port;
 
+struct pic_bigint {
+  PIC_OBJECT_HEADER
+  mpz_t z;
+};
+
+struct pic_rational {
+  PIC_OBJECT_HEADER
+  mpq_t q;
+};
+
 /* set aliases to basic types */
 typedef pic_value pic_list;
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
 typedef struct pic_blob pic_blob;
+typedef struct pic_bigint pic_bigint;
+typedef struct pic_rational pic_rational;
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
@@ -246,6 +261,10 @@ pic_type_repr(enum pic_tt tt)
     return "vector";
   case PIC_TT_BLOB:
     return "blob";
+  case PIC_TT_BIGINT:
+    return "bigint";
+  case PIC_TT_RATIONAL:
+    return "rational";
   case PIC_TT_PORT:
     return "port";
   case PIC_TT_ERROR:
@@ -430,7 +449,18 @@ pic_eq_p(pic_value x, pic_value y)
 static inline bool
 pic_eqv_p(pic_value x, pic_value y)
 {
-  return x.u.data == y.u.data;
+  if (pic_type(x) != pic_type(y))
+    return false;
+
+  switch (pic_type(x)) {
+  case PIC_TT_BIGINT:
+      return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
+  case PIC_TT_RATIONAL:
+      return mpq_cmp(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q) == 0;
+  default:
+    return x.u.data == y.u.data;
+  }
+
 }
 
 #else
@@ -470,6 +500,10 @@ pic_eqv_p(pic_value x, pic_value y)
     return pic_float(x) == pic_float(y);
   case PIC_TT_INT:
     return pic_int(x) == pic_int(y);
+  case PIC_TT_BIGINT:
+    return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
+  case PIC_TT_RATIONAL:
+    return mpq_cmp(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q) == 0;
   default:
     return pic_ptr(x) == pic_ptr(y);
   }

@@ -8,6 +8,7 @@
 #include "picrin/string.h"
 #include "picrin/vector.h"
 #include "picrin/blob.h"
+#include "picrin/number.h"
 #include "picrin/macro.h"
 
 static bool
@@ -185,6 +186,7 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e;
   int c;
+  char *str;
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
@@ -302,6 +304,16 @@ write_core(struct writer_control *p, pic_value obj)
       }
     }
     xfprintf(file, ")");
+    break;
+  case PIC_TT_BIGINT:
+    str = mpz_get_str(NULL, 10, pic_bigint_ptr(obj)->z);
+    xfprintf(file, "%s", str);
+    free(str);
+    break;
+  case PIC_TT_RATIONAL:
+    str = mpq_get_str(NULL, 10, pic_rational_ptr(obj)->q);
+    xfprintf(file, "%s", str);
+    free(str);
     break;
   case PIC_TT_ERROR:
     xfprintf(file, "#<error %p>", pic_ptr(obj));
