@@ -8,6 +8,7 @@
 #include "picrin/string.h"
 #include "picrin/vector.h"
 #include "picrin/blob.h"
+#include "picrin/number.h"
 #include "picrin/port.h"
 
 #define YY_NO_UNISTD_H
@@ -179,6 +180,12 @@ read_datum(int tok, yyscan_t scanner)
     pic_free(pic, yylval.buf.dat);
     return val;
 
+  case tBIGINT:
+    val = pic_obj_value(pic_read_bigint(pic, yylval.buf.dat, (int) yylval.buf.len));
+    return val;
+  case tRATIONAL:
+    val = pic_obj_value(pic_read_rational(pic, yylval.buf.dat, (int) yylval.buf.len));
+    return val;
   case tLPAREN:
   case tLBRACKET:
     return read_pair(tok, scanner);

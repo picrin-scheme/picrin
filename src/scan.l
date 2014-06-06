@@ -19,7 +19,7 @@
  * at least once avoiding get flex affected in any condition.
  */
 #define YY_EXIT_FAILURE ( (void)yyscanner, 2 )
-int yyreadint(char *);
+char *yycheckprefix(char *, int *, bool *);
 %}
 
 %option reentrant
@@ -47,31 +47,29 @@ identifier	[a-z0-9A-Z+/*!$%&:@^~?<=>_.-]+
 bit		[01]
 octal		[0-7]
 digit		[0-9]
-hexadecimal	[0-9a-f]
-real		{exponential}|{float}|{integer}|{infnan}
-exponential	{radix2expt}|{radix8expt}|{radix10expt}|{radix16expt}
-radix2expt	{radix2flt}{exptmark}{sign}{bit}+
-radix8expt	{radix8flt}{exptmark}{sign}{octal}+
-radix10expt	{radix10flt}{exptmark}{sign}{digit}+
-radix16expt	{radix16flt}{exptmark}{sign}{hexadecimal}+
-float		{radix2flt}|{radix8flt}|{radix10flt}|{radix16flt}|
-radix2flt	{bitprefix}\.{bit}+|{bitprefix}{bit}+\.{bit}*
-radix8flt	{octalprefix}\.{octal}+|{octalprefix}{octal}+\.{octal}*
-radix10flt	{digitprefix}\.{digit}+|{digitprefix}{digit}+\.{digit}*
-radix16flt	{hexadecimalprefix}\.{hexadecimal}+|{hexadecimalprefix}{hexadecimal}+\.{hexadecimal}*
-integer		{radix2int}|{radix8int}|{radix10int}|{radix16int}|
+hexadecimal	[0-9a-fA-F]
+real		{exponential}|{rational}|{float}|{integer}|{infnan}
+exponential	{float}{exptsuffix}
+rational	{radix2rational}|{radix8rational}|{radix10rational}|{radix16rational}
+radix2rational	{bitprefix}{sign}{bit}+\/{bit}+
+radix8rational	{octalprefix}{sign}{octal}+\/{octal}+
+radix10rational	{digitprefix}{sign}{uinteger}\/{uinteger}
+radix16rational	{hexprefix}{sign}{hexadecimal}+\/{hexadecimal}+
+float		{digitprefix}\.{digit}+|{digitprefix}{digit}+\.{digit}*
+integer		{radix2int}|{radix8int}|{radix10int}|{radix16int}
 radix2int	{bitprefix}{sign}{bit}+
 radix8int	{octalprefix}{sign}{octal}+
 radix10int	{digitprefix}{sign}{uinteger}
-radix16int	{hexadecimalprefix}{sign}{hexadecimal}+
+radix16int	{hexprefix}{sign}{hexadecimal}+
 uinteger	{digit}+
 sign		[+-]?
+exptsuffix	{exptmark}{sign}{digit}+
 exptmark	"e"
-exactness       "#e"|"#i"
-bitprefix       {exactness}"#b"|"#b"{exactness}|"#b"
-octalprefix     {exactness}"#o"|"#o"{exactness}|"#o"
+exactness	"#e"|"#i"
+bitprefix	{exactness}"#b"|"#b"{exactness}|"#b"
+octalprefix	{exactness}"#o"|"#o"{exactness}|"#o"
 digitprefix	{exactness}"#d"|"#d"{exactness}|"#d"?
-hexadecimalprefix  {exactness}"#x"|"#x"{exactness}|"#x"
+hexprefix	{exactness}"#x"|"#x"{exactness}|"#x"
 infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
   /* char */
@@ -143,12 +141,45 @@ label		#{uinteger}
 }
 
 {integer}	{
-  yylval.i = yyreadint(yytext);
-  return tINT;
+  bool exactp; int radix;
+  char *str = yycheckprefix(yytext, &radix, &exactp);
+  if(exactp){
+    yylval.buf.dat = str;
+    yylval.buf.len = radix;
+    return tBIGINT;    
+  }
+  else{
+    mpz_t num;
+    mpz_init(num);
+    mpz_set_str(num, str, radix);
+    yylval.i = (int) mpz_get_si(num);
+    return tINT;
+  }
 }
 
-{real} 		{
-  yylval.f = atof(yytext);
+{rational}	{
+  bool exactp; int radix;
+  char *str = yycheckprefix(yytext, &radix, &exactp);
+  if(exactp){
+    yylval.buf.dat = str;
+    yylval.buf.len = radix;
+    return tRATIONAL;
+  }
+  else{
+    mpq_t num;
+    mpq_init(num);
+    mpq_set_str(num, str, radix);
+    yylval.f = mpq_get_d(num);
+    return tFLOAT;
+  }
+}
+{real}		{
+  bool exactp; int radix;
+  char *str = yycheckprefix(yytext, &radix, &exactp);
+  mpf_t num;
+  mpf_init(num);
+  mpf_set_str(num, str, radix);
+  yylval.f = mpf_get_d(num);
   return tFLOAT;
 }
 
@@ -248,58 +279,44 @@ yyfree(void * ptr, yyscan_t yyscanner)
   return pic_free(yyget_extra(yyscanner)->pic, ptr);
 }
 
-int
-yyreadint(char *str){
-  int dstart = 0;
-  bool exact = true;
-#define check_exact                              \
-  if(str[dstart] == 'e' || str[dstart] == 'i'){  \
-    exact = str[dstart] == 'e'? true : false;    \
-    dstart +=2;                                  \
-  }                                              \
 
-  if(str[dstart] == '#'){
-    dstart += 1;
-    check_exact;
-    if(str[dstart] == 'd'){
-      dstart += 1;
-      check_exact;
+char *
+yycheckprefix(char *str, int *radix, bool *exactp){
+  int start = 0;
+  *exactp = true; *radix = 10;
+  if(str[start] == '#'){
+    switch(str[start + 1]){
+    case 'e':
+      break;
+    case 'i':
+      *exactp = false; break;
+    case 'b':
+      *radix = 2; break;
+    case 'o':
+      *radix = 8; break;
+    case 'd':
+      break;
+    case 'x':
+      *radix = 16; break;
     }
-    else{
-      check_exact;      
-      int res = 0; int shamt;int i;
-      switch(str[dstart]){
-      case 'b':
-        shamt = 1; break;
-      case 'o':
-        shamt = 3; break;
-      case 'x':
-        shamt = 4; break;
-      }
-      dstart += 1;
-      i = dstart;
-      if(str[i] == '-' || str[i] == '+'){
-        ++i;
-      }
-      while(1){
-        if(str[i] == '\0'){
-          break;
-        }
-
-        res <<= shamt;
-        res += ((int) str[i]) <= ((int) '9') ?
-              ((int) str[i])-((int) '0') :
-              ((int) str[i])-((int) 'a') + 10;
-        ++i;
-      }
-      if(str[dstart] == '-'){
-        res *= -1;
-      }
-      return res;
+    start += 2;
+  }
+  if(str[start] == '#'){
+    switch(str[start + 1]){
+    case 'e':
+      break;
+    case 'i':
+      *exactp = false; break;
+    case 'b':
+      *radix = 2; break;
+    case 'o':
+      *radix = 8; break;
+    case 'd':
+      break;
+    case 'x':
+      *radix = 16; break;
     }
+    start += 2;
   }
-  else{
-    return atoi(str+dstart);
-  }
+  return str + start;
 }
-

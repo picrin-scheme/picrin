@@ -11,6 +11,7 @@
 #include "picrin/pair.h"
 #include "picrin/string.h"
 #include "picrin/vector.h"
+#include "picrin/number.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"
 #include "picrin/irep.h"
@@ -91,6 +92,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
         case PIC_TT_INT:
           *f = pic_int(v);
           break;
+        case PIC_TT_BIGINT:
+          *f = mpz_get_d(pic_bigint_ptr(v)->z);
+          break;
+        case PIC_TT_RATIONAL:
+          *f = mpq_get_d(pic_rational_ptr(v)->q);
+          break;
         default:
           pic_error(pic, "pic_get_args: expected float or int");
         }
@@ -117,8 +124,16 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *f = pic_int(v);
           *e = true;
           break;
+        case PIC_TT_BIGINT:
+          *f = mpz_get_d(pic_bigint_ptr(v)->z);
+          *e = true;
+          break;
+        case PIC_TT_RATIONAL:
+          *f = mpq_get_d(pic_rational_ptr(v)->q);
+          *e = true;
+          break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int");
+          pic_error(pic, "pic_get_args: expected float or int or rational");
         }
         i++;
       }
@@ -143,8 +158,16 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *k = pic_int(v);
           *e = true;
           break;
+        case PIC_TT_BIGINT:
+          *k = mpz_get_d(pic_bigint_ptr(v)->z);
+          *e = true;
+          break;
+        case PIC_TT_RATIONAL:
+          *k = mpq_get_d(pic_rational_ptr(v)->q);
+          *e = true;
+          break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int");
+          pic_error(pic, "pic_get_args: expected float or int or rational");
         }
         i++;
       }
@@ -164,6 +187,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
           break;
         case PIC_TT_INT:
           *k = pic_int(v);
+          break;
+        case PIC_TT_BIGINT:
+          *k = mpz_get_d(pic_bigint_ptr(v)->z);
+          break;
+        case PIC_TT_RATIONAL:
+          *k = mpq_get_d(pic_rational_ptr(v)->q);
           break;
         default:
           pic_error(pic, "pic_get_args: expected int");
@@ -854,22 +883,36 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
 
-#define DEFINE_ARITH_OP(opcode, op, guard)			\
+#define DEFINE_ARITH_OP(opcode, op, name, guard)                \
     CASE(opcode) {						\
       pic_value a, b;						\
       b = POP();						\
       a = POP();						\
-      if (pic_int_p(a) && pic_int_p(b)) {			\
-	double f = (double)pic_int(a) op (double)pic_int(b);	\
+      if (pic_int_p(a) && pic_int_p(b)) {                       \
+          double f = (double) pic_int(a) op                     \
+              (double) pic_int(b);                              \
 	if (INT_MIN <= f && f <= INT_MAX && (guard)) {		\
 	  PUSH(pic_int_value((int)f));				\
 	}							\
 	else {							\
-	  PUSH(pic_float_value(f));				\
+          mpq_t res;                                            \
+          mpq_init(res);                                        \
+          mpq_set_d(res, f);                                    \
+          PUSH(pic_obj_value(pic_rational_new(pic, res)));      \
 	}							\
       }								\
       else if (pic_float_p(a) && pic_float_p(b)) {		\
 	PUSH(pic_float_value(pic_float(a) op pic_float(b)));	\
+      }								\
+      else if (pic_bigint_p(a) && pic_bigint_p(b)) {            \
+        PUSH(pic_obj_value(pic_bigint_##name(pic,               \
+                                 pic_bigint_ptr(a),             \
+                                 pic_bigint_ptr(b))));          \
+      }								\
+      else if (pic_rational_p(a) && pic_rational_p(b)) {        \
+        PUSH(pic_obj_value(pic_rational_##name(pic,             \
+                                 pic_rational_ptr(a),           \
+                                 pic_rational_ptr(b))));        \
       }								\
       else if (pic_int_p(a) && pic_float_p(b)) {		\
 	PUSH(pic_float_value(pic_int(a) op pic_float(b)));	\
@@ -877,16 +920,80 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       else if (pic_float_p(a) && pic_int_p(b)) {		\
 	PUSH(pic_float_value(pic_float(a) op pic_int(b)));	\
       }								\
+      else if(pic_bigint_p(a) && pic_int_p(b)){                 \
+        mpz_t c;                                                \
+        mpz_init(c);                                            \
+        mpz_set_si(c, pic_int(b));                              \
+        PUSH(pic_obj_value(pic_bigint_##name(pic,               \
+                                 pic_bigint_ptr(a),             \
+                                 pic_bigint_new(pic, c))));     \
+      }                                                         \
+      else if(pic_int_p(a) && pic_bigint_p(b)){                 \
+        mpz_t c;                                                \
+        mpz_init(c);                                            \
+        mpz_set_si(c, pic_int(a));                              \
+        PUSH(pic_obj_value(pic_bigint_##name(pic,               \
+                                 pic_bigint_new(pic, c),        \
+                                 pic_bigint_ptr(b))));          \
+      }                                                         \
+      else if(pic_bigint_p(a) && pic_float_p(b)){               \
+        PUSH(pic_float_value(mpz_get_d(pic_bigint_ptr(a)->z)    \
+                             op pic_int(b)));                   \
+      }                                                         \
+      else if(pic_float_p(a) && pic_bigint_p(b)){               \
+        PUSH(pic_float_value( pic_int(a) op                     \
+                              mpz_get_d(pic_bigint_ptr(b)->z)));\
+      }                                                         \
+      else if (pic_rational_p(a) && pic_int_p(b)) {             \
+        mpq_t c;                                                \
+        mpq_init(c);                                            \
+        mpq_set_d(c, (double) pic_int(b));                      \
+        PUSH(pic_obj_value(pic_rational_##name(pic,             \
+                                 pic_rational_ptr(a),           \
+                                 pic_rational_new(pic, c))));   \
+      }								\
+      else if (pic_int_p(b) && pic_rational_p(a)) {             \
+        mpq_t c;                                                \
+        mpq_init(c);                                            \
+        mpq_set_d(c, (double) pic_int(a));                      \
+        PUSH(pic_obj_value(pic_rational_##name(pic,             \
+                                 pic_rational_new(pic, c),      \
+                                 pic_rational_ptr(b))));        \
+      }								\
+      else if (pic_rational_p(a) && pic_float_p(b)) {           \
+        PUSH(pic_float_value(pic_float(a) op                    \
+                              mpq_get_d(pic_rational_ptr(b)->q)));\
+      }								\
+      else if (pic_float_p(b) && pic_rational_p(a)) {           \
+        PUSH(pic_float_value(mpq_get_d(pic_rational_ptr(b)->q)  \
+                               op pic_float(a)));               \
+      }								\
+      else if (pic_rational_p(a) && pic_bigint_p(b)) {          \
+        mpq_t c;                                                \
+        mpq_init(c);                                            \
+        mpq_set_z(c, pic_bigint_ptr(b)->z);                     \
+        PUSH(pic_obj_value(pic_rational_##name(pic,             \
+                                 pic_rational_ptr(a),           \
+                                 pic_rational_new(pic, c))));   \
+      }								\
+      else if (pic_bigint_p(b) && pic_rational_p(a)) {          \
+        mpq_t c;                                                \
+        mpq_init(c);                                            \
+        mpq_set_z(c, pic_bigint_ptr(a)->z);                     \
+        PUSH(pic_obj_value(pic_rational_##name(pic,             \
+                                 pic_rational_new(pic, c),      \
+                                 pic_rational_ptr(b))));        \
+      }								\
       else {							\
-	pic_error(pic, #op " got non-number operands");		\
+	pic_errorf(pic, "#op  got non-number operands");	\
       }								\
       NEXT;							\
     }
 
-    DEFINE_ARITH_OP(OP_ADD, +, true);
-    DEFINE_ARITH_OP(OP_SUB, -, true);
-    DEFINE_ARITH_OP(OP_MUL, *, true);
-    DEFINE_ARITH_OP(OP_DIV, /, f == round(f));
+    DEFINE_ARITH_OP(OP_ADD, +, add, true);
+    DEFINE_ARITH_OP(OP_SUB, -, sub, true);
+    DEFINE_ARITH_OP(OP_MUL, *, mul,  true);
+    DEFINE_ARITH_OP(OP_DIV, /, div, f == round(f));
 
     CASE(OP_MINUS) {
       pic_value n;
@@ -896,6 +1003,16 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
       else if (pic_float_p(n)) {
 	PUSH(pic_float_value(-pic_float(n)));
+      }
+      else if (pic_bigint_p(n)) {
+        mpz_t res;
+        mpz_neg(res, pic_bigint_ptr(n)->z);
+        PUSH(pic_obj_value(pic_bigint_new(pic, res)));
+      }
+      else if (pic_rational_p(n)) {
+        mpq_t res;
+        mpq_neg(res, pic_rational_ptr(n)->q);
+        PUSH(pic_obj_value(pic_rational_new(pic, res)));
       }
       else {
 	pic_error(pic, "unary - got a non-number operand");
@@ -914,11 +1031,35 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       else if (pic_float_p(a) && pic_float_p(b)) {		\
 	PUSH(pic_bool_value(pic_float(a) op pic_float(b)));	\
       }								\
+      else if (pic_bigint_p(a) && pic_bigint_p(b)) {		\
+        PUSH(pic_bool_value(mpz_cmp(pic_bigint_ptr(a)->z,       \
+                                    pic_bigint_ptr(b)->z) op 0));\
+      }								\
+      else if (pic_rational_p(a) && pic_rational_p(b)) {	\
+        PUSH(pic_bool_value(mpq_cmp(pic_rational_ptr(a)->q,     \
+                                    pic_rational_ptr(b)->q) op 0));\
+      }								\
       else if (pic_int_p(a) && pic_float_p(b)) {		\
 	PUSH(pic_bool_value(pic_int(a) op pic_float(b)));	\
       }								\
       else if (pic_float_p(a) && pic_int_p(b)) {		\
 	PUSH(pic_bool_value(pic_float(a) op pic_int(b)));	\
+      }								\
+      else if (pic_bigint_p(a) && pic_int_p(b)) {		\
+        PUSH(pic_bool_value(mpz_cmp_si(pic_bigint_ptr(a)->z,    \
+            pic_int(b)) op 0));                                 \
+      }								\
+      else if (pic_int_p(a) && pic_bigint_p(b)) {		\
+        PUSH(pic_bool_value(0 op mpz_cmp_si(pic_bigint_ptr(b)->z,\
+                                            pic_int(a))));      \
+      }								\
+      else if (pic_bigint_p(a) && pic_float_p(b)) {		\
+        PUSH(pic_bool_value(mpz_cmp_d(pic_bigint_ptr(a)->z,     \
+                                      pic_float(b)) op 0));     \
+      }								\
+      else if (pic_float_p(a) && pic_bigint_p(b)) {		\
+        PUSH(pic_bool_value(0 op mpz_cmp_d(pic_bigint_ptr(b)->z,\
+                                           pic_float(a))));     \
       }								\
       else {							\
 	pic_error(pic, #op " got non-number operands");		\
