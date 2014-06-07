@@ -68,7 +68,7 @@ exptmark	"e"
 exactness	"#e"|"#i"
 bitprefix	{exactness}"#b"|"#b"{exactness}|"#b"
 octalprefix	{exactness}"#o"|"#o"{exactness}|"#o"
-digitprefix	{exactness}"#d"|"#d"{exactness}|"#d"?
+digitprefix	{exactness}"#d"|"#d"{exactness}|"#d"?|{exactness}
 hexprefix	{exactness}"#x"|"#x"{exactness}|"#x"
 infnan		"+inf.0"|"-inf.0"|"+nan.0"|"-nan.0"
 
