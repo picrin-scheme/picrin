@@ -889,8 +889,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       b = POP();						\
       a = POP();						\
       if (pic_int_p(a) && pic_int_p(b)) {                       \
-          double f = (double) pic_int(a) op                     \
-              (double) pic_int(b);                              \
+        double f = (double) pic_int(a) op                       \
+          (double) pic_int(b);                                  \
 	if (INT_MIN <= f && f <= INT_MAX && (guard)) {		\
 	  PUSH(pic_int_value((int)f));				\
 	}							\
@@ -987,6 +987,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       else {							\
 	pic_errorf(pic, "#op  got non-number operands");	\
       }								\
+      pic_number_normalize(pic->sp - 1);                        \
       NEXT;							\
     }
 

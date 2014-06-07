@@ -449,9 +449,9 @@ pic_eqv_p(pic_value x, pic_value y)
 
   switch (pic_type(x)) {
   case PIC_TT_BIGINT:
-      return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
+    return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
   case PIC_TT_RATIONAL:
-      return mpq_cmp(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q) == 0;
+    return mpq_equal(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q);
   default:
     return x.u.data == y.u.data;
   }
@@ -494,7 +494,7 @@ pic_eqv_p(pic_value x, pic_value y)
   case PIC_TT_BIGINT:
     return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
   case PIC_TT_RATIONAL:
-    return mpq_cmp(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q) == 0;
+    return mpq_equal(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q);
   default:
     return pic_ptr(x) == pic_ptr(y);
   }

@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#include <gmp.h>
 
 #define pic_bigint_p(v) (pic_type(v) == PIC_TT_BIGINT)
 #define pic_bigint_ptr(o) ((struct pic_bigint *)pic_ptr(o))
@@ -35,6 +36,32 @@ pic_rational *pic_rational_new(pic_state *, mpq_t);
      pic_bigint_p(o) ? mpz_get_d(pic_bigint_ptr(o)->z)   :              \
                        mpq_get_d(pic_rational_ptr(o)->q))
 
+static inline void
+pic_number_normalize(pic_value *v)
+{
+  if(pic_vtype(*v) == PIC_VTYPE_HEAP){
+    if(pic_rational_p(*v)){
+    pic_rational *q = pic_rational_ptr(*v);
+    if(mpz_get_si(mpq_denref(q->q)) == 1){
+      mpz_t z;
+      mpz_init(z);
+      mpq_get_num(z, q->q);
+      mpq_clear(q->q);
+      q->tt = PIC_TT_BIGINT;
+      mpz_init(((pic_bigint *)q)->z);
+      mpz_set(((pic_bigint *)q)->z, z);
+      mpz_clear(z);
+    }
+  }
+  if(pic_bigint_p(*v)){
+    pic_bigint *bi  = pic_bigint_ptr(*v);
+    if(mpz_fits_sint_p(bi->z)){
+      pic_init_value(*v, PIC_VTYPE_INT);
+      v->u.i = mpz_get_si(bi->z);
+      /* mpz_clear(bi->z); */
+    }
+  }
+}}
 pic_bigint *pic_bigint_add(pic_state *, pic_bigint *, pic_bigint *);
 pic_bigint *pic_bigint_sub(pic_state *, pic_bigint *, pic_bigint *);
 pic_bigint *pic_bigint_mul(pic_state *, pic_bigint *, pic_bigint *);
