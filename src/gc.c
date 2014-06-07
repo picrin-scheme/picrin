@@ -533,8 +533,7 @@ gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
   pic_callinfo *ci;
-  size_t i;
-  int j;
+  size_t i, j;
   xh_iter it;
 
   /* block */
