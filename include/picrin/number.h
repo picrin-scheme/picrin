@@ -16,11 +16,11 @@ extern "C" {
 
 #define pic_rational_p(v) (pic_type(v) == PIC_TT_RATIONAL)
 #define pic_rational_ptr(o) ((struct pic_rational *)pic_ptr(o))
-pic_bigint *pic_read_bigint(pic_state *, char *, int);
-pic_rational *pic_read_rational(pic_state *, char *, int);
+pic_value pic_read_bigint(pic_state *, char *, int);
+pic_value pic_read_rational(pic_state *, char *, int);
 
-pic_bigint *pic_bigint_new(pic_state *, mpz_t);
-pic_rational *pic_rational_new(pic_state *, mpq_t);
+pic_bigint *pic_bigint_new(pic_state *);
+pic_rational *pic_rational_new(pic_state *);
 
 #define pic_number_p(o)    (pic_int_p(o) || pic_float_p(o) || pic_bigint_p(o) || pic_rational_p(o))
 
@@ -37,31 +37,34 @@ pic_rational *pic_rational_new(pic_state *, mpq_t);
                        mpq_get_d(pic_rational_ptr(o)->q))
 
 static inline void
-pic_number_normalize(pic_value *v)
+pic_number_normalize(pic_state *pic, pic_value *v)
 {
+  UNUSED(pic);
   if(pic_vtype(*v) == PIC_VTYPE_HEAP){
     if(pic_rational_p(*v)){
-    pic_rational *q = pic_rational_ptr(*v);
-    if(mpz_get_si(mpq_denref(q->q)) == 1){
-      mpz_t z;
-      mpz_init(z);
-      mpq_get_num(z, q->q);
-      mpq_clear(q->q);
-      q->tt = PIC_TT_BIGINT;
-      mpz_init(((pic_bigint *)q)->z);
-      mpz_set(((pic_bigint *)q)->z, z);
-      mpz_clear(z);
+      pic_rational *q = pic_rational_ptr(*v);
+      if(((int) mpz_get_si(mpq_denref(q->q))) == 1){
+        mpz_t z;
+        mpz_init(z);
+        mpq_get_num(z, q->q);
+        mpq_clear(q->q);
+        q->tt = PIC_TT_BIGINT;
+        mpz_init(((pic_bigint *)q)->z);
+        mpz_set(((pic_bigint *)q)->z, z);
+        mpz_clear(z);
+      }
+    }
+    if(pic_bigint_p(*v)){
+      pic_bigint *bi  = pic_bigint_ptr(*v);
+      if(mpz_fits_sint_p(bi->z)){
+        pic_init_value(*v, PIC_VTYPE_INT);
+        v->u.i = mpz_get_si(bi->z);
+        mpz_clear(bi->z);
+        pic_free(pic, bi);
+      }
     }
   }
-  if(pic_bigint_p(*v)){
-    pic_bigint *bi  = pic_bigint_ptr(*v);
-    if(mpz_fits_sint_p(bi->z)){
-      pic_init_value(*v, PIC_VTYPE_INT);
-      v->u.i = mpz_get_si(bi->z);
-      /* mpz_clear(bi->z); */
-    }
-  }
-}}
+}
 pic_bigint *pic_bigint_add(pic_state *, pic_bigint *, pic_bigint *);
 pic_bigint *pic_bigint_sub(pic_state *, pic_bigint *, pic_bigint *);
 pic_bigint *pic_bigint_mul(pic_state *, pic_bigint *, pic_bigint *);

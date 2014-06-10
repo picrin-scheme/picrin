@@ -181,10 +181,10 @@ read_datum(int tok, yyscan_t scanner)
     return val;
 
   case tBIGINT:
-    val = pic_obj_value(pic_read_bigint(pic, yylval.buf.dat, (int) yylval.buf.len));
+    val = pic_read_bigint(pic, yylval.buf.dat, (int) yylval.buf.len);
     return val;
   case tRATIONAL:
-    val = pic_obj_value(pic_read_rational(pic, yylval.buf.dat, (int) yylval.buf.len));
+    val = pic_read_rational(pic, yylval.buf.dat, (int) yylval.buf.len);
     return val;
   case tLPAREN:
   case tLBRACKET:
