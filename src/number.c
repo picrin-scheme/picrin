@@ -11,57 +11,79 @@
 #include "picrin/number.h"
 #include "picrin/string.h"
 
-pic_bigint *
+pic_value
 pic_read_bigint(pic_state *pic, char *str, int radix)
 {
-    
-    pic_bigint *num;
-    num = (pic_bigint *)pic_obj_alloc(pic , sizeof(pic_bigint), PIC_TT_BIGINT);
-    mpz_init(num->z);
-    mpz_set_str(num->z, str, radix);
-    
-    return num;
+  mpz_t z;
+  mpz_init(z);
+  mpz_set_str(z, str, radix);
+  if(mpz_fits_sint_p(z)){
+    pic_value res;
+    pic_init_value(res, PIC_VTYPE_INT);
+    pic_int(res) = mpz_get_si(z);
+    return res;
+  }
+  else{
+    pic_bigint *res = pic_bigint_new(pic);
+    mpz_set(res->z, z);
+    mpz_clear(z);
+    return pic_obj_value(res);
+  }
 }
 
-pic_rational *
+pic_value
 pic_read_rational(pic_state *pic, char *str, int radix)
 {
-    pic_rational *num;
-    num = (pic_rational *)pic_obj_alloc(pic , sizeof(pic_str), PIC_TT_RATIONAL);
-    mpq_init(num->q);
-    mpq_set_str(num->q, str, radix);
-    return num;    
+  mpq_t q;
+  mpq_init(q);
+  mpq_set_str(q, str, radix);
+  if((mpz_get_si(mpq_denref(q))) == 1){
+    if(mpz_fits_sint_p(mpq_numref(q))){
+      pic_value res = pic_int_value(mpz_get_si(mpq_numref(q)));
+      mpq_clear(q);
+      return res;
+    }
+    else{
+      pic_bigint *res = pic_bigint_new(pic);
+      mpq_get_num(res->z, q);
+      mpq_clear(q);
+      return pic_obj_value(res);
+    }
+  }
+  else{
+    pic_rational *res = pic_rational_new(pic);
+    mpq_set(res->q, q);
+    mpq_clear(q);
+    return pic_obj_value(res);
+  }
 }
 
 pic_bigint *
-pic_bigint_new(pic_state *pic, mpz_t num)
+pic_bigint_new(pic_state *pic)
 {
     pic_bigint *res;
     res = (pic_bigint *)pic_obj_alloc(pic , sizeof(pic_bigint), PIC_TT_BIGINT);
     mpz_init(res->z);
-    mpz_set(res->z, num);
     return res;
 }
 
 pic_rational *
-pic_rational_new(pic_state *pic, mpq_t num)
+pic_rational_new(pic_state *pic)
 {
     pic_rational *res;
     res = (pic_rational *)pic_obj_alloc(pic , sizeof(pic_rational), PIC_TT_RATIONAL);
     mpq_init(res->q);
-    mpq_set(res->q, num);
     return res;
 }
 
-#define DEFINE_BIGINT_ARITH(op)                                     \
-pic_bigint *                                                        \
-pic_bigint_##op(pic_state *pic, pic_bigint *x, pic_bigint *y)       \
-{                                                                   \
-  mpz_t res;                                                        \
-  mpz_init(res);                                                    \
-  mpz_##op(res, x->z, y->z);                                        \
-  return pic_bigint_new(pic, res);                                  \
-}                                                                   \
+#define DEFINE_BIGINT_ARITH(op)                                 \
+pic_bigint *                                                    \
+pic_bigint_##op(pic_state *pic, pic_bigint *x, pic_bigint *y)   \
+{                                                               \
+  pic_bigint *res = pic_bigint_new(pic);                        \
+  mpz_##op(res->z, x->z, y->z);                                 \
+  return res;                                                   \
+}                                                               \
 
 DEFINE_BIGINT_ARITH(add)
 DEFINE_BIGINT_ARITH(sub)
@@ -70,22 +92,20 @@ DEFINE_BIGINT_ARITH(mul)
 pic_rational *
 pic_bigint_div(pic_state *pic, pic_bigint *x, pic_bigint *y)
 {
-  mpq_t res;
-  mpq_init(res);
-  mpq_set_num(res, x->z);
-  mpq_set_den(res, y->z);
-  mpq_canonicalize(res);
-  return pic_rational_new(pic, res);
+  pic_rational *res = pic_rational_new(pic);
+  mpq_set_num(res->q, x->z);
+  mpq_set_den(res->q, y->z);
+  mpq_canonicalize(res->q);
+  return res;
 }
 
 #define DEFINE_RATIONAL_ARITH(op)                                   \
 pic_rational *                                                      \
 pic_rational_##op(pic_state *pic, pic_rational *x, pic_rational *y) \
 {                                                                   \
-  mpq_t res;                                                        \
-  mpq_init(res);                                                    \
-  mpq_##op(res, x->q, y->q);                                        \
-  return pic_rational_new(pic, res);                                \
+  pic_rational *res = pic_rational_new(pic);                        \
+  mpq_##op(res->q, x->q, y->q);                                     \
+  return  res;                                                      \
 }                                                                   \
 
 DEFINE_RATIONAL_ARITH(add);
