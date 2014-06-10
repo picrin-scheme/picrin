@@ -224,7 +224,7 @@ pic_number_max(pic_state *pic)
       f = fmax(f, pic_float(argv[i]));
     }
     else {
-      pic_error(pic, "min: number required");
+      pic_error(pic, "max: number required");
     }
   }
 
