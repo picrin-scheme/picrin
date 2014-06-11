@@ -15,8 +15,7 @@ pic_value
 pic_read_bigint(pic_state *pic, char *str, int radix)
 {
   mpz_t z;
-  mpz_init(z);
-  mpz_set_str(z, str, radix);
+  mpz_init_set_str(z, str, radix);
   if(mpz_fits_sint_p(z)){
     pic_value res;
     pic_init_value(res, PIC_VTYPE_INT);
@@ -37,6 +36,7 @@ pic_read_rational(pic_state *pic, char *str, int radix)
   mpq_t q;
   mpq_init(q);
   mpq_set_str(q, str, radix);
+  mpq_canonicalize(q);
   if((mpz_get_si(mpq_denref(q))) == 1){
     if(mpz_fits_sint_p(mpq_numref(q))){
       pic_value res = pic_int_value(mpz_get_si(mpq_numref(q)));
@@ -138,7 +138,7 @@ pic_number_real_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_float_p(v) || pic_int_p(v));
+  return pic_bool_value(pic_float_p(v) || pic_int_p(v) || pic_bigint_p(v) || pic_rational_p(v));
 }
 
 static pic_value
@@ -148,7 +148,7 @@ pic_number_integer_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_int_p(v)) {
+  if (pic_int_p(v) || pic_bigint_p(v)) {
     return pic_true_value();
   }
   if (pic_float_p(v)) {
@@ -172,7 +172,7 @@ pic_number_exact_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_int_p(v));
+  return pic_bool_value(pic_int_p(v) || pic_bigint_p(v) || pic_rational_p(v));
 }
 
 static pic_value
@@ -192,7 +192,7 @@ pic_number_finite_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_int_p(v))
+  if (pic_int_p(v) || pic_bigint_p(v) || pic_rational_p(v))
     return pic_true_value();
   if (pic_float_p(v) && ! (isinf(pic_float(v)) || isnan(pic_float(v))))
     return pic_true_value();
@@ -782,30 +782,36 @@ pic_number_inexact(pic_state *pic)
 static pic_value
 pic_number_exact(pic_state *pic)
 {
-  double f;
+  pic_value v;
 
-  pic_get_args(pic, "f", &f);
+  pic_get_args(pic, "o", &v);
 
-  return pic_int_value((int)round(f));
+  if(pic_float_p(v)){
+    return pic_int_value((int)round(pic_float(v)));
+  }
+  else{
+    return v;
+  }
 }
 
 static pic_value
 pic_number_number_to_string(pic_state *pic)
 {
-  double f;
+  mpq_t q;
   bool e;
   int radix = 10;
+  char *buf;
 
-  pic_get_args(pic, "F|i", &f, &e, &radix);
+  mpq_init(q);
+  pic_get_args(pic, "Q|i", &q, &e, &radix);
+
 
   if (e) {
-    char buf[snprintf(NULL, 0, "%d", (int)f) + 1];
-
-    snprintf(buf, sizeof buf, "%d", (int)f);
-
-    return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+    buf = mpq_get_str(NULL, radix, q);
+    return pic_obj_value(pic_str_new(pic, buf, strlen(buf)));
   }
   else {
+    double f = mpq_get_d(q);
     char buf[snprintf(NULL, 0, "%a", f) + 1];
 
     snprintf(buf, sizeof buf, "%a", f);
@@ -819,24 +825,15 @@ pic_number_string_to_number(pic_state *pic)
 {
   const char *str;
   int radix = 10;
-  long num;
-  char *eptr;
-  double flo;
-
+  pic_value q;
   pic_get_args(pic, "z|i", &str, &radix);
 
-  num = strtol(str, &eptr, radix);
-  if (*eptr == '\0') {
-    return pic_valid_int(num)
-      ? pic_int_value(num)
-      : pic_float_value(num);
-  }
-
-  flo = strtod(str, &eptr);
-  if (*eptr == '\0') {
-    return pic_float_value(flo);
-  }
-
+  pic_init_value(q, PIC_TT_RATIONAL);
+  mpq_init(pic_rational_ptr(q)->q);
+  mpq_set_str(pic_rational_ptr(q)->q, str, radix);
+  pic_number_normalize(pic, &q);
+  return q;
+  
   pic_errorf(pic, "invalid string given: %s", str);
 }
 
