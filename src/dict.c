@@ -40,7 +40,7 @@ pic_dict_dict_ref(pic_state *pic)
 
   e = xh_get_int(&dict->hash, key);
   if (! e) {
-    return pic_none_value();
+    pic_errorf(pic, "element not found for a key: ~s", pic_sym_value(key));
   }
   return xh_val(e, pic_value);
 }
@@ -72,6 +72,16 @@ pic_dict_dict_del(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_dict_dict_size(pic_state *pic)
+{
+  struct pic_dict *dict;
+
+  pic_get_args(pic, "d", &dict);
+
+  return pic_int_value(dict->hash.count);
+}
+
 void
 pic_init_dict(pic_state *pic)
 {
@@ -81,5 +91,6 @@ pic_init_dict(pic_state *pic)
     pic_defun(pic, "dictionary-ref", pic_dict_dict_ref);
     pic_defun(pic, "dictionary-set!", pic_dict_dict_set);
     pic_defun(pic, "dictionary-delete", pic_dict_dict_del);
+    pic_defun(pic, "dictionary-size", pic_dict_dict_size);
   }
 }
