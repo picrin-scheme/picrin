@@ -221,7 +221,7 @@ pic_number_nan_p(pic_state *pic)
   else
     return pic_false_value();
 }
-
+                               /* :TODO: */
 #define DEFINE_ARITH_CMP(op, name)			\
   static pic_value					\
   pic_number_##name(pic_state *pic)			\
@@ -309,7 +309,7 @@ pic_number_even_p(pic_state *pic)
 
 static pic_value
 pic_number_max(pic_state *pic)
-{
+{                               /* :TODO: */
   size_t argc;
   pic_value *argv;
   size_t i;
@@ -337,7 +337,7 @@ pic_number_max(pic_state *pic)
 
 static pic_value
 pic_number_min(pic_state *pic)
-{
+{                               /* :TODO: */
   size_t argc;
   pic_value *argv;
   size_t i;
@@ -394,7 +394,7 @@ pic_number_min(pic_state *pic)
 
 DEFINE_ARITH_OP(+, add, 0)
 DEFINE_ARITH_OP(*, mul, 1)
-
+                               /* :TODO: */
 #define DEFINE_ARITH_INV_OP(op, name, unit, exact)                      \
   static pic_value                                                      \
   pic_number_##name(pic_state *pic)                                     \
@@ -433,7 +433,7 @@ DEFINE_ARITH_INV_OP(/, div, 1, false)
 
 static pic_value
 pic_number_abs(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
   bool e;
 
@@ -449,7 +449,7 @@ pic_number_abs(pic_state *pic)
 
 static pic_value
 pic_number_floor_quotient(pic_state *pic)
-{
+{                               /* :TODO: */
   int i,j;
   bool e1, e2;
 
@@ -465,7 +465,7 @@ pic_number_floor_quotient(pic_state *pic)
 
 static pic_value
 pic_number_floor_remainder(pic_state *pic)
-{
+{                               /* :TODO: */
   int i,j,q;
   bool e1, e2;
 
@@ -482,7 +482,7 @@ pic_number_floor_remainder(pic_state *pic)
 
 static pic_value
 pic_number_trunc_quotient(pic_state *pic)
-{
+{                               /* :TODO: */
   int i,j;
   bool e1, e2;
 
@@ -498,7 +498,7 @@ pic_number_trunc_quotient(pic_state *pic)
 
 static pic_value
 pic_number_trunc_remainder(pic_state *pic)
-{
+{                               /* :TODO: */
   int i,j,q;
   bool e1, e2;
 
@@ -515,7 +515,7 @@ pic_number_trunc_remainder(pic_state *pic)
 
 static pic_value
 pic_number_gcd(pic_state *pic)
-{
+{                               /* :TODO: */
   size_t argc;
   pic_value *args;
   int r;
@@ -541,7 +541,7 @@ pic_number_gcd(pic_state *pic)
 
 static pic_value
 pic_number_lcm(pic_state *pic)
-{
+{                               /* :TODO: */
   size_t argc;
   pic_value *args;
   double r;
@@ -567,7 +567,7 @@ pic_number_lcm(pic_state *pic)
 
 static pic_value
 pic_number_floor(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
   bool e;
 
@@ -583,7 +583,7 @@ pic_number_floor(pic_state *pic)
 
 static pic_value
 pic_number_ceil(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
   bool e;
 
@@ -599,7 +599,7 @@ pic_number_ceil(pic_state *pic)
 
 static pic_value
 pic_number_trunc(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
   bool e;
 
@@ -615,7 +615,7 @@ pic_number_trunc(pic_state *pic)
 
 static pic_value
 pic_number_round(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
   bool e;
 
@@ -631,7 +631,7 @@ pic_number_round(pic_state *pic)
 
 static pic_value
 pic_number_exp(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
 
   pic_get_args(pic, "f", &f);
@@ -640,7 +640,7 @@ pic_number_exp(pic_state *pic)
 
 static pic_value
 pic_number_log(pic_state *pic)
-{
+{                               /* :TODO: */
   double f,g;
   int argc;
 
@@ -655,7 +655,7 @@ pic_number_log(pic_state *pic)
 
 static pic_value
 pic_number_sin(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
 
   pic_get_args(pic, "f", &f);
@@ -665,7 +665,7 @@ pic_number_sin(pic_state *pic)
 
 static pic_value
 pic_number_cos(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
 
   pic_get_args(pic, "f", &f);
@@ -675,7 +675,7 @@ pic_number_cos(pic_state *pic)
 
 static pic_value
 pic_number_tan(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
 
   pic_get_args(pic, "f", &f);
@@ -685,7 +685,7 @@ pic_number_tan(pic_state *pic)
 
 static pic_value
 pic_number_acos(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
 
   pic_get_args(pic, "f", &f);
@@ -695,7 +695,7 @@ pic_number_acos(pic_state *pic)
 
 static pic_value
 pic_number_asin(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
 
   pic_get_args(pic, "f", &f);
@@ -705,7 +705,7 @@ pic_number_asin(pic_state *pic)
 
 static pic_value
 pic_number_atan(pic_state *pic)
-{
+{                               /* :TODO: */
   double f,g;
   int argc;
 
@@ -721,7 +721,7 @@ pic_number_atan(pic_state *pic)
 
 static pic_value
 pic_number_square(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
   bool e;
 
@@ -739,7 +739,7 @@ pic_number_square(pic_state *pic)
 
 static pic_value
 pic_number_sqrt(pic_state *pic)
-{
+{                               /* :TODO: */
   double f;
 
   pic_get_args(pic, "f", &f);
@@ -749,7 +749,7 @@ pic_number_sqrt(pic_state *pic)
 
 static pic_value
 pic_number_expt(pic_state *pic)
-{
+{                               /* :TODO: */
   double f, g, h;
   bool e1, e2;
 
