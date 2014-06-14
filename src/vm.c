@@ -19,6 +19,7 @@
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"
+#include "picrin/dict.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -49,6 +50,7 @@ pic_get_proc(pic_state *pic)
  *  c   char
  *  l   lambda object
  *  p   port object
+ *  d   dictionary object
  *
  *  |  optional operator
  *  *  variable length operator
@@ -322,6 +324,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
         }
         else {
           pic_error(pic, "pic_get_args, expected port");
+        }
+        i++;
+      }
+      break;
+    }
+    case 'd': {
+      struct pic_dict **d;
+      pic_value v;
+
+      d = va_arg(ap, struct pic_dict **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_dict_p(v)) {
+          *d = pic_dict_ptr(v);
+        }
+        else {
+          pic_error(pic, "pic_get_args, expected dictionary");
         }
         i++;
       }

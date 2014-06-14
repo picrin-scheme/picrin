@@ -338,6 +338,9 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_BOX:
     xfprintf(file, "#<box %p>", pic_ptr(obj));
     break;
+  case PIC_TT_DICT:
+    xfprintf(file, "#<dict %p>", pic_ptr(obj));
+    break;
   }
 }
 
