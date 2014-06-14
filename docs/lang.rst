@@ -18,7 +18,7 @@ At the REPL start-up time, some usuful built-in libraries listed below will be a
 - ``(scheme lazy)``
 - ``(scheme time)``
 
-Compiliance with R7RS
+Compliance with R7RS
 ---------------------
 
 ================================================ ========== ==========================================================================================================================
