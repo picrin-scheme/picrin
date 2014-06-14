@@ -13,6 +13,7 @@ Contents:
 
    intro.rst
    lang.rst
+   libs.rst
 
 Indices and tables
 ==================
