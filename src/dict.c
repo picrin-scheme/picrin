@@ -67,6 +67,10 @@ pic_dict_dict_del(pic_state *pic)
 
   pic_get_args(pic, "dm", &dict, &key);
 
+  if (xh_get_int(&dict->hash, key) == NULL) {
+    pic_errorf(pic, "no slot named ~s found in dictionary", pic_sym_value(key));
+  }
+
   xh_del_int(&dict->hash, key);
 
   return pic_none_value();
