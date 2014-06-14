@@ -30,12 +30,10 @@ SRFI libraries
 
   Sorting and Marging.
 
-
-Macros
-------
-
 (picrin macro)
-^^^^^^^^^^^^^^
+--------------
+
+Utility functions and syntaces for macro definition.
 
 - define-macro
 - gensym
@@ -55,62 +53,80 @@ Syntactic closures.
 Explicit renaming macro family.
 
 (picrin regexp)
-^^^^^^^^^^^^^^^
+---------------
 
-- (regexp? obj)
-- (regexp ptrn [flags])
+(regexp ptrn [flags])
+^^^^^^^^^^^^^^^^^^^^^
 
 Compiles pattern string into a regexp object. A string flags may contain any of #\g, #\i, #\m.
 
-- (regexp-match re input)
+(regexp? obj)
+^^^^^^^^^^^^^
+
+Judges if obj is a regexp object or not.
+
+(regexp-match re input)
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Returns two values: a list of match strings, and a list of match indeces.
 
-- (regexp-replace re input txt)
-- (regexp-split re input)
+(regexp-replace re input txt)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+(regexp-split re input)
+^^^^^^^^^^^^^^^^^^^^^^^
 
 (picrin control)
-^^^^^^^^^^^^^^^^
-
-- (reset h)
-- (shift k)
+----------------
 
 Delimited control operators.
 
+(reset h)
+^^^^^^^^^
+
+(shift k)
+^^^^^^^^^
+
 (picrin dictionary)
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 Symbol to Object table. Internally it is implemented on hash-table.
 
 Note that dictionary is not a weak map; if you are going to make a highly memory-consuming program with dictionaries, you should know that dictionaries keep their bound objects and never let them free until you explicitly deletes bindings.
 
-- (dictionary)
+(dictionary)
+^^^^^^^^^^^^
 
   Returns a newly allocated empty dictionary. In the future, it is planned to extend this function to take optional arguments for initial key/values.
 
-- (dictionary? obj)
+(dictionary? obj)
+^^^^^^^^^^^^^^^^^
 
   Returns #t if obj is a dictionary.
 
-- (dictionary-ref dict key)
+(dictionary-ref dict key)
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
   Look up dictionary dict for a value associated with symbol key. If no object is associated with key, it will raise an error.
 
-- (dictionary-set! dict key obj)
+(dictionary-set! dict key obj)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   If there is no value already associated with key, this function newly creates a binding of key with obj. Otherwise, updates the existing binding with given obj.
 
-- (dictionary-delete dict key)
+(dictionary-delete dict key)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   Deletes the binding associated with key from dict. If no binding on dict is associated with key, an error will be raised.
 
 
-- (dictionary-size dict)
+(dictionary-size dict)
+^^^^^^^^^^^^^^^^^^^^^^
 
   Returns the number of registered elements in dict.
 
 (picrin user)
-^^^^^^^^^^^^^
+-------------
 
 When you start the REPL, you are dropped into here.
 
