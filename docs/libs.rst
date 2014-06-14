@@ -55,21 +55,22 @@ Explicit renaming macro family.
 (picrin regexp)
 ---------------
 
-.. topic:: (regexp ptrn [flags])
+.. glossary::
 
-Compiles pattern string into a regexp object. A string flags may contain any of #\g, #\i, #\m.
+   (regexp ptrn [flags])
 
-.. topic:: (regexp? obj)
+      Compiles pattern string into a regexp object. A string flags may contain any of #\g, #\i, #\m.
 
-Judges if obj is a regexp object or not.
+   (regexp? obj)
 
-.. topic:: (regexp-match re input)
+      Judges if obj is a regexp object or not.
 
-Returns two values: a list of match strings, and a list of match indeces.
+   (regexp-match re input)
 
-.. topic:: (regexp-replace re input txt)
+      Returns two values: a list of match strings, and a list of match indeces.
 
-.. topic:: (regexp-split re input)
+   (regexp-replace re input txt)
+   (regexp-split re input)
 
 (picrin control)
 ----------------
