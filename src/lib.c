@@ -95,7 +95,7 @@ pic_export(pic_state *pic, pic_sym sym)
   printf("* exporting %s as %s\n", pic_symbol_name(pic, sym), pic_symbol_name(pic, rename));
 #endif
 
-  xh_put(&pic->lib->exports, sym, &rename);
+  xh_put_int(&pic->lib->exports, sym, &rename);
 }
 
 void
@@ -111,5 +111,5 @@ pic_export_as(pic_state *pic, pic_sym sym, pic_sym as)
   printf("* exporting %s as %s\n", pic_symbol_name(pic, as), pic_symbol_name(pic, rename));
 #endif
 
-  xh_put(&pic->lib->exports, as, &rename);
+  xh_put_int(&pic->lib->exports, as, &rename);
 }

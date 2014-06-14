@@ -294,7 +294,7 @@ analyze_global_var(analyze_state *state, pic_sym sym)
   xh_entry *e;
   size_t i;
 
-  if ((e = xh_get(&pic->global_tbl, sym))) {
+  if ((e = xh_get_int(&pic->global_tbl, sym))) {
     i = xh_val(e, size_t);
   }
   else {
@@ -302,7 +302,7 @@ analyze_global_var(analyze_state *state, pic_sym sym)
     if (i >= pic->gcapa) {
       pic_error(pic, "global table overflow");
     }
-    xh_put(&pic->global_tbl, sym, &i);
+    xh_put_int(&pic->global_tbl, sym, &i);
   }
   return pic_list2(pic, pic_symbol_value(state->sGREF), pic_int_value(i));
 }
@@ -929,18 +929,18 @@ create_activation(codegen_context *cxt)
   for (i = 0; i < cxt->args.size; ++i) {
     var = xv_get(&cxt->args, i);
     n = i + offset;
-    xh_put(&regs, *var, &n);
+    xh_put_int(&regs, *var, &n);
   }
   offset += i;
   for (i = 0; i < cxt->locals.size; ++i) {
     var = xv_get(&cxt->locals, i);
     n = i + offset;
-    xh_put(&regs, *var, &n);
+    xh_put_int(&regs, *var, &n);
   }
 
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    if ((n = xh_val(xh_get(&regs, *var), size_t)) <= cxt->args.size || (cxt->varg && n == cxt->args.size + 1)) {
+    if ((n = xh_val(xh_get_int(&regs, *var), size_t)) <= cxt->args.size || (cxt->varg && n == cxt->args.size + 1)) {
       /* copy arguments to capture variable area */
       cxt->code[cxt->clen].insn = OP_LREF;
       cxt->code[cxt->clen].u.i = n;

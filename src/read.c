@@ -53,7 +53,7 @@ read_label_set(int i, yyscan_t scanner)
 
       val = pic_cons(pic, pic_none_value(), pic_none_value());
 
-      xh_put(&yylabels, i, &val);
+      xh_put_int(&yylabels, i, &val);
 
       tmp = read(tok, scanner);
       pic_pair_ptr(val)->car = pic_car(pic, tmp);
@@ -67,7 +67,7 @@ read_label_set(int i, yyscan_t scanner)
 
       val = pic_obj_value(pic_vec_new(pic, 0));
 
-      xh_put(&yylabels, i, &val);
+      xh_put_int(&yylabels, i, &val);
 
       tmp = pic_vec_ptr(read(tok, scanner));
       SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
@@ -79,7 +79,7 @@ read_label_set(int i, yyscan_t scanner)
     {
       val = read(tok, scanner);
 
-      xh_put(&yylabels, i, &val);
+      xh_put_int(&yylabels, i, &val);
 
       return val;
     }
@@ -91,7 +91,7 @@ read_label_ref(int i, yyscan_t scanner)
 {
   xh_entry *e;
 
-  e = xh_get(&yylabels, i);
+  e = xh_get_int(&yylabels, i);
   if (! e) {
     error("label of given index not defined", scanner);
   }

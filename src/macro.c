@@ -52,7 +52,7 @@ pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym renam
 {
   UNUSED(pic);
 
-  xh_put(&senv->renames, sym, &rename);
+  xh_put_int(&senv->renames, sym, &rename);
 }
 
 bool
@@ -62,7 +62,7 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 
   UNUSED(pic);
 
-  if ((e = xh_get(&senv->renames, sym)) == NULL) {
+  if ((e = xh_get_int(&senv->renames, sym)) == NULL) {
     return false;
   }
   if (rename != NULL) {
@@ -80,7 +80,7 @@ define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_s
   mac->senv = senv;
   mac->proc = proc;
 
-  xh_put(&pic->macros, rename, &mac);
+  xh_put_int(&pic->macros, rename, &mac);
 }
 
 static struct pic_macro *
@@ -88,7 +88,7 @@ find_macro(pic_state *pic, pic_sym rename)
 {
   xh_entry *e;
 
-  if ((e = xh_get(&pic->macros, rename)) == NULL) {
+  if ((e = xh_get_int(&pic->macros, rename)) == NULL) {
     return NULL;
   }
   return xh_val(e, struct pic_macro *);

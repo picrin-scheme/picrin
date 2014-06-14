@@ -360,7 +360,7 @@ global_ref(pic_state *pic, const char *name)
   if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
     return SIZE_MAX;
   }
-  if (! (e = xh_get(&pic->global_tbl, rename))) {
+  if (! (e = xh_get_int(&pic->global_tbl, rename))) {
     return SIZE_MAX;
   }
   return xh_val(e, size_t);
@@ -386,7 +386,7 @@ global_def(pic_state *pic, const char *name)
   if (pic->glen >= pic->gcapa) {
     pic_error(pic, "global table overflow");
   }
-  xh_put(&pic->global_tbl, rename, &gidx);
+  xh_put_int(&pic->global_tbl, rename, &gidx);
 
   return gidx;
 }
