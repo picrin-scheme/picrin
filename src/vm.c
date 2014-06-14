@@ -33,6 +33,27 @@ pic_get_proc(pic_state *pic)
   return pic_proc_ptr(v);
 }
 
+/**
+ * char type
+ * ---- ----
+ *  o   object
+ *  i   int
+ *  I   int with exactness
+ *  f   float
+ *  F   float with exactness
+ *  s   string object
+ *  z   c string
+ *  m   symbol
+ *  v   vector object
+ *  b   bytevector object
+ *  c   char
+ *  l   lambda object
+ *  p   port object
+ *
+ *  |  optional operator
+ *  *  variable length operator
+ */
+
 int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
