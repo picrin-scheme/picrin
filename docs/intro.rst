@@ -23,6 +23,11 @@ Currently picrin is hosted on Github. You can freely send a bug report or pull-r
 
 https://github.com/wasabiz/picrin
 
+Documentation
+-------------
+
+See http://picrin.readthedocs.org/
+
 IRC
 ---
 
