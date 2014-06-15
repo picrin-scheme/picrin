@@ -4,7 +4,7 @@ Picrin is a lightweight scheme implementation intended to comply with full R7RS 
 
 ## Features
 
-- R7RS compatibility (but partial support)
+- R7RS compatibility
 - reentrant design (all VM states are stored in single global state object)
 - bytecode interpreter (based on stack VM)
 - direct threaded VM
