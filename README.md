@@ -33,7 +33,14 @@ There is a chat room on chat.freenode.org, channel #picrin. IRC logs here: https
 
 ## How to use it
 
-- make `Makefile`
+To build picrin, you need some build tools installed on your platform.
+
+- cmake (>= 2.8)
+- git
+
+Because of submodule dependencies, it is necessary to get picrin's source code via git clone command. Basically our git dependencies are only due to submodules, so in fact, If you have no git on your machine, it is possible to build it by downloading a tarball from github page as well. But in such case, you are assumed to modify CMakeLists.txt by yourself to get it work completely. We just strongly recommend you to use git-clone.
+
+### Generate `Makefile`
 
 	Change directory to `build` then run `ccmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin.
 
@@ -42,7 +49,7 @@ There is a chat room on chat.freenode.org, channel #picrin. IRC logs here: https
 
 	Actually you don't necessarily need to move to `build` directory before running `ccmake` (in that case `$ ccmake .`), but I strongly recommend to follow above instruction.
     
-- build
+### Build
 
  	A built executable binary will be under bin/ directory and shared libraries under lib/.
 
@@ -50,19 +57,19 @@ There is a chat room on chat.freenode.org, channel #picrin. IRC logs here: https
 
 	If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is automatically turned on (see include/picrin/config.h for detail).
 
-- install
+### Install
 
 	Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via ccmake.
 
 		$ make install
 
-- run
+### Run
 
 	Before installing picrin, you can try picrin without breaking any of your system. Simply directly run the binary `bin/picrin` from terminal, or you can use `make` to execute it like this.
 
 		$ make run
 
-- debug run
+### Debug run
 
 	If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
 
