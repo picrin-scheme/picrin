@@ -20,6 +20,7 @@
 #include "picrin/var.h"
 #include "picrin/data.h"
 #include "picrin/box.h"
+#include "picrin/dict.h"
 
 #if GC_DEBUG
 # include <string.h>
@@ -504,6 +505,16 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, box->value);
     break;
   }
+  case PIC_TT_DICT: {
+    struct pic_dict *dict = (struct pic_dict *)obj;
+    xh_iter it;
+
+    xh_begin(&it, &dict->hash);
+    while (xh_next(&it)) {
+      gc_mark(pic, xh_val(it.e, pic_value));
+    }
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -533,8 +544,7 @@ gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
   pic_callinfo *ci;
-  size_t i;
-  int j;
+  size_t i, j;
   xh_iter it;
 
   /* block */
@@ -656,6 +666,11 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_BOX: {
+    break;
+  }
+  case PIC_TT_DICT: {
+    struct pic_dict *dict = (struct pic_dict *)obj;
+    xh_destroy(&dict->hash);
     break;
   }
   case PIC_TT_NIL:

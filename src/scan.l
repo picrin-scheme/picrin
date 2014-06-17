@@ -33,6 +33,9 @@
 %option extra-type="struct parser_control *"
 %option never-interactive
 
+  /* shebang */
+shebang		#!.*$
+
   /* comment */
 comment		;.*$
 
@@ -71,6 +74,7 @@ label		#{uinteger}
 
 [ \t\n\r]	/* skip whitespace */
 {comment}	/* skip comment */
+{shebang}	/* skip shebang */
 
 "#|"		{
   BEGIN(BLOCK_COMMENT);

@@ -1,75 +1,7 @@
 Language
 ========
 
-The language provided by picrin.
-
-Libraries
----------
-
-- ``(scheme base)``
-- ``(scheme write)``
-- ``(scheme cxr)``
-- ``(scheme file)``
-- ``(scheme inexact)``
-- ``(scheme time)``
-- ``(scheme process-context)``
-- ``(scheme load)``
-- ``(scheme lazy)``
-- ``(picrin macro)``
-
-  - ``define-macro``
-  - ``gensym``
-  - ``macroexpand``
-
-  Old-fashioned macro.
-
-  - ``make-syntactic-closure``
-  - ``identifier?``
-  - ``identifier=?``
-
-  Syntactic closures.
-
-  - ``er-macro-transformer``
-  - ``ir-macro-transformer``
-
-  Explicit renaming macro family.
-
-- ``(picrin regexp)``
-
-  - ``(regexp? obj)``
-  - ``(regexp ptrn [flags])``
-
-  Compiles pattern string into a regexp object. A string ``flags`` may contain any of #\g, #\i, #\m.
-
-  - ``(regexp-match re input)``
-
-  Returns two values: a list of match strings, and a list of match indeces.
-
-  - ``(regexp-replace re input txt)``
-  - ``(regexp-split re input)``
-
-- ``(picrin control)``
-
-  - ``(reset h)``
-  - ``(shift k)``
-
-  Delimited control operators.
-
-- ``(picrin user)``
-
-  When you start the REPL, you are dropped into here.
-
-- ``(srfi 1)``
-
-  List manipulation library.
-
-- ``(srfi 26)``
-
-  Cut/cute macros.
-
-- ``(srfi 95)``
-
-  Sorting and Marging.
+Picrin's core language is the R7RS scheme with some powerful extensions. Please visit http://r7rs.org/ for the information of R7RS's design and underlying thoughts.
 
 The REPL
 --------
@@ -86,7 +18,7 @@ At the REPL start-up time, some usuful built-in libraries listed below will be a
 - ``(scheme lazy)``
 - ``(scheme time)``
 
-Compiliance with R7RS
+Compliance with R7RS
 ---------------------
 
 ================================================ ========== ==========================================================================================================================
@@ -148,7 +80,7 @@ section                                          status     comments
 6.11 Exceptions                                  yes        ``raise-continuable`` is not supported
 6.12 Environments and evaluation                 N/A
 6.13.1 Ports                                     yes
-6.13.2 Input                                     incomplete TODO: binary input
+6.13.2 Input                                     yes
 6.13.3 Output                                    yes
 6.14 System interface                            yes
 ================================================ ========== ==========================================================================================================================

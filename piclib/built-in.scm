@@ -263,10 +263,14 @@
             ,(let loop ((clauses clauses))
                (if (null? clauses)
                    #f
-                   `(,(r 'if) (,(r 'or)
-                               ,@(map (lambda (x) `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
-                                      (caar clauses)))
-                        (begin ,@(cdar clauses))
+                   `(,(r 'if) ,(if (compare (r 'else) (caar clauses))
+                                   '#t
+                                   `(,(r 'or)
+                                     ,@(map (lambda (x) `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
+                                            (caar clauses))))
+                     ,(if (compare (r '=>) (cadar clauses))
+                          `(,(caddar clauses) ,(r 'key))
+                          `(,(r 'begin) ,@(cdar clauses)))
                         ,(loop (cdr clauses))))))))))
 
   (define-syntax syntax-error
@@ -729,7 +733,7 @@
 	(end (if (>= (length opts) 2)
 		 (cadr opts)
 		 (vector-length v))))
-    (let ((res (make-vector (vector-length v))))
+    (let ((res (make-vector (- end start))))
       (vector-copy! res 0 v start end)
       res)))
 
@@ -788,7 +792,7 @@
 	(end (if (>= (length opts) 2)
 		 (cadr opts)
 		 (bytevector-length v))))
-    (let ((res (make-bytevector (bytevector-length v))))
+    (let ((res (make-bytevector (- end start))))
       (bytevector-copy! res 0 v start end)
       res)))
 
@@ -798,7 +802,7 @@
       (bytevector-copy! res 0 v)
       (bytevector-copy! res (bytevector-length v) w)
       res))
-  (fold bytevector-append-2-inv #() vs))
+  (fold bytevector-append-2-inv #u8() vs))
 
 (define (bytevector->list v start end)
     (do ((i start (+ i 1))

@@ -52,7 +52,7 @@ pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym renam
 {
   UNUSED(pic);
 
-  xh_put(&senv->renames, sym, &rename);
+  xh_put_int(&senv->renames, sym, &rename);
 }
 
 bool
@@ -62,50 +62,13 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 
   UNUSED(pic);
 
-  if ((e = xh_get(&senv->renames, sym)) == NULL) {
+  if ((e = xh_get_int(&senv->renames, sym)) == NULL) {
     return false;
   }
   if (rename != NULL) {
     *rename = xh_val(e, pic_sym);
   }
   return true;
-}
-
-void
-pic_import(pic_state *pic, pic_value spec)
-{
-  struct pic_lib *lib;
-  xh_iter it;
-
-  lib = pic_find_library(pic, spec);
-  if (! lib) {
-    pic_errorf(pic, "library not found: ~a", spec);
-  }
-  xh_begin(&it, &lib->exports);
-  while (xh_next(&it)) {
-
-#if DEBUG
-    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, xh_val(it.e, pic_sym)));
-#endif
-
-    pic_put_rename(pic, pic->lib->senv, xh_key(it.e, pic_sym), xh_val(it.e, pic_sym));
-  }
-}
-
-void
-pic_export(pic_state *pic, pic_sym sym)
-{
-  pic_sym rename;
-
-  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
-    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
-  }
-
-#if DEBUG
-  printf("* exporting %s as %s\n", pic_symbol_name(pic, sym), pic_symbol_name(pic, rename));
-#endif
-
-  xh_put(&pic->lib->exports, sym, &rename);
 }
 
 static void
@@ -117,7 +80,7 @@ define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_s
   mac->senv = senv;
   mac->proc = proc;
 
-  xh_put(&pic->macros, rename, &mac);
+  xh_put_int(&pic->macros, rename, &mac);
 }
 
 static struct pic_macro *
@@ -125,7 +88,7 @@ find_macro(pic_state *pic, pic_sym rename)
 {
   xh_entry *e;
 
-  if ((e = xh_get(&pic->macros, rename)) == NULL) {
+  if ((e = xh_get_int(&pic->macros, rename)) == NULL) {
     return NULL;
   }
   return xh_val(e, struct pic_macro *);
@@ -304,14 +267,34 @@ macroexpand_import(pic_state *pic, pic_value expr)
 static pic_value
 macroexpand_export(pic_state *pic, pic_value expr)
 {
+  extern pic_value pic_export_as(pic_state *, pic_sym, pic_sym);
   pic_value spec;
+  pic_sym sRENAME, sym, as;
+
+  sRENAME = pic_intern_cstr(pic, "rename");
 
   pic_for_each (spec, pic_cdr(pic, expr)) {
-    if (! pic_sym_p(spec)) {
+    if (pic_sym_p(spec)) {
+      sym = as = pic_sym(spec);
+    }
+    else if (pic_list_p(spec) && pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME))) {
+      if (pic_length(pic, spec) != 3) {
+        pic_error(pic, "syntax error");
+      }
+      if (! pic_sym_p(pic_list_ref(pic, spec, 1))) {
+        pic_error(pic, "syntax error");
+      }
+      sym = pic_sym(pic_list_ref(pic, spec, 1));
+      if (! pic_sym_p(pic_list_ref(pic, spec, 2))) {
+        pic_error(pic, "syntax error");
+      }
+      as = pic_sym(pic_list_ref(pic, spec, 2));
+    }
+    else {
       pic_error(pic, "syntax error");
     }
     /* TODO: warn if symbol is shadowed by local variable */
-    pic_export(pic, pic_sym(spec));
+    pic_export_as(pic, sym, as);
   }
 
   return pic_none_value();
@@ -586,6 +569,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
   case PIC_TT_IREP:
   case PIC_TT_DATA:
   case PIC_TT_BOX:
+  case PIC_TT_DICT:
     pic_errorf(pic, "unexpected value type: ~s", expr);
   }
   UNREACHABLE();

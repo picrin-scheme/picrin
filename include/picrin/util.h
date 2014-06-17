@@ -28,7 +28,7 @@ extern "C" {
 # define GENSYM(x) GENSYM1__(__LINE__,x)
 #endif
 
-#if __GNUC__ || __clang__
+#if GCC_VERSION >= 40500 || __clang__
 # define UNREACHABLE() (__builtin_unreachable())
 #else
 # include <assert.h>
