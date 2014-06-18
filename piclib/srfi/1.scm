@@ -358,10 +358,10 @@
     (if (null? clist)
 	(let rec ((clist clist))
 	  (if (pair? clist)
-	      (begin (f (car clist)) (rec (cdr clist)))))
+	      (begin (f clist) (rec (cdr clist)))))
 	(let rec ((clists (cons clist clists)))
 	  (if (every pair? clists)
-	      (begin (apply f (map car clists)) (rec (map cdr clists)))))))
+	      (begin (apply f clists) (rec (map cdr clists)))))))
 
   (define (map! f list . lists)
     (if (null? lists)
