@@ -8,12 +8,16 @@ Extension Library
 
 If you want to create a contribution library with C, the only thing you need to do is make a directory under contrib/. Below is a sample code of extension library.
 
-* contrib/add/CMakeLists.txt::
+* contrib/add/CMakeLists.txt
+
+.. sourcecode:: cmake
 
   list(APPEND PICRIN_CONTRIB_INITS "void pic_init_add(pic_state *)\; pic_init_add(pic)\;")
   list(APPEND PICRIN_CONTRIB_SOURCES ${PROJECT_SOURCE_DIR}/contrib/add/add.c)
 
-* contrib/add/add.c::
+* contrib/add/add.c
+
+.. sourcecode:: c
 
   #include "picrin.h"
 
@@ -40,7 +44,9 @@ After recompiling the interpreter, the library "(picrin add)" is available in th
 User-data vs GC
 ^^^^^^^^^^^^^^^
 
-When you use dynamic memory allocation inside C APIs, you must be caseful about Picrin's GC. Fortunately, we provides a set of wrapper functions for complete abstraction of GC. In the case below, the memory (de)allocators *create_foo* and *finalize_foo* are wrapped in pic_data object, so that when an instance of foo losts all references from others to it picrin can automatically finalize the orphan object::
+When you use dynamic memory allocation inside C APIs, you must be caseful about Picrin's GC. Fortunately, we provides a set of wrapper functions for complete abstraction of GC. In the case below, the memory (de)allocators *create_foo* and *finalize_foo* are wrapped in pic_data object, so that when an instance of foo losts all references from others to it picrin can automatically finalize the orphan object.
+
+.. sourcecode:: c
 
   /** foo.c **/
   #include <stdlib.h>
@@ -94,3 +100,4 @@ When you use dynamic memory allocation inside C APIs, you must be caseful about 
   {
     pic_defun(pic, "create-my-data", pic_create_foo); // (create-foo)
   }
+
