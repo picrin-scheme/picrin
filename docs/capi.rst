@@ -90,7 +90,7 @@ When you use dynamic memory allocation inside C APIs, you must be caseful about 
 
     f = create_foo();
 
-    data = pic_data_alloc(pic, &f, md);
+    data = pic_data_alloc(pic, &foo_type, md);
 
     return pic_obj_value(data);
   }
