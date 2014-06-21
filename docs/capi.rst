@@ -96,8 +96,8 @@ When you use dynamic memory allocation inside C APIs, you must be caseful about 
   }
 
   void
-  pic_init_my_data(pic_state *pic)
+  pic_init_foo(pic_state *pic)
   {
-    pic_defun(pic, "create-my-data", pic_create_foo); // (create-foo)
+    pic_defun(pic, "create-foo", pic_create_foo); // (create-foo)
   }
 
