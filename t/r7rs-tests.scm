@@ -43,11 +43,7 @@
 ;; language except `delete-file'.  Currently assumes full-unicode
 ;; support, the full numeric tower and all standard libraries
 ;; provided.
-;;
-;; Uses the (chibi test) library which is written in portable R7RS.
-;; This is mostly a subset of SRFI-64, providing test-begin, test-end
-;; and test, which could be defined as something like:
-;;
+
 (define (test-begin . o) #f)
 
 (define (test-end . o) #f)
@@ -80,9 +76,6 @@
          (display "[0;39m")
          (newline)))
        (set! counter (+ counter 1))))))
-;;
-;; however (chibi test) provides nicer output, timings, and
-;; approximate equivalence for floating point numbers.
 
 (newline)
 
