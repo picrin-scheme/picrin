@@ -39,6 +39,9 @@ include(tools/CMakeLists.txt)
 # $ make run
 add_custom_target(run bin/picrin DEPENDS repl)
 
+# $ make test
+add_custom_target(test DEPENDS no-act)
+
 # $ make no-act
 add_custom_target(no-act bin/picrin -e '' > /dev/null DEPENDS repl)
 
