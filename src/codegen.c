@@ -1442,13 +1442,13 @@ pic_compile(pic_state *pic, pic_value obj)
   size_t ai = pic_gc_arena_preserve(pic);
 
 #if DEBUG
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 
   fprintf(stdout, "# input expression\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
 
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* macroexpand */
@@ -1457,7 +1457,7 @@ pic_compile(pic_state *pic, pic_value obj)
   fprintf(stdout, "## macroexpand completed\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* analyze */
@@ -1466,7 +1466,7 @@ pic_compile(pic_state *pic, pic_value obj)
   fprintf(stdout, "## analyzer completed\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* codegen */
