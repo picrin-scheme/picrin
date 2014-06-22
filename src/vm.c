@@ -747,7 +747,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
         /* invoke! */
 	pic->sp[0] = proc->u.func.f(pic);
-        pic->sp += ci->retc;
+        pic->sp += pic->ci->retc;
 
         pic_gc_arena_restore(pic, ai);
         goto L_RET;
@@ -1002,21 +1002,23 @@ static pic_code trampoline_iseq[] = {
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  pic_value v, call_list, *fp = pic->ci->fp;
+  pic_value v, *sp;
   pic_callinfo *ci;
 
-  call_list = pic_cons(pic, pic_obj_value(proc), args);
+  *pic->sp++ = pic_obj_value(proc);
 
-  pic_for_each (v, call_list) {
-    *fp++ = v;
+  sp = pic->sp;
+  pic_for_each (v, args) {
+    *sp++ = v;
   }
 
-  trampoline_iseq[1].u.i = pic_length(pic, call_list);
+  trampoline_iseq[1].u.i = -1;
 
   ci = PUSHCI();
   ci->ip = trampoline_iseq;
-  ci->fp = fp - 1;         /* the last argument is pushed by the VM */
-  return v;
+  ci->fp = pic->sp;
+  ci->retc = pic_length(pic, args);
+  return pic_obj_value(proc);
 }
 
 pic_value
