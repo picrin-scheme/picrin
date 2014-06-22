@@ -25,9 +25,6 @@
 ;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 ;; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-;; -*- coding: utf-8 -*-
-
 (import (scheme base)
 ;        (scheme char)
         (scheme lazy)
