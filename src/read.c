@@ -342,7 +342,7 @@ read_pair(pic_state *pic, struct pic_port *port, char c)
   if (c == tCLOSE) {
     return pic_nil_value();
   }
-  if (c == '.') {
+  if (c == '.' && strchr("()#;,|'\" \t\n\r", peek(port)) != NULL) {
     cdr = read(pic, port, next(port));
 
     if ((c = skip(port, ' ')) != tCLOSE) {
