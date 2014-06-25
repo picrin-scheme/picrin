@@ -87,19 +87,20 @@ pic_open_output_string(pic_state *pic)
 struct pic_string *
 pic_get_output_string(pic_state *pic, struct pic_port *port)
 {
-  long endpos;
+  long size;
   char *buf;
 
   /* get endpos */
   xfflush(port->file);
-  endpos = xftell(port->file);
+  size = xftell(port->file);
   xrewind(port->file);
 
   /* copy to buf */
-  buf = (char *)pic_alloc(pic, endpos);
-  xfread(buf, 1, endpos, port->file);
+  buf = (char *)pic_alloc(pic, size + 1);
+  buf[size] = 0;
+  xfread(buf, size, 1, port->file);
 
-  return pic_str_new(pic, buf, endpos);
+  return pic_str_new(pic, buf, size);
 }
 
 void
