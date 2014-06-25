@@ -152,7 +152,8 @@ bool pic_interned_p(pic_state *, pic_sym);
 char *pic_strdup(pic_state *, const char *);
 char *pic_strndup(pic_state *, const char *, size_t);
 
-pic_value pic_read(pic_state *, const char *);
+pic_value pic_read(pic_state *, struct pic_port *);
+pic_value pic_read_cstr(pic_state *, const char *);
 pic_list pic_parse_file(pic_state *, FILE *); /* #f for incomplete input */
 pic_list pic_parse_cstr(pic_state *, const char *);
 
@@ -180,7 +181,7 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
 #define pic_deflibrary_helper__(i, prev_lib, spec)                      \
   for (int i = 0; ! i; )                                                \
     for (struct pic_lib *prev_lib; ! i; )                               \
-      for ((prev_lib = pic->lib), pic_make_library(pic, pic_read(pic, spec)), pic_in_library(pic, pic_read(pic, spec)); ! i++; pic->lib = prev_lib)
+      for ((prev_lib = pic->lib), pic_make_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)
 
 void pic_import(pic_state *, pic_value);
 void pic_export(pic_state *, pic_sym);
