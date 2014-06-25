@@ -34,13 +34,7 @@ skip(struct pic_port *port, char c)
 static char
 next(struct pic_port *port)
 {
-  char c;
-
-  c = xfgetc(port->file);
-
-  //  printf("%c", c);
-
-  return c;
+  return xfgetc(port->file);
 }
 
 static char
@@ -56,11 +50,13 @@ peek(struct pic_port *port)
 static pic_value
 read_comment(pic_state *pic, struct pic_port *port, char c)
 {
+  UNUSED(pic);
+
   do {
     c = next(port);
   } while (! (c == EOF || c == '\n'));
 
-  return read(pic, port, c);
+  return pic_undef_value();
 }
 
 static pic_value
@@ -68,6 +64,7 @@ read_block_comment(pic_state *pic, struct pic_port *port, char c)
 {
   char x, y;
 
+  UNUSED(pic);
   UNUSED(c);
 
   x = next(port);
@@ -80,11 +77,18 @@ read_block_comment(pic_state *pic, struct pic_port *port, char c)
       break;
     }
   }
-  if (y != EOF) {
-    y = next(port);
-  }
 
-  return read(pic, port, y);
+  return pic_undef_value();
+}
+
+static pic_value
+read_datum_comment(pic_state *pic, struct pic_port *port, char c)
+{
+  UNUSED(c);
+
+  read(pic, port, next(port));
+
+  return pic_undef_value();
 }
 
 static pic_value
@@ -113,16 +117,6 @@ read_comma(pic_state *pic, struct pic_port *port, char c)
   } else {
     return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, c));
   }
-}
-
-static pic_value
-read_datum_comment(pic_state *pic, struct pic_port *port, char c)
-{
-  UNUSED(c);
-
-  read(pic, port, next(port));
-
-  return read(pic, port, next(port));
 }
 
 static pic_value
@@ -491,7 +485,7 @@ read_dispatch(pic_state *pic, struct pic_port *port, char c)
 }
 
 static pic_value
-read(pic_state *pic, struct pic_port *port, char c)
+read_nullable(pic_state *pic, struct pic_port *port, char c)
 {
   c = skip(port, c);
 
@@ -526,16 +520,34 @@ read(pic_state *pic, struct pic_port *port, char c)
   }
 }
 
+static pic_value
+read(pic_state *pic, struct pic_port *port, char c)
+{
+  pic_value val;
+
+ retry:
+  c = skip(port, c);
+
+  if (c == EOF) {
+    return pic_eof_object();
+  }
+
+  val = read_nullable(pic, port, c);
+
+  if (pic_undef_p(val)) {
+    c = next(port);
+    goto retry;
+  }
+
+  return val;
+}
+
 pic_value
 pic_read(pic_state *pic, struct pic_port *port)
 {
   char c;
 
   c = next(port);
-
-  if (c == EOF) {
-    return pic_eof_object();
-  }
 
   return read(pic, port, c);
 }
