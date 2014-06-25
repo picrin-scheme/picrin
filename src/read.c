@@ -151,10 +151,10 @@ read_symbol(pic_state *pic, struct pic_port *port, char c)
   return pic_sym_value(sym);
 }
 
-static int
+static int64_t
 read_uinteger(pic_state *pic, struct pic_port *port, char c)
 {
-  int n;
+  int64_t n;
 
   c = skip(port, c);
 
@@ -174,14 +174,14 @@ read_uinteger(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_number(pic_state *pic, struct pic_port *port, char c)
 {
-  int i, j;
+  int64_t i, j;
 
   i = read_uinteger(pic, port, c);
 
   if (peek(port) == '.') {
     next(port);
     j = read_uinteger(pic, port, next(port));
-    return pic_float_value(i + (double)j * pow(10, -snprintf(NULL, 0, "%d", j)));
+    return pic_float_value(i + (double)j * pow(10, -snprintf(NULL, 0, "%lld", j)));
   }
   else {
     return pic_int_value(i);
