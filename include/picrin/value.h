@@ -9,7 +9,8 @@
 extern "C" {
 #endif
 
-#include <gmp.h>    
+#include <gmp.h>
+#include <mpfr.h>
 /**
  * pic_sym is just an alias to unsigned int.
  */
@@ -107,6 +108,7 @@ enum pic_tt {
   PIC_TT_BLOB,
   PIC_TT_BIGINT,
   PIC_TT_RATIONAL,
+  PIC_TT_BIGFLOAT,
   PIC_TT_PROC,
   PIC_TT_PORT,
   PIC_TT_ERROR,
@@ -148,6 +150,11 @@ struct pic_rational {
   mpq_t q;
 };
 
+struct pic_bigfloat {
+  PIC_OBJECT_HEADER
+  mpfr_t f;
+};
+
 /* set aliases to basic types */
 typedef pic_value pic_list;
 typedef struct pic_pair pic_pair;
@@ -156,6 +163,7 @@ typedef struct pic_vector pic_vec;
 typedef struct pic_blob pic_blob;
 typedef struct pic_bigint pic_bigint;
 typedef struct pic_rational pic_rational;
+typedef struct pic_bigfloat pic_bigfloat;
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
@@ -265,6 +273,8 @@ pic_type_repr(enum pic_tt tt)
     return "bigint";
   case PIC_TT_RATIONAL:
     return "rational";
+  case PIC_TT_BIGFLOAT:
+    return "bigfloat";
   case PIC_TT_PORT:
     return "port";
   case PIC_TT_ERROR:
@@ -457,6 +467,8 @@ pic_eqv_p(pic_value x, pic_value y)
     return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
   case PIC_TT_RATIONAL:
     return mpq_equal(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q);
+  case PIC_TT_BIGFLOAT:
+    return mpfr_equal_p(((pic_bigfloat *)pic_ptr(x))->f, ((pic_bigfloat *)pic_ptr(y))->f);
   default:
     return x.u.data == y.u.data;
   }
@@ -504,6 +516,8 @@ pic_eqv_p(pic_value x, pic_value y)
     return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
   case PIC_TT_RATIONAL:
     return mpq_equal(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q);
+  case PIC_TT_BIGFLOAT:
+    return mpfr_equal_p(((pic_bigfloat *)pic_ptr(x))->f, ((pic_bigfloat *)pic_ptr(y))->f);
   default:
     return pic_ptr(x) == pic_ptr(y);
   }

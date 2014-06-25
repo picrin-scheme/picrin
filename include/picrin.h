@@ -36,6 +36,7 @@ extern "C" {
 #include <limits.h>
 #include <assert.h>
 #include <gmp.h>
+#include <mpfr.h>
 
 #include "xvect/xvect.h"
 #include "xhash/xhash.h"
