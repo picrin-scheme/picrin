@@ -42,6 +42,7 @@ import_repllib(pic_state *pic)
   pic_import(pic, pic_read_cstr(pic, "(scheme base)"));
   pic_import(pic, pic_read_cstr(pic, "(scheme load)"));
   pic_import(pic, pic_read_cstr(pic, "(scheme process-context)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme read)"));
   pic_import(pic, pic_read_cstr(pic, "(scheme write)"));
   pic_import(pic, pic_read_cstr(pic, "(scheme file)"));
   pic_import(pic, pic_read_cstr(pic, "(scheme inexact)"));
