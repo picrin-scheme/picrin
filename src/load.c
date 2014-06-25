@@ -14,7 +14,7 @@ pic_load_cstr(pic_state *pic, const char *src)
 
   exprs = pic_parse_cstr(pic, src);
   if (pic_undef_p(exprs)) {
-    pic_error(pic, "load: unexpected EOF");
+    pic_errorf(pic, "load: read failure (%s)", pic_errmsg(pic));
   }
 
   pic_for_each (v, exprs) {
@@ -48,7 +48,7 @@ pic_load(pic_state *pic, const char *fn)
 
   exprs = pic_parse_file(pic, file);
   if (pic_undef_p(exprs)) {
-    pic_error(pic, "load: unexpected EOF");
+    pic_errorf(pic, "load: read failure (%s)", pic_errmsg(pic));
   }
 
   pic_for_each (v, exprs) {

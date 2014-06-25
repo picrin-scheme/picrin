@@ -64,6 +64,9 @@ pic_open(int argc, char *argv[], char **envp)
   pic->lib_tbl = pic_nil_value();
   pic->lib = NULL;
 
+  /* reader */
+  xh_init_int(&pic->rlabels, sizeof(pic_value));
+
   /* error handling */
   pic->jmp = NULL;
   pic->err = NULL;
@@ -116,8 +119,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic_init_core(pic);
 
   /* set library */
-  pic_make_library(pic, pic_read(pic, "(picrin user)"));
-  pic_in_library(pic, pic_read(pic, "(picrin user)"));
+  pic_make_library(pic, pic_read_cstr(pic, "(picrin user)"));
+  pic_in_library(pic, pic_read_cstr(pic, "(picrin user)"));
 
   return pic;
 }
@@ -154,6 +157,7 @@ pic_close(pic_state *pic)
   xh_destroy(&pic->syms);
   xh_destroy(&pic->global_tbl);
   xh_destroy(&pic->macros);
+  xh_destroy(&pic->rlabels);
 
   /* free GC arena */
   free(pic->arena);

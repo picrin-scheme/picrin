@@ -39,16 +39,16 @@ import_repllib(pic_state *pic)
 {
   int ai = pic_gc_arena_preserve(pic);
 
-  pic_import(pic, pic_read(pic, "(scheme base)"));
-  pic_import(pic, pic_read(pic, "(scheme load)"));
-  pic_import(pic, pic_read(pic, "(scheme process-context)"));
-  pic_import(pic, pic_read(pic, "(scheme write)"));
-  pic_import(pic, pic_read(pic, "(scheme file)"));
-  pic_import(pic, pic_read(pic, "(scheme inexact)"));
-  pic_import(pic, pic_read(pic, "(scheme cxr)"));
-  pic_import(pic, pic_read(pic, "(scheme lazy)"));
-  pic_import(pic, pic_read(pic, "(scheme time)"));
-  pic_import(pic, pic_read(pic, "(picrin macro)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme base)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme load)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme process-context)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme write)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme file)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme inexact)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme cxr)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme lazy)"));
+  pic_import(pic, pic_read_cstr(pic, "(scheme time)"));
+  pic_import(pic, pic_read_cstr(pic, "(picrin macro)"));
 
 #if DEBUG
   puts("* imported repl libraries");
@@ -289,7 +289,7 @@ main(int argc, char *argv[], char **envp)
   parse_opt(argc, argv);
 
   if (mode == INTERACTIVE_MODE || mode == ONE_LINER_MODE) {
-    import_repllib(pic);
+    // import_repllib(pic);
   }
 
   switch (mode) {
