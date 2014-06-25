@@ -315,6 +315,11 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, "%s", str);
     free(str);
     break;
+  case PIC_TT_BIGFLOAT:
+    /* str = mpfr_get_str(NULL, 10, pic_rational_ptr(obj)->q); */
+    /* xfprintf(file, "%s", str); */
+    /* mpfr_free_str(str); */
+    break;
   case PIC_TT_ERROR:
     xfprintf(file, "#<error %p>", pic_ptr(obj));
     break;

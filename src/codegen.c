@@ -817,7 +817,8 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_VECTOR:
   case PIC_TT_BLOB:
   case PIC_TT_BIGINT:
-  case PIC_TT_RATIONAL:{
+  case PIC_TT_RATIONAL:
+  case PIC_TT_BIGFLOAT: {
     return pic_list2(pic, pic_symbol_value(pic->sQUOTE), obj);
   }
   case PIC_TT_CONT:

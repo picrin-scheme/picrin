@@ -416,6 +416,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_RATIONAL: {
     break;
   }
+  case PIC_TT_BIGFLOAT: {
+    break;
+  }
   case PIC_TT_CONT: {
     struct pic_cont *cont = (struct pic_cont *)obj;
     pic_value *stack;
@@ -631,6 +634,10 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_RATIONAL: {
     mpq_clear(((struct pic_rational *)obj)->q);
+    break;
+  }
+  case PIC_TT_BIGFLOAT: {
+    mpfr_clear(((struct pic_bigfloat *)obj)->f);
     break;
   }
   case PIC_TT_PORT: {
