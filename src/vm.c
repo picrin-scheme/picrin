@@ -99,6 +99,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
         case PIC_TT_RATIONAL:
           *f = mpq_get_d(pic_rational_ptr(v)->q);
           break;
+        case PIC_TT_BIGFLOAT:
+          *f = mpfr_get_d(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
+          break;
         default:
           pic_error(pic, "pic_get_args: expected float or int or rational");
         }
@@ -133,6 +136,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *f = mpq_get_d(pic_rational_ptr(v)->q);
           *e = true;
           break;
+        case PIC_TT_BIGFLOAT:
+          *f = mpfr_get_d(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
+          *e = true;
+          break;
         default:
           pic_error(pic, "pic_get_args: expected float or int or rational");
         }
@@ -160,12 +167,16 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *e = true;
           break;
         case PIC_TT_BIGINT:
-          *k = (int)mpz_get_d(pic_bigint_ptr(v)->z);
+          *k = mpz_get_si(pic_bigint_ptr(v)->z);
           *e = true;
           break;
         case PIC_TT_RATIONAL:
           *k = (int)mpq_get_d(pic_rational_ptr(v)->q);
           *e = false;
+          break;
+        case PIC_TT_BIGFLOAT:
+          *k = mpfr_get_si(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
+          *e = true;
           break;
         default:
           pic_error(pic, "pic_get_args: expected float or int or rational");
@@ -190,10 +201,13 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *k = pic_int(v);
           break;
         case PIC_TT_BIGINT:
-          *k = (int)mpz_get_d(pic_bigint_ptr(v)->z);
+          *k = mpz_get_si(pic_bigint_ptr(v)->z);
           break;
         case PIC_TT_RATIONAL:
           *k = (int)mpq_get_d(pic_rational_ptr(v)->q);
+          break;
+        case PIC_TT_BIGFLOAT:
+          *k = mpfr_get_si(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
           break;
         default:
           pic_error(pic, "pic_get_args: expected int");
@@ -203,122 +217,54 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 'n': {
-      mpz_t *z;
+      pic_value *n;
 
-      z = va_arg(ap, mpz_t *);
+      n = va_arg(ap, pic_value *);
       if (i < argc) {
         pic_value v;
 
         v = GET_OPERAND(pic, i);
         switch (pic_type(v)) {
         case PIC_TT_FLOAT:
-          mpz_set_d(*z, pic_float(v));
-          break;
         case PIC_TT_INT:
-          mpz_set_si(*z, pic_int(v));
-          break;
         case PIC_TT_BIGINT:
-          mpz_set(*z, pic_bigint_ptr(v)->z);
-          break;
         case PIC_TT_RATIONAL:
-          mpz_set_d(*z, mpq_get_d(pic_rational_ptr(v)->q));
+        case PIC_TT_BIGFLOAT:
+          *n = v;
           break;
         default:
-          pic_error(pic, "pic_get_args: expected int");
+          pic_error(pic, "pic_get_args: expected number");
         }
         i++;
       }
       break;
     }
-    case 'N': {
-      mpz_t *z;
-      bool *e;
-      z = va_arg(ap, mpz_t *);
-      e = va_arg(ap, bool *);
+    case 'r': {
+      mpfr_t *f;
+
+      f = va_arg(ap, mpfr_t *);
       if (i < argc) {
         pic_value v;
 
         v = GET_OPERAND(pic, i);
         switch (pic_type(v)) {
         case PIC_TT_FLOAT:
-          mpz_set_d(*z, pic_float(v));
-          *e = false;
+          mpfr_set_d(*f, pic_float(v), MPFR_RNDN);
           break;
         case PIC_TT_INT:
-          mpz_set_si(*z, pic_int(v));
-          *e = true;
+          mpfr_set_si(*f, pic_int(v), MPFR_RNDN);
           break;
         case PIC_TT_BIGINT:
-          mpz_set(*z, pic_bigint_ptr(v)->z);
-          *e = true;
+          mpfr_set_z(*f, pic_bigint_ptr(v)->z, MPFR_RNDN);
           break;
         case PIC_TT_RATIONAL:
-          mpz_set_d(*z, mpq_get_d(pic_rational_ptr(v)->q));
+          mpfr_set_q(*f, pic_rational_ptr(v)->q, MPFR_RNDN);
           break;
-          *e = false;
-        default:
-          pic_error(pic, "pic_get_args: expected int");
-        }
-        i++;
-      }
-      break;
-    }
-    case 'q': {
-      mpq_t *q;
-
-      q = va_arg(ap, mpq_t *);
-      if (i < argc) {
-        pic_value v;
-
-        v = GET_OPERAND(pic, i);
-        switch (pic_type(v)) {
-        case PIC_TT_FLOAT:
-          mpq_set_d(*q, pic_float(v));
-          break;
-        case PIC_TT_INT:
-          mpq_set_si(*q, pic_int(v), 1);
-          break;
-        case PIC_TT_BIGINT:
-          mpq_set_z(*q, pic_bigint_ptr(v)->z);
-          break;
-        case PIC_TT_RATIONAL:
-          mpq_set(*q, pic_rational_ptr(v)->q);
+        case PIC_TT_BIGFLOAT:
+          mpfr_set(*f, pic_bigfloat_ptr(v)->f, MPFR_RNDN);
           break;
         default:
-          pic_error(pic, "pic_get_args: expected int");
-        }
-        i++;
-      }
-      break;
-    }
-    case 'Q': {
-      mpq_t *q;
-      bool *e;
-      q = va_arg(ap, mpq_t *);
-      e = va_arg(ap, bool *);
-      if (i < argc) {
-        pic_value v;
-
-        v = GET_OPERAND(pic, i);
-        switch (pic_type(v)) {
-        case PIC_TT_FLOAT:
-          mpq_set_d(*q, pic_float(v));
-          *e = false;
-          break;
-        case PIC_TT_INT:
-          mpq_set_si(*q, pic_int(v), 1);
-          *e = true;
-          break;
-        case PIC_TT_BIGINT:
-          mpq_set_z(*q, pic_bigint_ptr(v)->z);
-          *e = true;
-          break;
-        case PIC_TT_RATIONAL:
-          mpq_set(*q, pic_rational_ptr(v)->q);
-          *e = true;
-          break;
-        default:
-          pic_error(pic, "pic_get_args: expected int");
+          pic_error(pic, "pic_get_args: expected number");
         }
         i++;
       }

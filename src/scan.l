@@ -176,11 +176,18 @@ label		#{uinteger}
 {real}		{
   bool exactp; int radix;
   char *str = yycheckprefix(yytext, &radix, &exactp);
-  mpf_t num;
-  mpf_init(num);
-  mpf_set_str(num, str, radix);
-  yylval.f = mpf_get_d(num);
-  return tFLOAT;
+  if(exactp){
+    yylval.buf.dat = str;
+    yylval.buf.len = radix;
+    return tBIGFLOAT;
+  }
+  else{
+    mpf_t num;
+    mpf_init(num);
+    mpf_set_str(num, str, radix);
+    yylval.f = mpf_get_d(num);
+    return tFLOAT;
+  }
 }
 
 {identifier}	{

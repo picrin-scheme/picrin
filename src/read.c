@@ -186,6 +186,9 @@ read_datum(int tok, yyscan_t scanner)
   case tRATIONAL:
     val = pic_read_rational(pic, yylval.buf.dat, (int) yylval.buf.len);
     return val;
+  case tBIGFLOAT:
+    val = pic_read_bigfloat(pic, yylval.buf.dat, (int) yylval.buf.len);
+    return val;
   case tLPAREN:
   case tLBRACKET:
     return read_pair(tok, scanner);

@@ -572,7 +572,8 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, pic_valu
   case PIC_TT_VECTOR:
   case PIC_TT_BLOB:
   case PIC_TT_BIGINT:
-  case PIC_TT_RATIONAL:{
+  case PIC_TT_RATIONAL:
+  case PIC_TT_BIGFLOAT:{
     return expr;
   }
   case PIC_TT_PROC:
