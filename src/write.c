@@ -440,8 +440,8 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 
   va_end(ap);
 
-  printf("%s", pic_str_cstr(str));
-  fflush(stdout);
+  xprintf("%s", pic_str_cstr(str));
+  xfflush(xstdout);
 }
 
 static pic_value
