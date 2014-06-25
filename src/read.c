@@ -362,6 +362,8 @@ read_vector(pic_state *pic, struct pic_port *port, char c)
 {
   pic_value val;
 
+  c = next(port);
+
   val = pic_nil_value();
   while ((c = skip(port, c)) != ')') {
     val = pic_cons(pic, read(pic, port, c), val);
