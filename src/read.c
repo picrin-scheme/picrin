@@ -616,3 +616,21 @@ pic_parse_cstr(pic_state *pic, const char *str)
 
   return pic_parse(pic, port);
 }
+
+static pic_value
+pic_read_read(pic_state *pic)
+{
+  struct pic_port *port = pic_stdin(pic);
+
+  pic_get_args(pic, "|p", &port);
+
+  return pic_read(pic, port);
+}
+
+void
+pic_init_read(pic_state *pic)
+{
+  pic_deflibrary ("(scheme read)") {
+    pic_defun(pic, "read", pic_read_read);
+  }
+}
