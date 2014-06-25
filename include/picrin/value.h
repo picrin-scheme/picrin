@@ -444,6 +444,8 @@ pic_eq_p(pic_value x, pic_value y)
   switch (pic_type(x)) {
   case PIC_TT_NIL:
     return true;
+  case PIC_TT_BOOL:
+    return pic_vtype(x) == pic_vtype(y);
   case PIC_TT_SYMBOL:
     return pic_sym(x) == pic_sym(y);
   default:
@@ -460,6 +462,8 @@ pic_eqv_p(pic_value x, pic_value y)
   switch (pic_type(x)) {
   case PIC_TT_NIL:
     return true;
+  case PIC_TT_BOOL:
+    return pic_vtype(x) == pic_vtype(y);
   case PIC_TT_SYMBOL:
     return pic_sym(x) == pic_sym(y);
   case PIC_TT_FLOAT:
