@@ -64,7 +64,6 @@ Requirement
 Picrin scheme depends on some external libraries to build the binary:
 
 - perl
-- lex (preferably, flex)
 - getopt
 - readline (optional)
 - regex.h of POSIX.1 (optional)
