@@ -289,7 +289,7 @@ main(int argc, char *argv[], char **envp)
   parse_opt(argc, argv);
 
   if (mode == INTERACTIVE_MODE || mode == ONE_LINER_MODE) {
-    // import_repllib(pic);
+    import_repllib(pic);
   }
 
   switch (mode) {
