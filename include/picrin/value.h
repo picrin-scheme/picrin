@@ -158,6 +158,7 @@ typedef struct pic_blob pic_blob;
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
 #define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
+#define pic_eof_p(v) (pic_vtype(v) == PIC_VTYPE_EOF)
 
 #define pic_test(v) (! pic_false_p(v))
 
