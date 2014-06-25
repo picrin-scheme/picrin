@@ -100,6 +100,8 @@ typedef struct {
   pic_value lib_tbl;
   struct pic_lib *lib;
 
+  xhash rlabels;
+
   jmp_buf *jmp;
   struct pic_error *err;
   struct pic_jmpbuf *try_jmps;
