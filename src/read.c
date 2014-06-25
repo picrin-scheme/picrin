@@ -531,6 +531,23 @@ read(pic_state *pic, struct pic_port *port, char c)
   pic_value val;
 
  retry:
+  val = read_nullable(pic, port, c);
+
+  if (pic_undef_p(val)) {
+    c = next(port);
+    goto retry;
+  }
+
+  return val;
+}
+
+pic_value
+pic_read(pic_state *pic, struct pic_port *port)
+{
+  pic_value val;
+  char c = next(port);
+
+ retry:
   c = skip(port, c);
 
   if (c == EOF) {
@@ -545,16 +562,6 @@ read(pic_state *pic, struct pic_port *port, char c)
   }
 
   return val;
-}
-
-pic_value
-pic_read(pic_state *pic, struct pic_port *port)
-{
-  char c;
-
-  c = next(port);
-
-  return read(pic, port, c);
 }
 
 pic_value
