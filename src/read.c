@@ -206,25 +206,39 @@ negate(pic_value n)
 static pic_value
 read_minus(pic_state *pic, struct pic_port *port, char c)
 {
-  /* TODO: -inf.0, -nan.0 */
+  pic_value sym;
 
   if (isdigit(peek(port))) {
     return negate(read_number(pic, port, next(port)));
   }
   else {
-    return read_symbol(pic, port, c);
+    sym = read_symbol(pic, port, c);
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "-inf.0")))) {
+      return pic_float_value(-INFINITY);
+    }
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "-nan.0")))) {
+      return pic_float_value(-NAN);
+    }
+    return sym;
   }
 }
 
 static pic_value
 read_plus(pic_state *pic, struct pic_port *port, char c)
 {
-  /* TODO: +inf.0, +nan.0 */
+  pic_value sym;
 
   if (isdigit(peek(port))) {
     return read_number(pic, port, c);
   }
   else {
+    sym = read_symbol(pic, port, c);
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "+inf.0")))) {
+      return pic_float_value(INFINITY);
+    }
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "+nan.0")))) {
+      return pic_float_value(NAN);
+    }
     return read_symbol(pic, port, c);
   }
 }
