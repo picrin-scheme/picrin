@@ -402,12 +402,8 @@
   ;; filter partition remove
   ;; filter! partition! remove!
   (define (filter pred list)
-    (if (null? list)
-        '()
-        (if (pred (car list))
-            (cons (car list)
-                  (filter pred (cdr list)))
-            (filter pred (cdr list)))))
+    (let ((pcons (lambda (v acc) (if (pred v) (cons v acc) acc))))
+      (reverse (fold pcons '() list))))
 
   (define (remove pred list)
     (filter (lambda (x) (not (pred x))) list))
