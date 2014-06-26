@@ -387,15 +387,10 @@
 	      (reverse! acc)))))
 
   (define (filter-map f clist . clists)
-    (if (null? clists)
-	(let rec ((clist clist) (cont values))
-	  (if (null? clist)
-	      (cont '())
-	      (rec (cdr clist)
-		   (let ((it (f (car clist))))
-		     (if it
-			 (lambda (x) (cont (cons it x)))
-			 (lambda (x) (cont x)))))))))
+    (let recur ((l (apply map f clist clists)))
+      (cond ((null? l) '())
+	    ((car l)   (cons (car l) (recur (cdr l))))
+	    (else      (recur (cdr l))))))
 
   (export map for-each
 	  fold unfold pair-fold reduce
