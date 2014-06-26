@@ -69,24 +69,22 @@ static pic_value
 read_block_comment(pic_state *pic, struct pic_port *port, char c)
 {
   char x, y;
-  int i;
+  int i = 1;
 
   UNUSED(pic);
   UNUSED(c);
 
-  x = next(port);
   y = next(port);
 
-  i = 1;
-  while (x != EOF && y != EOF && i > 0) {
+  while (y != EOF && i > 0) {
+    x = y;
+    y = next(port);
     if (x == '|' && y == '#') {
       i--;
     }
     if (x == '#' && y == '|') {
       i++;
     }
-    x = y;
-    y = next(port);
   }
 
   return pic_undef_value();
