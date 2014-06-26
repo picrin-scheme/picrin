@@ -47,6 +47,12 @@ peek(struct pic_port *port)
   return c;
 }
 
+static bool
+isdelim(char c)
+{
+  return strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
+}
+
 static pic_value
 read_comment(pic_state *pic, struct pic_port *port, char c)
 {
@@ -127,7 +133,6 @@ read_comma(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_symbol(pic_state *pic, struct pic_port *port, char c)
 {
-  static const char TRAIL_SYMBOL[] = "+/*!$%&:@^~?<=>_.-";
   size_t len;
   char *buf;
   pic_sym sym;
@@ -142,7 +147,7 @@ read_symbol(pic_state *pic, struct pic_port *port, char c)
     len += 1;
     buf = pic_realloc(pic, buf, len);
     buf[len - 1] = c;
-  } while (isalnum(peek(port)) || strchr(TRAIL_SYMBOL, peek(port)));
+  } while (! isdelim(peek(port)));
 
   buf[len] = '\0';
   sym = pic_intern_cstr(pic, buf);
@@ -338,7 +343,7 @@ read_pair(pic_state *pic, struct pic_port *port, char c)
   if (c == tCLOSE) {
     return pic_nil_value();
   }
-  if (c == '.' && strchr("()#;,|'\" \t\n\r", peek(port)) != NULL) {
+  if (c == '.' && isdelim(peek(port))) {
     cdr = read(pic, port, next(port));
 
     if ((c = skip(port, ' ')) != tCLOSE) {
