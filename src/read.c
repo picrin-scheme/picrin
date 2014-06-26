@@ -15,6 +15,7 @@
 typedef pic_value (*read_func_t)(pic_state *, struct pic_port *, char);
 
 static pic_value read(pic_state *pic, struct pic_port *port, char c);
+static pic_value read_nullable(pic_state *pic, struct pic_port *port, char c);
 
 static noreturn void
 read_error(pic_state *pic, const char *msg)
@@ -336,6 +337,8 @@ read_pair(pic_state *pic, struct pic_port *port, char c)
   char tOPEN = c, tCLOSE = (tOPEN == '(') ? ')' : ']';
   pic_value car, cdr;
 
+ retry:
+
   c = skip(port, ' ');
 
   if (c == tCLOSE) {
@@ -350,7 +353,12 @@ read_pair(pic_state *pic, struct pic_port *port, char c)
     return cdr;
   }
   else {
-    car = read(pic, port, c);
+    car = read_nullable(pic, port, c);
+
+    if (pic_undef_p(car)) {
+      goto retry;
+    }
+
     cdr = read_pair(pic, port, tOPEN); /* FIXME: don't use recursion */
     return pic_cons(pic, car, cdr);
   }
@@ -359,16 +367,11 @@ read_pair(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_vector(pic_state *pic, struct pic_port *port, char c)
 {
-  pic_value val;
+  pic_value list;
 
-  c = next(port);
+  list = read(pic, port, c);
 
-  val = pic_nil_value();
-  while ((c = skip(port, c)) != ')') {
-    val = pic_cons(pic, read(pic, port, c), val);
-    c = next(port);
-  }
-  return pic_obj_value(pic_vec_new_from_list(pic, pic_reverse(pic, val)));
+  return pic_obj_value(pic_vec_new_from_list(pic, list));
 }
 
 static pic_value
