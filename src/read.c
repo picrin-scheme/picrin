@@ -50,7 +50,7 @@ peek(struct pic_port *port)
 static bool
 isdelim(char c)
 {
-  return strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
+  return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
 static pic_value
