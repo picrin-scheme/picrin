@@ -1063,7 +1063,7 @@
 			 (let-values (((match1 vars1) (compile-match-base (car pattern))))
 			   (loop (cdr pattern)
 				 (cons `(,_if (,_pair? ,accessor)
-					      (,_let ((expr (,_car,accessor)))
+					      (,_let ((expr (,_car ,accessor)))
 						     ,match1)
 					      (exit #f))
 				       matches)
