@@ -210,7 +210,7 @@ read_minus(pic_state *pic, struct pic_port *port, char c)
   /* TODO: -inf.0, -nan.0 */
 
   if (isdigit(peek(port))) {
-    return negate(read_number(pic, port, c));
+    return negate(read_number(pic, port, next(port)));
   }
   else {
     return read_symbol(pic, port, c);
