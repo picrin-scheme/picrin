@@ -926,7 +926,7 @@
   (define (make-promise obj)
     (if (promise? obj)
 	obj
-	(make-promise% #f obj)))
+	(make-promise% #t obj)))
 
   (export delay-force delay force make-promise promise?))
 
