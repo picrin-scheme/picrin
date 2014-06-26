@@ -202,11 +202,9 @@ negate(pic_value n)
 static pic_value
 read_minus(pic_state *pic, struct pic_port *port, char c)
 {
-  static const char DIGITS[] = "0123456789";
-
   /* TODO: -inf.0, -nan.0 */
 
-  if (strchr(DIGITS, peek(port))) {
+  if (isdigit(peek(port))) {
     return negate(read_number(pic, port, c));
   }
   else {
@@ -217,11 +215,9 @@ read_minus(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_plus(pic_state *pic, struct pic_port *port, char c)
 {
-  static const char DIGITS[] = "0123456789";
-
   /* TODO: +inf.0, +nan.0 */
 
-  if (strchr(DIGITS, peek(port))) {
+  if (isdigit(peek(port))) {
     return read_number(pic, port, c);
   }
   else {
