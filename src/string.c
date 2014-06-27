@@ -74,7 +74,7 @@ pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 static xrope *
 xr_put(xrope *rope, size_t i, char c)
 {
-  xrope *x, *y;
+  xrope *x, *y, *z;
   char buf[1];
 
   if (xr_len(rope) <= i) {
@@ -85,14 +85,12 @@ xr_put(xrope *rope, size_t i, char c)
 
   x = xr_sub(rope, 0, i);
   y = xr_new_copy(buf, 1);
-  rope = xr_cat(x, y);
+  z = xr_cat(x, y);
   XROPE_DECREF(x);
   XROPE_DECREF(y);
 
-  x = rope;
   y = xr_sub(rope, i + 1, xr_len(rope));
-  rope = xr_cat(x, y);
-  XROPE_DECREF(x);
+  rope = xr_cat(z, y);
   XROPE_DECREF(y);
 
   return rope;
@@ -385,12 +383,11 @@ pic_str_string_fill_ip(pic_state *pic)
   n = pic_get_args(pic, "sc|ii", &str, &c, &start, &end);
 
   switch (n) {
-  case 1:
-    start = 0;
   case 2:
+    start = 0;
+  case 3:
     end = pic_strlen(str);
   }
-
   while (start < end) {
     pic_str_set(pic, str, start++, c);
   }
