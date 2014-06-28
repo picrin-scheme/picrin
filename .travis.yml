@@ -7,4 +7,4 @@ before_script:
 script:
   - perl --version
   - cmake .. && make test
-  - cmake -DCMAKE_BUILD_TYPE=Debug .. && make test
+  - cmake -DCMAKE_BUILD_TYPE=Debug .. && make no-act
