@@ -822,7 +822,7 @@
 ;; (test #i1/3 (rationalize .3 1/10))
 
 (test 1.0 (inexact (exp 0))) ;; may return exact number
-(test 20.0855369231877 (exp 3))
+(test 20.0855369231876679236 (exp 3))
 
 (test 0.0 (inexact (log 1))) ;; may return exact number
 (test 1.0 (log (exp 1)))
@@ -835,30 +835,30 @@
 (test 1.0 (inexact (cos 0))) ;; may return exact number
 (test -1.0 (cos 3.14159265358979))
 (test 0.0 (inexact (tan 0))) ;; may return exact number
-(test 1.5574077246549 (tan 1))
+(test 1.5574077246549020703 (tan 1))
 
 (test 0.0 (asin 0))
-(test 1.5707963267949 (asin 1))
+(test 1.5707963267948965580 (asin 1))
 (test 0.0 (acos 1))
-(test 3.14159265358979 (acos -1))
+(test 3.1415926535897931160 (acos -1))
 
 (test 0.0 (atan 0.0 1.0))
 (test -0.0 (atan -0.0 1.0))
-(test 0.785398163397448 (atan 1.0 1.0))
-(test 1.5707963267949 (atan 1.0 0.0))
-(test 2.35619449019234 (atan 1.0 -1.0))
-(test 3.14159265358979 (atan 0.0 -1.0))
-(test -3.14159265358979 (atan -0.0 -1.0)) ;
-(test -2.35619449019234 (atan -1.0 -1.0))
-(test -1.5707963267949 (atan -1.0 0.0))
-(test -0.785398163397448 (atan -1.0 1.0))
+(test 0.7853981633974482790 (atan 1.0 1.0))
+(test 1.5707963267948965580 (atan 1.0 0.0))
+(test 2.3561944901923448370 (atan 1.0 -1.0))
+(test 3.1415926535897931160 (atan 0.0 -1.0))
+(test -3.1415926535897931160 (atan -0.0 -1.0)) ;
+(test -2.3561944901923448370 (atan -1.0 -1.0))
+(test -1.5707963267948965580 (atan -1.0 0.0))
+(test -0.7853981633974482790 (atan -1.0 1.0))
 ;; (test undefined (atan 0.0 0.0))
 
 (test 1764 (square 42))
 (test 4 (square 2))
 
 (test 3.0 (inexact (sqrt 9)))
-(test 1.4142135623731 (sqrt 2))
+(test 1.4142135623730951454 (sqrt 2))
 ;; (test 0.0+1.0i (inexact (sqrt -1)))
 
 (test '(2 0) (call-with-values (lambda () (exact-integer-sqrt 4)) list))
