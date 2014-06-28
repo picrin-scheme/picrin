@@ -361,7 +361,11 @@ read_pair(pic_state *pic, struct pic_port *port, char c)
   if (c == '.' && isdelim(peek(port))) {
     cdr = read(pic, port, next(port));
 
+  closing:
     if ((c = skip(port, ' ')) != tCLOSE) {
+      if (pic_undef_p(read_nullable(pic, port, c))) {
+        goto closing;
+      }
       read_error(pic, "unmatched parenthesis");
     }
     return cdr;
