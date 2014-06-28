@@ -364,18 +364,18 @@
 
 
 
-;; (define radix
-;;   (make-parameter
-;;    10
-;;    (lambda (x)
-;;      (if (and (integer? x) (<= 2 x 16))
-;;          x
-;;          (error "invalid radix")))))
-;; (define (f n) (number->string n (radix)))
-;; (test "12" (f 12))
-;; (test "1100" (parameterize ((radix 2))
-;;                            (f 12)))
-;; (test "12" (f 12))
+(define radix
+  (make-parameter
+   10
+   (lambda (x)
+     (if (and (integer? x) (<= 2 x 16))
+         x
+         (error "invalid radix")))))
+(define (f n) (number->string n (radix)))
+(test "12" (f 12))
+(test "1100" (parameterize ((radix 2))
+                           (f 12)))
+(test "12" (f 12))
 (test '(list 3 4) `(list ,(+ 1 2) 4))
 (let ((name 'a)) (test '(list a (quote a)) `(list ,name ',name)))
 (test '(a 3 4 5 6 b) `(a ,(+ 1 2) ,@(map abs '(4 -5 6)) b))
