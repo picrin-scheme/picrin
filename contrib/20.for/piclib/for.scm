@@ -15,4 +15,7 @@
   (define (yield x)
     (list x))
 
-  (export for in yield))
+  (define (null . x)
+    '())
+
+  (export for in yield null))
