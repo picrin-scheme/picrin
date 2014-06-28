@@ -50,6 +50,10 @@ pic_number_integer_p(pic_state *pic)
   if (pic_float_p(v)) {
     double f = pic_float(v);
 
+    if (isinf(f)) {
+      return pic_false_value();
+    }
+
     if (f == round(f)) {
       return pic_true_value();
     }
