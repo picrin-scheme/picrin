@@ -257,7 +257,7 @@
             (mean / /))))
 (let*-values (((a b c) (means '(8 5 99 1 22))))
   (test 27 a)
-  (test 9.728 b)
+  (test 9.7280002558226410514 b)
   (test (/ 1800 497) c))
 
 (let*-values (((root rem) (exact-integer-sqrt 32)))
