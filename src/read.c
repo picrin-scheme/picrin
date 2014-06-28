@@ -299,7 +299,7 @@ read_string(pic_state *pic, struct pic_port *port, char c)
   }
   buf[cnt] = '\0';
 
-  str = pic_str_new(pic, buf, size);
+  str = pic_str_new(pic, buf, cnt);
   pic_free(pic, buf);
   return pic_obj_value(str);
 }
