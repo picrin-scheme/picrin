@@ -43,7 +43,7 @@ add_custom_target(run bin/picrin DEPENDS repl)
 add_custom_target(test DEPENDS no-act test-r7rs)
 
 # $ make no-act
-add_custom_target(no-act bin/picrin -e '' > /dev/null 2> /dev/null DEPENDS repl)
+add_custom_target(no-act bin/picrin -e '' > /dev/null DEPENDS repl)
 
 # $ make test-r7rs
 add_custom_target(test-r7rs bin/picrin ${PROJECT_SOURCE_DIR}/t/r7rs-tests.scm DEPENDS repl)
