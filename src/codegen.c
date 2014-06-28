@@ -690,6 +690,12 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
 	}						\
       } while (0)
 
+#define ARGC_ASSERT_WITH_FALLBACK(n) do {               \
+	if (pic_length(pic, obj) != (n) + 1) {		\
+          goto fallback;                                \
+	}						\
+      } while (0)
+
 #define CONSTRUCT_OP1(op)                                               \
       pic_list2(pic,                                                    \
                 pic_symbol_value(op),                                   \
@@ -768,23 +774,23 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_div(state, obj);
       }
       else if (sym == state->rEQ) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sEQ);
       }
       else if (sym == state->rLT) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLT);
       }
       else if (sym == state->rLE) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLE);
       }
       else if (sym == state->rGT) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGT);
       }
       else if (sym == state->rGE) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGE);
       }
       else if (sym == state->rNOT) {
@@ -798,6 +804,8 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_call_with_values(state, obj, tailpos);
       }
     }
+  fallback:
+
     return analyze_call(state, obj, tailpos);
   }
   case PIC_TT_BOOL:
