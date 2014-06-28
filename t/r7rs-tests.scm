@@ -1292,29 +1292,29 @@
 (test "b" (string-copy "abc" 1 2))
 (test "bc" (string-copy "abc" 1 3))
 
-;; (test "-----"
-;;     (let ((str (make-string 5 #\x))) (string-fill! str #\-) str))
-;; (test "xx---"
-;;     (let ((str (make-string 5 #\x))) (string-fill! str #\- 2) str))
-;; (test "xx-xx"
-;;     (let ((str (make-string 5 #\x))) (string-fill! str #\- 2 3) str))
+(test "-----"
+    (let ((str (make-string 5 #\x))) (string-fill! str #\-) str))
+(test "xx---"
+    (let ((str (make-string 5 #\x))) (string-fill! str #\- 2) str))
+(test "xx-xx"
+    (let ((str (make-string 5 #\x))) (string-fill! str #\- 2 3) str))
 
-;; (test "a12de"
-;;     (let ((str (string-copy "abcde"))) (string-copy! str 1 "12345" 0 2) str))
-;; (test "-----"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----") str))
-;; (test "---xx"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----" 2) str))
-;; (test "xx---"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 0 3) str))
-;; (test "xx-xx"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 2 3) str))
+(test "a12de"
+    (let ((str (string-copy "abcde"))) (string-copy! str 1 "12345" 0 2) str))
+(test "-----"
+    (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----") str))
+(test "---xx"
+    (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----" 2) str))
+(test "xx---"
+    (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 0 3) str))
+(test "xx-xx"
+    (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 2 3) str))
 
 ;; same source and dest
-;; (test "aabde"
-;;     (let ((str (string-copy "abcde"))) (string-copy! str 1 str 0 2) str))
-;; (test "abcab"
-;;     (let ((str (string-copy "abcde"))) (string-copy! str 3 str 0 2) str))
+(test "aabde"
+    (let ((str (string-copy "abcde"))) (string-copy! str 1 str 0 2) str))
+(test "abcab"
+    (let ((str (string-copy "abcde"))) (string-copy! str 3 str 0 2) str))
 
 (test-end)
 
