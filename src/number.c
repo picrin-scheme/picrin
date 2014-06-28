@@ -133,6 +133,7 @@ pic_number_nan_p(pic_state *pic)
       return pic_false_value();				\
     							\
     for (i = 0; i < argc; ++i) {			\
+      f = g;                                            \
       if (pic_float_p(argv[i]))				\
 	g = pic_float(argv[i]);				\
       else if (pic_int_p(argv[i]))			\
