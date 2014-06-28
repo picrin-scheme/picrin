@@ -1802,9 +1802,9 @@
       (output-port-open? out)))
 
 (test #t (eof-object? (eof-object)))
-;; (test #t (eof-object? (read (open-input-string ""))))
+(test #t (eof-object? (read (open-input-string ""))))
 (test #t (char-ready? (open-input-string "42")))
-;; (test 42 (read (open-input-string " 42 ")))
+(test 42 (read (open-input-string " 42 ")))
 
 (test #t (eof-object? (read-char (open-input-string ""))))
 (test #\a (read-char (open-input-string "abc")))
