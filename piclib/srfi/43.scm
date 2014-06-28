@@ -50,7 +50,7 @@
 
                                         ; for the symmetry, this should be rather 'vector=?' than 'vector='.
   (define (vector= elt=? . vects)
-    (letrec ((2vector=
+    (letrec ((vector2=
               (lambda (v1 v2)
                 (let ((ln1 (vector-length v1)))
                   (and (= ln1 (vector-length v2))
@@ -67,7 +67,7 @@
                       (others (cdr others)))
                   (if (eq? vect1 vect2)
                       (rec1 vect1 others)
-                      (and (2vector= vect1 vect2)
+                      (and (vector2= vect1 vect2)
                            (rec1 vect2 others)))))))))
 
   
