@@ -136,6 +136,22 @@
   (define (unquote-splicing? form compare?)
     (and (pair? form) (pair? (car form)) (compare? (car (car form)) 'unquote-splicing)))
 
+  (define (list->vector list)
+    (let ((vector (make-vector (length list))))
+      (let loop ((list list) (i 0))
+        (if (null? list)
+            vector
+            (begin
+              (vector-set! vector i (car list))
+              (loop (cdr list) (+ i 1)))))))
+
+  (define (vector->list vector)
+    (let ((length (vector-length vector)))
+      (let loop ((list '()) (i 0))
+        (if (= i length)
+            (reverse list)
+            (loop (cons (vector-ref vector i) list) (+ i 1))))))
+
   (define-syntax quasiquote
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -170,6 +186,9 @@
            (list 'cons
                  (qq depth (car expr))
                  (qq depth (cdr expr))))
+          ;; vector
+          ((vector? expr)
+           (list 'list->vector (qq depth (vector->list expr))))
           ;; simple datum
           (else
            (list 'quote expr))))
