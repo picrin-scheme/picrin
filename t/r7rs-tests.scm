@@ -44,11 +44,27 @@
 ;; support, the full numeric tower and all standard libraries
 ;; provided.
 
-(define (test-begin . o) #f)
+(define test-counter 0)
+(define counter 0)
+(define failure-counter 0)
 
-(define (test-end . o) #f)
+(define (print-statistics)
+  (newline)
+  (display "[0;34mTest Result: ")
+  (write (- counter failure-counter))
+  (display " / ")
+  (write counter)
+  (display " [PASS/TOTAL]")
+  (display "[0;39m")
+  (newline))
 
-(define counter 1)
+(define (test-begin . o)
+  (set! test-counter (+ test-counter 1)))
+
+(define (test-end . o)
+  (set! test-counter (- test-counter 1))
+  (if (= test-counter 0)
+      (print-statistics)))
 
 (define-syntax test
   (syntax-rules ()
@@ -66,6 +82,7 @@
          (newline)
          )
         ((not (equal? res expected))
+         (set! failure-counter (+ failure-counter 1))
          (display " [0;31mFAIL: ")
          (write 'expr)
          (newline)
