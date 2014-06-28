@@ -386,9 +386,9 @@ pic_str_string_fill_ip(pic_state *pic)
   n = pic_get_args(pic, "sc|ii", &str, &c, &start, &end);
 
   switch (n) {
-  case 1:
-    start = 0;
   case 2:
+    start = 0;
+  case 3:
     end = pic_strlen(str);
   }
 
