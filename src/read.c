@@ -178,14 +178,18 @@ read_uinteger(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_number(pic_state *pic, struct pic_port *port, char c)
 {
-  int64_t i, j;
+  char buf[256], *cur;
+  int64_t i;
 
   i = read_uinteger(pic, port, c);
 
   if (peek(port) == '.') {
-    next(port);
-    j = read_uinteger(pic, port, next(port));
-    return pic_float_value(i + (double)j * pow(10, -snprintf(NULL, 0, "%lld", j)));
+    cur = buf + snprintf(buf, sizeof buf, "%lld", i);
+    do {
+      *cur++ = next(port);
+    } while (isdigit(peek(port)));
+    *cur = '\0';
+    return pic_float_value(atof(buf));
   }
   else {
     return pic_int_value(i);
