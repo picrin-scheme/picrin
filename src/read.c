@@ -144,7 +144,7 @@ read_symbol(pic_state *pic, struct pic_port *port, char c)
       c = next(port);
     }
     len += 1;
-    buf = pic_realloc(pic, buf, len);
+    buf = pic_realloc(pic, buf, len + 1);
     buf[len - 1] = c;
   } while (! isdelim(peek(port)));
 
