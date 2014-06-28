@@ -155,46 +155,43 @@ read_symbol(pic_state *pic, struct pic_port *port, char c)
   return pic_sym_value(sym);
 }
 
-static int64_t
-read_uinteger(pic_state *pic, struct pic_port *port, char c)
+static size_t
+read_uinteger(pic_state *pic, struct pic_port *port, char c, char buf[])
 {
-  int64_t n;
-
-  c = skip(port, c);
+  size_t i = 0;
 
   if (! isdigit(c)) {
     read_error(pic, "expected one or more digits");
   }
 
-  n = c - '0';
+  buf[i++] = c;
   while (isdigit(c = peek(port))) {
-    next(port);
-    n = n * 10 + c - '0';
+    buf[i++] = next(port);
   }
 
-  return n;
+  buf[i] = '\0';
+
+  return i;
 }
 
 static pic_value
 read_number(pic_state *pic, struct pic_port *port, char c)
 {
-  char buf[256], *cur;
-  int64_t i;
+  char buf[256];
+  size_t i;
 
-  i = read_uinteger(pic, port, c);
+  i = read_uinteger(pic, port, c, buf);
 
   if (peek(port) == '.') {
-    cur = buf + snprintf(buf, sizeof buf, "%lld", i);
     do {
-      *cur++ = next(port);
+      buf[i++] = next(port);
     } while (isdigit(peek(port)));
-    *cur = '\0';
+    buf[i] = '\0';
     return pic_float_value(atof(buf));
   }
   else {
-    return pic_int_value(i);
+    return pic_int_value(atoi(buf));
   }
-
 }
 
 static pic_value
@@ -313,7 +310,7 @@ read_unsigned_blob(pic_state *pic, struct pic_port *port, char c)
 {
   int nbits, n;
   size_t len;
-  char *buf;
+  char *dat, buf[256];
   pic_blob *blob;
 
   nbits = 0;
@@ -331,21 +328,22 @@ read_unsigned_blob(pic_state *pic, struct pic_port *port, char c)
   }
 
   len = 0;
-  buf = NULL;
+  dat = NULL;
   c = next(port);
   while ((c = skip(port, c)) != ')') {
-    n = read_uinteger(pic, port, c);
+    read_uinteger(pic, port, c, buf);
+    n = atoi(buf);
     if (n < 0 || (1 << nbits) <= n) {
       read_error(pic, "invalid element in bytevector literal");
     }
     len += 1;
-    buf = pic_realloc(pic, buf, len);
-    buf[len - 1] = n;
+    dat = pic_realloc(pic, dat, len);
+    dat[len - 1] = n;
     c = next(port);
   }
 
-  blob = pic_blob_new(pic, buf, len);
-  pic_free(pic, buf);
+  blob = pic_blob_new(pic, dat, len);
+  pic_free(pic, dat);
   return pic_obj_value(blob);
 }
 
