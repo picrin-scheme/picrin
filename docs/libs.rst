@@ -20,11 +20,23 @@ SRFI libraries
 
 - (srfi 1)
 
-  List manipulation library.
+  List library.
+
+- (srfi 8)
+
+  ``receive`` macro.
 
 - (srfi 26)
 
   Cut/cute macros.
+
+- (srfi 43)
+
+  Vector library.
+
+- (srfi 60)
+
+  Bitwise operations.
 
 - (srfi 95)
 
