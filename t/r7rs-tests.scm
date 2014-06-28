@@ -1151,7 +1151,7 @@
 ;;       (string-set! s 1 #\x1F700)
 ;;       s))
 
-#;(test #t (string=? "" ""))
+(test #t (string=? "" ""))
 (test #t (string=? "abc" "abc" "abc"))
 (test #f (string=? "" "abc"))
 (test #f (string=? "abc" "aBc"))
