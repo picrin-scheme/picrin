@@ -2226,17 +2226,17 @@
 
 ;; (test "/usr/local/bin:/usr/bin:/bin" (get-environment-variable "PATH"))
 
-;; (test #t (string? (get-environment-variable "PATH")))
+(test #t (string? (get-environment-variable "PATH")))
 
 ;; (test '(("USER" . "root") ("HOME" . "/")) (get-environment-variables))
 
-;; (let ((env (get-environment-variables)))
-;;   (define (env-pair? x)
-;;     (and (pair? x) (string? (car x)) (string? (cdr x))))
-;;   (define (all? pred ls)
-;;     (or (null? ls) (and (pred (car ls)) (all? pred (cdr ls)))))
-;;   (test #t (list? env))
-;;   (test #t (all? env-pair? env)))
+(let ((env (get-environment-variables)))
+  (define (env-pair? x)
+    (and (pair? x) (string? (car x)) (string? (cdr x))))
+  (define (all? pred ls)
+    (or (null? ls) (and (pred (car ls)) (all? pred (cdr ls)))))
+  (test #t (list? env))
+  (test #t (all? env-pair? env)))
 
 (test #t (list? (command-line)))
 
