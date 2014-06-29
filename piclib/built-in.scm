@@ -343,24 +343,63 @@
      (lambda (form r c)
        `(,(r 'let*-values) ,@(cdr form)))))
 
+  (define (vector-map proc vect)
+    (do ((i 0 (+ i 1))
+         (u (make-vector (vector-length vect))))
+        ((= i (vector-length vect))
+         u)
+      (vector-set! u i (proc (vector-ref vect i)))))
+
+  (define (walk proc expr)
+    (cond
+     ((null? expr)
+      '())
+     ((pair? expr)
+      (cons (proc (car expr))
+            (walk proc (cdr expr))))
+     ((vector? expr)
+      (vector-map proc expr))
+     (else
+      (proc expr))))
+
+  (define (flatten expr)
+    (let ((list '()))
+      (walk
+       (lambda (x)
+         (set! list (cons x list)))
+       expr)
+      (reverse list)))
+
+  (define (predefine var)
+    `(define ,var #f))
+
+  (define (predefines vars)
+    (map predefine vars))
+
+  (define (assign var val)
+    `(set! ,var ,val))
+
+  (define (assigns vars vals)
+    (map assign vars vals))
+
+  (define uniq
+    (let ((counter 0))
+      (lambda (x)
+        (let ((sym (string->symbol (string-append "var$" (number->string counter)))))
+          (set! counter (+ counter 1))
+          sym))))
+
   (define-syntax define-values
-    (er-macro-transformer
-     (lambda (form r c)
-       (let ((formals (cadr form)))
-         `(,(r 'begin)
-            ,@(do ((vars formals (cdr vars))
-                   (defs '()))
-                  ((null? vars)
-                   defs)
-                (set! defs (cons `(,(r 'define) ,(car vars) #f) defs)))
-            (,(r 'call-with-values)
-                (,(r 'lambda) () ,@(cddr form))
-              (,(r 'lambda) (,@(map r formals))
-                ,@(do ((vars formals (cdr vars))
-                       (assn '()))
-                      ((null? vars)
-                       assn)
-                    (set! assn (cons `(,(r 'set!) ,(car vars) ,(r (car vars))) assn))))))))))
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let* ((formal  (cadr form))
+              (formal* (walk uniq formal))
+              (exprs   (cddr form)))
+         `(begin
+            ,@(predefines (flatten formal))
+            (call-with-values (lambda () ,@exprs)
+              (lambda ,formal*
+                ,@(assigns (flatten formal) (flatten formal*)))))))))
 
   (export let-values
           let*-values
