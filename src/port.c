@@ -329,6 +329,8 @@ pic_port_open_input_blob(pic_state *pic)
   port->status = PIC_PORT_OPEN;
 
   xfwrite(blob->data, 1, blob->len, port->file);
+  xfflush(port->file);
+  xrewind(port->file);
 
   return pic_obj_value(port);
 }
