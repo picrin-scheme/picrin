@@ -15,7 +15,6 @@ struct pic_jmpbuf {
   pic_value *sp;
   pic_code *ip;
   jmp_buf *prev_jmp;
-  struct pic_jmpbuf *prev;
 };
 
 /* do not return from try block! */

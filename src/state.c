@@ -9,6 +9,7 @@
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/cont.h"
+#include "picrin/error.h"
 
 void pic_init_core(pic_state *);
 
@@ -70,7 +71,9 @@ pic_open(int argc, char *argv[], char **envp)
   /* error handling */
   pic->jmp = NULL;
   pic->err = NULL;
-  pic->try_jmps = NULL;
+  pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
+  pic->try_jmp_idx = 0;
+  pic->try_jmp_size = PIC_RESCUE_SIZE;
 
   /* GC arena */
   pic->arena = (struct pic_object **)calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
@@ -170,6 +173,7 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   free(pic->globals);
+  free(pic->try_jmps);
   xh_destroy(&pic->syms);
   xh_destroy(&pic->global_tbl);
   xh_destroy(&pic->macros);

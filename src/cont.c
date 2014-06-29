@@ -10,6 +10,7 @@
 #include "picrin/proc.h"
 #include "picrin/cont.h"
 #include "picrin/pair.h"
+#include "picrin/error.h"
 
 pic_value
 pic_values0(pic_state *pic)
@@ -143,6 +144,11 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
+  cont->try_jmp_idx = pic->try_jmp_idx;
+  cont->try_jmp_size = pic->try_jmp_size;
+  cont->try_jmps = pic_alloc(pic, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  memcpy(cont->try_jmps, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+
   cont->results = pic_undef_value();
 }
 
@@ -188,6 +194,11 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
+
+  pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
+  memcpy(pic->try_jmps, cont->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
+  pic->try_jmp_size = cont->try_jmp_size;
+  pic->try_jmp_idx = cont->try_jmp_idx;
 
   memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);
 

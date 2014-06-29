@@ -38,7 +38,7 @@ pic_push_try(pic_state *pic)
 {
   struct pic_jmpbuf *try_jmp;
 
-  try_jmp = pic_alloc(pic, sizeof(struct pic_jmpbuf));
+  try_jmp = pic->try_jmps + pic->try_jmp_idx++;
 
   try_jmp->ci = pic->ci;
   try_jmp->sp = pic->sp;
@@ -46,27 +46,22 @@ pic_push_try(pic_state *pic)
 
   try_jmp->prev_jmp = pic->jmp;
   pic->jmp = &try_jmp->here;
-
-  try_jmp->prev = pic->try_jmps;
-  pic->try_jmps = try_jmp;
 }
 
 void
 pic_pop_try(pic_state *pic)
 {
-  struct pic_jmpbuf *prev;
+  struct pic_jmpbuf *try_jmp;
 
-  assert(pic->jmp == &pic->try_jmps->here);
+  try_jmp = pic->try_jmps + --pic->try_jmp_idx;
 
-  pic->ci = pic->try_jmps->ci;
-  pic->sp = pic->try_jmps->sp;
-  pic->ip = pic->try_jmps->ip;
+  assert(pic->jmp == &try_jmp->here);
 
-  pic->jmp = pic->try_jmps->prev_jmp;
+  pic->ci = try_jmp->ci;
+  pic->sp = try_jmp->sp;
+  pic->ip = try_jmp->ip;
 
-  prev = pic->try_jmps->prev;
-  pic_free(pic, pic->try_jmps);
-  pic->try_jmps = prev;
+  pic->jmp = try_jmp->prev_jmp;
 }
 
 static struct pic_error *

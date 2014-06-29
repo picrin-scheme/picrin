@@ -30,6 +30,9 @@ struct pic_cont {
   size_t arena_size;
   int arena_idx;
 
+  struct pic_jmpbuf *try_jmps;
+  size_t try_jmp_idx, try_jmp_size;
+
   pic_value results;
 };
 
