@@ -599,39 +599,6 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   return v;
 }
 
-/* once read.c is implemented move there */
-static pic_value
-pic_macro_include(pic_state *pic)
-{
-  size_t argc, i;
-  pic_value *argv, exprs, body;
-  FILE *file;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  /* FIXME unhygienic */
-  body = pic_list1(pic, pic_sym_value(pic->sBEGIN));
-
-  for (i = 0; i < argc; ++i) {
-    const char *filename;
-    if (! pic_str_p(argv[i])) {
-      pic_error(pic, "expected string");
-    }
-    filename = pic_str_cstr(pic_str_ptr(argv[i]));
-    file = fopen(filename, "r");
-    if (file == NULL) {
-      pic_error(pic, "could not open file");
-    }
-    exprs = pic_parse_file(pic, file);
-    if (pic_undef_p(exprs)) {
-      pic_error(pic, "parse error");
-    }
-    body = pic_append(pic, body, exprs);
-  }
-
-  return body;
-}
-
 static pic_value
 pic_macro_gensym(pic_state *pic)
 {
@@ -958,8 +925,6 @@ pic_macro_ir_macro_transformer(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
-  pic_defmacro(pic, "include", pic_proc_new(pic, pic_macro_include, "<include-procedure>"));
-
   pic_deflibrary ("(picrin macro)") {
 
     /* export define-macro syntax */

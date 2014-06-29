@@ -907,6 +907,31 @@
 
 (export call-with-port)
 
+;;; include syntax
+
+(import (scheme read)
+        (scheme file))
+
+(define (call-with-input-file filename callback)
+  (call-with-port (open-input-file filename) callback))
+
+(define (read-many filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (let loop ((expr (read port)) (exprs '()))
+        (if (eof-object? expr)
+            (reverse exprs)
+            (loop (read port) (cons expr exprs)))))))
+
+(define-syntax include
+  (er-macro-transformer
+   (lambda (form rename compare)
+     (let ((filenames (cdr form)))
+       (let ((exprs (apply append (map read-many filenames))))
+         `(,(rename 'begin) ,@exprs))))))
+
+(export include)
+
 ;;; Appendix A. Standard Libraries Lazy
 (define-library (scheme lazy)
   (import (scheme base)
