@@ -17,7 +17,6 @@ pic_abort(pic_state *pic, const char *msg)
   UNUSED(pic);
 
   fprintf(stderr, "abort: %s\n", msg);
-  fflush(stderr);
   abort();
 }
 
