@@ -34,7 +34,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
 }
 
 void
-pic_push_try(pic_state *pic)
+pic_push_try(pic_state *pic, struct pic_proc *handler)
 {
   struct pic_jmpbuf *try_jmp;
 
@@ -44,6 +44,8 @@ pic_push_try(pic_state *pic)
   }
 
   try_jmp = pic->try_jmps + pic->try_jmp_idx++;
+
+  try_jmp->handler = handler;
 
   try_jmp->ci = pic->ci;
   try_jmp->sp = pic->sp;
@@ -140,7 +142,7 @@ pic_error_with_exception_handler(pic_state *pic)
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  pic_try {
+  pic_try_with_handler(handler) {
     v = pic_apply0(pic, thunk);
   }
   pic_catch {
@@ -167,6 +169,28 @@ pic_error_raise(pic_state *pic)
   pic_get_args(pic, "o", &v);
 
   pic_throw(pic, PIC_ERROR_RAISED, "object is raised", pic_list1(pic, v));
+}
+
+static pic_value
+pic_error_raise_continuable(pic_state *pic)
+{
+  pic_value v;
+  size_t i;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic->try_jmps->handler == NULL) {
+    pic_errorf(pic, "uncontinuable exception handler is on top");
+  }
+  if ((i = pic->try_jmp_idx) == 0) {
+    pic_errorf(pic, "no exception handler registered");
+  }
+  else {
+    pic->try_jmp_idx--;
+    v = pic_apply1(pic, pic->try_jmps->handler, v);
+    ++pic->try_jmp_idx;
+  }
+  return v;
 }
 
 noreturn static pic_value
@@ -248,6 +272,7 @@ pic_init_error(pic_state *pic)
 {
   pic_defun(pic, "with-exception-handler", pic_error_with_exception_handler);
   pic_defun(pic, "raise", pic_error_raise);
+  pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
   pic_defun(pic, "error", pic_error_error);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);

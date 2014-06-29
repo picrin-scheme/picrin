@@ -11,6 +11,7 @@ extern "C" {
 
 struct pic_jmpbuf {
   jmp_buf here;
+  struct pic_proc *handler;
   pic_callinfo *ci;
   pic_value *sp;
   pic_code *ip;
@@ -20,7 +21,9 @@ struct pic_jmpbuf {
 /* do not return from try block! */
 
 #define pic_try                                 \
-  pic_push_try(pic);                            \
+  pic_try_with_handler(NULL)
+#define pic_try_with_handler(handler)           \
+  pic_push_try(pic, handler);                   \
   if (setjmp(*pic->jmp) == 0)                   \
     do
 #define pic_catch                               \
@@ -28,7 +31,7 @@ struct pic_jmpbuf {
   else                                          \
     if (pic_pop_try(pic), 1)
 
-void pic_push_try(pic_state *);
+void pic_push_try(pic_state *, struct pic_proc *);
 void pic_pop_try(pic_state *);
 
 noreturn void pic_throw(pic_state *, short, const char *, pic_value);
