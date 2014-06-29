@@ -38,6 +38,11 @@ pic_push_try(pic_state *pic)
 {
   struct pic_jmpbuf *try_jmp;
 
+  if (pic->try_jmp_idx >= pic->try_jmp_size) {
+    pic->try_jmp_size *= 2;
+    pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  }
+
   try_jmp = pic->try_jmps + pic->try_jmp_idx++;
 
   try_jmp->ci = pic->ci;
