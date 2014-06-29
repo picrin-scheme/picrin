@@ -247,15 +247,18 @@ read_plus(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_boolean(pic_state *pic, struct pic_port *port, char c)
 {
-  UNUSED(pic);
-  UNUSED(port);
+  pic_value sym;
 
-  /* TODO: support #true and #false */
-
-  if (c == 't') {
+  sym = read_symbol(pic, port, c);
+  if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "t"))) ||
+      pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "true")))) {
     return pic_true_value();
-  } else {
+  } else if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "f"))) ||
+             pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "false")))) {
     return pic_false_value();
+  } else {
+    /* TODO: raise an error instead of ignore silently */
+    return pic_undef_value();
   }
 }
 
