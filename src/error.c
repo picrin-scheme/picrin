@@ -147,7 +147,13 @@ pic_error_with_exception_handler(pic_state *pic)
     struct pic_error *e = pic->err;
 
     pic->err = NULL;
-    v = pic_apply1(pic, handler, pic_obj_value(e));
+
+    if (e->type == PIC_ERROR_RAISED) {
+      v = pic_list_ref(pic, e->irrs, 0);
+    } else {
+      v = pic_obj_value(e);
+    }
+    v = pic_apply1(pic, handler, v);
     pic_errorf(pic, "error handler returned ~s, by error ~s", v, pic_obj_value(e));
   }
   return v;
