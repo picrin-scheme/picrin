@@ -32,7 +32,8 @@ struct pic_jmpbuf {
 void pic_push_try(pic_state *);
 void pic_pop_try(pic_state *);
 
-noreturn void pic_throw(pic_state *, struct pic_error *);
+noreturn void pic_throw(pic_state *, short, const char *, pic_value);
+noreturn void pic_throw_error(pic_state *, struct pic_error *);
 
 struct pic_error {
   PIC_OBJECT_HEADER

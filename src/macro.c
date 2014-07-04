@@ -246,7 +246,7 @@ macroexpand_deflibrary(pic_state *pic, pic_value expr)
   pic_catch {
     /* restores pic->lib even if an error occurs */
     pic_in_library(pic, prev->name);
-    pic_throw(pic, pic->err);
+    pic_throw_error(pic, pic->err);
   }
 
   return pic_none_value();
