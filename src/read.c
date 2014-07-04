@@ -49,6 +49,19 @@ peek(struct pic_port *port)
 }
 
 static bool
+expect(struct pic_port *port, const char *str)
+{
+  char c;
+
+  while ((c = *str++) != 0) {
+    if (c != next(port))
+      return false;
+  }
+
+  return true;
+}
+
+static bool
 isdelim(char c)
 {
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
@@ -250,13 +263,26 @@ read_boolean(pic_state *pic, struct pic_port *port, char c)
   UNUSED(pic);
   UNUSED(port);
 
-  /* TODO: support #true and #false */
+  if (! isdelim(peek(port))) {
+    if (c == 't') {
+      if (! expect(port, "rue")) {
+        goto fail;
+      }
+    } else {
+      if (! expect(port, "alse")) {
+        goto fail;
+      }
+    }
+  }
 
   if (c == 't') {
     return pic_true_value();
   } else {
     return pic_false_value();
   }
+
+ fail:
+  read_error(pic, "illegal character during reading boolean literal");
 }
 
 static pic_value
