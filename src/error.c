@@ -91,11 +91,16 @@ error_new(pic_state *pic, short type, pic_str *msg, pic_value irrs)
 noreturn void
 pic_throw_error(pic_state *pic, struct pic_error *e)
 {
+  void pic_vm_tear_off(pic_state *);
+
+  pic_vm_tear_off(pic);         /* tear off */
+
   pic->err = e;
   if (! pic->jmp) {
     puts(pic_errmsg(pic));
     abort();
   }
+
   longjmp(*pic->jmp, 1);
 }
 

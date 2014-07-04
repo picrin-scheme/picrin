@@ -164,8 +164,11 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
 noreturn static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
+  void pic_vm_tear_off(pic_state *);
   char v;
   struct pic_cont *tmp = cont;
+
+  pic_vm_tear_off(pic);         /* tear off */
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);

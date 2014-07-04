@@ -503,10 +503,26 @@ vm_tear_off(pic_state *pic)
   assert(pic->ci->env != NULL);
 
   env = pic->ci->env;
+
+  if (env->regs == env->storage) {
+    return;                     /* is torn off */
+  }
   for (i = 0; i < env->regc; ++i) {
     env->storage[i] = env->regs[i];
   }
   env->regs = env->storage;
+}
+
+void
+pic_vm_tear_off(pic_state *pic)
+{
+  pic_callinfo *ci;
+
+  for (ci = pic->ci; ci > pic->cibase; ci--) {
+    if (pic->ci->env != NULL) {
+      vm_tear_off(pic);
+    }
+  }
 }
 
 pic_value
