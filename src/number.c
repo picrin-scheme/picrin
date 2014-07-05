@@ -115,19 +115,352 @@ pic_bigint_div(pic_state *pic, pic_bigint *x, pic_bigint *y)
   return res;
 }
 
-#define DEFINE_RATIONAL_ARITH(op)                                   \
-pic_rational *                                                      \
-pic_rational_##op(pic_state *pic, pic_rational *x, pic_rational *y) \
-{                                                                   \
-  pic_rational *res = pic_rational_new(pic);                        \
-  mpq_##op(res->q, x->q, y->q);                                     \
-  return  res;                                                      \
-}                                                                   \
 
-DEFINE_RATIONAL_ARITH(add);
-DEFINE_RATIONAL_ARITH(sub);
-DEFINE_RATIONAL_ARITH(mul);
-DEFINE_RATIONAL_ARITH(div);
+#define DEFINE_ARITH_FUNCTION(op, name)                                 \
+  pic_value                                                             \
+  pic_##name(pic_state *pic, pic_value a, pic_value b)                  \
+  {                                                                     \
+    pic_value result;                                                   \
+    bool exactp = true;                                                 \
+                                                                        \
+    switch(pic_type(a)){                                                \
+    case PIC_TT_INT:{                                                   \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:{                                                 \
+        double f = (double) pic_int(a) op (double) pic_int(b);          \
+        if (INT_MIN <= f && f <= INT_MAX) {                             \
+          result = pic_float_value(f);                                  \
+        }                                                               \
+        else {                                                          \
+          pic_bigint *c = pic_bigint_new(pic);                          \
+          pic_bigint *d = pic_bigint_new(pic);                          \
+          mpz_set_si(c->z, pic_int(a));                                 \
+          mpz_set_si(d->z, pic_int(b));                                 \
+          mpz_##name(c->z, c->z, d->z);                                 \
+          result = pic_obj_value(c);                                    \
+        }                                                               \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_FLOAT:{                                               \
+        exactp = false;                                                 \
+        result = pic_float_value(pic_int(a) op pic_float(b));           \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGINT:{                                              \
+        pic_bigint *c = pic_bigint_new(pic);                            \
+        mpz_set_si(c->z, pic_int(a));                                   \
+        mpz_##name(c->z, c->z, pic_bigint_ptr(b)->z);                   \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_RATIONAL:{                                            \
+        pic_rational *c = pic_rational_new(pic);                        \
+        mpq_set_si(c->q,  pic_int(a), 1);                               \
+        mpq_##name(c->q, c->q, pic_rational_ptr(b)->q);                 \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:{                                            \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_si_##name(c->f, pic_int(a), pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    }                                                                   \
+    case PIC_TT_FLOAT: {                                                \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:{                                                 \
+        exactp = false;                                                 \
+        result = pic_float_value(pic_float(a) op pic_int(b));           \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_FLOAT:{                                               \
+        exactp = false;                                                 \
+        result = pic_float_value(pic_float(a) op pic_float(b));         \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGINT:{                                              \
+        exactp = false;                                                 \
+        result = pic_float_value( pic_float(a) op                       \
+                                  mpz_get_d(pic_bigint_ptr(b)->z));     \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_RATIONAL:{                                            \
+        exactp = false;                                                 \
+        result = pic_float_value(pic_float(a) op                        \
+                                 mpq_get_d(pic_rational_ptr(b)->q));    \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:{                                            \
+        exactp = false;                                                 \
+        result = pic_float_value(pic_float(a) op                        \
+                                 mpfr_get_d(pic_bigfloat_ptr(b)->f, MPFR_RNDN)); \
+        break;                                                          \
+      }                                                                 \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    }                                                                   \
+    case PIC_TT_BIGINT:{                                                \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:{                                                 \
+        pic_bigint *c = pic_bigint_new(pic);                            \
+        mpz_set_si(c->z, pic_int(b));                                   \
+        mpz_##name(c->z, pic_bigint_ptr(a)->z, c->z);                   \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_FLOAT:{                                               \
+        exactp = false;                                                 \
+        result = pic_float_value(mpz_get_d(pic_bigint_ptr(a)->z)        \
+                                 op pic_int(b));                        \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGINT:{                                              \
+        result = pic_obj_value(pic_bigint_##name(pic, pic_bigint_ptr(a), \
+                                                 pic_bigint_ptr(b)));   \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_RATIONAL:{                                            \
+        pic_rational *c = pic_rational_new(pic);                        \
+        mpq_set_z(c->q, pic_bigint_ptr(a)->z);                          \
+        mpq_##name(c->q, c->q, pic_rational_ptr(b)->q);                 \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:{                                            \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_z_##name(c->f, pic_bigint_ptr(a)->z, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      break;                                                            \
+      }                                                                 \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    }                                                                   \
+    case PIC_TT_RATIONAL:{                                              \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:{                                                 \
+        pic_rational *c = pic_rational_new(pic);                        \
+        mpq_set_d(c->q, (double) pic_int(b));                           \
+        mpq_##name(c->q, pic_rational_ptr(a)->q, c->q);                 \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_FLOAT:{                                               \
+        exactp = false;                                                 \
+        result = pic_float_value(pic_float(a) op                        \
+                                 mpq_get_d(pic_rational_ptr(b)->q));    \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGINT:{                                              \
+        pic_rational *c = pic_rational_new(pic);                        \
+        mpq_set_z(c->q, pic_bigint_ptr(b)->z);                          \
+        mpq_##name(c->q, pic_rational_ptr(a)->q, c->q);                 \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_RATIONAL:{                                            \
+        pic_rational *c = pic_rational_new(pic);                        \
+        mpq_##name(c->q, pic_rational_ptr(a)->q, pic_rational_ptr(b)->q); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:{                                            \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_q_##name(c->f, pic_rational_ptr(a)->q, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    }                                                                   \
+    case PIC_TT_BIGFLOAT:{                                              \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:{                                                 \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_##name##_si(c->f, pic_bigfloat_ptr(a)->f, pic_int(b), MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_FLOAT:{                                               \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_##name##_d(c->f, pic_bigfloat_ptr(a)->f,  pic_float(b), MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGINT:{                                              \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_##name##_z(c->f, pic_bigfloat_ptr(a)->f,  pic_bigint_ptr(b)->z, MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_RATIONAL:{                                            \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_##name##_q(c->f, pic_bigfloat_ptr(a)->f, pic_rational_ptr(b)->q, MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:{                                            \
+        exactp = false;                                                 \
+        pic_bigfloat *c = pic_bigfloat_new(pic);                        \
+        mpfr_q_##name(c->f, pic_rational_ptr(a)->q, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        result = pic_obj_value(c);                                      \
+        break;                                                          \
+      }                                                                 \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    }                                                                   \
+    default:                                                            \
+    ERROR:                                                              \
+      pic_errorf(pic, #op " got non-number operands");                  \
+    }                                                                   \
+    pic_number_normalize(pic, &result, exactp);                         \
+    return result;                                                      \
+  }
+
+DEFINE_ARITH_FUNCTION(+, add)
+DEFINE_ARITH_FUNCTION(-, sub)
+DEFINE_ARITH_FUNCTION(*, mul)
+DEFINE_ARITH_FUNCTION(/, div)
+
+#define DEFINE_COMP_FUNCTION(op, name)                                  \
+  bool                                                                  \
+  pic_##name(pic_state *pic, pic_value a, pic_value b)                  \
+  {                                                                     \
+    switch(pic_type(a)){                                                \
+    case PIC_TT_INT:                                                    \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        return pic_int(a) op pic_int(b);                                \
+      case PIC_TT_FLOAT:                                                \
+        return pic_int(a) op pic_float(b);                              \
+      case PIC_TT_BIGINT:                                               \
+        return 0 op mpz_cmp_si(pic_bigint_ptr(b)->z, pic_int(a));       \
+      case PIC_TT_RATIONAL:                                             \
+        return 0 op mpq_cmp_si(pic_rational_ptr(b)->q, pic_int(a), 1);  \
+      case PIC_TT_BIGFLOAT:                                             \
+        return 0 op mpfr_cmp_si(pic_bigfloat_ptr(b)->f, pic_int(a));    \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_FLOAT:                                                  \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        return pic_float(a) op pic_int(b);                              \
+      case PIC_TT_FLOAT:                                                \
+        return pic_float(a) op pic_float(b);                            \
+      case PIC_TT_BIGINT:                                               \
+        return 0 op mpz_cmp_d(pic_bigint_ptr(b)->z, pic_float(a));      \
+      case PIC_TT_RATIONAL:{                                            \
+        mpq_t q;                                                        \
+        mpq_init(q);                                                    \
+        mpq_set_d(q, pic_float(a));                                     \
+        bool res = mpq_cmp(q, pic_rational_ptr(b)->q) op 0;             \
+        mpq_clear(q);                                                   \
+        return res;                                                     \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:                                             \
+        return 0 op mpfr_cmp_d(pic_bigfloat_ptr(b)->f, pic_float(a));   \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_BIGINT:                                                 \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        return mpz_cmp_si(pic_bigint_ptr(a)->z, pic_int(b)) op 0;       \
+      case PIC_TT_FLOAT:                                                \
+        return mpz_cmp_d(pic_bigint_ptr(a)->z, pic_float(b)) op 0;      \
+      case PIC_TT_BIGINT:                                               \
+        return mpz_cmp(pic_bigint_ptr(a)->z, pic_bigint_ptr(b)->z) op 0; \
+      case PIC_TT_RATIONAL:{                                            \
+        mpfr_t f;                                                       \
+        mpfr_init_set_z(f, pic_bigint_ptr(a)->z, MPFR_RNDN);            \
+        bool res = mpfr_cmp_q(f, pic_rational_ptr(b)->q) op 0;          \
+        mpfr_clear(f);                                                  \
+        return res;                                                     \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:                                             \
+        return 0 op mpfr_cmp_z(pic_bigfloat_ptr(b)->f, pic_bigint_ptr(a)->z); \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_RATIONAL:                                               \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        return mpq_cmp_si(pic_rational_ptr(a)->q, ((long) pic_int(b)), 1) op 0; \
+      case PIC_TT_FLOAT:{                                               \
+        mpq_t q;                                                        \
+        mpq_init(q);                                                    \
+        mpq_set_d(q, pic_float(b));                                     \
+        bool res = mpq_cmp(pic_rational_ptr(a)->q, q) op 0;             \
+        mpq_clear(q);                                                   \
+        return res;                                                     \
+      }                                                                 \
+      case PIC_TT_BIGINT:{                                              \
+        mpfr_t f;                                                       \
+        mpfr_init_set_q(f, pic_rational_ptr(a)->q, MPFR_RNDN);          \
+        bool res = mpfr_cmp_z(f, pic_bigint_ptr(b)->z) op 0;            \
+        mpfr_clear(f);                                                  \
+        return res;                                                     \
+      }                                                                 \
+      case PIC_TT_RATIONAL:                                             \
+        return mpq_cmp(pic_rational_ptr(a)->q, pic_rational_ptr(b)->q) op 0; \
+      case PIC_TT_BIGFLOAT:                                             \
+        return 0 op mpfr_cmp_q(pic_bigfloat_ptr(b)->f, pic_rational_ptr(a)->q); \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_BIGFLOAT:                                               \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        return mpfr_cmp_si(pic_bigfloat_ptr(a)->f, pic_int(b)) op 0;    \
+      case PIC_TT_FLOAT:                                                \
+        return mpfr_cmp_d(pic_bigfloat_ptr(a)->f, pic_float(b)) op 0;   \
+      case PIC_TT_BIGINT:                                               \
+        return mpfr_cmp_z(pic_bigfloat_ptr(a)->f, pic_bigint_ptr(b)->z) op 0; \
+      case PIC_TT_RATIONAL:                                             \
+        return mpfr_cmp_q(pic_bigfloat_ptr(a)->f, pic_rational_ptr(b)->q) op 0; \
+      case PIC_TT_BIGFLOAT:                                             \
+        return mpfr_cmp(pic_bigfloat_ptr(a)->f, pic_bigfloat_ptr(b)->f) op 0; \
+      default:                                                          \
+        goto ERROR;                                                     \
+      }                                                                 \
+      break;                                                            \
+    default:                                                            \
+    ERROR:                                                              \
+      pic_errorf(pic, #op " got non-number operands");                  \
+    }                                                                   \
+  }
+
+DEFINE_COMP_FUNCTION(==, eq)
+DEFINE_COMP_FUNCTION(<, lt)
+DEFINE_COMP_FUNCTION(>, gt)
+DEFINE_COMP_FUNCTION(<=, le)
+DEFINE_COMP_FUNCTION(>=, ge)
+
 
 static pic_value
 pic_number_real_p(pic_state *pic)
@@ -181,7 +514,7 @@ pic_number_exact_p(pic_state *pic)
 
   pic_get_args(pic, "n", &v);
 
-  return pic_bool_value(pic_int_p(v) || pic_bigint_p(v) || pic_rational_p(v) || pic_bigfloat_p(v));
+  return pic_bool_value(pic_int_p(v) || pic_bigint_p(v) || pic_rational_p(v));
 }
 
 static pic_value
@@ -238,74 +571,31 @@ pic_number_nan_p(pic_state *pic)
     return pic_false_value();
 }
 
-#define DEFINE_ARITH_CMP(op, name)                              \
-  static pic_value                                              \
-  pic_number_##name(pic_state *pic)                             \
-  {                                                             \
-    size_t argc;                                                \
-    pic_value *argv;                                            \
-    size_t i;                                                   \
-    mpfr_t f;                                                   \
-    pic_value g;                                                \
-    mpfr_init(f);                                               \
-    pic_get_args(pic, "rn*", &f, &g, &argc, &argv);             \
-    i = -1;                                                     \
-    while ( ++i < argc) {                                       \
-      switch(pic_type(g)){                                      \
-      case PIC_TT_INT:                                          \
-        if (!(mpfr_cmp_si(f, pic_int(g)) op 0)){                \
-          mpfr_clear(f);                                        \
-          return pic_false_value();                             \
-        }                                                       \
-        else                                                    \
-          mpfr_set_si(f, pic_int(g), MPFR_RNDN);                \
-        break;                                                  \
-      case PIC_TT_FLOAT:                                        \
-        if (!(mpfr_cmp_d(f, pic_float(g)) op 0)){               \
-          mpfr_clear(f);                                        \
-          return pic_false_value();                             \
-        }                                                       \
-        else                                                    \
-          mpfr_set_d(f, pic_float(g), MPFR_RNDN);               \
-        break;                                                  \
-      case PIC_TT_BIGINT:                                       \
-        if (!(mpfr_cmp_z(f, pic_bigint_ptr(g)->z) op 0)){       \
-          mpfr_clear(f);                                        \
-          return pic_false_value();                             \
-        }                                                       \
-        else                                                    \
-          mpfr_set_z(f, pic_bigint_ptr(g)->z, MPFR_RNDN);       \
-        break;                                                  \
-      case PIC_TT_RATIONAL:                                     \
-        if (!(mpfr_cmp_q(f, pic_rational_ptr(g)->q) op 0)){     \
-          mpfr_clear(f);                                        \
-          return pic_false_value();                             \
-        }                                                       \
-        else                                                    \
-          mpfr_set_q(f, pic_rational_ptr(g)->q, MPFR_RNDN);     \
-        break;                                                  \
-      case PIC_TT_BIGFLOAT:                                     \
-        if (!(mpfr_cmp(f, pic_bigfloat_ptr(g)->f) op 0)){       \
-          mpfr_clear(f);                                        \
-          return pic_false_value();                             \
-        }                                                       \
-        else                                                    \
-          mpfr_set(f, pic_bigfloat_ptr(g)->f, MPFR_RNDN);       \
-        break;                                                  \
-      default:                                                  \
-        pic_error(pic, #op ": number required");                \
-      }                                                         \
-      g = argv[i];                                              \
-    }                                                           \
-    mpfr_clear(f);                                              \
-    return pic_true_value();                                    \
+#define DEFINE_ARITH_COMP(op, name)                                     \
+  static pic_value                                                      \
+  pic_number_##name(pic_state *pic)                                     \
+  {                                                                     \
+    size_t argc;                                                        \
+    pic_value *argv;                                                    \
+    pic_value v,w;                                                      \
+    pic_get_args(pic, "n*", &v, &argc, &argv);                          \
+    if(argc == 0)                                                       \
+      pic_errorf(pic, #op " expected 2 or more operands but got 1");    \
+    for(size_t i = 0; i < argc; i++) {                                  \
+      w = argv[i];                                                      \
+      if(! pic_##name(pic, v, w)){                                      \
+        return pic_false_value();                                       \
+      }                                                                 \
+      v = w;                                                            \
+    }                                                                   \
+    return pic_true_value();                                            \
   }
 
-DEFINE_ARITH_CMP(==, eq)
-DEFINE_ARITH_CMP(<, lt)
-DEFINE_ARITH_CMP(>, gt)
-DEFINE_ARITH_CMP(<=, le)
-DEFINE_ARITH_CMP(>=, ge)
+DEFINE_ARITH_COMP(==, eq)
+DEFINE_ARITH_COMP(<, lt)
+DEFINE_ARITH_COMP(>, gt)
+DEFINE_ARITH_COMP(<=, le)
+DEFINE_ARITH_COMP(>=, ge)
 
 static pic_value
 pic_number_zero_p(pic_state *pic)
@@ -366,6 +656,7 @@ pic_number_even_p(pic_state *pic)
     size_t i;                                                   \
     mpfr_t f;                                                   \
     pic_value v, result;                                        \
+    bool exactp = true;                                         \
                                                                 \
     pic_get_args(pic, "*", &argc, &argv);                       \
                                                                 \
@@ -382,6 +673,7 @@ pic_number_even_p(pic_state *pic)
         }                                                       \
         break;                                                  \
       case PIC_TT_FLOAT:                                        \
+        exactp = false;                                         \
         if(mpfr_cmp_d(f, pic_float(v)) op 0){                   \
           result = v;                                           \
           mpfr_set_d(f, pic_float(v), MPFR_RNDN);               \
@@ -410,237 +702,35 @@ pic_number_even_p(pic_state *pic)
       }                                                         \
     }                                                           \
     mpfr_clear(f);                                              \
-    return result;                                              \
+    return exactp ? result :                                    \
+      pic_float_value(pic_number_to_float(result));             \
   }
 
 DEFINE_MIN_MAX(>, min, +);
 DEFINE_MIN_MAX(<, max, -);
 
 
-#define DEFINE_ARITH_OP(op, name, unit)                                 \
+#define DEFINE_ARITH_OP(name, unit)                                     \
   static pic_value                                                      \
   pic_number_##name(pic_state *pic)                                     \
   {                                                                     \
     size_t argc;                                                        \
     pic_value *argv;                                                    \
-    size_t i;                                                           \
-    pic_value a, b;                                                     \
+    pic_value a;                                                        \
                                                                         \
     pic_get_args(pic, "*", &argc, &argv);                               \
                                                                         \
-    a = pic_float_value(unit);                                          \
-    for (i = 0; i < argc; ++i) {                                        \
-      b = argv[i];                                                      \
-      switch(pic_type(a)){                                              \
-      case PIC_TT_INT:{                                                 \
-        switch(pic_type(b)){                                            \
-        case PIC_TT_INT:{                                               \
-          double f = (double) pic_int(a) op (double) pic_int(b);        \
-          if (INT_MIN <= f && f <= INT_MAX) {                           \
-            a = pic_int_value((int)f);                                  \
-          }                                                             \
-          else {                                                        \
-            pic_bigint *c = pic_bigint_new(pic);                        \
-            pic_bigint *d = pic_bigint_new(pic);                        \
-            mpz_set_si(c->z, pic_int(a));                               \
-            mpz_set_si(d->z, pic_int(b));                               \
-            mpz_##name(c->z, c->z, d->z);                               \
-            a = pic_obj_value(c);                                       \
-          }                                                             \
-                                                                        \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_FLOAT:{                                             \
-          a = pic_float_value(pic_int(a) op pic_float(b));              \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGINT:{                                            \
-          pic_bigint *c = pic_bigint_new(pic);                          \
-          mpz_set_si(c->z, pic_int(a));                                 \
-          mpz_##name(c->z, c->z, pic_bigint_ptr(b)->z);                 \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_RATIONAL:{                                          \
-          pic_rational *c = pic_rational_new(pic);                      \
-          mpq_set_si(c->q,  pic_int(a), 1);                             \
-          mpq_##name(c->q, c->q, pic_rational_ptr(b)->q);               \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGFLOAT:{                                          \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_si_##name(c->f, pic_int(a), pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-        }                                                               \
-        default:{                                                       \
-          pic_errorf(pic, #op " got non-number operands");              \
-          break;                                                        \
-        }                                                               \
-        }                                                               \
-        break;                                                          \
-      }                                                                 \
-      case PIC_TT_FLOAT: {                                              \
-        switch(pic_type(b)){                                            \
-        case PIC_TT_INT:{                                               \
-          a = pic_float_value(pic_float(a) op pic_int(b));              \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_FLOAT:{                                             \
-          a = pic_float_value(pic_float(a) op pic_float(b));            \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGINT:{                                            \
-          a = pic_float_value( pic_int(a) op                            \
-                               mpz_get_d(pic_bigint_ptr(b)->z));        \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_RATIONAL:{                                          \
-          a = pic_float_value(mpq_get_d(pic_rational_ptr(b)->q)         \
-                              op pic_float(a));                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGFLOAT:{                                          \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_d_##name(c->f, pic_float(a), pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-        }                                                               \
-        default:{                                                       \
-          pic_errorf(pic, #op " got non-number operands");              \
-          break;                                                        \
-        }                                                               \
-        }                                                               \
-        break;                                                          \
-      }                                                                 \
-      case PIC_TT_BIGINT:{                                              \
-        switch(pic_type(b)){                                            \
-        case PIC_TT_INT:{                                               \
-          pic_bigint *c = pic_bigint_new(pic);                          \
-          mpz_set_si(c->z, pic_int(b));                                 \
-          mpz_##name(c->z, pic_bigint_ptr(a)->z, c->z);                 \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_FLOAT:{                                             \
-          a = pic_float_value(mpz_get_d(pic_bigint_ptr(a)->z)           \
-                              op pic_int(b));                           \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGINT:{                                            \
-          a = pic_obj_value(pic_bigint_##name(pic,                      \
-                                              pic_bigint_ptr(a),        \
-                                              pic_bigint_ptr(b)));      \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_RATIONAL:{                                          \
-          pic_rational *c = pic_rational_new(pic);                      \
-          mpq_set_z(c->q, pic_bigint_ptr(a)->z);                        \
-          mpq_##name(c->q, c->q, pic_rational_ptr(b)->q);               \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGFLOAT:{                                          \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_z_##name(c->f, pic_bigint_ptr(a)->z, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-        }                                                               \
-        default:{                                                       \
-          pic_errorf(pic, #op " got non-number operands");              \
-          break;                                                        \
-        }                                                               \
-        }                                                               \
-        break;                                                          \
-      }                                                                 \
-      case PIC_TT_RATIONAL:{                                            \
-        switch(pic_type(b)){                                            \
-        case PIC_TT_INT:{                                               \
-          pic_rational *c = pic_rational_new(pic);                      \
-          mpq_set_d(c->q, (double) pic_int(b));                         \
-          mpq_##name(c->q, pic_rational_ptr(a)->q, c->q);               \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_FLOAT:{                                             \
-          a = pic_float_value(pic_float(a) op                           \
-                              mpq_get_d(pic_rational_ptr(b)->q));       \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGINT:{                                            \
-          pic_rational *c = pic_rational_new(pic);                      \
-          mpq_set_z(c->q, pic_bigint_ptr(b)->z);                        \
-          mpq_##name(c->q, pic_rational_ptr(a)->q, c->q);               \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_RATIONAL:{                                          \
-          a = pic_obj_value(pic_rational_##name(pic,                    \
-                                                pic_rational_ptr(a),    \
-                                                pic_rational_ptr(b)));  \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGFLOAT:{                                          \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_q_##name(c->f, pic_rational_ptr(a)->q, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-        }                                                               \
-        default:{                                                       \
-          pic_errorf(pic, #op " got non-number operands");              \
-          break;                                                        \
-        }                                                               \
-        }                                                               \
-        break;                                                          \
-      }                                                                 \
-      case PIC_TT_BIGFLOAT:{                                            \
-        switch(pic_type(b)){                                            \
-        case PIC_TT_INT:{                                               \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_##name##_si(c->f, pic_bigfloat_ptr(a)->f, pic_int(b), MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_FLOAT:{                                             \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_##name##_d(c->f, pic_bigfloat_ptr(a)->f,  pic_float(b), MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGINT:{                                            \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_##name##_z(c->f, pic_bigfloat_ptr(a)->f,  pic_bigint_ptr(b)->z, MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_RATIONAL:{                                          \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_##name##_q(c->f, pic_bigfloat_ptr(a)->f, pic_rational_ptr(b)->q, MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-          break;                                                        \
-        }                                                               \
-        case PIC_TT_BIGFLOAT:{                                          \
-          pic_bigfloat *c = pic_bigfloat_new(pic);                      \
-          mpfr_q_##name(c->f, pic_rational_ptr(a)->q, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
-          a = pic_obj_value(c);                                         \
-        }                                                               \
-        default:{                                                       \
-          pic_errorf(pic, #op " got non-number operands");              \
-          break;                                                        \
-        }                                                               \
-        }                                                               \
-        break;                                                          \
-      }                                                                 \
-      default:{                                                         \
-        pic_errorf(pic, #op " got non-number operands");                \
-        break;                                                          \
-      }                                                                 \
-      }                                                                 \
+    a = pic_int_value(unit);                                            \
+    for (size_t i = 0; i < argc; ++i) {                                 \
+      a = pic_##name(pic, a, argv[i]);                                  \
     }                                                                   \
     return a;                                                           \
   }
 
-DEFINE_ARITH_OP(+, add, 0)
-DEFINE_ARITH_OP(*, mul, 1)
-DEFINE_ARITH_OP(-, sub, 0)
-DEFINE_ARITH_OP(/, div, 1)
+DEFINE_ARITH_OP(add, 0)
+DEFINE_ARITH_OP(mul, 1)
+DEFINE_ARITH_OP(sub, 0)
+DEFINE_ARITH_OP(div, 1)
 
 static pic_value
 pic_number_abs(pic_state *pic)
@@ -692,7 +782,7 @@ pic_number_floor_quotient(pic_state *pic)
   mpfr_clear(g);
 
   v = pic_obj_value(f);
-  pic_number_normalize(pic, &v);
+  pic_number_normalize(pic, &v, true);
   return v;  
 }
 
@@ -702,11 +792,13 @@ pic_number_floor_remainder(pic_state *pic)
   pic_bigfloat *f;
   mpfr_t g, h;
   pic_value v;
+  bool e1, e2;
+
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
   mpfr_init(h);
 
-  pic_get_args(pic, "rr", &(f->f), &g);
+  pic_get_args(pic, "RR", &(f->f), &e1, &g, &e2);
 
   mpfr_div(h, f->f, g, MPFR_RNDD);
   mpfr_floor(h, h);
@@ -716,7 +808,7 @@ pic_number_floor_remainder(pic_state *pic)
   mpfr_clear(h);
 
   v = pic_obj_value(f);
-  pic_number_normalize(pic, &v);
+  pic_number_normalize(pic, &v, e1&&e2);
   return v;
 }
 
@@ -736,7 +828,7 @@ pic_number_trunc_quotient(pic_state *pic)
   mpfr_clear(g);
 
   v = pic_obj_value(f);
-  pic_number_normalize(pic, &v);
+  pic_number_normalize(pic, &v, true);
   return v;  
 }
 
@@ -746,16 +838,18 @@ pic_number_trunc_remainder(pic_state *pic)
   pic_bigfloat *f;
   mpfr_t g;
   pic_value v;
+  bool e1, e2;
+
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
 
-  pic_get_args(pic, "rr", &(f->f), &g);
+  pic_get_args(pic, "RR", &(f->f), &e1, &g, &e2);
 
   mpfr_remainder(f->f, f->f, g, MPFR_RNDN);
   mpfr_clear(g);
 
   v = pic_obj_value(f);
-  pic_number_normalize(pic, &v);
+  pic_number_normalize(pic, &v, e1&&e2);
   return v;
 }
 
@@ -777,11 +871,11 @@ pic_number_trunc_remainder(pic_state *pic)
       v = args[argc];                                                   \
       switch(pic_type(v)){                                              \
       case PIC_TT_INT:                                                  \
-        mpz_##name##_ui(z->z, z->z, (unsigned long) pic_int(v));        \
+        mpz_##name##_ui(z->z, z->z, (unsigned long) abs(pic_int(v)));   \
         break;                                                          \
       case PIC_TT_FLOAT:                                                \
         e = false;                                                      \
-        mpz_##name##_ui(z->z, z->z,(unsigned long) pic_float(v));       \
+        mpz_##name##_ui(z->z, z->z,(unsigned long) fabs(pic_float(v))); \
         break;                                                          \
       case PIC_TT_BIGINT:                                               \
         mpz_##name(z->z, z->z, pic_bigint_ptr(v)->z);                   \
@@ -806,7 +900,7 @@ pic_number_trunc_remainder(pic_state *pic)
     }                                                                   \
     if(e){                                                              \
       pic_value res = pic_obj_value(z);                                 \
-      pic_number_normalize(pic, &res);                                  \
+      pic_number_normalize(pic, &res, true);                            \
       return res;                                                       \
     }                                                                   \
     else{                                                               \
@@ -861,11 +955,15 @@ static pic_value
 pic_number_exp(pic_state *pic)
 {
   pic_bigfloat *f;
-
+  pic_value v;
+  bool e;
+  
   f = pic_bigfloat_new(pic);
-  pic_get_args(pic, "r", &f);
+  pic_get_args(pic, "R", &(f->f), &e);
   mpfr_exp(f->f, f->f, MPFR_RNDN);
-  return pic_obj_value(f);
+  v = pic_obj_value(f);
+  pic_number_normalize(pic, &v, e);
+  return v;
 }
 
 static pic_value
@@ -987,7 +1085,7 @@ pic_number_sqrt(pic_state *pic)
 
   mpfr_sqrt(f->f, f->f, MPFR_RNDN);
   v = pic_obj_value(f);
-  pic_number_normalize(pic, &v);
+  pic_number_normalize(pic, &v, false);
 
   return v;
 }
@@ -998,16 +1096,17 @@ pic_number_expt(pic_state *pic)
   pic_bigfloat *f;
   mpfr_t g;
   pic_value v;
+  bool e1, e2;
 
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
 
-  pic_get_args(pic, "rr", &(f->f), &g);
+  pic_get_args(pic, "RR", &(f->f), &e1, &g, &e2);
 
   mpfr_pow(f->f, f->f, g, MPFR_RNDN);
   mpfr_clear(g);
   v = pic_obj_value(f);
-  pic_number_normalize(pic, &v);
+  pic_number_normalize(pic, &v, e1&&e2);
   return v;
 }
 
@@ -1028,17 +1127,37 @@ pic_number_exact(pic_state *pic)
 
   pic_get_args(pic, "n", &v);
 
-  if(pic_float_p(v)){
+  switch(pic_type(v)){
+  case PIC_TT_FLOAT:{
     pic_bigint *z;
     pic_value w;
     z = pic_bigint_new(pic);
     mpz_set_d(z->z, pic_float(v));
     w = pic_obj_value(z);
-    pic_number_normalize(pic, &w);
+    pic_number_normalize(pic, &w, true);
     return w;
   }
-  else{
+  case PIC_TT_RATIONAL:{
+    pic_bigint *z;
+    pic_value w;
+    z = pic_bigint_new(pic);
+    mpz_set_q(z->z, pic_rational_ptr(v)->q);
+    w = pic_obj_value(z);
+    pic_number_normalize(pic, &w, true);
+    return w;
+  }
+  case PIC_TT_BIGFLOAT:{
+    pic_bigint *z;
+    pic_value w;
+    z = pic_bigint_new(pic);
+    mpfr_get_z(z->z, pic_bigfloat_ptr(v)->f, MPFR_RNDN);
+    w = pic_obj_value(z);
+    pic_number_normalize(pic, &w, true);
+    return w;
+  }
+ default:{
     return v;
+  }
   }
 }
 
@@ -1092,7 +1211,7 @@ static pic_value
 pic_number_string_to_number(pic_state *pic)
 {                               /* :TODO: */
   UNUSED(pic);
-  return pic_obj_value(NULL);
+  return pic_int_value(1);
   
 }
 
