@@ -951,20 +951,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       PUSH(pic_bool_value(pic_nil_p(p)));
       NEXT;
     }
-#define mpfr_si_add(rop, op1, op2, rnd) mpfr_add_si(rop, op2, op1, rnd)
-#define mpfr_d_add(rop, op1, op2, rnd) mpfr_add_d(rop, op2, op1, rnd)
-#define mpfr_z_add(rop, op1, op2, rnd) mpfr_add_z(rop, op2, op1, rnd)
-#define mpfr_q_add(rop, op1, op2, rnd) mpfr_add_q(rop, op2, op1, rnd)
-
-#define mpfr_q_sub(rop, op1, op2, rnd) mpfr_sub_q(rop, op2, op1, rnd);mpfr_neg(rop, rop, rnd);
-
-#define mpfr_si_mul(rop, op1, op2, rnd) mpfr_mul_si(rop, op2, op1, rnd)
-#define mpfr_d_mul(rop, op1, op2, rnd) mpfr_mul_d(rop, op2, op1, rnd)
-#define mpfr_z_mul(rop, op1, op2, rnd) mpfr_mul_z(rop, op2, op1, rnd)
-#define mpfr_q_mul(rop, op1, op2, rnd) mpfr_mul_q(rop, op2, op1, rnd)
-
-#define mpfr_z_div(rop, op1, op2, rnd) mpfr_div_z(rop, op2, op1, rnd);mpfr_ui_div(rop, 1, rop, rnd);
-#define mpfr_q_div(rop, op1, op2, rnd) mpfr_div_q(rop, op2, op1, rnd);mpfr_ui_div(rop, 1, rop, rnd);
 
 #define DEFINE_ARITH_OP(opcode, op, name)                               \
     CASE(opcode) {                                                      \
@@ -1083,6 +1069,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
           pic_bigfloat *c = pic_bigfloat_new(pic);                      \
           mpfr_z_##name(c->f, pic_bigint_ptr(a)->z, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
           PUSH(pic_obj_value(c));                                       \
+          break;                                                        \
         }                                                               \
         default:{                                                       \
           pic_errorf(pic, #op " got non-number operands");              \
@@ -1185,75 +1172,198 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_MINUS) {
       pic_value n;
       n = POP();
-      if (pic_int_p(n)) {
+      switch(pic_type(n)){
+      case PIC_TT_INT: {
 	PUSH(pic_int_value(-pic_int(n)));
+        break;
       }
-      else if (pic_float_p(n)) {
+      case PIC_TT_FLOAT: {
 	PUSH(pic_float_value(-pic_float(n)));
+        break;
       }
-      else if (pic_bigint_p(n)) {
+      case PIC_TT_BIGINT: {
         pic_bigint *res;
         res = pic_bigint_new(pic);
         mpz_neg(res->z, pic_bigint_ptr(n)->z);
         PUSH(pic_obj_value(res));
+        break;
       }
-      else if (pic_rational_p(n)) {
+      case PIC_TT_RATIONAL: {
         pic_rational *res = pic_rational_new(pic);
         mpq_neg(res->q, pic_rational_ptr(n)->q);
         PUSH(pic_obj_value(res));
+        break;
       }
-      else {
+      case PIC_TT_BIGFLOAT: {
+        pic_bigfloat *res = pic_bigfloat_new(pic);
+        mpfr_neg(res->f, pic_bigfloat_ptr(n)->f, MPFR_RNDN);
+        break;
+      }
+      default: {
 	pic_errorf(pic, "unary - got a non-number operand");
+      }
       }
       NEXT;
     }
 
-#define DEFINE_COMP_OP(opcode, op)				\
-    CASE(opcode) {						\
-      pic_value a, b;						\
-      b = POP();						\
-      a = POP();						\
-      if (pic_int_p(a) && pic_int_p(b)) {			\
-	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
-      }								\
-      else if (pic_float_p(a) && pic_float_p(b)) {		\
-	PUSH(pic_bool_value(pic_float(a) op pic_float(b)));	\
-      }								\
-      else if (pic_bigint_p(a) && pic_bigint_p(b)) {		\
-        PUSH(pic_bool_value(mpz_cmp(pic_bigint_ptr(a)->z,       \
-                                    pic_bigint_ptr(b)->z) op 0));\
-      }								\
-      else if (pic_rational_p(a) && pic_rational_p(b)) {	\
-        PUSH(pic_bool_value(mpq_cmp(pic_rational_ptr(a)->q,     \
-                                    pic_rational_ptr(b)->q) op 0));\
-      }								\
-      else if (pic_int_p(a) && pic_float_p(b)) {		\
-	PUSH(pic_bool_value(pic_int(a) op pic_float(b)));	\
-      }								\
-      else if (pic_float_p(a) && pic_int_p(b)) {		\
-	PUSH(pic_bool_value(pic_float(a) op pic_int(b)));	\
-      }								\
-      else if (pic_bigint_p(a) && pic_int_p(b)) {		\
-        PUSH(pic_bool_value(mpz_cmp_si(pic_bigint_ptr(a)->z,    \
-            pic_int(b)) op 0));                                 \
-      }								\
-      else if (pic_int_p(a) && pic_bigint_p(b)) {		\
-        PUSH(pic_bool_value(0 op mpz_cmp_si(pic_bigint_ptr(b)->z,\
-                                            pic_int(a))));      \
-      }								\
-      else if (pic_bigint_p(a) && pic_float_p(b)) {		\
-        PUSH(pic_bool_value(mpz_cmp_d(pic_bigint_ptr(a)->z,     \
-                                      pic_float(b)) op 0));     \
-      }								\
-      else if (pic_float_p(a) && pic_bigint_p(b)) {		\
-        PUSH(pic_bool_value(0 op mpz_cmp_d(pic_bigint_ptr(b)->z,\
-                                           pic_float(a))));     \
-      }								\
-      else {							\
-	pic_errorf(pic, #op " got non-number operands");	\
-      }								\
-      NEXT;							\
-    }
+#define DEFINE_COMP_OP(opcode, op)                                      \
+  CASE(opcode) {                                                        \
+    pic_value a, b;                                                     \
+    b = POP();                                                          \
+    a = POP();                                                          \
+    switch(pic_type(a)){                                                \
+    case PIC_TT_INT:                                                    \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        PUSH(pic_bool_value(pic_int(a) op pic_int(b)));                 \
+        break;                                                          \
+      case PIC_TT_FLOAT:                                                \
+        PUSH(pic_bool_value(pic_int(a) op pic_float(b)));               \
+        break;                                                          \
+      case PIC_TT_BIGINT:                                               \
+        PUSH(pic_bool_value(0 op mpz_cmp_si(pic_bigint_ptr(b)->z,       \
+                                            pic_int(a))));              \
+        break;                                                          \
+      case PIC_TT_RATIONAL:                                             \
+        PUSH(pic_bool_value(0 op mpq_cmp_si(pic_rational_ptr(b)->q,     \
+                                            pic_int(a), 1)));           \
+        break;                                                          \
+      case PIC_TT_BIGFLOAT:                                             \
+        PUSH(pic_bool_value(0 op mpfr_cmp_si(pic_bigfloat_ptr(b)->f,       \
+                                             pic_int(a))));             \
+      default:                                                          \
+        pic_errorf(pic, #op " got non-number operands");                \
+        break;                                                          \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_FLOAT:                                                  \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        PUSH(pic_bool_value(pic_float(a) op pic_int(b)));               \
+        break;                                                          \
+      case PIC_TT_FLOAT:                                                \
+        PUSH(pic_bool_value(pic_float(a) op pic_float(b)));             \
+        break;                                                          \
+      case PIC_TT_BIGINT:                                               \
+        PUSH(pic_bool_value(0 op mpz_cmp_d(pic_bigint_ptr(b)->z,        \
+                                           pic_float(a))));             \
+        break;                                                          \
+      case PIC_TT_RATIONAL:{                                            \
+        mpq_t q;                                                        \
+        mpq_init(q);                                                    \
+        mpq_set_d(q, pic_float(a));                                     \
+        PUSH(pic_bool_value(mpq_cmp(q, pic_rational_ptr(b)->q) op 0));  \
+        mpq_clear(q);                                                   \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:                                             \
+        PUSH(pic_bool_value(0 op mpfr_cmp_d(pic_bigfloat_ptr(b)->f,     \
+                                            pic_float(a)))); \
+      default:                                                          \
+        pic_errorf(pic, #op " got non-number operands");                \
+        break;                                                          \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_BIGINT:                                                 \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        PUSH(pic_bool_value(mpz_cmp_si(pic_bigint_ptr(a)->z,            \
+                                       pic_int(b)) op 0));              \
+        break;                                                          \
+      case PIC_TT_FLOAT:                                                \
+        PUSH(pic_bool_value(mpz_cmp_d(pic_bigint_ptr(a)->z,             \
+                                      pic_float(b)) op 0));             \
+        break;                                                          \
+      case PIC_TT_BIGINT:                                               \
+        PUSH(pic_bool_value(mpz_cmp(pic_bigint_ptr(a)->z,               \
+                                     pic_bigint_ptr(b)->z) op 0));      \
+        break;                                                          \
+      case PIC_TT_RATIONAL:{                                            \
+        mpfr_t f;                                                       \
+        mpfr_init_set_z(f, pic_bigint_ptr(a)->z, MPFR_RNDN);            \
+                                                                        \
+        PUSH(pic_bool_value(mpfr_cmp_q(f, pic_rational_ptr(b)->q)       \
+                            op 0));                                     \
+        mpfr_clear(f);                                                  \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGFLOAT:                                             \
+        PUSH(pic_bool_value(0 op mpfr_cmp_z(pic_bigfloat_ptr(b)->f,     \
+                                            pic_bigint_ptr(b)->z)));    \
+        break;                                                          \
+      default:                                                          \
+        pic_errorf(pic, #op " got non-number operands");                \
+        break;                                                          \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_RATIONAL:                                               \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        PUSH(pic_bool_value(mpq_cmp_si(pic_rational_ptr(a)->q,          \
+                                       ((long) pic_int(b)), 1) op 0));  \
+        break;                                                          \
+      case PIC_TT_FLOAT:{                                               \
+        mpq_t q;                                                        \
+        mpq_init(q);                                                    \
+        mpq_set_d(q, pic_float(b));                                     \
+        PUSH(pic_bool_value(mpq_cmp(pic_rational_ptr(a)->q, q) op 0));  \
+        mpq_clear(q);                                                   \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_BIGINT:{                                              \
+        mpfr_t f;                                                       \
+        mpfr_init_set_q(f, pic_rational_ptr(a)->q, MPFR_RNDN);          \
+                                                                        \
+        PUSH(pic_bool_value(mpfr_cmp_z(f, pic_bigint_ptr(b)->z) op 0)); \
+        mpfr_clear(f);                                                  \
+        break;                                                          \
+      }                                                                 \
+      case PIC_TT_RATIONAL:                                             \
+        PUSH(pic_bool_value(mpq_cmp(pic_rational_ptr(a)->q,             \
+                                    pic_rational_ptr(b)->q) op 0));     \
+        break;                                                          \
+      case PIC_TT_BIGFLOAT:                                             \
+        PUSH(pic_bool_value(0 op mpfr_cmp_q(pic_bigfloat_ptr(b)->f,     \
+                                            pic_rational_ptr(b)->q)));  \
+        break;                                                          \
+      default:                                                          \
+        pic_errorf(pic, #op " got non-number operands");                \
+        break;                                                          \
+      }                                                                 \
+      break;                                                            \
+    case PIC_TT_BIGFLOAT:                                               \
+      switch(pic_type(b)){                                              \
+      case PIC_TT_INT:                                                  \
+        PUSH(pic_bool_value(mpfr_cmp_si(pic_bigfloat_ptr(a)->f,         \
+                                        pic_int(b)) op 0));             \
+        break;                                                          \
+      case PIC_TT_FLOAT:                                                \
+        PUSH(pic_bool_value(mpfr_cmp_d(pic_bigfloat_ptr(a)->f,          \
+                                       pic_float(b)) op 0));            \
+        break;                                                          \
+      case PIC_TT_BIGINT:                                               \
+        PUSH(pic_bool_value(mpfr_cmp_z(pic_bigfloat_ptr(a)->f,          \
+                                       pic_bigint_ptr(b)->z) op 0));    \
+        break;                                                          \
+      case PIC_TT_RATIONAL:                                             \
+        PUSH(pic_bool_value(mpfr_cmp_q(pic_bigfloat_ptr(a)->f,          \
+                                       pic_rational_ptr(b)->q) op 0));  \
+      case PIC_TT_BIGFLOAT:                                             \
+        PUSH(pic_bool_value(mpfr_cmp(pic_bigfloat_ptr(b)->f,            \
+                                     pic_bigfloat_ptr(b)->f)            \
+                            op 0));                                     \
+        break;                                                          \
+      default:                                                          \
+        pic_errorf(pic, #op " got non-number operands");                \
+        break;                                                          \
+      }                                                                 \
+      break;                                                            \
+    default:                                                            \
+      pic_errorf(pic, #op " got non-number operands");                  \
+      break;                                                            \
+    }                                                                   \
+    NEXT;                                                               \
+  }
 
     DEFINE_COMP_OP(OP_EQ, ==);
     DEFINE_COMP_OP(OP_LT, <);
