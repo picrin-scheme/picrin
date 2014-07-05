@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#include <math.h>
 #include <gmp.h>
 #include <mpfr.h>
 
@@ -29,49 +30,73 @@ pic_bigint *pic_bigint_new(pic_state *);
 pic_rational *pic_rational_new(pic_state *);
 pic_bigfloat *pic_bigfloat_new(pic_state *);
 
-#define pic_number_p(o)    (pic_int_p(o) || pic_float_p(o) || pic_bigint_p(o) || pic_rational_p(o)) || pic_bigfloat_p(o))
+#define pic_number_p(o)    (pic_int_p(o) || pic_float_p(o) || pic_bigint_p(o) || pic_rational_p(o) || pic_bigfloat_p(o))
 
 #define pic_number_to_int(o)                                            \
     (pic_int_p(o)      ? pic_int(o)                             :       \
      pic_float_p(o)    ? (int)pic_float(o)                      :       \
      pic_bigint_p(o)   ?      mpz_get_si(pic_bigint_ptr(o)->z)  :       \
      pic_rational_p(o) ? (int)mpq_get_d(pic_rational_ptr(o)->q) :       \
-     mpfr_get_si(pic_bigfloat_ptr))
+     mpfr_get_si(pic_bigfloat_ptr(o)->f))
     
     
 #define pic_number_to_float(o)                                  \
     (pic_int_p(o)      ? (double)pic_int(o)                 :   \
      pic_float_p(o)    ? pic_float(o)                       :   \
      pic_bigint_p(o)   ? mpz_get_d(pic_bigint_ptr(o)->z)    :   \
-     pic_rational_p(o) ? mpq_get_d(pic_rational_ptr(o)->q)) :   \
+     pic_rational_p(o) ? mpq_get_d(pic_rational_ptr(o)->q)  :   \
+     mpfr_get_d(pic_bigfloat_ptr(o)->f, MPFR_RNDN))
 
 static inline void
-pic_number_normalize(pic_state *pic, pic_value *v)
+pic_number_normalize(pic_state *pic, pic_value *v, bool exactp)
 {
-  UNUSED(pic);
-  if(pic_vtype(*v) == PIC_VTYPE_HEAP){
-    if(pic_rational_p(*v)){
-      pic_rational *q = pic_rational_ptr(*v);
-      if(((int) mpz_get_si(mpq_denref(q->q))) == 1){
-        mpz_t z;
-        mpz_init(z);
-        mpq_get_num(z, q->q);
-        mpq_clear(q->q);
-        q->tt = PIC_TT_BIGINT;
-        mpz_init(((pic_bigint *)q)->z);
-        mpz_set(((pic_bigint *)q)->z, z);
-        mpz_clear(z);
+  switch(pic_type(*v)){
+  case PIC_TT_INT:
+    break;
+  case PIC_TT_FLOAT:
+    if(exactp && pic_float(*v) == trunc(pic_float(*v))){
+      *v = pic_int_value(trunc(pic_float(*v)));
+    }
+    break;
+  case PIC_TT_BIGINT:{
+    pic_bigint *z  = pic_bigint_ptr(*v);
+    if(mpz_fits_sint_p(z->z)){
+      *v = pic_int_value(mpz_get_si(z->z));
+    }
+    break;
+  }
+  case PIC_TT_RATIONAL:{
+    pic_rational *q = pic_rational_ptr(*v);
+    if(((int) mpz_get_si(mpq_denref(q->q))) == 1){
+      if(mpz_fits_sint_p(mpq_numref(q->q))){
+        *v = pic_int_value((int) mpz_get_si(mpq_denref(q->q)));
+      }
+      else{
+        pic_bigint *z =pic_bigint_new(pic);
+        mpq_get_num(z->z, q->q);
+        *v = pic_obj_value(z);
       }
     }
-    if(pic_bigint_p(*v)){
-      pic_bigint *z  = pic_bigint_ptr(*v);
-      if(mpz_fits_sint_p(z->z)){
-        pic_init_value(*v, PIC_VTYPE_INT);
-        v->u.i = mpz_get_si(z->z);
-        /* mpz_clear(z->z); */
-        /* pic_free(pic, z); */
+    break;
+  }
+  case PIC_TT_BIGFLOAT:{
+    pic_bigfloat *f = pic_bigfloat_ptr(*v);
+    if(mpfr_integer_p(f->f) && exactp){
+      if(mpfr_fits_sint_p(f->f, MPFR_RNDN)){
+        *v = pic_int_value(mpfr_get_si(f->f, MPFR_RNDN));
+      }
+      else{
+        pic_bigint *z = pic_bigint_new(pic);
+        mpfr_get_z(z->z, f->f, MPFR_RNDN);
+        *v = pic_obj_value(z);
       }
     }
+    break;
+  }
+  default:{
+    pic_debug(pic, *v);
+    pic_errorf(pic, "internal error: pic_number_normalize got non number object\n");
+  }
   }
 }
 
@@ -90,22 +115,22 @@ pic_number_normalize(pic_state *pic, pic_value *v)
 #define mpfr_z_div(rop, op1, op2, rnd) mpfr_div_z(rop, op2, op1, rnd);mpfr_ui_div(rop, 1, rop, rnd);
 #define mpfr_q_div(rop, op1, op2, rnd) mpfr_div_q(rop, op2, op1, rnd);mpfr_ui_div(rop, 1, rop, rnd);
 
+pic_value pic_add(pic_state *, pic_value, pic_value);
+pic_value pic_sub(pic_state *, pic_value, pic_value);
+pic_value pic_mul(pic_state *, pic_value, pic_value);
+pic_value pic_div(pic_state *, pic_value, pic_value);
 
+bool pic_eq(pic_state *, pic_value, pic_value);
+bool pic_gt(pic_state *, pic_value, pic_value);
+bool pic_ge(pic_state *, pic_value, pic_value);
+bool pic_lt(pic_state *, pic_value, pic_value);
+bool pic_le(pic_state *, pic_value, pic_value);
 
 pic_bigint *pic_bigint_add(pic_state *, pic_bigint *, pic_bigint *);
 pic_bigint *pic_bigint_sub(pic_state *, pic_bigint *, pic_bigint *);
 pic_bigint *pic_bigint_mul(pic_state *, pic_bigint *, pic_bigint *);
 pic_rational *pic_bigint_div(pic_state *, pic_bigint *, pic_bigint *);
 
-pic_rational *pic_rational_add(pic_state *, pic_rational *, pic_rational *);
-pic_rational *pic_rational_sub(pic_state *, pic_rational *, pic_rational *);
-pic_rational *pic_rational_mul(pic_state *, pic_rational *, pic_rational *);
-pic_rational *pic_rational_div(pic_state *, pic_rational *, pic_rational *);
-
-pic_bigfloat *pic_bigfloat_add(pic_state *, pic_bigfloat *, pic_bigfloat *);
-pic_bigfloat *pic_bigfloat_sub(pic_state *, pic_bigfloat *, pic_bigfloat *);
-pic_bigfloat *pic_bigfloat_mul(pic_state *, pic_bigfloat *, pic_bigfloat *);
-pic_bigfloat *pic_bigfloat_div(pic_state *, pic_bigfloat *, pic_bigfloat *);
 #if defined(__cplusplus)
 }
 #endif

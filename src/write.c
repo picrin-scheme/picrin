@@ -308,18 +308,15 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_BIGINT:
     str = mpz_get_str(NULL, 10, pic_bigint_ptr(obj)->z);
     xfprintf(file, "%s", str);
-    free(str);
     break;
   case PIC_TT_RATIONAL:
     str = mpq_get_str(NULL, 10, pic_rational_ptr(obj)->q);
     xfprintf(file, "%s", str);
-    free(str);
     break;
-  case PIC_TT_BIGFLOAT:
-    /* str = mpfr_get_str(NULL, 10, pic_rational_ptr(obj)->q); */
-    /* xfprintf(file, "%s", str); */
-    /* mpfr_free_str(str); */
+  case PIC_TT_BIGFLOAT:{
+    xfprintf(file, "%f", mpfr_get_d(pic_bigfloat_ptr(obj)->f, MPFR_RNDN));
     break;
+  }
   case PIC_TT_ERROR:
     xfprintf(file, "#<error %p>", pic_ptr(obj));
     break;
