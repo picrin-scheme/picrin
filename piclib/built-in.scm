@@ -136,6 +136,22 @@
   (define (unquote-splicing? form compare?)
     (and (pair? form) (pair? (car form)) (compare? (car (car form)) 'unquote-splicing)))
 
+  (define (list->vector list)
+    (let ((vector (make-vector (length list))))
+      (let loop ((list list) (i 0))
+        (if (null? list)
+            vector
+            (begin
+              (vector-set! vector i (car list))
+              (loop (cdr list) (+ i 1)))))))
+
+  (define (vector->list vector)
+    (let ((length (vector-length vector)))
+      (let loop ((list '()) (i 0))
+        (if (= i length)
+            (reverse list)
+            (loop (cons (vector-ref vector i) list) (+ i 1))))))
+
   (define-syntax quasiquote
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -170,6 +186,9 @@
            (list 'cons
                  (qq depth (car expr))
                  (qq depth (cdr expr))))
+          ;; vector
+          ((vector? expr)
+           (list 'list->vector (qq depth (vector->list expr))))
           ;; simple datum
           (else
            (list 'quote expr))))
@@ -263,10 +282,14 @@
             ,(let loop ((clauses clauses))
                (if (null? clauses)
                    #f
-                   `(,(r 'if) (,(r 'or)
-                               ,@(map (lambda (x) `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
-                                      (caar clauses)))
-                        (begin ,@(cdar clauses))
+                   `(,(r 'if) ,(if (compare (r 'else) (caar clauses))
+                                   '#t
+                                   `(,(r 'or)
+                                     ,@(map (lambda (x) `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
+                                            (caar clauses))))
+                     ,(if (compare (r '=>) (cadar clauses))
+                          `(,(caddar clauses) ,(r 'key))
+                          `(,(r 'begin) ,@(cdar clauses)))
                         ,(loop (cdr clauses))))))))))
 
   (define-syntax syntax-error
@@ -729,7 +752,7 @@
 	(end (if (>= (length opts) 2)
 		 (cadr opts)
 		 (vector-length v))))
-    (let ((res (make-vector (vector-length v))))
+    (let ((res (make-vector (- end start))))
       (vector-copy! res 0 v start end)
       res)))
 
@@ -788,7 +811,7 @@
 	(end (if (>= (length opts) 2)
 		 (cadr opts)
 		 (bytevector-length v))))
-    (let ((res (make-bytevector (bytevector-length v))))
+    (let ((res (make-bytevector (- end start))))
       (bytevector-copy! res 0 v start end)
       res)))
 
@@ -798,7 +821,7 @@
       (bytevector-copy! res 0 v)
       (bytevector-copy! res (bytevector-length v) w)
       res))
-  (fold bytevector-append-2-inv #() vs))
+  (fold bytevector-append-2-inv #u8() vs))
 
 (define (bytevector->list v start end)
     (do ((i start (+ i 1))
@@ -922,7 +945,7 @@
   (define (make-promise obj)
     (if (promise? obj)
 	obj
-	(make-promise% #f obj)))
+	(make-promise% #t obj)))
 
   (export delay-force delay force make-promise promise?))
 
@@ -1059,7 +1082,7 @@
 			 (let-values (((match1 vars1) (compile-match-base (car pattern))))
 			   (loop (cdr pattern)
 				 (cons `(,_if (,_pair? ,accessor)
-					      (,_let ((expr (,_car,accessor)))
+					      (,_let ((expr (,_car ,accessor)))
 						     ,match1)
 					      (exit #f))
 				       matches)

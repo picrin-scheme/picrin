@@ -501,6 +501,10 @@ pic_pair_append(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &args);
 
+  if (argc == 0) {
+    return pic_nil_value();
+  }
+
   list = args[--argc];
 
   while (argc-- > 0) {

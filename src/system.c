@@ -104,17 +104,17 @@ pic_system_getenvs(pic_state *pic)
   }
 
   for (envp = pic->envp; *envp; ++envp) {
-    pic_value key, val;
+    pic_str *key, *val;
     int i;
 
     for (i = 0; (*envp)[i] != '='; ++i)
       ;
 
-    key = pic_obj_value(pic_str_new(pic, *envp, i));
-    val = pic_obj_value(pic_str_new_cstr(pic, getenv(*envp)));
+    key = pic_str_new(pic, *envp, i);
+    val = pic_str_new_cstr(pic, getenv(pic_str_cstr(key)));
 
     /* push */
-    data = pic_acons(pic, key, val, data);
+    data = pic_acons(pic, pic_obj_value(key), pic_obj_value(val), data);
 
     pic_gc_arena_restore(pic, ai);
     pic_gc_protect(pic, data);

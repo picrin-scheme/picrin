@@ -121,7 +121,8 @@ enum pic_tt {
   PIC_TT_VAR,
   PIC_TT_IREP,
   PIC_TT_DATA,
-  PIC_TT_BOX
+  PIC_TT_BOX,
+  PIC_TT_DICT
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -169,7 +170,8 @@ typedef struct pic_bigfloat pic_bigfloat;
 #define pic_sym(v) ((v).u.sym)
 #define pic_char(v) ((v).u.c)
 
-#define pic_obj_ptr(o) ((struct pic_object *)pic_ptr(o))
+#define pic_obj_p(v) (pic_vtype(v) == PIC_VTYPE_HEAP)
+#define pic_obj_ptr(v) ((struct pic_object *)pic_ptr(v))
 
 #define pic_nil_p(v) (pic_vtype(v) == PIC_VTYPE_NIL)
 #define pic_true_p(v) (pic_vtype(v) == PIC_VTYPE_TRUE)
@@ -179,6 +181,7 @@ typedef struct pic_bigfloat pic_bigfloat;
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
 #define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
+#define pic_eof_p(v) (pic_vtype(v) == PIC_VTYPE_EOF)
 
 #define pic_test(v) (! pic_false_p(v))
 
@@ -298,6 +301,8 @@ pic_type_repr(enum pic_tt tt)
     return "data";
   case PIC_TT_BOX:
     return "box";
+  case PIC_TT_DICT:
+    return "dict";
   }
   UNREACHABLE();
 }
@@ -481,6 +486,8 @@ pic_eq_p(pic_value x, pic_value y)
   switch (pic_type(x)) {
   case PIC_TT_NIL:
     return true;
+  case PIC_TT_BOOL:
+    return pic_vtype(x) == pic_vtype(y);
   case PIC_TT_SYMBOL:
     return pic_sym(x) == pic_sym(y);
   default:
@@ -497,6 +504,8 @@ pic_eqv_p(pic_value x, pic_value y)
   switch (pic_type(x)) {
   case PIC_TT_NIL:
     return true;
+  case PIC_TT_BOOL:
+    return pic_vtype(x) == pic_vtype(y);
   case PIC_TT_SYMBOL:
     return pic_sym(x) == pic_sym(y);
   case PIC_TT_FLOAT:

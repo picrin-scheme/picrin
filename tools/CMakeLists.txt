@@ -1,6 +1,6 @@
 list(APPEND REPL_LIBRARIES picrin)
 
-find_package(LIBEDIT)
+find_package(Libedit)
 if (Libedit_FOUND)
   include_directories(${Libedit_INCLUDE_DIRS})
   add_definitions(${Libedit_DEFINITIONS} -DPIC_READLINE_FOUND=1)

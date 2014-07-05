@@ -68,7 +68,7 @@ new_analyze_state(pic_state *pic)
   state->pic = pic;
   state->scope = NULL;
 
-  stdlib = pic_find_library(pic, pic_read(pic, "(scheme base)"));
+  stdlib = pic_find_library(pic, pic_read_cstr(pic, "(scheme base)"));
 
   /* native VM procedures */
   register_renamed_symbol(pic, state, rCONS, stdlib, "cons");
@@ -294,7 +294,7 @@ analyze_global_var(analyze_state *state, pic_sym sym)
   xh_entry *e;
   size_t i;
 
-  if ((e = xh_get(&pic->global_tbl, sym))) {
+  if ((e = xh_get_int(&pic->global_tbl, sym))) {
     i = xh_val(e, size_t);
   }
   else {
@@ -302,7 +302,7 @@ analyze_global_var(analyze_state *state, pic_sym sym)
     if (i >= pic->gcapa) {
       pic_error(pic, "global table overflow");
     }
-    xh_put(&pic->global_tbl, sym, &i);
+    xh_put_int(&pic->global_tbl, sym, &i);
   }
   return pic_list2(pic, pic_symbol_value(state->sGREF), pic_int_value(i));
 }
@@ -561,7 +561,7 @@ analyze_add(analyze_state *state, pic_value obj, bool tailpos)
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
   case 1:
-    return pic_int_value(0);
+    return pic_list2(pic, pic_symbol_value(pic->sQUOTE), pic_int_value(0));
   case 2:
     return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
   default:
@@ -598,7 +598,7 @@ analyze_mul(analyze_state *state, pic_value obj, bool tailpos)
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
   case 1:
-    return pic_int_value(1);
+    return pic_list2(pic, pic_symbol_value(pic->sQUOTE), pic_int_value(1));
   case 2:
     return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
   default:
@@ -690,6 +690,12 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
 	}						\
       } while (0)
 
+#define ARGC_ASSERT_WITH_FALLBACK(n) do {               \
+	if (pic_length(pic, obj) != (n) + 1) {		\
+          goto fallback;                                \
+	}						\
+      } while (0)
+
 #define CONSTRUCT_OP1(op)                                               \
       pic_list2(pic,                                                    \
                 pic_symbol_value(op),                                   \
@@ -768,23 +774,23 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_div(state, obj);
       }
       else if (sym == state->rEQ) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sEQ);
       }
       else if (sym == state->rLT) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLT);
       }
       else if (sym == state->rLE) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLE);
       }
       else if (sym == state->rGT) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGT);
       }
       else if (sym == state->rGE) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGE);
       }
       else if (sym == state->rNOT) {
@@ -798,6 +804,8 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_call_with_values(state, obj, tailpos);
       }
     }
+  fallback:
+
     return analyze_call(state, obj, tailpos);
   }
   case PIC_TT_BOOL:
@@ -828,6 +836,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_IREP:
   case PIC_TT_DATA:
   case PIC_TT_BOX:
+  case PIC_TT_DICT:
     pic_errorf(pic, "invalid expression given: ~s", obj);
   }
   UNREACHABLE();
@@ -932,18 +941,18 @@ create_activation(codegen_context *cxt)
   for (i = 0; i < cxt->args.size; ++i) {
     var = xv_get(&cxt->args, i);
     n = i + offset;
-    xh_put(&regs, *var, &n);
+    xh_put_int(&regs, *var, &n);
   }
   offset += i;
   for (i = 0; i < cxt->locals.size; ++i) {
     var = xv_get(&cxt->locals, i);
     n = i + offset;
-    xh_put(&regs, *var, &n);
+    xh_put_int(&regs, *var, &n);
   }
 
   for (i = 0; i < cxt->captures.size; ++i) {
     var = xv_get(&cxt->captures, i);
-    if ((n = xh_val(xh_get(&regs, *var), size_t)) <= cxt->args.size || (cxt->varg && n == cxt->args.size + 1)) {
+    if ((n = xh_val(xh_get_int(&regs, *var), size_t)) <= cxt->args.size || (cxt->varg && n == cxt->args.size + 1)) {
       /* copy arguments to capture variable area */
       cxt->code[cxt->clen].insn = OP_LREF;
       cxt->code[cxt->clen].u.i = n;
@@ -1444,13 +1453,13 @@ pic_compile(pic_state *pic, pic_value obj)
   size_t ai = pic_gc_arena_preserve(pic);
 
 #if DEBUG
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 
   fprintf(stdout, "# input expression\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
 
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* macroexpand */
@@ -1459,7 +1468,7 @@ pic_compile(pic_state *pic, pic_value obj)
   fprintf(stdout, "## macroexpand completed\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* analyze */
@@ -1468,7 +1477,7 @@ pic_compile(pic_state *pic, pic_value obj)
   fprintf(stdout, "## analyzer completed\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %d\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
   /* codegen */

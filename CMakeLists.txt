@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 PROJECT(picrin)
 
@@ -16,8 +16,16 @@ execute_process(
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
-set(CMAKE_C_FLAGS "-Wall -Wextra -std=c99")
+set(CMAKE_C_FLAGS "-Wall -Wextra")
 set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG=1")
+
+option(USE_C11_FEATURE "Enable c11 feature" OFF)
+if(USE_C11_FEATURE)
+  add_definitions(-std=c11)
+else()
+  add_definitions(-std=c99)     # at least c99 is required
+endif()
+
 include_directories(include extlib)
 
 # build picrin
@@ -31,8 +39,14 @@ include(tools/CMakeLists.txt)
 # $ make run
 add_custom_target(run bin/picrin DEPENDS repl)
 
+# $ make test
+add_custom_target(test DEPENDS no-act test-r7rs)
+
 # $ make no-act
 add_custom_target(no-act bin/picrin -e '' > /dev/null DEPENDS repl)
+
+# $ make test-r7rs
+add_custom_target(test-r7rs bin/picrin ${PROJECT_SOURCE_DIR}/t/r7rs-tests.scm DEPENDS repl)
 
 # $ make tak
 add_custom_target(tak bin/picrin etc/tak.scm DEPENDS repl)

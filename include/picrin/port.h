@@ -37,6 +37,7 @@ struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
 struct pic_port *pic_stderr(pic_state *);
 
+struct pic_port *pic_open_input_string(pic_state *, const char *);
 struct pic_port *pic_open_output_string(pic_state *);
 struct pic_string *pic_get_output_string(pic_state *, struct pic_port *);
 

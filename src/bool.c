@@ -6,6 +6,9 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/vector.h"
+#include "picrin/blob.h"
+#include "picrin/string.h"
 
 bool
 pic_equal_p(pic_state *pic, pic_value x, pic_value y)
@@ -20,8 +23,35 @@ pic_equal_p(pic_state *pic, pic_value x, pic_value y)
     return false;
   switch (type) {
   case PIC_TT_PAIR:
-    return pic_equal_p(pic, pic_car(pic, x), pic_car(pic, y))
-      && pic_equal_p(pic, pic_cdr(pic, x), pic_cdr(pic, y));
+    return pic_equal_p(pic, pic_car(pic, x), pic_car(pic, y)) && pic_equal_p(pic, pic_cdr(pic, x), pic_cdr(pic, y));
+  case PIC_TT_BLOB: {
+    size_t i;
+    struct pic_blob *u = pic_blob_ptr(x), *v = pic_blob_ptr(y);
+
+    if(u->len != v->len){
+      return false;
+    }
+    for(i = 0; i < u->len; ++i){
+      if(u->data[i] != v->data[i])
+        return false;
+    }
+    return true;
+  }
+  case PIC_TT_VECTOR: {
+    size_t i;
+    struct pic_vector *u = pic_vec_ptr(x), *v = pic_vec_ptr(y);
+
+    if(u->len != v->len){
+      return false;
+    }
+    for(i = 0; i < u->len; ++i){
+      if(! pic_equal_p(pic, u->data[i], v->data[i]))
+        return false;
+    }
+    return true;
+  }
+  case PIC_TT_STRING:
+    return pic_strcmp(pic_str_ptr(x), pic_str_ptr(y)) == 0;
   default:
     return false;
   }

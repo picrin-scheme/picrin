@@ -12,7 +12,10 @@ Contents:
    :maxdepth: 2
 
    intro.rst
+   deploy.rst
    lang.rst
+   libs.rst
+   capi.rst
 
 Indices and tables
 ==================

@@ -21,6 +21,7 @@
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"
+#include "picrin/dict.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -34,6 +35,28 @@ pic_get_proc(pic_state *pic)
   }
   return pic_proc_ptr(v);
 }
+
+/**
+ * char type
+ * ---- ----
+ *  o   object
+ *  i   int
+ *  I   int with exactness
+ *  f   float
+ *  F   float with exactness
+ *  s   string object
+ *  z   c string
+ *  m   symbol
+ *  v   vector object
+ *  b   bytevector object
+ *  c   char
+ *  l   lambda object
+ *  p   port object
+ *  d   dictionary object
+ *
+ *  |  optional operator
+ *  *  variable length operator
+ */
 
 int
 pic_get_args(pic_state *pic, const char *format, ...)
@@ -404,6 +427,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+    case 'd': {
+      struct pic_dict **d;
+      pic_value v;
+
+      d = va_arg(ap, struct pic_dict **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_dict_p(v)) {
+          *d = pic_dict_ptr(v);
+        }
+        else {
+          pic_error(pic, "pic_get_args, expected dictionary");
+        }
+        i++;
+      }
+      break;
+    }
     default:
       pic_error(pic, "pic_get_args: invalid argument specifier given");
     }
@@ -437,7 +477,7 @@ global_ref(pic_state *pic, const char *name)
   if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
     return SIZE_MAX;
   }
-  if (! (e = xh_get(&pic->global_tbl, rename))) {
+  if (! (e = xh_get_int(&pic->global_tbl, rename))) {
     return SIZE_MAX;
   }
   return xh_val(e, size_t);
@@ -463,7 +503,7 @@ global_def(pic_state *pic, const char *name)
   if (pic->glen >= pic->gcapa) {
     pic_error(pic, "global table overflow");
   }
-  xh_put(&pic->global_tbl, rename, &gidx);
+  xh_put_int(&pic->global_tbl, rename, &gidx);
 
   return gidx;
 }
@@ -805,7 +845,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
         /* invoke! */
 	pic->sp[0] = proc->u.func.f(pic);
-        pic->sp += ci->retc;
+        pic->sp += pic->ci->retc;
 
         pic_gc_arena_restore(pic, ai);
         goto L_RET;
@@ -1393,29 +1433,26 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   } VM_LOOP_END;
 }
 
-static pic_code trampoline_iseq[] = {
-  { OP_NOP,		{0} },
-  { OP_TAILCALL,	{0} },
-};
-
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  pic_value v, call_list, *fp = pic->ci->fp;
+  static const pic_code iseq = { OP_TAILCALL, { .i = -1 } };
+
+  pic_value v, *sp;
   pic_callinfo *ci;
 
-  call_list = pic_cons(pic, pic_obj_value(proc), args);
+  *pic->sp++ = pic_obj_value(proc);
 
-  pic_for_each (v, call_list) {
-    *fp++ = v;
+  sp = pic->sp;
+  pic_for_each (v, args) {
+    *sp++ = v;
   }
 
-  trampoline_iseq[1].u.i = pic_length(pic, call_list);
-
   ci = PUSHCI();
-  ci->ip = trampoline_iseq;
-  ci->fp = fp - 1;         /* the last argument is pushed by the VM */
-  return v;
+  ci->ip = (pic_code *)&iseq - 1;
+  ci->fp = pic->sp;
+  ci->retc = pic_length(pic, args);
+  return pic_obj_value(proc);
 }
 
 pic_value
