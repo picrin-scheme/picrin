@@ -190,30 +190,63 @@ read_uinteger(pic_state *pic, struct pic_port *port, char c, char buf[])
 static pic_value
 read_number(pic_state *pic, struct pic_port *port, char c)
 {
-  char buf[256];
+  char buf[256], peek_char;
   size_t i;
+  pic_value v;
 
   i = read_uinteger(pic, port, c, buf);
-
-  if (peek(port) == '.') {
+  peek_char = peek(port);
+  switch(peek_char){
+  case '.': {
+    pic_bigfloat *f = pic_bigfloat_new(pic);
     do {
       buf[i++] = next(port);
     } while (isdigit(peek(port)));
     buf[i] = '\0';
-    return pic_float_value(atof(buf));
+    mpfr_set_str(f->f, buf, 10, MPFR_RNDN);
+    v = pic_obj_value(f);
+    break;
   }
-  else {
-    return pic_int_value(atoi(buf));
+  case '/': {
+    pic_rational *q = pic_rational_new(pic);
+    do {
+      buf[i++] = next(port);
+    } while (isdigit(peek(port)));
+    buf[i] = '\0';
+    mpq_set_str(q->q, buf, 10);
+    v = pic_obj_value(q);
+    break;
   }
+  default:{
+    pic_bigint *z = pic_bigint_new(pic);
+    mpz_set_str(z->z, buf, 10);
+    v = pic_obj_value(z);
+    break;
+  }
+  }
+  pic_number_normalize(pic, &v, false);
+  return v;
 }
 
 static pic_value
 negate(pic_value n)
 {
-  if (pic_int_p(n)) {
+  switch(pic_type(n)){
+  case PIC_TT_INT:
     return pic_int_value(-pic_int(n));
-  } else {
+  case PIC_TT_FLOAT:
     return pic_float_value(-pic_float(n));
+  case PIC_TT_BIGINT:
+    mpz_neg(pic_bigint_ptr(n)->z, pic_bigint_ptr(n)->z);
+    return n;
+  case PIC_TT_RATIONAL:
+    mpq_neg(pic_rational_ptr(n)->q, pic_rational_ptr(n)->q);
+    return n;
+  case PIC_TT_BIGFLOAT:
+    mpfr_neg(pic_bigfloat_ptr(n)->f, pic_bigfloat_ptr(n)->f, MPFR_RNDN);
+    return n;
+  default:
+    return pic_none_value();
   }
 }
 
