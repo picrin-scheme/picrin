@@ -69,7 +69,7 @@ pic_number_normalize(pic_state *pic, pic_value *v, bool exactp)
     pic_rational *q = pic_rational_ptr(*v);
     if(((int) mpz_get_si(mpq_denref(q->q))) == 1){
       if(mpz_fits_sint_p(mpq_numref(q->q))){
-        *v = pic_int_value((int) mpz_get_si(mpq_denref(q->q)));
+        *v = pic_int_value((int) mpz_get_si(mpq_numref(q->q)));
       }
       else{
         pic_bigint *z =pic_bigint_new(pic);
