@@ -186,7 +186,6 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e;
   int c;
-  char *str;
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
@@ -259,10 +258,11 @@ write_core(struct writer_control *p, pic_value obj)
     }
     break;
   case PIC_TT_FLOAT:
-    xfprintf(file, "%f", pic_float(obj));
-    break;
   case PIC_TT_INT:
-    xfprintf(file, "%d", pic_int(obj));
+  case PIC_TT_BIGINT:
+  case PIC_TT_RATIONAL:
+  case PIC_TT_BIGFLOAT:
+    xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(pic_number_to_string(pic, obj, 10))));
     break;
   case PIC_TT_EOF:
     xfprintf(file, "#<eof-object>");
@@ -305,18 +305,6 @@ write_core(struct writer_control *p, pic_value obj)
     }
     xfprintf(file, ")");
     break;
-  case PIC_TT_BIGINT:
-    str = mpz_get_str(NULL, 10, pic_bigint_ptr(obj)->z);
-    xfprintf(file, "%s", str);
-    break;
-  case PIC_TT_RATIONAL:
-    str = mpq_get_str(NULL, 10, pic_rational_ptr(obj)->q);
-    xfprintf(file, "%s", str);
-    break;
-  case PIC_TT_BIGFLOAT:{
-    xfprintf(file, "%f", mpfr_get_d(pic_bigfloat_ptr(obj)->f, MPFR_RNDN));
-    break;
-  }
   case PIC_TT_ERROR:
     xfprintf(file, "#<error %p>", pic_ptr(obj));
     break;

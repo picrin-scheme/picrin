@@ -204,23 +204,40 @@ read_uinteger(pic_state *pic, struct pic_port *port, char c, char buf[], size_t 
 }
 
 static pic_value
-read_number(pic_state *pic, struct pic_port *port, char c, size_t base, bool exactp)
+read_number(pic_state *pic, struct pic_port *port, char c, size_t base, enum exactness exactp)
 {
   char buf[256], peek_char;
-  size_t i;
+  size_t i = 0;
   pic_value v;
 
+  if(c == '.')
+    goto READ_FLOAT;
   i = read_uinteger(pic, port, c, buf, base);
   peek_char = peek(port);
   switch(peek_char){
-  case '.': {
+  case '.': case 'e':
+    READ_FLOAT:
+    {
     pic_bigfloat *f = pic_bigfloat_new(pic);
     do {
       buf[i++] = next(port);
     } while (is_digit_of_base(peek(port), base));
     buf[i] = '\0';
+
     mpfr_set_str(f->f, buf, base, MPFR_RNDN);
-    v = pic_obj_value(f);
+    if(exactp == EXACT){
+      if(mpfr_fits_sint_p(f->f, MPFR_RNDN)){
+        v = pic_int_value(mpfr_get_si(f->f, MPFR_RNDN));
+      }
+      else {
+        pic_bigint *z = pic_bigint_new(pic);
+        mpfr_get_z(z->z, f->f, MPFR_RNDN);
+        v = pic_obj_value(z);
+      }
+    }
+    else{
+      v = pic_obj_value(f);
+    }
     break;
   }
   case '/': {
@@ -231,31 +248,32 @@ read_number(pic_state *pic, struct pic_port *port, char c, size_t base, bool exa
     buf[i] = '\0';
     mpq_set_str(q->q, buf, base);
     mpq_canonicalize(q->q);
-    if(exactp){
-      v = pic_obj_value(q);
-    }
-    else{
+
+    if(exactp == INEXACT){
       pic_bigfloat *f = pic_bigfloat_new(pic);
       mpfr_set_q(f->f, q->q, MPFR_RNDN);
       v = pic_obj_value(f);
+    }
+    else{
+      v = pic_obj_value(q);
     }
     break;
   }
   default:{
     pic_bigint *z = pic_bigint_new(pic);
     mpz_set_str(z->z, buf, base);
-    if(exactp){
-      v = pic_obj_value(z);
-    }
-    else{
+    if(exactp == INEXACT){
       pic_bigfloat *f = pic_bigfloat_new(pic);
       mpfr_set_z(f->f, z->z, MPFR_RNDN);
       v = pic_obj_value(f);
     }
+    else{
+      v = pic_obj_value(z);
+    }
     break;
   }
   }
-  pic_number_normalize(pic, &v, false);
+  pic_number_normalize(pic, &v, INEXACT);
   return v;
 }
 
@@ -282,11 +300,11 @@ negate(pic_value n)
 }
 
 static pic_value
-read_minus(pic_state *pic, struct pic_port *port, char c, size_t base, bool exactp)
+read_minus(pic_state *pic, struct pic_port *port, char c, size_t base, enum exactness exactp)
 {
   pic_value sym;
 
-  if (is_digit_of_base(peek(port), base)) {
+  if (is_digit_of_base(peek(port), base) || peek(port) == '.') {
     return negate(read_number(pic, port, next(port), base, exactp));
   }
   else {
@@ -302,11 +320,11 @@ read_minus(pic_state *pic, struct pic_port *port, char c, size_t base, bool exac
 }
 
 static pic_value
-read_plus(pic_state *pic, struct pic_port *port, char c, size_t base, bool exactp)
+read_plus(pic_state *pic, struct pic_port *port, char c, size_t base, enum exactness exactp)
 {
   pic_value sym;
 
-  if (is_digit_of_base(peek(port), base)) {
+  if (is_digit_of_base(peek(port), base) || peek(port) == '.') {
     return read_number(pic, port, next(port), base, exactp);
   }
   else {
@@ -322,9 +340,9 @@ read_plus(pic_state *pic, struct pic_port *port, char c, size_t base, bool exact
 }
 
 static pic_value
-read_sigined_number(pic_state *pic, struct pic_port *port, char c, size_t base, bool exactp)
+read_sigined_number(pic_state *pic, struct pic_port *port, char c, size_t base, enum exactness exactp)
 {
-  if(is_digit_of_base(c, base))
+  if(is_digit_of_base(c, base) || c == '.')
     return read_number(pic, port, c, base, exactp);
   else if( c == '-')
     return read_minus(pic, port, c, 10, exactp);
@@ -335,7 +353,7 @@ read_sigined_number(pic_state *pic, struct pic_port *port, char c, size_t base, 
 static pic_value
 read_number_dispatch_exactness(pic_state *pic, struct pic_port *port, char c)
 {
-  bool exactp = c == 'I' ? true : false;
+  enum exactness exactp = c == 'e' ? EXACT : INEXACT;
   char d = next(port);
   if(is_digit_of_base(d, 10))
     return read_number(pic, port, d, 10, exactp);
@@ -374,19 +392,19 @@ read_number_dispatch_base(pic_state *pic, struct pic_port *port, char c)
 
   char d = next(port);
   if(is_digit_of_base(d, base))
-    return read_number(pic, port, d, base, true);
+    return read_number(pic, port, d, base, MAYBE);
   switch(d){
   case '+':
-    return read_plus(pic, port, d, base, true);
+    return read_plus(pic, port, d, base, MAYBE);
   case '-':
-    return read_minus(pic, port, d, base, true);
+    return read_minus(pic, port, d, base, MAYBE);
   case '#':
     d = next(port);
     switch(d){
     case 'e': case 'E':
-      return read_sigined_number(pic, port, d, base, true);
+      return read_sigined_number(pic, port, d, base, EXACT);
     case 'i': case 'I':
-      return read_sigined_number(pic, port, d, base, false);
+      return read_sigined_number(pic, port, d, base, INEXACT);
     default:
       read_error(pic, "invalid exactness character");
     }

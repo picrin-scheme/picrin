@@ -618,7 +618,7 @@ analyze_div(analyze_state *state, pic_value obj)
   switch (pic_length(pic, obj)) {
   case 2:
     args = pic_cdr(pic, obj);
-    obj = pic_list3(pic, pic_car(pic, obj), pic_float_value(1), pic_car(pic, args));
+    obj = pic_list3(pic, pic_car(pic, obj), pic_int_value(1), pic_car(pic, args));
     return analyze(state, obj, false);
   default:
     args = pic_cdr(pic, obj);

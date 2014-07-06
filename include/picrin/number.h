@@ -47,15 +47,28 @@ pic_bigfloat *pic_bigfloat_new(pic_state *);
      pic_rational_p(o) ? mpq_get_d(pic_rational_ptr(o)->q)  :   \
      mpfr_get_d(pic_bigfloat_ptr(o)->f, MPFR_RNDN))
 
+enum exactness {
+  EXACT,
+  MAYBE,
+  INEXACT
+};
+
 static inline void
-pic_number_normalize(pic_state *pic, pic_value *v, bool exactp)
+pic_number_normalize(pic_state *pic, pic_value *v, enum exactness exactp)
 {
   switch(pic_type(*v)){
   case PIC_TT_INT:
     break;
   case PIC_TT_FLOAT:
-    if(exactp && pic_float(*v) == trunc(pic_float(*v))){
-      *v = pic_int_value(trunc(pic_float(*v)));
+    if(exactp == EXACT ||
+       (exactp == MAYBE && pic_float(*v) == trunc(pic_float(*v)))){
+      if(INT_MIN <= pic_float(*v) && pic_float(*v))
+        *v = pic_int_value(trunc(pic_float(*v)));
+      else{
+        pic_bigint *z = pic_bigint_new(pic);
+        mpz_set_d(z->z, pic_float(*v));
+        *v = pic_obj_value(z);
+      }
     }
     break;
   case PIC_TT_BIGINT:{
@@ -81,7 +94,7 @@ pic_number_normalize(pic_state *pic, pic_value *v, bool exactp)
   }
   case PIC_TT_BIGFLOAT:{
     pic_bigfloat *f = pic_bigfloat_ptr(*v);
-    if(mpfr_integer_p(f->f) && exactp){
+    if(exactp == EXACT && (mpfr_integer_p(f->f) && exactp == MAYBE)){
       if(mpfr_fits_sint_p(f->f, MPFR_RNDN)){
         *v = pic_int_value(mpfr_get_si(f->f, MPFR_RNDN));
       }
@@ -126,10 +139,7 @@ bool pic_ge(pic_state *, pic_value, pic_value);
 bool pic_lt(pic_state *, pic_value, pic_value);
 bool pic_le(pic_state *, pic_value, pic_value);
 
-pic_bigint *pic_bigint_add(pic_state *, pic_bigint *, pic_bigint *);
-pic_bigint *pic_bigint_sub(pic_state *, pic_bigint *, pic_bigint *);
-pic_bigint *pic_bigint_mul(pic_state *, pic_bigint *, pic_bigint *);
-pic_rational *pic_bigint_div(pic_state *, pic_bigint *, pic_bigint *);
+pic_value pic_number_to_string(pic_state *, pic_value, int);
 
 #if defined(__cplusplus)
 }
