@@ -21,7 +21,7 @@ static pic_value read_nullable(pic_state *pic, struct pic_port *port, char c);
 static noreturn void
 read_error(pic_state *pic, const char *msg)
 {
-  pic_error(pic, msg);
+  pic_throw(pic, PIC_ERROR_READ, msg, pic_nil_value());
 }
 
 static char
@@ -47,6 +47,19 @@ peek(struct pic_port *port)
   xungetc((c = xfgetc(port->file)), port->file);
 
   return c;
+}
+
+static bool
+expect(struct pic_port *port, const char *str)
+{
+  char c;
+
+  while ((c = *str++) != 0) {
+    if (c != next(port))
+      return false;
+  }
+
+  return true;
 }
 
 static bool
@@ -407,13 +420,26 @@ read_boolean(pic_state *pic, struct pic_port *port, char c)
   UNUSED(pic);
   UNUSED(port);
 
-  /* TODO: support #true and #false */
+  if (! isdelim(peek(port))) {
+    if (c == 't') {
+      if (! expect(port, "rue")) {
+        goto fail;
+      }
+    } else {
+      if (! expect(port, "alse")) {
+        goto fail;
+      }
+    }
+  }
 
   if (c == 't') {
     return pic_true_value();
   } else {
     return pic_false_value();
   }
+
+ fail:
+  read_error(pic, "illegal character during reading boolean literal");
 }
 
 static pic_value
