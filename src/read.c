@@ -215,7 +215,7 @@ read_number(pic_state *pic, struct pic_port *port, char c, size_t base, enum exa
   i = read_uinteger(pic, port, c, buf, base);
   peek_char = peek(port);
   switch(peek_char){
-  case '.': case 'e':
+  case '.': case 'e': case 'E':
     READ_FLOAT:
     {
     pic_bigfloat *f = pic_bigfloat_new(pic);
