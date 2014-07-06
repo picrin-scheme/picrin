@@ -55,7 +55,7 @@
   (display " / ")
   (write counter)
   (display " (")
-  (write (* (/ (- counter failure-counter) counter) 100))
+  (write (* (inexact (/ (- counter failure-counter) counter)) 100))
   (display "%)")
   (display " [PASS/TOTAL]")
   (display "[0;39m")
