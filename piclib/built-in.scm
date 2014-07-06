@@ -618,6 +618,9 @@
 
 ;;; 6.2. Numbers
 
+(define (exact-integer? n)
+  (and (integer? n) (exact? n)))
+
 (define (floor/ n m)
   (values (floor-quotient n m)
 	  (floor-remainder n m)))
@@ -630,10 +633,11 @@
 (import (scheme inexact))
 
 (define (exact-integer-sqrt k)
-  (let ((n (exact (floor (sqrt k)))))
+  (let ((n (integer-sqrt k)))
     (values n (- k (square n)))))
 
 (export floor/ truncate/
+        exact-integer?
         exact-integer-sqrt)
 
 ;;; 6.3 Booleans

@@ -262,6 +262,37 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+    case 'Z': {
+      mpz_t *z;
+
+      z = va_arg(ap, mpz_t *);
+      if (i < argc) {
+        pic_value v;
+
+        v = GET_OPERAND(pic, i);
+        switch (pic_type(v)) {
+        case PIC_TT_INT:
+          mpz_set_si(*z, pic_int(v));
+          break;
+        case PIC_TT_FLOAT:
+          mpz_set_d(*z, pic_float(v));
+          break;
+        case PIC_TT_BIGINT:
+          mpz_set(*z, pic_bigint_ptr(v)->z);
+          break;
+        case PIC_TT_RATIONAL:
+          mpz_set_q(*z, pic_rational_ptr(v)->q);
+          break;
+        case PIC_TT_BIGFLOAT:
+          mpfr_get_z(*z, pic_bigfloat_ptr(v)->f, MPFR_RNDN);
+          break;
+        default:
+          pic_error(pic, "pic_get_args: expected number");
+        }
+        i++;
+      }
+      break;
+    }
     case 'r': {
       mpfr_t *f;
 

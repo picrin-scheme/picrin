@@ -10,6 +10,23 @@
 #include "picrin/number.h"
 #include "picrin/string.h"
 
+void mpz_pow(mpz_t rop, const mpz_t base, const mpz_t expt)
+{
+  if(mpz_sgn(expt) < 0){
+    /* divided by zoro error */
+    return;
+  }
+  if(mpz_fits_uint_p(expt)){
+    mpz_pow_ui(rop, base, mpz_get_ui(expt));
+    return;
+  }
+  mpz_fdiv_q_ui(rop, expt, 2);
+  mpz_pow(rop, base, rop);
+  mpz_mul(rop, rop, rop);
+  if(!mpz_even_p(expt))
+    mpz_mul(rop, rop, base);
+}
+
 pic_value
 pic_read_bigint(pic_state *pic, char *str, int radix)
 {
@@ -508,6 +525,41 @@ pic_number_integer_p(pic_state *pic)
 }
 
 static pic_value
+pic_number_rational_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "n", &v);
+
+  switch(pic_type(v)){
+  case PIC_TT_INT:
+  case PIC_TT_BIGINT:
+  case PIC_TT_RATIONAL:
+    return pic_true_value();
+  case PIC_TT_FLOAT:{
+    double f = pic_float(v);
+
+    if (isinf(f)) {
+      return pic_false_value();
+    }
+
+    if (f == round(f)) {
+      return pic_true_value();
+    }
+    else{
+      return pic_false_value();      
+    }
+  }
+  case PIC_TT_BIGFLOAT:{
+    mpfr_integer_p(pic_bigfloat_ptr(v)->f);
+      return pic_true_value();
+  }
+  default:;
+  }
+  return pic_false_value();
+}
+
+static pic_value
 pic_number_exact_p(pic_state *pic)
 {
   pic_value v;
@@ -919,7 +971,7 @@ DEFINE_FACTOR_FUNCTION(lcm, 1)
   {                                                             \
     pic_value v;                                                \
                                                                 \
-    pic_get_args(pic, "o", &v);                                 \
+    pic_get_args(pic, "n", &v);                                 \
                                                                 \
     switch(pic_type(v)){                                        \
     case PIC_TT_INT: case PIC_TT_BIGINT:                        \
@@ -956,13 +1008,12 @@ pic_number_exp(pic_state *pic)
 {
   pic_bigfloat *f;
   pic_value v;
-  bool e;
   
   f = pic_bigfloat_new(pic);
-  pic_get_args(pic, "R", &(f->f), &e);
+  pic_get_args(pic, "r", &(f->f));
   mpfr_exp(f->f, f->f, MPFR_RNDN);
   v = pic_obj_value(f);
-  pic_number_normalize(pic, &v, e);
+  pic_number_normalize(pic, &v, false);
   return v;
 }
 
@@ -1091,23 +1142,229 @@ pic_number_sqrt(pic_state *pic)
 }
 
 static pic_value
+pic_number_integer_sqrt(pic_state *pic)
+{
+  pic_bigint *z;
+  pic_value v;
+
+  z = pic_bigint_new(pic);
+
+  pic_get_args(pic, "Z", &(z->z));
+
+  mpz_sqrt(z->z, z->z);
+  v = pic_obj_value(z);
+  pic_number_normalize(pic, &v, true);
+
+  return v;
+}
+
+static pic_value
 pic_number_expt(pic_state *pic)
 {
-  pic_bigfloat *f;
-  mpfr_t g;
-  pic_value v;
-  bool e1, e2;
+  pic_value a, b;
 
-  f = pic_bigfloat_new(pic);
-  mpfr_init(g);
+  pic_get_args(pic, "nn", &a, &b);
 
-  pic_get_args(pic, "RR", &(f->f), &e1, &g, &e2);
-
-  mpfr_pow(f->f, f->f, g, MPFR_RNDN);
-  mpfr_clear(g);
-  v = pic_obj_value(f);
-  pic_number_normalize(pic, &v, e1&&e2);
-  return v;
+  switch(pic_type(a)){
+  case PIC_TT_INT:
+    switch(pic_type(b)){
+    case PIC_TT_INT:{
+      double i = pow((double)pic_int(a), (double)pic_int(b));
+      if(INT_MIN <= i && i <= INT_MAX){
+        return pic_int_value((int)i);
+      }
+      else{
+        pic_bigint *c = pic_bigint_new(pic);
+        mpz_set_si(c->z, pic_int(a));
+        mpz_pow_ui(c->z, c->z, abs(pic_int(b)));
+        if( pic_int(b) >= 0){
+          return pic_obj_value(c);
+        }
+        else{
+          pic_rational *d = pic_rational_new(pic);
+          mpq_set_z(d->q, c->z);
+          mpq_inv(d->q, d->q);
+          return pic_obj_value(d);
+        }
+      }
+    }
+    case PIC_TT_FLOAT:
+      return pic_float_value(pow((double) pic_int(a),  pic_float(b)));
+    case PIC_TT_BIGINT:{
+      pic_bigint *c = pic_bigint_ptr(b);
+      if(mpz_sgn(c->z) >= 0){
+        pic_bigint *d = pic_bigint_new(pic);
+        mpz_set_si(d->z, pic_int(a));
+        mpz_pow(d->z, d->z, c->z);
+        return pic_obj_value(d);
+      }
+      else{
+        pic_rational *d = pic_rational_new(pic);
+        mpz_t z;
+        mpz_init(z);
+        mpz_neg(z, c->z);
+        mpq_set_si(d->q, 1, pic_int(a));
+        mpz_pow(mpq_denref(d->q), mpq_denref(d->q), z);
+        mpz_clear(z);
+        return pic_obj_value(d);        
+      }
+    }
+    case PIC_TT_RATIONAL:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_t d;
+      mpfr_init_set_q(d, pic_rational_ptr(b)->q, MPFR_RNDN);
+      mpfr_ui_pow(c->f, pic_int(a), d, MPFR_RNDN);
+      mpfr_clear(d);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_BIGFLOAT:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_ui_pow(c->f, pic_int(a), pic_bigfloat_ptr(b)->f, MPFR_RNDN);
+      return pic_obj_value(c);
+    }
+    default:
+      goto ERROR;
+    }
+    break;
+  case PIC_TT_FLOAT:
+    switch(pic_type(b)){
+    case PIC_TT_INT:
+      return pic_float_value(pow(pic_float(a), (double) pic_int(b)));
+    case PIC_TT_FLOAT:
+      return pic_float_value(pow(pic_float(a), pic_float(b)));
+    case PIC_TT_BIGINT:
+      return pic_float_value(pow(pic_float(a), mpz_get_d(pic_bigint_ptr(b)->z)));
+    case PIC_TT_RATIONAL:
+      return pic_float_value(pow(pic_float(a), mpq_get_d(pic_rational_ptr(b)->q)));
+    case PIC_TT_BIGFLOAT:
+      return pic_float_value(pow(pic_float(a), mpfr_get_d(pic_bigfloat_ptr(b)->f, MPFR_RNDN)));
+    default:
+      goto ERROR;
+    }
+    break;
+  case PIC_TT_BIGINT:
+    switch(pic_type(b)){
+    case PIC_TT_INT:
+      if(pic_int(b) >= 0){
+        pic_bigint *c = pic_bigint_new(pic);
+        mpz_pow_ui(c->z, pic_bigint_ptr(a)->z, (unsigned)pic_int(b));
+        return pic_obj_value(c);
+      }
+      else{
+        pic_rational *c = pic_rational_new(pic);
+        mpq_set_z(c->q, pic_bigint_ptr(a)->z);
+        mpz_pow_ui(mpq_denref(c->q), pic_bigint_ptr(a)->z, (unsigned) -pic_int(b));
+        mpq_inv(c->q, c->q);
+        return pic_obj_value(c);
+      }
+    case PIC_TT_FLOAT:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_t d;
+      mpfr_set_z(c->f, pic_bigint_ptr(a)->z, MPFR_RNDN);
+      mpfr_init_set_d(d, pic_float(b), MPFR_RNDN);
+      mpfr_pow(c->f, c->f, d, MPFR_RNDN);
+      mpfr_clear(d);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_BIGINT:{
+      pic_bigint *c = pic_bigint_new(pic);
+      mpz_pow(c->z, pic_bigint_ptr(a)->z, pic_bigint_ptr(b)->z);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_RATIONAL:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_t d;
+      mpfr_init_set_q(d, pic_rational_ptr(b)->q, MPFR_RNDN);
+      mpfr_set_z(c->f, pic_bigint_ptr(a)->z, MPFR_RNDN);
+      mpfr_pow(c->f, c->f, d, MPFR_RNDN);
+      mpfr_clear(d);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_BIGFLOAT:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_set_z(c->f, pic_bigint_ptr(a)->z, MPFR_RNDN);
+      mpfr_pow(c->f, c->f, pic_bigfloat_ptr(b)->f, MPFR_RNDN);
+      return pic_obj_value(c);
+    }
+    default:
+      goto ERROR;
+    }
+    break;
+  case PIC_TT_RATIONAL:
+    switch(pic_type(b)){
+    case PIC_TT_INT:{
+      pic_rational *c = pic_rational_new(pic);
+      mpz_pow_ui(mpq_denref(c->q), mpq_denref(pic_rational_ptr(a)->q), abs(pic_int(b)));
+      mpz_pow_ui(mpq_numref(c->q), mpq_numref(pic_rational_ptr(a)->q), abs(pic_int(b)));
+      if(pic_int(b)>= 0)
+        mpq_inv(c->q, c->q);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_FLOAT:
+      return pic_float_value(pow(mpq_get_d(pic_rational_ptr(a)->q), pic_float(b)));
+    case PIC_TT_BIGINT:{
+      pic_rational *c = pic_rational_new(pic);
+      mpz_t d;
+      mpz_init(d);
+      mpz_abs(d, pic_bigint_ptr(b)->z);
+      mpz_pow(mpq_denref(c->q), mpq_denref(pic_rational_ptr(a)->q), d);
+      mpz_pow(mpq_numref(c->q), mpq_numref(pic_rational_ptr(a)->q), d);
+      if(mpz_sgn(pic_bigint_ptr(b)->z) >= 0)
+        mpq_inv(c->q, c->q);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_RATIONAL:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_t d;
+      mpfr_set_q(c->f, pic_rational_ptr(a)->q, MPFR_RNDN);
+      mpfr_init_set_q(d, pic_rational_ptr(b)->q, MPFR_RNDN);
+      mpfr_pow(c->f, c->f, d, MPFR_RNDN);
+      mpfr_clear(d);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_BIGFLOAT:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_set_q(c->f, pic_rational_ptr(a)->q, MPFR_RNDN);
+      mpfr_pow(c->f, c->f, pic_bigfloat_ptr(b)->f, MPFR_RNDN);
+      return pic_obj_value(c);
+    }
+    default:
+      goto ERROR;
+    }
+    break;
+  case PIC_TT_BIGFLOAT:
+    switch(pic_type(b)){
+    case PIC_TT_INT:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_pow_si(c->f, pic_bigfloat_ptr(a)->f, pic_int(b), MPFR_RNDN);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_FLOAT:
+      return pic_float_value(pow(mpfr_get_d(pic_bigfloat_ptr(a)->f, MPFR_RNDN), pic_float(b)));
+    case PIC_TT_BIGINT:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_pow_z(c->f, pic_bigfloat_ptr(a)->f, pic_bigint_ptr(b)->z, MPFR_RNDN);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_RATIONAL:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_set_q(c->f, pic_rational_ptr(b)->q, MPFR_RNDN);
+      mpfr_pow(c->f, pic_bigfloat_ptr(a)->f, c->f, MPFR_RNDN);
+      return pic_obj_value(c);
+    }
+    case PIC_TT_BIGFLOAT:{
+      pic_bigfloat *c = pic_bigfloat_new(pic);
+      mpfr_pow(c->f, pic_bigfloat_ptr(a)->f, pic_bigfloat_ptr(b)->f, MPFR_RNDN);
+      return pic_obj_value(c);
+    }
+    default:
+      goto ERROR;
+    }
+    break;
+  default:
+  ERROR:
+    pic_errorf(pic, "expt got non-number operands");
+  }
 }
 
 static pic_value
@@ -1163,7 +1420,7 @@ pic_number_exact(pic_state *pic)
 
 static pic_value
 pic_number_number_to_string(pic_state *pic)
-{                               /* :TODO: */
+{
   pic_value n;
   int radix = 10;
   char *buf;
@@ -1181,10 +1438,26 @@ pic_number_number_to_string(pic_state *pic)
     }
   case PIC_TT_FLOAT:{
     mpfr_t f;
-    mpfr_exp_t e;
+    mpfr_exp_t *e;
+    char *frac;
+    int intlen;
+    e = pic_alloc(pic, sizeof(mpfr_exp_t));
     mpfr_init_set_d(f, pic_float(n), MPFR_RNDN);
-    buf = mpfr_get_str(NULL, &e, radix, 0, f, MPFR_RNDN);
+    frac = mpfr_get_str(NULL, e, radix, 0, f, MPFR_RNDN);
+    if(frac == NULL){
+      pic_errorf(pic, "an error occured in number->string");
+    }
+    buf = pic_alloc(pic, strlen(frac + 2)); /* \0 and floating point */
+    if(frac[0] == '-')
+      intlen = *e+1;
+    else
+      intlen = *e;
+    memcpy(buf, frac, intlen);
+    buf[intlen] = '.';
+    memcpy(buf+intlen+1, frac+intlen, strlen(frac) - intlen + 1);
     mpfr_clear(f);
+    mpfr_free_str(frac);
+    pic_free(pic, e);
     break;
     }
   case PIC_TT_BIGINT:{
@@ -1196,14 +1469,30 @@ pic_number_number_to_string(pic_state *pic)
     break;
     }
   case PIC_TT_BIGFLOAT:{
-    mpfr_exp_t e;
-    buf = mpfr_get_str(NULL, &e, radix, 0, pic_bigfloat_ptr(n)->f, MPFR_RNDN);
+    mpfr_exp_t *e;
+    char *frac;
+    int intlen;
+    e = pic_alloc(pic, sizeof(mpfr_exp_t));
+    frac = mpfr_get_str(NULL, e, radix, 0, pic_bigfloat_ptr(n)->f, MPFR_RNDN);
+    if(frac == NULL){
+      pic_errorf(pic, "an error occured in number->string");
+    }
+    buf = pic_alloc(pic, strlen(frac + 2)); /* \0 and floating point */
+    if(frac[0] == '-')
+      intlen = *e+1;
+    else
+      intlen = *e;
+    memcpy(buf, frac, intlen);
+    buf[intlen] = '.';
+    memcpy(buf+intlen+1, frac+intlen, strlen(frac) - intlen + 1);
+    mpfr_free_str(frac);
+    pic_free(pic, e);
     break;
   }
   default:
     pic_errorf(pic, "logic flow");
   }
-  return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+  return pic_obj_value(pic_str_new(pic, buf, strlen(buf)));
 
 }
 
@@ -1223,13 +1512,12 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "number?", pic_number_real_p);
   pic_defun(pic, "complex?", pic_number_real_p);
   pic_defun(pic, "real?", pic_number_real_p);
-  pic_defun(pic, "rational?", pic_number_integer_p);
+  pic_defun(pic, "rational?", pic_number_rational_p);
   pic_defun(pic, "integer?", pic_number_integer_p);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "exact?", pic_number_exact_p);
   pic_defun(pic, "inexact?", pic_number_inexact_p);
-  pic_defun(pic, "exact-integer?", pic_number_exact_p);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "=", pic_number_eq);
@@ -1277,6 +1565,7 @@ pic_init_number(pic_state *pic)
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "square", pic_number_square);
+  pic_defun(pic, "integer-sqrt", pic_number_integer_sqrt);
   pic_defun(pic, "expt", pic_number_expt);
   pic_gc_arena_restore(pic, ai);
 
