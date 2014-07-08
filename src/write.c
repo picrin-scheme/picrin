@@ -8,6 +8,7 @@
 #include "picrin/string.h"
 #include "picrin/vector.h"
 #include "picrin/blob.h"
+#include "picrin/number.h"
 #include "picrin/macro.h"
 
 static bool
@@ -257,10 +258,11 @@ write_core(struct writer_control *p, pic_value obj)
     }
     break;
   case PIC_TT_FLOAT:
-    xfprintf(file, "%f", pic_float(obj));
-    break;
   case PIC_TT_INT:
-    xfprintf(file, "%d", pic_int(obj));
+  case PIC_TT_BIGINT:
+  case PIC_TT_RATIONAL:
+  case PIC_TT_BIGFLOAT:
+    xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(pic_number_to_string(pic, obj, 10))));
     break;
   case PIC_TT_EOF:
     xfprintf(file, "#<eof-object>");

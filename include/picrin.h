@@ -35,6 +35,8 @@ extern "C" {
 #include <stdint.h>
 #include <limits.h>
 #include <assert.h>
+#include <gmp.h>
+#include <mpfr.h>
 
 #include "xvect/xvect.h"
 #include "xhash/xhash.h"

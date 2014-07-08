@@ -14,7 +14,7 @@ add_custom_command(
 # build!
 file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
 add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES})
-target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
+target_link_libraries(picrin m gmp mpfr ${PICRIN_CONTRIB_LIBRARIES})
 
 # install
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
