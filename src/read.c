@@ -11,6 +11,7 @@
 #include "picrin/vector.h"
 #include "picrin/blob.h"
 #include "picrin/port.h"
+#include "picrin/number.h"
 
 typedef pic_value (*read_func_t)(pic_state *, struct pic_port *, char);
 
