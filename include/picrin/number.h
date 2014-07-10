@@ -28,21 +28,39 @@ pic_bigint *pic_bigint_new(pic_state *);
 pic_bigrat *pic_bigrat_new(pic_state *);
 pic_bigfloat *pic_bigfloat_new(pic_state *);
 
-#define pic_number_p(o)    (pic_int_p(o) || pic_float_p(o) || pic_bigint_p(o) || pic_bigrat_p(o) || pic_bigfloat_p(o))
+#define pic_number_p(o) (pic_int_p(o) || pic_float_p(o) || pic_bigint_p(o) || pic_bigrat_p(o) || pic_bigfloat_p(o))
 
-#define pic_number_to_int(o)                                    \
-  (pic_int_p(o)      ? pic_int(o)                             : \
-   pic_float_p(o)    ? (int)pic_float(o)                      : \
-   pic_bigint_p(o)   ?      mpz_get_si(pic_bigint_ptr(o)->z)  : \
-   pic_bigrat_p(o) ? (int)mpq_get_d(pic_bigrat_ptr(o)->q) :     \
-   mpfr_get_si(pic_bigfloat_ptr(o)->f))
+static inline int
+pic_number_to_int(pic_value o)
+{
+  if (pic_int_p(o)) {
+    return pic_int(o);
+  } else if (pic_float_p(o)) {
+    return pic_float(o);
+  } else if (pic_bigint_p(o)) {
+    return mpz_get_si(pic_bigint_ptr(o)->z);
+  } else if (pic_bigrat_p(o)) {
+    return mpq_get_d(pic_bigrat_ptr(o)->q);
+  } else {
+    return mpfr_get_si(pic_bigfloat_ptr(o)->f, MPFR_RNDN);
+  }
+}
 
-#define pic_number_to_float(o)                                  \
-  (pic_int_p(o)      ? (double)pic_int(o)                 :     \
-   pic_float_p(o)    ? pic_float(o)                       :     \
-   pic_bigint_p(o)   ? mpz_get_d(pic_bigint_ptr(o)->z)    :     \
-   pic_bigrat_p(o) ? mpq_get_d(pic_bigrat_ptr(o)->q)  :         \
-   mpfr_get_d(pic_bigfloat_ptr(o)->f, MPFR_RNDN))
+static inline float
+pic_number_to_float(pic_value o)
+{
+  if (pic_int_p(o)) {
+    return pic_int(o);
+  } else if (pic_float_p(o)) {
+    return pic_float(o);
+  } else if (pic_bigint_p(o)) {
+    return mpz_get_d(pic_bigint_ptr(o)->z);
+  } else if (pic_bigrat_p(o)) {
+    return mpq_get_d(pic_bigrat_ptr(o)->q);
+  } else {
+    return mpfr_get_d(pic_bigfloat_ptr(o)->f, MPFR_RNDN);
+  }
+}
 
 enum exactness {
   EXACT,
