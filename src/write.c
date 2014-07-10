@@ -260,7 +260,7 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
   case PIC_TT_BIGINT:
-  case PIC_TT_RATIONAL:
+  case PIC_TT_BIGRAT:
   case PIC_TT_BIGFLOAT:
     xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(pic_number_to_string(pic, obj, 10))));
     break;

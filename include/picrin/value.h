@@ -105,7 +105,7 @@ enum pic_tt {
   PIC_TT_VECTOR,
   PIC_TT_BLOB,
   PIC_TT_BIGINT,
-  PIC_TT_RATIONAL,
+  PIC_TT_BIGRAT,
   PIC_TT_BIGFLOAT,
   PIC_TT_PROC,
   PIC_TT_PORT,
@@ -143,7 +143,7 @@ struct pic_bigint {
   mpz_t z;
 };
 
-struct pic_rational {
+struct pic_bigrat {
   PIC_OBJECT_HEADER
   mpq_t q;
 };
@@ -160,7 +160,7 @@ typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
 typedef struct pic_blob pic_blob;
 typedef struct pic_bigint pic_bigint;
-typedef struct pic_rational pic_rational;
+typedef struct pic_bigrat pic_bigrat;
 typedef struct pic_bigfloat pic_bigfloat;
 
 #define pic_float(v) ((v).u.f)
@@ -269,8 +269,8 @@ pic_type_repr(enum pic_tt tt)
     return "blob";
   case PIC_TT_BIGINT:
     return "bigint";
-  case PIC_TT_RATIONAL:
-    return "rational";
+  case PIC_TT_BIGRAT:
+    return "bigrat";
   case PIC_TT_BIGFLOAT:
     return "bigfloat";
   case PIC_TT_PORT:
@@ -463,8 +463,8 @@ pic_eqv_p(pic_value x, pic_value y)
   switch (pic_type(x)) {
   case PIC_TT_BIGINT:
     return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
-  case PIC_TT_RATIONAL:
-    return mpq_equal(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q);
+  case PIC_TT_BIGRAT:
+    return mpq_equal(((pic_bigrat *)pic_ptr(x))->q, ((pic_bigrat *)pic_ptr(y))->q);
   case PIC_TT_BIGFLOAT:
     return mpfr_equal_p(((pic_bigfloat *)pic_ptr(x))->f, ((pic_bigfloat *)pic_ptr(y))->f);
   default:
@@ -512,8 +512,8 @@ pic_eqv_p(pic_value x, pic_value y)
     return pic_int(x) == pic_int(y);
   case PIC_TT_BIGINT:
     return mpz_cmp(((pic_bigint *)pic_ptr(x))->z, ((pic_bigint *)pic_ptr(y))->z) == 0;
-  case PIC_TT_RATIONAL:
-    return mpq_equal(((pic_rational *)pic_ptr(x))->q, ((pic_rational *)pic_ptr(y))->q);
+  case PIC_TT_BIGRAT:
+    return mpq_equal(((pic_bigrat *)pic_ptr(x))->q, ((pic_bigrat *)pic_ptr(y))->q);
   case PIC_TT_BIGFLOAT:
     return mpfr_equal_p(((pic_bigfloat *)pic_ptr(x))->f, ((pic_bigfloat *)pic_ptr(y))->f);
   default:

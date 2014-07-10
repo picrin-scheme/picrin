@@ -243,7 +243,7 @@ read_number(pic_state *pic, struct pic_port *port, char c, size_t base, enum exa
     break;
   }
   case '/': {
-    pic_rational *q = pic_rational_new(pic);
+    pic_bigrat *q = pic_bigrat_new(pic);
     do {
       buf[i++] = next(port);
     } while (ispdigit(peek(port), base));
@@ -290,8 +290,8 @@ negate(pic_value n)
   case PIC_TT_BIGINT:
     mpz_neg(pic_bigint_ptr(n)->z, pic_bigint_ptr(n)->z);
     return n;
-  case PIC_TT_RATIONAL:
-    mpq_neg(pic_rational_ptr(n)->q, pic_rational_ptr(n)->q);
+  case PIC_TT_BIGRAT:
+    mpq_neg(pic_bigrat_ptr(n)->q, pic_bigrat_ptr(n)->q);
     return n;
   case PIC_TT_BIGFLOAT:
     mpfr_neg(pic_bigfloat_ptr(n)->f, pic_bigfloat_ptr(n)->f, MPFR_RNDN);
