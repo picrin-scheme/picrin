@@ -19,12 +19,13 @@ pic_equal_p(pic_state *pic, pic_value x, pic_value y)
   if (pic_eqv_p(x, y))
     return true;
 
-  if(pic_number_p(x) && pic_number_p(y))
-    return pic_eq(pic, x, y);
-  
   type = pic_type(x);
   if (type != pic_type(y))
     return false;
+
+  if(pic_number_p(x))
+    return pic_eq(pic, x, y);
+
   switch (type) {
   case PIC_TT_PAIR:
     return pic_equal_p(pic, pic_car(pic, x), pic_car(pic, y)) && pic_equal_p(pic, pic_cdr(pic, x), pic_cdr(pic, y));
