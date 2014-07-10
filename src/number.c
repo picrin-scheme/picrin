@@ -10,7 +10,8 @@
 #include "picrin/number.h"
 #include "picrin/string.h"
 
-void mpz_pow(mpz_t rop, const mpz_t base, const mpz_t expt)
+static void
+mpz_pow(mpz_t rop, const mpz_t base, const mpz_t expt)
 {
   if(mpz_sgn(expt) < 0){
     /* divided by zoro error */
