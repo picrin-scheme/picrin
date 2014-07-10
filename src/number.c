@@ -10,6 +10,66 @@
 #include "picrin/number.h"
 #include "picrin/string.h"
 
+void
+pic_number_normalize(pic_state *pic, pic_value *v, enum exactness exactp)
+{
+  switch(pic_type(*v)){
+  case PIC_TT_INT:
+    break;
+  case PIC_TT_FLOAT:
+    if(exactp == EXACT ||
+       (exactp == MAYBE && pic_float(*v) == trunc(pic_float(*v)))){
+      if(INT_MIN <= pic_float(*v) && pic_float(*v))
+        *v = pic_int_value(trunc(pic_float(*v)));
+      else{
+        pic_bigint *z = pic_bigint_new(pic);
+        mpz_set_d(z->z, pic_float(*v));
+        *v = pic_obj_value(z);
+      }
+    }
+    break;
+  case PIC_TT_BIGINT:{
+    pic_bigint *z  = pic_bigint_ptr(*v);
+    if(mpz_fits_sint_p(z->z)){
+      *v = pic_int_value(mpz_get_si(z->z));
+    }
+    break;
+  }
+  case PIC_TT_BIGRAT:{
+    pic_bigrat *q = pic_bigrat_ptr(*v);
+    if(((int) mpz_get_si(mpq_denref(q->q))) == 1){
+      if(mpz_fits_sint_p(mpq_numref(q->q))){
+        *v = pic_int_value((int) mpz_get_si(mpq_numref(q->q)));
+      }
+      else{
+        pic_bigint *z =pic_bigint_new(pic);
+        mpq_get_num(z->z, q->q);
+        *v = pic_obj_value(z);
+      }
+    }
+    break;
+  }
+  case PIC_TT_BIGFLOAT:{
+    pic_bigfloat *f = pic_bigfloat_ptr(*v);
+    if(exactp == EXACT && (mpfr_integer_p(f->f) && exactp == MAYBE)){
+      if(mpfr_fits_sint_p(f->f, MPFR_RNDN)){
+        *v = pic_int_value(mpfr_get_si(f->f, MPFR_RNDN));
+      }
+      else{
+        pic_bigint *z = pic_bigint_new(pic);
+        mpfr_get_z(z->z, f->f, MPFR_RNDN);
+        *v = pic_obj_value(z);
+      }
+    }
+    break;
+  }
+  default:{
+    pic_debug(pic, *v);
+    pic_errorf(pic, "internal error: pic_number_normalize got non number object\n");
+  }
+  }
+}
+
 static void
 mpz_pow(mpz_t rop, const mpz_t base, const mpz_t expt)
 {
