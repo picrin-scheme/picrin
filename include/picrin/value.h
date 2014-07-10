@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-#include <gmp.h>
-#include <mpfr.h>
 /**
  * pic_sym is just an alias to unsigned int.
  */

@@ -17,7 +17,6 @@
 #include "picrin/irep.h"
 #include "picrin/blob.h"
 #include "picrin/var.h"
-#include "picrin/value.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"

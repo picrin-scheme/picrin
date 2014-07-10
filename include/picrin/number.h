@@ -10,8 +10,6 @@ extern "C" {
 #endif
 
 #include <math.h>
-#include <gmp.h>
-#include <mpfr.h>
 
 #define pic_bigint_p(v) (pic_type(v) == PIC_TT_BIGINT)
 #define pic_bigint_ptr(o) ((struct pic_bigint *)pic_ptr(o))
