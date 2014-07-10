@@ -174,7 +174,7 @@ pic_bigint_div(pic_state *pic, mpz_t x, mpz_t y)
       }                                                                 \
       case PIC_TT_BIGFLOAT:{                                            \
         pic_bigfloat *c = pic_bigfloat_new(pic);                        \
-        mpfr_si_##name(c->f, pic_int(a), pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        mpfr_##name##_si(c->f, pic_bigfloat_ptr(b)->f, pic_int(a), MPFR_RNDN); \
         result = pic_obj_value(c);                                      \
         break;                                                          \
       }                                                                 \
@@ -241,7 +241,7 @@ pic_bigint_div(pic_state *pic, mpz_t x, mpz_t y)
       }                                                                 \
       case PIC_TT_BIGFLOAT:{                                            \
         pic_bigfloat *c = pic_bigfloat_new(pic);                        \
-        mpfr_z_##name(c->f, pic_bigint_ptr(a)->z, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        mpfr_##name##_z(c->f, pic_bigfloat_ptr(b)->f, pic_bigint_ptr(a)->z, MPFR_RNDN); \
         result = pic_obj_value(c);                                      \
         break;                                                          \
       break;                                                            \
@@ -280,7 +280,7 @@ pic_bigint_div(pic_state *pic, mpz_t x, mpz_t y)
       }                                                                 \
       case PIC_TT_BIGFLOAT:{                                            \
         pic_bigfloat *c = pic_bigfloat_new(pic);                        \
-        mpfr_q_##name(c->f, pic_rational_ptr(a)->q, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        mpfr_##name##_q(c->f, pic_bigfloat_ptr(b)->f, pic_rational_ptr(a)->q, MPFR_RNDN); \
         result = pic_obj_value(c);                                      \
         break;                                                          \
       }                                                                 \
@@ -317,7 +317,7 @@ pic_bigint_div(pic_state *pic, mpz_t x, mpz_t y)
       }                                                                 \
       case PIC_TT_BIGFLOAT:{                                            \
         pic_bigfloat *c = pic_bigfloat_new(pic);                        \
-        mpfr_q_##name(c->f, pic_rational_ptr(a)->q, pic_bigfloat_ptr(b)->f, MPFR_RNDN); \
+        mpfr_##name##_q(c->f, pic_bigfloat_ptr(b)->f, pic_rational_ptr(a)->q, MPFR_RNDN); \
         result = pic_obj_value(c);                                      \
         break;                                                          \
       }                                                                 \

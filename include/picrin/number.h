@@ -111,21 +111,6 @@ pic_number_normalize(pic_state *pic, pic_value *v, enum exactness exactp)
   }
 }
 
-#define mpfr_si_add(rop, op1, op2, rnd) mpfr_add_si(rop, op2, op1, rnd)
-#define mpfr_d_add(rop, op1, op2, rnd) mpfr_add_d(rop, op2, op1, rnd)
-#define mpfr_z_add(rop, op1, op2, rnd) mpfr_add_z(rop, op2, op1, rnd)
-#define mpfr_q_add(rop, op1, op2, rnd) mpfr_add_q(rop, op2, op1, rnd)
-
-#define mpfr_q_sub(rop, op1, op2, rnd) mpfr_sub_q(rop, op2, op1, rnd);mpfr_neg(rop, rop, rnd);
-
-#define mpfr_si_mul(rop, op1, op2, rnd) mpfr_mul_si(rop, op2, op1, rnd)
-#define mpfr_d_mul(rop, op1, op2, rnd) mpfr_mul_d(rop, op2, op1, rnd)
-#define mpfr_z_mul(rop, op1, op2, rnd) mpfr_mul_z(rop, op2, op1, rnd)
-#define mpfr_q_mul(rop, op1, op2, rnd) mpfr_mul_q(rop, op2, op1, rnd)
-
-#define mpfr_z_div(rop, op1, op2, rnd) mpfr_div_z(rop, op2, op1, rnd);mpfr_ui_div(rop, 1, rop, rnd);
-#define mpfr_q_div(rop, op1, op2, rnd) mpfr_div_q(rop, op2, op1, rnd);mpfr_ui_div(rop, 1, rop, rnd);
-
 pic_value pic_add(pic_state *, pic_value, pic_value);
 pic_value pic_sub(pic_state *, pic_value, pic_value);
 pic_value pic_mul(pic_state *, pic_value, pic_value);
