@@ -69,16 +69,17 @@ isdelim(char c)
 }
 
 static bool
-is_digit_of_base(char c, size_t base){
-  switch(base){
+ispdigit(char c, size_t base)
+{
+  switch (base) {
   case 2:
     return '0' <= c && c <= '1';
   case 8:
     return '0' <= c && c <= '7';
   case 10:
-    return '0' <= c && c <= '9';
+    return isdigit(c);
   case 16:
-    return ('0' <= c && c <= '9') || ('a' <= (c | 32) && c <= 'f');
+    return isxdigit(c);
   default:
     return false;
   }
@@ -190,12 +191,12 @@ read_uinteger(pic_state *pic, struct pic_port *port, char c, char buf[], size_t 
 {
   size_t i = 0;
 
-  if (! is_digit_of_base(c, base)) {
+  if (! ispdigit(c, base)) {
     read_error(pic, "expected one or more digits");
   }
 
   buf[i++] = c;
-  while (is_digit_of_base(c = peek(port), base)) {
+  while (ispdigit(c = peek(port), base)) {
     buf[i++] = next(port);
   }
 
@@ -222,7 +223,7 @@ read_number(pic_state *pic, struct pic_port *port, char c, size_t base, enum exa
     pic_bigfloat *f = pic_bigfloat_new(pic);
     do {
       buf[i++] = next(port);
-    } while (is_digit_of_base(peek(port), base));
+    } while (ispdigit(peek(port), base));
     buf[i] = '\0';
 
     mpfr_set_str(f->f, buf, base, MPFR_RNDN);
@@ -245,7 +246,7 @@ read_number(pic_state *pic, struct pic_port *port, char c, size_t base, enum exa
     pic_rational *q = pic_rational_new(pic);
     do {
       buf[i++] = next(port);
-    } while (is_digit_of_base(peek(port), base));
+    } while (ispdigit(peek(port), base));
     buf[i] = '\0';
     mpq_set_str(q->q, buf, base);
     mpq_canonicalize(q->q);
@@ -305,7 +306,7 @@ read_minus(pic_state *pic, struct pic_port *port, char c, size_t base, enum exac
 {
   pic_value sym;
 
-  if (is_digit_of_base(peek(port), base) || peek(port) == '.') {
+  if (ispdigit(peek(port), base) || peek(port) == '.') {
     return negate(read_number(pic, port, next(port), base, exactp));
   }
   else {
@@ -325,7 +326,7 @@ read_plus(pic_state *pic, struct pic_port *port, char c, size_t base, enum exact
 {
   pic_value sym;
 
-  if (is_digit_of_base(peek(port), base) || peek(port) == '.') {
+  if (ispdigit(peek(port), base) || peek(port) == '.') {
     return read_number(pic, port, next(port), base, exactp);
   }
   else {
@@ -343,7 +344,7 @@ read_plus(pic_state *pic, struct pic_port *port, char c, size_t base, enum exact
 static pic_value
 read_sigined_number(pic_state *pic, struct pic_port *port, char c, size_t base, enum exactness exactp)
 {
-  if(is_digit_of_base(c, base) || c == '.')
+  if(ispdigit(c, base) || c == '.')
     return read_number(pic, port, c, base, exactp);
   else if( c == '-')
     return read_minus(pic, port, c, 10, exactp);
@@ -356,7 +357,7 @@ read_number_dispatch_exactness(pic_state *pic, struct pic_port *port, char c)
 {
   enum exactness exactp = c == 'e' ? EXACT : INEXACT;
   char d = next(port);
-  if(is_digit_of_base(d, 10))
+  if(ispdigit(d, 10))
     return read_number(pic, port, d, 10, exactp);
   switch(d){
   case '+':
@@ -392,7 +393,7 @@ read_number_dispatch_base(pic_state *pic, struct pic_port *port, char c)
     16;
 
   char d = next(port);
-  if(is_digit_of_base(d, base))
+  if(ispdigit(d, base))
     return read_number(pic, port, d, base, MAYBE);
   switch(d){
   case '+':
