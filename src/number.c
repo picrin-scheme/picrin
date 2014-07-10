@@ -1508,7 +1508,9 @@ pic_number_to_string(pic_state *pic, pic_value n, int radix)
       else
         ilen = *e;
       slen = strlen(frac);
-      while(frac[--slen] == '0' && ilen < slen);slen++;
+      while(frac[--slen] == '0' && ilen < slen)
+        ;
+      slen++;
       buf = pic_alloc(pic, slen + 2 + (*e == 0?1:0)); /* \0 and floating point (and leading 0)*/
       memcpy(buf, frac, ilen);
       if(*e == 0)
