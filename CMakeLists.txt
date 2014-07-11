@@ -49,7 +49,7 @@ add_custom_target(no-act bin/picrin -e '' > /dev/null DEPENDS repl)
 add_custom_target(test-r7rs bin/picrin ${PROJECT_SOURCE_DIR}/t/r7rs-tests.scm DEPENDS repl)
 
 # $ make tak
-add_custom_target(tak bin/picrin etc/tak.scm DEPENDS repl)
+add_custom_target(tak bin/picrin ${PROJECT_SOURCE_DIR}/etc/tak.scm DEPENDS repl)
 
 # $ make lines
 add_custom_target(lines find . -name "*.[chyl]" | xargs wc -l WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
