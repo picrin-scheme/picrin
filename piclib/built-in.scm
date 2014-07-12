@@ -410,10 +410,34 @@
   (import (scheme base)
           (scheme cxr)
           (picrin macro)
-          (picrin core-syntax))
+          (picrin core-syntax)
+          (picrin var))
 
-  ;; reopen (pircin parameter)
-  ;; see src/var.c
+  (define (single? x)
+    (and (list? x) (= (length x) 1)))
+
+  (define (double? x)
+    (and (list? x) (= (length x) 2)))
+
+  (define (%make-parameter init conv)
+    (let ((var (make-var (conv init))))
+      (lambda args
+        (cond
+         ((null? args)
+          (var-ref var))
+         ((single? args)
+          (var-set! var (conv (car args))))
+         ((double? args)
+          (var-set! var ((cadr args) (car args))))
+         (else
+          (error "invalid arguments for parameter"))))))
+
+  (define (make-parameter init . conv)
+    (let ((conv
+           (if (null? conv)
+               (lambda (x) x)
+               (car conv))))
+      (%make-parameter init conv)))
 
   (define-syntax parameterize
     (er-macro-transformer
@@ -432,11 +456,12 @@
               ,@bindings
               (,(r 'let) ((,(r 'result) (begin ,@body)))
                 ,@(map (lambda (var)
-                         `(,(r 'parameter-set!) ,var ,(r (gensym var))))
+                         `(,var ,(r (gensym var)) (,(r 'lambda) (x) x)))
                        vars)
                 ,(r 'result))))))))
 
-  (export parameterize))
+  (export make-parameter
+          parameterize))
 
 ;;; Record Type
 (define-library (picrin record)
