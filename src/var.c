@@ -43,27 +43,6 @@ pic_var_set_force(pic_state *pic, struct pic_var *var, pic_value value)
   var->value = value;
 }
 
-static struct pic_var *
-get_var_from_proc(pic_state *pic, struct pic_proc *proc)
-{
-  pic_value v;
-
-  if (! pic_proc_func_p(proc)) {
-    goto typeerror;
-  }
-  if (pic_proc_cv_size(pic, proc) != 1) {
-    goto typeerror;
-  }
-  v = pic_proc_cv_ref(pic, proc, 0);
-  if (! pic_var_p(v)) {
-    goto typeerror;
-  }
-  return pic_var_ptr(v);
-
- typeerror:
-  pic_errorf(pic, "expected parameter, but got ~s", v);
-}
-
 static pic_value
 var_call(pic_state *pic)
 {
@@ -105,7 +84,22 @@ pic_wrap_var(pic_state *pic, struct pic_var *var)
 struct pic_var *
 pic_unwrap_var(pic_state *pic, struct pic_proc *proc)
 {
-  return get_var_from_proc(pic, proc);
+  pic_value v;
+
+  if (! pic_proc_func_p(proc)) {
+    goto typeerror;
+  }
+  if (pic_proc_cv_size(pic, proc) != 1) {
+    goto typeerror;
+  }
+  v = pic_proc_cv_ref(pic, proc, 0);
+  if (! pic_var_p(v)) {
+    goto typeerror;
+  }
+  return pic_var_ptr(v);
+
+ typeerror:
+  pic_errorf(pic, "expected parameter, but got ~s", v);
 }
 
 static pic_value
@@ -129,7 +123,7 @@ pic_var_parameter_ref(pic_state *pic)
 
   pic_get_args(pic, "l", &proc);
 
-  var = get_var_from_proc(pic, proc);
+  var = pic_unwrap_var(pic, proc);
   return pic_var_ref(pic, var);
 }
 
@@ -142,7 +136,7 @@ pic_var_parameter_set(pic_state *pic)
 
   pic_get_args(pic, "lo", &proc, &v);
 
-  var = get_var_from_proc(pic, proc);
+  var = pic_unwrap_var(pic, proc);
   /* no convert */
   pic_var_set_force(pic, var, v);
   return pic_none_value();
@@ -156,7 +150,7 @@ pic_var_parameter_converter(pic_state *pic)
 
   pic_get_args(pic, "l", &proc);
 
-  var = get_var_from_proc(pic, proc);
+  var = pic_unwrap_var(pic, proc);
   if (var->conv) {
     return pic_obj_value(var->conv);
   }
