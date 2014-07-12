@@ -11,7 +11,7 @@ extern "C" {
 
 struct pic_var {
   PIC_OBJECT_HEADER
-  pic_value value;
+  pic_value stack;
 };
 
 #define pic_var_p(o) (pic_type(o) == PIC_TT_VAR)
@@ -21,6 +21,8 @@ struct pic_var *pic_var_new(pic_state *, pic_value);
 
 pic_value pic_var_ref(pic_state *, const char *);
 void pic_var_set(pic_state *, const char *, pic_value);
+void pic_var_push(pic_state *, const char *, pic_value);
+void pic_var_pop(pic_state *, const char *);
 
 #if defined(__cplusplus)
 }

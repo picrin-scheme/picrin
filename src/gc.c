@@ -475,7 +475,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_VAR: {
     struct pic_var *var = (struct pic_var *)obj;
-    gc_mark(pic, var->value);
+    gc_mark(pic, var->stack);
     break;
   }
   case PIC_TT_IREP: {
