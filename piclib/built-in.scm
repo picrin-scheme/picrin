@@ -411,7 +411,9 @@
           (scheme cxr)
           (picrin macro)
           (picrin core-syntax)
-          (picrin var))
+          (picrin var)
+          (picrin attribute)
+          (picrin dictionary))
 
   (define (single? x)
     (and (list? x) (= (length x) 1)))
@@ -421,7 +423,7 @@
 
   (define (%make-parameter init conv)
     (let ((var (make-var (conv init))))
-      (lambda args
+      (define (parameter . args)
         (cond
          ((null? args)
           (var-ref var))
@@ -430,7 +432,11 @@
          ((double? args)
           (var-set! var ((cadr args) (car args))))
          (else
-          (error "invalid arguments for parameter"))))))
+          (error "invalid arguments for parameter"))))
+
+      (dictionary-set! (attribute parameter) '@@var var)
+
+      parameter))
 
   (define (make-parameter init . conv)
     (let ((conv
@@ -439,26 +445,32 @@
                (car conv))))
       (%make-parameter init conv)))
 
+  (define-syntax with
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((before (car (cdr form)))
+             (after  (car (cdr (cdr form))))
+             (body   (cdr (cdr (cdr form)))))
+         `(begin
+            (,before)
+            (let ((result (begin ,@body)))
+              (,after)
+              result))))))
+
+  (define (var-of parameter)
+    (dictionary-ref (attribute parameter) '@@var))
+
   (define-syntax parameterize
-    (er-macro-transformer
-     (lambda (form r compare)
-       (let ((bindings (cadr form))
-             (body (cddr form)))
-         (let ((vars (map car bindings))
-               (gensym (lambda (var)
-                         (string->symbol
-                          (string-append
-                           "parameterize-"
-                           (symbol->string var))))))
-           `(,(r 'let) (,@(map (lambda (var)
-                                 `(,(r (gensym var)) (,var)))
-                            vars))
-              ,@bindings
-              (,(r 'let) ((,(r 'result) (begin ,@body)))
-                ,@(map (lambda (var)
-                         `(,var ,(r (gensym var)) (,(r 'lambda) (x) x)))
-                       vars)
-                ,(r 'result))))))))
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((formal (car (cdr form)))
+             (body   (cdr (cdr form))))
+         (let ((vars (map car formal))
+               (vals (map cadr formal)))
+           `(with
+             (lambda () ,@(map (lambda (var val) `(var-push! (var-of ,var) ,val)) vars vals))
+             (lambda () ,@(map (lambda (var) `(var-pop! (var-of ,var))) vars))
+             ,@body))))))
 
   (export make-parameter
           parameterize))
