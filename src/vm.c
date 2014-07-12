@@ -427,7 +427,7 @@ pic_ref(pic_state *pic, const char *name)
 
   gid = global_ref(pic, name);
   if (gid == SIZE_MAX) {
-    pic_error(pic, "symbol not defined");
+    pic_errorf(pic, "symbol \"%s\" not defined", name);
   }
   return pic->globals[gid];
 }
