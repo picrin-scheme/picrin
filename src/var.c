@@ -6,6 +6,29 @@
 #include "picrin/proc.h"
 #include "picrin/var.h"
 
+static pic_value
+var_ref(pic_state *pic, struct pic_var *var)
+{
+  UNUSED(pic);
+  return var->value;
+}
+
+static void
+var_set_force(pic_state *pic, struct pic_var *var, pic_value value)
+{
+  UNUSED(pic);
+  var->value = value;
+}
+
+static void
+var_set(pic_state *pic, struct pic_var *var, pic_value value)
+{
+  if (var->conv) {
+    value = pic_apply1(pic, var->conv, value);
+  }
+  var_set_force(pic, var, value);
+}
+
 struct pic_var *
 pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv /* = NULL */)
 {
@@ -15,32 +38,9 @@ pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv /* = NULL */)
   var->value = pic_undef_value();
   var->conv = conv;
 
-  pic_var_set(pic, var, init);
+  var_set(pic, var, init);
 
   return var;
-}
-
-pic_value
-pic_var_ref(pic_state *pic, struct pic_var *var)
-{
-  UNUSED(pic);
-  return var->value;
-}
-
-void
-pic_var_set(pic_state *pic, struct pic_var *var, pic_value value)
-{
-  if (var->conv) {
-    value = pic_apply1(pic, var->conv, value);
-  }
-  pic_var_set_force(pic, var, value);
-}
-
-void
-pic_var_set_force(pic_state *pic, struct pic_var *var, pic_value value)
-{
-  UNUSED(pic);
-  var->value = value;
 }
 
 static pic_value
@@ -56,12 +56,12 @@ var_call(pic_state *pic)
   c = pic_get_args(pic, "|o", &v);
   if (c == 0) {
     var = pic_var_ptr(proc->env->regs[0]);
-    return pic_var_ref(pic, var);
+    return var_ref(pic, var);
   }
   else if (c == 1) {
     var = pic_var_ptr(proc->env->regs[0]);
 
-    pic_var_set(pic, var, v);
+    var_set(pic, var, v);
     return pic_none_value();
   }
   else {
@@ -124,7 +124,7 @@ pic_var_parameter_ref(pic_state *pic)
   pic_get_args(pic, "l", &proc);
 
   var = pic_unwrap_var(pic, proc);
-  return pic_var_ref(pic, var);
+  return var_ref(pic, var);
 }
 
 static pic_value
@@ -138,7 +138,7 @@ pic_var_parameter_set(pic_state *pic)
 
   var = pic_unwrap_var(pic, proc);
   /* no convert */
-  pic_var_set_force(pic, var, v);
+  var_set_force(pic, var, v);
   return pic_none_value();
 }
 
