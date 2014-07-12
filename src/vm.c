@@ -444,6 +444,18 @@ pic_set(pic_state *pic, const char *name, pic_value value)
   pic->globals[gid] = value;
 }
 
+pic_value
+pic_funcall(pic_state *pic, const char *name, pic_list args)
+{
+  pic_value proc;
+
+  proc = pic_ref(pic, name);
+
+  pic_assert_type(pic, proc, proc);
+
+  return pic_apply(pic, pic_proc_ptr(proc), args);
+}
+
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
