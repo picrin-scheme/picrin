@@ -684,9 +684,11 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_defvar(pic, "current-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
-  pic_defvar(pic, "current-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
-  pic_defvar(pic, "current-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
+  pic_deflibrary ("(picrin port)") {
+    pic_define(pic, "standard-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
+    pic_define(pic, "standard-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
+    pic_define(pic, "standard-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
+  }
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);

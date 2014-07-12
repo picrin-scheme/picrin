@@ -465,15 +465,6 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
   pic_define(pic, name, pic_obj_value(proc));
 }
 
-void
-pic_defvar(pic_state *pic, const char *name, pic_value init)
-{
-  struct pic_var *var;
-
-  var = pic_var_new(pic, init, NULL);
-  pic_define(pic, name, pic_obj_value(pic_wrap_var(pic, var)));
-}
-
 static void
 vm_push_env(pic_state *pic)
 {
