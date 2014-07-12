@@ -306,7 +306,7 @@ pic_port_open_output_string(pic_state *pic)
 static pic_value
 pic_port_get_output_string(pic_state *pic)
 {
-  struct pic_port *port = pic_stdout(pic);;
+  struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "|p", &port);
 
@@ -353,7 +353,7 @@ pic_port_open_output_bytevector(pic_state *pic)
 static pic_value
 pic_port_get_output_bytevector(pic_state *pic)
 {
-  struct pic_port *port = pic_stdout(pic);;
+  struct pic_port *port = pic_stdout(pic);
   long endpos;
   char *buf;
 
