@@ -124,6 +124,23 @@ pic_dict_dict_size(pic_state *pic)
   return pic_int_value(pic_dict_size(pic, dict));
 }
 
+static pic_value
+pic_dict_dict_for_each(pic_state *pic)
+{
+  struct pic_proc *proc;
+  struct pic_dict *dict;
+  xh_iter it;
+
+  pic_get_args(pic, "ld", &proc, &dict);
+
+  xh_begin(&it, &dict->hash);
+  while (xh_next(&it)) {
+    pic_apply2(pic, proc, pic_sym_value(xh_key(it.e, pic_sym)), xh_val(it.e, pic_value));
+  }
+
+  return pic_none_value();
+}
+
 void
 pic_init_dict(pic_state *pic)
 {
@@ -134,5 +151,6 @@ pic_init_dict(pic_state *pic)
     pic_defun(pic, "dictionary-set!", pic_dict_dict_set);
     pic_defun(pic, "dictionary-delete", pic_dict_dict_del);
     pic_defun(pic, "dictionary-size", pic_dict_dict_size);
+    pic_defun(pic, "dictionary-for-each", pic_dict_dict_for_each);
   }
 }
