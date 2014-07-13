@@ -144,9 +144,9 @@ Symbol to Object table. Internally it is implemented on hash-table.
 
 Note that dictionary is not a weak map; if you are going to make a highly memory-consuming program with dictionaries, you should know that dictionaries keep their bound objects and never let them free until you explicitly deletes bindings.
 
-- **(dictionary)**
+- **(dictionary . plist)**
 
-  Returns a newly allocated empty dictionary. In the future, it is planned to extend this function to take optional arguments for initial key/values.
+  Returns a newly allocated empty dictionary. The dictionary is initialized with the content of plist.
 
 - **(dictionary? obj)**
 
@@ -167,6 +167,21 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 - **(dictionary-size dict)**
 
   Returns the number of registered elements in dict.
+
+- **(dicitonary-map proc dict)**
+
+  Perform mapping action onto dictionary object. ``proc`` is called by a sequence ``(proc key val)``.
+
+- **(dictionary-for-each proc dict)**
+
+  Similar to ``dictionary-map``, but discards the result.
+
+- **(dictionary->plist dict)**
+- **(plist->dictionary plist)**
+- **(dictionary->alist dict)**
+- **(alist->dictionary alist)**
+
+  Conversion between dictionary and alist/plist.
 
 
 (picrin user)
