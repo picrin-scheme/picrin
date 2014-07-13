@@ -1,8 +1,21 @@
 (define-library (picrin dictionary)
   (import (scheme base))
 
+  (define (dictionary-map proc dict)
+    (let ((kvs '()))
+      (dictionary-for-each
+       (lambda (key val)
+         (set! kvs (cons (proc key val) kvs)))
+       dict)
+      (reverse kvs)))
+
   (define (dictionary->plist dict)
-    (error "not implemented"))
+    (let ((kvs '()))
+      (dictionary-for-each
+       (lambda (key val)
+         (set! kvs (cons val (cons key kvs))))
+       dict)
+      (reverse kvs)))
 
   (define (plist->dictionary plist)
     (let ((dict (make-dictionary)))
@@ -12,7 +25,10 @@
         (dictionary-set! dict (car kv) (cadr kv)))))
 
   (define (dictionary->alist dict)
-    (error "not implemented"))
+    (dictionary-map
+     (lambda (key val)
+       (cons key val))
+     dict))
 
   (define (alist->dictionary alist)
     (let ((dict (make-dictionary)))
@@ -25,6 +41,7 @@
     (plist->dictionary plist))
 
   (export dictionary
+          dictionary-map
           dictionary->plist
           plist->dictionary
           dictionary->alist
