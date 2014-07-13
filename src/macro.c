@@ -204,17 +204,13 @@ macroexpand_deflibrary(pic_state *pic, pic_value expr)
     pic_in_library(pic, pic_cadr(pic, expr));
 
     pic_for_each (v, pic_cddr(pic, expr)) {
-      size_t ai = pic_gc_arena_preserve(pic);
-
-      pic_eval(pic, v);
-
-      pic_gc_arena_restore(pic, ai);
+      pic_void(pic_eval(pic, v));
     }
 
     pic_in_library(pic, prev->name);
   }
   pic_catch {
-    pic_in_library(pic, prev->name);    /* restores pic->lib even if an error occurs */
+    pic_in_library(pic, prev->name); /* restores pic->lib even if an error occurs */
     pic_throw_error(pic, pic->err);
   }
 
