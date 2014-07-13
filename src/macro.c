@@ -337,38 +337,22 @@ macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct 
 }
 
 static pic_value
-macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv, struct pic_dict *cxt)
 {
   size_t ai = pic_gc_arena_preserve(pic);
-  pic_value v, vs;
+  pic_value x, head, tail;
 
-  /* macroexpand in order */
-  vs = pic_nil_value();
-  while (pic_pair_p(list)) {
-    v = pic_car(pic, list);
-
-    vs = pic_cons(pic, macroexpand(pic, v, senv, cxt), vs);
-    list = pic_cdr(pic, list);
-
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, vs);
-    pic_gc_protect(pic, list);
-  }
-
-  list = macroexpand(pic, list, senv, cxt);
-
-  /* reverse the result */
-  pic_for_each (v, vs) {
-    list = pic_cons(pic, v, list);
-
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, vs);
-    pic_gc_protect(pic, list);
+  if (pic_pair_p(obj)) {
+    head = macroexpand(pic, pic_car(pic, obj), senv, cxt);
+    tail = macroexpand_list(pic, pic_cdr(pic, obj), senv, cxt);
+    x = pic_cons(pic, head, tail);
+  } else {
+    x = macroexpand(pic, obj, senv, cxt);
   }
 
   pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, list);
-  return list;
+  pic_gc_protect(pic, x);
+  return x;
 }
 
 static pic_value
