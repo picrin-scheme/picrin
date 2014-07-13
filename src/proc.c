@@ -218,6 +218,16 @@ pic_proc_for_each(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_proc_attribute(pic_state *pic)
+{
+  struct pic_proc *proc;
+
+  pic_get_args(pic, "l", &proc);
+
+  return pic_obj_value(pic_proc_attr(pic, proc));
+}
+
 void
 pic_init_proc(pic_state *pic)
 {
@@ -225,4 +235,8 @@ pic_init_proc(pic_state *pic)
   pic_defun(pic, "apply", pic_proc_apply);
   pic_defun(pic, "map", pic_proc_map);
   pic_defun(pic, "for-each", pic_proc_for_each);
+
+  pic_deflibrary ("(picrin attribute)") {
+    pic_defun(pic, "attribute", pic_proc_attribute);
+  }
 }
