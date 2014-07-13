@@ -185,125 +185,6 @@ macroexpand_deflibrary(pic_state *pic, pic_value expr)
 }
 
 static pic_value
-macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
-{
-  pic_value var, val;
-  pic_sym sym, rename;
-
-  if (pic_length(pic, expr) != 3) {
-    pic_error(pic, "syntax error");
-  }
-
-  var = pic_cadr(pic, expr);
-  if (! pic_sym_p(var)) {
-    var = macroexpand(pic, var, senv, cxt);
-  }
-  if (! pic_sym_p(var)) {
-    pic_error(pic, "binding to non-symbol object");
-  }
-  sym = pic_sym(var);
-  if (! pic_find_rename(pic, senv, sym, &rename)) {
-    rename = pic_add_rename(pic, senv, sym);
-  }
-
-  val = pic_cadr(pic, pic_cdr(pic, expr));
-
-  pic_try {
-    val = pic_eval(pic, val);
-  } pic_catch {
-    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
-  }
-
-  if (! pic_proc_p(val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
-  }
-
-  define_macro(pic, rename, pic_proc_ptr(val), senv);
-
-  return pic_none_value();
-}
-
-static pic_value
-macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
-{
-  pic_value var, val;
-  pic_sym sym, rename;
-
-  if (pic_length(pic, expr) < 2) {
-    pic_error(pic, "syntax error");
-  }
-
-  var = pic_car(pic, pic_cdr(pic, expr));
-  if (pic_pair_p(var)) {
-    /* FIXME: unhygienic */
-    val = pic_cons(pic, pic_sym_value(pic->sLAMBDA),
-                   pic_cons(pic, pic_cdr(pic, var),
-                            pic_cdr(pic, pic_cdr(pic, expr))));
-    var = pic_car(pic, var);
-  }
-  else {
-    if (pic_length(pic, expr) != 3) {
-      pic_error(pic, "syntax_error");
-    }
-    val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, expr)));
-  }
-  if (! pic_sym_p(var)) {
-    pic_error(pic, "syntax error");
-  }
-  sym = pic_sym(var);
-  if (! pic_find_rename(pic, senv, sym, &rename)) {
-    rename = pic_add_rename(pic, senv, sym);
-  }
-
-  pic_try {
-    val = pic_eval(pic, val);
-  } pic_catch {
-    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
-  }
-
-  if (! pic_proc_p(val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
-  }
-
-  define_macro(pic, rename, pic_proc_ptr(val), NULL);
-
-  return pic_none_value();
-}
-
-static pic_value
-macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
-{
-  pic_value v, args;
-
-#if DEBUG
-  puts("before expand-1:");
-  pic_debug(pic, expr);
-  puts("");
-#endif
-
-  if (mac->senv == NULL) { /* legacy macro */
-    args = pic_cdr(pic, expr);
-  }
-  else {
-    args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
-  }
-
-  pic_try {
-    v = pic_apply(pic, mac->proc, args);
-  } pic_catch {
-    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
-  }
-
-#if DEBUG
-  puts("after expand-1:");
-  pic_debug(pic, v);
-  puts("");
-#endif
-
-  return macroexpand(pic, v, senv, cxt);
-}
-
-static pic_value
 macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv, struct pic_dict *cxt)
 {
   size_t ai = pic_gc_arena_preserve(pic);
@@ -403,6 +284,165 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
 }
 
 static pic_value
+macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+{
+  pic_value var, val;
+  pic_sym sym, rename;
+
+  if (pic_length(pic, expr) != 3) {
+    pic_error(pic, "syntax error");
+  }
+
+  var = pic_cadr(pic, expr);
+  if (! pic_sym_p(var)) {
+    var = macroexpand(pic, var, senv, cxt);
+  }
+  if (! pic_sym_p(var)) {
+    pic_error(pic, "binding to non-symbol object");
+  }
+  sym = pic_sym(var);
+  if (! pic_find_rename(pic, senv, sym, &rename)) {
+    rename = pic_add_rename(pic, senv, sym);
+  }
+
+  val = pic_cadr(pic, pic_cdr(pic, expr));
+
+  pic_try {
+    val = pic_eval(pic, val);
+  } pic_catch {
+    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+  }
+
+  if (! pic_proc_p(val)) {
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+  }
+
+  define_macro(pic, rename, pic_proc_ptr(val), senv);
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
+  pic_value var, val;
+  pic_sym sym, rename;
+
+  if (pic_length(pic, expr) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  var = pic_car(pic, pic_cdr(pic, expr));
+  if (pic_pair_p(var)) {
+    /* FIXME: unhygienic */
+    val = pic_cons(pic, pic_sym_value(pic->sLAMBDA),
+                   pic_cons(pic, pic_cdr(pic, var),
+                            pic_cdr(pic, pic_cdr(pic, expr))));
+    var = pic_car(pic, var);
+  }
+  else {
+    if (pic_length(pic, expr) != 3) {
+      pic_error(pic, "syntax_error");
+    }
+    val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, expr)));
+  }
+  if (! pic_sym_p(var)) {
+    pic_error(pic, "syntax error");
+  }
+  sym = pic_sym(var);
+  if (! pic_find_rename(pic, senv, sym, &rename)) {
+    rename = pic_add_rename(pic, senv, sym);
+  }
+
+  pic_try {
+    val = pic_eval(pic, val);
+  } pic_catch {
+    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+  }
+
+  if (! pic_proc_p(val)) {
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+  }
+
+  define_macro(pic, rename, pic_proc_ptr(val), NULL);
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+{
+  struct pic_senv *in;
+  pic_value formal, v, var, val;
+  pic_sym sym, rename;
+
+  in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  in->up = senv;
+  xh_init_int(&in->renames, sizeof(pic_sym));
+
+  if (pic_length(pic, expr) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  formal = pic_cadr(pic, expr);
+  if (! pic_list_p(formal)) {
+    pic_error(pic, "syntax error");
+  }
+  pic_for_each (v, formal) {
+    var = pic_car(pic, v);
+    if (! pic_sym_p(var)) {
+      var = macroexpand(pic, var, senv, cxt);
+    }
+    if (! pic_sym_p(var)) {
+      pic_error(pic, "binding to non-symbol object");
+    }
+    sym = pic_sym(var);
+    if (! pic_find_rename(pic, in, sym, &rename)) {
+      rename = pic_add_rename(pic, in, sym);
+    }
+    val = pic_eval(pic, pic_cadr(pic, v));
+    if (! pic_proc_p(val)) {
+      pic_errorf(pic, "macro definition \"~s\" evaluated to non-procedure object", var);
+    }
+    define_macro(pic, rename, pic_proc_ptr(val), senv);
+  }
+  return pic_cons(pic, pic_sym_value(pic->sBEGIN), macroexpand_list(pic, pic_cddr(pic, expr), in, cxt));
+}
+
+static pic_value
+macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+{
+  pic_value v, args;
+
+#if DEBUG
+  puts("before expand-1:");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
+  if (mac->senv == NULL) { /* legacy macro */
+    args = pic_cdr(pic, expr);
+  }
+  else {
+    args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
+  }
+
+  pic_try {
+    v = pic_apply(pic, mac->proc, args);
+  } pic_catch {
+    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+  }
+
+#if DEBUG
+  puts("after expand-1:");
+  pic_debug(pic, v);
+  puts("");
+#endif
+
+  return macroexpand(pic, v, senv, cxt);
+}
+
+static pic_value
 macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
 {
 #if DEBUG
@@ -445,6 +485,12 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
       else if (tag == pic->sDEFINE_MACRO) {
         return macroexpand_defmacro(pic, expr, senv);
       }
+      else if (tag == pic->sLET_SYNTAX) {
+        return macroexpand_let_syntax(pic, expr, senv, cxt);
+      }
+      /* else if (tag == pic->sLETREC_SYNTAX) { */
+      /*   return macroexpand_letrec_syntax(pic, expr, senv, cxt); */
+      /* } */
       else if (tag == pic->sLAMBDA) {
         return macroexpand_lambda(pic, expr, senv, cxt);
       }

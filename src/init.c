@@ -75,6 +75,8 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sIF);
     pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sBEGIN);
     pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLET_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLETREC_SYNTAX);
 
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;

@@ -96,6 +96,8 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
   register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
   register_core_symbol(pic, sDEFINE_MACRO, "define-macro");
+  register_core_symbol(pic, sLET_SYNTAX, "let-syntax");
+  register_core_symbol(pic, sLETREC_SYNTAX, "letrec-syntax");
   register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
   register_core_symbol(pic, sIMPORT, "import");
   register_core_symbol(pic, sEXPORT, "export");
