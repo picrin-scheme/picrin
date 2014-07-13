@@ -128,7 +128,7 @@ void
 pic_init_dict(pic_state *pic)
 {
   pic_deflibrary ("(picrin dictionary)") {
-    pic_defun(pic, "dictionary", pic_dict_dict);
+    pic_defun(pic, "make-dictionary", pic_dict_dict);
     pic_defun(pic, "dictionary?", pic_dict_dict_p);
     pic_defun(pic, "dictionary-ref", pic_dict_dict_ref);
     pic_defun(pic, "dictionary-set!", pic_dict_dict_set);
