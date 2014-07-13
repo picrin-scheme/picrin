@@ -17,6 +17,8 @@ struct pic_dict {
 #define pic_dict_p(v) (pic_type(v) == PIC_TT_DICT)
 #define pic_dict_ptr(v) ((struct pic_dict *)pic_ptr(v))
 
+struct pic_dict *pic_dict_new(pic_state *);
+
 #if defined(__cplusplus)
 }
 #endif
