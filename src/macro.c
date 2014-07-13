@@ -129,78 +129,15 @@ translate(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *c
 }
 
 static pic_value
-macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv, struct pic_dict *cxt)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value v, vs;
-
-  /* macroexpand in order */
-  vs = pic_nil_value();
-  while (pic_pair_p(list)) {
-    v = pic_car(pic, list);
-
-    vs = pic_cons(pic, macroexpand(pic, v, senv, cxt), vs);
-    list = pic_cdr(pic, list);
-
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, vs);
-    pic_gc_protect(pic, list);
-  }
-
-  list = macroexpand(pic, list, senv, cxt);
-
-  /* reverse the result */
-  pic_for_each (v, vs) {
-    list = pic_cons(pic, v, list);
-
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, vs);
-    pic_gc_protect(pic, list);
-  }
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, list);
-  return list;
-}
-
-static pic_value
 macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
 {
   return pic_sym_value(translate(pic, sym, senv, cxt));
 }
 
 static pic_value
-macroexpand_deflibrary(pic_state *pic, pic_value expr)
+macroexpand_quote(pic_state *pic, pic_value expr)
 {
-  struct pic_lib *prev = pic->lib;
-  pic_value v;
-
-  if (pic_length(pic, expr) < 2) {
-    pic_error(pic, "syntax error");
-  }
-
-  pic_make_library(pic, pic_cadr(pic, expr));
-
-  pic_try {
-    pic_in_library(pic, pic_cadr(pic, expr));
-
-    pic_for_each (v, pic_cddr(pic, expr)) {
-      size_t ai = pic_gc_arena_preserve(pic);
-
-      pic_eval(pic, v);
-
-      pic_gc_arena_restore(pic, ai);
-    }
-
-    pic_in_library(pic, prev->name);
-  }
-  pic_catch {
-    /* restores pic->lib even if an error occurs */
-    pic_in_library(pic, prev->name);
-    pic_throw_error(pic, pic->err);
-  }
-
-  return pic_none_value();
+  return pic_cons(pic, pic_sym_value(pic->sQUOTE), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -246,6 +183,39 @@ macroexpand_export(pic_state *pic, pic_value expr)
     }
     /* TODO: warn if symbol is shadowed by local variable */
     pic_export_as(pic, sym, as);
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+macroexpand_deflibrary(pic_state *pic, pic_value expr)
+{
+  struct pic_lib *prev = pic->lib;
+  pic_value v;
+
+  if (pic_length(pic, expr) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  pic_make_library(pic, pic_cadr(pic, expr));
+
+  pic_try {
+    pic_in_library(pic, pic_cadr(pic, expr));
+
+    pic_for_each (v, pic_cddr(pic, expr)) {
+      size_t ai = pic_gc_arena_preserve(pic);
+
+      pic_eval(pic, v);
+
+      pic_gc_arena_restore(pic, ai);
+    }
+
+    pic_in_library(pic, prev->name);
+  }
+  pic_catch {
+    pic_in_library(pic, prev->name);    /* restores pic->lib even if an error occurs */
+    pic_throw_error(pic, pic->err);
   }
 
   return pic_none_value();
@@ -338,6 +308,74 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
 }
 
 static pic_value
+macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+{
+  pic_value v, args;
+
+#if DEBUG
+  puts("before expand-1:");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
+  if (mac->senv == NULL) { /* legacy macro */
+    args = pic_cdr(pic, expr);
+  }
+  else {
+    args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
+  }
+
+  pic_try {
+    v = pic_apply(pic, mac->proc, args);
+  } pic_catch {
+    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+  }
+
+#if DEBUG
+  puts("after expand-1:");
+  pic_debug(pic, v);
+  puts("");
+#endif
+
+  return macroexpand(pic, v, senv, cxt);
+}
+
+static pic_value
+macroexpand_list(pic_state *pic, pic_value list, struct pic_senv *senv, struct pic_dict *cxt)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value v, vs;
+
+  /* macroexpand in order */
+  vs = pic_nil_value();
+  while (pic_pair_p(list)) {
+    v = pic_car(pic, list);
+
+    vs = pic_cons(pic, macroexpand(pic, v, senv, cxt), vs);
+    list = pic_cdr(pic, list);
+
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, vs);
+    pic_gc_protect(pic, list);
+  }
+
+  list = macroexpand(pic, list, senv, cxt);
+
+  /* reverse the result */
+  pic_for_each (v, vs) {
+    list = pic_cons(pic, v, list);
+
+    pic_gc_arena_restore(pic, ai);
+    pic_gc_protect(pic, vs);
+    pic_gc_protect(pic, list);
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, list);
+  return list;
+}
+
+static pic_value
 macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
 {
   pic_sym sym;
@@ -398,45 +436,6 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
   body = macroexpand_list(pic, pic_cddr(pic, expr), in, cxt);
 
   return pic_cons(pic, pic_sym_value(pic->sLAMBDA), pic_cons(pic, formal, body));
-}
-
-static pic_value
-macroexpand_quote(pic_state *pic, pic_value expr)
-{
-  return pic_cons(pic, pic_sym_value(pic->sQUOTE), pic_cdr(pic, expr));
-}
-
-static pic_value
-macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
-{
-  pic_value v, args;
-
-#if DEBUG
-  puts("before expand-1:");
-  pic_debug(pic, expr);
-  puts("");
-#endif
-
-  if (mac->senv == NULL) { /* legacy macro */
-    args = pic_cdr(pic, expr);
-  }
-  else {
-    args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
-  }
-
-  pic_try {
-    v = pic_apply(pic, mac->proc, args);
-  } pic_catch {
-    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
-  }
-
-#if DEBUG
-  puts("after expand-1:");
-  pic_debug(pic, v);
-  puts("");
-#endif
-
-  return macroexpand(pic, v, senv, cxt);
 }
 
 static pic_value
