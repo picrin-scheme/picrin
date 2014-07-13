@@ -81,6 +81,7 @@ typedef struct {
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;
+  pic_sym sLET_SYNTAX, sLETREC_SYNTAX;
   pic_sym sDEFINE_LIBRARY, sIMPORT, sEXPORT;
   pic_sym sCONS, sCAR, sCDR, sNILP;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
@@ -127,6 +128,13 @@ void pic_gc_run(pic_state *);
 pic_value pic_gc_protect(pic_state *, pic_value);
 size_t pic_gc_arena_preserve(pic_state *);
 void pic_gc_arena_restore(pic_state *, size_t);
+#define pic_void(exec)                          \
+  pic_void_(GENSYM(ai), exec)
+#define pic_void_(ai,exec) do {                 \
+    size_t ai = pic_gc_arena_preserve(pic);     \
+    exec;                                       \
+    pic_gc_arena_restore(pic, ai);              \
+  } while (0)
 
 pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
