@@ -11,8 +11,6 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 
-static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, struct pic_dict *);
-
 pic_sym
 pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 {
@@ -70,39 +68,6 @@ find_macro(pic_state *pic, pic_sym rename)
   return xh_val(e, struct pic_macro *);
 }
 
-static struct pic_senv *
-push_scope(pic_state *pic, pic_value formals, struct pic_senv *up, struct pic_dict *cxt)
-{
-  struct pic_senv *senv;
-  pic_value a;
-
-  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = up;
-  xh_init_int(&senv->renames, sizeof(pic_sym));
-
-  for (a = formals; pic_pair_p(a); a = pic_cdr(pic, a)) {
-    pic_value v = pic_car(pic, a);
-
-    if (! pic_sym_p(v)) {
-      v = macroexpand(pic, v, up, cxt);
-    }
-    if (! pic_sym_p(v)) {
-      pic_error(pic, "syntax error");
-    }
-    pic_add_rename(pic, senv, pic_sym(v));
-  }
-  if (! pic_sym_p(a)) {
-    a = macroexpand(pic, a, up, cxt);
-  }
-  if (pic_sym_p(a)) {
-    pic_add_rename(pic, senv, pic_sym(a));
-  }
-  else if (! pic_nil_p(a)) {
-    pic_error(pic, "syntax error");
-  }
-  return senv;
-}
-
 static pic_sym
 translate(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
 {
@@ -127,6 +92,8 @@ translate(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *c
     return rename;
   }
 }
+
+static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, struct pic_dict *);
 
 static pic_value
 macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
@@ -360,8 +327,36 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
 {
   pic_value formal, body;
   struct pic_senv *in;
+  pic_value a;
 
-  in = push_scope(pic, pic_cadr(pic, expr), senv, cxt);
+  if (pic_length(pic, expr) < 2) {
+    pic_error(pic, "syntax error");
+  }
+
+  in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  in->up = senv;
+  xh_init_int(&in->renames, sizeof(pic_sym));
+
+  for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
+    pic_value v = pic_car(pic, a);
+
+    if (! pic_sym_p(v)) {
+      v = macroexpand(pic, v, senv, cxt);
+    }
+    if (! pic_sym_p(v)) {
+      pic_error(pic, "syntax error");
+    }
+    pic_add_rename(pic, in, pic_sym(v));
+  }
+  if (! pic_sym_p(a)) {
+    a = macroexpand(pic, a, senv, cxt);
+  }
+  if (pic_sym_p(a)) {
+    pic_add_rename(pic, in, pic_sym(a));
+  }
+  else if (! pic_nil_p(a)) {
+    pic_error(pic, "syntax error");
+  }
 
   formal = macroexpand_list(pic, pic_cadr(pic, expr), in, cxt);
   body = macroexpand_list(pic, pic_cddr(pic, expr), in, cxt);
