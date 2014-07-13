@@ -44,6 +44,14 @@ pic_dict_size(pic_state *pic, struct pic_dict *dict)
   return dict->hash.count;
 }
 
+bool
+pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym key)
+{
+  UNUSED(pic);
+
+  return xh_get_int(&dict->hash, key) != NULL;
+}
+
 void
 pic_dict_del(pic_state *pic, struct pic_dict *dict, pic_sym key)
 {
