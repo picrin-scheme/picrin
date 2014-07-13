@@ -389,12 +389,15 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
 static pic_value
 macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
 {
-  struct pic_senv *in = push_scope(pic, pic_cadr(pic, expr), senv, cxt);
+  pic_value formal, body;
+  struct pic_senv *in;
 
-  return pic_cons(pic, pic_sym_value(pic->sLAMBDA),
-                  pic_cons(pic,
-                           macroexpand_list(pic, pic_cadr(pic, expr), in, cxt),
-                           macroexpand_list(pic, pic_cddr(pic, expr), in, cxt)));
+  in = push_scope(pic, pic_cadr(pic, expr), senv, cxt);
+
+  formal = macroexpand_list(pic, pic_cadr(pic, expr), in, cxt);
+  body = macroexpand_list(pic, pic_cddr(pic, expr), in, cxt);
+
+  return pic_cons(pic, pic_sym_value(pic->sLAMBDA), pic_cons(pic, formal, body));
 }
 
 static pic_value
