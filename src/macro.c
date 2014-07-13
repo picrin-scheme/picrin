@@ -11,31 +11,7 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 
-struct pic_senv *
-pic_null_syntactic_environment(pic_state *pic)
-{
-  struct pic_senv *senv;
-
-  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = NULL;
-  xh_init_int(&senv->renames, sizeof(pic_sym));
-
-  pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY);
-  pic_define_syntactic_keyword(pic, senv, pic->sIMPORT);
-  pic_define_syntactic_keyword(pic, senv, pic->sEXPORT);
-
-  return senv;
-}
-
-void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym)
-{
-  pic_put_rename(pic, senv, sym, sym);
-
-  if (pic->lib && pic->lib->senv == senv) {
-    pic_export(pic, sym);
-  }
-}
+static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, struct pic_dict *);
 
 pic_sym
 pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
@@ -92,35 +68,6 @@ find_macro(pic_state *pic, pic_sym rename)
     return NULL;
   }
   return xh_val(e, struct pic_macro *);
-}
-
-void
-pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
-{
-  pic_sym sym, rename;
-
-  /* symbol registration */
-  sym = pic_intern_cstr(pic, name);
-  rename = pic_add_rename(pic, pic->lib->senv, sym);
-  define_macro(pic, rename, macro, NULL);
-
-  /* auto export! */
-  pic_export(pic, sym);
-}
-
-static pic_value macroexpand_node(pic_state *, pic_value, struct pic_senv *, struct pic_dict *);
-
-static pic_value
-macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value v;
-
-  v = macroexpand_node(pic, expr, senv, cxt);
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, v);
-  return v;
 }
 
 static struct pic_senv *
@@ -579,6 +526,19 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
   UNREACHABLE();
 }
 
+static pic_value
+macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value v;
+
+  v = macroexpand_node(pic, expr, senv, cxt);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, v);
+  return v;
+}
+
 pic_value
 pic_macroexpand(pic_state *pic, pic_value expr)
 {
@@ -599,6 +559,46 @@ pic_macroexpand(pic_state *pic, pic_value expr)
 #endif
 
   return v;
+}
+
+struct pic_senv *
+pic_null_syntactic_environment(pic_state *pic)
+{
+  struct pic_senv *senv;
+
+  senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
+  senv->up = NULL;
+  xh_init_int(&senv->renames, sizeof(pic_sym));
+
+  pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY);
+  pic_define_syntactic_keyword(pic, senv, pic->sIMPORT);
+  pic_define_syntactic_keyword(pic, senv, pic->sEXPORT);
+
+  return senv;
+}
+
+void
+pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+{
+  pic_put_rename(pic, senv, sym, sym);
+
+  if (pic->lib && pic->lib->senv == senv) {
+    pic_export(pic, sym);
+  }
+}
+
+void
+pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
+{
+  pic_sym sym, rename;
+
+  /* symbol registration */
+  sym = pic_intern_cstr(pic, name);
+  rename = pic_add_rename(pic, pic->lib->senv, sym);
+  define_macro(pic, rename, macro, NULL);
+
+  /* auto export! */
+  pic_export(pic, sym);
 }
 
 static pic_value
