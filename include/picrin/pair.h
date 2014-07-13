@@ -21,6 +21,8 @@ struct pic_pair {
 pic_value pic_cons(pic_state *, pic_value, pic_value);
 pic_value pic_car(pic_state *, pic_value);
 pic_value pic_cdr(pic_state *, pic_value);
+void pic_set_car(pic_state *, pic_value, pic_value);
+void pic_set_cdr(pic_state *, pic_value, pic_value);
 
 bool pic_list_p(pic_value);
 pic_value pic_list1(pic_state *, pic_value);

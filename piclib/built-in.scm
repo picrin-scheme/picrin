@@ -410,33 +410,70 @@
   (import (scheme base)
           (scheme cxr)
           (picrin macro)
-          (picrin core-syntax))
+          (picrin core-syntax)
+          (picrin var)
+          (picrin attribute)
+          (picrin dictionary))
 
-  ;; reopen (pircin parameter)
-  ;; see src/var.c
+  (define (single? x)
+    (and (list? x) (= (length x) 1)))
+
+  (define (double? x)
+    (and (list? x) (= (length x) 2)))
+
+  (define (%make-parameter init conv)
+    (let ((var (make-var (conv init))))
+      (define (parameter . args)
+        (cond
+         ((null? args)
+          (var-ref var))
+         ((single? args)
+          (var-set! var (conv (car args))))
+         ((double? args)
+          (var-set! var ((cadr args) (car args))))
+         (else
+          (error "invalid arguments for parameter"))))
+
+      (dictionary-set! (attribute parameter) '@@var var)
+
+      parameter))
+
+  (define (make-parameter init . conv)
+    (let ((conv
+           (if (null? conv)
+               (lambda (x) x)
+               (car conv))))
+      (%make-parameter init conv)))
+
+  (define-syntax with
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((before (car (cdr form)))
+             (after  (car (cdr (cdr form))))
+             (body   (cdr (cdr (cdr form)))))
+         `(begin
+            (,before)
+            (let ((result (begin ,@body)))
+              (,after)
+              result))))))
+
+  (define (var-of parameter)
+    (dictionary-ref (attribute parameter) '@@var))
 
   (define-syntax parameterize
-    (er-macro-transformer
-     (lambda (form r compare)
-       (let ((bindings (cadr form))
-             (body (cddr form)))
-         (let ((vars (map car bindings))
-               (gensym (lambda (var)
-                         (string->symbol
-                          (string-append
-                           "parameterize-"
-                           (symbol->string var))))))
-           `(,(r 'let) (,@(map (lambda (var)
-                                 `(,(r (gensym var)) (,var)))
-                            vars))
-              ,@bindings
-              (,(r 'let) ((,(r 'result) (begin ,@body)))
-                ,@(map (lambda (var)
-                         `(,(r 'parameter-set!) ,var ,(r (gensym var))))
-                       vars)
-                ,(r 'result))))))))
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((formal (car (cdr form)))
+             (body   (cdr (cdr form))))
+         (let ((vars (map car formal))
+               (vals (map cadr formal)))
+           `(with
+             (lambda () ,@(map (lambda (var val) `(var-push! (var-of ,var) ,val)) vars vals))
+             (lambda () ,@(map (lambda (var) `(var-pop! (var-of ,var))) vars))
+             ,@body))))))
 
-  (export parameterize))
+  (export make-parameter
+          parameterize))
 
 ;;; Record Type
 (define-library (picrin record)
@@ -949,6 +986,16 @@
         vector-map vector-for-each)
 
 ;;; 6.13. Input and output
+
+(import (picrin port))
+
+(define current-input-port (make-parameter standard-input-port))
+(define current-output-port (make-parameter standard-output-port))
+(define current-error-port (make-parameter standard-error-port))
+
+(export current-input-port
+        current-output-port
+        current-error-port)
 
 (define (call-with-port port proc)
   (dynamic-wind

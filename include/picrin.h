@@ -135,11 +135,12 @@ void pic_define(pic_state *, const char *, pic_value); /* automatic export */
 pic_value pic_ref(pic_state *, const char *);
 void pic_set(pic_state *, const char *, pic_value);
 
+pic_value pic_funcall(pic_state *pic, const char *name, pic_list args);
+
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defmacro(pic_state *, const char *, struct pic_proc *);
-void pic_defvar(pic_state *, const char *, pic_value);
 
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 

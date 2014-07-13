@@ -427,7 +427,7 @@ pic_ref(pic_state *pic, const char *name)
 
   gid = global_ref(pic, name);
   if (gid == SIZE_MAX) {
-    pic_error(pic, "symbol not defined");
+    pic_errorf(pic, "symbol \"%s\" not defined", name);
   }
   return pic->globals[gid];
 }
@@ -444,6 +444,18 @@ pic_set(pic_state *pic, const char *name, pic_value value)
   pic->globals[gid] = value;
 }
 
+pic_value
+pic_funcall(pic_state *pic, const char *name, pic_list args)
+{
+  pic_value proc;
+
+  proc = pic_ref(pic, name);
+
+  pic_assert_type(pic, proc, proc);
+
+  return pic_apply(pic, pic_proc_ptr(proc), args);
+}
+
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
@@ -451,15 +463,6 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 
   proc = pic_proc_new(pic, cfunc, name);
   pic_define(pic, name, pic_obj_value(proc));
-}
-
-void
-pic_defvar(pic_state *pic, const char *name, pic_value init)
-{
-  struct pic_var *var;
-
-  var = pic_var_new(pic, init, NULL);
-  pic_define(pic, name, pic_obj_value(pic_wrap_var(pic, var)));
 }
 
 static void
