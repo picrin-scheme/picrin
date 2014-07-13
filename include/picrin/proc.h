@@ -31,6 +31,7 @@ struct pic_proc {
     struct pic_irep *irep;
   } u;
   struct pic_env *env;
+  struct pic_dict *attr;
 };
 
 #define PIC_PROC_KIND_FUNC 1
@@ -49,6 +50,8 @@ struct pic_proc *pic_proc_new(pic_state *, pic_func_t, const char *);
 struct pic_proc *pic_proc_new_irep(pic_state *, struct pic_irep *, struct pic_env *);
 
 pic_sym pic_proc_name(struct pic_proc *);
+
+struct pic_dict *pic_proc_attr(pic_state *, struct pic_proc *);
 
 /* closed variables accessor */
 void pic_proc_cv_init(pic_state *, struct pic_proc *, size_t);

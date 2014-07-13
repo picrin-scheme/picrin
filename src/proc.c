@@ -6,6 +6,7 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/irep.h"
+#include "picrin/dict.h"
 
 struct pic_proc *
 pic_proc_new(pic_state *pic, pic_func_t func, const char *name)
@@ -19,6 +20,7 @@ pic_proc_new(pic_state *pic, pic_func_t func, const char *name)
   proc->u.func.f = func;
   proc->u.func.name = pic_intern_cstr(pic, name);
   proc->env = NULL;
+  proc->attr = NULL;
   return proc;
 }
 
@@ -31,6 +33,7 @@ pic_proc_new_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
   proc->kind = PIC_PROC_KIND_IREP;
   proc->u.irep = irep;
   proc->env = env;
+  proc->attr = NULL;
   return proc;
 }
 
@@ -44,6 +47,15 @@ pic_proc_name(struct pic_proc *proc)
     return proc->u.irep->name;
   }
   UNREACHABLE();
+}
+
+struct pic_dict *
+pic_proc_attr(pic_state *pic, struct pic_proc *proc)
+{
+  if (proc->attr == NULL) {
+    proc->attr = pic_dict_new(pic);
+  }
+  return proc->attr;
 }
 
 void
@@ -206,6 +218,16 @@ pic_proc_for_each(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_proc_attribute(pic_state *pic)
+{
+  struct pic_proc *proc;
+
+  pic_get_args(pic, "l", &proc);
+
+  return pic_obj_value(pic_proc_attr(pic, proc));
+}
+
 void
 pic_init_proc(pic_state *pic)
 {
@@ -213,4 +235,8 @@ pic_init_proc(pic_state *pic)
   pic_defun(pic, "apply", pic_proc_apply);
   pic_defun(pic, "map", pic_proc_map);
   pic_defun(pic, "for-each", pic_proc_for_each);
+
+  pic_deflibrary ("(picrin attribute)") {
+    pic_defun(pic, "attribute", pic_proc_attribute);
+  }
 }

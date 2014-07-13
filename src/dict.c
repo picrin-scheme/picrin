@@ -5,6 +5,17 @@
 #include "picrin.h"
 #include "picrin/dict.h"
 
+struct pic_dict *
+pic_dict_new(pic_state *pic)
+{
+  struct pic_dict *dict;
+
+  dict = (struct pic_dict *)pic_obj_alloc(pic, sizeof(struct pic_dict), PIC_TT_DICT);
+  xh_init_int(&dict->hash, sizeof(pic_value));
+
+  return dict;
+}
+
 static pic_value
 pic_dict_dict(pic_state *pic)
 {
@@ -12,9 +23,7 @@ pic_dict_dict(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  dict = (struct pic_dict *)pic_obj_alloc(pic, sizeof(struct pic_dict), PIC_TT_DICT);
-
-  xh_init_int(&dict->hash, sizeof(pic_value));
+  dict = pic_dict_new(pic);
 
   return pic_obj_value(dict);
 }
