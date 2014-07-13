@@ -359,19 +359,19 @@ static pic_value
 macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
 {
   pic_sym sym;
-  pic_value formals;
+  pic_value formal;
 
   if (pic_length(pic, expr) < 2) {
     pic_error(pic, "syntax error");
   }
 
-  formals = pic_cadr(pic, expr);
-  if (pic_pair_p(formals)) {
-    struct pic_senv *in = push_scope(pic, pic_cdr(pic, formals), senv, cxt);
+  formal = pic_cadr(pic, expr);
+  if (pic_pair_p(formal)) {
+    struct pic_senv *in = push_scope(pic, pic_cdr(pic, formal), senv, cxt);
     pic_value a;
 
     /* defined symbol */
-    a = pic_car(pic, formals);
+    a = pic_car(pic, formal);
     if (! pic_sym_p(a)) {
       a = macroexpand(pic, a, senv, cxt);
     }
@@ -390,13 +390,13 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
                              macroexpand_list(pic, pic_cddr(pic, expr), in, cxt)));
   }
 
-  if (! pic_sym_p(formals)) {
-    formals = macroexpand(pic, formals, senv, cxt);
+  if (! pic_sym_p(formal)) {
+    formal = macroexpand(pic, formal, senv, cxt);
   }
-  if (! pic_sym_p(formals)) {
+  if (! pic_sym_p(formal)) {
     pic_error(pic, "binding to non-symbol object");
   }
-  sym = pic_sym(formals);
+  sym = pic_sym(formal);
   if (! pic_find_rename(pic, senv, sym, NULL)) {
     pic_add_rename(pic, senv, sym);
   }
