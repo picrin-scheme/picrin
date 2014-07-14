@@ -440,20 +440,20 @@
 
 (test-begin "4.3 Macros")
 
-;; (test 'now (let-syntax
-;;                ((when (syntax-rules ()
-;;                         ((when test stmt1 stmt2 ...)
-;;                          (if test
-;;                              (begin stmt1
-;;                                     stmt2 ...))))))
-;;              (let ((if #t))
-;;                (when if (set! if 'now))
-;;                if)))
+(test 'now (let-syntax
+               ((when (syntax-rules ()
+                        ((when test stmt1 stmt2 ...)
+                         (if test
+                             (begin stmt1
+                                    stmt2 ...))))))
+             (let ((if #t))
+               (when if (set! if 'now))
+               if)))
 
-;; (test 'outer (let ((x 'outer))
-;;   (let-syntax ((m (syntax-rules () ((m) x))))
-;;     (let ((x 'inner))
-;;       (m)))))
+(test 'outer (let ((x 'outer))
+  (let-syntax ((m (syntax-rules () ((m) x))))
+    (let ((x 'inner))
+      (m)))))
 
 ;; (test 7 (letrec-syntax
 ;;   ((my-or (syntax-rules ()
