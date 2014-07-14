@@ -87,6 +87,11 @@ typedef struct {
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
 
+  pic_sym rDEFINE, rLAMBDA, rIF, rBEGIN, rQUOTE, rSETBANG;
+  pic_sym rDEFINE_SYNTAX, rDEFINE_MACRO;
+  pic_sym rLET_SYNTAX, rLETREC_SYNTAX;
+  pic_sym rDEFINE_LIBRARY, rIMPORT, rEXPORT;
+
   xhash syms;                   /* name to symbol */
   xhash sym_names;              /* symbol to name */
   int sym_cnt;

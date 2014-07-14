@@ -68,15 +68,15 @@ pic_init_core(pic_state *pic)
 
     /* load core syntaces */
     pic->lib->senv = pic_null_syntactic_environment(pic);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sSETBANG);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sQUOTE);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLAMBDA);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sIF);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sBEGIN);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_SYNTAX);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLET_SYNTAX);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLETREC_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE, pic->rDEFINE);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sSETBANG, pic->rSETBANG);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sQUOTE, pic->rQUOTE);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLAMBDA, pic->rLAMBDA);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sIF, pic->rIF);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sBEGIN, pic->rBEGIN);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLET_SYNTAX, pic->rLET_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLETREC_SYNTAX, pic->rLETREC_SYNTAX);
 
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;

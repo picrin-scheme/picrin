@@ -118,6 +118,26 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sNOT, "not");
   pic_gc_arena_restore(pic, ai);
 
+#define register_renamed_symbol(pic,slot,name) do {              \
+    pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));     \
+  } while (0)
+
+  ai = pic_gc_arena_preserve(pic);
+  register_renamed_symbol(pic, rDEFINE, "define");
+  register_renamed_symbol(pic, rLAMBDA, "lambda");
+  register_renamed_symbol(pic, rIF, "if");
+  register_renamed_symbol(pic, rBEGIN, "begin");
+  register_renamed_symbol(pic, rSETBANG, "set!");
+  register_renamed_symbol(pic, rQUOTE, "quote");
+  register_renamed_symbol(pic, rDEFINE_SYNTAX, "define-syntax");
+  register_renamed_symbol(pic, rDEFINE_MACRO, "define-macro");
+  register_renamed_symbol(pic, rLET_SYNTAX, "let-syntax");
+  register_renamed_symbol(pic, rLETREC_SYNTAX, "letrec-syntax");
+  register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
+  register_renamed_symbol(pic, rIMPORT, "import");
+  register_renamed_symbol(pic, rEXPORT, "export");
+  pic_gc_arena_restore(pic, ai);
+
   pic_init_core(pic);
 
   /* set library */

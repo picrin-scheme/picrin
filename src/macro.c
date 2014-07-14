@@ -104,7 +104,7 @@ macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pi
 static pic_value
 macroexpand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, pic_sym_value(pic->sQUOTE), pic_cdr(pic, expr));
+  return pic_cons(pic, pic_sym_value(pic->rQUOTE), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -242,7 +242,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
   formal = macroexpand_list(pic, pic_cadr(pic, expr), in, cxt);
   body = macroexpand_list(pic, pic_cddr(pic, expr), in, cxt);
 
-  return pic_cons(pic, pic_sym_value(pic->sLAMBDA), pic_cons(pic, formal, body));
+  return pic_cons(pic, pic_sym_value(pic->rLAMBDA), pic_cons(pic, formal, body));
 }
 
 static pic_value
@@ -280,7 +280,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
   } else {
     val = macroexpand(pic, pic_car(pic, body), senv, cxt);
   }
-  return pic_list3(pic, pic_sym_value(pic->sDEFINE), macroexpand_symbol(pic, sym, senv, cxt), val);
+  return pic_list3(pic, pic_sym_value(pic->rDEFINE), macroexpand_symbol(pic, sym, senv, cxt), val);
 }
 
 static pic_value
@@ -406,7 +406,7 @@ macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv, st
     }
     define_macro(pic, rename, pic_proc_ptr(val), senv);
   }
-  return pic_cons(pic, pic_sym_value(pic->sBEGIN), macroexpand_list(pic, pic_cddr(pic, expr), in, cxt));
+  return pic_cons(pic, pic_sym_value(pic->rBEGIN), macroexpand_list(pic, pic_cddr(pic, expr), in, cxt));
 }
 
 static pic_value
@@ -470,34 +470,34 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
     if (pic_sym_p(car)) {
       pic_sym tag = pic_sym(car);
 
-      if (tag == pic->sDEFINE_LIBRARY) {
+      if (tag == pic->rDEFINE_LIBRARY) {
         return macroexpand_deflibrary(pic, expr);
       }
-      else if (tag == pic->sIMPORT) {
+      else if (tag == pic->rIMPORT) {
         return macroexpand_import(pic, expr);
       }
-      else if (tag == pic->sEXPORT) {
+      else if (tag == pic->rEXPORT) {
         return macroexpand_export(pic, expr);
       }
-      else if (tag == pic->sDEFINE_SYNTAX) {
+      else if (tag == pic->rDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, senv, cxt);
       }
-      else if (tag == pic->sDEFINE_MACRO) {
+      else if (tag == pic->rDEFINE_MACRO) {
         return macroexpand_defmacro(pic, expr, senv);
       }
-      else if (tag == pic->sLET_SYNTAX) {
+      else if (tag == pic->rLET_SYNTAX) {
         return macroexpand_let_syntax(pic, expr, senv, cxt);
       }
       /* else if (tag == pic->sLETREC_SYNTAX) { */
       /*   return macroexpand_letrec_syntax(pic, expr, senv, cxt); */
       /* } */
-      else if (tag == pic->sLAMBDA) {
+      else if (tag == pic->rLAMBDA) {
         return macroexpand_lambda(pic, expr, senv, cxt);
       }
-      else if (tag == pic->sDEFINE) {
+      else if (tag == pic->rDEFINE) {
         return macroexpand_define(pic, expr, senv, cxt);
       }
-      else if (tag == pic->sQUOTE) {
+      else if (tag == pic->rQUOTE) {
         return macroexpand_quote(pic, expr);
       }
 
@@ -582,17 +582,17 @@ pic_null_syntactic_environment(pic_state *pic)
   senv->up = NULL;
   xh_init_int(&senv->renames, sizeof(pic_sym));
 
-  pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY);
-  pic_define_syntactic_keyword(pic, senv, pic->sIMPORT);
-  pic_define_syntactic_keyword(pic, senv, pic->sEXPORT);
+  pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
+  pic_define_syntactic_keyword(pic, senv, pic->sIMPORT, pic->rIMPORT);
+  pic_define_syntactic_keyword(pic, senv, pic->sEXPORT, pic->rEXPORT);
 
   return senv;
 }
 
 void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rsym)
 {
-  pic_put_rename(pic, senv, sym, sym);
+  pic_put_rename(pic, senv, sym, rsym);
 
   if (pic->lib && pic->lib->senv == senv) {
     pic_export(pic, sym);
@@ -944,7 +944,7 @@ pic_init_macro(pic_state *pic)
   pic_deflibrary ("(picrin macro)") {
 
     /* export define-macro syntax */
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_MACRO);
+    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_MACRO, pic->rDEFINE_MACRO);
 
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);

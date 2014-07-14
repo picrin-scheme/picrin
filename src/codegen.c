@@ -366,7 +366,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
       : pic_false_value();
 
     /* To know what kind of local variables are defined, analyze body at first. */
-    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), body_exprs), true);
+    body = analyze(state, pic_cons(pic, pic_sym_value(pic->rBEGIN), body_exprs), true);
 
     locals = pic_nil_value();
     for (i = scope->locals.size; i > 0; --i) {
@@ -535,7 +535,7 @@ analyze_quote(analyze_state *state, pic_value obj)
   if (pic_length(pic, obj) != 2) {
     pic_error(pic, "syntax error");
   }
-  return obj;
+  return pic_list2(pic, pic_sym_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
 #define ARGC_ASSERT_GE(n) do {				\
@@ -727,22 +727,22 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     if (pic_sym_p(proc)) {
       pic_sym sym = pic_sym(proc);
 
-      if (sym == pic->sDEFINE) {
+      if (sym == pic->rDEFINE) {
         return analyze_define(state, obj);
       }
-      else if (sym == pic->sLAMBDA) {
+      else if (sym == pic->rLAMBDA) {
         return analyze_lambda(state, obj);
       }
-      else if (sym == pic->sIF) {
+      else if (sym == pic->rIF) {
         return analyze_if(state, obj, tailpos);
       }
-      else if (sym == pic->sBEGIN) {
+      else if (sym == pic->rBEGIN) {
         return analyze_begin(state, obj, tailpos);
       }
-      else if (sym == pic->sSETBANG) {
+      else if (sym == pic->rSETBANG) {
         return analyze_set(state, obj);
       }
-      else if (sym == pic->sQUOTE) {
+      else if (sym == pic->rQUOTE) {
         return analyze_quote(state, obj);
       }
       else if (sym == state->rCONS) {
