@@ -1,0 +1,55 @@
+(define-library (picrin array)
+  (import (scheme base))
+
+  (define-record-type array
+    (create-array data size head tail)
+    array?
+    (data array-data set-array-data!)
+    (size array-size set-array-size!)
+    (head array-head set-array-head!)
+    (tail array-tail set-array-tail!))
+
+  (define (translate ary i)
+    (floor-remainder i (array-size ary)))
+
+  (define (make-array)
+    (create-array (vector) 0 0 0))
+
+  (define (array-length ary)
+    (let ((size (- (array-tail ary) (array-head ary))))
+     (translate ary size)))
+
+  (define (array-rotate! ary)
+    (when (< (array-tail ary) (array-head ary))
+      (let ((xs (vector-copy (array-data ary) 0 (array-head ary)))
+            (ys (vector-copy (array-data ary) (array-head ary))))
+        (set-array-data! ary (vector-append ys xs))
+        (set-array-tail! ary (array-length ary))
+        (set-array-head! ary 0))))
+
+  (define (array-reserve! ary size)
+    (set! size (+ size 1))              ; capa == size - 1
+    (when (< (array-size ary) size)
+      (array-rotate! ary)
+      (set-array-data! ary (vector-append (array-data ary) (make-vector (- size (array-size ary)))))
+      (set-array-size! ary size)))
+
+  (define (array-ref ary i)
+    (let ((data (array-data ary)))
+      (vector-ref data (translate ary (+ (array-head ary) i)))))
+
+  (define (array-set! ary i obj)
+    (let ((data (array-data ary)))
+      (vector-set! data (translate ary (+ (array-head ary) i)) obj)))
+
+  (define (array-push! ary obj)
+    (array-reserve! ary (+ (array-length ary) 1))
+    (array-set! ary (array-length ary) obj)
+    (set-array-tail! ary (translate ary (+ (array-tail ary) 1))))
+
+  (export make-array
+          array?
+          array-length
+          array-ref
+          array-set!
+          array-push!))
