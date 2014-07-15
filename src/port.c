@@ -179,7 +179,7 @@ pic_port_seekable_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(v) && file->vtable.seek != NULL) {
+  if (pic_port_p(v) && pic_port_ptr(v)->file->vtable.seek != NULL) {
     return pic_true_value();
   }
   else {
