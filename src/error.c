@@ -47,8 +47,8 @@ pic_push_try(pic_state *pic, struct pic_proc *handler)
 
   try_jmp->handler = handler;
 
-  try_jmp->ci = pic->ci;
-  try_jmp->sp = pic->sp;
+  try_jmp->ci_offset = pic->ci - pic->cibase;
+  try_jmp->sp_offset = pic->sp - pic->stbase;
   try_jmp->ip = pic->ip;
 
   try_jmp->prev_jmp = pic->jmp;
@@ -64,8 +64,8 @@ pic_pop_try(pic_state *pic)
 
   assert(pic->jmp == &try_jmp->here);
 
-  pic->ci = try_jmp->ci;
-  pic->sp = try_jmp->sp;
+  pic->ci += try_jmp->ci_offset;
+  pic->sp += try_jmp->sp_offset;
   pic->ip = try_jmp->ip;
 
   pic->jmp = try_jmp->prev_jmp;
