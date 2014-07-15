@@ -81,6 +81,12 @@
   (define (array . objs)
     (list->array objs))
 
+  (define (array-map proc ary)
+    (list->array (map proc (array->list ary))))
+
+  (define (array-for-each proc ary)
+    (for-each proc (array->list ary)))
+
   (export make-array
           array
           array?
@@ -91,5 +97,7 @@
           array-pop!
           array-shift!
           array-unshift!
+          array-map
+          array-for-each
           array->list
           list->array))
