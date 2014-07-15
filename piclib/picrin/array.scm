@@ -34,7 +34,12 @@
       (set-array-size! ary size)))
 
   (define (make-array . rest)
-    (create-array (vector) 0 0 0))
+    (if (null? rest)
+        (make-array 0)
+        (let ((capacity (car rest))
+              (ary (create-array (vector) 0 0 0)))
+          (array-reserve! ary capacity)
+          ary)))
 
   (define (array-ref ary i)
     (let ((data (array-data ary)))
