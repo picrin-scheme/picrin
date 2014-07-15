@@ -167,6 +167,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   void pic_vm_tear_off(pic_state *);
   char v;
   struct pic_cont *tmp = cont;
+  pic_block *blk;
 
   pic_vm_tear_off(pic);         /* tear off */
 
@@ -177,9 +178,10 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
-  PIC_BLK_DECREF(pic, pic->blk);
-  PIC_BLK_INCREF(pic, cont->blk);
+  blk = pic->blk;
   pic->blk = cont->blk;
+  PIC_BLK_INCREF(pic, pic->blk);
+  PIC_BLK_DECREF(pic, blk);
 
   pic->stbase = (pic_value *)pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
