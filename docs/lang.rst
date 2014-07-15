@@ -17,6 +17,8 @@ At the REPL start-up time, some usuful built-in libraries listed below will be a
 - ``(scheme cxr)``
 - ``(scheme lazy)``
 - ``(scheme time)``
+- ``(scheme case-lambda)``
+- ``(scheme read)``
 
 Compliance with R7RS
 ---------------------
