@@ -31,7 +31,9 @@
     (set! size (+ size 1))              ; capa == size - 1
     (when (< (array-size ary) size)
       (array-rotate! ary)
-      (set-array-data! ary (vector-append (array-data ary) (make-vector (- size (array-size ary)))))
+      (set-array-data! ary (vector-append
+                            (array-data ary)
+                            (make-vector (- size (array-size ary)))))
       (set-array-size! ary size)))
 
   (define (array-ref ary i)
@@ -47,9 +49,25 @@
     (array-set! ary (array-length ary) obj)
     (set-array-tail! ary (translate ary (+ (array-tail ary) 1))))
 
+  (define (array-pop! ary)
+    (set-array-tail! ary (translate ary (- (array-tail ary) 1)))
+    (array-ref ary (array-length ary)))
+
+  (define (array-shift! ary)
+    (set-array-head! ary (translate ary (+ (array-head ary) 1)))
+    (array-ref ary -1))
+
+  (define (array-unshift! ary obj)
+    (array-reserve! ary (+ (array-length ary) 1))
+    (array-set! ary -1 obj)
+    (set-array-head! ary (translate ary (- (array-head ary) 1))))
+
   (export make-array
           array?
           array-length
           array-ref
           array-set!
-          array-push!))
+          array-push!
+          array-pop!
+          array-shift!
+          array-unshift!))
