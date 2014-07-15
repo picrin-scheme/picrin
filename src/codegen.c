@@ -420,14 +420,11 @@ analyze_define(analyze_state *state, pic_value obj)
   pic_value var, val;
   pic_sym sym;
 
-  if (pic_length(pic, obj) < 2) {
+  if (pic_length(pic, obj) != 3) {
     pic_error(pic, "syntax error");
   }
 
   var = pic_list_ref(pic, obj, 1);
-  if (pic_pair_p(var)) {
-    var = pic_list_ref(pic, var, 0);
-  }
   if (! pic_sym_p(var)) {
     pic_error(pic, "syntax error");
   } else {
@@ -435,11 +432,13 @@ analyze_define(analyze_state *state, pic_value obj)
   }
   var = analyze_declare(state, sym);
 
-  if (pic_pair_p(pic_list_ref(pic, obj, 1))) {
+  if (pic_pair_p(pic_list_ref(pic, obj, 2))
+      && pic_sym_p(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0))
+      && pic_sym(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->rLAMBDA) {
     pic_value formals, body_exprs;
 
-    formals = pic_list_tail(pic, pic_list_ref(pic, obj, 1), 1);
-    body_exprs = pic_list_tail(pic, obj, 2);
+    formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
+    body_exprs = pic_list_tail(pic, pic_list_ref(pic, obj, 2), 2);
 
     val = analyze_procedure(state, pic_sym_value(sym), formals, body_exprs);
   } else {
