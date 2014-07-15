@@ -1,5 +1,5 @@
 (import (scheme base)
-        (picrin port)
+        (picrin port seek)
         (scheme write))
 
 (define (count-lines str)
