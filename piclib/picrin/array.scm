@@ -12,9 +12,6 @@
   (define (translate ary i)
     (floor-remainder i (array-size ary)))
 
-  (define (make-array)
-    (create-array (vector) 0 0 0))
-
   (define (array-length ary)
     (let ((size (- (array-tail ary) (array-head ary))))
      (translate ary size)))
@@ -35,6 +32,9 @@
                             (array-data ary)
                             (make-vector (- size (array-size ary)))))
       (set-array-size! ary size)))
+
+  (define (make-array . rest)
+    (create-array (vector) 0 0 0))
 
   (define (array-ref ary i)
     (let ((data (array-data ary)))
@@ -62,7 +62,22 @@
     (array-set! ary -1 obj)
     (set-array-head! ary (translate ary (- (array-head ary) 1))))
 
+  (define (array->list ary)
+    (do ((i 0 (+ i 1))
+         (x '() (cons (array-ref ary i) x)))
+        ((= i (array-length ary))
+         (reverse x))))
+
+  (define (list->array list)
+    (let ((ary (make-array)))
+      (for-each (lambda (x) (array-push! ary x)) list)
+      ary))
+
+  (define (array . objs)
+    (list->array objs))
+
   (export make-array
+          array
           array?
           array-length
           array-ref
@@ -70,4 +85,6 @@
           array-push!
           array-pop!
           array-shift!
-          array-unshift!))
+          array-unshift!
+          array->list
+          list->array))
