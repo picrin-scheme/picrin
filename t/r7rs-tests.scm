@@ -637,11 +637,11 @@
 ;; (test #t (real? #e1e10))
 (test #t (real? +inf.0))
 (test #f (rational? -inf.0))
-;; (test #t (rational? 6/10))
-;; (test #t (rational? 6/3))
+(test #t (rational? 6/10))
+(test #t (rational? 6/3))
 ;; (test #t (integer? 3+0i))
 (test #t (integer? 3.0))
-;; (test #t (integer? 8/4))
+(test #t (integer? 8/4))
 
 (test #f (exact? 3.0))
 ;; (test #t (exact? #e3.0))
@@ -649,7 +649,7 @@
 
 (test #t (exact-integer? 32))
 (test #f (exact-integer? 32.0))
-;; (test #f (exact-integer? 32/5))
+(test #f (exact-integer? 32/5))
 
 (test #t (finite? 3))
 (test #f (finite? +inf.0))
@@ -763,8 +763,8 @@
 (test -1 (- 3 4))
 (test -6 (- 3 4 5))
 (test -3 (- 3))
-;; (test 3/20 (/ 3 4 5))
-;; (test 1/3 (/ 3))
+(test 3/20 (/ 3 4 5))
+(test 1/3 (/ 3))
 
 (test 7 (abs -7))
 (test 7 (abs 7))
@@ -817,7 +817,7 @@
 (test 3.0 (truncate 3.5))
 (test 4.0 (round 3.5))
 
-;; (test 4 (round 7/2))
+(test 4 (round 7/2))
 (test 7 (round 7))
 
 ;; (test 1/3 (rationalize (exact .3) 1/10))
