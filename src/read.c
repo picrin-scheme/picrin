@@ -208,7 +208,11 @@ read_number(pic_state *pic, struct pic_port *port, char c)
     n = atoi(buf);
     next(port);
     read_uinteger(pic, port, next(port), buf);
-    return pic_float_value(n / (double)atoi(buf));
+    if (n == n / atoi(buf) * atoi(buf)) {
+      return pic_int_value(n / atoi(buf)); /* exact */
+    } else {
+      return pic_float_value(n / (double)atoi(buf));
+    }
 
   default:
     return pic_int_value(atoi(buf));
