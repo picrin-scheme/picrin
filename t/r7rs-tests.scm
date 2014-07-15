@@ -36,8 +36,7 @@
         (scheme write)
 ;        (scheme eval)
         (scheme process-context)
-;        (scheme case-lambda)
-        )
+        (scheme case-lambda))
 
 ;; R7RS test suite.  Covers all procedures and syntax in the small
 ;; language except `delete-file'.  Currently assumes full-unicode
@@ -409,32 +408,32 @@
 (test '(list 3 4) (quasiquote (list (unquote (+ 1 2)) 4)) )
 (test `(list ,(+ 1 2) 4) (quasiquote (list (unquote (+ 1 2)) 4)))
 
-;; (define plus
-;;   (case-lambda
-;;    (() 0)
-;;    ((x) x)
-;;    ((x y) (+ x y))
-;;    ((x y z) (+ (+ x y) z))
-;;    (args (apply + args))))
+(define plus
+  (case-lambda
+   (() 0)
+   ((x) x)
+   ((x y) (+ x y))
+   ((x y z) (+ (+ x y) z))
+   (args (apply + args))))
 
-;; (test 0 (plus))
-;; (test 1 (plus 1))
-;; (test 3 (plus 1 2))
-;; (test 6 (plus 1 2 3))
-;; (test 10 (plus 1 2 3 4))
+(test 0 (plus))
+(test 1 (plus 1))
+(test 3 (plus 1 2))
+(test 6 (plus 1 2 3))
+(test 10 (plus 1 2 3 4))
 
-;; (define mult
-;;   (case-lambda
-;;    (() 1)
-;;    ((x) x)
-;;    ((x y) (* x y))
-;;    ((x y . z) (apply mult (* x y) z))))
+(define mult
+  (case-lambda
+   (() 1)
+   ((x) x)
+   ((x y) (* x y))
+   ((x y . z) (apply mult (* x y) z))))
 
-;; (test 1 (mult))
-;; (test 1 (mult 1))
-;; (test 2 (mult 1 2))
-;; (test 6 (mult 1 2 3))
-;; (test 24 (mult 1 2 3 4))
+(test 1 (mult))
+(test 1 (mult 1))
+(test 2 (mult 1 2))
+(test 6 (mult 1 2 3))
+(test 24 (mult 1 2 3 4))
 
 (test-end)
 
