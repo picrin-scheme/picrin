@@ -49,7 +49,7 @@ Utility functions and syntaces for macro definition.
 
 - define-macro
 - gensym
-- macroexpand expr
+- macroexpand
 
 Old-fashioned macro.
 
