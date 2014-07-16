@@ -292,6 +292,17 @@
                           `(,(r 'begin) ,@(cdar clauses)))
                         ,(loop (cdr clauses))))))))))
 
+  (define-syntax letrec-syntax
+    (er-macro-transformer
+     (lambda (form r c)
+       (let ((formal (car (cdr form)))
+             (body   (cdr (cdr form))))
+         `(let ()
+            ,@(map (lambda (x)
+                     `(,(r 'define-syntax) ,(car x) ,(cadr x)))
+                   formal)
+            ,@body)))))
+
   (define-syntax syntax-error
     (er-macro-transformer
      (lambda (expr rename compare)
@@ -317,6 +328,7 @@
           and or
           cond case else =>
           do when unless
+          letrec-syntax
           _ ... syntax-error))
 
 
@@ -629,6 +641,7 @@
         and or
         cond case else =>
         do when unless
+        letrec-syntax
         _ ... syntax-error)
 
 (export let-values

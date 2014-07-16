@@ -58,7 +58,7 @@ section                                          status     comments
 5.3.1 Top level definitions                      yes
 5.3.2 Internal definitions                       yes        TODO: interreferential definitions
 5.3.3 Multiple-value definitions                 yes
-5.4 Syntax definitions                           yes        TODO: internal macro definition is not supported.
+5.4 Syntax definitions                           yes
 5.5 Recored-type definitions                     yes
 5.6.1 Library Syntax                             incomplete In picrin, libraries can be reopend and can be nested.
 5.6.2 Library example                            N/A
