@@ -34,7 +34,12 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 {
   xh_entry *e;
 
-  UNUSED(pic);
+  if (! pic_interned_p(pic, sym)) {
+    if (rename != NULL) {
+      *rename = sym;
+    }
+    return true;
+  }
 
   if ((e = xh_get_int(&senv->renames, sym)) == NULL) {
     return false;
@@ -73,9 +78,6 @@ translate(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *c
 {
   pic_sym rename;
 
-  if (! pic_interned_p(pic, sym)) {
-    return sym;
-  }
   while (true) {
     if (pic_find_rename(pic, senv, sym, &rename)) {
       return rename;
