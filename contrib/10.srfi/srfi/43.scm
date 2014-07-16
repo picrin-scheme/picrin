@@ -92,16 +92,28 @@
                         (map (lambda (v) (vector-ref v count)) vects))
                  (- count 1))))))
 
-  (define (vector-map! f vec . vects)
+  (define (vector-map f vec . vects)
     (let* ((vects (cons vec vects))
            (veclen (apply min (map vector-length vects)))
            (new-vect (make-vector veclen)))
       (let rec ((count 0))
+        (if (= count veclen)
+            new-vect
+            (begin
+              (vector-set! new-vect count
+                           (apply f count (map (lambda (v) (vector-ref v count))
+                                               vects)))
+              (rec (+ 1 count)))))))
+
+  (define (vector-map! f vec . vects)
+    (let* ((vects (cons vec vects))
+           (veclen (apply min (map vector-length vects))))
+      (let rec ((count 0))
         (if (< count veclen)
             (begin
               (vector-set! vec count
-                           (apply f (map (lambda (v) (vector-ref v count))
-                                         vects)))
+                           (apply f count (map (lambda (v) (vector-ref v count))
+                                               vects)))
               (rec (+ 1 count)))))))
 
   (define (vector-count pred? vec . vects)
