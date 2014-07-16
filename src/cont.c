@@ -245,7 +245,6 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
     c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
-    pic_proc_cv_init(pic, c, 1);
     pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
 
     return pic_apply1(pic, proc, pic_obj_value(c));
@@ -267,7 +266,6 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
     c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
-    pic_proc_cv_init(pic, c, 1);
     pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
 
     return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));

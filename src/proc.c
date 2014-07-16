@@ -58,17 +58,6 @@ pic_proc_attr(pic_state *pic, struct pic_proc *proc)
   return proc->attr;
 }
 
-void
-pic_proc_cv_init(pic_state *pic, struct pic_proc *proc, size_t cv_size)
-{
-}
-
-int
-pic_proc_cv_size(pic_state *pic, struct pic_proc *proc)
-{
-  return 0;
-}
-
 pic_value
 pic_proc_cv_ref(pic_state *pic, struct pic_proc *proc, size_t i)
 {
