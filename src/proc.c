@@ -100,36 +100,6 @@ pic_proc_cv_set(pic_state *pic, struct pic_proc *proc, size_t i, pic_value v)
 }
 
 static pic_value
-papply_call(pic_state *pic)
-{
-  size_t argc;
-  pic_value *argv, arg, arg_list;
-  struct pic_proc *proc;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  proc = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
-  arg = pic_proc_cv_ref(pic, pic_get_proc(pic), 1);
-
-  arg_list = pic_list_by_array(pic, argc, argv);
-  arg_list = pic_cons(pic, arg, arg_list);
-  return pic_apply(pic, proc, arg_list);
-}
-
-struct pic_proc *
-pic_papply(pic_state *pic, struct pic_proc *proc, pic_value arg)
-{
-  struct pic_proc *pa_proc;
-
-  pa_proc = pic_proc_new(pic, papply_call, "<partial-applied-procedure>");
-  pic_proc_cv_init(pic, pa_proc, 2);
-  pic_proc_cv_set(pic, pa_proc, 0, pic_obj_value(proc));
-  pic_proc_cv_set(pic, pa_proc, 1, arg);
-
-  return pa_proc;
-}
-
-static pic_value
 pic_proc_proc_p(pic_state *pic)
 {
   pic_value v;
