@@ -248,6 +248,16 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
   Conversion between dictionary and alist/plist.
 
 
+(picrin pretty-print)
+---------------------
+
+Pretty-printer.
+
+- **(pretty-print obj)**
+
+  Prints obj with human-readable indention to current-output-port.
+
+
 (picrin user)
 -------------
 

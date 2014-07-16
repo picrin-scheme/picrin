@@ -300,12 +300,23 @@ read_boolean(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_char(pic_state *pic, struct pic_port *port, char c)
 {
-  UNUSED(pic);
-  UNUSED(c);
+  c = next(port);
 
-  /* TODO: #\alart, #\space, so on and so on */
+  if (! isdelim(peek(port))) {
+    switch (c) {
+    default: read_error(pic, "unexpected character after char literal");
+    case 'a': c = '\a'; expect(port, "lerm"); break;
+    case 'b': c = '\b'; expect(port, "ackspace"); break;
+    case 'd': c = 0x7F; expect(port, "elete"); break;
+    case 'e': c = 0x1B; expect(port, "scape"); break;
+    case 'n': c = peek(port) == 'e' ? (expect(port, "ewline"), '\n') : (expect(port, "ull"), '\0'); break;
+    case 'r': c = '\r'; expect(port, "eturn"); break;
+    case 's': c = ' '; expect(port, "pace"); break;
+    case 't': c = '\t'; expect(port, "ab"); break;
+    }
+  }
 
-  return pic_char_value(next(port));
+  return pic_char_value(c);
 }
 
 static pic_value
