@@ -92,6 +92,28 @@
                      (dictionary-set! cache atom id)
                      id)))))))
 
+  (define (er-macro-transformer f)
+    (lambda (expr use-env mac-env)
+
+      (define cache (make-dictionary))
+
+      (define (rename sym)
+        (if (dictionary-has? cache sym)
+            (dictionary-ref cache sym)
+            (begin
+              (define id (make-identifier sym mac-env))
+              (dictionary-set! cache sym id)
+              id)))
+
+      (define (compare sym1 sym2)
+        (if (symbol? sym1)
+            (if (symbol? sym2)
+                (identifier=? use-env sym1 use-env sym2)
+                #f)
+            #f))
+
+      (f expr rename compare)))
+
   (define (sc-macro-transformer f)
     (lambda (expr use-env mac-env)
       (make-syntactic-closure mac-env '() (f expr use-env))))
