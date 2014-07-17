@@ -173,6 +173,21 @@ pic_port_binary_port_p(pic_state *pic)
 }
 
 static pic_value
+pic_port_seekable_port_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic_port_p(v) && pic_port_ptr(v)->file->vtable.seek != NULL) {
+    return pic_true_value();
+  }
+  else {
+    return pic_false_value();
+  }
+}
+
+static pic_value
 pic_port_port_p(pic_state *pic)
 {
   pic_value v;
@@ -249,6 +264,29 @@ pic_port_close_port(pic_state *pic)
   pic_close_port(pic, port);
 
   return pic_none_value();
+}
+
+static pic_value
+pic_port_seek_port(pic_state *pic)
+{
+  int i;
+  struct pic_port *port = pic_stdin(pic);
+
+  pic_get_args(pic, "pi", &port, &i);
+
+  xfseek(port->file, (long) i, SEEK_SET);
+
+  return pic_nil_value();
+}
+
+static pic_value
+pic_port_current_seeker_position(pic_state *pic)
+{
+  struct pic_port *port = pic_stdin(pic);
+
+  pic_get_args(pic, "p", &port);
+
+  return pic_int_value(xftell(port->file));
 }
 
 #define assert_port_profile(port, flgs, stat, caller) do {              \
@@ -688,6 +726,12 @@ pic_init_port(pic_state *pic)
     pic_define(pic, "standard-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
     pic_define(pic, "standard-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
     pic_define(pic, "standard-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
+  }
+
+  pic_deflibrary ("(picrin port seek)"){
+    pic_defun(pic, "seek-port", pic_port_seek_port);
+    pic_defun(pic, "port-seekable?", pic_port_seekable_port_p);
+    pic_defun(pic, "port-current-seeker-position", pic_port_current_seeker_position);
   }
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
