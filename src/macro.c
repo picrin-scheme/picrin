@@ -637,17 +637,6 @@ pic_macro_macroexpand(pic_state *pic)
   return pic_macroexpand(pic, expr);
 }
 
-static struct pic_sc *
-sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
-{
-  struct pic_sc *sc;
-
-  sc = (struct pic_sc *)pic_obj_alloc(pic, sizeof(struct pic_sc), PIC_TT_SC);
-  sc->expr = expr;
-  sc->senv = senv;
-  return sc;
-}
-
 static bool
 sc_identifier_p(pic_value obj)
 {
@@ -675,23 +664,6 @@ sc_identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_value x, struct pic_
   y = macroexpand(pic, y, e2, cxt);
 
   return pic_eq_p(x, y);
-}
-
-static pic_value
-pic_macro_make_sc(pic_state *pic)
-{
-  pic_value senv, free_vars, expr;
-  struct pic_sc *sc;
-
-  pic_get_args(pic, "ooo", &senv, &free_vars, &expr);
-
-  if (! pic_senv_p(senv))
-    pic_error(pic, "make-syntactic-closure: senv required");
-
-  /* just ignore free_vars for now */
-  sc = sc_new(pic, expr, pic_senv_ptr(senv));
-
-  return pic_obj_value(sc);
 }
 
 static pic_value
@@ -747,7 +719,6 @@ pic_init_macro(pic_state *pic)
 
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
-    pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
     pic_defun(pic, "make-identifier", pic_macro_make_identifier);
