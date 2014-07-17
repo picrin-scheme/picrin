@@ -1418,7 +1418,7 @@
        (define (compile-expand ellipsis reserved template)
 	 (letrec ((compile-expand-base
 		   (lambda (template ellipsis-valid)
-		     (cond ((member template reserved compare)
+		     (cond ((member template reserved eq?)
 			    (values (var->sym template) (list template)))
 			   ((symbol? template)
 			    (values `(rename ',template) '()))
