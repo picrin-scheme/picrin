@@ -494,11 +494,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_BOX: {
-    struct pic_box *box = (struct pic_box *)obj;
-    gc_mark(pic, box->value);
-    break;
-  }
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
     xh_iter it;
@@ -654,9 +649,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     struct pic_data *data = (struct pic_data *)obj;
     data->type->dtor(pic, data->data);
     xh_destroy(&data->storage);
-    break;
-  }
-  case PIC_TT_BOX: {
     break;
   }
   case PIC_TT_DICT: {
