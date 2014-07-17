@@ -21,15 +21,6 @@ struct pic_macro {
   struct pic_senv *senv;
 };
 
-struct pic_sc {
-  PIC_OBJECT_HEADER
-  pic_value expr;
-  struct pic_senv *senv;
-};
-
-#define pic_sc_p(v) (pic_type(v) == PIC_TT_SC)
-#define pic_sc_ptr(v) ((struct pic_sc *)pic_ptr(v))
-
 #define pic_macro_p(v) (pic_type(v) == PIC_TT_MACRO)
 #define pic_macro_ptr(v) ((struct pic_macro *)pic_ptr(v))
 

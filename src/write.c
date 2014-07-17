@@ -318,11 +318,6 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_MACRO:
     xfprintf(file, "#<macro %p>", pic_ptr(obj));
     break;
-  case PIC_TT_SC:
-    xfprintf(file, "#<sc %p: ", pic_ptr(obj));
-    write_core(p, pic_sc_ptr(obj)->expr);
-    xfprintf(file, ">");
-    break;
   case PIC_TT_LIB:
     xfprintf(file, "#<lib %p>", pic_ptr(obj));
     break;

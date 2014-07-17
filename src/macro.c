@@ -454,9 +454,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
 #endif
 
   switch (pic_type(expr)) {
-  case PIC_TT_SC: {
-    return macroexpand(pic, pic_sc_ptr(expr)->expr, pic_sc_ptr(expr)->senv, cxt);
-  }
   case PIC_TT_SYMBOL: {
     return macroexpand_symbol(pic, pic_sym(expr), senv, cxt);
   }
