@@ -940,6 +940,19 @@ pic_macro_ir_macro_transformer(pic_state *pic)
   return pic_obj_value(proc);
 }
 
+static pic_value
+pic_macro_make_identifier(pic_state *pic)
+{
+  pic_value obj;
+  pic_sym sym;
+
+  pic_get_args(pic, "mo", &sym, &obj);
+
+  pic_assert_type(pic, obj, senv);
+
+  return pic_sym_value(make_identifier(pic, sym, pic_senv_ptr(obj), pic_dict_new(pic)));
+}
+
 void
 pic_init_macro(pic_state *pic)
 {
@@ -955,5 +968,6 @@ pic_init_macro(pic_state *pic)
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
     pic_defun(pic, "er-macro-transformer", pic_macro_er_macro_transformer);
     pic_defun(pic, "ir-macro-transformer", pic_macro_ir_macro_transformer);
+    pic_defun(pic, "make-identifier", pic_macro_make_identifier);
   }
 }
