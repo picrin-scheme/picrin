@@ -1,7 +1,6 @@
 (define-library (picrin control list)
   (import (scheme base)
-          (picrin control)
-          (scheme write))
+          (picrin control))
 
   (define-syntax for
     (syntax-rules ()
