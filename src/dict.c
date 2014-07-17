@@ -110,6 +110,17 @@ pic_dict_dict_set(pic_state *pic)
 }
 
 static pic_value
+pic_dict_dict_has_p(pic_state *pic)
+{
+  struct pic_dict *dict;
+  pic_sym key;
+
+  pic_get_args(pic, "dm", &dict, &key);
+
+  return pic_bool_value(pic_dict_has(pic, dict, key));
+}
+
+static pic_value
 pic_dict_dict_del(pic_state *pic)
 {
   struct pic_dict *dict;
@@ -155,6 +166,7 @@ pic_init_dict(pic_state *pic)
   pic_deflibrary ("(picrin dictionary)") {
     pic_defun(pic, "make-dictionary", pic_dict_dict);
     pic_defun(pic, "dictionary?", pic_dict_dict_p);
+    pic_defun(pic, "dictionary-has?", pic_dict_dict_has_p);
     pic_defun(pic, "dictionary-ref", pic_dict_dict_ref);
     pic_defun(pic, "dictionary-set!", pic_dict_dict_set);
     pic_defun(pic, "dictionary-delete", pic_dict_dict_del);
