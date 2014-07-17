@@ -36,7 +36,61 @@
 
 ;;; hygienic macros
 (define-library (picrin macro)
-  (import (scheme base))
+  (import (scheme base)
+          (picrin dictionary))
+
+  (define (memq obj list)
+    (if (null? list)
+        #f
+        (if (eq? obj (car list))
+            list
+            (memq obj (cdr list)))))
+
+  (define (list->vector proc list)
+    (define vector (make-vector (length list)))
+    (define (go list i)
+      (if (null? list)
+          vector
+          (begin
+            (vector-set! vector i (car list))
+            (go (cdr list) (+ i 1)))))
+    (go list 0))
+
+  (define (vector->list proc vector)
+    (define (go i)
+      (if (= i (vector-length vector))
+          '()
+          (cons (vector-ref vector i)
+                (go (+ i 1)))))
+    (go 0))
+
+  (define (vector-map proc expr)
+    (list->vector (map proc (vector->list expr))))
+
+  (define (walk proc expr)
+    (if (null? expr)
+        '()
+        (if (pair? expr)
+            (cons (proc (car expr))
+                  (walk proc (cdr expr)))
+            (if (vector? expr)
+                (vector-map proc expr)
+                (proc expr)))))
+
+  (define (make-syntactic-closure form free env)
+    (define cache (make-dictionary))
+    (walk
+     (lambda (atom)
+       (if (not (symbol? atom))
+           atom
+           (if (memq atom free)
+               atom
+               (if (dictionary-has? cache atom)
+                   (dictionary-ref cache atom)
+                   (begin
+                     (define id (make-identifier atom env))
+                     (dictionary-set! cache atom id)
+                     id)))))))
 
   (define (sc-macro-transformer f)
     (lambda (expr use-env mac-env)
