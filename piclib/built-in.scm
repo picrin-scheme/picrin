@@ -46,7 +46,7 @@
             list
             (memq obj (cdr list)))))
 
-  (define (list->vector proc list)
+  (define (list->vector list)
     (define vector (make-vector (length list)))
     (define (go list i)
       (if (null? list)
@@ -56,7 +56,7 @@
             (go (cdr list) (+ i 1)))))
     (go list 0))
 
-  (define (vector->list proc vector)
+  (define (vector->list vector)
     (define (go i)
       (if (= i (vector-length vector))
           '()
@@ -71,7 +71,7 @@
     (if (null? expr)
         '()
         (if (pair? expr)
-            (cons (proc (car expr))
+            (cons (walk proc (car expr))
                   (walk proc (cdr expr)))
             (if (vector? expr)
                 (vector-map proc expr)
