@@ -374,10 +374,11 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
       case 'n': c = '\n'; break;
       case 'r': c = '\r'; break;
       case 'x':{
-        char hex[2];            /* Currently supports only ascii chars */
+        /* Currently supports only ascii chars */
+        size_t s = 3;        /* 2 bytes of hex + 1 byte of terminator(';')*/
+        char hex[s];
         size_t i = 0;
-        while((c = (next(port))) != ';' && i < 6)
-          hex[i++] = c;
+        while((hex[i++] = (next(port))) != ';' && i < s);
         c = (char)strtol(hex, NULL, 16);
         break;
       }
