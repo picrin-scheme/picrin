@@ -115,6 +115,35 @@ read_datum_comment(pic_state *pic, struct pic_port *port, char c)
 }
 
 static pic_value
+read_directive(pic_state *pic, struct pic_port *port, char c)
+{
+  c = next(port);
+
+  if (c == 'n') {
+    if(expect(port, "o-fold-case")){
+      /* :FIXME: set no-fold-case flag */
+    }
+    else{
+      goto abort;
+    }
+  }
+  else if (c == 'f') {
+    if(expect(port, "old-case")){
+      /* :FIXME: set fold-case flag */      
+    }
+    else{
+      goto abort;
+    }
+  }
+  else{
+  abort:
+    pic_error(pic, "unknown directive");
+  }
+
+  return pic_undef_value();
+}
+
+static pic_value
 read_quote(pic_state *pic, struct pic_port *port, char c)
 {
   UNUSED(c);
@@ -541,7 +570,7 @@ read_dispatch(pic_state *pic, struct pic_port *port, char c)
 
   switch (c) {
   case '!':
-    return read_comment(pic, port, c);
+    return read_directive(pic, port, c);
   case '|':
     return read_block_comment(pic, port, c);
   case ';':
@@ -674,6 +703,13 @@ pic_parse_file(pic_state *pic, FILE *file)
   port->file = xfpopen(file);
   port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
+
+  if(xfgetc(port->file) == '#' && xfgetc(port->file) == '!'){
+    while(xfgetc(port->file) != '\n');
+  }
+  else{
+    xfseek(port->file, 0, SEEK_SET);
+  }
 
   return pic_parse(pic, port);
 }
