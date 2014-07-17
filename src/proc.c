@@ -59,15 +59,15 @@ pic_attr(pic_state *pic, struct pic_proc *proc)
 }
 
 pic_value
-pic_proc_cv_ref(pic_state *pic, struct pic_proc *proc, size_t i)
+pic_attr_ref(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  return pic_dict_ref(pic, pic_attr(pic, proc), i); /* FIXME */
+  return pic_dict_ref(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key));
 }
 
 void
-pic_proc_cv_set(pic_state *pic, struct pic_proc *proc, size_t i, pic_value v)
+pic_attr_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value v)
 {
-  pic_dict_set(pic, pic_attr(pic, proc), i, v); /* FIXME */
+  pic_dict_set(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key), v);
 }
 
 static pic_value

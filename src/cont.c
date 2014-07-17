@@ -221,7 +221,7 @@ cont_call(pic_state *pic)
   proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
 
-  cont = (struct pic_cont *)pic_ptr(pic_proc_cv_ref(pic, proc, 0));
+  cont = (struct pic_cont *)pic_ptr(pic_attr_ref(pic, proc, "@@cont"));
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
@@ -245,7 +245,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
     c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
-    pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
 
     return pic_apply1(pic, proc, pic_obj_value(c));
   }
@@ -266,7 +266,7 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
     c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
-    pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
 
     return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
   }
