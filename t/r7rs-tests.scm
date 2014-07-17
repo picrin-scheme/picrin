@@ -635,6 +635,53 @@
 (test #t (equal? (make-vector 5 'a)
                  (make-vector 5 'a)))
 
+;; circular objects
+(let ((l '(1 . 2))
+      (m '(1 . 2)))
+  (set-cdr! l l)
+  (set-cdr! m m)
+  (test #t (equal? l m)))
+
+(let ((l '(1 . 2))
+      (m '(2 . 1)))
+  (set-cdr! l l)
+  (set-cdr! m m)
+  (test #f (equal? l m)))
+
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 1)))
+  (vector-set! v 1 v)
+  (vector-set! w 1 w)
+  (test #t (equal? v w)))
+
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 2)))
+  (vector-set! v 1 v)
+  (vector-set! w 1 w)
+  (test #f (equal? v w)))
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 1))
+      (l '(1 . 2))
+      (m '(1 . 2)))
+  (vector-set! v 1 l)
+  (vector-set! w 1 m)
+  (set-cdr! l v)
+  (set-cdr! m w)
+  (test #t  (equal? v w)))
+
+(let ((v (make-vector 2 2))
+      (w (make-vector 2 1))
+      (l '(1 . 2))
+      (m '(1 . 2)))
+  (vector-set! v 1 l)
+  (vector-set! w 1 m)
+  (set-cdr! l v)
+  (set-cdr! m w)
+  (test #f (equal? v w)))
+
 (test-end)
 
 (test-begin "6.2 Numbers")
