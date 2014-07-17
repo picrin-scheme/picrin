@@ -50,7 +50,7 @@ pic_proc_name(struct pic_proc *proc)
 }
 
 struct pic_dict *
-pic_proc_attr(pic_state *pic, struct pic_proc *proc)
+pic_attr(pic_state *pic, struct pic_proc *proc)
 {
   if (proc->attr == NULL) {
     proc->attr = pic_dict_new(pic);
@@ -58,75 +58,16 @@ pic_proc_attr(pic_state *pic, struct pic_proc *proc)
   return proc->attr;
 }
 
-void
-pic_proc_cv_init(pic_state *pic, struct pic_proc *proc, size_t cv_size)
-{
-  struct pic_env *env;
-
-  if (proc->env != NULL) {
-    pic_error(pic, "env slot already in use");
-  }
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-  env->regc = cv_size;
-  env->regs = (pic_value *)pic_calloc(pic, cv_size, sizeof(pic_value));
-  env->up = NULL;
-
-  proc->env = env;
-}
-
-int
-pic_proc_cv_size(pic_state *pic, struct pic_proc *proc)
-{
-  UNUSED(pic);
-  return proc->env ? proc->env->regc : 0;
-}
-
 pic_value
-pic_proc_cv_ref(pic_state *pic, struct pic_proc *proc, size_t i)
+pic_attr_ref(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  if (proc->env == NULL) {
-    pic_error(pic, "no closed env");
-  }
-  return proc->env->regs[i];
+  return pic_dict_ref(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key));
 }
 
 void
-pic_proc_cv_set(pic_state *pic, struct pic_proc *proc, size_t i, pic_value v)
+pic_attr_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value v)
 {
-  if (proc->env == NULL) {
-    pic_error(pic, "no closed env");
-  }
-  proc->env->regs[i] = v;
-}
-
-static pic_value
-papply_call(pic_state *pic)
-{
-  size_t argc;
-  pic_value *argv, arg, arg_list;
-  struct pic_proc *proc;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  proc = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
-  arg = pic_proc_cv_ref(pic, pic_get_proc(pic), 1);
-
-  arg_list = pic_list_by_array(pic, argc, argv);
-  arg_list = pic_cons(pic, arg, arg_list);
-  return pic_apply(pic, proc, arg_list);
-}
-
-struct pic_proc *
-pic_papply(pic_state *pic, struct pic_proc *proc, pic_value arg)
-{
-  struct pic_proc *pa_proc;
-
-  pa_proc = pic_proc_new(pic, papply_call, "<partial-applied-procedure>");
-  pic_proc_cv_init(pic, pa_proc, 2);
-  pic_proc_cv_set(pic, pa_proc, 0, pic_obj_value(proc));
-  pic_proc_cv_set(pic, pa_proc, 1, arg);
-
-  return pa_proc;
+  pic_dict_set(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key), v);
 }
 
 static pic_value
@@ -225,7 +166,7 @@ pic_proc_attribute(pic_state *pic)
 
   pic_get_args(pic, "l", &proc);
 
-  return pic_obj_value(pic_proc_attr(pic, proc));
+  return pic_obj_value(pic_attr(pic, proc));
 }
 
 void
