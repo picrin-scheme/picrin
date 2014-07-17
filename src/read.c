@@ -4,6 +4,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <stdlib.h>
 #include "picrin.h"
 #include "picrin/error.h"
 #include "picrin/pair.h"
@@ -355,6 +356,47 @@ read_string(pic_state *pic, struct pic_port *port, char c)
 }
 
 static pic_value
+read_pipe(pic_state *pic, struct pic_port *port, char c)
+{
+  char *buf;
+  size_t size, cnt;
+  pic_sym sym;
+
+  size = 256;
+  buf = pic_alloc(pic, size);
+  cnt = 0;
+  while ((c = next(port)) != '|') {
+    if (c == '\\') {
+      switch (c = next(port)) {
+      case 'a': c = '\a'; break;
+      case 'b': c = '\b'; break;
+      case 't': c = '\t'; break;
+      case 'n': c = '\n'; break;
+      case 'r': c = '\r'; break;
+      case 'x':{
+        char hex[2];            /* Currently supports only ascii chars */
+        size_t i = 0;
+        while((c = (next(port))) != ';' && i < 6)
+          hex[i++] = c;
+        c = (char)strtol(hex, NULL, 16);
+        break;
+      }
+      }
+    }
+    buf[cnt++] = c;
+    if (cnt >= size) {
+      buf = pic_realloc(pic, buf, size *= 2);
+    }
+  }
+  buf[cnt] = '\0';
+
+  sym = pic_intern_cstr(pic, buf);
+  pic_free(pic, buf);
+
+  return pic_sym_value(sym);
+}
+
+static pic_value
 read_unsigned_blob(pic_state *pic, struct pic_port *port, char c)
 {
   int nbits, n;
@@ -584,6 +626,8 @@ read_nullable(pic_state *pic, struct pic_port *port, char c)
     return read_comma(pic, port, c);
   case '"':
     return read_string(pic, port, c);
+  case '|':
+    return read_pipe(pic, port, c);
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
     return read_number(pic, port, c);
