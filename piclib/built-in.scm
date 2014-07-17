@@ -92,6 +92,14 @@
                      (dictionary-set! cache atom id)
                      id)))))))
 
+  (define (sc-macro-transformer f)
+    (lambda (expr use-env mac-env)
+      (make-syntactic-closure mac-env '() (f expr use-env))))
+
+  (define (rsc-macro-transformer f)
+    (lambda (expr use-env mac-env)
+      (make-syntactic-closure use-env '() (f expr mac-env))))
+
   (define (er-macro-transformer f)
     (lambda (expr use-env mac-env)
 
@@ -158,16 +166,10 @@
 
       (unwrap (f (wrap expr) inject compare))))
 
-  (define (sc-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure mac-env '() (f expr use-env))))
-
-  (define (rsc-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure use-env '() (f expr mac-env))))
-
   (export sc-macro-transformer
-          rsc-macro-transformer))
+          rsc-macro-transformer
+          er-macro-transformer
+          ir-macro-transformer))
 
 ;;; core syntaces
 (define-library (picrin core-syntax)
