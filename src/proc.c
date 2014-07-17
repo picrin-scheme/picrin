@@ -50,7 +50,7 @@ pic_proc_name(struct pic_proc *proc)
 }
 
 struct pic_dict *
-pic_proc_attr(pic_state *pic, struct pic_proc *proc)
+pic_attr(pic_state *pic, struct pic_proc *proc)
 {
   if (proc->attr == NULL) {
     proc->attr = pic_dict_new(pic);
@@ -61,13 +61,13 @@ pic_proc_attr(pic_state *pic, struct pic_proc *proc)
 pic_value
 pic_proc_cv_ref(pic_state *pic, struct pic_proc *proc, size_t i)
 {
-  return pic_dict_ref(pic, pic_proc_attr(pic, proc), i); /* FIXME */
+  return pic_dict_ref(pic, pic_attr(pic, proc), i); /* FIXME */
 }
 
 void
 pic_proc_cv_set(pic_state *pic, struct pic_proc *proc, size_t i, pic_value v)
 {
-  pic_dict_set(pic, pic_proc_attr(pic, proc), i, v); /* FIXME */
+  pic_dict_set(pic, pic_attr(pic, proc), i, v); /* FIXME */
 }
 
 static pic_value
@@ -166,7 +166,7 @@ pic_proc_attribute(pic_state *pic)
 
   pic_get_args(pic, "l", &proc);
 
-  return pic_obj_value(pic_proc_attr(pic, proc));
+  return pic_obj_value(pic_attr(pic, proc));
 }
 
 void

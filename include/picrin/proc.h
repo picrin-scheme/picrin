@@ -51,7 +51,7 @@ struct pic_proc *pic_proc_new_irep(pic_state *, struct pic_irep *, struct pic_en
 
 pic_sym pic_proc_name(struct pic_proc *);
 
-struct pic_dict *pic_proc_attr(pic_state *, struct pic_proc *);
+struct pic_dict *pic_attr(pic_state *, struct pic_proc *);
 
 /* closed variables accessor */
 pic_value pic_proc_cv_ref(pic_state *, struct pic_proc *, size_t);
