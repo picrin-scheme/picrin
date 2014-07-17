@@ -350,6 +350,9 @@ pic_str_string_copy_ip(pic_state *pic)
   case 4:
     end = pic_strlen(from);
   }
+  if (to == from) {
+    from = pic_substr(pic, from, 0, end);
+  }
 
   while (start < end) {
     pic_str_set(pic, to, at++, pic_str_ref(pic, from, start++));
