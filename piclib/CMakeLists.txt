@@ -1,5 +1,5 @@
 list(APPEND PICLIB_SCHEME_LIBS
-  ${PROJECT_SOURCE_DIR}/piclib/built-in.scm
+  ${PROJECT_SOURCE_DIR}/piclib/prelude.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/array.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/dictionary.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/1.scm
