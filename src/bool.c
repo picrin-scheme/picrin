@@ -90,25 +90,34 @@ pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xha
     }else{
       return false;
     }
-      
-  case PIC_TT_VECTOR:{
+  case PIC_TT_BLOB: {
     size_t i;
-    struct pic_vector *v1 = pic_vec_ptr(x), *v2 = pic_vec_ptr(y);
-    
-    if(v1->len != v2->len){
+    struct pic_blob *u = pic_blob_ptr(x), *v = pic_blob_ptr(y);
+
+    if (u->len != v->len) {
       return false;
     }
-    for(i = 0; i < v1->len; ++i){
-      if(! pic_internal_equal_p(pic, v1->data[i], v2->data[i], depth + 1, ht)){
-        return false;          
-        }
+    for (i = 0; i < u->len; ++i) {
+      if (u->data[i] != v->data[i])
+        return false;
     }
     return true;
   }
-  case PIC_TT_BLOB: 
-    return pic_blob_equal_p(pic_blob_ptr(x), pic_blob_ptr(y));
+  case PIC_TT_VECTOR: {
+    size_t i;
+    struct pic_vector *u = pic_vec_ptr(x), *v = pic_vec_ptr(y);
+
+    if (u->len != v->len) {
+      return false;
+    }
+    for (i = 0; i < u->len; ++i) {
+      if (! pic_internal_equal_p(pic, u->data[i], v->data[i], depth + 1, ht))
+        return false;
+    }
+    return true;
+  }
   case PIC_TT_STRING:
-    return pic_string_equal_p(pic_str_ptr(x), pic_str_ptr(y));
+    return pic_strcmp(pic_str_ptr(x), pic_str_ptr(y)) == 0;
   default:
     return false;
   }

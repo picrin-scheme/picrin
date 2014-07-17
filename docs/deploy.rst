@@ -25,6 +25,8 @@ Change directory to `build` then run `ccmake` to create Makefile. Once `Makefile
 
 Actually you don't necessarily need to move to `build` directory before running `ccmake` (in that case `$ ccmake .`), but I strongly recommend to follow above instruction.
 
+Before generating Makefile, you can change some compilation switches to enable or disable optional features. Take *NAN_BOXING* for example, when you turn on "Use C11 feature" flag and the platform supports addresses of 48bit length, it is enabled.
+
 Build
 ^^^^^
 
@@ -62,7 +64,6 @@ Requirement
 Picrin scheme depends on some external libraries to build the binary:
 
 - perl
-- lex (preferably, flex)
 - getopt
 - readline (optional)
 - regex.h of POSIX.1 (optional)

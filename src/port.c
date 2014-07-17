@@ -55,6 +55,23 @@ port_new_stdport(pic_state *pic, xFILE *file, short dir)
 }
 
 struct pic_port *
+pic_open_input_string(pic_state *pic, const char *str)
+{
+  struct pic_port *port;
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xmopen();
+  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
+
+  xfputs(str, port->file);
+  xfflush(port->file);
+  xrewind(port->file);
+
+  return port;
+}
+
+struct pic_port *
 pic_open_output_string(pic_state *pic)
 {
   struct pic_port *port;
@@ -70,19 +87,20 @@ pic_open_output_string(pic_state *pic)
 struct pic_string *
 pic_get_output_string(pic_state *pic, struct pic_port *port)
 {
-  long endpos;
+  long size;
   char *buf;
 
   /* get endpos */
   xfflush(port->file);
-  endpos = xftell(port->file);
+  size = xftell(port->file);
   xrewind(port->file);
 
   /* copy to buf */
-  buf = (char *)pic_alloc(pic, endpos);
-  xfread(buf, 1, endpos, port->file);
+  buf = (char *)pic_alloc(pic, size + 1);
+  buf[size] = 0;
+  xfread(buf, size, 1, port->file);
 
-  return pic_str_new(pic, buf, endpos);
+  return pic_str_new(pic, buf, size);
 }
 
 void
@@ -268,14 +286,7 @@ pic_port_open_input_string(pic_state *pic)
 
   pic_get_args(pic, "z", &str);
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
-  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
-  port->status = PIC_PORT_OPEN;
-
-  xfputs(str, port->file);
-  xfflush(port->file);
-  xrewind(port->file);
+  port = pic_open_input_string(pic, str);
 
   return pic_obj_value(port);
 }
@@ -295,7 +306,7 @@ pic_port_open_output_string(pic_state *pic)
 static pic_value
 pic_port_get_output_string(pic_state *pic)
 {
-  struct pic_port *port = pic_stdout(pic);;
+  struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "|p", &port);
 
@@ -318,6 +329,8 @@ pic_port_open_input_blob(pic_state *pic)
   port->status = PIC_PORT_OPEN;
 
   xfwrite(blob->data, 1, blob->len, port->file);
+  xfflush(port->file);
+  xrewind(port->file);
 
   return pic_obj_value(port);
 }
@@ -340,7 +353,7 @@ pic_port_open_output_bytevector(pic_state *pic)
 static pic_value
 pic_port_get_output_bytevector(pic_state *pic)
 {
-  struct pic_port *port = pic_stdout(pic);;
+  struct pic_port *port = pic_stdout(pic);
   long endpos;
   char *buf;
 
@@ -671,9 +684,11 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_defvar(pic, "current-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
-  pic_defvar(pic, "current-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
-  pic_defvar(pic, "current-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
+  pic_deflibrary ("(picrin port)") {
+    pic_define(pic, "standard-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
+    pic_define(pic, "standard-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
+    pic_define(pic, "standard-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
+  }
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);

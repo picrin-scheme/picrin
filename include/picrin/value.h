@@ -111,12 +111,10 @@ enum pic_tt {
   PIC_TT_CONT,
   PIC_TT_SENV,
   PIC_TT_MACRO,
-  PIC_TT_SC,
   PIC_TT_LIB,
   PIC_TT_VAR,
   PIC_TT_IREP,
   PIC_TT_DATA,
-  PIC_TT_BOX,
   PIC_TT_DICT
 };
 
@@ -158,6 +156,7 @@ typedef struct pic_blob pic_blob;
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
 #define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
+#define pic_eof_p(v) (pic_vtype(v) == PIC_VTYPE_EOF)
 
 #define pic_test(v) (! pic_false_p(v))
 
@@ -255,8 +254,6 @@ pic_type_repr(enum pic_tt tt)
     return "cont";
   case PIC_TT_PROC:
     return "proc";
-  case PIC_TT_SC:
-    return "sc";
   case PIC_TT_SENV:
     return "senv";
   case PIC_TT_MACRO:
@@ -269,8 +266,6 @@ pic_type_repr(enum pic_tt tt)
     return "irep";
   case PIC_TT_DATA:
     return "data";
-  case PIC_TT_BOX:
-    return "box";
   case PIC_TT_DICT:
     return "dict";
   }
@@ -443,6 +438,8 @@ pic_eq_p(pic_value x, pic_value y)
   switch (pic_type(x)) {
   case PIC_TT_NIL:
     return true;
+  case PIC_TT_BOOL:
+    return pic_vtype(x) == pic_vtype(y);
   case PIC_TT_SYMBOL:
     return pic_sym(x) == pic_sym(y);
   default:
@@ -459,6 +456,8 @@ pic_eqv_p(pic_value x, pic_value y)
   switch (pic_type(x)) {
   case PIC_TT_NIL:
     return true;
+  case PIC_TT_BOOL:
+    return pic_vtype(x) == pic_vtype(y);
   case PIC_TT_SYMBOL:
     return pic_sym(x) == pic_sym(y);
   case PIC_TT_FLOAT:

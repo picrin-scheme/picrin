@@ -36,7 +36,64 @@
 
 ;;; hygienic macros
 (define-library (picrin macro)
-  (import (scheme base))
+  (import (scheme base)
+          (picrin dictionary))
+
+  (define (memq obj list)
+    (if (null? list)
+        #f
+        (if (eq? obj (car list))
+            list
+            (memq obj (cdr list)))))
+
+  (define (list->vector list)
+    (define vector (make-vector (length list)))
+    (define (go list i)
+      (if (null? list)
+          vector
+          (begin
+            (vector-set! vector i (car list))
+            (go (cdr list) (+ i 1)))))
+    (go list 0))
+
+  (define (vector->list vector)
+    (define (go i)
+      (if (= i (vector-length vector))
+          '()
+          (cons (vector-ref vector i)
+                (go (+ i 1)))))
+    (go 0))
+
+  (define (vector-map proc expr)
+    (list->vector (map proc (vector->list expr))))
+
+  (define (walk proc expr)
+    (if (null? expr)
+        '()
+        (if (pair? expr)
+            (cons (walk proc (car expr))
+                  (walk proc (cdr expr)))
+            (if (vector? expr)
+                (vector-map proc expr)
+                (proc expr)))))
+
+  (define (make-syntactic-closure form free env)
+    (define cache (make-dictionary))
+    (walk
+     (lambda (atom)
+       (if (not (symbol? atom))
+           atom
+           (if (memq atom free)
+               atom
+               (if (dictionary-has? cache atom)
+                   (dictionary-ref cache atom)
+                   (begin
+                     (define id (make-identifier atom env))
+                     (dictionary-set! cache atom id)
+                     id)))))))
+
+  (define (close-syntax form env)
+    (make-syntactic-closure form '() env))
 
   (define (sc-macro-transformer f)
     (lambda (expr use-env mac-env)
@@ -46,14 +103,106 @@
     (lambda (expr use-env mac-env)
       (make-syntactic-closure use-env '() (f expr mac-env))))
 
-  (export sc-macro-transformer
-          rsc-macro-transformer))
+  (define (er-macro-transformer f)
+    (lambda (expr use-env mac-env)
+
+      (define cache (make-dictionary))
+
+      (define (rename sym)
+        (if (dictionary-has? cache sym)
+            (dictionary-ref cache sym)
+            (begin
+              (define id (make-identifier sym mac-env))
+              (dictionary-set! cache sym id)
+              id)))
+
+      (define (compare x y)
+        (if (not (symbol? x))
+            #f
+            (if (not (symbol? y))
+                #f
+                (identifier=? use-env x use-env y))))
+
+      (f expr rename compare)))
+
+  (define (ir-macro-transformer f)
+    (lambda (expr use-env mac-env)
+
+      (define protects (make-dictionary))
+
+      (define (wrap expr)
+        (walk
+         (lambda (atom)
+           (if (not (symbol? atom))
+               atom
+               (begin
+                 (define id (make-identifier atom use-env))
+                 (dictionary-set! protects id atom) ; lookup *atom* from id
+                 id)))
+         expr))
+
+      (define (unwrap expr)
+        (define cache (make-dictionary))
+        (walk
+         (lambda (atom)
+           (if (not (symbol? atom))
+               atom
+               (if (dictionary-has? protects atom)
+                   (dictionary-ref protects atom)
+                   (if (dictionary-has? cache atom)
+                       (dictionary-ref cache atom)
+                       (begin
+                         ;; implicit renaming
+                         (define id (make-identifier atom mac-env))
+                         (dictionary-set! cache atom id)
+                         id)))))
+         expr))
+
+      (define cache (make-dictionary))
+
+      (define (inject sym)
+        (if (dictionary-has? cache sym)
+            (dictionary-ref cache sym)
+            (begin
+              (define id (make-identifier sym use-env))
+              (dictionary-set! cache sym id)
+              id)))
+
+      (define (compare x y)
+        (if (not (symbol? x))
+            #f
+            (if (not (symbol? y))
+                #f
+                (identifier=? mac-env x mac-env y))))
+
+      (unwrap (f (wrap expr) inject compare))))
+
+  (export make-syntactic-closure
+          close-syntax
+          sc-macro-transformer
+          rsc-macro-transformer
+          er-macro-transformer
+          ir-macro-transformer))
 
 ;;; core syntaces
 (define-library (picrin core-syntax)
   (import (scheme base)
           (scheme cxr)
           (picrin macro))
+
+  (define-syntax define-auxiliary-syntax
+    (er-macro-transformer
+     (lambda (expr r c)
+       (list (r 'define-syntax) (cadr expr)
+             (list (r 'lambda) '_
+                   (list (r 'error) "invalid use of auxiliary syntax"))))))
+
+  (define-auxiliary-syntax else)
+  (define-auxiliary-syntax =>)
+  (define-auxiliary-syntax _)
+  (define-auxiliary-syntax ...)
+  (define-auxiliary-syntax unquote)
+  (define-auxiliary-syntax unquote-splicing)
 
   (define-syntax let
     (er-macro-transformer
@@ -84,9 +233,9 @@
                  (if (if (>= (length (car clauses)) 2)
                          (compare (r '=>) (cadar clauses))
                          #f)
-                     (list (r 'let) (list (list 'x (caar clauses)))
-                           (list (r 'if) 'x
-                                 (list (caddar clauses) 'x)
+                     (list (r 'let) (list (list (r 'x) (caar clauses)))
+                           (list (r 'if) (r 'x)
+                                 (list (caddar clauses) (r 'x))
                                  (cons (r 'cond) (cdr clauses))))
                      (list (r 'if) (caar clauses)
                            (cons (r 'begin) (cdar clauses))
@@ -136,6 +285,22 @@
   (define (unquote-splicing? form compare?)
     (and (pair? form) (pair? (car form)) (compare? (car (car form)) 'unquote-splicing)))
 
+  (define (list->vector list)
+    (let ((vector (make-vector (length list))))
+      (let loop ((list list) (i 0))
+        (if (null? list)
+            vector
+            (begin
+              (vector-set! vector i (car list))
+              (loop (cdr list) (+ i 1)))))))
+
+  (define (vector->list vector)
+    (let ((length (vector-length vector)))
+      (let loop ((list '()) (i 0))
+        (if (= i length)
+            (reverse list)
+            (loop (cons (vector-ref vector i) list) (+ i 1))))))
+
   (define-syntax quasiquote
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -170,6 +335,9 @@
            (list 'cons
                  (qq depth (car expr))
                  (qq depth (cdr expr))))
+          ;; vector
+          ((vector? expr)
+           (list 'list->vector (qq depth (vector->list expr))))
           ;; simple datum
           (else
            (list 'quote expr))))
@@ -273,31 +441,28 @@
                           `(,(r 'begin) ,@(cdar clauses)))
                         ,(loop (cdr clauses))))))))))
 
+  (define-syntax letrec-syntax
+    (er-macro-transformer
+     (lambda (form r c)
+       (let ((formal (car (cdr form)))
+             (body   (cdr (cdr form))))
+         `(let ()
+            ,@(map (lambda (x)
+                     `(,(r 'define-syntax) ,(car x) ,(cadr x)))
+                   formal)
+            ,@body)))))
+
   (define-syntax syntax-error
     (er-macro-transformer
      (lambda (expr rename compare)
        (apply error (cdr expr)))))
-
-  (define-syntax define-auxiliary-syntax
-    (er-macro-transformer
-     (lambda (expr r c)
-       `(,(r 'define-syntax) ,(cadr expr)
-           (,(r 'sc-macro-transformer)
-                (,(r 'lambda) (expr env)
-                  (,(r 'error) "invalid use of auxiliary syntax")))))))
-
-  (define-auxiliary-syntax else)
-  (define-auxiliary-syntax =>)
-  (define-auxiliary-syntax _)
-  (define-auxiliary-syntax ...)
-  (define-auxiliary-syntax unquote)
-  (define-auxiliary-syntax unquote-splicing)
 
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
           and or
           cond case else =>
           do when unless
+          letrec-syntax
           _ ... syntax-error))
 
 
@@ -324,24 +489,63 @@
      (lambda (form r c)
        `(,(r 'let*-values) ,@(cdr form)))))
 
+  (define (vector-map proc vect)
+    (do ((i 0 (+ i 1))
+         (u (make-vector (vector-length vect))))
+        ((= i (vector-length vect))
+         u)
+      (vector-set! u i (proc (vector-ref vect i)))))
+
+  (define (walk proc expr)
+    (cond
+     ((null? expr)
+      '())
+     ((pair? expr)
+      (cons (proc (car expr))
+            (walk proc (cdr expr))))
+     ((vector? expr)
+      (vector-map proc expr))
+     (else
+      (proc expr))))
+
+  (define (flatten expr)
+    (let ((list '()))
+      (walk
+       (lambda (x)
+         (set! list (cons x list)))
+       expr)
+      (reverse list)))
+
+  (define (predefine var)
+    `(define ,var #f))
+
+  (define (predefines vars)
+    (map predefine vars))
+
+  (define (assign var val)
+    `(set! ,var ,val))
+
+  (define (assigns vars vals)
+    (map assign vars vals))
+
+  (define uniq
+    (let ((counter 0))
+      (lambda (x)
+        (let ((sym (string->symbol (string-append "var$" (number->string counter)))))
+          (set! counter (+ counter 1))
+          sym))))
+
   (define-syntax define-values
-    (er-macro-transformer
-     (lambda (form r c)
-       (let ((formals (cadr form)))
-         `(,(r 'begin)
-            ,@(do ((vars formals (cdr vars))
-                   (defs '()))
-                  ((null? vars)
-                   defs)
-                (set! defs (cons `(,(r 'define) ,(car vars) #f) defs)))
-            (,(r 'call-with-values)
-                (,(r 'lambda) () ,@(cddr form))
-              (,(r 'lambda) (,@(map r formals))
-                ,@(do ((vars formals (cdr vars))
-                       (assn '()))
-                      ((null? vars)
-                       assn)
-                    (set! assn (cons `(,(r 'set!) ,(car vars) ,(r (car vars))) assn))))))))))
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let* ((formal  (cadr form))
+              (formal* (walk uniq formal))
+              (exprs   (cddr form)))
+         `(begin
+            ,@(predefines (flatten formal))
+            (call-with-values (lambda () ,@exprs)
+              (lambda ,formal*
+                ,@(assigns (flatten formal) (flatten formal*)))))))))
 
   (export let-values
           let*-values
@@ -352,33 +556,70 @@
   (import (scheme base)
           (scheme cxr)
           (picrin macro)
-          (picrin core-syntax))
+          (picrin core-syntax)
+          (picrin var)
+          (picrin attribute)
+          (picrin dictionary))
 
-  ;; reopen (pircin parameter)
-  ;; see src/var.c
+  (define (single? x)
+    (and (list? x) (= (length x) 1)))
+
+  (define (double? x)
+    (and (list? x) (= (length x) 2)))
+
+  (define (%make-parameter init conv)
+    (let ((var (make-var (conv init))))
+      (define (parameter . args)
+        (cond
+         ((null? args)
+          (var-ref var))
+         ((single? args)
+          (var-set! var (conv (car args))))
+         ((double? args)
+          (var-set! var ((cadr args) (car args))))
+         (else
+          (error "invalid arguments for parameter"))))
+
+      (dictionary-set! (attribute parameter) '@@var var)
+
+      parameter))
+
+  (define (make-parameter init . conv)
+    (let ((conv
+           (if (null? conv)
+               (lambda (x) x)
+               (car conv))))
+      (%make-parameter init conv)))
+
+  (define-syntax with
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((before (car (cdr form)))
+             (after  (car (cdr (cdr form))))
+             (body   (cdr (cdr (cdr form)))))
+         `(begin
+            (,before)
+            (let ((result (begin ,@body)))
+              (,after)
+              result))))))
+
+  (define (var-of parameter)
+    (dictionary-ref (attribute parameter) '@@var))
 
   (define-syntax parameterize
-    (er-macro-transformer
-     (lambda (form r compare)
-       (let ((bindings (cadr form))
-             (body (cddr form)))
-         (let ((vars (map car bindings))
-               (gensym (lambda (var)
-                         (string->symbol
-                          (string-append
-                           "parameterize-"
-                           (symbol->string var))))))
-           `(,(r 'let) (,@(map (lambda (var)
-                                 `(,(r (gensym var)) (,var)))
-                            vars))
-              ,@bindings
-              (,(r 'let) ((,(r 'result) (begin ,@body)))
-                ,@(map (lambda (var)
-                         `(,(r 'parameter-set!) ,var ,(r (gensym var))))
-                       vars)
-                ,(r 'result))))))))
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((formal (car (cdr form)))
+             (body   (cdr (cdr form))))
+         (let ((vars (map car formal))
+               (vals (map cadr formal)))
+           `(with
+             (lambda () ,@(map (lambda (var val) `(var-push! (var-of ,var) ,val)) vars vals))
+             (lambda () ,@(map (lambda (var) `(var-pop! (var-of ,var))) vars))
+             ,@body))))))
 
-  (export parameterize))
+  (export make-parameter
+          parameterize))
 
 ;;; Record Type
 (define-library (picrin record)
@@ -534,6 +775,7 @@
         and or
         cond case else =>
         do when unless
+        letrec-syntax
         _ ... syntax-error)
 
 (export let-values
@@ -719,14 +961,20 @@
   (apply vector list))
 
 (define (vector-copy! to at from . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length from))))
-    (do ((i at (+ i 1))
-	 (j start (+ j 1)))
-	((= j end))
-      (vector-set! to i (vector-ref from j)))))
+  (let* ((start (if (pair? opts) (car opts) 0))
+         (end (if (>= (length opts) 2)
+                  (cadr opts)
+                  (vector-length from)))
+         (vs #f))
+    (if (eq? from to)
+        (begin
+          (set! vs (make-vector (- end start)))
+          (vector-copy! vs 0 from start end)
+          (vector-copy! to at vs))
+        (do ((i at (+ i 1))
+             (j start (+ j 1)))
+            ((= j end))
+          (vector-set! to i (vector-ref from j))))))
 
 (define (vector-copy v . opts)
   (let ((start (if (pair? opts) (car opts) 0))
@@ -778,14 +1026,20 @@
 	(bytevector-u8-set! v i (car l))))))
 
 (define (bytevector-copy! to at from . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
+  (let* ((start (if (pair? opts) (car opts) 0))
+         (end (if (>= (length opts) 2)
 		 (cadr opts)
-		 (bytevector-length from))))
-    (do ((i at (+ i 1))
-	 (j start (+ j 1)))
-	((= j end))
-      (bytevector-u8-set! to i (bytevector-u8-ref from j)))))
+		 (bytevector-length from)))
+         (vs #f))
+    (if (eq? from to)
+        (begin
+          (set! vs (make-bytevector (- end start)))
+          (bytevector-copy! vs 0 from start end)
+          (bytevector-copy! to at vs))
+        (do ((i at (+ i 1))
+             (j start (+ j 1)))
+            ((= j end))
+          (bytevector-u8-set! to i (bytevector-u8-ref from j))))))
 
 (define (bytevector-copy v . opts)
   (let ((start (if (pair? opts) (car opts) 0))
@@ -880,6 +1134,16 @@
 
 ;;; 6.13. Input and output
 
+(import (picrin port))
+
+(define current-input-port (make-parameter standard-input-port))
+(define current-output-port (make-parameter standard-output-port))
+(define current-error-port (make-parameter standard-error-port))
+
+(export current-input-port
+        current-output-port
+        current-error-port)
+
 (define (call-with-port port proc)
   (dynamic-wind
       (lambda () #f)
@@ -887,6 +1151,40 @@
       (lambda () (close-port port))))
 
 (export call-with-port)
+
+(define-library (scheme file)
+  (import (scheme base))
+
+  (define (call-with-input-file filename callback)
+    (call-with-port (open-input-file filename) callback))
+
+  (define (call-with-output-file filename callback)
+    (call-with-port (open-output-file filename) callback))
+
+  (export call-with-input-file
+          call-with-output-file))
+
+;;; include syntax
+
+(import (scheme read)
+        (scheme file))
+
+(define (read-many filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (let loop ((expr (read port)) (exprs '()))
+        (if (eof-object? expr)
+            (reverse exprs)
+            (loop (read port) (cons expr exprs)))))))
+
+(define-syntax include
+  (er-macro-transformer
+   (lambda (form rename compare)
+     (let ((filenames (cdr form)))
+       (let ((exprs (apply append (map read-many filenames))))
+         `(,(rename 'begin) ,@exprs))))))
+
+(export include)
 
 ;;; Appendix A. Standard Libraries Lazy
 (define-library (scheme lazy)
@@ -926,7 +1224,7 @@
   (define (make-promise obj)
     (if (promise? obj)
 	obj
-	(make-promise% #f obj)))
+	(make-promise% #t obj)))
 
   (export delay-force delay force make-promise promise?))
 
@@ -1063,7 +1361,7 @@
 			 (let-values (((match1 vars1) (compile-match-base (car pattern))))
 			   (loop (cdr pattern)
 				 (cons `(,_if (,_pair? ,accessor)
-					      (,_let ((expr (,_car,accessor)))
+					      (,_let ((expr (,_car ,accessor)))
 						     ,match1)
 					      (exit #f))
 				       matches)
@@ -1125,7 +1423,7 @@
        (define (compile-expand ellipsis reserved template)
 	 (letrec ((compile-expand-base
 		   (lambda (template ellipsis-valid)
-		     (cond ((member template reserved compare)
+		     (cond ((member template reserved eq?)
 			    (values (var->sym template) (list template)))
 			   ((symbol? template)
 			    (values `(rename ',template) '()))
@@ -1255,3 +1553,33 @@
 
 (import (picrin syntax-rules))
 (export syntax-rules)
+
+(define-library (scheme case-lambda)
+  (import (scheme base))
+
+  (define-syntax case-lambda
+    (syntax-rules ()
+      ((case-lambda (params body0 ...) ...)
+       (lambda args
+         (let ((len (length args)))
+           (letrec-syntax
+               ((cl (syntax-rules ::: ()
+                      ((cl)
+                       (error "no matching clause"))
+                      ((cl ((p :::) . body) . rest)
+                       (if (= len (length '(p :::)))
+                           (apply (lambda (p :::)
+                                    . body)
+                                  args)
+                           (cl . rest)))
+                      ((cl ((p ::: . tail) . body)
+                           . rest)
+                       (if (>= len (length '(p :::)))
+                           (apply
+                            (lambda (p ::: . tail)
+                              . body)
+                            args)
+                           (cl . rest))))))
+             (cl (params body0 ...) ...)))))))
+
+  (export case-lambda))

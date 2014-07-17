@@ -2,84 +2,499 @@
  * See Copyright Notice in picrin.h
  */
 
+#include <ctype.h>
+#include <math.h>
 #include "picrin.h"
-#include "picrin/parse.h"
+#include "picrin/error.h"
 #include "picrin/pair.h"
 #include "picrin/string.h"
 #include "picrin/vector.h"
 #include "picrin/blob.h"
 #include "picrin/port.h"
 
-#define YY_NO_UNISTD_H
-#include "lex.yy.h"
+typedef pic_value (*read_func_t)(pic_state *, struct pic_port *, char);
 
-static pic_value read(int, yyscan_t);
+static pic_value read(pic_state *pic, struct pic_port *port, char c);
+static pic_value read_nullable(pic_state *pic, struct pic_port *port, char c);
 
-#define pic (yyget_extra(scanner)->pic)
-#define yylval (yyget_extra(scanner)->yylval)
-#define yylabels (yyget_extra(scanner)->labels)
-#define yymsg (yyget_extra(scanner)->msg)
-#define yyjmp (yyget_extra(scanner)->jmp)
-
-static void
-error(const char *msg, yyscan_t scanner)
+static noreturn void
+read_error(pic_state *pic, const char *msg)
 {
-  yymsg = msg;
-  longjmp(yyjmp, 1);
+  pic_throw(pic, PIC_ERROR_READ, msg, pic_nil_value());
 }
 
-static int
-gettok(yyscan_t scanner)
+static char
+skip(struct pic_port *port, char c)
 {
-  int tok;
-
-  while ((tok = yylex(scanner)) == tDATUM_COMMENT) {
-    read(gettok(scanner), scanner); /* discard */
+  while (isspace(c)) {
+    c = xfgetc(port->file);
   }
-  return tok;
+  return c;
+}
+
+static char
+next(struct pic_port *port)
+{
+  return xfgetc(port->file);
+}
+
+static char
+peek(struct pic_port *port)
+{
+  char c;
+
+  xungetc((c = xfgetc(port->file)), port->file);
+
+  return c;
+}
+
+static bool
+expect(struct pic_port *port, const char *str)
+{
+  char c;
+
+  while ((c = *str++) != 0) {
+    if (c != next(port))
+      return false;
+  }
+
+  return true;
+}
+
+static bool
+isdelim(char c)
+{
+  return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
 static pic_value
-read_label_set(int i, yyscan_t scanner)
+read_comment(pic_state *pic, struct pic_port *port, char c)
 {
-  int tok;
-  pic_value val;
+  UNUSED(pic);
 
-  switch (tok = gettok(scanner)) {
-  case tLPAREN:
-  case tLBRACKET:
+  do {
+    c = next(port);
+  } while (! (c == EOF || c == '\n'));
+
+  return pic_undef_value();
+}
+
+static pic_value
+read_block_comment(pic_state *pic, struct pic_port *port, char c)
+{
+  char x, y;
+  int i = 1;
+
+  UNUSED(pic);
+  UNUSED(c);
+
+  y = next(port);
+
+  while (y != EOF && i > 0) {
+    x = y;
+    y = next(port);
+    if (x == '|' && y == '#') {
+      i--;
+    }
+    if (x == '#' && y == '|') {
+      i++;
+    }
+  }
+
+  return pic_undef_value();
+}
+
+static pic_value
+read_datum_comment(pic_state *pic, struct pic_port *port, char c)
+{
+  UNUSED(c);
+
+  read(pic, port, next(port));
+
+  return pic_undef_value();
+}
+
+static pic_value
+read_quote(pic_state *pic, struct pic_port *port, char c)
+{
+  UNUSED(c);
+
+  return pic_list2(pic, pic_sym_value(pic->sQUOTE), read(pic, port, next(port)));
+}
+
+static pic_value
+read_quasiquote(pic_state *pic, struct pic_port *port, char c)
+{
+  UNUSED(c);
+
+  return pic_list2(pic, pic_sym_value(pic->sQUASIQUOTE), read(pic, port, next(port)));
+}
+
+static pic_value
+read_comma(pic_state *pic, struct pic_port *port, char c)
+{
+  c = next(port);
+
+  if (c == '@') {
+    return pic_list2(pic, pic_sym_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
+  } else {
+    return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, c));
+  }
+}
+
+static pic_value
+read_symbol(pic_state *pic, struct pic_port *port, char c)
+{
+  size_t len;
+  char *buf;
+  pic_sym sym;
+
+  len = 0;
+  buf = NULL;
+
+  do {
+    if (len != 0) {
+      c = next(port);
+    }
+    len += 1;
+    buf = pic_realloc(pic, buf, len + 1);
+    buf[len - 1] = c;
+  } while (! isdelim(peek(port)));
+
+  buf[len] = '\0';
+  sym = pic_intern_cstr(pic, buf);
+  pic_free(pic, buf);
+
+  return pic_sym_value(sym);
+}
+
+static size_t
+read_uinteger(pic_state *pic, struct pic_port *port, char c, char buf[])
+{
+  size_t i = 0;
+
+  if (! isdigit(c)) {
+    read_error(pic, "expected one or more digits");
+  }
+
+  buf[i++] = c;
+  while (isdigit(c = peek(port))) {
+    buf[i++] = next(port);
+  }
+
+  buf[i] = '\0';
+
+  return i;
+}
+
+static pic_value
+read_number(pic_state *pic, struct pic_port *port, char c)
+{
+  char buf[256];
+  size_t i;
+  long n;
+
+  i = read_uinteger(pic, port, c, buf);
+
+  switch (peek(port)) {
+  case '.':
+    do {
+      buf[i++] = next(port);
+    } while (isdigit(peek(port)));
+    buf[i] = '\0';
+    return pic_float_value(atof(buf));
+
+  case '/':
+    n = atoi(buf);
+    next(port);
+    read_uinteger(pic, port, next(port), buf);
+    if (n == n / atoi(buf) * atoi(buf)) {
+      return pic_int_value(n / atoi(buf)); /* exact */
+    } else {
+      return pic_float_value(n / (double)atoi(buf));
+    }
+
+  default:
+    return pic_int_value(atoi(buf));
+  }
+}
+
+static pic_value
+negate(pic_value n)
+{
+  if (pic_int_p(n)) {
+    return pic_int_value(-pic_int(n));
+  } else {
+    return pic_float_value(-pic_float(n));
+  }
+}
+
+static pic_value
+read_minus(pic_state *pic, struct pic_port *port, char c)
+{
+  pic_value sym;
+
+  if (isdigit(peek(port))) {
+    return negate(read_number(pic, port, next(port)));
+  }
+  else {
+    sym = read_symbol(pic, port, c);
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "-inf.0")))) {
+      return pic_float_value(-INFINITY);
+    }
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "-nan.0")))) {
+      return pic_float_value(-NAN);
+    }
+    return sym;
+  }
+}
+
+static pic_value
+read_plus(pic_state *pic, struct pic_port *port, char c)
+{
+  pic_value sym;
+
+  if (isdigit(peek(port))) {
+    return read_number(pic, port, c);
+  }
+  else {
+    sym = read_symbol(pic, port, c);
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "+inf.0")))) {
+      return pic_float_value(INFINITY);
+    }
+    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "+nan.0")))) {
+      return pic_float_value(NAN);
+    }
+    return read_symbol(pic, port, c);
+  }
+}
+
+static pic_value
+read_boolean(pic_state *pic, struct pic_port *port, char c)
+{
+  UNUSED(pic);
+  UNUSED(port);
+
+  if (! isdelim(peek(port))) {
+    if (c == 't') {
+      if (! expect(port, "rue")) {
+        goto fail;
+      }
+    } else {
+      if (! expect(port, "alse")) {
+        goto fail;
+      }
+    }
+  }
+
+  if (c == 't') {
+    return pic_true_value();
+  } else {
+    return pic_false_value();
+  }
+
+ fail:
+  read_error(pic, "illegal character during reading boolean literal");
+}
+
+static pic_value
+read_char(pic_state *pic, struct pic_port *port, char c)
+{
+  c = next(port);
+
+  if (! isdelim(peek(port))) {
+    switch (c) {
+    default: read_error(pic, "unexpected character after char literal");
+    case 'a': c = '\a'; expect(port, "lerm"); break;
+    case 'b': c = '\b'; expect(port, "ackspace"); break;
+    case 'd': c = 0x7F; expect(port, "elete"); break;
+    case 'e': c = 0x1B; expect(port, "scape"); break;
+    case 'n': c = peek(port) == 'e' ? (expect(port, "ewline"), '\n') : (expect(port, "ull"), '\0'); break;
+    case 'r': c = '\r'; expect(port, "eturn"); break;
+    case 's': c = ' '; expect(port, "pace"); break;
+    case 't': c = '\t'; expect(port, "ab"); break;
+    }
+  }
+
+  return pic_char_value(c);
+}
+
+static pic_value
+read_string(pic_state *pic, struct pic_port *port, char c)
+{
+  char *buf;
+  size_t size, cnt;
+  pic_str *str;
+
+  size = 256;
+  buf = pic_alloc(pic, size);
+  cnt = 0;
+
+  /* TODO: intraline whitespaces */
+
+  while ((c = next(port)) != '"') {
+    if (c == '\\') {
+      switch (c = next(port)) {
+      case 'a': c = '\a'; break;
+      case 'b': c = '\b'; break;
+      case 't': c = '\t'; break;
+      case 'n': c = '\n'; break;
+      case 'r': c = '\r'; break;
+      }
+    }
+    buf[cnt++] = c;
+    if (cnt >= size) {
+      buf = pic_realloc(pic, buf, size *= 2);
+    }
+  }
+  buf[cnt] = '\0';
+
+  str = pic_str_new(pic, buf, cnt);
+  pic_free(pic, buf);
+  return pic_obj_value(str);
+}
+
+static pic_value
+read_unsigned_blob(pic_state *pic, struct pic_port *port, char c)
+{
+  int nbits, n;
+  size_t len;
+  char *dat, buf[256];
+  pic_blob *blob;
+
+  nbits = 0;
+
+  while (isdigit(c = next(port))) {
+    nbits = 10 * nbits + c - '0';
+  }
+
+  if (nbits != 8) {
+    read_error(pic, "unsupported bytevector bit width");
+  }
+
+  if (c != '(') {
+    read_error(pic, "expected '(' character");
+  }
+
+  len = 0;
+  dat = NULL;
+  c = next(port);
+  while ((c = skip(port, c)) != ')') {
+    read_uinteger(pic, port, c, buf);
+    n = atoi(buf);
+    if (n < 0 || (1 << nbits) <= n) {
+      read_error(pic, "invalid element in bytevector literal");
+    }
+    len += 1;
+    dat = pic_realloc(pic, dat, len);
+    dat[len - 1] = n;
+    c = next(port);
+  }
+
+  blob = pic_blob_new(pic, dat, len);
+  pic_free(pic, dat);
+  return pic_obj_value(blob);
+}
+
+static pic_value
+read_pair(pic_state *pic, struct pic_port *port, char c)
+{
+  char tOPEN = c, tCLOSE = (tOPEN == '(') ? ')' : ']';
+  pic_value car, cdr;
+
+ retry:
+
+  c = skip(port, ' ');
+
+  if (c == tCLOSE) {
+    return pic_nil_value();
+  }
+  if (c == '.' && isdelim(peek(port))) {
+    cdr = read(pic, port, next(port));
+
+  closing:
+    if ((c = skip(port, ' ')) != tCLOSE) {
+      if (pic_undef_p(read_nullable(pic, port, c))) {
+        goto closing;
+      }
+      read_error(pic, "unmatched parenthesis");
+    }
+    return cdr;
+  }
+  else {
+    car = read_nullable(pic, port, c);
+
+    if (pic_undef_p(car)) {
+      goto retry;
+    }
+
+    cdr = read_pair(pic, port, tOPEN); /* FIXME: don't use recursion */
+    return pic_cons(pic, car, cdr);
+  }
+}
+
+static pic_value
+read_vector(pic_state *pic, struct pic_port *port, char c)
+{
+  pic_value list;
+
+  list = read(pic, port, c);
+
+  return pic_obj_value(pic_vec_new_from_list(pic, list));
+}
+
+static pic_value
+read_label_set(pic_state *pic, struct pic_port *port, int i)
+{
+  pic_value val;
+  char c;
+
+  switch (c = skip(port, ' ')) {
+  case '(': case '[':
     {
       pic_value tmp;
 
       val = pic_cons(pic, pic_none_value(), pic_none_value());
 
-      xh_put_int(&yylabels, i, &val);
+      xh_put_int(&pic->rlabels, i, &val);
 
-      tmp = read(tok, scanner);
+      tmp = read(pic, port, c);
       pic_pair_ptr(val)->car = pic_car(pic, tmp);
       pic_pair_ptr(val)->cdr = pic_cdr(pic, tmp);
 
       return val;
     }
-  case tVPAREN:
+  case '#':
     {
-      pic_vec *tmp;
+      bool vect;
 
-      val = pic_obj_value(pic_vec_new(pic, 0));
+      if (peek(port) == '(') {
+        vect = true;
+      } else {
+        vect = false;
+      }
 
-      xh_put_int(&yylabels, i, &val);
+      if (vect) {
+        pic_vec *tmp;
 
-      tmp = pic_vec_ptr(read(tok, scanner));
-      SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
-      SWAP(size_t, tmp->len, pic_vec_ptr(val)->len);
+        val = pic_obj_value(pic_vec_new(pic, 0));
 
-      return val;
+        xh_put_int(&pic->rlabels, i, &val);
+
+        tmp = pic_vec_ptr(read(pic, port, c));
+        SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
+        SWAP(size_t, tmp->len, pic_vec_ptr(val)->len);
+
+        return val;
+      }
+
+      FALLTHROUGH;
     }
   default:
     {
-      val = read(tok, scanner);
+      val = read(pic, port, c);
 
-      xh_put_int(&yylabels, i, &val);
+      xh_put_int(&pic->rlabels, i, &val);
 
       return val;
     }
@@ -87,239 +502,206 @@ read_label_set(int i, yyscan_t scanner)
 }
 
 static pic_value
-read_label_ref(int i, yyscan_t scanner)
+read_label_ref(pic_state *pic, struct pic_port *port, int i)
 {
   xh_entry *e;
 
-  e = xh_get_int(&yylabels, i);
+  UNUSED(port);
+
+  e = xh_get_int(&pic->rlabels, i);
   if (! e) {
-    error("label of given index not defined", scanner);
+    read_error(pic, "label of given index not defined");
   }
   return xh_val(e, pic_value);
 }
 
 static pic_value
-read_pair(int tOPEN, yyscan_t scanner)
+read_label(pic_state *pic, struct pic_port *port, char c)
 {
-  int tok, tCLOSE = (tOPEN == tLPAREN) ? tRPAREN : tRBRACKET;
-  pic_value car, cdr;
+  int i;
 
-  tok = gettok(scanner);
-  if (tok == tCLOSE) {
-    return pic_nil_value();
-  }
-  if (tok == tDOT) {
-    cdr = read(gettok(scanner), scanner);
+  i = 0;
+  do {
+    i = i * 10 + c;
+  } while (isdigit(c = next(port)));
 
-    if (gettok(scanner) != tCLOSE) {
-      error("unmatched parenthesis", scanner);
-    }
-    return cdr;
+  if (c == '=') {
+    return read_label_set(pic, port, i);
   }
-  else {
-    car = read(tok, scanner);
-    cdr = read_pair(tOPEN, scanner);
-    return pic_cons(pic, car, cdr);
+  if (c == '#') {
+    return read_label_ref(pic, port, i);
   }
-}
-
-static pic_vec *
-read_vect(yyscan_t scanner)
-{
-  int tok;
-  pic_value val;
-
-  val = pic_nil_value();
-  while ((tok = gettok(scanner)) != tRPAREN) {
-    val = pic_cons(pic, read(tok, scanner), val);
-  }
-  return pic_vec_new_from_list(pic, pic_reverse(pic, val));
+  read_error(pic, "broken label expression");
 }
 
 static pic_value
-read_abbrev(pic_sym sym, yyscan_t scanner)
+read_dispatch(pic_state *pic, struct pic_port *port, char c)
 {
-  return pic_cons(pic, pic_sym_value(sym), pic_cons(pic, read(gettok(scanner), scanner), pic_nil_value()));
+  c = next(port);
+
+  switch (c) {
+  case '!':
+    return read_comment(pic, port, c);
+  case '|':
+    return read_block_comment(pic, port, c);
+  case ';':
+    return read_datum_comment(pic, port, c);
+  case 't': case 'f':
+    return read_boolean(pic, port, c);
+  case '\\':
+    return read_char(pic, port, c);
+  case '(':
+    return read_vector(pic, port, c);
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    return read_label(pic, port, c);
+  case 'u':
+    return read_unsigned_blob(pic, port, c);
+  default:
+    read_error(pic, "unexpected dispatch character");
+  }
 }
 
 static pic_value
-read_datum(int tok, yyscan_t scanner)
+read_nullable(pic_state *pic, struct pic_port *port, char c)
 {
-  pic_value val;
+  c = skip(port, c);
 
-  switch (tok) {
-  case tLABEL_SET:
-    return read_label_set(yylval.i, scanner);
-
-  case tLABEL_REF:
-    return read_label_ref(yylval.i, scanner);
-
-  case tSYMBOL:
-    return pic_symbol_value(pic_intern(pic, yylval.buf.dat, yylval.buf.len));
-
-  case tINT:
-    return pic_int_value(yylval.i);
-
-  case tFLOAT:
-    return pic_float_value(yylval.f);
-
-  case tBOOLEAN:
-    return pic_bool_value(yylval.i);
-
-  case tCHAR:
-    return pic_char_value(yylval.c);
-
-  case tSTRING:
-    val = pic_obj_value(pic_str_new(pic, yylval.buf.dat, yylval.buf.len));
-    pic_free(pic, yylval.buf.dat);
-    return val;
-
-  case tBYTEVECTOR:
-    val = pic_obj_value(pic_blob_new(pic, yylval.buf.dat, yylval.buf.len));
-    pic_free(pic, yylval.buf.dat);
-    return val;
-
-  case tLPAREN:
-  case tLBRACKET:
-    return read_pair(tok, scanner);
-
-  case tVPAREN:
-    return pic_obj_value(read_vect(scanner));
-
-  case tQUOTE:
-    return read_abbrev(pic->sQUOTE, scanner);
-
-  case tQUASIQUOTE:
-    return read_abbrev(pic->sQUASIQUOTE, scanner);
-
-  case tUNQUOTE:
-    return read_abbrev(pic->sUNQUOTE, scanner);
-
-  case tUNQUOTE_SPLICING:
-    return read_abbrev(pic->sUNQUOTE_SPLICING, scanner);
-
-  case tRPAREN:
-    error("unexpected close parenthesis", scanner);
-
-  case tRBRACKET:
-    error("unexpected close bracket", scanner);
-
-  case tDOT:
-    error("unexpected '.'", scanner);
-
-  case tEOF:
-    error(NULL, scanner);
+  if (c == EOF) {
+    read_error(pic, "unexpected EOF");
   }
 
-  UNREACHABLE();
+  switch (c) {
+  case ';':
+    return read_comment(pic, port, c);
+  case '#':
+    return read_dispatch(pic, port, c);
+  case '\'':
+    return read_quote(pic, port, c);
+  case '`':
+    return read_quasiquote(pic, port, c);
+  case ',':
+    return read_comma(pic, port, c);
+  case '"':
+    return read_string(pic, port, c);
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    return read_number(pic, port, c);
+  case '+':
+    return read_plus(pic, port, c);
+  case '-':
+    return read_minus(pic, port, c);
+  case '(': case '[':
+    return read_pair(pic, port, c);
+  default:
+    return read_symbol(pic, port, c);
+  }
 }
 
 static pic_value
-read(int tok, yyscan_t scanner)
+read(pic_state *pic, struct pic_port *port, char c)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
   pic_value val;
 
-  val = read_datum(tok, scanner);
+ retry:
+  val = read_nullable(pic, port, c);
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, val);
+  if (pic_undef_p(val)) {
+    c = next(port);
+    goto retry;
+  }
+
   return val;
 }
 
 pic_value
-read_one(yyscan_t scanner)
+pic_read(pic_state *pic, struct pic_port *port)
 {
-  int tok;
+  pic_value val;
+  char c = next(port);
 
-  if (setjmp(yyjmp) != 0) {
-    pic_errorf(pic, "%s", yymsg ? yymsg : "unexpected EOF");
+ retry:
+  c = skip(port, c);
+
+  if (c == EOF) {
+    return pic_eof_object();
   }
 
-  if ((tok = gettok(scanner)) == tEOF) {
+  val = read_nullable(pic, port, c);
+
+  if (pic_undef_p(val)) {
+    c = next(port);
+    goto retry;
+  }
+
+  return val;
+}
+
+pic_value
+pic_read_cstr(pic_state *pic, const char *str)
+{
+  struct pic_port *port;
+
+  port = pic_open_input_string(pic, str);
+
+  return pic_read(pic, port);
+}
+
+static pic_value
+pic_parse(pic_state *pic, struct pic_port *port)
+{
+  pic_value val, acc;
+
+  pic_try {
+    acc = pic_nil_value();
+    while (! pic_eof_p(val = pic_read(pic, port))) {
+      pic_push(pic, val, acc);
+    }
+  }
+  pic_catch {
     return pic_undef_value();
   }
-  return read(tok, scanner);
-}
 
-pic_list
-read_many(yyscan_t scanner)
-{
-  int tok;
-  pic_value vals;
-
-  if (setjmp(yyjmp) != 0) {
-    if (yymsg) {
-      pic_errorf(pic, "%s", yymsg);
-    }
-    return pic_undef_value();   /* incomplete string */
-  }
-
-  vals = pic_nil_value();
-  while ((tok = gettok(scanner)) != tEOF) {
-    vals = pic_cons(pic, read(tok, scanner), vals);
-  }
-  return pic_reverse(pic, vals);
-}
-
-#undef pic
-
-pic_value
-pic_read(pic_state *pic, const char *cstr)
-{
-  yyscan_t scanner;
-  struct parser_control ctrl;
-  pic_value val;
-
-  ctrl.pic = pic;
-  xh_init_int(&ctrl.labels, sizeof(pic_value));
-  yylex_init_extra(&ctrl, &scanner);
-  yy_scan_string(cstr, scanner);
-
-  val = read_one(scanner);
-
-  yylex_destroy(scanner);
-  xh_destroy(&ctrl.labels);
-
-  return val;
+  return pic_reverse(pic, acc);
 }
 
 pic_list
 pic_parse_file(pic_state *pic, FILE *file)
 {
-  yyscan_t scanner;
-  struct parser_control ctrl;
-  pic_value vals;
+  struct pic_port *port;
 
-  ctrl.pic = pic;
-  xh_init_int(&ctrl.labels, sizeof(pic_value));
-  yylex_init_extra(&ctrl, &scanner);
-  yyset_in(file, scanner);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port->file = xfpopen(file);
+  port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
 
-  vals = read_many(scanner);
-
-  yylex_destroy(scanner);
-  xh_destroy(&ctrl.labels);
-
-  return vals;
+  return pic_parse(pic, port);
 }
 
 pic_list
-pic_parse_cstr(pic_state *pic, const char *cstr)
+pic_parse_cstr(pic_state *pic, const char *str)
 {
-  yyscan_t scanner;
-  struct parser_control ctrl;
-  pic_value vals;
+  struct pic_port *port;
 
-  ctrl.pic = pic;
-  xh_init_int(&ctrl.labels, sizeof(pic_value));
-  yylex_init_extra(&ctrl, &scanner);
-  yy_scan_string(cstr, scanner);
+  port = pic_open_input_string(pic, str);
 
-  vals = read_many(scanner);
+  return pic_parse(pic, port);
+}
 
-  yylex_destroy(scanner);
-  xh_destroy(&ctrl.labels);
+static pic_value
+pic_read_read(pic_state *pic)
+{
+  struct pic_port *port = pic_stdin(pic);
 
-  return vals;
+  pic_get_args(pic, "|p", &port);
+
+  return pic_read(pic, port);
+}
+
+void
+pic_init_read(pic_state *pic)
+{
+  pic_deflibrary ("(scheme read)") {
+    pic_defun(pic, "read", pic_read_read);
+  }
 }

@@ -45,6 +45,32 @@ pic_cdr(pic_state *pic, pic_value obj)
   return pair->cdr;
 }
 
+void
+pic_set_car(pic_state *pic, pic_value obj, pic_value val)
+{
+  struct pic_pair *pair;
+
+  if (! pic_pair_p(obj)) {
+    pic_error(pic, "pair required");
+  }
+  pair = pic_pair_ptr(obj);
+
+  pair->car = val;
+}
+
+void
+pic_set_cdr(pic_state *pic, pic_value obj, pic_value val)
+{
+  struct pic_pair *pair;
+
+  if (! pic_pair_p(obj)) {
+    pic_error(pic, "pair required");
+  }
+  pair = pic_pair_ptr(obj);
+
+  pair->cdr = val;
+}
+
 bool
 pic_list_p(pic_value obj)
 {
@@ -500,6 +526,10 @@ pic_pair_append(pic_state *pic)
   pic_value *args, list;
 
   pic_get_args(pic, "*", &argc, &args);
+
+  if (argc == 0) {
+    return pic_nil_value();
+  }
 
   list = args[--argc];
 

@@ -17,7 +17,6 @@ pic_abort(pic_state *pic, const char *msg)
   UNUSED(pic);
 
   fprintf(stderr, "abort: %s\n", msg);
-  fflush(stderr);
   abort();
 }
 
@@ -88,7 +87,7 @@ error_new(pic_state *pic, short type, pic_str *msg, pic_value irrs)
 }
 
 noreturn void
-pic_throw(pic_state *pic, struct pic_error *e)
+pic_throw_error(pic_state *pic, struct pic_error *e)
 {
   pic->err = e;
   if (! pic->jmp) {
@@ -96,6 +95,16 @@ pic_throw(pic_state *pic, struct pic_error *e)
     abort();
   }
   longjmp(*pic->jmp, 1);
+}
+
+noreturn void
+pic_throw(pic_state *pic, short type, const char *msg, pic_value irrs)
+{
+  struct pic_error *e;
+
+  e = error_new(pic, type, pic_str_new_cstr(pic, msg), irrs);
+
+  pic_throw_error(pic, e);
 }
 
 const char *
@@ -110,13 +119,17 @@ void
 pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  pic_value err_line;
+  pic_value err_line, irrs;
+  const char *msg;
 
   va_start(ap, fmt);
   err_line = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  pic_throw(pic, error_new(pic, PIC_ERROR_OTHER, pic_str_ptr(pic_car(pic, err_line)), pic_cdr(pic, err_line)));
+  msg = pic_str_cstr(pic_str_ptr(pic_car(pic, err_line)));
+  irrs = pic_cdr(pic, err_line);
+
+  pic_throw(pic, PIC_ERROR_OTHER, msg, irrs);
 }
 
 static pic_value
@@ -147,19 +160,19 @@ pic_error_raise(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  pic_throw(pic, error_new(pic, PIC_ERROR_RAISED, pic_str_new_cstr(pic, "object is raised"), pic_list1(pic, v)));
+  pic_throw(pic, PIC_ERROR_RAISED, "object is raised", pic_list1(pic, v));
 }
 
 noreturn static pic_value
 pic_error_error(pic_state *pic)
 {
-  pic_str *str;
+  const char *str;
   size_t argc;
   pic_value *argv;
 
-  pic_get_args(pic, "s*", &str, &argc, &argv);
+  pic_get_args(pic, "z*", &str, &argc, &argv);
 
-  pic_throw(pic, error_new(pic, PIC_ERROR_OTHER, str, pic_list_by_array(pic, argc, argv)));
+  pic_throw(pic, PIC_ERROR_OTHER, str, pic_list_by_array(pic, argc, argv));
 }
 
 static pic_value
