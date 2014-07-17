@@ -115,7 +115,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *f = pic_int(v);
           break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int");
+          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
         }
         i++;
       }
@@ -141,7 +141,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *e = true;
           break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int");
+          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
         }
         i++;
       }
@@ -167,7 +167,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *e = true;
           break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int");
+          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
         }
         i++;
       }
@@ -189,7 +189,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *k = pic_int(v);
           break;
         default:
-          pic_error(pic, "pic_get_args: expected int");
+          pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
         }
         i++;
       }
@@ -206,23 +206,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *str = pic_str_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected string");
+          pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
         }
         i++;
       }
       break;
     }
     case 'z': {
-      pic_value str;
       const char **cstr;
+      pic_value v;
 
       cstr = va_arg(ap, const char **);
       if (i < argc) {
-        str = GET_OPERAND(pic,i);
-        if (! pic_str_p(str)) {
-          pic_error(pic, "pic_get_args: expected string");
+        v = GET_OPERAND(pic,i);
+        if (! pic_str_p(v)) {
+          pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
         }
-        *cstr = pic_str_cstr(pic_str_ptr(str));
+        *cstr = pic_str_cstr(pic_str_ptr(v));
         i++;
       }
       break;
@@ -238,7 +238,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *m = pic_sym(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected symbol");
+          pic_errorf(pic, "pic_get_args: expected symbol, but got ~s", v);
         }
         i++;
       }
@@ -255,7 +255,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *vec = pic_vec_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected vector");
+          pic_errorf(pic, "pic_get_args: expected vector, but got ~s", v);
         }
         i++;
       }
@@ -272,7 +272,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *b = pic_blob_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected bytevector");
+          pic_errorf(pic, "pic_get_args: expected bytevector, but got ~s", v);
         }
         i++;
       }
@@ -289,7 +289,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *c = pic_char(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected char");
+          pic_errorf(pic, "pic_get_args: expected char, but got ~s", v);
         }
         i++;
       }
@@ -306,7 +306,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *l = pic_proc_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args, expected procedure");
+          pic_errorf(pic, "pic_get_args, expected procedure, but got ~s", v);
         }
         i++;
       }
@@ -323,7 +323,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *p = pic_port_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args, expected port");
+          pic_errorf(pic, "pic_get_args, expected port, but got ~s", v);
         }
         i++;
       }
@@ -340,7 +340,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *d = pic_dict_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args, expected dictionary");
+          pic_errorf(pic, "pic_get_args, expected dictionary, but got ~s", v);
         }
         i++;
       }

@@ -74,7 +74,7 @@ find_macro(pic_state *pic, pic_sym rename)
 }
 
 static pic_sym
-translate(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
+make_identifier(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 {
   pic_sym rename;
 
@@ -86,21 +86,15 @@ translate(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *c
       break;
     senv = senv->up;
   }
-  if (pic_dict_has(pic, cxt, sym)) {
-    return pic_sym(pic_dict_ref(pic, cxt, sym));
-  } else {
-    rename = pic_gensym(pic, sym);
-    pic_dict_set(pic, cxt, sym, pic_sym_value(rename));
-    return rename;
-  }
+  return pic_gensym(pic, sym);
 }
 
-static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, struct pic_dict *);
+static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 
 static pic_value
-macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 {
-  return pic_sym_value(translate(pic, sym, senv, cxt));
+  return pic_sym_value(make_identifier(pic, sym, senv));
 }
 
 static pic_value
@@ -187,17 +181,17 @@ macroexpand_deflibrary(pic_state *pic, pic_value expr)
 }
 
 static pic_value
-macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value x, head, tail;
 
   if (pic_pair_p(obj)) {
-    head = macroexpand(pic, pic_car(pic, obj), senv, cxt);
-    tail = macroexpand_list(pic, pic_cdr(pic, obj), senv, cxt);
+    head = macroexpand(pic, pic_car(pic, obj), senv);
+    tail = macroexpand_list(pic, pic_cdr(pic, obj), senv);
     x = pic_cons(pic, head, tail);
   } else {
-    x = macroexpand(pic, obj, senv, cxt);
+    x = macroexpand(pic, obj, senv);
   }
 
   pic_gc_arena_restore(pic, ai);
@@ -206,7 +200,7 @@ macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv, struct pi
 }
 
 static pic_value
-macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   pic_value formal, body;
   struct pic_senv *in;
@@ -224,7 +218,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
     pic_value v = pic_car(pic, a);
 
     if (! pic_sym_p(v)) {
-      v = macroexpand(pic, v, senv, cxt);
+      v = macroexpand(pic, v, senv);
     }
     if (! pic_sym_p(v)) {
       pic_error(pic, "syntax error");
@@ -232,7 +226,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
     pic_add_rename(pic, in, pic_sym(v));
   }
   if (! pic_sym_p(a)) {
-    a = macroexpand(pic, a, senv, cxt);
+    a = macroexpand(pic, a, senv);
   }
   if (pic_sym_p(a)) {
     pic_add_rename(pic, in, pic_sym(a));
@@ -241,14 +235,14 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
     pic_error(pic, "syntax error");
   }
 
-  formal = macroexpand_list(pic, pic_cadr(pic, expr), in, cxt);
-  body = macroexpand_list(pic, pic_cddr(pic, expr), in, cxt);
+  formal = macroexpand_list(pic, pic_cadr(pic, expr), in);
+  body = macroexpand_list(pic, pic_cddr(pic, expr), in);
 
   return pic_cons(pic, pic_sym_value(pic->rLAMBDA), pic_cons(pic, formal, body));
 }
 
 static pic_value
-macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   pic_sym sym;
   pic_value formal, body, var, val;
@@ -267,7 +261,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
     var = formal;
   }
   if (! pic_sym_p(var)) {
-    var = macroexpand(pic, var, senv, cxt);
+    var = macroexpand(pic, var, senv);
   }
   if (! pic_sym_p(var)) {
     pic_error(pic, "binding to non-symbol object");
@@ -278,15 +272,15 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv, struct
   }
   body = pic_cddr(pic, expr);
   if (pic_pair_p(formal)) {
-    val = macroexpand_lambda(pic, pic_cons(pic, pic_false_value(), pic_cons(pic, pic_cdr(pic, formal), body)), senv, cxt);
+    val = macroexpand_lambda(pic, pic_cons(pic, pic_false_value(), pic_cons(pic, pic_cdr(pic, formal), body)), senv);
   } else {
-    val = macroexpand(pic, pic_car(pic, body), senv, cxt);
+    val = macroexpand(pic, pic_car(pic, body), senv);
   }
-  return pic_list3(pic, pic_sym_value(pic->rDEFINE), macroexpand_symbol(pic, sym, senv, cxt), val);
+  return pic_list3(pic, pic_sym_value(pic->rDEFINE), macroexpand_symbol(pic, sym, senv), val);
 }
 
 static pic_value
-macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   pic_value var, val;
   pic_sym sym, rename;
@@ -297,7 +291,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv, str
 
   var = pic_cadr(pic, expr);
   if (! pic_sym_p(var)) {
-    var = macroexpand(pic, var, senv, cxt);
+    var = macroexpand(pic, var, senv);
   }
   if (! pic_sym_p(var)) {
     pic_error(pic, "binding to non-symbol object");
@@ -372,7 +366,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
 }
 
 static pic_value
-macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   struct pic_senv *in;
   pic_value formal, v, var, val;
@@ -393,7 +387,7 @@ macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv, st
   pic_for_each (v, formal) {
     var = pic_car(pic, v);
     if (! pic_sym_p(var)) {
-      var = macroexpand(pic, var, senv, cxt);
+      var = macroexpand(pic, var, senv);
     }
     if (! pic_sym_p(var)) {
       pic_error(pic, "binding to non-symbol object");
@@ -408,11 +402,11 @@ macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv, st
     }
     define_macro(pic, rename, pic_proc_ptr(val), senv);
   }
-  return pic_cons(pic, pic_sym_value(pic->rBEGIN), macroexpand_list(pic, pic_cddr(pic, expr), in, cxt));
+  return pic_cons(pic, pic_sym_value(pic->rBEGIN), macroexpand_list(pic, pic_cddr(pic, expr), in));
 }
 
 static pic_value
-macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv)
 {
   pic_value v, args;
 
@@ -441,11 +435,11 @@ macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct 
   puts("");
 #endif
 
-  return macroexpand(pic, v, senv, cxt);
+  return macroexpand(pic, v, senv);
 }
 
 static pic_value
-macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
 #if DEBUG
   printf("[macroexpand] expanding... ");
@@ -454,11 +448,8 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
 #endif
 
   switch (pic_type(expr)) {
-  case PIC_TT_SC: {
-    return macroexpand(pic, pic_sc_ptr(expr)->expr, pic_sc_ptr(expr)->senv, cxt);
-  }
   case PIC_TT_SYMBOL: {
-    return macroexpand_symbol(pic, pic_sym(expr), senv, cxt);
+    return macroexpand_symbol(pic, pic_sym(expr), senv);
   }
   case PIC_TT_PAIR: {
     pic_value car;
@@ -468,7 +459,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
       pic_errorf(pic, "cannot macroexpand improper list: ~s", expr);
     }
 
-    car = macroexpand(pic, pic_car(pic, expr), senv, cxt);
+    car = macroexpand(pic, pic_car(pic, expr), senv);
     if (pic_sym_p(car)) {
       pic_sym tag = pic_sym(car);
 
@@ -482,33 +473,33 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
         return macroexpand_export(pic, expr);
       }
       else if (tag == pic->rDEFINE_SYNTAX) {
-        return macroexpand_defsyntax(pic, expr, senv, cxt);
+        return macroexpand_defsyntax(pic, expr, senv);
       }
       else if (tag == pic->rDEFINE_MACRO) {
         return macroexpand_defmacro(pic, expr, senv);
       }
       else if (tag == pic->rLET_SYNTAX) {
-        return macroexpand_let_syntax(pic, expr, senv, cxt);
+        return macroexpand_let_syntax(pic, expr, senv);
       }
       /* else if (tag == pic->sLETREC_SYNTAX) { */
-      /*   return macroexpand_letrec_syntax(pic, expr, senv, cxt); */
+      /*   return macroexpand_letrec_syntax(pic, expr, senv); */
       /* } */
       else if (tag == pic->rLAMBDA) {
-        return macroexpand_lambda(pic, expr, senv, cxt);
+        return macroexpand_lambda(pic, expr, senv);
       }
       else if (tag == pic->rDEFINE) {
-        return macroexpand_define(pic, expr, senv, cxt);
+        return macroexpand_define(pic, expr, senv);
       }
       else if (tag == pic->rQUOTE) {
         return macroexpand_quote(pic, expr);
       }
 
       if ((mac = find_macro(pic, tag)) != NULL) {
-        return macroexpand_macro(pic, mac, expr, senv, cxt);
+        return macroexpand_macro(pic, mac, expr, senv);
       }
     }
 
-    return pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv, cxt));
+    return pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
   }
   case PIC_TT_EOF:
   case PIC_TT_NIL:
@@ -541,12 +532,12 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv, struct p
 }
 
 static pic_value
-macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv, struct pic_dict *cxt)
+macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value v;
 
-  v = macroexpand_node(pic, expr, senv, cxt);
+  v = macroexpand_node(pic, expr, senv);
 
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, v);
@@ -564,7 +555,7 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   puts("");
 #endif
 
-  v = macroexpand(pic, expr, pic->lib->senv, pic_dict_new(pic));
+  v = macroexpand(pic, expr, pic->lib->senv);
 
 #if DEBUG
   puts("after expand:");
@@ -615,6 +606,21 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
   pic_export(pic, sym);
 }
 
+bool
+pic_identifier_p(pic_state *pic, pic_value obj)
+{
+  return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym(obj));
+}
+
+bool
+pic_identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_sym x, struct pic_senv *e2, pic_sym y)
+{
+  x = make_identifier(pic, x, e1);
+  y = make_identifier(pic, y, e2);
+
+  return x == y;
+}
+
 static pic_value
 pic_macro_gensym(pic_state *pic)
 {
@@ -637,63 +643,6 @@ pic_macro_macroexpand(pic_state *pic)
   return pic_macroexpand(pic, expr);
 }
 
-static struct pic_sc *
-sc_new(pic_state *pic, pic_value expr, struct pic_senv *senv)
-{
-  struct pic_sc *sc;
-
-  sc = (struct pic_sc *)pic_obj_alloc(pic, sizeof(struct pic_sc), PIC_TT_SC);
-  sc->expr = expr;
-  sc->senv = senv;
-  return sc;
-}
-
-static bool
-sc_identifier_p(pic_value obj)
-{
-  if (pic_sym_p(obj)) {
-    return true;
-  }
-  if (pic_sc_p(obj)) {
-    return sc_identifier_p(pic_sc_ptr(obj)->expr);
-  }
-  return false;
-}
-
-static bool
-sc_identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_value x, struct pic_senv *e2, pic_value y)
-{
-  struct pic_dict *cxt;
-
-  if (! (sc_identifier_p(x) && sc_identifier_p(y))) {
-    return false;
-  }
-
-  cxt = pic_dict_new(pic);
-
-  x = macroexpand(pic, x, e1, cxt);
-  y = macroexpand(pic, y, e2, cxt);
-
-  return pic_eq_p(x, y);
-}
-
-static pic_value
-pic_macro_make_sc(pic_state *pic)
-{
-  pic_value senv, free_vars, expr;
-  struct pic_sc *sc;
-
-  pic_get_args(pic, "ooo", &senv, &free_vars, &expr);
-
-  if (! pic_senv_p(senv))
-    pic_error(pic, "make-syntactic-closure: senv required");
-
-  /* just ignore free_vars for now */
-  sc = sc_new(pic, expr, pic_senv_ptr(senv));
-
-  return pic_obj_value(sc);
-}
-
 static pic_value
 pic_macro_identifier_p(pic_state *pic)
 {
@@ -701,16 +650,17 @@ pic_macro_identifier_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(sc_identifier_p(obj));
+  return pic_bool_value(pic_identifier_p(pic, obj));
 }
 
 static pic_value
 pic_macro_identifier_eq_p(pic_state *pic)
 {
-  pic_value e, x, f, y;
+  pic_sym x, y;
+  pic_value e, f;
   struct pic_senv *e1, *e2;
 
-  pic_get_args(pic, "oooo", &e, &x, &f, &y);
+  pic_get_args(pic, "omom", &e, &x, &f, &y);
 
   if (! pic_senv_p(e)) {
     pic_error(pic, "unexpected type of argument 1");
@@ -721,223 +671,20 @@ pic_macro_identifier_eq_p(pic_state *pic)
   }
   e2 = pic_senv_ptr(f);
 
-  return pic_bool_value(sc_identifier_eq_p(pic, e1, x, e2, y));
+  return pic_bool_value(pic_identifier_eq_p(pic, e1, x, e2, y));
 }
 
 static pic_value
-er_macro_rename(pic_state *pic)
+pic_macro_make_identifier(pic_state *pic)
 {
+  pic_value obj;
   pic_sym sym;
-  struct pic_senv *mac_env;
-  struct pic_dict *cxt;
 
-  pic_get_args(pic, "m", &sym);
+  pic_get_args(pic, "mo", &sym, &obj);
 
-  mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
-  cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
+  pic_assert_type(pic, obj, senv);
 
-  return pic_sym_value(translate(pic, sym, mac_env, cxt));
-}
-
-static pic_value
-er_macro_compare(pic_state *pic)
-{
-  pic_value a, b;
-  struct pic_senv *use_env;
-  pic_sym m, n;
-  struct pic_dict *cxt;
-
-  pic_get_args(pic, "oo", &a, &b);
-
-  if (! pic_sym_p(a) || ! pic_sym_p(b))
-    return pic_false_value();   /* should be an error? */
-
-  use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
-  cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
-
-  m = translate(pic, pic_sym(a), use_env, cxt);
-  n = translate(pic, pic_sym(b), use_env, cxt);
-
-  return pic_bool_value(m == n);
-}
-
-static pic_value
-er_macro_call(pic_state *pic)
-{
-  pic_value expr, use_env, mac_env;
-  struct pic_proc *rename, *compare, *cb;
-  struct pic_dict *cxt;
-
-  pic_get_args(pic, "ooo", &expr, &use_env, &mac_env);
-
-  if (! pic_senv_p(use_env)) {
-    pic_error(pic, "unexpected type of argument 1");
-  }
-  if (! pic_senv_p(mac_env)) {
-    pic_error(pic, "unexpected type of argument 3");
-  }
-
-  cxt = pic_dict_new(pic);
-
-  rename = pic_proc_new(pic, er_macro_rename, "<er-macro-renamer>");
-  pic_proc_cv_init(pic, rename, 3);
-  pic_proc_cv_set(pic, rename, 0, use_env);
-  pic_proc_cv_set(pic, rename, 1, mac_env);
-  pic_proc_cv_set(pic, rename, 2, pic_obj_value(cxt));
-
-  compare = pic_proc_new(pic, er_macro_compare, "<er-macro-comparator>");
-  pic_proc_cv_init(pic, compare, 3);
-  pic_proc_cv_set(pic, compare, 0, use_env);
-  pic_proc_cv_set(pic, compare, 1, mac_env);
-  pic_proc_cv_set(pic, compare, 2, pic_obj_value(cxt));
-
-  cb = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
-
-  return pic_apply3(pic, cb, expr, pic_obj_value(rename), pic_obj_value(compare));
-}
-
-static pic_value
-pic_macro_er_macro_transformer(pic_state *pic)
-{
-  struct pic_proc *cb, *proc;
-
-  pic_get_args(pic, "l", &cb);
-
-  proc = pic_proc_new(pic, er_macro_call, "<er-macro-procedure>");
-  pic_proc_cv_init(pic, proc, 1);
-  pic_proc_cv_set(pic, proc, 0, pic_obj_value(cb));
-
-  return pic_obj_value(proc);
-}
-
-static pic_value
-ir_macro_inject(pic_state *pic)
-{
-  pic_sym sym;
-  struct pic_senv *use_env;
-  struct pic_dict *cxt;
-
-  pic_get_args(pic, "m", &sym);
-
-  use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
-  cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
-
-  return pic_sym_value(translate(pic, sym, use_env, cxt));
-}
-
-static pic_value
-ir_macro_compare(pic_state *pic)
-{
-  pic_value a, b;
-  struct pic_senv *mac_env;
-  pic_sym m, n;
-  struct pic_dict *cxt;
-
-  pic_get_args(pic, "oo", &a, &b);
-
-  if (! pic_sym_p(a) || ! pic_sym_p(b))
-    return pic_false_value();   /* should be an error? */
-
-  mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
-  cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
-
-  m = translate(pic, pic_sym(a), mac_env, cxt);
-  n = translate(pic, pic_sym(b), mac_env, cxt);
-
-  return pic_bool_value(m == n);
-}
-
-static pic_value
-ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, struct pic_dict *cxt, pic_value *ir)
-{
-  if (pic_sym_p(expr)) {
-    pic_value r;
-    r = pic_sym_value(translate(pic, pic_sym(expr), use_env, cxt));
-    *ir = pic_acons(pic, r, expr, *ir);
-    return r;
-  }
-  else if (pic_pair_p(expr)) {
-    return pic_cons(pic,
-                    ir_macro_wrap(pic, pic_car(pic, expr), use_env, cxt, ir),
-                    ir_macro_wrap(pic, pic_cdr(pic, expr), use_env, cxt, ir));
-  }
-  else {
-    return expr;
-  }
-}
-
-static pic_value
-ir_macro_unwrap(pic_state *pic, pic_value expr, struct pic_senv *mac_env, struct pic_dict *cxt, pic_value *ir)
-{
-  if (pic_sym_p(expr)) {
-    pic_value r;
-    if (pic_test(r = pic_assq(pic, expr, *ir))) {
-      return pic_cdr(pic, r);
-    }
-    return pic_sym_value(translate(pic, pic_sym(expr), mac_env, cxt));
-  }
-  else if (pic_pair_p(expr)) {
-    return pic_cons(pic,
-                    ir_macro_unwrap(pic, pic_car(pic, expr), mac_env, cxt, ir),
-                    ir_macro_unwrap(pic, pic_cdr(pic, expr), mac_env, cxt, ir));
-  }
-  else {
-    return expr;
-  }
-}
-
-static pic_value
-ir_macro_call(pic_state *pic)
-{
-  pic_value expr, use_env, mac_env;
-  struct pic_proc *inject, *compare, *cb;
-  struct pic_dict *cxt;
-  pic_value ir = pic_nil_value();
-
-  pic_get_args(pic, "ooo", &expr, &use_env, &mac_env);
-
-  if (! pic_senv_p(use_env)) {
-    pic_error(pic, "unexpected type of argument 1");
-  }
-  if (! pic_senv_p(mac_env)) {
-    pic_error(pic, "unexpected type of argument 3");
-  }
-
-  cxt = pic_dict_new(pic);
-
-  inject = pic_proc_new(pic, ir_macro_inject, "<ir-macro-injecter>");
-  pic_proc_cv_init(pic, inject, 3);
-  pic_proc_cv_set(pic, inject, 0, use_env);
-  pic_proc_cv_set(pic, inject, 1, mac_env);
-  pic_proc_cv_set(pic, inject, 2, pic_obj_value(cxt));
-
-  compare = pic_proc_new(pic, ir_macro_compare, "<ir-macro-comparator>");
-  pic_proc_cv_init(pic, compare, 3);
-  pic_proc_cv_set(pic, compare, 0, use_env);
-  pic_proc_cv_set(pic, compare, 1, mac_env);
-  pic_proc_cv_set(pic, compare, 2, pic_obj_value(cxt));
-
-  cb = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
-
-  expr = ir_macro_wrap(pic, expr, pic_senv_ptr(use_env), cxt, &ir);
-  expr = pic_apply3(pic, cb, expr, pic_obj_value(inject), pic_obj_value(compare));
-  expr = ir_macro_unwrap(pic, expr, pic_senv_ptr(mac_env), cxt, &ir);
-
-  return expr;
-}
-
-static pic_value
-pic_macro_ir_macro_transformer(pic_state *pic)
-{
-  struct pic_proc *cb, *proc;
-
-  pic_get_args(pic, "l", &cb);
-
-  proc = pic_proc_new(pic, ir_macro_call, "<ir-macro-procedure>");
-  pic_proc_cv_init(pic, proc, 1);
-  pic_proc_cv_set(pic, proc, 0, pic_obj_value(cb));
-
-  return pic_obj_value(proc);
+  return pic_sym_value(make_identifier(pic, sym, pic_senv_ptr(obj)));
 }
 
 void
@@ -950,10 +697,8 @@ pic_init_macro(pic_state *pic)
 
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
-    pic_defun(pic, "make-syntactic-closure", pic_macro_make_sc);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
-    pic_defun(pic, "er-macro-transformer", pic_macro_er_macro_transformer);
-    pic_defun(pic, "ir-macro-transformer", pic_macro_ir_macro_transformer);
+    pic_defun(pic, "make-identifier", pic_macro_make_identifier);
   }
 }

@@ -826,7 +826,6 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_ERROR:
   case PIC_TT_SENV:
   case PIC_TT_MACRO:
-  case PIC_TT_SC:
   case PIC_TT_LIB:
   case PIC_TT_VAR:
   case PIC_TT_IREP:
