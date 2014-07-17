@@ -19,7 +19,6 @@
 #include "picrin/lib.h"
 #include "picrin/var.h"
 #include "picrin/data.h"
-#include "picrin/box.h"
 #include "picrin/dict.h"
 
 #if GC_DEBUG
