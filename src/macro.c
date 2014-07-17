@@ -615,6 +615,25 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
   pic_export(pic, sym);
 }
 
+bool
+pic_identifier_p(pic_state *pic, pic_value obj)
+{
+  return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym(obj));
+}
+
+bool
+pic_identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_sym x, struct pic_senv *e2, pic_sym y)
+{
+  struct pic_dict *cxt;
+
+  cxt = pic_dict_new(pic);
+
+  x = make_identifier(pic, x, e1, cxt);
+  y = make_identifier(pic, y, e2, cxt);
+
+  return x == y;
+}
+
 static pic_value
 pic_macro_gensym(pic_state *pic)
 {
@@ -637,35 +656,6 @@ pic_macro_macroexpand(pic_state *pic)
   return pic_macroexpand(pic, expr);
 }
 
-static bool
-sc_identifier_p(pic_value obj)
-{
-  if (pic_sym_p(obj)) {
-    return true;
-  }
-  if (pic_sc_p(obj)) {
-    return sc_identifier_p(pic_sc_ptr(obj)->expr);
-  }
-  return false;
-}
-
-static bool
-sc_identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_value x, struct pic_senv *e2, pic_value y)
-{
-  struct pic_dict *cxt;
-
-  if (! (sc_identifier_p(x) && sc_identifier_p(y))) {
-    return false;
-  }
-
-  cxt = pic_dict_new(pic);
-
-  x = macroexpand(pic, x, e1, cxt);
-  y = macroexpand(pic, y, e2, cxt);
-
-  return pic_eq_p(x, y);
-}
-
 static pic_value
 pic_macro_identifier_p(pic_state *pic)
 {
@@ -673,16 +663,17 @@ pic_macro_identifier_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(sc_identifier_p(obj));
+  return pic_bool_value(pic_identifier_p(pic, obj));
 }
 
 static pic_value
 pic_macro_identifier_eq_p(pic_state *pic)
 {
-  pic_value e, x, f, y;
+  pic_sym x, y;
+  pic_value e, f;
   struct pic_senv *e1, *e2;
 
-  pic_get_args(pic, "oooo", &e, &x, &f, &y);
+  pic_get_args(pic, "omom", &e, &x, &f, &y);
 
   if (! pic_senv_p(e)) {
     pic_error(pic, "unexpected type of argument 1");
@@ -693,7 +684,7 @@ pic_macro_identifier_eq_p(pic_state *pic)
   }
   e2 = pic_senv_ptr(f);
 
-  return pic_bool_value(sc_identifier_eq_p(pic, e1, x, e2, y));
+  return pic_bool_value(pic_identifier_eq_p(pic, e1, x, e2, y));
 }
 
 static pic_value
