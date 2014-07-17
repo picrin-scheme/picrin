@@ -92,6 +92,9 @@
                      (dictionary-set! cache atom id)
                      id)))))))
 
+  (define (close-syntax form env)
+    (make-syntactic-closure form '() env))
+
   (define (sc-macro-transformer f)
     (lambda (expr use-env mac-env)
       (make-syntactic-closure mac-env '() (f expr use-env))))
@@ -174,7 +177,9 @@
 
       (unwrap (f (wrap expr) inject compare))))
 
-  (export sc-macro-transformer
+  (export make-syntactic-closure
+          close-syntax
+          sc-macro-transformer
           rsc-macro-transformer
           er-macro-transformer
           ir-macro-transformer))
