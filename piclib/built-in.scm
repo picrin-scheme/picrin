@@ -110,6 +110,54 @@
 
       (f expr rename compare)))
 
+  (define (ir-macro-transformer f)
+    (lambda (expr use-env mac-env)
+
+      (define protects (make-dictionary))
+
+      (define (wrap expr)
+        (walk
+         (lambda (atom)
+           (if (not (symbol? atom))
+               atom
+               (begin
+                 (define id (make-identifier atom use-env))
+                 (dictionary-set! protects id atom) ; lookup *atom* from id
+                 id)))
+         expr))
+
+      (define (unwrap expr)
+        (define cache (make-dictionary))
+        (walk
+         (lambda (atom)
+           (if (not (symbol? atom))
+               atom
+               (if (dictionary-has? protects atom)
+                   (dictionary-ref protects atom)
+                   (if (dictionary-has? cache atom)
+                       (dictionary-ref cache atom)
+                       (begin
+                         ;; implicit renaming
+                         (define id (make-identifier atom mac-env))
+                         (dictionary-set! cache atom id)
+                         id)))))
+         expr))
+
+      (define cache (make-dictionary))
+
+      (define (inject sym)
+        (if (dictionary-has? cache sym)
+            (dictionary-ref cache sym)
+            (begin
+              (define id (make-identifier sym use-env))
+              (dictionary-set! cache sym id)
+              id)))
+
+      (define (compare sym1 sym2)
+        (identifier=? mac-env sym1 mac-env sym2))
+
+      (unwrap (f (wrap expr) inject compare))))
+
   (define (sc-macro-transformer f)
     (lambda (expr use-env mac-env)
       (make-syntactic-closure mac-env '() (f expr use-env))))
