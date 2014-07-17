@@ -86,13 +86,7 @@ make_identifier(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_d
       break;
     senv = senv->up;
   }
-  if (pic_dict_has(pic, cxt, sym)) {
-    return pic_sym(pic_dict_ref(pic, cxt, sym));
-  } else {
-    rename = pic_gensym(pic, sym);
-    pic_dict_set(pic, cxt, sym, pic_sym_value(rename));
-    return rename;
-  }
+  return pic_gensym(pic, sym);
 }
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, struct pic_dict *);
