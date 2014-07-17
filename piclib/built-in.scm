@@ -113,8 +113,12 @@
               (dictionary-set! cache sym id)
               id)))
 
-      (define (compare sym1 sym2)
-        (identifier=? use-env sym1 use-env sym2))
+      (define (compare x y)
+        (if (not (symbol? x))
+            #f
+            (if (not (symbol? y))
+                #f
+                (identifier=? use-env x use-env y))))
 
       (f expr rename compare)))
 
@@ -161,8 +165,12 @@
               (dictionary-set! cache sym id)
               id)))
 
-      (define (compare sym1 sym2)
-        (identifier=? mac-env sym1 mac-env sym2))
+      (define (compare x y)
+        (if (not (symbol? x))
+            #f
+            (if (not (symbol? y))
+                #f
+                (identifier=? mac-env x mac-env y))))
 
       (unwrap (f (wrap expr) inject compare))))
 
