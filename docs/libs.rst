@@ -53,9 +53,14 @@ Utility functions and syntaces for macro definition.
 
 Old-fashioned macro.
 
-- make-syntactic-closure
 - identifier?
 - identifier=?
+
+- make-syntactic-closure
+- close-syntax
+
+- sc-macro-transformer
+- rsc-macro-transformer
 
 Syntactic closures.
 
