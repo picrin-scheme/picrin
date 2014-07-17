@@ -131,6 +131,20 @@
           (scheme cxr)
           (picrin macro))
 
+  (define-syntax define-auxiliary-syntax
+    (er-macro-transformer
+     (lambda (expr r c)
+       (list (r 'define-syntax) (cadr expr)
+             (list (r 'lambda) '_
+                   (list (r 'error) "invalid use of auxiliary syntax"))))))
+
+  (define-auxiliary-syntax else)
+  (define-auxiliary-syntax =>)
+  (define-auxiliary-syntax _)
+  (define-auxiliary-syntax ...)
+  (define-auxiliary-syntax unquote)
+  (define-auxiliary-syntax unquote-splicing)
+
   (define-syntax let
     (er-macro-transformer
      (lambda (expr r compare)
@@ -383,21 +397,6 @@
     (er-macro-transformer
      (lambda (expr rename compare)
        (apply error (cdr expr)))))
-
-  (define-syntax define-auxiliary-syntax
-    (er-macro-transformer
-     (lambda (expr r c)
-       `(,(r 'define-syntax) ,(cadr expr)
-           (,(r 'sc-macro-transformer)
-                (,(r 'lambda) (expr env)
-                  (,(r 'error) "invalid use of auxiliary syntax")))))))
-
-  (define-auxiliary-syntax else)
-  (define-auxiliary-syntax =>)
-  (define-auxiliary-syntax _)
-  (define-auxiliary-syntax ...)
-  (define-auxiliary-syntax unquote)
-  (define-auxiliary-syntax unquote-splicing)
 
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
