@@ -74,7 +74,7 @@ find_macro(pic_state *pic, pic_sym rename)
 }
 
 static pic_sym
-translate(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
+make_identifier(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
 {
   pic_sym rename;
 
@@ -100,7 +100,7 @@ static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *, struct p
 static pic_value
 macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv, struct pic_dict *cxt)
 {
-  return pic_sym_value(translate(pic, sym, senv, cxt));
+  return pic_sym_value(make_identifier(pic, sym, senv, cxt));
 }
 
 static pic_value
@@ -736,7 +736,7 @@ er_macro_rename(pic_state *pic)
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
   cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
 
-  return pic_sym_value(translate(pic, sym, mac_env, cxt));
+  return pic_sym_value(make_identifier(pic, sym, mac_env, cxt));
 }
 
 static pic_value
@@ -755,8 +755,8 @@ er_macro_compare(pic_state *pic)
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
   cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
 
-  m = translate(pic, pic_sym(a), use_env, cxt);
-  n = translate(pic, pic_sym(b), use_env, cxt);
+  m = make_identifier(pic, pic_sym(a), use_env, cxt);
+  n = make_identifier(pic, pic_sym(b), use_env, cxt);
 
   return pic_bool_value(m == n);
 }
@@ -822,7 +822,7 @@ ir_macro_inject(pic_state *pic)
   use_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
   cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
 
-  return pic_sym_value(translate(pic, sym, use_env, cxt));
+  return pic_sym_value(make_identifier(pic, sym, use_env, cxt));
 }
 
 static pic_value
@@ -841,8 +841,8 @@ ir_macro_compare(pic_state *pic)
   mac_env = pic_senv_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 1));
   cxt = pic_dict_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 2));
 
-  m = translate(pic, pic_sym(a), mac_env, cxt);
-  n = translate(pic, pic_sym(b), mac_env, cxt);
+  m = make_identifier(pic, pic_sym(a), mac_env, cxt);
+  n = make_identifier(pic, pic_sym(b), mac_env, cxt);
 
   return pic_bool_value(m == n);
 }
@@ -852,7 +852,7 @@ ir_macro_wrap(pic_state *pic, pic_value expr, struct pic_senv *use_env, struct p
 {
   if (pic_sym_p(expr)) {
     pic_value r;
-    r = pic_sym_value(translate(pic, pic_sym(expr), use_env, cxt));
+    r = pic_sym_value(make_identifier(pic, pic_sym(expr), use_env, cxt));
     *ir = pic_acons(pic, r, expr, *ir);
     return r;
   }
@@ -874,7 +874,7 @@ ir_macro_unwrap(pic_state *pic, pic_value expr, struct pic_senv *mac_env, struct
     if (pic_test(r = pic_assq(pic, expr, *ir))) {
       return pic_cdr(pic, r);
     }
-    return pic_sym_value(translate(pic, pic_sym(expr), mac_env, cxt));
+    return pic_sym_value(make_identifier(pic, pic_sym(expr), mac_env, cxt));
   }
   else if (pic_pair_p(expr)) {
     return pic_cons(pic,
