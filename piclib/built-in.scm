@@ -106,11 +106,7 @@
               id)))
 
       (define (compare sym1 sym2)
-        (if (symbol? sym1)
-            (if (symbol? sym2)
-                (identifier=? use-env sym1 use-env sym2)
-                #f)
-            #f))
+        (identifier=? use-env sym1 use-env sym2))
 
       (f expr rename compare)))
 
