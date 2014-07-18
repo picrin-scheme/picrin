@@ -131,7 +131,6 @@ pic_open(int argc, char *argv[], char **envp)
   register_renamed_symbol(pic, rDEFINE_SYNTAX, "define-syntax");
   register_renamed_symbol(pic, rDEFINE_MACRO, "define-macro");
   register_renamed_symbol(pic, rLET_SYNTAX, "let-syntax");
-  register_renamed_symbol(pic, rLETREC_SYNTAX, "letrec-syntax");
   register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
   register_renamed_symbol(pic, rIMPORT, "import");
   register_renamed_symbol(pic, rEXPORT, "export");
