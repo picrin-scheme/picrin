@@ -827,7 +827,7 @@
 (test 3.0 (truncate 3.5))
 (test 4.0 (round 3.5))
 
-(test 4 (round 7/2))
+(test 4 (exact (round 7/2)))
 (test 7 (round 7))
 
 ;; (test 1/3 (rationalize (exact .3) 1/10))
