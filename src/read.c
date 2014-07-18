@@ -363,6 +363,7 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
   pic_sym sym;
   /* Currently supports only ascii chars */
   char HEX_BUF[3];
+  size_t i = 0;
 
   size = 256;
   buf = pic_alloc(pic, size);
@@ -376,7 +377,8 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
       case 'n': c = '\n'; break;
       case 'r': c = '\r'; break;
       case 'x':
-        for(size_t i = 0; (HEX_BUF[i] = next(port)) != ';'; i++) {
+        i = 0;
+        while ((HEX_BUF[i++] = next(port)) != ';') {
           if (i >= sizeof HEX_BUF)
             read_error(pic, "expected ';'");
         }
