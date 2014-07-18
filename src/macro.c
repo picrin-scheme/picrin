@@ -210,9 +210,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_error(pic, "syntax error");
   }
 
-  in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  in->up = senv;
-  xh_init_int(&in->map, sizeof(pic_sym));
+  in = pic_senv_new(pic, senv);
 
   for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
@@ -372,9 +370,7 @@ macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   pic_value formal, v, var, val;
   pic_sym sym, rename;
 
-  in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  in->up = senv;
-  xh_init_int(&in->map, sizeof(pic_sym));
+  in = pic_senv_new(pic, senv);
 
   if (pic_length(pic, expr) < 2) {
     pic_error(pic, "syntax error");
@@ -563,13 +559,23 @@ pic_macroexpand(pic_state *pic, pic_value expr)
 }
 
 struct pic_senv *
-pic_null_syntactic_environment(pic_state *pic)
+pic_senv_new(pic_state *pic, struct pic_senv *up)
 {
   struct pic_senv *senv;
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
-  senv->up = NULL;
+  senv->up = up;
   xh_init_int(&senv->map, sizeof(pic_sym));
+
+  return senv;
+}
+
+struct pic_senv *
+pic_null_syntactic_environment(pic_state *pic)
+{
+  struct pic_senv *senv;
+
+  senv = pic_senv_new(pic, NULL);
 
   pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
   pic_define_syntactic_keyword(pic, senv, pic->sIMPORT, pic->rIMPORT);
