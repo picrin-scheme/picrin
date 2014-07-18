@@ -376,7 +376,10 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
       case 'n': c = '\n'; break;
       case 'r': c = '\r'; break;
       case 'x':
-        for(size_t i = 0; (HEX_BUF[i++] = (next(port))) != ';' && i < sizeof HEX_BUF;);
+        for(size_t i = 0; (HEX_BUF[i] = next(port)) != ';'; i++) {
+          if (i >= sizeof HEX_BUF)
+            read_error(pic, "expected ';'");
+        }
         c = (char)strtol(HEX_BUF, NULL, 16);
         break;
       }
