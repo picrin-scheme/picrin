@@ -481,9 +481,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
       else if (tag == pic->rLET_SYNTAX) {
         return macroexpand_let_syntax(pic, expr, senv);
       }
-      /* else if (tag == pic->sLETREC_SYNTAX) { */
-      /*   return macroexpand_letrec_syntax(pic, expr, senv); */
-      /* } */
       else if (tag == pic->rLAMBDA) {
         return macroexpand_lambda(pic, expr, senv);
       }

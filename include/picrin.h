@@ -80,8 +80,7 @@ typedef struct {
 
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
-  pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO;
-  pic_sym sLET_SYNTAX, sLETREC_SYNTAX;
+  pic_sym sDEFINE_SYNTAX, sDEFINE_MACRO, sLET_SYNTAX;
   pic_sym sDEFINE_LIBRARY, sIMPORT, sEXPORT;
   pic_sym sCONS, sCAR, sCDR, sNILP;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
