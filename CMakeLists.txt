@@ -40,10 +40,7 @@ include(tools/CMakeLists.txt)
 add_custom_target(run bin/picrin DEPENDS repl)
 
 # $ make test
-add_custom_target(test DEPENDS no-act test-r7rs)
-
-# $ make no-act
-add_custom_target(no-act bin/picrin -e '' > /dev/null DEPENDS repl)
+add_custom_target(test DEPENDS test-r7rs)
 
 # $ make test-r7rs
 add_custom_target(test-r7rs bin/picrin ${PROJECT_SOURCE_DIR}/t/r7rs-tests.scm DEPENDS repl)
