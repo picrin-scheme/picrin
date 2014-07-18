@@ -744,7 +744,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "number?", pic_number_real_p);
   pic_defun(pic, "complex?", pic_number_real_p);
   pic_defun(pic, "real?", pic_number_real_p);
-  pic_defun(pic, "rational?", pic_number_integer_p);
+  pic_defun(pic, "rational?", pic_number_real_p);
   pic_defun(pic, "integer?", pic_number_integer_p);
   pic_gc_arena_restore(pic, ai);
 
