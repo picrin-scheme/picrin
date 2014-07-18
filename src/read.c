@@ -361,6 +361,8 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
   char *buf;
   size_t size, cnt;
   pic_sym sym;
+  /* Currently supports only ascii chars */
+  char HEX_BUF[3];
 
   size = 256;
   buf = pic_alloc(pic, size);
@@ -373,15 +375,10 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
       case 't': c = '\t'; break;
       case 'n': c = '\n'; break;
       case 'r': c = '\r'; break;
-      case 'x':{
-        /* Currently supports only ascii chars */
-        size_t s = 3;        /* 2 bytes of hex + 1 byte of terminator(';')*/
-        char hex[s];
-        size_t i = 0;
-        while((hex[i++] = (next(port))) != ';' && i < s);
-        c = (char)strtol(hex, NULL, 16);
+      case 'x':
+        for(size_t i = 0; (HEX_BUF[i++] = (next(port))) != ';' && i < sizeof HEX_BUF;);
+        c = (char)strtol(HEX_BUF, NULL, 16);
         break;
-      }
       }
     }
     buf[cnt++] = c;
