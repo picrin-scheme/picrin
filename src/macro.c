@@ -26,7 +26,7 @@ pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym renam
 {
   UNUSED(pic);
 
-  xh_put_int(&senv->renames, sym, &rename);
+  xh_put_int(&senv->map, sym, &rename);
 }
 
 bool
@@ -41,7 +41,7 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
     return true;
   }
 
-  if ((e = xh_get_int(&senv->renames, sym)) == NULL) {
+  if ((e = xh_get_int(&senv->map, sym)) == NULL) {
     return false;
   }
   if (rename != NULL) {
@@ -212,7 +212,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
   in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   in->up = senv;
-  xh_init_int(&in->renames, sizeof(pic_sym));
+  xh_init_int(&in->map, sizeof(pic_sym));
 
   for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
@@ -374,7 +374,7 @@ macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
   in = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   in->up = senv;
-  xh_init_int(&in->renames, sizeof(pic_sym));
+  xh_init_int(&in->map, sizeof(pic_sym));
 
   if (pic_length(pic, expr) < 2) {
     pic_error(pic, "syntax error");
@@ -569,7 +569,7 @@ pic_null_syntactic_environment(pic_state *pic)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = NULL;
-  xh_init_int(&senv->renames, sizeof(pic_sym));
+  xh_init_int(&senv->map, sizeof(pic_sym));
 
   pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
   pic_define_syntactic_keyword(pic, senv, pic->sIMPORT, pic->rIMPORT);

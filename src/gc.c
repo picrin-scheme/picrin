@@ -623,7 +623,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destroy(&senv->renames);
+    xh_destroy(&senv->map);
     break;
   }
   case PIC_TT_MACRO: {
