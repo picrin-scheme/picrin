@@ -28,6 +28,7 @@
     (list->vector (map proc (vector->list expr))))
 
   (define (walk proc expr)
+    "walk on symbols"
     (if (null? expr)
         '()
         (if (pair? expr)
@@ -35,19 +36,14 @@
                   (walk proc (cdr expr)))
             (if (vector? expr)
                 (vector-map proc expr)
-                (proc expr)))))
+                (if (symbol? expr)
+                    (proc expr)
+                    expr)))))
 
-  (define (walk-symbol proc expr)
-    (walk
-     (lambda (atom)
-       (if (symbol? atom)
-           (proc atom)
-           atom))
-     expr))
 
   (define (make-syntactic-closure env free form)
     (define cache (make-dictionary))
-    (walk-symbol
+    (walk
      (lambda (sym)
        (if (memq sym free)
            sym
@@ -134,10 +130,10 @@
                 (identifier=? mac-env x mac-env y))))
 
       (define (wrap expr)
-        (walk-symbol inject expr))
+        (walk inject expr))
 
       (define (unwrap expr)
-        (walk-symbol uninject expr))
+        (walk uninject expr))
 
       (unwrap (f (wrap expr) inject compare))))
 
