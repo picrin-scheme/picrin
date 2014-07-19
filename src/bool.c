@@ -41,19 +41,12 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
     if (depth > 200) {
       pic_errorf(pic, "Stack overflow in equal\n");
     }
-    if (NULL == ht) {
-      xh_init_ptr(ht, sizeof(void *));
-    }
-    switch (pic_type(x)) {
-    case PIC_TT_PAIR:
-    case PIC_TT_VECTOR:
+    if (pic_pair_p(x) || pic_vec_p(x)) {
       if (xh_get(ht, pic_obj_ptr(x)) != NULL) {
         return true;            /* `x' was seen already.  */
       } else {
         xh_put(ht, pic_obj_ptr(x), NULL);
       }
-    default:
-      break;
     }
   }
 
@@ -72,7 +65,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
   case PIC_TT_BLOB:
     return blob_equal_p(pic_blob_ptr(x), pic_blob_ptr(y));
 
-  case PIC_TT_PAIR:
+  case PIC_TT_PAIR: {
     if (pic_nil_p(local)) {
       local = x;
     }
@@ -93,6 +86,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
     } else {
       return false;
     }
+  }
   case PIC_TT_VECTOR: {
     size_t i;
     struct pic_vector *u, *v;
