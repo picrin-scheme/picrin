@@ -40,19 +40,29 @@
                     (proc expr)
                     expr)))))
 
+  (define (memoize f)
+    "memoize on a symbol"
+    (define cache (make-dictionary))
+    (lambda (sym)
+      (if (dictionary-has? cache sym)
+          (dictionary-ref cache sym)
+          (begin
+            (define val (f sym))
+            (dictionary-set! cache sym val)
+            val))))
 
   (define (make-syntactic-closure env free form)
-    (define cache (make-dictionary))
+
+    (define resolve
+      (memoize
+       (lambda (sym)
+         (make-identifier sym env))))
+
     (walk
      (lambda (sym)
        (if (memq sym free)
            sym
-           (if (dictionary-has? cache sym)
-               (dictionary-ref cache sym)
-               (begin
-                 (define id (make-identifier sym env))
-                 (dictionary-set! cache sym id)
-                 id))))
+           (resolve sym)))
      form))
 
   (define (close-syntax form env)
@@ -73,15 +83,10 @@
   (define (er-macro-transformer f)
     (lambda (expr use-env mac-env)
 
-      (define cache (make-dictionary))
-
-      (define (rename sym)
-        (if (dictionary-has? cache sym)
-            (dictionary-ref cache sym)
-            (begin
-              (define id (make-identifier sym mac-env))
-              (dictionary-set! cache sym id)
-              id)))
+      (define rename
+        (memoize
+         (lambda (sym)
+           (make-identifier sym mac-env))))
 
       (define (compare x y)
         (if (not (symbol? x))
@@ -95,27 +100,19 @@
   (define (ir-macro-transformer f)
     (lambda (expr use-env mac-env)
 
-      (define icache (make-dictionary))
       (define icache* (make-dictionary))
 
-      (define (inject sym)
-        (if (dictionary-has? icache sym)
-            (dictionary-ref icache sym)
-            (begin
-              (define id (make-identifier sym use-env))
-              (dictionary-set! icache sym id)
-              (dictionary-set! icache* id sym)
-              id)))
+      (define inject
+        (memoize
+         (lambda (sym)
+           (define id (make-identifier sym use-env))
+           (dictionary-set! icache* id sym)
+           id)))
 
-      (define rcache (make-dictionary))
-
-      (define (rename sym)
-        (if (dictionary-has? rcache sym)
-            (dictionary-ref rcache sym)
-            (begin
-              (define id (make-identifier sym mac-env))
-              (dictionary-set! rcache sym id)
-              id)))
+      (define rename
+        (memoize
+         (lambda (sym)
+           (make-identifier sym mac-env))))
 
       (define (uninject sym)
         (if (dictionary-has? icache* sym)
