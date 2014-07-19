@@ -34,8 +34,6 @@ pic_blob_equal_p(struct pic_blob *blob1, struct pic_blob *blob2)
 static bool
 pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *ht)
 {
-  xh_entry *e;
-  enum pic_tt type;
   pic_value local = pic_nil_value();
   size_t rapid_count = 0;
 
@@ -48,15 +46,12 @@ pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xha
     }
     switch (pic_type(x)) {
     case PIC_TT_PAIR:
-    case PIC_TT_VECTOR: {
-      e = xh_get(ht, pic_obj_ptr(x));
-      if (e) {
-        /* `x' was seen already.  */
-        return true;
+    case PIC_TT_VECTOR:
+      if (xh_get(ht, pic_obj_ptr(x)) != NULL) {
+        return true;            /* `x' was seen already.  */
       } else {
         xh_put(ht, pic_obj_ptr(x), NULL);
       }
-    }
     default:
       break;
     }
@@ -67,13 +62,10 @@ pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xha
   if (pic_eqv_p(x, y))
     return true;
 
-  type = pic_type(x);
-
-  if (type != pic_type(y)) {
+  if (pic_type(x) != pic_type(y))
     return false;
-  }
 
-  switch (type) {
+  switch (pic_type(x)) {
   case PIC_TT_PAIR:
     if (pic_nil_p(local)) {
       local = x;
@@ -81,6 +73,7 @@ pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xha
     if (pic_internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, ht)) {
       x = pic_cdr(pic, x);
       y = pic_cdr(pic, y);
+
       ++rapid_count;
 
       if (rapid_count == 2) {
@@ -91,7 +84,7 @@ pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xha
         }
       }
       goto LOOP;
-    }else{
+    } else {
       return false;
     }
   case PIC_TT_BLOB: {
@@ -109,7 +102,10 @@ pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xha
   }
   case PIC_TT_VECTOR: {
     size_t i;
-    struct pic_vector *u = pic_vec_ptr(x), *v = pic_vec_ptr(y);
+    struct pic_vector *u, *v;
+
+    u = pic_vec_ptr(x);
+    v = pic_vec_ptr(y);
 
     if (u->len != v->len) {
       return false;
@@ -130,6 +126,7 @@ pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xha
 bool
 pic_equal_p(pic_state *pic, pic_value x, pic_value y){
   xhash ht;
+
   xh_init_ptr(&ht, 0);
   return pic_internal_equal_p(pic, x, y, 0, &ht);
 }
