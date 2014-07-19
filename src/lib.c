@@ -104,3 +104,24 @@ pic_export(pic_state *pic, pic_sym sym)
 {
   pic_export_as(pic, sym, sym);
 }
+
+static pic_value
+pic_lib_lib_exports(pic_state *pic)
+{
+  struct pic_lib *lib;
+  pic_value spec;
+
+  pic_get_args(pic, "o", &spec);
+
+  lib = pic_find_library(pic, spec);
+
+  return pic_obj_value(lib->exports);
+}
+
+void
+pic_init_lib(pic_state *pic)
+{
+  pic_deflibrary ("(picrin library)") {
+    pic_defun(pic, "library-exports", pic_lib_lib_exports);
+  }
+}
