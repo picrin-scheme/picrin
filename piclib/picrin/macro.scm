@@ -37,20 +37,26 @@
                 (vector-map proc expr)
                 (proc expr)))))
 
-  (define (make-syntactic-closure env free form)
-    (define cache (make-dictionary))
+  (define (walk-symbol proc expr)
     (walk
      (lambda (atom)
-       (if (not (symbol? atom))
-           atom
-           (if (memq atom free)
-               atom
-               (if (dictionary-has? cache atom)
-                   (dictionary-ref cache atom)
-                   (begin
-                     (define id (make-identifier atom env))
-                     (dictionary-set! cache atom id)
-                     id)))))
+       (if (symbol? atom)
+           (proc atom)
+           atom))
+     expr))
+
+  (define (make-syntactic-closure env free form)
+    (define cache (make-dictionary))
+    (walk-symbol
+     (lambda (sym)
+       (if (memq sym free)
+           sym
+           (if (dictionary-has? cache sym)
+               (dictionary-ref cache sym)
+               (begin
+                 (define id (make-identifier sym env))
+                 (dictionary-set! cache sym id)
+                 id))))
      form))
 
   (define (close-syntax form env)
@@ -115,6 +121,11 @@
               (dictionary-set! rcache sym id)
               id)))
 
+      (define (uninject sym)
+        (if (dictionary-has? icache* sym)
+            (dictionary-ref icache* sym)
+            (rename sym)))
+
       (define (compare x y)
         (if (not (symbol? x))
             #f
@@ -123,23 +134,10 @@
                 (identifier=? mac-env x mac-env y))))
 
       (define (wrap expr)
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (inject atom)))
-         expr))
+        (walk-symbol inject expr))
 
       (define (unwrap expr)
-        (define cache (make-dictionary))
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (if (dictionary-has? icache* atom)
-                   (dictionary-ref icache* atom)
-                   (rename atom))))
-         expr))
+        (walk-symbol uninject expr))
 
       (unwrap (f (wrap expr) inject compare))))
 
