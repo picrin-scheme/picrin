@@ -1,5 +1,5 @@
 list(APPEND PICLIB_SCHEME_LIBS
-  ${PROJECT_SOURCE_DIR}/piclib/picrin/macro.scm
+  ${PROJECT_SOURCE_DIR}/piclib/picrin/macro.scm # the only dependency prelude requires
   ${PROJECT_SOURCE_DIR}/piclib/prelude.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/array.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/dictionary.scm
