@@ -55,8 +55,9 @@ expect(struct pic_port *port, const char *str)
   char c;
 
   while ((c = *str++) != 0) {
-    if (c != next(port))
+    if (c != peek(port))
       return false;
+    next(port);
   }
 
   return true;
