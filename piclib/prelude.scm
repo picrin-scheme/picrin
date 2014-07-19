@@ -27,9 +27,9 @@
      (lambda (expr r compare)
        (if (symbol? (cadr expr))
            (begin
-             (define name (cadr expr))
-             (define bindings (caddr expr))
-             (define body (cdddr expr))
+             (define name     (car (cdr expr)))
+             (define bindings (car (cdr (cdr expr))))
+             (define body     (cdr (cdr (cdr expr))))
              (list (r 'let) '()
                    (list (r 'define) name
                          (cons (r 'lambda) (cons (map car bindings) body)))
@@ -46,18 +46,20 @@
        (let ((clauses (cdr expr)))
          (if (null? clauses)
              #f
-             (if (compare (r 'else) (caar clauses))
-                 (cons (r 'begin) (cdar clauses))
-                 (if (if (>= (length (car clauses)) 2)
-                         (compare (r '=>) (cadar clauses))
-                         #f)
-                     (list (r 'let) (list (list (r 'x) (caar clauses)))
-                           (list (r 'if) (r 'x)
-                                 (list (caddar clauses) (r 'x))
-                                 (cons (r 'cond) (cdr clauses))))
-                     (list (r 'if) (caar clauses)
-                           (cons (r 'begin) (cdar clauses))
-                           (cons (r 'cond) (cdr clauses))))))))))
+             (begin
+               (define clause (car clauses))
+               (if (compare (r 'else) (car clause))
+                   (cons (r 'begin) (cdr clause))
+                   (if (if (>= (length clause) 2)
+                           (compare (r '=>) (list-ref clause 1))
+                           #f)
+                       (list (r 'let) (list (list (r 'x) (car clause)))
+                             (list (r 'if) (r 'x)
+                                   (list (list-ref clause 2) (r 'x))
+                                   (cons (r 'cond) (cdr clauses))))
+                       (list (r 'if) (car clause)
+                             (cons (r 'begin) (cdr clause))
+                             (cons (r 'cond) (cdr clauses)))))))))))
 
   (define-syntax and
     (er-macro-transformer
@@ -203,9 +205,9 @@
   (define-syntax do
     (er-macro-transformer
      (lambda (form r compare)
-       (let ((bindings (cadr form))
-             (finish (caddr form))
-             (body (cdddr form)))
+       (let ((bindings (car (cdr form)))
+             (finish   (car (cdr (cdr form))))
+             (body     (cdr (cdr (cdr form)))))
          `(,(r 'let) ,(r 'loop) ,(map (lambda (x)
                                         (list (car x) (cadr x)))
                                       bindings)
@@ -245,16 +247,18 @@
             ,(let loop ((clauses clauses))
                (if (null? clauses)
                    #f
-                   `(,(r 'if) ,(if (compare (r 'else) (caar clauses))
-                                   '#t
-                                   `(,(r 'or)
-                                     ,@(map (lambda (x)
-                                              `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
-                                            (caar clauses))))
-                     ,(if (compare (r '=>) (cadar clauses))
-                          `(,(caddar clauses) ,(r 'key))
-                          `(,(r 'begin) ,@(cdar clauses)))
-                        ,(loop (cdr clauses))))))))))
+                   (begin
+                     (define clause (car clauses))
+                     `(,(r 'if) ,(if (compare (r 'else) (car clause))
+                                     '#t
+                                     `(,(r 'or)
+                                       ,@(map (lambda (x)
+                                                `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
+                                              (car clause))))
+                       ,(if (compare (r '=>) (list-ref clause 1))
+                            `(,(list-ref clause 2) ,(r 'key))
+                            `(,(r 'begin) ,@(cdr clause)))
+                       ,(loop (cdr clauses)))))))))))
 
   (define-syntax letrec-syntax
     (er-macro-transformer
@@ -279,7 +283,6 @@
 ;;; multiple value
 (define-library (picrin multiple-value)
   (import (scheme base)
-          (scheme cxr)
           (picrin macro)
           (picrin core-syntax))
 
@@ -364,7 +367,6 @@
 ;;; parameter
 (define-library (picrin parameter)
   (import (scheme base)
-          (scheme cxr)
           (picrin macro)
           (picrin core-syntax)
           (picrin var)
@@ -434,8 +436,7 @@
 ;;; Record Type
 (define-library (picrin record)
   (import (scheme base)
-	  (scheme cxr)
-	  (picrin macro)
+          (picrin macro)
           (picrin core-syntax))
 
   (define record-marker (list 'record-marker))
@@ -541,9 +542,9 @@
   (define-syntax define-record-field
     (ir-macro-transformer
      (lambda (form inject compare?)
-       (let ((type (cadr form))
-	     (field-tag (caddr form))
-	     (acc-mod (cdddr form)))
+       (let ((type      (car (cdr form)))
+	     (field-tag (car (cdr (cdr form))))
+	     (acc-mod   (cdr (cdr (cdr form)))))
 	 (if (= 1 (length acc-mod))
 	     `(define ,(car acc-mod)
 		(record-accessor ,type ',field-tag))
@@ -557,9 +558,9 @@
     (ir-macro-transformer
      (lambda (form inject compare?)
        (let ((type (cadr form))
-	     (constructor (caddr form))
-	     (predicate (cadddr form))
-	     (field-tag (cddddr form)))
+	     (constructor (car (cdr (cdr form))))
+	     (predicate   (car (cdr (cdr (cdr form)))))
+	     (field-tag   (cdr (cdr (cdr (cdr form))))))
 	 `(begin
 	    (define ,type
 	      (make-record-type ',type ',(cdr constructor)))
@@ -987,8 +988,7 @@
 ;;; syntax-rules
 (define-library (picrin syntax-rules)
   (import (scheme base)
-	  (scheme cxr)
-	  (picrin macro))
+          (picrin macro))
 
   ;;; utility functions
   (define (reverse* l)
@@ -1261,9 +1261,9 @@
 	       ((compare (car clauses) 'mismatch)
 		`(,_syntax-error "invalid rule"))
 	       (else
-		(let ((vars (car (car clauses)))
-		      (match (cadr (car clauses)))
-		      (expand (caddr (car clauses))))
+		(let ((vars (list-ref (car clauses) 0))
+		      (match (list-ref (car clauses) 1))
+		      (expand (list-ref (car clauses) 2)))
 		  `(,_let ,(map (lambda (v) (list (var->sym v) '())) vars)
 			  (,_let ((result (,_call/cc (,_lambda (exit) ,match))))
 				 (,_if result
@@ -1294,9 +1294,9 @@
 
        (let ((form (normalize-form form)))
 	 (if form
-	     (let ((ellipsis (cadr form))
-		   (literals (caddr form))
-		   (rules (cdddr form)))
+	     (let ((ellipsis (list-ref form 1))
+		   (literals (list-ref form 2))
+		   (rules (list-tail form 3)))
 	       (let ((clauses (map (lambda (rule) (compile-rule ellipsis literals rule))
 				   rules)))
 		 `(,_er-macro-transformer
