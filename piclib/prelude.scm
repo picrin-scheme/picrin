@@ -1,199 +1,6 @@
-;;; Appendix A. Standard Libraries CxR
-(define-library (scheme cxr)
-  (import (scheme base))
-
-  (define (caaar p) (car (caar p)))
-  (define (caadr p) (car (cadr p)))
-  (define (cadar p) (car (cdar p)))
-  (define (caddr p) (car (cddr p)))
-  (define (cdaar p) (cdr (caar p)))
-  (define (cdadr p) (cdr (cadr p)))
-  (define (cddar p) (cdr (cdar p)))
-  (define (cdddr p) (cdr (cddr p)))
-  (define (caaaar p) (caar (caar p)))
-  (define (caaadr p) (caar (cadr p)))
-  (define (caadar p) (caar (cdar p)))
-  (define (caaddr p) (caar (cddr p)))
-  (define (cadaar p) (cadr (caar p)))
-  (define (cadadr p) (cadr (cadr p)))
-  (define (caddar p) (cadr (cdar p)))
-  (define (cadddr p) (cadr (cddr p)))
-  (define (cdaaar p) (cdar (caar p)))
-  (define (cdaadr p) (cdar (cadr p)))
-  (define (cdadar p) (cdar (cdar p)))
-  (define (cdaddr p) (cdar (cddr p)))
-  (define (cddaar p) (cddr (caar p)))
-  (define (cddadr p) (cddr (cadr p)))
-  (define (cdddar p) (cddr (cdar p)))
-  (define (cddddr p) (cddr (cddr p)))
-
-  (export caaar caadr cadar caddr
-          cdaar cdadr cddar cdddr
-          caaaar caaadr caadar caaddr
-          cadaar cadadr caddar cadddr
-          cdaaar cdaadr cdadar cdaddr
-          cddaar cddadr cdddar cddddr))
-
-;;; hygienic macros
-(define-library (picrin macro)
-  (import (scheme base)
-          (picrin dictionary))
-
-  (define (memq obj list)
-    (if (null? list)
-        #f
-        (if (eq? obj (car list))
-            list
-            (memq obj (cdr list)))))
-
-  (define (list->vector list)
-    (define vector (make-vector (length list)))
-    (define (go list i)
-      (if (null? list)
-          vector
-          (begin
-            (vector-set! vector i (car list))
-            (go (cdr list) (+ i 1)))))
-    (go list 0))
-
-  (define (vector->list vector)
-    (define (go i)
-      (if (= i (vector-length vector))
-          '()
-          (cons (vector-ref vector i)
-                (go (+ i 1)))))
-    (go 0))
-
-  (define (vector-map proc expr)
-    (list->vector (map proc (vector->list expr))))
-
-  (define (walk proc expr)
-    (if (null? expr)
-        '()
-        (if (pair? expr)
-            (cons (walk proc (car expr))
-                  (walk proc (cdr expr)))
-            (if (vector? expr)
-                (vector-map proc expr)
-                (proc expr)))))
-
-  (define (make-syntactic-closure env free form)
-    (define cache (make-dictionary))
-    (walk
-     (lambda (atom)
-       (if (not (symbol? atom))
-           atom
-           (if (memq atom free)
-               atom
-               (if (dictionary-has? cache atom)
-                   (dictionary-ref cache atom)
-                   (begin
-                     (define id (make-identifier atom env))
-                     (dictionary-set! cache atom id)
-                     id)))))
-     form))
-
-  (define (close-syntax form env)
-    (make-syntactic-closure env '() form))
-
-  (define-syntax capture-syntactic-environment
-    (lambda (form use-env mac-env)
-      (list (cadr form) (list (make-identifier 'quote mac-env) mac-env))))
-
-  (define (sc-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure mac-env '() (f expr use-env))))
-
-  (define (rsc-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure use-env '() (f expr mac-env))))
-
-  (define (er-macro-transformer f)
-    (lambda (expr use-env mac-env)
-
-      (define cache (make-dictionary))
-
-      (define (rename sym)
-        (if (dictionary-has? cache sym)
-            (dictionary-ref cache sym)
-            (begin
-              (define id (make-identifier sym mac-env))
-              (dictionary-set! cache sym id)
-              id)))
-
-      (define (compare x y)
-        (if (not (symbol? x))
-            #f
-            (if (not (symbol? y))
-                #f
-                (identifier=? use-env x use-env y))))
-
-      (f expr rename compare)))
-
-  (define (ir-macro-transformer f)
-    (lambda (expr use-env mac-env)
-
-      (define protects (make-dictionary))
-
-      (define (wrap expr)
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (begin
-                 (define id (make-identifier atom use-env))
-                 (dictionary-set! protects id atom) ; lookup *atom* from id
-                 id)))
-         expr))
-
-      (define (unwrap expr)
-        (define cache (make-dictionary))
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (if (dictionary-has? protects atom)
-                   (dictionary-ref protects atom)
-                   (if (dictionary-has? cache atom)
-                       (dictionary-ref cache atom)
-                       (begin
-                         ;; implicit renaming
-                         (define id (make-identifier atom mac-env))
-                         (dictionary-set! cache atom id)
-                         id)))))
-         expr))
-
-      (define cache (make-dictionary))
-
-      (define (inject sym)
-        (if (dictionary-has? cache sym)
-            (dictionary-ref cache sym)
-            (begin
-              (define id (make-identifier sym use-env))
-              (dictionary-set! cache sym id)
-              id)))
-
-      (define (compare x y)
-        (if (not (symbol? x))
-            #f
-            (if (not (symbol? y))
-                #f
-                (identifier=? mac-env x mac-env y))))
-
-      (unwrap (f (wrap expr) inject compare))))
-
-  (export make-syntactic-closure
-          close-syntax
-          capture-syntactic-environment
-          sc-macro-transformer
-          rsc-macro-transformer
-          er-macro-transformer
-          ir-macro-transformer))
-
 ;;; core syntaces
 (define-library (picrin core-syntax)
   (import (scheme base)
-          (scheme cxr)
           (picrin macro))
 
   (define-syntax syntax-error
@@ -1155,25 +962,13 @@
 
 (export call-with-port)
 
-(define-library (scheme file)
-  (import (scheme base))
-
-  (define (call-with-input-file filename callback)
-    (call-with-port (open-input-file filename) callback))
-
-  (define (call-with-output-file filename callback)
-    (call-with-port (open-output-file filename) callback))
-
-  (export call-with-input-file
-          call-with-output-file))
-
 ;;; include syntax
 
 (import (scheme read)
         (scheme file))
 
 (define (read-many filename)
-  (call-with-input-file filename
+  (call-with-port (open-input-file filename)
     (lambda (port)
       (let loop ((expr (read port)) (exprs '()))
         (if (eof-object? expr)
@@ -1188,48 +983,6 @@
          `(,(rename 'begin) ,@exprs))))))
 
 (export include)
-
-;;; Appendix A. Standard Libraries Lazy
-(define-library (scheme lazy)
-  (import (scheme base)
-	  (picrin macro))
-
-  (define-record-type promise
-    (make-promise% done obj)
-    promise?
-    (done promise-done? promise-done!)
-    (obj promise-value promise-value!))
-
-  (define-syntax delay-force
-    (ir-macro-transformer
-     (lambda (form rename compare?)
-       (let ((expr (cadr form)))
-	 `(make-promise% #f (lambda () ,expr))))))
-
-  (define-syntax delay
-    (ir-macro-transformer
-     (lambda (form rename compare?)
-       (let ((expr (cadr form)))
-	 `(delay-force (make-promise% #t ,expr))))))
-
-  (define (promise-update! new old)
-    (promise-done! old (promise-done? new))
-    (promise-value! old (promise-value new)))
-
-  (define (force promise)
-    (if (promise-done? promise)
-	(promise-value promise)
-	(let ((promise* ((promise-value promise))))
-	  (unless (promise-done? promise)
-		  (promise-update! promise* promise))
-	  (force promise))))
-
-  (define (make-promise obj)
-    (if (promise? obj)
-	obj
-	(make-promise% #t obj)))
-
-  (export delay-force delay force make-promise promise?))
 
 ;;; syntax-rules
 (define-library (picrin syntax-rules)
@@ -1557,32 +1310,3 @@
 (import (picrin syntax-rules))
 (export syntax-rules)
 
-(define-library (scheme case-lambda)
-  (import (scheme base))
-
-  (define-syntax case-lambda
-    (syntax-rules ()
-      ((case-lambda (params body0 ...) ...)
-       (lambda args
-         (let ((len (length args)))
-           (letrec-syntax
-               ((cl (syntax-rules ::: ()
-                      ((cl)
-                       (error "no matching clause"))
-                      ((cl ((p :::) . body) . rest)
-                       (if (= len (length '(p :::)))
-                           (apply (lambda (p :::)
-                                    . body)
-                                  args)
-                           (cl . rest)))
-                      ((cl ((p ::: . tail) . body)
-                           . rest)
-                       (if (>= len (length '(p :::)))
-                           (apply
-                            (lambda (p ::: . tail)
-                              . body)
-                            args)
-                           (cl . rest))))))
-             (cl (params body0 ...) ...)))))))
-
-  (export case-lambda))
