@@ -10,76 +10,80 @@
 #include "picrin/blob.h"
 #include "picrin/string.h"
 
-bool pic_string_equal_p(struct pic_string *str1, struct pic_string *str2)
+bool
+pic_string_equal_p(struct pic_string *str1, struct pic_string *str2)
 {
   return pic_strcmp(str1, str2) == 0;
 }
 
-bool pic_blob_equal_p(struct pic_blob *blob1, struct pic_blob *blob2)
+bool
+pic_blob_equal_p(struct pic_blob *blob1, struct pic_blob *blob2)
 {
-  if(blob1->len != blob2->len){
+  size_t i;
+
+  if (blob1->len != blob2->len) {
     return false;
   }
-  size_t i;
-  for(i = 0; i < blob1->len; ++i){
-    if(blob1->data[i] != blob2->data[i])
+  for (i = 0; i < blob1->len; ++i) {
+    if (blob1->data[i] != blob2->data[i])
       return false;
   }
-  return true;  
+  return true;
 }
 
-bool
+static bool
 pic_internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *ht)
 {
-
-  if (depth > 10){
-    if(depth > 200){
-      pic_errorf(pic, "Stack overflow in equal\n");
-    }
-    if (NULL == ht){
-      xh_init_ptr(ht, sizeof(void *));
-    }
-    switch(pic_type(x)){
-    case PIC_TT_PAIR:
-    case PIC_TT_VECTOR:{
-      xh_entry *e = xh_get(ht, pic_obj_ptr(x));
-      if(e){
-        /* `x' was seen already.  */
-        return true;
-      }else{
-        xh_put(ht, pic_obj_ptr(x), NULL);
-      }
-    }
-    default:;
-    }
-  }
-
+  xh_entry *e;
   enum pic_tt type;
   pic_value local = pic_nil_value();
   size_t rapid_count = 0;
+
+  if (depth > 10) {
+    if (depth > 200) {
+      pic_errorf(pic, "Stack overflow in equal\n");
+    }
+    if (NULL == ht) {
+      xh_init_ptr(ht, sizeof(void *));
+    }
+    switch (pic_type(x)) {
+    case PIC_TT_PAIR:
+    case PIC_TT_VECTOR: {
+      e = xh_get(ht, pic_obj_ptr(x));
+      if (e) {
+        /* `x' was seen already.  */
+        return true;
+      } else {
+        xh_put(ht, pic_obj_ptr(x), NULL);
+      }
+    }
+    default:
+      break;
+    }
+  }
 
  LOOP:
 
   if (pic_eqv_p(x, y))
     return true;
-  
+
   type = pic_type(x);
-  
-  if (type != pic_type(y)){
-    return false;    
+
+  if (type != pic_type(y)) {
+    return false;
   }
-  
+
   switch (type) {
   case PIC_TT_PAIR:
-    if(pic_nil_p(local)){
+    if (pic_nil_p(local)) {
       local = x;
     }
-    if(pic_internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, ht)){
+    if (pic_internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, ht)) {
       x = pic_cdr(pic, x);
       y = pic_cdr(pic, y);
       ++rapid_count;
-      
-      if(rapid_count == 2){
+
+      if (rapid_count == 2) {
         rapid_count = 0;
         local = pic_cdr(pic, local);
         if (pic_eq_p(local, x)) {
