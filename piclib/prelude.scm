@@ -279,12 +279,20 @@
           letrec-syntax
           _ ... syntax-error))
 
+(import (picrin core-syntax))
+
+(export let let* letrec letrec*
+        quasiquote unquote unquote-splicing
+        and or
+        cond case else =>
+        do when unless
+        letrec-syntax
+        _ ... syntax-error)
 
 ;;; multiple value
 (define-library (picrin multiple-value)
   (import (scheme base)
-          (picrin macro)
-          (picrin core-syntax))
+          (picrin macro))
 
   (define-syntax let*-values
     (er-macro-transformer
@@ -361,7 +369,6 @@
 (define-library (picrin parameter)
   (import (scheme base)
           (picrin macro)
-          (picrin core-syntax)
           (picrin var)
           (picrin attribute)
           (picrin dictionary))
@@ -429,8 +436,7 @@
 ;;; Record Type
 (define-library (picrin record)
   (import (scheme base)
-          (picrin macro)
-          (picrin core-syntax))
+          (picrin macro))
 
   (define record-marker (list 'record-marker))
 
@@ -569,18 +575,9 @@
   (export define-record-type vector?))
 
 (import (picrin macro)
-        (picrin core-syntax)
         (picrin multiple-value)
         (picrin parameter)
         (picrin record))
-
-(export let let* letrec letrec*
-        quasiquote unquote unquote-splicing
-        and or
-        cond case else =>
-        do when unless
-        letrec-syntax
-        _ ... syntax-error)
 
 (export let-values
         let*-values
