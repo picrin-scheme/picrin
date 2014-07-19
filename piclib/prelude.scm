@@ -823,20 +823,6 @@
 
 ;;; 6.4 Pairs and lists
 
-(define (memv obj list)
-  (if (null? list)
-      #f
-      (if (eqv? obj (car list))
-	  list
-	  (memq obj (cdr list)))))
-
-(define (assv obj list)
-  (if (null? list)
-      #f
-      (if (eqv? obj (caar list))
-	  (car list)
-	  (assq obj (cdr list)))))
-
 (define (member obj list . opts)
   (let ((compare (if (null? opts) equal? (car opts))))
     (if (null? list)
@@ -853,8 +839,7 @@
 	    (car list)
 	    (assoc obj (cdr list) compare)))))
 
-(export memv member
-        assv assoc)
+(export member assoc)
 
 ;;; 6.5. Symbols
 
