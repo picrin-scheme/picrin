@@ -2146,14 +2146,14 @@
 ;; tests are run by default - need to cond-expand and test for
 ;; infinities and -0.0.
 
-;; (define-syntax test-numeric-syntax
-;;   (syntax-rules ()
-;;     ((test-numeric-syntax str expect strs ...)
-;;      (let* ((z (read (open-input-string str)))
-;;             (out (open-output-string))
-;;             (z-str (begin (write z out) (get-output-string out))))
-;;        (test expect (values z))
-;;        (test #t (and (member z-str '(str strs ...)) #t))))))
+(define-syntax test-numeric-syntax
+  (syntax-rules ()
+    ((test-numeric-syntax str expect strs ...)
+     (let* ((z (read (open-input-string str)))
+            (out (open-output-string))
+            (z-str (begin (write z out) (get-output-string out))))
+       (test expect (values z))
+       (test #t (and (member z-str '(str strs ...)) #t))))))
 
 ;; Each test is of the form:
 ;;
@@ -2170,20 +2170,20 @@
 ;;   (test-numeric-syntax input-str expected-value (input-str))
 
 ;; Simple
-;; (test-numeric-syntax "1" 1)
+(test-numeric-syntax "1" 1)
 ;; (test-numeric-syntax "+1" 1 "1")
-;; (test-numeric-syntax "-1" -1)
+(test-numeric-syntax "-1" -1)
 ;; (test-numeric-syntax "#i1" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#I1" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#i-1" -1.0 "-1.0" "-1.")
 ;; ;; Decimal
-;; (test-numeric-syntax "1.0" 1.0 "1.0" "1.")
-;; (test-numeric-syntax "1." 1.0 "1.0" "1.")
-;; (test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
-;; (test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
+(test-numeric-syntax "1.0" 1.0 "1.0" "1.")
+(test-numeric-syntax "1." 1.0 "1.0" "1.")
+(test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
+(test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
 ;; ;; Some Schemes don't allow negative zero. This is okay with the standard
-;; (test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
-;; (test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
+(test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
+(test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
 ;; (test-numeric-syntax "#i1.0" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#e1.0" 1 "1")
 ;; (test-numeric-syntax "#e-.0" 0 "0")
@@ -2200,21 +2200,21 @@
 ;; (test-numeric-syntax "1l2" 100.0 "100.0" "100.")
 ;; (test-numeric-syntax "1L2" 100.0 "100.0" "100.")
 ;; ;; NaN, Inf
-;; (test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
-;; (test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
-;; (test-numeric-syntax "+inf.0" +inf.0 "+inf.0" "+Inf.0")
-;; (test-numeric-syntax "+InF.0" +inf.0 "+inf.0" "+Inf.0")
-;; (test-numeric-syntax "-inf.0" -inf.0 "-inf.0" "-Inf.0")
-;; (test-numeric-syntax "-iNF.0" -inf.0 "-inf.0" "-Inf.0")
+(test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
+(test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
+(test-numeric-syntax "+inf.0" +inf.0 "+inf.0" "+Inf.0")
+(test-numeric-syntax "+InF.0" +inf.0 "+inf.0" "+Inf.0")
+(test-numeric-syntax "-inf.0" -inf.0 "-inf.0" "-Inf.0")
+(test-numeric-syntax "-iNF.0" -inf.0 "-inf.0" "-Inf.0")
 ;; (test-numeric-syntax "#i+nan.0" +nan.0 "+nan.0" "+NaN.0")
 ;; (test-numeric-syntax "#i+inf.0" +inf.0 "+inf.0" "+Inf.0")
 ;; (test-numeric-syntax "#i-inf.0" -inf.0 "-inf.0" "-Inf.0")
 ;; ;; Exact ratios
-;; (test-numeric-syntax "1/2" (/ 1 2))
+(test-numeric-syntax "1/2" (/ 1 2))
 ;; (test-numeric-syntax "#e1/2" (/ 1 2) "1/2")
-;; (test-numeric-syntax "10/2" 5 "5")
-;; (test-numeric-syntax "-1/2" (- (/ 1 2)))
-;; (test-numeric-syntax "0/10" 0 "0")
+(test-numeric-syntax "10/2" 5 "5")
+(test-numeric-syntax "-1/2" (- (/ 1 2)))
+(test-numeric-syntax "0/10" 0 "0")
 ;; (test-numeric-syntax "#e0/10" 0 "0")
 ;; (test-numeric-syntax "#i3/2" (/ 3.0 2.0) "1.5")
 ;; ;; Exact complex
