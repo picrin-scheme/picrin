@@ -6,13 +6,6 @@
 
   ;; assumes no derived expressions are provided yet
 
-  (define (memq obj list)
-    (if (null? list)
-        #f
-        (if (eq? obj (car list))
-            list
-            (memq obj (cdr list)))))
-
   (define (list->vector list)
     (define vector (make-vector (length list)))
     (define (go list i)
