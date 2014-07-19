@@ -290,7 +290,7 @@
         _ ... syntax-error)
 
 ;;; multiple value
-(define-library (picrin multiple-value)
+(define-library (picrin values)
   (import (scheme base)
           (picrin macro))
 
@@ -575,7 +575,7 @@
   (export define-record-type vector?))
 
 (import (picrin macro)
-        (picrin multiple-value)
+        (picrin values)
         (picrin parameter)
         (picrin record))
 
