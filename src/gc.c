@@ -464,6 +464,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_lib *lib = (struct pic_lib *)obj;
     gc_mark(pic, lib->name);
     gc_mark_object(pic, (struct pic_object *)lib->senv);
+    gc_mark_object(pic, (struct pic_object *)lib->exports);
     break;
   }
   case PIC_TT_VAR: {
@@ -630,8 +631,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_LIB: {
-    struct pic_lib *lib = (struct pic_lib *)obj;
-    xh_destroy(&lib->exports);
     break;
   }
   case PIC_TT_VAR: {
