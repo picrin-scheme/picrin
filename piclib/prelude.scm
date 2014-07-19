@@ -77,7 +77,7 @@
                 (vector-map proc expr)
                 (proc expr)))))
 
-  (define (make-syntactic-closure form free env)
+  (define (make-syntactic-closure env free form)
     (define cache (make-dictionary))
     (walk
      (lambda (atom)
@@ -90,10 +90,11 @@
                    (begin
                      (define id (make-identifier atom env))
                      (dictionary-set! cache atom id)
-                     id)))))))
+                     id)))))
+     form))
 
   (define (close-syntax form env)
-    (make-syntactic-closure form '() env))
+    (make-syntactic-closure env '() form))
 
   (define (sc-macro-transformer f)
     (lambda (expr use-env mac-env)
