@@ -93,44 +93,26 @@
   (define (ir-macro-transformer f)
     (lambda (expr use-env mac-env)
 
-      (define protects (make-dictionary))
-
-      (define (wrap expr)
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (begin
-                 (define id (make-identifier atom use-env))
-                 (dictionary-set! protects id atom) ; lookup *atom* from id
-                 id)))
-         expr))
-
-      (define (unwrap expr)
-        (define cache (make-dictionary))
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (if (dictionary-has? protects atom)
-                   (dictionary-ref protects atom)
-                   (if (dictionary-has? cache atom)
-                       (dictionary-ref cache atom)
-                       (begin
-                         ;; implicit renaming
-                         (define id (make-identifier atom mac-env))
-                         (dictionary-set! cache atom id)
-                         id)))))
-         expr))
-
-      (define cache (make-dictionary))
+      (define icache (make-dictionary))
+      (define icache* (make-dictionary))
 
       (define (inject sym)
-        (if (dictionary-has? cache sym)
-            (dictionary-ref cache sym)
+        (if (dictionary-has? icache sym)
+            (dictionary-ref icache sym)
             (begin
               (define id (make-identifier sym use-env))
-              (dictionary-set! cache sym id)
+              (dictionary-set! icache sym id)
+              (dictionary-set! icache* id sym)
+              id)))
+
+      (define rcache (make-dictionary))
+
+      (define (rename sym)
+        (if (dictionary-has? rcache sym)
+            (dictionary-ref rcache sym)
+            (begin
+              (define id (make-identifier sym mac-env))
+              (dictionary-set! rcache sym id)
               id)))
 
       (define (compare x y)
@@ -139,6 +121,25 @@
             (if (not (symbol? y))
                 #f
                 (identifier=? mac-env x mac-env y))))
+
+      (define (wrap expr)
+        (walk
+         (lambda (atom)
+           (if (not (symbol? atom))
+               atom
+               (inject atom)))
+         expr))
+
+      (define (unwrap expr)
+        (define cache (make-dictionary))
+        (walk
+         (lambda (atom)
+           (if (not (symbol? atom))
+               atom
+               (if (dictionary-has? icache* atom)
+                   (dictionary-ref icache* atom)
+                   (rename atom))))
+         expr))
 
       (unwrap (f (wrap expr) inject compare))))
 
