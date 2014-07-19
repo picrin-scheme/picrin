@@ -196,6 +196,11 @@
           (scheme cxr)
           (picrin macro))
 
+  (define-syntax syntax-error
+    (er-macro-transformer
+     (lambda (expr rename compare)
+       (apply error (cdr expr)))))
+
   (define-syntax define-auxiliary-syntax
     (er-macro-transformer
      (lambda (expr r c)
@@ -247,11 +252,6 @@
                            (cons (r 'begin) (cdar clauses))
                            (cons (r 'cond) (cdr clauses))))))))))
 
-  (define (single? list)
-    (if (pair? list)
-        (null? (cdr list))
-        #f))
-
   (define-syntax and
     (er-macro-transformer
      (lambda (expr r compare)
@@ -259,7 +259,7 @@
          (cond
           ((null? exprs)
            #t)
-          ((single? exprs)
+          ((= (length exprs) 1)
            (car exprs))
           (else
            (list (r 'let) (list (list (r 'it) (car exprs)))
@@ -274,22 +274,13 @@
          (cond
           ((null? exprs)
            #t)
-          ((single? exprs)
+          ((= (length exprs) 1)
            (car exprs))
           (else
            (list (r 'let) (list (list (r 'it) (car exprs)))
                  (list (r 'if) (r 'it)
                        (r 'it)
                        (cons (r 'or) (cdr exprs))))))))))
-
-  (define (quasiquote? form compare?)
-    (and (pair? form) (compare? (car form) 'quasiquote)))
-
-  (define (unquote? form compare?)
-    (and (pair? form) (compare? (car form) 'unquote)))
-
-  (define (unquote-splicing? form compare?)
-    (and (pair? form) (pair? (car form)) (compare? (car (car form)) 'unquote-splicing)))
 
   (define (list->vector list)
     (let ((vector (make-vector (length list))))
@@ -311,17 +302,27 @@
     (ir-macro-transformer
      (lambda (form inject compare)
 
+       (define (quasiquote? form)
+         (and (pair? form) (compare (car form) 'quasiquote)))
+
+       (define (unquote? form)
+         (and (pair? form) (compare (car form) 'unquote)))
+
+       (define (unquote-splicing? form)
+         (and (pair? form) (pair? (car form))
+              (compare (car (car form)) 'unquote-splicing)))
+
        (define (qq depth expr)
          (cond
           ;; unquote
-          ((unquote? expr compare)
+          ((unquote? expr)
            (if (= depth 1)
                (car (cdr expr))
                (list 'list
                      (list 'quote (inject 'unquote))
                      (qq (- depth 1) (car (cdr expr))))))
           ;; unquote-splicing
-          ((unquote-splicing? expr compare)
+          ((unquote-splicing? expr)
            (if (= depth 1)
                (list 'append
                      (car (cdr (car expr)))
@@ -332,7 +333,7 @@
                            (qq (- depth 1) (car (cdr (car expr)))))
                      (qq depth (cdr expr)))))
           ;; quasiquote
-          ((quasiquote? expr compare)
+          ((quasiquote? expr)
            (list 'list
                  (list 'quote (inject 'quasiquote))
                  (qq (+ depth 1) (car (cdr expr)))))
@@ -440,7 +441,8 @@
                    `(,(r 'if) ,(if (compare (r 'else) (caar clauses))
                                    '#t
                                    `(,(r 'or)
-                                     ,@(map (lambda (x) `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
+                                     ,@(map (lambda (x)
+                                              `(,(r 'eqv?) ,(r 'key) (,(r 'quote) ,x)))
                                             (caar clauses))))
                      ,(if (compare (r '=>) (cadar clauses))
                           `(,(caddar clauses) ,(r 'key))
@@ -457,11 +459,6 @@
                      `(,(r 'define-syntax) ,(car x) ,(cadr x)))
                    formal)
             ,@body)))))
-
-  (define-syntax syntax-error
-    (er-macro-transformer
-     (lambda (expr rename compare)
-       (apply error (cdr expr)))))
 
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
