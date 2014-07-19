@@ -24,9 +24,6 @@
                 (go (+ i 1)))))
     (go 0))
 
-  (define (vector-map proc expr)
-    (list->vector (map proc (vector->list expr))))
-
   (define (walk proc expr)
     "walk on symbols"
     (if (null? expr)
