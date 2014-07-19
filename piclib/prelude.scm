@@ -39,13 +39,6 @@
   (import (scheme base)
           (picrin dictionary))
 
-  (define (memq obj list)
-    (if (null? list)
-        #f
-        (if (eq? obj (car list))
-            list
-            (memq obj (cdr list)))))
-
   (define (list->vector list)
     (define vector (make-vector (length list)))
     (define (go list i)
@@ -830,26 +823,12 @@
 
 ;;; 6.4 Pairs and lists
 
-(define (memq obj list)
-  (if (null? list)
-      #f
-      (if (eq? obj (car list))
-	  list
-	  (memq obj (cdr list)))))
-
 (define (memv obj list)
   (if (null? list)
       #f
       (if (eqv? obj (car list))
 	  list
 	  (memq obj (cdr list)))))
-
-(define (assq obj list)
-  (if (null? list)
-      #f
-      (if (eq? obj (caar list))
-	  (car list)
-	  (assq obj (cdr list)))))
 
 (define (assv obj list)
   (if (null? list)
@@ -874,8 +853,8 @@
 	    (car list)
 	    (assoc obj (cdr list) compare)))))
 
-(export memq memv member
-        assq assv assoc)
+(export memv member
+        assv assoc)
 
 ;;; 6.5. Symbols
 
