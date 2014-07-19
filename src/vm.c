@@ -119,8 +119,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
         case PIC_TT_BIGINT:
           *f = mpz_get_d(pic_bigint_ptr(v)->z);
           break;
-        case PIC_TT_RATIONAL:
-          *f = mpq_get_d(pic_rational_ptr(v)->q);
+        case PIC_TT_BIGRAT:
+          *f = mpq_get_d(pic_bigrat_ptr(v)->q);
           break;
         case PIC_TT_BIGFLOAT:
           *f = mpfr_get_d(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
@@ -155,8 +155,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *f = mpz_get_d(pic_bigint_ptr(v)->z);
           *e = true;
           break;
-        case PIC_TT_RATIONAL:
-          *f = mpq_get_d(pic_rational_ptr(v)->q);
+        case PIC_TT_BIGRAT:
+          *f = mpq_get_d(pic_bigrat_ptr(v)->q);
           *e = true;
           break;
         case PIC_TT_BIGFLOAT:
@@ -193,8 +193,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *k = mpz_get_si(pic_bigint_ptr(v)->z);
           *e = true;
           break;
-        case PIC_TT_RATIONAL:
-          *k = (int)mpq_get_d(pic_rational_ptr(v)->q);
+        case PIC_TT_BIGRAT:
+          *k = (int)mpq_get_d(pic_bigrat_ptr(v)->q);
           *e = false;
           break;
         case PIC_TT_BIGFLOAT:
@@ -226,8 +226,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
         case PIC_TT_BIGINT:
           *k = mpz_get_si(pic_bigint_ptr(v)->z);
           break;
-        case PIC_TT_RATIONAL:
-          *k = (int)mpq_get_d(pic_rational_ptr(v)->q);
+        case PIC_TT_BIGRAT:
+          *k = (int)mpq_get_d(pic_bigrat_ptr(v)->q);
           break;
         case PIC_TT_BIGFLOAT:
           *k = mpfr_get_si(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
@@ -251,7 +251,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         case PIC_TT_FLOAT:
         case PIC_TT_INT:
         case PIC_TT_BIGINT:
-        case PIC_TT_RATIONAL:
+        case PIC_TT_BIGRAT:
         case PIC_TT_BIGFLOAT:
           *n = v;
           break;
@@ -280,8 +280,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
         case PIC_TT_BIGINT:
           mpz_set(*z, pic_bigint_ptr(v)->z);
           break;
-        case PIC_TT_RATIONAL:
-          mpz_set_q(*z, pic_rational_ptr(v)->q);
+        case PIC_TT_BIGRAT:
+          mpz_set_q(*z, pic_bigrat_ptr(v)->q);
           break;
         case PIC_TT_BIGFLOAT:
           mpfr_get_z(*z, pic_bigfloat_ptr(v)->f, MPFR_RNDN);
@@ -311,8 +311,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
         case PIC_TT_BIGINT:
           mpfr_set_z(*f, pic_bigint_ptr(v)->z, MPFR_RNDN);
           break;
-        case PIC_TT_RATIONAL:
-          mpfr_set_q(*f, pic_rational_ptr(v)->q, MPFR_RNDN);
+        case PIC_TT_BIGRAT:
+          mpfr_set_q(*f, pic_bigrat_ptr(v)->q, MPFR_RNDN);
           break;
         case PIC_TT_BIGFLOAT:
           mpfr_set(*f, pic_bigfloat_ptr(v)->f, MPFR_RNDN);
@@ -347,8 +347,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
           mpfr_set_z(*f, pic_bigint_ptr(v)->z, MPFR_RNDN);
           *e = true;          
           break;
-        case PIC_TT_RATIONAL:
-          mpfr_set_q(*f, pic_rational_ptr(v)->q, MPFR_RNDN);
+        case PIC_TT_BIGRAT:
+          mpfr_set_q(*f, pic_bigrat_ptr(v)->q, MPFR_RNDN);
           *e = true;          
           break;
         case PIC_TT_BIGFLOAT:
@@ -1094,9 +1094,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
         PUSH(pic_obj_value(res));
         break;
       }
-      case PIC_TT_RATIONAL: {
-        pic_rational *res = pic_rational_new(pic);
-        mpq_neg(res->q, pic_rational_ptr(n)->q);
+      case PIC_TT_BIGRAT: {
+        pic_bigrat *res = pic_bigrat_new(pic);
+        mpq_neg(res->q, pic_bigrat_ptr(n)->q);
         PUSH(pic_obj_value(res));
         break;
       }

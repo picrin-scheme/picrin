@@ -413,7 +413,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BIGINT: {
     break;
   }
-  case PIC_TT_RATIONAL: {
+  case PIC_TT_BIGRAT: {
     break;
   }
   case PIC_TT_BIGFLOAT: {
@@ -632,8 +632,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     mpz_clear(((struct pic_bigint *)obj)->z);
     break;
   }
-  case PIC_TT_RATIONAL: {
-    mpq_clear(((struct pic_rational *)obj)->q);
+  case PIC_TT_BIGRAT: {
+    mpq_clear(((struct pic_bigrat *)obj)->q);
     break;
   }
   case PIC_TT_BIGFLOAT: {
