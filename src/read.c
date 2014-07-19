@@ -278,7 +278,7 @@ read_plus(pic_state *pic, struct pic_port *port, char c)
   pic_value sym;
 
   if (isdigit(peek(port))) {
-    return read_number(pic, port, c);
+    return read_number(pic, port, next(port));
   }
   else {
     sym = read_symbol(pic, port, c);
