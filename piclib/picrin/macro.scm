@@ -28,29 +28,41 @@
     (list->vector (map proc (vector->list expr))))
 
   (define (walk proc expr)
+    "walk on symbols"
     (if (null? expr)
         '()
         (if (pair? expr)
             (cons (walk proc (car expr))
                   (walk proc (cdr expr)))
             (if (vector? expr)
-                (vector-map proc expr)
-                (proc expr)))))
+                (list->vector (walk proc (vector->list expr)))
+                (if (symbol? expr)
+                    (proc expr)
+                    expr)))))
+
+  (define (memoize f)
+    "memoize on a symbol"
+    (define cache (make-dictionary))
+    (lambda (sym)
+      (if (dictionary-has? cache sym)
+          (dictionary-ref cache sym)
+          (begin
+            (define val (f sym))
+            (dictionary-set! cache sym val)
+            val))))
 
   (define (make-syntactic-closure env free form)
-    (define cache (make-dictionary))
+
+    (define resolve
+      (memoize
+       (lambda (sym)
+         (make-identifier sym env))))
+
     (walk
-     (lambda (atom)
-       (if (not (symbol? atom))
-           atom
-           (if (memq atom free)
-               atom
-               (if (dictionary-has? cache atom)
-                   (dictionary-ref cache atom)
-                   (begin
-                     (define id (make-identifier atom env))
-                     (dictionary-set! cache atom id)
-                     id)))))
+     (lambda (sym)
+       (if (memq sym free)
+           sym
+           (resolve sym)))
      form))
 
   (define (close-syntax form env)
@@ -71,15 +83,10 @@
   (define (er-macro-transformer f)
     (lambda (expr use-env mac-env)
 
-      (define cache (make-dictionary))
-
-      (define (rename sym)
-        (if (dictionary-has? cache sym)
-            (dictionary-ref cache sym)
-            (begin
-              (define id (make-identifier sym mac-env))
-              (dictionary-set! cache sym id)
-              id)))
+      (define rename
+        (memoize
+         (lambda (sym)
+           (make-identifier sym mac-env))))
 
       (define (compare x y)
         (if (not (symbol? x))
@@ -93,45 +100,19 @@
   (define (ir-macro-transformer f)
     (lambda (expr use-env mac-env)
 
-      (define protects (make-dictionary))
+      (define icache* (make-dictionary))
 
-      (define (wrap expr)
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (begin
-                 (define id (make-identifier atom use-env))
-                 (dictionary-set! protects id atom) ; lookup *atom* from id
-                 id)))
-         expr))
+      (define inject
+        (memoize
+         (lambda (sym)
+           (define id (make-identifier sym use-env))
+           (dictionary-set! icache* id sym)
+           id)))
 
-      (define (unwrap expr)
-        (define cache (make-dictionary))
-        (walk
-         (lambda (atom)
-           (if (not (symbol? atom))
-               atom
-               (if (dictionary-has? protects atom)
-                   (dictionary-ref protects atom)
-                   (if (dictionary-has? cache atom)
-                       (dictionary-ref cache atom)
-                       (begin
-                         ;; implicit renaming
-                         (define id (make-identifier atom mac-env))
-                         (dictionary-set! cache atom id)
-                         id)))))
-         expr))
-
-      (define cache (make-dictionary))
-
-      (define (inject sym)
-        (if (dictionary-has? cache sym)
-            (dictionary-ref cache sym)
-            (begin
-              (define id (make-identifier sym use-env))
-              (dictionary-set! cache sym id)
-              id)))
+      (define rename
+        (memoize
+         (lambda (sym)
+           (make-identifier sym mac-env))))
 
       (define (compare x y)
         (if (not (symbol? x))
@@ -140,7 +121,11 @@
                 #f
                 (identifier=? mac-env x mac-env y))))
 
-      (unwrap (f (wrap expr) inject compare))))
+      (walk (lambda (sym)
+              (if (dictionary-has? icache* sym)
+                  (dictionary-ref icache* sym)
+                  (rename sym)))
+            (f (walk inject expr) inject compare))))
 
   (export make-syntactic-closure
           close-syntax
