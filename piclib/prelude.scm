@@ -96,6 +96,10 @@
   (define (close-syntax form env)
     (make-syntactic-closure env '() form))
 
+  (define-syntax capture-syntactic-environment
+    (lambda (form use-env mac-env)
+      (list (cadr form) (list (make-identifier 'quote mac-env) mac-env))))
+
   (define (sc-macro-transformer f)
     (lambda (expr use-env mac-env)
       (make-syntactic-closure mac-env '() (f expr use-env))))
@@ -180,6 +184,7 @@
 
   (export make-syntactic-closure
           close-syntax
+          capture-syntactic-environment
           sc-macro-transformer
           rsc-macro-transformer
           er-macro-transformer
