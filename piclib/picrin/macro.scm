@@ -114,11 +114,6 @@
          (lambda (sym)
            (make-identifier sym mac-env))))
 
-      (define (uninject sym)
-        (if (dictionary-has? icache* sym)
-            (dictionary-ref icache* sym)
-            (rename sym)))
-
       (define (compare x y)
         (if (not (symbol? x))
             #f
@@ -126,13 +121,11 @@
                 #f
                 (identifier=? mac-env x mac-env y))))
 
-      (define (wrap expr)
-        (walk inject expr))
-
-      (define (unwrap expr)
-        (walk uninject expr))
-
-      (unwrap (f (wrap expr) inject compare))))
+      (walk (lambda (sym)
+              (if (dictionary-has? icache* sym)
+                  (dictionary-ref icache* sym)
+                  (rename sym)))
+            (f (walk inject expr) inject compare))))
 
   (export make-syntactic-closure
           close-syntax
