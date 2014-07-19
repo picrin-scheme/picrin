@@ -35,7 +35,7 @@
             (cons (walk proc (car expr))
                   (walk proc (cdr expr)))
             (if (vector? expr)
-                (vector-map proc expr)
+                (list->vector (walk proc (vector->list expr)))
                 (if (symbol? expr)
                     (proc expr)
                     expr)))))
