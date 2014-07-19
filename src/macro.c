@@ -304,7 +304,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   pic_try {
     val = pic_eval(pic, val);
   } pic_catch {
-    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+    pic_errorf(pic, "macroexpand error while definition: %s", pic_errmsg(pic));
   }
 
   if (! pic_proc_p(val)) {
@@ -351,7 +351,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
   pic_try {
     val = pic_eval(pic, val);
   } pic_catch {
-    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+    pic_errorf(pic, "macroexpand error while definition: %s", pic_errmsg(pic));
   }
 
   if (! pic_proc_p(val)) {
@@ -422,7 +422,7 @@ macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct 
   pic_try {
     v = pic_apply(pic, mac->proc, args);
   } pic_catch {
-    pic_errorf(pic, "macroexpand error: %s", pic_errmsg(pic));
+    pic_errorf(pic, "macroexpand error while application: %s", pic_errmsg(pic));
   }
 
 #if DEBUG
