@@ -35,7 +35,7 @@ static bool
 internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *ht)
 {
   pic_value local = pic_nil_value();
-  size_t rapid_count = 0;
+  size_t c;
 
   if (depth > 10) {
     if (depth > 200) {
@@ -49,6 +49,8 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
       }
     }
   }
+
+  c = 0;
 
  LOOP:
 
@@ -73,10 +75,10 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
       x = pic_cdr(pic, x);
       y = pic_cdr(pic, y);
 
-      ++rapid_count;
+      c++;
 
-      if (rapid_count == 2) {
-        rapid_count = 0;
+      if (c == 2) {
+        c = 0;
         local = pic_cdr(pic, local);
         if (pic_eq_p(local, x)) {
           return true;
