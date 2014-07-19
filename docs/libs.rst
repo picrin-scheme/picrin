@@ -58,6 +58,7 @@ Old-fashioned macro.
 
 - make-syntactic-closure
 - close-syntax
+- capture-syntactic-environment
 
 - sc-macro-transformer
 - rsc-macro-transformer
