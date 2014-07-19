@@ -572,7 +572,7 @@
 		 `(define-record-field ,type ,(car x) ,(cadr x) ,@(cddr x)))
 	       field-tag))))))
 
-  (export define-record-type vector?))
+  (export define-record-type))
 
 (import (picrin macro)
         (picrin values)
@@ -586,8 +586,7 @@
 (export make-parameter
         parameterize)
 
-(export vector?                         ; override definition
-        define-record-type)
+(export define-record-type)
 
 (define (every pred list)
   (if (null? list)
