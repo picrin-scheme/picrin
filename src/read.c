@@ -118,34 +118,22 @@ read_datum_comment(pic_state *pic, struct pic_port *port, char c)
 static pic_value
 read_directive(pic_state *pic, struct pic_port *port, char c)
 {
-  UNUSED(pic);
-
-  c = next(port);
-
-  if (c == 'n') {
-    if(expect(port, "o-fold-case")){
+  switch (peek(port)) {
+  case 'n':
+    if (expect(port, "no-fold-case")) {
       /* :FIXME: set no-fold-case flag */
+      return pic_undef_value();
     }
-    else{
-      xfseek(port->file, -1, SEEK_CUR);
-      goto shebang;
+    break;
+  case 'f':
+    if (expect(port, "fold-case")) {
+      /* :FIXME: set fold-case flag */
+      return pic_undef_value();
     }
-  }
-  else if (c == 'f') {
-    if(expect(port, "old-case")){
-      /* :FIXME: set fold-case flag */      
-    }
-    else{
-      xfseek(port->file, -1, SEEK_CUR);
-      goto shebang;
-    }
-  }
-  else{
-  shebang:
-    while(xfgetc(port->file) != '\n');
+    break;
   }
 
-  return pic_undef_value();
+  return read_comment(pic, port, c);
 }
 
 static pic_value
