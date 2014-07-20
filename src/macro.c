@@ -10,6 +10,7 @@
 #include "picrin/lib.h"
 #include "picrin/error.h"
 #include "picrin/dict.h"
+#include "picrin/cont.h"
 
 pic_sym
 pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
@@ -508,6 +509,47 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   return v;
 }
 
+static pic_value
+macroexpand_one(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
+  struct pic_macro *mac;
+  pic_value v, args;
+
+  if (pic_sym_p(expr)) {
+    pic_sym sym;
+
+    sym = pic_sym(expr);
+
+    if (pic_interned_p(pic, sym)) {
+      return pic_sym_value(make_identifier(pic, pic_sym(expr), senv));
+    }
+  }
+  if (pic_pair_p(expr) && pic_sym_p(pic_car(pic, expr))) {
+    pic_sym sym;
+
+    sym = make_identifier(pic, pic_sym(pic_car(pic, expr)), senv);
+
+    if ((mac = find_macro(pic, sym)) != NULL) {
+      if (mac->senv == NULL) { /* legacy macro */
+        args = pic_cdr(pic, expr);
+      }
+      else {
+        args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
+      }
+
+      pic_try {
+        v = pic_apply(pic, mac->proc, args);
+      } pic_catch {
+        pic_errorf(pic, "macroexpand error while application: %s", pic_errmsg(pic));
+      }
+
+      return v;
+    }
+  }
+
+  return pic_undef_value();     /* no expansion occurred */
+}
+
 struct pic_senv *
 pic_senv_new(pic_state *pic, struct pic_senv *up)
 {
@@ -596,6 +638,22 @@ pic_macro_macroexpand(pic_state *pic)
 }
 
 static pic_value
+pic_macro_macroexpand_1(pic_state *pic)
+{
+  pic_value expr, val;
+
+  pic_get_args(pic, "o", &expr);
+
+  val = macroexpand_one(pic, expr, pic->lib->senv);
+  if (pic_undef_p(val)) {
+    return pic_values2(pic, expr, pic_false_value());
+  }
+  else {
+    return pic_values2(pic, val, pic_true_value());
+  }
+}
+
+static pic_value
 pic_macro_identifier_p(pic_state *pic)
 {
   pic_value obj;
@@ -645,6 +703,7 @@ pic_init_macro(pic_state *pic)
   pic_deflibrary ("(picrin macro)") {
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
+    pic_defun(pic, "macroexpand-1", pic_macro_macroexpand_1);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
     pic_defun(pic, "make-identifier", pic_macro_make_identifier);
