@@ -45,8 +45,6 @@
 ;; provided.
 
 
-(newline)
-
 (test-begin "R7RS")
 
 (test-begin "4.1 Primitive expression types")
