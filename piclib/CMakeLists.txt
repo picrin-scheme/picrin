@@ -3,6 +3,7 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/prelude.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/array.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/dictionary.scm
+  ${PROJECT_SOURCE_DIR}/piclib/picrin/test.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/cxr.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/file.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/case-lambda.scm
