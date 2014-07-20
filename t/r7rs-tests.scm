@@ -36,77 +36,14 @@
         (scheme write)
 ;        (scheme eval)
         (scheme process-context)
-        (scheme case-lambda))
+        (scheme case-lambda)
+        (picrin test))
 
 ;; R7RS test suite.  Covers all procedures and syntax in the small
 ;; language except `delete-file'.  Currently assumes full-unicode
 ;; support, the full numeric tower and all standard libraries
 ;; provided.
 
-(define test-counter 0)
-(define counter 0)
-(define failure-counter 0)
-
-(define fails '())
-
-(define (print-statistics)
-  (newline)
-  (display "[0;34mTest Result: ")
-  (write (- counter failure-counter))
-  (display " / ")
-  (write counter)
-  (display " (")
-  (write (* (/ (- counter failure-counter) counter) 100))
-  (display "%)")
-  (display " [PASS/TOTAL]")
-  (display "[0;39m")
-  (newline)
-  (for-each
-   (lambda (fail)
-     (display fail))
-   fails))
-
-(define (test-begin . o)
-  (set! test-counter (+ test-counter 1)))
-
-(define (test-end . o)
-  (set! test-counter (- test-counter 1))
-  (if (= test-counter 0)
-      (print-statistics)))
-
-(define-syntax test
-  (syntax-rules ()
-    ((test expected expr)
-     (let ((res expr))
-       (display "case ")
-       (write counter)
-       (cond
-        ((equal? res expected)
-         (display "[0;32m PASS: ")
-         (write 'expr)
-         (display " equals ")
-         (write expected)
-         (display "[0;39m")
-         (newline)
-         )
-        ((not (equal? res expected))
-         (set! failure-counter (+ failure-counter 1))
-         (let ((out (open-output-string)))
-           (display " [0;31mFAIL: " out)
-           (write 'expr out)
-           (newline out)
-           (display "   expected " out)
-           (write expected out)
-           (display " but got " out)
-           (write res out)
-           (display "[0;39m" out)
-           (newline out)
-           (let ((str (get-output-string out)))
-             (set! fails (cons str fails))
-             (display str)))))
-       (set! counter (+ counter 1))))))
-
-(newline)
 
 (test-begin "R7RS")
 
@@ -2089,12 +2026,6 @@
 (test '(a . c) (read (open-input-string "(a . #;b c)")))
 (test '(a . b) (read (open-input-string "(a . b #;c)")))
 
-;; (define (test-read-error str)
-;;   (test-assert
-;;       (guard (exn (else #t))
-;;         (read (open-input-string str))
-;;         #f)))
-
 ;; (test-read-error "(#;a . b)")
 ;; (test-read-error "(a . #;b)")
 ;; (test-read-error "(a #;. b)")
@@ -2137,37 +2068,6 @@
 (test-end)
 
 (test-begin "Numeric syntax")
-
-;; Numeric syntax adapted from Peter Bex's tests.
-;;
-;; These are updated to R7RS, using string ports instead of
-;; string->number, and "error" tests removed because implementations
-;; are free to provide their own numeric extensions.  Currently all
-;; tests are run by default - need to cond-expand and test for
-;; infinities and -0.0.
-
-(define-syntax test-numeric-syntax
-  (syntax-rules ()
-    ((test-numeric-syntax str expect strs ...)
-     (let* ((z (read (open-input-string str)))
-            (out (open-output-string))
-            (z-str (begin (write z out) (get-output-string out))))
-       (test expect (values z))
-       (test #t (and (member z-str '(str strs ...)) #t))))))
-
-;; Each test is of the form:
-;;
-;;   (test-numeric-syntax input-str expected-value expected-write-values ...)
-;;
-;; where the input should be eqv? to the expected-value, and the
-;; written output the same as any of the expected-write-values.  The
-;; form
-;;
-;;   (test-numeric-syntax input-str expected-value)
-;;
-;; is a shorthand for
-;;
-;;   (test-numeric-syntax input-str expected-value (input-str))
 
 ;; Simple
 (test-numeric-syntax "1" 1)
