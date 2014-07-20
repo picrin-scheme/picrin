@@ -306,41 +306,6 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
 }
 
 static pic_value
-macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
-{
-  struct pic_senv *in;
-  pic_value formal, v, var, val;
-  pic_sym sym, rename;
-
-  in = pic_senv_new(pic, senv);
-
-  if (pic_length(pic, expr) < 2) {
-    pic_error(pic, "syntax error");
-  }
-
-  formal = pic_cadr(pic, expr);
-  if (! pic_list_p(formal)) {
-    pic_error(pic, "syntax error");
-  }
-  pic_for_each (v, formal) {
-    var = pic_car(pic, v);
-    if (! pic_sym_p(var)) {
-      pic_error(pic, "binding to non-symbol object");
-    }
-    sym = pic_sym(var);
-    if (! pic_find_rename(pic, in, sym, &rename)) {
-      rename = pic_add_rename(pic, in, sym);
-    }
-    val = pic_eval(pic, pic_cadr(pic, v));
-    if (! pic_proc_p(val)) {
-      pic_errorf(pic, "macro definition \"~s\" evaluated to non-procedure object", var);
-    }
-    define_macro(pic, rename, pic_proc_ptr(val), senv);
-  }
-  return pic_cons(pic, pic_sym_value(pic->rBEGIN), macroexpand_list(pic, pic_cddr(pic, expr), in));
-}
-
-static pic_value
 macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv)
 {
   pic_value v, args;
@@ -409,9 +374,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
       else if (tag == pic->rDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, senv);
-      }
-      else if (tag == pic->rLET_SYNTAX) {
-        return macroexpand_let_syntax(pic, expr, senv);
       }
       else if (tag == pic->rLAMBDA) {
         return macroexpand_lambda(pic, expr, senv);
