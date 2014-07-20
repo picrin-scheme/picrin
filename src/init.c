@@ -31,14 +31,9 @@ void pic_init_load(pic_state *);
 void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
+void pic_init_contrib(pic_state *);
 
 void pic_load_piclib(pic_state *);
-
-void
-pic_init_contrib(pic_state *pic)
-{
-  PIC_CONTRIB_INITS
-}
 
 #define push_sym(pic, name, list)                                       \
   pic_push(pic, pic_symbol_value(pic_intern_cstr(pic, name)), list)
