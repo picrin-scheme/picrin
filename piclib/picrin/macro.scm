@@ -124,10 +124,25 @@
                   (rename sym)))
             (f (walk inject expr) inject compare))))
 
+  (define-syntax define-macro
+    (er-macro-transformer
+     (lambda (expr r c)
+       (define formal (car (cdr expr)))
+       (define body   (cdr (cdr expr)))
+       (if (symbol? formal)
+           (list (r 'define-syntax) formal
+                 (list (r 'lambda) (list (r 'form) '_ '_)
+                       (list (r 'apply) (car body) (list (r 'cdr) (r 'form)))))
+           (list (r 'define-macro) (car formal)
+                 (cons (r 'lambda)
+                       (cons (cdr formal)
+                             body)))))))
+
   (export make-syntactic-closure
           close-syntax
           capture-syntactic-environment
           sc-macro-transformer
           rsc-macro-transformer
           er-macro-transformer
-          ir-macro-transformer))
+          ir-macro-transformer
+          define-macro))

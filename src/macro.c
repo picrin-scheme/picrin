@@ -317,53 +317,6 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
 }
 
 static pic_value
-macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_senv *senv)
-{
-  pic_value var, val;
-  pic_sym sym, rename;
-
-  if (pic_length(pic, expr) < 2) {
-    pic_error(pic, "syntax error");
-  }
-
-  var = pic_car(pic, pic_cdr(pic, expr));
-  if (pic_pair_p(var)) {
-    /* FIXME: unhygienic */
-    val = pic_cons(pic, pic_sym_value(pic->sLAMBDA),
-                   pic_cons(pic, pic_cdr(pic, var),
-                            pic_cdr(pic, pic_cdr(pic, expr))));
-    var = pic_car(pic, var);
-  }
-  else {
-    if (pic_length(pic, expr) != 3) {
-      pic_error(pic, "syntax_error");
-    }
-    val = pic_car(pic, pic_cdr(pic, pic_cdr(pic, expr)));
-  }
-  if (! pic_sym_p(var)) {
-    pic_error(pic, "syntax error");
-  }
-  sym = pic_sym(var);
-  if (! pic_find_rename(pic, senv, sym, &rename)) {
-    rename = pic_add_rename(pic, senv, sym);
-  }
-
-  pic_try {
-    val = pic_eval(pic, val);
-  } pic_catch {
-    pic_errorf(pic, "macroexpand error while definition: %s", pic_errmsg(pic));
-  }
-
-  if (! pic_proc_p(val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
-  }
-
-  define_macro(pic, rename, pic_proc_ptr(val), NULL);
-
-  return pic_none_value();
-}
-
-static pic_value
 macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   struct pic_senv *in;
@@ -470,9 +423,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
       else if (tag == pic->rDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, senv);
-      }
-      else if (tag == pic->rDEFINE_MACRO) {
-        return macroexpand_defmacro(pic, expr, senv);
       }
       else if (tag == pic->rLET_SYNTAX) {
         return macroexpand_let_syntax(pic, expr, senv);
@@ -693,10 +643,6 @@ void
 pic_init_macro(pic_state *pic)
 {
   pic_deflibrary ("(picrin macro)") {
-
-    /* export define-macro syntax */
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_MACRO, pic->rDEFINE_MACRO);
-
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
