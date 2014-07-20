@@ -12,7 +12,7 @@ extern "C" {
 struct pic_lib {
   PIC_OBJECT_HEADER
   pic_value name;
-  struct pic_senv *senv;
+  struct pic_senv *env;
   xhash exports;
 };
 

@@ -27,7 +27,7 @@ pic_make_library(pic_state *pic, pic_value name)
   senv = pic_null_syntactic_environment(pic);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
-  lib->senv = senv;
+  lib->env = senv;
   lib->name = name;
   xh_init_int(&lib->exports, sizeof(pic_sym));
 
@@ -78,7 +78,7 @@ pic_import(pic_state *pic, pic_value spec)
     printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, xh_val(it.e, pic_sym)));
 #endif
 
-    pic_put_rename(pic, pic->lib->senv, xh_key(it.e, pic_sym), xh_val(it.e, pic_sym));
+    pic_put_rename(pic, pic->lib->env, xh_key(it.e, pic_sym), xh_val(it.e, pic_sym));
   }
 }
 
@@ -87,7 +87,7 @@ pic_export(pic_state *pic, pic_sym sym)
 {
   pic_sym rename;
 
-  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
+  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
     pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
   }
 
@@ -103,7 +103,7 @@ pic_export_as(pic_state *pic, pic_sym sym, pic_sym as)
 {
   pic_sym rename;
 
-  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
+  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
     pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
   }
 

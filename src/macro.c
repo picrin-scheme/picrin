@@ -445,7 +445,7 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   puts("");
 #endif
 
-  v = macroexpand(pic, expr, pic->lib->senv);
+  v = macroexpand(pic, expr, pic->lib->env);
 
 #if DEBUG
   puts("after expand:");
@@ -528,7 +528,7 @@ pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym,
 {
   pic_put_rename(pic, senv, sym, rsym);
 
-  if (pic->lib && pic->lib->senv == senv) {
+  if (pic->lib && pic->lib->env == senv) {
     pic_export(pic, sym);
   }
 }
@@ -540,7 +540,7 @@ pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
 
   /* symbol registration */
   sym = pic_intern_cstr(pic, name);
-  rename = pic_add_rename(pic, pic->lib->senv, sym);
+  rename = pic_add_rename(pic, pic->lib->env, sym);
   define_macro(pic, rename, macro, NULL);
 
   /* auto export! */
@@ -591,7 +591,7 @@ pic_macro_macroexpand_1(pic_state *pic)
 
   pic_get_args(pic, "o", &expr);
 
-  val = macroexpand_one(pic, expr, pic->lib->senv);
+  val = macroexpand_one(pic, expr, pic->lib->env);
   if (pic_undef_p(val)) {
     return pic_values2(pic, expr, pic_false_value());
   }
