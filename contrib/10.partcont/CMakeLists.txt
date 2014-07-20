@@ -1,2 +1,2 @@
-file(GLOB PARTCONT_FILES ${PROJECT_SOURCE_DIR}/contrib/10.partcont/piclib/*.scm)
+file(GLOB PARTCONT_FILES ${PICRIN_CONTRIB_DIR}/10.partcont/piclib/*.scm)
 list(APPEND PICLIB_CONTRIB_LIBS ${PARTCONT_FILES})

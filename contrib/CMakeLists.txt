@@ -1,4 +1,5 @@
-file(GLOB CONTRIBS ${PROJECT_SOURCE_DIR}/contrib/*/CMakeLists.txt)
+set(PICRIN_CONTRIB_DIR ${PROJECT_SOURCE_DIR}/contrib)
+file(GLOB CONTRIBS ${PICRIN_CONTRIB_DIR}/*/CMakeLists.txt)
 list(SORT CONTRIBS)
 foreach(contrib ${CONTRIBS})
   include(${contrib})

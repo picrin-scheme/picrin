@@ -1,2 +1,2 @@
-file(GLOB FOR_FILES ${PROJECT_SOURCE_DIR}/contrib/20.for/piclib/*.scm)
+file(GLOB FOR_FILES ${PICRIN_CONTRIB_DIR}/20.for/piclib/*.scm)
 list(APPEND PICLIB_CONTRIB_LIBS ${FOR_FILES})
