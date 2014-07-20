@@ -217,15 +217,9 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_value v = pic_car(pic, a);
 
     if (! pic_sym_p(v)) {
-      v = macroexpand(pic, v, senv);
-    }
-    if (! pic_sym_p(v)) {
       pic_error(pic, "syntax error");
     }
     pic_add_rename(pic, in, pic_sym(v));
-  }
-  if (! pic_sym_p(a)) {
-    a = macroexpand(pic, a, senv);
   }
   if (pic_sym_p(a)) {
     pic_add_rename(pic, in, pic_sym(a));
@@ -260,9 +254,6 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
     var = formal;
   }
   if (! pic_sym_p(var)) {
-    var = macroexpand(pic, var, senv);
-  }
-  if (! pic_sym_p(var)) {
     pic_error(pic, "binding to non-symbol object");
   }
   sym = pic_sym(var);
@@ -289,9 +280,6 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   }
 
   var = pic_cadr(pic, expr);
-  if (! pic_sym_p(var)) {
-    var = macroexpand(pic, var, senv);
-  }
   if (! pic_sym_p(var)) {
     pic_error(pic, "binding to non-symbol object");
   }
@@ -336,9 +324,6 @@ macroexpand_let_syntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   }
   pic_for_each (v, formal) {
     var = pic_car(pic, v);
-    if (! pic_sym_p(var)) {
-      var = macroexpand(pic, var, senv);
-    }
     if (! pic_sym_p(var)) {
       pic_error(pic, "binding to non-symbol object");
     }
