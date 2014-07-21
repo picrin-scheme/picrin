@@ -1,4 +1,7 @@
 # regex
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/contrib/10.regexp/cmake/")
+
 find_package(REGEX)
 
 if (REGEX_FOUND)
