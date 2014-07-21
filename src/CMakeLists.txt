@@ -1,8 +1,9 @@
+find_package(Perl REQUIRED)
+
 # xfile
 set(XFILE_SOURCES extlib/xfile/xfile.c)
 
 # piclib
-find_package(Perl REQUIRED)
 set(PICLIB_SOURCE ${PROJECT_SOURCE_DIR}/src/load_piclib.c)
 add_custom_command(
   OUTPUT ${PICLIB_SOURCE}
@@ -11,9 +12,18 @@ add_custom_command(
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 
+# contrib
+set(CONTRIB_INIT ${PROJECT_SOURCE_DIR}/src/init_contrib.c)
+add_custom_command(
+  OUTPUT ${CONTRIB_INIT}
+  COMMAND ${PERL_EXECUTABLE} etc/mkinit.pl ${PICRIN_CONTRIB_INITS} > ${CONTRIB_INIT}
+  DEPENDS ${PICRIN_CONTRIB_SOURCES}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  )
+
 # build!
 file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
-add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES})
+add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES} ${CONTRIB_INIT})
 target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
 
 # install

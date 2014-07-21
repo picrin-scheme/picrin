@@ -463,7 +463,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_LIB: {
     struct pic_lib *lib = (struct pic_lib *)obj;
     gc_mark(pic, lib->name);
-    gc_mark_object(pic, (struct pic_object *)lib->senv);
+    gc_mark_object(pic, (struct pic_object *)lib->env);
     break;
   }
   case PIC_TT_VAR: {
@@ -623,7 +623,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destroy(&senv->renames);
+    xh_destroy(&senv->map);
     break;
   }
   case PIC_TT_MACRO: {

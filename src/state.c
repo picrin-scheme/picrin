@@ -95,8 +95,6 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sUNQUOTE, "unquote");
   register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
   register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
-  register_core_symbol(pic, sDEFINE_MACRO, "define-macro");
-  register_core_symbol(pic, sLET_SYNTAX, "let-syntax");
   register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
   register_core_symbol(pic, sIMPORT, "import");
   register_core_symbol(pic, sEXPORT, "export");
@@ -129,8 +127,6 @@ pic_open(int argc, char *argv[], char **envp)
   register_renamed_symbol(pic, rSETBANG, "set!");
   register_renamed_symbol(pic, rQUOTE, "quote");
   register_renamed_symbol(pic, rDEFINE_SYNTAX, "define-syntax");
-  register_renamed_symbol(pic, rDEFINE_MACRO, "define-macro");
-  register_renamed_symbol(pic, rLET_SYNTAX, "let-syntax");
   register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
   register_renamed_symbol(pic, rIMPORT, "import");
   register_renamed_symbol(pic, rEXPORT, "export");

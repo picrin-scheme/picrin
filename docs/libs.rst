@@ -50,6 +50,7 @@ Utility functions and syntaces for macro definition.
 - define-macro
 - gensym
 - macroexpand
+- macroexpand-1
 
 Old-fashioned macro.
 
@@ -58,6 +59,7 @@ Old-fashioned macro.
 
 - make-syntactic-closure
 - close-syntax
+- capture-syntactic-environment
 
 - sc-macro-transformer
 - rsc-macro-transformer

@@ -36,77 +36,14 @@
         (scheme write)
 ;        (scheme eval)
         (scheme process-context)
-        (scheme case-lambda))
+        (scheme case-lambda)
+        (picrin test))
 
 ;; R7RS test suite.  Covers all procedures and syntax in the small
 ;; language except `delete-file'.  Currently assumes full-unicode
 ;; support, the full numeric tower and all standard libraries
 ;; provided.
 
-(define test-counter 0)
-(define counter 0)
-(define failure-counter 0)
-
-(define fails '())
-
-(define (print-statistics)
-  (newline)
-  (display "[0;34mTest Result: ")
-  (write (- counter failure-counter))
-  (display " / ")
-  (write counter)
-  (display " (")
-  (write (* (/ (- counter failure-counter) counter) 100))
-  (display "%)")
-  (display " [PASS/TOTAL]")
-  (display "[0;39m")
-  (newline)
-  (for-each
-   (lambda (fail)
-     (display fail))
-   fails))
-
-(define (test-begin . o)
-  (set! test-counter (+ test-counter 1)))
-
-(define (test-end . o)
-  (set! test-counter (- test-counter 1))
-  (if (= test-counter 0)
-      (print-statistics)))
-
-(define-syntax test
-  (syntax-rules ()
-    ((test expected expr)
-     (let ((res expr))
-       (display "case ")
-       (write counter)
-       (cond
-        ((equal? res expected)
-         (display "[0;32m PASS: ")
-         (write 'expr)
-         (display " equals ")
-         (write expected)
-         (display "[0;39m")
-         (newline)
-         )
-        ((not (equal? res expected))
-         (set! failure-counter (+ failure-counter 1))
-         (let ((out (open-output-string)))
-           (display " [0;31mFAIL: " out)
-           (write 'expr out)
-           (newline out)
-           (display "   expected " out)
-           (write expected out)
-           (display " but got " out)
-           (write res out)
-           (display "[0;39m" out)
-           (newline out)
-           (let ((str (get-output-string out)))
-             (set! fails (cons str fails))
-             (display str)))))
-       (set! counter (+ counter 1))))))
-
-(newline)
 
 (test-begin "R7RS")
 
@@ -634,6 +571,53 @@
 (test #t (equal? 2 2))
 (test #t (equal? (make-vector 5 'a)
                  (make-vector 5 'a)))
+
+;; circular objects
+(let ((l '(1 . 2))
+      (m '(1 . 2)))
+  (set-cdr! l l)
+  (set-cdr! m m)
+  (test #t (equal? l m)))
+
+(let ((l '(1 . 2))
+      (m '(2 . 1)))
+  (set-cdr! l l)
+  (set-cdr! m m)
+  (test #f (equal? l m)))
+
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 1)))
+  (vector-set! v 1 v)
+  (vector-set! w 1 w)
+  (test #t (equal? v w)))
+
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 2)))
+  (vector-set! v 1 v)
+  (vector-set! w 1 w)
+  (test #f (equal? v w)))
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 1))
+      (l '(1 . 2))
+      (m '(1 . 2)))
+  (vector-set! v 1 l)
+  (vector-set! w 1 m)
+  (set-cdr! l v)
+  (set-cdr! m w)
+  (test #t  (equal? v w)))
+
+(let ((v (make-vector 2 2))
+      (w (make-vector 2 1))
+      (l '(1 . 2))
+      (m '(1 . 2)))
+  (vector-set! v 1 l)
+  (vector-set! w 1 m)
+  (set-cdr! l v)
+  (set-cdr! m w)
+  (test #f (equal? v w)))
 
 (test-end)
 
@@ -2042,12 +2026,6 @@
 (test '(a . c) (read (open-input-string "(a . #;b c)")))
 (test '(a . b) (read (open-input-string "(a . b #;c)")))
 
-;; (define (test-read-error str)
-;;   (test-assert
-;;       (guard (exn (else #t))
-;;         (read (open-input-string str))
-;;         #f)))
-
 ;; (test-read-error "(#;a . b)")
 ;; (test-read-error "(a . #;b)")
 ;; (test-read-error "(a #;. b)")
@@ -2091,52 +2069,21 @@
 
 (test-begin "Numeric syntax")
 
-;; Numeric syntax adapted from Peter Bex's tests.
-;;
-;; These are updated to R7RS, using string ports instead of
-;; string->number, and "error" tests removed because implementations
-;; are free to provide their own numeric extensions.  Currently all
-;; tests are run by default - need to cond-expand and test for
-;; infinities and -0.0.
-
-;; (define-syntax test-numeric-syntax
-;;   (syntax-rules ()
-;;     ((test-numeric-syntax str expect strs ...)
-;;      (let* ((z (read (open-input-string str)))
-;;             (out (open-output-string))
-;;             (z-str (begin (write z out) (get-output-string out))))
-;;        (test expect (values z))
-;;        (test #t (and (member z-str '(str strs ...)) #t))))))
-
-;; Each test is of the form:
-;;
-;;   (test-numeric-syntax input-str expected-value expected-write-values ...)
-;;
-;; where the input should be eqv? to the expected-value, and the
-;; written output the same as any of the expected-write-values.  The
-;; form
-;;
-;;   (test-numeric-syntax input-str expected-value)
-;;
-;; is a shorthand for
-;;
-;;   (test-numeric-syntax input-str expected-value (input-str))
-
 ;; Simple
-;; (test-numeric-syntax "1" 1)
+(test-numeric-syntax "1" 1)
 ;; (test-numeric-syntax "+1" 1 "1")
-;; (test-numeric-syntax "-1" -1)
+(test-numeric-syntax "-1" -1)
 ;; (test-numeric-syntax "#i1" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#I1" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#i-1" -1.0 "-1.0" "-1.")
 ;; ;; Decimal
-;; (test-numeric-syntax "1.0" 1.0 "1.0" "1.")
-;; (test-numeric-syntax "1." 1.0 "1.0" "1.")
-;; (test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
-;; (test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
+(test-numeric-syntax "1.0" 1.0 "1.0" "1.")
+(test-numeric-syntax "1." 1.0 "1.0" "1.")
+(test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
+(test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
 ;; ;; Some Schemes don't allow negative zero. This is okay with the standard
-;; (test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
-;; (test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
+(test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
+(test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
 ;; (test-numeric-syntax "#i1.0" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#e1.0" 1 "1")
 ;; (test-numeric-syntax "#e-.0" 0 "0")
@@ -2153,21 +2100,21 @@
 ;; (test-numeric-syntax "1l2" 100.0 "100.0" "100.")
 ;; (test-numeric-syntax "1L2" 100.0 "100.0" "100.")
 ;; ;; NaN, Inf
-;; (test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
-;; (test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
-;; (test-numeric-syntax "+inf.0" +inf.0 "+inf.0" "+Inf.0")
-;; (test-numeric-syntax "+InF.0" +inf.0 "+inf.0" "+Inf.0")
-;; (test-numeric-syntax "-inf.0" -inf.0 "-inf.0" "-Inf.0")
-;; (test-numeric-syntax "-iNF.0" -inf.0 "-inf.0" "-Inf.0")
+(test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
+(test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
+(test-numeric-syntax "+inf.0" +inf.0 "+inf.0" "+Inf.0")
+(test-numeric-syntax "+InF.0" +inf.0 "+inf.0" "+Inf.0")
+(test-numeric-syntax "-inf.0" -inf.0 "-inf.0" "-Inf.0")
+(test-numeric-syntax "-iNF.0" -inf.0 "-inf.0" "-Inf.0")
 ;; (test-numeric-syntax "#i+nan.0" +nan.0 "+nan.0" "+NaN.0")
 ;; (test-numeric-syntax "#i+inf.0" +inf.0 "+inf.0" "+Inf.0")
 ;; (test-numeric-syntax "#i-inf.0" -inf.0 "-inf.0" "-Inf.0")
 ;; ;; Exact ratios
-;; (test-numeric-syntax "1/2" (/ 1 2))
+(test-numeric-syntax "1/2" (/ 1 2))
 ;; (test-numeric-syntax "#e1/2" (/ 1 2) "1/2")
-;; (test-numeric-syntax "10/2" 5 "5")
-;; (test-numeric-syntax "-1/2" (- (/ 1 2)))
-;; (test-numeric-syntax "0/10" 0 "0")
+(test-numeric-syntax "10/2" 5 "5")
+(test-numeric-syntax "-1/2" (- (/ 1 2)))
+(test-numeric-syntax "0/10" 0 "0")
 ;; (test-numeric-syntax "#e0/10" 0 "0")
 ;; (test-numeric-syntax "#i3/2" (/ 3.0 2.0) "1.5")
 ;; ;; Exact complex

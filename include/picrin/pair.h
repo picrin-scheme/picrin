@@ -49,8 +49,13 @@ int pic_length(pic_state *, pic_value);
 pic_value pic_reverse(pic_state *, pic_value);
 pic_value pic_append(pic_state *, pic_value, pic_value);
 
+pic_value pic_memq(pic_state *, pic_value key, pic_value list);
+pic_value pic_memv(pic_state *, pic_value key, pic_value list);
+
 pic_value pic_assq(pic_state *, pic_value key, pic_value assoc);
+pic_value pic_assv(pic_state *, pic_value key, pic_value assoc);
 pic_value pic_assoc(pic_state *, pic_value key, pic_value assoc);
+
 pic_value pic_acons(pic_state *, pic_value key, pic_value val, pic_value assoc);
 
 pic_value pic_caar(pic_state *, pic_value);

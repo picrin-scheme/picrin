@@ -376,7 +376,7 @@ global_ref(pic_state *pic, const char *name)
   pic_sym sym, rename;
 
   sym = pic_intern_cstr(pic, name);
-  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
+  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
     return SIZE_MAX;
   }
   if (! (e = xh_get_int(&pic->global_tbl, rename))) {
@@ -398,7 +398,7 @@ global_def(pic_state *pic, const char *name)
   }
 
   /* register to the senv */
-  rename = pic_add_rename(pic, pic->lib->senv, sym);
+  rename = pic_add_rename(pic, pic->lib->env, sym);
 
   /* register to the global table */
   gidx = pic->glen++;

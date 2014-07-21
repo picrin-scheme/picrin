@@ -55,8 +55,9 @@ expect(struct pic_port *port, const char *str)
   char c;
 
   while ((c = *str++) != 0) {
-    if (c != next(port))
+    if (c != peek(port))
       return false;
+    next(port);
   }
 
   return true;
@@ -113,6 +114,27 @@ read_datum_comment(pic_state *pic, struct pic_port *port, char c)
   read(pic, port, next(port));
 
   return pic_undef_value();
+}
+
+static pic_value
+read_directive(pic_state *pic, struct pic_port *port, char c)
+{
+  switch (peek(port)) {
+  case 'n':
+    if (expect(port, "no-fold-case")) {
+      /* :FIXME: set no-fold-case flag */
+      return pic_undef_value();
+    }
+    break;
+  case 'f':
+    if (expect(port, "fold-case")) {
+      /* :FIXME: set fold-case flag */
+      return pic_undef_value();
+    }
+    break;
+  }
+
+  return read_comment(pic, port, c);
 }
 
 static pic_value
@@ -256,7 +278,7 @@ read_plus(pic_state *pic, struct pic_port *port, char c)
   pic_value sym;
 
   if (isdigit(peek(port))) {
-    return read_number(pic, port, c);
+    return read_number(pic, port, next(port));
   }
   else {
     sym = read_symbol(pic, port, c);
@@ -306,18 +328,31 @@ read_char(pic_state *pic, struct pic_port *port, char c)
   if (! isdelim(peek(port))) {
     switch (c) {
     default: read_error(pic, "unexpected character after char literal");
-    case 'a': c = '\a'; expect(port, "lerm"); break;
-    case 'b': c = '\b'; expect(port, "ackspace"); break;
-    case 'd': c = 0x7F; expect(port, "elete"); break;
-    case 'e': c = 0x1B; expect(port, "scape"); break;
-    case 'n': c = peek(port) == 'e' ? (expect(port, "ewline"), '\n') : (expect(port, "ull"), '\0'); break;
-    case 'r': c = '\r'; expect(port, "eturn"); break;
-    case 's': c = ' '; expect(port, "pace"); break;
-    case 't': c = '\t'; expect(port, "ab"); break;
+    case 'a': c = '\a'; if (! expect(port, "lerm")) goto fail; break;
+    case 'b': c = '\b'; if (! expect(port, "ackspace")) goto fail; break;
+    case 'd': c = 0x7F; if (! expect(port, "elete")) goto fail; break;
+    case 'e': c = 0x1B; if (! expect(port, "scape")) goto fail; break;
+    case 'n':
+      if ((c = peek(port)) == 'e') {
+        c = '\n';
+        if (! expect(port, "ewline"))
+          goto fail;
+      } else {
+        c = '\0';
+        if (! expect(port, "ull"))
+          goto fail;
+      }
+      break;
+    case 'r': c = '\r'; if (! expect(port, "eturn")) goto fail; break;
+    case 's': c = ' '; if (! expect(port, "pace")) goto fail; break;
+    case 't': c = '\t'; if (! expect(port, "ab")) goto fail; break;
     }
   }
 
   return pic_char_value(c);
+
+ fail:
+  read_error(pic, "unexpected character while reading character literal");
 }
 
 static pic_value
@@ -586,7 +621,7 @@ read_dispatch(pic_state *pic, struct pic_port *port, char c)
 
   switch (c) {
   case '!':
-    return read_comment(pic, port, c);
+    return read_directive(pic, port, c);
   case '|':
     return read_block_comment(pic, port, c);
   case ';':

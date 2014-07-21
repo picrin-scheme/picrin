@@ -1,7 +1,13 @@
 list(APPEND PICLIB_SCHEME_LIBS
+  ${PROJECT_SOURCE_DIR}/piclib/picrin/macro.scm # the only dependency prelude requires
   ${PROJECT_SOURCE_DIR}/piclib/prelude.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/array.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/dictionary.scm
+  ${PROJECT_SOURCE_DIR}/piclib/picrin/test.scm
+  ${PROJECT_SOURCE_DIR}/piclib/scheme/cxr.scm
+  ${PROJECT_SOURCE_DIR}/piclib/scheme/file.scm
+  ${PROJECT_SOURCE_DIR}/piclib/scheme/case-lambda.scm
+  ${PROJECT_SOURCE_DIR}/piclib/scheme/lazy.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/1.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/8.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/26.scm
