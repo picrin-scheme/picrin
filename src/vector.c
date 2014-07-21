@@ -119,6 +119,48 @@ pic_vec_vector_set(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_vec_list_to_vector(pic_state *pic)
+{
+  struct pic_vector *vec;
+  pic_value list, e, *data;
+
+  pic_get_args(pic, "o", &list);
+
+  vec = pic_vec_new(pic, pic_length(pic, list));
+
+  data = vec->data;
+
+  pic_for_each (e, list) {
+    *data++ = e;
+  }
+  return pic_obj_value(vec);
+}
+
+static pic_value
+pic_vec_vector_to_list(pic_state *pic)
+{
+  struct pic_vector *vec;
+  pic_value list;
+  int n, start, end, i;
+
+  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = vec->len;
+  }
+
+  list = pic_nil_value();
+
+  for (i = start; i < end; ++i) {
+    pic_push(pic, vec->data[i], list);
+  }
+  return pic_reverse(pic, list);
+}
+
 void
 pic_init_vector(pic_state *pic)
 {
@@ -127,4 +169,6 @@ pic_init_vector(pic_state *pic)
   pic_defun(pic, "vector-length", pic_vec_vector_length);
   pic_defun(pic, "vector-ref", pic_vec_vector_ref);
   pic_defun(pic, "vector-set!", pic_vec_vector_set);
+  pic_defun(pic, "list->vector", pic_vec_list_to_vector);
+  pic_defun(pic, "vector->list", pic_vec_vector_to_list);
 }

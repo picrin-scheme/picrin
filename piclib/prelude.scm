@@ -91,22 +91,6 @@
                        (r 'it)
                        (cons (r 'or) (cdr exprs))))))))))
 
-  (define (list->vector list)
-    (let ((vector (make-vector (length list))))
-      (let loop ((list list) (i 0))
-        (if (null? list)
-            vector
-            (begin
-              (vector-set! vector i (car list))
-              (loop (cdr list) (+ i 1)))))))
-
-  (define (vector->list vector)
-    (let ((length (vector-length vector)))
-      (let loop ((list '()) (i 0))
-        (if (= i length)
-            (reverse list)
-            (loop (cons (vector-ref vector i) list) (+ i 1))))))
-
   (define-syntax quasiquote
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -714,27 +698,7 @@
 ;;; 6.8. Vector
 
 (define (vector . objs)
-  (let ((len (length objs)))
-    (let ((v (make-vector len)))
-      (do ((i 0 (+ i 1))
-	   (l objs (cdr l)))
-	  ((= i len)
-	   v)
-	(vector-set! v i (car l))))))
-
-(define (vector->list vector . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length vector))))
-    (do ((i start (+ i 1))
-	 (res '()))
-	((= i end)
-	 (reverse res))
-      (set! res (cons (vector-ref vector i) res)))))
-
-(define (list->vector list)
-  (apply vector list))
+  (list->vector objs))
 
 (define (vector-copy! to at from . opts)
   (let* ((start (if (pair? opts) (car opts) 0))
@@ -785,8 +749,7 @@
 (define (string->vector . args)
   (list->vector (apply string->list args)))
 
-(export vector vector->list list->vector
-        vector-copy! vector-copy
+(export vector vector-copy! vector-copy
         vector-append vector-fill!
         vector->string string->vector)
 
