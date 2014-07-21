@@ -35,12 +35,7 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 {
   xh_entry *e;
 
-  if (! pic_interned_p(pic, sym)) {
-    if (rename != NULL) {
-      *rename = sym;
-    }
-    return true;
-  }
+  UNUSED(pic);
 
   if ((e = xh_get_int(&senv->map, sym)) == NULL) {
     return false;
@@ -87,7 +82,12 @@ make_identifier(pic_state *pic, pic_sym sym, struct pic_senv *senv)
       break;
     senv = senv->up;
   }
-  return pic_gensym(pic, sym);
+  if (! pic_interned_p(pic, sym)) {
+    return sym;
+  }
+  else {
+    return pic_gensym(pic, sym);
+  }
 }
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
