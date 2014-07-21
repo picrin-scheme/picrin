@@ -27,6 +27,59 @@ lcm(int a, int b)
   return fabs((double)a * b) / gcd(a, b);
 }
 
+/**
+ * Returns the length of string representing val.
+ * radix is between 2 and 36 (inclusive).
+ * No error checks are performed in this function.
+ */
+static int
+number_string_length(int val, int radix)
+{
+  long long v = val; /* in case val == INT_MIN */
+  int count = 0;
+  if (val == 0) {
+    return 1;
+  }
+  if (val < 0) {
+    v = - v;
+    count = 1;
+  }
+  while (v > 0) {
+    ++count;
+    v /= radix;
+  }
+  return count;
+}
+
+/**
+ * Returns the string representing val.
+ * radix is between 2 and 36 (inclusive).
+ * This function overwrites buffer and stores the result.
+ * No error checks are performed in this function. It is caller's responsibility to avoid buffer-overrun.
+ */
+static void
+number_string(int val, int radix, int length, char *buffer) {
+  const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
+  long long v = val;
+  int i;
+  if (val == 0) {
+    buffer[0] = '0';
+    buffer[1] = '\0';
+    return;
+  }
+  if (val < 0) {
+    buffer[0] = '-';
+    v = -v;
+  }
+
+  for(i = length - 1; v > 0; --i) {
+    buffer[i] = digits[v % radix];
+    v /= radix;
+  }
+  buffer[length] = '\0';
+  return;
+}
+
 static pic_value
 pic_number_real_p(pic_state *pic)
 {
@@ -694,10 +747,16 @@ pic_number_number_to_string(pic_state *pic)
 
   pic_get_args(pic, "F|i", &f, &e, &radix);
 
-  if (e) {
-    char buf[snprintf(NULL, 0, "%d", (int)f) + 1];
+  if (radix < 2 || radix > 36) {
+    pic_errorf(pic, "number->string: invalid radix %d (between 2 and 36, inclusive)", radix);
+  }
 
-    snprintf(buf, sizeof buf, "%d", (int)f);
+  if (e) {
+    int ival = (int) f;
+    int ilen = number_string_length(ival, radix);
+    char buf[ilen + 1];
+
+    number_string(ival, radix, ilen, buf);
 
     return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
   }
