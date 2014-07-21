@@ -271,12 +271,17 @@
                    formal)
             ,@body)))))
 
+  (define-syntax let-syntax
+    (er-macro-transformer
+     (lambda (form r c)
+       `(,(r 'letrec-syntax) ,@(cdr form)))))
+
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
           and or
           cond case else =>
           do when unless
-          letrec-syntax
+          let-syntax letrec-syntax
           _ ... syntax-error))
 
 (import (picrin core-syntax))
@@ -286,7 +291,7 @@
         and or
         cond case else =>
         do when unless
-        letrec-syntax
+        let-syntax letrec-syntax
         _ ... syntax-error)
 
 ;;; multiple value

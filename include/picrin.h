@@ -80,14 +80,14 @@ typedef struct {
 
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
-  pic_sym sDEFINE_SYNTAX, sLET_SYNTAX;
+  pic_sym sDEFINE_SYNTAX;
   pic_sym sDEFINE_LIBRARY, sIMPORT, sEXPORT;
   pic_sym sCONS, sCAR, sCDR, sNILP;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
 
   pic_sym rDEFINE, rLAMBDA, rIF, rBEGIN, rQUOTE, rSETBANG;
-  pic_sym rDEFINE_SYNTAX, rLET_SYNTAX;
+  pic_sym rDEFINE_SYNTAX;
   pic_sym rDEFINE_LIBRARY, rIMPORT, rEXPORT;
 
   xhash syms;                   /* name to symbol */
