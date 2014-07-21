@@ -1,1 +1,1 @@
-list(APPEND PICLIB_CONTRIB_LIBS ${PICRIN_CONTRIB_DIR}/10.pretty-print/pretty-print.scm)
+list(APPEND PICLIB_CONTRIB_LIBS ${PROJECT_SOURCE_DIR}/contrib/10.pretty-print/pretty-print.scm)
