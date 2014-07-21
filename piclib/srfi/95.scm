@@ -14,9 +14,6 @@
   (define (identity x)
     x)
 
-  (define (quotient a b)
-    (exact (floor (/ a b))))
-
   (define (merge ls1 ls2 less? . opt-key)
     (let ((key (if (null? opt-key) identity (car opt-key))))
       (let rec ((arg1 ls1) (arg2 ls2))

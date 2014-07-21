@@ -1,7 +1,6 @@
 build/*
-src/lex.yy.c
-src/lex.yy.h
 src/load_piclib.c
+src/init_contrib.c
 .dir-locals.el
 GPATH
 GRTAGS

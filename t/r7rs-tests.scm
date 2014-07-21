@@ -32,52 +32,18 @@
 ;        (scheme complex)
         (scheme time)
         (scheme file)
-;        (scheme read)
+        (scheme read)
         (scheme write)
 ;        (scheme eval)
         (scheme process-context)
-;        (scheme case-lambda)
-        )
+        (scheme case-lambda)
+        (picrin test))
 
 ;; R7RS test suite.  Covers all procedures and syntax in the small
 ;; language except `delete-file'.  Currently assumes full-unicode
 ;; support, the full numeric tower and all standard libraries
 ;; provided.
 
-(define (test-begin . o) #f)
-
-(define (test-end . o) #f)
-
-(define counter 1)
-
-(define-syntax test
-  (syntax-rules ()
-    ((test expected expr)
-     (let ((res expr))
-       (display "case ")
-       (write counter)
-       (cond
-        ((equal? res expected)
-         (display "[0;32m PASS: ")
-         (write 'expr)
-         (display " equals ")
-         (write expected)
-         (display "[0;39m")
-         (newline)
-         )
-        ((not (equal? res expected))
-         (display " [0;31mFAIL: ")
-         (write 'expr)
-         (newline)
-         (display "   expected ")
-         (write expected)
-         (display " but got ")
-         (write res)
-         (display "[0;39m")
-         (newline)))
-       (set! counter (+ counter 1))))))
-
-(newline)
 
 (test-begin "R7RS")
 
@@ -240,7 +206,7 @@
             (mean / /))))
 (let*-values (((a b c) (means '(8 5 99 1 22))))
   (test 27 a)
-  (test 9.728 b)
+  (test 9.7280002558226410514 b)
   (test (/ 1800 497) c))
 
 (let*-values (((root rem) (exact-integer-sqrt 32)))
@@ -310,7 +276,7 @@
 
 (test 3 (force (delay (+ 1 2))))
 
-(test '(3 3)  
+(test '(3 3)
     (let ((p (delay (+ 1 2))))
       (list (force p) (force p))))
 
@@ -328,7 +294,7 @@
 
 (define (stream-filter p? s)
   (delay-force
-   (if (null? (force s)) 
+   (if (null? (force s))
        (delay '())
        (let ((h (car (force s)))
              (t (cdr (force s))))
@@ -364,18 +330,18 @@
 
 
 
-;; (define radix
-;;   (make-parameter
-;;    10
-;;    (lambda (x)
-;;      (if (and (integer? x) (<= 2 x 16))
-;;          x
-;;          (error "invalid radix")))))
-;; (define (f n) (number->string n (radix)))
-;; (test "12" (f 12))
-;; (test "1100" (parameterize ((radix 2))
-;;                            (f 12)))
-;; (test "12" (f 12))
+(define radix
+  (make-parameter
+   10
+   (lambda (x)
+     (if (and (integer? x) (<= 2 x 16))
+         x
+         (error "invalid radix")))))
+(define (f n) (number->string n (radix)))
+(test "12" (f 12))
+(test "1100" (parameterize ((radix 2))
+                           (f 12)))
+(test "12" (f 12))
 (test '(list 3 4) `(list ,(+ 1 2) 4))
 (let ((name 'a)) (test '(list a (quote a)) `(list ,name ',name)))
 (test '(a 3 4 5 6 b) `(a ,(+ 1 2) ,@(map abs '(4 -5 6)) b))
@@ -389,70 +355,70 @@
 (test '(list 3 4) (quasiquote (list (unquote (+ 1 2)) 4)) )
 (test `(list ,(+ 1 2) 4) (quasiquote (list (unquote (+ 1 2)) 4)))
 
-;; (define plus
-;;   (case-lambda 
-;;    (() 0)
-;;    ((x) x)
-;;    ((x y) (+ x y))
-;;    ((x y z) (+ (+ x y) z))
-;;    (args (apply + args))))
+(define plus
+  (case-lambda
+   (() 0)
+   ((x) x)
+   ((x y) (+ x y))
+   ((x y z) (+ (+ x y) z))
+   (args (apply + args))))
 
-;; (test 0 (plus))
-;; (test 1 (plus 1))
-;; (test 3 (plus 1 2))
-;; (test 6 (plus 1 2 3))
-;; (test 10 (plus 1 2 3 4))
+(test 0 (plus))
+(test 1 (plus 1))
+(test 3 (plus 1 2))
+(test 6 (plus 1 2 3))
+(test 10 (plus 1 2 3 4))
 
-;; (define mult
-;;   (case-lambda 
-;;    (() 1)
-;;    ((x) x)
-;;    ((x y) (* x y))
-;;    ((x y . z) (apply mult (* x y) z))))
+(define mult
+  (case-lambda
+   (() 1)
+   ((x) x)
+   ((x y) (* x y))
+   ((x y . z) (apply mult (* x y) z))))
 
-;; (test 1 (mult))
-;; (test 1 (mult 1))
-;; (test 2 (mult 1 2))
-;; (test 6 (mult 1 2 3))
-;; (test 24 (mult 1 2 3 4))
+(test 1 (mult))
+(test 1 (mult 1))
+(test 2 (mult 1 2))
+(test 6 (mult 1 2 3))
+(test 24 (mult 1 2 3 4))
 
 (test-end)
 
 (test-begin "4.3 Macros")
 
-;; (test 'now (let-syntax
-;;                ((when (syntax-rules ()
-;;                         ((when test stmt1 stmt2 ...)
-;;                          (if test
-;;                              (begin stmt1
-;;                                     stmt2 ...))))))
-;;              (let ((if #t))
-;;                (when if (set! if 'now))
-;;                if)))
+(test 'now (let-syntax
+               ((when (syntax-rules ()
+                        ((when test stmt1 stmt2 ...)
+                         (if test
+                             (begin stmt1
+                                    stmt2 ...))))))
+             (let ((if #t))
+               (when if (set! if 'now))
+               if)))
 
-;; (test 'outer (let ((x 'outer))
-;;   (let-syntax ((m (syntax-rules () ((m) x))))
-;;     (let ((x 'inner))
-;;       (m)))))
+(test 'outer (let ((x 'outer))
+  (let-syntax ((m (syntax-rules () ((m) x))))
+    (let ((x 'inner))
+      (m)))))
 
-;; (test 7 (letrec-syntax
-;;   ((my-or (syntax-rules ()
-;;             ((my-or) #f)
-;;             ((my-or e) e)
-;;             ((my-or e1 e2 ...)
-;;              (let ((temp e1))
-;;                (if temp
-;;                    temp
-;;                    (my-or e2 ...)))))))
-;;   (let ((x #f)
-;;         (y 7)
-;;         (temp 8)
-;;         (let odd?)
-;;         (if even?))
-;;     (my-or x
-;;            (let temp)
-;;            (if y)
-;;            y))))
+(test 7 (letrec-syntax
+  ((my-or (syntax-rules ()
+            ((my-or) #f)
+            ((my-or e) e)
+            ((my-or e1 e2 ...)
+             (let ((temp e1))
+               (if temp
+                   temp
+                   (my-or e2 ...)))))))
+  (let ((x #f)
+        (y 7)
+        (temp 8)
+        (let odd?)
+        (if even?))
+    (my-or x
+           (let temp)
+           (if y)
+           y))))
 
 (define-syntax be-like-begin
   (syntax-rules ()
@@ -500,10 +466,10 @@
     (let ()
       (define-values (x) (values 1))
       x))
-;; (test 3
-;;     (let ()
-;;       (define-values x (values 1 2))
-;;       (apply + x)))
+(test 3
+    (let ()
+      (define-values x (values 1 2))
+      (apply + x)))
 (test 3
     (let ()
       (define-values (x y) (values 1 2))
@@ -512,10 +478,10 @@
     (let ()
       (define-values (x y z) (values 1 2 3))
       (+ x y z)))
-;; (test 10
-;;     (let ()
-;;       (define-values (x y . z) (values 1 2 3 4))
-;;       (+ x y (car z) (cadr z))))
+(test 10
+    (let ()
+      (define-values (x y . z) (values 1 2 3 4))
+      (+ x y (car z) (cadr z))))
 
 (test '(2 1) (let ((x 1) (y 2))
   (define-syntax swap!
@@ -606,6 +572,53 @@
 (test #t (equal? (make-vector 5 'a)
                  (make-vector 5 'a)))
 
+;; circular objects
+(let ((l '(1 . 2))
+      (m '(1 . 2)))
+  (set-cdr! l l)
+  (set-cdr! m m)
+  (test #t (equal? l m)))
+
+(let ((l '(1 . 2))
+      (m '(2 . 1)))
+  (set-cdr! l l)
+  (set-cdr! m m)
+  (test #f (equal? l m)))
+
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 1)))
+  (vector-set! v 1 v)
+  (vector-set! w 1 w)
+  (test #t (equal? v w)))
+
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 2)))
+  (vector-set! v 1 v)
+  (vector-set! w 1 w)
+  (test #f (equal? v w)))
+
+(let ((v (make-vector 2 1))
+      (w (make-vector 2 1))
+      (l '(1 . 2))
+      (m '(1 . 2)))
+  (vector-set! v 1 l)
+  (vector-set! w 1 m)
+  (set-cdr! l v)
+  (set-cdr! m w)
+  (test #t  (equal? v w)))
+
+(let ((v (make-vector 2 2))
+      (w (make-vector 2 1))
+      (l '(1 . 2))
+      (m '(1 . 2)))
+  (vector-set! v 1 l)
+  (vector-set! w 1 m)
+  (set-cdr! l v)
+  (set-cdr! m w)
+  (test #f (equal? v w)))
+
 (test-end)
 
 (test-begin "6.2 Numbers")
@@ -618,11 +631,11 @@
 ;; (test #t (real? #e1e10))
 (test #t (real? +inf.0))
 (test #f (rational? -inf.0))
-;; (test #t (rational? 6/10))
-;; (test #t (rational? 6/3))
+(test #t (rational? 6/10))
+(test #t (rational? 6/3))
 ;; (test #t (integer? 3+0i))
 (test #t (integer? 3.0))
-;; (test #t (integer? 8/4))
+(test #t (integer? 8/4))
 
 (test #f (exact? 3.0))
 ;; (test #t (exact? #e3.0))
@@ -630,7 +643,7 @@
 
 (test #t (exact-integer? 32))
 (test #f (exact-integer? 32.0))
-;; (test #f (exact-integer? 32/5))
+(test #f (exact-integer? 32/5))
 
 (test #t (finite? 3))
 (test #f (finite? +inf.0))
@@ -648,14 +661,14 @@
 
 ;; (test #t (= 1 1.0 1.0+0.0i))
 ;; (test #f (= 1.0 1.0+1.0i))
-;; (test #t (< 1 2 3))
-;; (test #f (< 1 1 2))
-;; (test #t (> 3.0 2.0 1.0))
-;; (test #f (> -3.0 2.0 1.0))
-;; (test #t (<= 1 1 2))
-;; (test #f (<= 1 2 1))
-;; (test #t (>= 2 1 1))
-;; (test #f (>= 1 2 1))
+(test #t (< 1 2 3))
+(test #f (< 1 1 2))
+(test #t (> 3.0 2.0 1.0))
+(test #f (> -3.0 2.0 1.0))
+(test #t (<= 1 1 2))
+(test #f (<= 1 2 1))
+(test #t (>= 2 1 1))
+(test #f (>= 1 2 1))
 
 ;; From R7RS 6.2.6 Numerical operations:
 ;;
@@ -744,8 +757,8 @@
 (test -1 (- 3 4))
 (test -6 (- 3 4 5))
 (test -3 (- 3))
-;; (test 3/20 (/ 3 4 5))
-;; (test 1/3 (/ 3))
+(test 3/20 (/ 3 4 5))
+(test 1/3 (/ 3))
 
 (test 7 (abs -7))
 (test 7 (abs 7))
@@ -798,14 +811,14 @@
 (test 3.0 (truncate 3.5))
 (test 4.0 (round 3.5))
 
-;; (test 4 (round 7/2))
+(test 4 (exact (round 7/2)))
 (test 7 (round 7))
 
 ;; (test 1/3 (rationalize (exact .3) 1/10))
 ;; (test #i1/3 (rationalize .3 1/10))
 
 (test 1.0 (inexact (exp 0))) ;; may return exact number
-(test 20.0855369231877 (exp 3))
+(test 20.0855369231876679236 (exp 3))
 
 (test 0.0 (inexact (log 1))) ;; may return exact number
 (test 1.0 (log (exp 1)))
@@ -818,30 +831,30 @@
 (test 1.0 (inexact (cos 0))) ;; may return exact number
 (test -1.0 (cos 3.14159265358979))
 (test 0.0 (inexact (tan 0))) ;; may return exact number
-(test 1.5574077246549 (tan 1))
+(test 1.5574077246549020703 (tan 1))
 
 (test 0.0 (asin 0))
-(test 1.5707963267949 (asin 1))
+(test 1.5707963267948965580 (asin 1))
 (test 0.0 (acos 1))
-(test 3.14159265358979 (acos -1))
+(test 3.1415926535897931160 (acos -1))
 
 (test 0.0 (atan 0.0 1.0))
 (test -0.0 (atan -0.0 1.0))
-(test 0.785398163397448 (atan 1.0 1.0))
-(test 1.5707963267949 (atan 1.0 0.0))
-(test 2.35619449019234 (atan 1.0 -1.0))
-(test 3.14159265358979 (atan 0.0 -1.0))
-(test -3.14159265358979 (atan -0.0 -1.0)) ;
-(test -2.35619449019234 (atan -1.0 -1.0))
-(test -1.5707963267949 (atan -1.0 0.0))
-(test -0.785398163397448 (atan -1.0 1.0))
+(test 0.7853981633974482790 (atan 1.0 1.0))
+(test 1.5707963267948965580 (atan 1.0 0.0))
+(test 2.3561944901923448370 (atan 1.0 -1.0))
+(test 3.1415926535897931160 (atan 0.0 -1.0))
+(test -3.1415926535897931160 (atan -0.0 -1.0)) ;
+(test -2.3561944901923448370 (atan -1.0 -1.0))
+(test -1.5707963267948965580 (atan -1.0 0.0))
+(test -0.7853981633974482790 (atan -1.0 1.0))
 ;; (test undefined (atan 0.0 0.0))
 
 (test 1764 (square 42))
 (test 4 (square 2))
 
 (test 3.0 (inexact (sqrt 9)))
-(test 1.4142135623731 (sqrt 2))
+(test 1.4142135623730951454 (sqrt 2))
 ;; (test 0.0+1.0i (inexact (sqrt -1)))
 
 (test '(2 0) (call-with-values (lambda () (exact-integer-sqrt 4)) list))
@@ -1017,7 +1030,7 @@
 (test #t (symbol=? 'a 'a 'a))
 (test #f (symbol=? 'a 'a 'A))
 
-(test "flying-fish"     
+(test "flying-fish"
 (symbol->string 'flying-fish))
 (test "Martin" (symbol->string 'Martin))
 (test "Malvina" (symbol->string (string->symbol "Malvina")))
@@ -1151,7 +1164,7 @@
 ;;       (string-set! s 1 #\x1F700)
 ;;       s))
 
-#;(test #t (string=? "" ""))
+(test #t (string=? "" ""))
 (test #t (string=? "abc" "abc" "abc"))
 (test #f (string=? "" "abc"))
 (test #f (string=? "abc" "aBc"))
@@ -1275,29 +1288,29 @@
 (test "b" (string-copy "abc" 1 2))
 (test "bc" (string-copy "abc" 1 3))
 
-;; (test "-----"
-;;     (let ((str (make-string 5 #\x))) (string-fill! str #\-) str))
-;; (test "xx---"
-;;     (let ((str (make-string 5 #\x))) (string-fill! str #\- 2) str))
-;; (test "xx-xx"
-;;     (let ((str (make-string 5 #\x))) (string-fill! str #\- 2 3) str))
+(test "-----"
+    (let ((str (make-string 5 #\x))) (string-fill! str #\-) str))
+(test "xx---"
+    (let ((str (make-string 5 #\x))) (string-fill! str #\- 2) str))
+(test "xx-xx"
+    (let ((str (make-string 5 #\x))) (string-fill! str #\- 2 3) str))
 
-;; (test "a12de"
-;;     (let ((str (string-copy "abcde"))) (string-copy! str 1 "12345" 0 2) str))
-;; (test "-----"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----") str))
-;; (test "---xx"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----" 2) str))
-;; (test "xx---"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 0 3) str))
-;; (test "xx-xx"
-;;     (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 2 3) str))
+(test "a12de"
+    (let ((str (string-copy "abcde"))) (string-copy! str 1 "12345" 0 2) str))
+(test "-----"
+    (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----") str))
+(test "---xx"
+    (let ((str (make-string 5 #\x))) (string-copy! str 0 "-----" 2) str))
+(test "xx---"
+    (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 0 3) str))
+(test "xx-xx"
+    (let ((str (make-string 5 #\x))) (string-copy! str 2 "-----" 2 3) str))
 
 ;; same source and dest
-;; (test "aabde"
-;;     (let ((str (string-copy "abcde"))) (string-copy! str 1 str 0 2) str))
-;; (test "abcab"
-;;     (let ((str (string-copy "abcde"))) (string-copy! str 3 str 0 2) str))
+(test "aabde"
+    (let ((str (string-copy "abcde"))) (string-copy! str 1 str 0 2) str))
+(test "abcab"
+    (let ((str (string-copy "abcde"))) (string-copy! str 3 str 0 2) str))
 
 (test-end)
 
@@ -1802,9 +1815,9 @@
       (output-port-open? out)))
 
 (test #t (eof-object? (eof-object)))
-;; (test #t (eof-object? (read (open-input-string ""))))
+(test #t (eof-object? (read (open-input-string ""))))
 (test #t (char-ready? (open-input-string "42")))
-;; (test 42 (read (open-input-string " 42 ")))
+(test 42 (read (open-input-string " 42 ")))
 
 (test #t (eof-object? (read-char (open-input-string ""))))
 (test #\a (read-char (open-input-string "abc")))
@@ -1962,62 +1975,56 @@
 (test-begin "Read syntax")
 
 ;; check reading boolean followed by eof
-;; (test #t (read (open-input-string "#t")))
-;; (test #t (read (open-input-string "#true")))
-;; (test #f (read (open-input-string "#f")))
-;; (test #f (read (open-input-string "#false")))
-;; (define (read2 port)
-;;   (let* ((o1 (read port)) (o2 (read port)))
-;;     (cons o1 o2)))
-;; ;; check reading boolean followed by delimiter
-;; (test '(#t . (5)) (read2 (open-input-string "#t(5)")))
-;; (test '(#t . 6) (read2 (open-input-string "#true 6 ")))
-;; (test '(#f . 7) (read2 (open-input-string "#f 7")))
-;; (test '(#f . "8") (read2 (open-input-string "#false\"8\"")))
+(test #t (read (open-input-string "#t")))
+(test #t (read (open-input-string "#true")))
+(test #f (read (open-input-string "#f")))
+(test #f (read (open-input-string "#false")))
+(define (read2 port)
+  (let* ((o1 (read port)) (o2 (read port)))
+    (cons o1 o2)))
+;; check reading boolean followed by delimiter
+(test '(#t . (5)) (read2 (open-input-string "#t(5)")))
+(test '(#t . 6) (read2 (open-input-string "#true 6 ")))
+(test '(#f . 7) (read2 (open-input-string "#f 7")))
+(test '(#f . "8") (read2 (open-input-string "#false\"8\"")))
 
-;; (test '() (read (open-input-string "()")))
-;; (test '(1 2) (read (open-input-string "(1 2)")))
-;; (test '(1 . 2) (read (open-input-string "(1 . 2)")))
-;; (test '(1 2) (read (open-input-string "(1 . (2))")))
-;; (test '(1 2 3 4 5) (read (open-input-string "(1 . (2 3 4 . (5)))")))
-;; (test '1 (cadr (read (open-input-string "#0=(1 . #0#)"))))
-;; (test '(1 2 3) (cadr (read (open-input-string "(#0=(1 2 3) #0#)"))))
+(test '() (read (open-input-string "()")))
+(test '(1 2) (read (open-input-string "(1 2)")))
+(test '(1 . 2) (read (open-input-string "(1 . 2)")))
+(test '(1 2) (read (open-input-string "(1 . (2))")))
+(test '(1 2 3 4 5) (read (open-input-string "(1 . (2 3 4 . (5)))")))
+(test '1 (cadr (read (open-input-string "#0=(1 . #0#)"))))
+(test '(1 2 3) (cadr (read (open-input-string "(#0=(1 2 3) #0#)"))))
 
-;; (test '(quote (1 2)) (read (open-input-string "'(1 2)")))
-;; (test '(quote (1 (unquote 2))) (read (open-input-string "'(1 ,2)")))
-;; (test '(quote (1 (unquote-splicing 2))) (read (open-input-string "'(1 ,@2)")))
-;; (test '(quasiquote (1 (unquote 2))) (read (open-input-string "`(1 ,2)")))
+(test '(quote (1 2)) (read (open-input-string "'(1 2)")))
+(test '(quote (1 (unquote 2))) (read (open-input-string "'(1 ,2)")))
+(test '(quote (1 (unquote-splicing 2))) (read (open-input-string "'(1 ,@2)")))
+(test '(quasiquote (1 (unquote 2))) (read (open-input-string "`(1 ,2)")))
 
-;; (test #() (read (open-input-string "#()")))
-;; (test #(a b) (read (open-input-string "#(a b)")))
+(test #() (read (open-input-string "#()")))
+(test #(a b) (read (open-input-string "#(a b)")))
 
-;; (test #u8() (read (open-input-string "#u8()")))
-;; (test #u8(0 1) (read (open-input-string "#u8(0 1)")))
+(test #u8() (read (open-input-string "#u8()")))
+(test #u8(0 1) (read (open-input-string "#u8(0 1)")))
 
-;; (test 'abc (read (open-input-string "abc")))
-;; (test 'abc (read (open-input-string "abc def")))
-;; (test 'ABC (read (open-input-string "ABC")))
-;; (test 'Hello (read (open-input-string "|H\\x65;llo|")))
+(test 'abc (read (open-input-string "abc")))
+(test 'abc (read (open-input-string "abc def")))
+(test 'ABC (read (open-input-string "ABC")))
+(test 'Hello (read (open-input-string "|H\\x65;llo|")))
 
-;; (test 'abc (read (open-input-string "#!fold-case ABC")))
-;; (test 'ABC (read (open-input-string "#!fold-case #!no-fold-case ABC")))
+(test 'abc (read (open-input-string "#!fold-case ABC")))
+(test 'ABC (read (open-input-string "#!fold-case #!no-fold-case ABC")))
 
-;; (test 'def (read (open-input-string "#; abc def")))
-;; (test 'def (read (open-input-string "; abc \ndef")))
-;; (test 'def (read (open-input-string "#| abc |# def")))
-;; (test 'ghi (read (open-input-string "#| abc #| def |# |# ghi")))
-;; (test 'ghi (read (open-input-string "#; ; abc\n def ghi")))
-;; (test '(abs -16) (read (open-input-string "(#;sqrt abs -16)")))
-;; (test '(a d) (read (open-input-string "(a #; #;b c d)")))
-;; (test '(a e) (read (open-input-string "(a #;(b #;c d) e)")))
-;; (test '(a . c) (read (open-input-string "(a . #;b c)")))
-;; (test '(a . b) (read (open-input-string "(a . b #;c)")))
-
-;; (define (test-read-error str)
-;;   (test-assert
-;;       (guard (exn (else #t))
-;;         (read (open-input-string str))
-;;         #f)))
+(test 'def (read (open-input-string "#; abc def")))
+(test 'def (read (open-input-string "; abc \ndef")))
+(test 'def (read (open-input-string "#| abc |# def")))
+(test 'ghi (read (open-input-string "#| abc #| def |# |# ghi")))
+(test 'ghi (read (open-input-string "#; ; abc\n def ghi")))
+(test '(abs -16) (read (open-input-string "(#;sqrt abs -16)")))
+(test '(a d) (read (open-input-string "(a #; #;b c d)")))
+(test '(a e) (read (open-input-string "(a #;(b #;c d) e)")))
+(test '(a . c) (read (open-input-string "(a . #;b c)")))
+(test '(a . b) (read (open-input-string "(a . b #;c)")))
 
 ;; (test-read-error "(#;a . b)")
 ;; (test-read-error "(a . #;b)")
@@ -2058,56 +2065,25 @@
 ;; (test "line 1\n\nline 3\n" (read (open-input-string "\"line 1\\ \t \n \t \n\nline 3\n\"")))
 ;; (test #x03BB (char->integer (string-ref (read (open-input-string "\"\\x03BB;\"")) 0)))
 
-;; (test-end)
+(test-end)
 
 (test-begin "Numeric syntax")
 
-;; Numeric syntax adapted from Peter Bex's tests.
-;;
-;; These are updated to R7RS, using string ports instead of
-;; string->number, and "error" tests removed because implementations
-;; are free to provide their own numeric extensions.  Currently all
-;; tests are run by default - need to cond-expand and test for
-;; infinities and -0.0.
-
-;; (define-syntax test-numeric-syntax
-;;   (syntax-rules ()
-;;     ((test-numeric-syntax str expect strs ...)
-;;      (let* ((z (read (open-input-string str)))
-;;             (out (open-output-string))
-;;             (z-str (begin (write z out) (get-output-string out))))
-;;        (test expect (values z))
-;;        (test #t (and (member z-str '(str strs ...)) #t))))))
-
-;; Each test is of the form:
-;;
-;;   (test-numeric-syntax input-str expected-value expected-write-values ...)
-;;
-;; where the input should be eqv? to the expected-value, and the
-;; written output the same as any of the expected-write-values.  The
-;; form
-;;
-;;   (test-numeric-syntax input-str expected-value)
-;;
-;; is a shorthand for
-;;
-;;   (test-numeric-syntax input-str expected-value (input-str))
-
 ;; Simple
-;; (test-numeric-syntax "1" 1)
+(test-numeric-syntax "1" 1)
 ;; (test-numeric-syntax "+1" 1 "1")
-;; (test-numeric-syntax "-1" -1)
+(test-numeric-syntax "-1" -1)
 ;; (test-numeric-syntax "#i1" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#I1" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#i-1" -1.0 "-1.0" "-1.")
 ;; ;; Decimal
-;; (test-numeric-syntax "1.0" 1.0 "1.0" "1.")
-;; (test-numeric-syntax "1." 1.0 "1.0" "1.")
-;; (test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
-;; (test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
+(test-numeric-syntax "1.0" 1.0 "1.0" "1.")
+(test-numeric-syntax "1." 1.0 "1.0" "1.")
+(test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
+(test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
 ;; ;; Some Schemes don't allow negative zero. This is okay with the standard
-;; (test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
-;; (test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
+(test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
+(test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
 ;; (test-numeric-syntax "#i1.0" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#e1.0" 1 "1")
 ;; (test-numeric-syntax "#e-.0" 0 "0")
@@ -2124,21 +2100,21 @@
 ;; (test-numeric-syntax "1l2" 100.0 "100.0" "100.")
 ;; (test-numeric-syntax "1L2" 100.0 "100.0" "100.")
 ;; ;; NaN, Inf
-;; (test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
-;; (test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
-;; (test-numeric-syntax "+inf.0" +inf.0 "+inf.0" "+Inf.0")
-;; (test-numeric-syntax "+InF.0" +inf.0 "+inf.0" "+Inf.0")
-;; (test-numeric-syntax "-inf.0" -inf.0 "-inf.0" "-Inf.0")
-;; (test-numeric-syntax "-iNF.0" -inf.0 "-inf.0" "-Inf.0")
+(test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
+(test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
+(test-numeric-syntax "+inf.0" +inf.0 "+inf.0" "+Inf.0")
+(test-numeric-syntax "+InF.0" +inf.0 "+inf.0" "+Inf.0")
+(test-numeric-syntax "-inf.0" -inf.0 "-inf.0" "-Inf.0")
+(test-numeric-syntax "-iNF.0" -inf.0 "-inf.0" "-Inf.0")
 ;; (test-numeric-syntax "#i+nan.0" +nan.0 "+nan.0" "+NaN.0")
 ;; (test-numeric-syntax "#i+inf.0" +inf.0 "+inf.0" "+Inf.0")
 ;; (test-numeric-syntax "#i-inf.0" -inf.0 "-inf.0" "-Inf.0")
 ;; ;; Exact ratios
-;; (test-numeric-syntax "1/2" (/ 1 2))
+(test-numeric-syntax "1/2" (/ 1 2))
 ;; (test-numeric-syntax "#e1/2" (/ 1 2) "1/2")
-;; (test-numeric-syntax "10/2" 5 "5")
-;; (test-numeric-syntax "-1/2" (- (/ 1 2)))
-;; (test-numeric-syntax "0/10" 0 "0")
+(test-numeric-syntax "10/2" 5 "5")
+(test-numeric-syntax "-1/2" (- (/ 1 2)))
+(test-numeric-syntax "0/10" 0 "0")
 ;; (test-numeric-syntax "#e0/10" 0 "0")
 ;; (test-numeric-syntax "#i3/2" (/ 3.0 2.0) "1.5")
 ;; ;; Exact complex
@@ -2168,7 +2144,7 @@
 ;; (test-numeric-syntax "0.5+3/4i" (make-rectangular 0.5 (/ 3 4))
 ;;   "0.5+0.75i" ".5+.75i" "0.5+3/4i" ".5+3/4i" "500.0e-3+750.0e-3i")
 ;; ;; Complex NaN, Inf (rectangular notation)
-;; ;;(test-numeric-syntax "+nan.0+nan.0i" (make-rectangular the-nan the-nan) "+NaN.0+NaN.0i") 
+;; ;;(test-numeric-syntax "+nan.0+nan.0i" (make-rectangular the-nan the-nan) "+NaN.0+NaN.0i")
 ;; (test-numeric-syntax "+inf.0+inf.0i" (make-rectangular +inf.0 +inf.0) "+Inf.0+Inf.0i")
 ;; (test-numeric-syntax "-inf.0+inf.0i" (make-rectangular -inf.0 +inf.0) "-Inf.0+Inf.0i")
 ;; (test-numeric-syntax "-inf.0-inf.0i" (make-rectangular -inf.0 -inf.0) "-Inf.0-Inf.0i")
@@ -2226,17 +2202,17 @@
 
 ;; (test "/usr/local/bin:/usr/bin:/bin" (get-environment-variable "PATH"))
 
-;; (test #t (string? (get-environment-variable "PATH")))
+(test #t (string? (get-environment-variable "PATH")))
 
 ;; (test '(("USER" . "root") ("HOME" . "/")) (get-environment-variables))
 
-;; (let ((env (get-environment-variables)))
-;;   (define (env-pair? x)
-;;     (and (pair? x) (string? (car x)) (string? (cdr x))))
-;;   (define (all? pred ls)
-;;     (or (null? ls) (and (pred (car ls)) (all? pred (cdr ls)))))
-;;   (test #t (list? env))
-;;   (test #t (all? env-pair? env)))
+(let ((env (get-environment-variables)))
+  (define (env-pair? x)
+    (and (pair? x) (string? (car x)) (string? (cdr x))))
+  (define (all? pred ls)
+    (or (null? ls) (and (pred (car ls)) (all? pred (cdr ls)))))
+  (test #t (list? env))
+  (test #t (all? env-pair? env)))
 
 (test #t (list? (command-line)))
 

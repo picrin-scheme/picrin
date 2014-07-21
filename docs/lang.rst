@@ -17,6 +17,8 @@ At the REPL start-up time, some usuful built-in libraries listed below will be a
 - ``(scheme cxr)``
 - ``(scheme lazy)``
 - ``(scheme time)``
+- ``(scheme case-lambda)``
+- ``(scheme read)``
 
 Compliance with R7RS
 ---------------------
@@ -38,7 +40,7 @@ section                                          status     comments
 4.1.4 Procedures                                 yes
 4.1.5 Conditionals                               yes        In picrin ``(if #f #f)`` returns ``#f``
 4.1.6 Assignments                                yes
-4.1.7 Inclusion                                  incomplete ``include-ci``. TODO: Once ``read`` is implemented rewrite ``include`` macro with it.
+4.1.7 Inclusion                                  incomplete ``include-ci``
 4.2.1 Conditionals                               incomplete TODO: ``cond-expand``
 4.2.2 Binding constructs                         yes
 4.2.3 Sequencing                                 yes
@@ -56,12 +58,12 @@ section                                          status     comments
 5.3.1 Top level definitions                      yes
 5.3.2 Internal definitions                       yes        TODO: interreferential definitions
 5.3.3 Multiple-value definitions                 yes
-5.4 Syntax definitions                           yes        TODO: internal macro definition is not supported.
+5.4 Syntax definitions                           yes
 5.5 Recored-type definitions                     yes
 5.6.1 Library Syntax                             incomplete In picrin, libraries can be reopend and can be nested.
 5.6.2 Library example                            N/A
 5.7 The REPL                                     yes
-6.1 Equivalence predicates                       yes        TODO: equal? must terminate if circular structure is given
+6.1 Equivalence predicates                       yes
 6.2.1 Numerical types                            yes        picrin has only two types of internal representation of numbers: fixnum and double float. It still comforms the R7RS spec.
 6.2.2 Exactness                                  yes
 6.2.3 Implementation restrictions                yes

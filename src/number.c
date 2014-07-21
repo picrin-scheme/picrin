@@ -50,6 +50,10 @@ pic_number_integer_p(pic_state *pic)
   if (pic_float_p(v)) {
     double f = pic_float(v);
 
+    if (isinf(f)) {
+      return pic_false_value();
+    }
+
     if (f == round(f)) {
       return pic_true_value();
     }
@@ -133,6 +137,7 @@ pic_number_nan_p(pic_state *pic)
       return pic_false_value();				\
     							\
     for (i = 0; i < argc; ++i) {			\
+      f = g;                                            \
       if (pic_float_p(argv[i]))				\
 	g = pic_float(argv[i]);				\
       else if (pic_int_p(argv[i]))			\
@@ -739,7 +744,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "number?", pic_number_real_p);
   pic_defun(pic, "complex?", pic_number_real_p);
   pic_defun(pic, "real?", pic_number_real_p);
-  pic_defun(pic, "rational?", pic_number_integer_p);
+  pic_defun(pic, "rational?", pic_number_real_p);
   pic_defun(pic, "integer?", pic_number_integer_p);
   pic_gc_arena_restore(pic, ai);
 
@@ -777,6 +782,9 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
   pic_defun(pic, "truncate-quotient", pic_number_trunc_quotient);
   pic_defun(pic, "truncate-remainder", pic_number_trunc_remainder);
+  pic_defun(pic, "modulo", pic_number_floor_remainder);
+  pic_defun(pic, "quotient", pic_number_trunc_quotient);
+  pic_defun(pic, "remainder", pic_number_trunc_remainder);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "gcd", pic_number_gcd);

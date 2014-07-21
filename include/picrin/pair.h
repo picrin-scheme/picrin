@@ -21,6 +21,8 @@ struct pic_pair {
 pic_value pic_cons(pic_state *, pic_value, pic_value);
 pic_value pic_car(pic_state *, pic_value);
 pic_value pic_cdr(pic_state *, pic_value);
+void pic_set_car(pic_state *, pic_value, pic_value);
+void pic_set_cdr(pic_state *, pic_value, pic_value);
 
 bool pic_list_p(pic_value);
 pic_value pic_list1(pic_state *, pic_value);
@@ -47,8 +49,13 @@ int pic_length(pic_state *, pic_value);
 pic_value pic_reverse(pic_state *, pic_value);
 pic_value pic_append(pic_state *, pic_value, pic_value);
 
+pic_value pic_memq(pic_state *, pic_value key, pic_value list);
+pic_value pic_memv(pic_state *, pic_value key, pic_value list);
+
 pic_value pic_assq(pic_state *, pic_value key, pic_value assoc);
+pic_value pic_assv(pic_state *, pic_value key, pic_value assoc);
 pic_value pic_assoc(pic_state *, pic_value key, pic_value assoc);
+
 pic_value pic_acons(pic_state *, pic_value key, pic_value val, pic_value assoc);
 
 pic_value pic_caar(pic_state *, pic_value);

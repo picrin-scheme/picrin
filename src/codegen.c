@@ -51,7 +51,7 @@ static void pop_scope(analyze_state *);
 #define register_renamed_symbol(pic, state, slot, lib, id) do {         \
     pic_sym sym, gsym;                                                  \
     sym = pic_intern_cstr(pic, id);                                     \
-    if (! pic_find_rename(pic, lib->senv, sym, &gsym)) {                \
+    if (! pic_find_rename(pic, lib->env, sym, &gsym)) {                \
       pic_error(pic, "internal error! native VM procedure not found");  \
     }                                                                   \
     state->slot = gsym;                                                 \
@@ -366,7 +366,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
       : pic_false_value();
 
     /* To know what kind of local variables are defined, analyze body at first. */
-    body = analyze(state, pic_cons(pic, pic_sym_value(pic->sBEGIN), body_exprs), true);
+    body = analyze(state, pic_cons(pic, pic_sym_value(pic->rBEGIN), body_exprs), true);
 
     locals = pic_nil_value();
     for (i = scope->locals.size; i > 0; --i) {
@@ -420,14 +420,11 @@ analyze_define(analyze_state *state, pic_value obj)
   pic_value var, val;
   pic_sym sym;
 
-  if (pic_length(pic, obj) < 2) {
+  if (pic_length(pic, obj) != 3) {
     pic_error(pic, "syntax error");
   }
 
   var = pic_list_ref(pic, obj, 1);
-  if (pic_pair_p(var)) {
-    var = pic_list_ref(pic, var, 0);
-  }
   if (! pic_sym_p(var)) {
     pic_error(pic, "syntax error");
   } else {
@@ -435,11 +432,13 @@ analyze_define(analyze_state *state, pic_value obj)
   }
   var = analyze_declare(state, sym);
 
-  if (pic_pair_p(pic_list_ref(pic, obj, 1))) {
+  if (pic_pair_p(pic_list_ref(pic, obj, 2))
+      && pic_sym_p(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0))
+      && pic_sym(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->rLAMBDA) {
     pic_value formals, body_exprs;
 
-    formals = pic_list_tail(pic, pic_list_ref(pic, obj, 1), 1);
-    body_exprs = pic_list_tail(pic, obj, 2);
+    formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
+    body_exprs = pic_list_tail(pic, pic_list_ref(pic, obj, 2), 2);
 
     val = analyze_procedure(state, pic_sym_value(sym), formals, body_exprs);
   } else {
@@ -535,7 +534,7 @@ analyze_quote(analyze_state *state, pic_value obj)
   if (pic_length(pic, obj) != 2) {
     pic_error(pic, "syntax error");
   }
-  return obj;
+  return pic_list2(pic, pic_sym_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
 #define ARGC_ASSERT_GE(n) do {				\
@@ -690,6 +689,12 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
 	}						\
       } while (0)
 
+#define ARGC_ASSERT_WITH_FALLBACK(n) do {               \
+	if (pic_length(pic, obj) != (n) + 1) {		\
+          goto fallback;                                \
+	}						\
+      } while (0)
+
 #define CONSTRUCT_OP1(op)                                               \
       pic_list2(pic,                                                    \
                 pic_symbol_value(op),                                   \
@@ -721,22 +726,22 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     if (pic_sym_p(proc)) {
       pic_sym sym = pic_sym(proc);
 
-      if (sym == pic->sDEFINE) {
+      if (sym == pic->rDEFINE) {
         return analyze_define(state, obj);
       }
-      else if (sym == pic->sLAMBDA) {
+      else if (sym == pic->rLAMBDA) {
         return analyze_lambda(state, obj);
       }
-      else if (sym == pic->sIF) {
+      else if (sym == pic->rIF) {
         return analyze_if(state, obj, tailpos);
       }
-      else if (sym == pic->sBEGIN) {
+      else if (sym == pic->rBEGIN) {
         return analyze_begin(state, obj, tailpos);
       }
-      else if (sym == pic->sSETBANG) {
+      else if (sym == pic->rSETBANG) {
         return analyze_set(state, obj);
       }
-      else if (sym == pic->sQUOTE) {
+      else if (sym == pic->rQUOTE) {
         return analyze_quote(state, obj);
       }
       else if (sym == state->rCONS) {
@@ -768,23 +773,23 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_div(state, obj);
       }
       else if (sym == state->rEQ) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sEQ);
       }
       else if (sym == state->rLT) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLT);
       }
       else if (sym == state->rLE) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLE);
       }
       else if (sym == state->rGT) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGT);
       }
       else if (sym == state->rGE) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGE);
       }
       else if (sym == state->rNOT) {
@@ -798,6 +803,8 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_call_with_values(state, obj, tailpos);
       }
     }
+  fallback:
+
     return analyze_call(state, obj, tailpos);
   }
   case PIC_TT_BOOL:
@@ -819,12 +826,10 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_ERROR:
   case PIC_TT_SENV:
   case PIC_TT_MACRO:
-  case PIC_TT_SC:
   case PIC_TT_LIB:
   case PIC_TT_VAR:
   case PIC_TT_IREP:
   case PIC_TT_DATA:
-  case PIC_TT_BOX:
   case PIC_TT_DICT:
     pic_errorf(pic, "invalid expression given: ~s", obj);
   }

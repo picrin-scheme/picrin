@@ -19,7 +19,6 @@
 #include "picrin/lib.h"
 #include "picrin/var.h"
 #include "picrin/data.h"
-#include "picrin/box.h"
 #include "picrin/dict.h"
 
 #if GC_DEBUG
@@ -381,6 +380,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (proc->env) {
       gc_mark_object(pic, (struct pic_object *)proc->env);
     }
+    if (proc->attr) {
+      gc_mark_object(pic, (struct pic_object *)proc->attr);
+    }
     if (pic_proc_irep_p(proc)) {
       gc_mark_object(pic, (struct pic_object *)proc->u.irep);
     }
@@ -458,24 +460,15 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_SC: {
-    struct pic_sc *sc = (struct pic_sc *)obj;
-    gc_mark(pic, sc->expr);
-    gc_mark_object(pic, (struct pic_object *)sc->senv);
-    break;
-  }
   case PIC_TT_LIB: {
     struct pic_lib *lib = (struct pic_lib *)obj;
     gc_mark(pic, lib->name);
-    gc_mark_object(pic, (struct pic_object *)lib->senv);
+    gc_mark_object(pic, (struct pic_object *)lib->env);
     break;
   }
   case PIC_TT_VAR: {
     struct pic_var *var = (struct pic_var *)obj;
-    gc_mark(pic, var->value);
-    if (var->conv) {
-      gc_mark_object(pic, (struct pic_object *)var->conv);
-    }
+    gc_mark(pic, var->stack);
     break;
   }
   case PIC_TT_IREP: {
@@ -498,11 +491,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     while (xh_next(&it)) {
       gc_mark(pic, xh_val(it.e, pic_value));
     }
-    break;
-  }
-  case PIC_TT_BOX: {
-    struct pic_box *box = (struct pic_box *)obj;
-    gc_mark(pic, box->value);
     break;
   }
   case PIC_TT_DICT: {
@@ -635,13 +623,10 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destroy(&senv->renames);
+    xh_destroy(&senv->map);
     break;
   }
   case PIC_TT_MACRO: {
-    break;
-  }
-  case PIC_TT_SC: {
     break;
   }
   case PIC_TT_LIB: {
@@ -663,9 +648,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     struct pic_data *data = (struct pic_data *)obj;
     data->type->dtor(pic, data->data);
     xh_destroy(&data->storage);
-    break;
-  }
-  case PIC_TT_BOX: {
     break;
   }
   case PIC_TT_DICT: {

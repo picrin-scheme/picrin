@@ -95,7 +95,6 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sUNQUOTE, "unquote");
   register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
   register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
-  register_core_symbol(pic, sDEFINE_MACRO, "define-macro");
   register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
   register_core_symbol(pic, sIMPORT, "import");
   register_core_symbol(pic, sEXPORT, "export");
@@ -114,6 +113,23 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sGT, ">");
   register_core_symbol(pic, sGE, ">=");
   register_core_symbol(pic, sNOT, "not");
+  pic_gc_arena_restore(pic, ai);
+
+#define register_renamed_symbol(pic,slot,name) do {              \
+    pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));     \
+  } while (0)
+
+  ai = pic_gc_arena_preserve(pic);
+  register_renamed_symbol(pic, rDEFINE, "define");
+  register_renamed_symbol(pic, rLAMBDA, "lambda");
+  register_renamed_symbol(pic, rIF, "if");
+  register_renamed_symbol(pic, rBEGIN, "begin");
+  register_renamed_symbol(pic, rSETBANG, "set!");
+  register_renamed_symbol(pic, rQUOTE, "quote");
+  register_renamed_symbol(pic, rDEFINE_SYNTAX, "define-syntax");
+  register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
+  register_renamed_symbol(pic, rIMPORT, "import");
+  register_renamed_symbol(pic, rEXPORT, "export");
   pic_gc_arena_restore(pic, ai);
 
   pic_init_core(pic);
