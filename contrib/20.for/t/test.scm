@@ -11,3 +11,11 @@
        (let ((n (in '(1 2 3)))
              (c (in '(a b c))))
          (yield (list n c)))))
+
+(test '((2 a) (2 b) (2 c))
+      (for
+       (let ((n (in '(1 2 3)))
+             (c (in '(a b c))))
+         (if (even? n)
+             (yield (list n c))
+             (null)))))
