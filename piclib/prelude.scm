@@ -668,31 +668,6 @@
 	   v)
 	(bytevector-u8-set! v i (car l))))))
 
-(define (bytevector-copy! to at from . opts)
-  (let* ((start (if (pair? opts) (car opts) 0))
-         (end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (bytevector-length from)))
-         (vs #f))
-    (if (eq? from to)
-        (begin
-          (set! vs (make-bytevector (- end start)))
-          (bytevector-copy! vs 0 from start end)
-          (bytevector-copy! to at vs))
-        (do ((i at (+ i 1))
-             (j start (+ j 1)))
-            ((= j end))
-          (bytevector-u8-set! to i (bytevector-u8-ref from j))))))
-
-(define (bytevector-copy v . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (bytevector-length v))))
-    (let ((res (make-bytevector (- end start))))
-      (bytevector-copy! res 0 v start end)
-      res)))
-
 (define (bytevector-append . vs)
   (define (bytevector-append-2-inv w v)
     (let ((res (make-bytevector (+ (bytevector-length v) (bytevector-length w)))))
@@ -726,8 +701,8 @@
     (list->bytevector (map char->integer (string->list s start end)))))
 
 (export bytevector
-        bytevector-copy!
-        bytevector-copy
+        bytevector->list
+        list->bytevector
         bytevector-append
         utf8->string
         string->utf8)

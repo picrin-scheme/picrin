@@ -100,6 +100,60 @@ pic_blob_bytevector_u8_set(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_blob_bytevector_copy_i(pic_state *pic)
+{
+  pic_blob *to, *from;
+  int n, at, start, end;
+
+  n = pic_get_args(pic, "bib|ii", &to, &at, &from, &start, &end);
+
+  switch (n) {
+  case 3:
+    start = 0;
+  case 4:
+    end = from->len;
+  }
+
+  if (to == from && (start <= at && at < end)) {
+    /* copy in reversed order */
+    at += end - start;
+    while (start < end) {
+      to->data[--at] = from->data[--end];
+    }
+    return pic_none_value();
+  }
+
+  while (start < end) {
+    to->data[at++] = from->data[start++];
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+pic_blob_bytevector_copy(pic_state *pic)
+{
+  pic_blob *from, *to;
+  int n, start, end, i = 0;
+
+  n = pic_get_args(pic, "b|ii", &from, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = from->len;
+  }
+
+  to = pic_blob_new(pic, end - start);
+  while (start < end) {
+    to->data[i++] = from->data[start++];
+  }
+
+  return pic_obj_value(to);
+}
+
 void
 pic_init_blob(pic_state *pic)
 {
@@ -108,4 +162,6 @@ pic_init_blob(pic_state *pic)
   pic_defun(pic, "bytevector-length", pic_blob_bytevector_length);
   pic_defun(pic, "bytevector-u8-ref", pic_blob_bytevector_u8_ref);
   pic_defun(pic, "bytevector-u8-set!", pic_blob_bytevector_u8_set);
+  pic_defun(pic, "bytevector-copy!", pic_blob_bytevector_copy_i);
+  pic_defun(pic, "bytevector-copy", pic_blob_bytevector_copy);
 }
