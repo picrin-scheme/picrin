@@ -589,14 +589,6 @@
       s
       (fold f (f (car xs) s) (cdr xs))))
 
-;;; 6.3 Booleans
-
-(define (boolean=? . objs)
-  (or (every (lambda (x) (eq? x #t)) objs)
-      (every (lambda (x) (eq? x #f)) objs)))
-
-(export boolean=?)
-
 ;;; 6.4 Pairs and lists
 
 (define (member obj list . opts)

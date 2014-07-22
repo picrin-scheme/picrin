@@ -169,6 +169,25 @@ pic_bool_boolean_p(pic_state *pic)
   return (pic_true_p(v) || pic_false_p(v)) ? pic_true_value() : pic_false_value();
 }
 
+static pic_value
+pic_bool_boolean_eq_p(pic_state *pic)
+{
+  size_t argc, i;
+  pic_value *argv;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  for (i = 0; i < argc; ++i) {
+    if (! (pic_true_p(argv[i]) || pic_false_p(argv[i]))) {
+      return pic_false_value();
+    }
+    if (! pic_eq_p(argv[i], argv[0])) {
+      return pic_false_value();
+    }
+  }
+  return pic_true_value();
+}
+
 void
 pic_init_bool(pic_state *pic)
 {
@@ -178,4 +197,5 @@ pic_init_bool(pic_state *pic)
 
   pic_defun(pic, "not", pic_bool_not);
   pic_defun(pic, "boolean?", pic_bool_boolean_p);
+  pic_defun(pic, "boolean=?", pic_bool_boolean_eq_p);
 }
