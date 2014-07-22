@@ -651,14 +651,6 @@
 	   v)
 	(bytevector-u8-set! v i (car l))))))
 
-(define (bytevector-append . vs)
-  (define (bytevector-append-2-inv w v)
-    (let ((res (make-bytevector (+ (bytevector-length v) (bytevector-length w)))))
-      (bytevector-copy! res 0 v)
-      (bytevector-copy! res (bytevector-length v) w)
-      res))
-  (fold bytevector-append-2-inv #u8() vs))
-
 (define (bytevector->list v start end)
     (do ((i start (+ i 1))
 	 (res '()))
@@ -686,7 +678,6 @@
 (export bytevector
         bytevector->list
         list->bytevector
-        bytevector-append
         utf8->string
         string->utf8)
 

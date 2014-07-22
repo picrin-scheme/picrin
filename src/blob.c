@@ -154,6 +154,34 @@ pic_blob_bytevector_copy(pic_state *pic)
   return pic_obj_value(to);
 }
 
+static pic_value
+pic_blob_bytevector_append(pic_state *pic)
+{
+  size_t argc, i, j, len;
+  pic_value *argv;
+  pic_blob *blob;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  len = 0;
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], blob);
+    len += pic_blob_ptr(argv[i])->len;
+  }
+
+  blob = pic_blob_new(pic, len);
+
+  len = 0;
+  for (i = 0; i < argc; ++i) {
+    for (j = 0; j < pic_blob_ptr(argv[i])->len; ++j) {
+      blob->data[len + j] = pic_blob_ptr(argv[i])->data[j];
+    }
+    len += pic_blob_ptr(argv[i])->len;
+  }
+
+  return pic_obj_value(blob);
+}
+
 void
 pic_init_blob(pic_state *pic)
 {
@@ -164,4 +192,5 @@ pic_init_blob(pic_state *pic)
   pic_defun(pic, "bytevector-u8-set!", pic_blob_bytevector_u8_set);
   pic_defun(pic, "bytevector-copy!", pic_blob_bytevector_copy_i);
   pic_defun(pic, "bytevector-copy", pic_blob_bytevector_copy);
+  pic_defun(pic, "bytevector-append", pic_blob_bytevector_append);
 }
