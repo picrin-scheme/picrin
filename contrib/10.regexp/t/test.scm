@@ -7,6 +7,6 @@
  (test-values (values '("abcd" "b") '(5 6)) (regexp-match (regexp "a(b)cd") "abdacabcd"))
 (test '("a" "b" "c" "d") (regexp-split (regexp ",") "a,b,c,d"))
 (test '("a" "b" "c" "d") (regexp-split (regexp "\\.+") "a.b....c.....d"))
-(test "a b c d" (regexp-replace (regexp ",") " " "a,b,c,d"))
-(test "newline tab spase " (regexp-replace (regexp "\\s") " " "newline
-tab	space "))
+(test "a b c d" (regexp-replace (regexp ",") "a,b,c,d" " "))
+(test "newline tab space " (regexp-replace (regexp "\\s") "newline
+tab	space " " "))
