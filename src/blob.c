@@ -25,12 +25,12 @@ pic_strdup(pic_state *pic, const char *s)
 }
 
 struct pic_blob *
-pic_blob_new(pic_state *pic, char *dat, size_t len)
+pic_blob_new(pic_state *pic, size_t len)
 {
   struct pic_blob *bv;
 
   bv = (struct pic_blob *)pic_obj_alloc(pic, sizeof(struct pic_blob), PIC_TT_BLOB);
-  bv->data = pic_strndup(pic, dat, len);
+  bv->data = pic_alloc(pic, len);
   bv->len = len;
   return bv;
 }
@@ -48,20 +48,20 @@ pic_blob_bytevector_p(pic_state *pic)
 static pic_value
 pic_blob_make_bytevector(pic_state *pic)
 {
+  pic_blob *blob;
   int k, b = 0, i;
-  char *dat;
 
   pic_get_args(pic, "i|i", &k, &b);
 
   if (b < 0 || b > 255)
     pic_error(pic, "byte out of range");
 
-  dat = pic_alloc(pic, k);
+  blob = pic_blob_new(pic, k);
   for (i = 0; i < k; ++i) {
-    dat[i] = b;
+    blob->data[i] = b;
   }
 
-  return pic_obj_value(pic_blob_new(pic, dat, k));
+  return pic_obj_value(blob);
 }
 
 static pic_value

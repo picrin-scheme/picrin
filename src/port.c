@@ -354,8 +354,8 @@ static pic_value
 pic_port_get_output_bytevector(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
+  pic_blob *blob;
   long endpos;
-  char *buf;
 
   pic_get_args(pic, "|p", &port);
 
@@ -367,10 +367,10 @@ pic_port_get_output_bytevector(pic_state *pic)
   xrewind(port->file);
 
   /* copy to buf */
-  buf = (char *)pic_alloc(pic, endpos);
-  xfread(buf, 1, endpos, port->file);
+  blob = pic_blob_new(pic, endpos);
+  xfread(blob->data, 1, endpos, port->file);
 
-  return pic_obj_value(pic_blob_new(pic, buf, endpos));
+  return pic_obj_value(blob);
 }
 
 static pic_value
@@ -524,28 +524,32 @@ pic_port_byte_ready_p(pic_state *pic)
 
 
 static pic_value
-pic_port_read_blob(pic_state *pic){
+pic_port_read_blob(pic_state *pic)
+{
   struct pic_port *port = pic_stdin(pic);
+  pic_blob *blob;
   int k, i;
-  char *buf;
 
   pic_get_args(pic, "i|p", &k,  &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector");
 
-  buf = pic_calloc(pic, k, sizeof(char));
-  i = xfread(buf, sizeof(char), k, port->file);
+  blob = pic_blob_new(pic, k);
+
+  i = xfread(blob->data, sizeof(char), k, port->file);
   if ( i == 0 ) {
     return pic_eof_object();
   }
   else {
-    pic_realloc(pic, buf, i);
-    return pic_obj_value(pic_blob_new(pic, buf, i));
+    pic_realloc(pic, blob->data, i);
+    blob->len = i;
+    return pic_obj_value(blob);
   }
 }
 
 static pic_value
-pic_port_read_blob_ip(pic_state *pic){
+pic_port_read_blob_ip(pic_state *pic)
+{
   struct pic_port *port;
   struct pic_blob *bv;
   int i, n, start, end, len;
@@ -568,7 +572,7 @@ pic_port_read_blob_ip(pic_state *pic){
   i = xfread(buf, sizeof(char), len, port->file);
   memcpy(bv->data + start, buf, i);
   pic_free(pic, buf);
-  
+
   if ( i == 0) {
     return pic_eof_object();
   }
