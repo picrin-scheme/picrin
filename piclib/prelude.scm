@@ -260,12 +260,34 @@
      (lambda (form r c)
        `(,(r 'letrec-syntax) ,@(cdr form)))))
 
+  (import (scheme read) (scheme file))
+
+  (define-syntax include
+    (letrec ((read-file
+              (lambda (filename)
+                (let ((port (open-input-file filename)))
+                  (dynamic-wind
+                      (lambda () #f)
+                      (lambda ()
+                        (let loop ((expr (read port)) (exprs '()))
+                          (if (eof-object? expr)
+                              (reverse exprs)
+                              (loop (read port) (cons expr exprs)))))
+                      (lambda ()
+                        (close-port port)))))))
+      (er-macro-transformer
+       (lambda (form rename compare)
+         (let ((filenames (cdr form)))
+           (let ((exprs (apply append (map read-file filenames))))
+             `(,(rename 'begin) ,@exprs)))))))
+
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
           and or
           cond case else =>
           do when unless
           let-syntax letrec-syntax
+          include
           _ ... syntax-error))
 
 (import (picrin core-syntax))
@@ -276,6 +298,7 @@
         cond case else =>
         do when unless
         let-syntax letrec-syntax
+        include
         _ ... syntax-error)
 
 ;;; multiple value
@@ -736,28 +759,6 @@
       (lambda () (close-port port))))
 
 (export call-with-port)
-
-;;; include syntax
-
-(import (scheme read)
-        (scheme file))
-
-(define (read-many filename)
-  (call-with-port (open-input-file filename)
-    (lambda (port)
-      (let loop ((expr (read port)) (exprs '()))
-        (if (eof-object? expr)
-            (reverse exprs)
-            (loop (read port) (cons expr exprs)))))))
-
-(define-syntax include
-  (er-macro-transformer
-   (lambda (form rename compare)
-     (let ((filenames (cdr form)))
-       (let ((exprs (apply append (map read-many filenames))))
-         `(,(rename 'begin) ,@exprs))))))
-
-(export include)
 
 ;;; syntax-rules
 (define-library (picrin syntax-rules)
