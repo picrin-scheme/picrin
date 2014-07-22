@@ -91,22 +91,6 @@
                        (r 'it)
                        (cons (r 'or) (cdr exprs))))))))))
 
-  (define (list->vector list)
-    (let ((vector (make-vector (length list))))
-      (let loop ((list list) (i 0))
-        (if (null? list)
-            vector
-            (begin
-              (vector-set! vector i (car list))
-              (loop (cdr list) (+ i 1)))))))
-
-  (define (vector->list vector)
-    (let ((length (vector-length vector)))
-      (let loop ((list '()) (i 0))
-        (if (= i length)
-            (reverse list)
-            (loop (cons (vector-ref vector i) list) (+ i 1))))))
-
   (define-syntax quasiquote
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -605,34 +589,6 @@
       s
       (fold f (f (car xs) s) (cdr xs))))
 
-;;; 6.2. Numbers
-
-(define (floor/ n m)
-  (values (floor-quotient n m)
-	  (floor-remainder n m)))
-
-(define (truncate/ n m)
-  (values (truncate-quotient n m)
-	  (truncate-remainder n m)))
-
-; (import (only (scheme inexact) sqrt))
-(import (scheme inexact))
-
-(define (exact-integer-sqrt k)
-  (let ((n (exact (floor (sqrt k)))))
-    (values n (- k (square n)))))
-
-(export floor/ truncate/
-        exact-integer-sqrt)
-
-;;; 6.3 Booleans
-
-(define (boolean=? . objs)
-  (or (every (lambda (x) (eq? x #t)) objs)
-      (every (lambda (x) (eq? x #f)) objs)))
-
-(export boolean=?)
-
 ;;; 6.4 Pairs and lists
 
 (define (member obj list . opts)
@@ -652,19 +608,6 @@
 	    (assoc obj (cdr list) compare)))))
 
 (export member assoc)
-
-;;; 6.5. Symbols
-
-(define (symbol=? . objs)
-  (let ((sym (car objs)))
-    (if (symbol? sym)
-	(every (lambda (x)
-		 (and (symbol? x)
-		      (eq? x sym)))
-	       (cdr objs))
-	#f)))
-
-(export symbol=?)
 
 ;;; 6.6 Characters
 
@@ -714,52 +657,7 @@
 ;;; 6.8. Vector
 
 (define (vector . objs)
-  (let ((len (length objs)))
-    (let ((v (make-vector len)))
-      (do ((i 0 (+ i 1))
-	   (l objs (cdr l)))
-	  ((= i len)
-	   v)
-	(vector-set! v i (car l))))))
-
-(define (vector->list vector . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length vector))))
-    (do ((i start (+ i 1))
-	 (res '()))
-	((= i end)
-	 (reverse res))
-      (set! res (cons (vector-ref vector i) res)))))
-
-(define (list->vector list)
-  (apply vector list))
-
-(define (vector-copy! to at from . opts)
-  (let* ((start (if (pair? opts) (car opts) 0))
-         (end (if (>= (length opts) 2)
-                  (cadr opts)
-                  (vector-length from)))
-         (vs #f))
-    (if (eq? from to)
-        (begin
-          (set! vs (make-vector (- end start)))
-          (vector-copy! vs 0 from start end)
-          (vector-copy! to at vs))
-        (do ((i at (+ i 1))
-             (j start (+ j 1)))
-            ((= j end))
-          (vector-set! to i (vector-ref from j))))))
-
-(define (vector-copy v . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length v))))
-    (let ((res (make-vector (- end start))))
-      (vector-copy! res 0 v start end)
-      res)))
+  (list->vector objs))
 
 (define (vector-append . vs)
   (define (vector-append-2-inv w v)
@@ -769,24 +667,13 @@
       res))
   (fold vector-append-2-inv #() vs))
 
-(define (vector-fill! v fill . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length v))))
-    (do ((i start (+ i 1)))
-	((= i end)
-	 #f)
-      (vector-set! v i fill))))
-
 (define (vector->string . args)
   (list->string (apply vector->list args)))
 
 (define (string->vector . args)
   (list->vector (apply string->list args)))
 
-(export vector vector->list list->vector
-        vector-copy! vector-copy
+(export vector vector-copy! vector-copy
         vector-append vector-fill!
         vector->string string->vector)
 

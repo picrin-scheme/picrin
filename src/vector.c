@@ -119,6 +119,125 @@ pic_vec_vector_set(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_vec_vector_copy_i(pic_state *pic)
+{
+  pic_vec *to, *from;
+  int n, at, start, end;
+
+  n = pic_get_args(pic, "viv|ii", &to, &at, &from, &start, &end);
+
+  switch (n) {
+  case 3:
+    start = 0;
+  case 4:
+    end = from->len;
+  }
+
+  if (to == from && (start <= at && at < end)) {
+    /* copy in reversed order */
+    at += end - start;
+    while (start < end) {
+      to->data[--at] = from->data[--end];
+    }
+    return pic_none_value();
+  }
+
+  while (start < end) {
+    to->data[at++] = from->data[start++];
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+pic_vec_vector_copy(pic_state *pic)
+{
+  pic_vec *vec, *to;
+  int n, start, end, i = 0;
+
+  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = vec->len;
+  }
+
+  to = pic_vec_new(pic, end - start);
+  while (start < end) {
+    to->data[i++] = vec->data[start++];
+  }
+
+  return pic_obj_value(to);
+}
+
+static pic_value
+pic_vec_vector_fill_i(pic_state *pic)
+{
+  pic_vec *vec;
+  pic_value obj;
+  int n, start, end;
+
+  n = pic_get_args(pic, "vo|ii", &vec, &obj, &start, &end);
+
+  switch (n) {
+  case 2:
+    start = 0;
+  case 3:
+    end = vec->len;
+  }
+
+  while (start < end) {
+    vec->data[start++] = obj;
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+pic_vec_list_to_vector(pic_state *pic)
+{
+  struct pic_vector *vec;
+  pic_value list, e, *data;
+
+  pic_get_args(pic, "o", &list);
+
+  vec = pic_vec_new(pic, pic_length(pic, list));
+
+  data = vec->data;
+
+  pic_for_each (e, list) {
+    *data++ = e;
+  }
+  return pic_obj_value(vec);
+}
+
+static pic_value
+pic_vec_vector_to_list(pic_state *pic)
+{
+  struct pic_vector *vec;
+  pic_value list;
+  int n, start, end, i;
+
+  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = vec->len;
+  }
+
+  list = pic_nil_value();
+
+  for (i = start; i < end; ++i) {
+    pic_push(pic, vec->data[i], list);
+  }
+  return pic_reverse(pic, list);
+}
+
 void
 pic_init_vector(pic_state *pic)
 {
@@ -127,4 +246,9 @@ pic_init_vector(pic_state *pic)
   pic_defun(pic, "vector-length", pic_vec_vector_length);
   pic_defun(pic, "vector-ref", pic_vec_vector_ref);
   pic_defun(pic, "vector-set!", pic_vec_vector_set);
+  pic_defun(pic, "vector-copy!", pic_vec_vector_copy_i);
+  pic_defun(pic, "vector-copy", pic_vec_vector_copy);
+  pic_defun(pic, "vector-fill!", pic_vec_vector_fill_i);
+  pic_defun(pic, "list->vector", pic_vec_list_to_vector);
+  pic_defun(pic, "vector->list", pic_vec_vector_to_list);
 }

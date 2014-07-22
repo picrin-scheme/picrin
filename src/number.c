@@ -8,6 +8,7 @@
 
 #include "picrin.h"
 #include "picrin/string.h"
+#include "picrin/cont.h"
 
 static int
 gcd(int a, int b)
@@ -382,6 +383,26 @@ pic_number_floor_remainder(pic_state *pic)
 }
 
 static pic_value
+pic_number_floor2(pic_state *pic)
+{
+  int i, j;
+  bool e1, e2;
+  double q, r;
+
+  pic_get_args(pic, "II", &i, &e1, &j, &e2);
+
+  q = floor((double)i/j);
+  r = i - j * q;
+
+  if (e1 && e2) {
+    return pic_values2(pic, pic_int_value(q), pic_int_value(r));
+  }
+  else {
+    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
+  }
+}
+
+static pic_value
 pic_number_trunc_quotient(pic_state *pic)
 {
   int i,j;
@@ -411,6 +432,26 @@ pic_number_trunc_remainder(pic_state *pic)
   }
   else {
     return pic_float_value(i - j * q);
+  }
+}
+
+static pic_value
+pic_number_trunc2(pic_state *pic)
+{
+  int i, j;
+  bool e1, e2;
+  double q, r;
+
+  pic_get_args(pic, "II", &i, &e1, &j, &e2);
+
+  q = trunc((double)i/j);
+  r = i - j * q;
+
+  if (e1 && e2) {
+    return pic_values2(pic, pic_int_value(q), pic_int_value(r));
+  }
+  else {
+    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
   }
 }
 
@@ -621,6 +662,19 @@ pic_number_atan(pic_state *pic)
 }
 
 static pic_value
+pic_number_exact_integer_sqrt(pic_state *pic)
+{
+  int k, n, m;
+
+  pic_get_args(pic, "i", &k);
+
+  n = sqrt(k);
+  m = k - n * n;
+
+  return pic_values2(pic, pic_int_value(n), pic_int_value(m));
+}
+
+static pic_value
 pic_number_square(pic_state *pic)
 {
   double f;
@@ -780,8 +834,10 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "abs", pic_number_abs);
   pic_defun(pic, "floor-quotient", pic_number_floor_quotient);
   pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
+  pic_defun(pic, "floor/", pic_number_floor2);
   pic_defun(pic, "truncate-quotient", pic_number_trunc_quotient);
   pic_defun(pic, "truncate-remainder", pic_number_trunc_remainder);
+  pic_defun(pic, "truncate/", pic_number_trunc2);
   pic_defun(pic, "modulo", pic_number_floor_remainder);
   pic_defun(pic, "quotient", pic_number_trunc_quotient);
   pic_defun(pic, "remainder", pic_number_trunc_remainder);
@@ -797,6 +853,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "round", pic_number_round);
   pic_gc_arena_restore(pic, ai);
 
+  pic_defun(pic, "exact-integer-sqrt", pic_number_exact_integer_sqrt);
   pic_defun(pic, "square", pic_number_square);
   pic_defun(pic, "expt", pic_number_expt);
   pic_gc_arena_restore(pic, ai);
