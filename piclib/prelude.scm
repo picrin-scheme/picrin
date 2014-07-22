@@ -589,26 +589,6 @@
       s
       (fold f (f (car xs) s) (cdr xs))))
 
-;;; 6.4 Pairs and lists
-
-(define (member obj list . opts)
-  (let ((compare (if (null? opts) equal? (car opts))))
-    (if (null? list)
-	#f
-	(if (compare obj (car list))
-	    list
-	    (member obj (cdr list) compare)))))
-
-(define (assoc obj list . opts)
-  (let ((compare (if (null? opts) equal? (car opts))))
-    (if (null? list)
-	#f
-	(if (compare obj (caar list))
-	    (car list)
-	    (assoc obj (cdr list) compare)))))
-
-(export member assoc)
-
 ;;; 6.6 Characters
 
 (define-macro (define-char-transitive-predicate name op)

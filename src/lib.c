@@ -54,7 +54,7 @@ pic_find_library(pic_state *pic, pic_value spec)
 {
   pic_value v;
 
-  v = pic_assoc(pic, spec, pic->lib_tbl);
+  v = pic_assoc(pic, spec, pic->lib_tbl, NULL);
   if (pic_false_p(v)) {
     return NULL;
   }
