@@ -6,30 +6,6 @@
 #include "picrin/var.h"
 #include "picrin/pair.h"
 
-static pic_value
-var_ref(pic_state *pic, struct pic_var *var)
-{
-  return pic_car(pic, var->stack);
-}
-
-static void
-var_set(pic_state *pic, struct pic_var *var, pic_value value)
-{
-  pic_set_car(pic, var->stack, value);
-}
-
-static void
-var_push(pic_state *pic, struct pic_var *var, pic_value value)
-{
-  var->stack = pic_cons(pic, value, var->stack);
-}
-
-static void
-var_pop(pic_state *pic, struct pic_var *var)
-{
-  var->stack = pic_cdr(pic, var->stack);
-}
-
 struct pic_var *
 pic_var_new(pic_state *pic, pic_value init)
 {
@@ -38,69 +14,33 @@ pic_var_new(pic_state *pic, pic_value init)
   var = (struct pic_var *)pic_obj_alloc(pic, sizeof(struct pic_var), PIC_TT_VAR);
   var->stack = pic_nil_value();
 
-  var_push(pic, var, init);
+  pic_var_push(pic, var, init);
 
   return var;
 }
 
 pic_value
-pic_var_ref(pic_state *pic, const char *name)
+pic_var_ref(pic_state *pic, struct pic_var *var)
 {
-  pic_value v;
-  struct pic_var *var;
-
-  v = pic_ref(pic, name);
-
-  pic_assert_type(pic, v, var);
-
-  var = pic_var_ptr(v);
-
-  return var_ref(pic, var);
+  return pic_car(pic, var->stack);
 }
 
 void
-pic_var_set(pic_state *pic, const char *name, pic_value value)
+pic_var_set(pic_state *pic, struct pic_var *var, pic_value value)
 {
-  pic_value v;
-  struct pic_var *var;
-
-  v = pic_ref(pic, name);
-
-  pic_assert_type(pic, v, var);
-
-  var = pic_var_ptr(v);
-
-  var_set(pic, var, value);
+  pic_set_car(pic, var->stack, value);
 }
 
 void
-pic_var_push(pic_state *pic, const char *name, pic_value value)
+pic_var_push(pic_state *pic, struct pic_var *var, pic_value value)
 {
-  pic_value v;
-  struct pic_var *var;
-
-  v = pic_ref(pic, name);
-
-  pic_assert_type(pic, v, var);
-
-  var = pic_var_ptr(v);
-
-  var_push(pic, var, value);
+  var->stack = pic_cons(pic, value, var->stack);
 }
 
 void
-pic_var_pop(pic_state *pic, const char *name)
+pic_var_pop(pic_state *pic, struct pic_var *var)
 {
-  pic_value v;
-  struct pic_var *var;
-
-  v = pic_ref(pic, name);
-
-  pic_assert_type(pic, v, var);
-
-  var = pic_var_ptr(v);
-
-  var_pop(pic, var);
+  var->stack = pic_cdr(pic, var->stack);
 }
 
 static pic_value
@@ -125,7 +65,7 @@ pic_var_var_ref(pic_state *pic)
 
   var = pic_var_ptr(v);
 
-  return var_ref(pic, var);
+  return pic_var_ref(pic, var);
 }
 
 static pic_value
@@ -139,7 +79,7 @@ pic_var_var_set(pic_state *pic)
   pic_assert_type(pic, v, var);
 
   var = pic_var_ptr(v);
-  var_set(pic, var, val);
+  pic_var_set(pic, var, val);
   return pic_none_value();
 }
 
@@ -154,7 +94,7 @@ pic_var_var_push(pic_state *pic)
   pic_assert_type(pic, v, var);
 
   var = pic_var_ptr(v);
-  var_push(pic, var, val);
+  pic_var_push(pic, var, val);
   return pic_none_value();
 }
 
@@ -169,7 +109,7 @@ pic_var_var_pop(pic_state *pic)
   pic_assert_type(pic, v, var);
 
   var = pic_var_ptr(v);
-  var_pop(pic, var);
+  pic_var_pop(pic, var);
   return pic_none_value();
 }
 
