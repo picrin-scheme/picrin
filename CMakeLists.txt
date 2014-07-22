@@ -40,10 +40,13 @@ include(tools/CMakeLists.txt)
 add_custom_target(run bin/picrin DEPENDS repl)
 
 # $ make test
-add_custom_target(test DEPENDS test-r7rs)
+add_custom_target(test DEPENDS test-r7rs test-contribs)
 
 # $ make test-r7rs
 add_custom_target(test-r7rs bin/picrin ${PROJECT_SOURCE_DIR}/t/r7rs-tests.scm DEPENDS repl)
+
+# $ make test-contribs
+add_custom_target(test-contribs DEPENDS ${CONTRIB_TESTS})
 
 # $ make tak
 add_custom_target(tak bin/picrin ${PROJECT_SOURCE_DIR}/etc/tak.scm DEPENDS repl)
