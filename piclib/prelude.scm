@@ -639,23 +639,13 @@
 (define (vector . objs)
   (list->vector objs))
 
-(define (vector-append . vs)
-  (define (vector-append-2-inv w v)
-    (let ((res (make-vector (+ (vector-length v) (vector-length w)))))
-      (vector-copy! res 0 v)
-      (vector-copy! res (vector-length v) w)
-      res))
-  (fold vector-append-2-inv #() vs))
-
 (define (vector->string . args)
   (list->string (apply vector->list args)))
 
 (define (string->vector . args)
   (list->vector (apply string->list args)))
 
-(export vector vector-copy! vector-copy
-        vector-append vector-fill!
-        vector->string string->vector)
+(export vector vector->string string->vector)
 
 ;;; 6.9 bytevector
 

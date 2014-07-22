@@ -174,6 +174,34 @@ pic_vec_vector_copy(pic_state *pic)
 }
 
 static pic_value
+pic_vec_vector_append(pic_state *pic)
+{
+  size_t argc, i, j, len;
+  pic_value *argv;
+  pic_vec *vec;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  len = 0;
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], vec);
+    len += pic_vec_ptr(argv[i])->len;
+  }
+
+  vec = pic_vec_new(pic, len);
+
+  len = 0;
+  for (i = 0; i < argc; ++i) {
+    for (j = 0; j < pic_vec_ptr(argv[i])->len; ++j) {
+      vec->data[len + j] = pic_vec_ptr(argv[i])->data[j];
+    }
+    len += pic_vec_ptr(argv[i])->len;
+  }
+
+  return pic_obj_value(vec);
+}
+
+static pic_value
 pic_vec_vector_fill_i(pic_state *pic)
 {
   pic_vec *vec;
@@ -248,6 +276,7 @@ pic_init_vector(pic_state *pic)
   pic_defun(pic, "vector-set!", pic_vec_vector_set);
   pic_defun(pic, "vector-copy!", pic_vec_vector_copy_i);
   pic_defun(pic, "vector-copy", pic_vec_vector_copy);
+  pic_defun(pic, "vector-append", pic_vec_vector_append);
   pic_defun(pic, "vector-fill!", pic_vec_vector_fill_i);
   pic_defun(pic, "list->vector", pic_vec_list_to_vector);
   pic_defun(pic, "vector->list", pic_vec_vector_to_list);
