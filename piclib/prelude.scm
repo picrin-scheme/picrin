@@ -591,14 +591,6 @@
 
 ;;; 6.2. Numbers
 
-(define (floor/ n m)
-  (values (floor-quotient n m)
-	  (floor-remainder n m)))
-
-(define (truncate/ n m)
-  (values (truncate-quotient n m)
-	  (truncate-remainder n m)))
-
 ; (import (only (scheme inexact) sqrt))
 (import (scheme inexact))
 
