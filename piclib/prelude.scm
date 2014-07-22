@@ -299,13 +299,6 @@
      (lambda (form r c)
        `(,(r 'let*-values) ,@(cdr form)))))
 
-  (define (vector-map proc vect)
-    (do ((i 0 (+ i 1))
-         (u (make-vector (vector-length vect))))
-        ((= i (vector-length vect))
-         u)
-      (vector-set! u i (proc (vector-ref vect i)))))
-
   (define (walk proc expr)
     (cond
      ((null? expr)
@@ -314,7 +307,7 @@
       (cons (proc (car expr))
             (walk proc (cdr expr))))
      ((vector? expr)
-      (vector-map proc expr))
+      (list->vector (map proc (vector->list expr))))
      (else
       (proc expr))))
 

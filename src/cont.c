@@ -210,6 +210,37 @@ walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
   }
 }
 
+static pic_value
+pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
+{
+  pic_block *here;
+  pic_value val;
+
+  if (in != NULL) {
+    pic_apply0(pic, in);        /* enter */
+  }
+
+  here = pic->blk;
+  pic->blk = (pic_block *)pic_alloc(pic, sizeof(pic_block));
+  pic->blk->prev = here;
+  pic->blk->depth = here->depth + 1;
+  pic->blk->in = in;
+  pic->blk->out = out;
+  pic->blk->refcnt = 1;
+  PIC_BLK_INCREF(pic, here);
+
+  val = pic_apply0(pic, thunk);
+
+  PIC_BLK_DECREF(pic, pic->blk);
+  pic->blk = here;
+
+  if (out != NULL) {
+    pic_apply0(pic, out);       /* exit */
+  }
+
+  return val;
+}
+
 noreturn static pic_value
 cont_call(pic_state *pic)
 {
@@ -286,33 +317,10 @@ static pic_value
 pic_cont_dynamic_wind(pic_state *pic)
 {
   struct pic_proc *in, *thunk, *out;
-  pic_value v;
 
   pic_get_args(pic, "lll", &in, &thunk, &out);
 
-  /* enter */
-  pic_apply0(pic, in);
-  {
-    pic_block *here;
-
-    here = pic->blk;
-    pic->blk = (pic_block *)pic_alloc(pic, sizeof(pic_block));
-    pic->blk->prev = here;
-    pic->blk->depth = here->depth + 1;
-    pic->blk->in = in;
-    pic->blk->out = out;
-    pic->blk->refcnt = 1;
-    PIC_BLK_INCREF(pic, here);
-
-    v = pic_apply0(pic, thunk);
-
-    PIC_BLK_DECREF(pic, pic->blk);
-    pic->blk = here;
-  }
-  /* exit */
-  pic_apply0(pic, out);
-
-  return v;
+  return pic_dynamic_wind(pic, in, thunk, out);
 }
 
 static pic_value
