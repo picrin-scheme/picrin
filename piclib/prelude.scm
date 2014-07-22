@@ -609,19 +609,6 @@
 
 (export member assoc)
 
-;;; 6.5. Symbols
-
-(define (symbol=? . objs)
-  (let ((sym (car objs)))
-    (if (symbol? sym)
-	(every (lambda (x)
-		 (and (symbol? x)
-		      (eq? x sym)))
-	       (cdr objs))
-	#f)))
-
-(export symbol=?)
-
 ;;; 6.6 Characters
 
 (define-macro (define-char-transitive-predicate name op)
