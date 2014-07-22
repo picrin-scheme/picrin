@@ -69,9 +69,7 @@
   (define-syntax test-values
     (syntax-rules ()
       ((_ expect expr)
-       (test-values #f expect expr))
-      ((_ name expect expr)
-       (test name (call-with-values (lambda () expect) (lambda results results))
+       (test (call-with-values (lambda () expect) (lambda results results))
              (call-with-values (lambda () expr) (lambda results results))))))
 
 
