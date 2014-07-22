@@ -51,10 +51,11 @@ pic_value pic_append(pic_state *, pic_value, pic_value);
 
 pic_value pic_memq(pic_state *, pic_value key, pic_value list);
 pic_value pic_memv(pic_state *, pic_value key, pic_value list);
+pic_value pic_member(pic_state *, pic_value key, pic_value list, struct pic_proc * /* = NULL */);
 
 pic_value pic_assq(pic_state *, pic_value key, pic_value assoc);
 pic_value pic_assv(pic_state *, pic_value key, pic_value assoc);
-pic_value pic_assoc(pic_state *, pic_value key, pic_value assoc);
+pic_value pic_assoc(pic_state *, pic_value key, pic_value assoc, struct pic_proc * /* = NULL */);
 
 pic_value pic_acons(pic_state *, pic_value key, pic_value val, pic_value assoc);
 

@@ -78,6 +78,25 @@ pic_symbol_symbol_p(pic_state *pic)
 }
 
 static pic_value
+pic_symbol_symbol_eq_p(pic_state *pic)
+{
+  size_t argc, i;
+  pic_value *argv;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  for (i = 0; i < argc; ++i) {
+    if (! pic_sym_p(argv[i])) {
+      return pic_false_value();
+    }
+    if (! pic_eq_p(argv[i], argv[0])) {
+      return pic_false_value();
+    }
+  }
+  return pic_true_value();
+}
+
+static pic_value
 pic_symbol_symbol_to_string(pic_state *pic)
 {
   pic_value v;
@@ -109,6 +128,7 @@ void
 pic_init_symbol(pic_state *pic)
 {
   pic_defun(pic, "symbol?", pic_symbol_symbol_p);
+  pic_defun(pic, "symbol=?", pic_symbol_symbol_eq_p);
   pic_defun(pic, "symbol->string", pic_symbol_symbol_to_string);
   pic_defun(pic, "string->symbol", pic_symbol_string_to_symbol);
 }

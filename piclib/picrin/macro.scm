@@ -6,24 +6,6 @@
 
   ;; assumes no derived expressions are provided yet
 
-  (define (list->vector list)
-    (define vector (make-vector (length list)))
-    (define (go list i)
-      (if (null? list)
-          vector
-          (begin
-            (vector-set! vector i (car list))
-            (go (cdr list) (+ i 1)))))
-    (go list 0))
-
-  (define (vector->list vector)
-    (define (go i)
-      (if (= i (vector-length vector))
-          '()
-          (cons (vector-ref vector i)
-                (go (+ i 1)))))
-    (go 0))
-
   (define (walk proc expr)
     "walk on symbols"
     (if (null? expr)

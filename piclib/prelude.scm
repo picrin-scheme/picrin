@@ -91,22 +91,6 @@
                        (r 'it)
                        (cons (r 'or) (cdr exprs))))))))))
 
-  (define (list->vector list)
-    (let ((vector (make-vector (length list))))
-      (let loop ((list list) (i 0))
-        (if (null? list)
-            vector
-            (begin
-              (vector-set! vector i (car list))
-              (loop (cdr list) (+ i 1)))))))
-
-  (define (vector->list vector)
-    (let ((length (vector-length vector)))
-      (let loop ((list '()) (i 0))
-        (if (= i length)
-            (reverse list)
-            (loop (cons (vector-ref vector i) list) (+ i 1))))))
-
   (define-syntax quasiquote
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -276,12 +260,34 @@
      (lambda (form r c)
        `(,(r 'letrec-syntax) ,@(cdr form)))))
 
+  (import (scheme read) (scheme file))
+
+  (define-syntax include
+    (letrec ((read-file
+              (lambda (filename)
+                (let ((port (open-input-file filename)))
+                  (dynamic-wind
+                      (lambda () #f)
+                      (lambda ()
+                        (let loop ((expr (read port)) (exprs '()))
+                          (if (eof-object? expr)
+                              (reverse exprs)
+                              (loop (read port) (cons expr exprs)))))
+                      (lambda ()
+                        (close-port port)))))))
+      (er-macro-transformer
+       (lambda (form rename compare)
+         (let ((filenames (cdr form)))
+           (let ((exprs (apply append (map read-file filenames))))
+             `(,(rename 'begin) ,@exprs)))))))
+
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
           and or
           cond case else =>
           do when unless
           let-syntax letrec-syntax
+          include
           _ ... syntax-error))
 
 (import (picrin core-syntax))
@@ -292,6 +298,7 @@
         cond case else =>
         do when unless
         let-syntax letrec-syntax
+        include
         _ ... syntax-error)
 
 ;;; multiple value
@@ -315,13 +322,6 @@
      (lambda (form r c)
        `(,(r 'let*-values) ,@(cdr form)))))
 
-  (define (vector-map proc vect)
-    (do ((i 0 (+ i 1))
-         (u (make-vector (vector-length vect))))
-        ((= i (vector-length vect))
-         u)
-      (vector-set! u i (proc (vector-ref vect i)))))
-
   (define (walk proc expr)
     (cond
      ((null? expr)
@@ -330,7 +330,7 @@
       (cons (proc (car expr))
             (walk proc (cdr expr))))
      ((vector? expr)
-      (vector-map proc expr))
+      (list->vector (map proc (vector->list expr))))
      (else
       (proc expr))))
 
@@ -593,78 +593,10 @@
 
 (export define-record-type)
 
-(define (every pred list)
-  (if (null? list)
-      #t
-      (if (pred (car list))
-	  (every pred (cdr list))
-	  #f)))
-
 (define (fold f s xs)
   (if (null? xs)
       s
       (fold f (f (car xs) s) (cdr xs))))
-
-;;; 6.2. Numbers
-
-(define (floor/ n m)
-  (values (floor-quotient n m)
-	  (floor-remainder n m)))
-
-(define (truncate/ n m)
-  (values (truncate-quotient n m)
-	  (truncate-remainder n m)))
-
-; (import (only (scheme inexact) sqrt))
-(import (scheme inexact))
-
-(define (exact-integer-sqrt k)
-  (let ((n (exact (floor (sqrt k)))))
-    (values n (- k (square n)))))
-
-(export floor/ truncate/
-        exact-integer-sqrt)
-
-;;; 6.3 Booleans
-
-(define (boolean=? . objs)
-  (or (every (lambda (x) (eq? x #t)) objs)
-      (every (lambda (x) (eq? x #f)) objs)))
-
-(export boolean=?)
-
-;;; 6.4 Pairs and lists
-
-(define (member obj list . opts)
-  (let ((compare (if (null? opts) equal? (car opts))))
-    (if (null? list)
-	#f
-	(if (compare obj (car list))
-	    list
-	    (member obj (cdr list) compare)))))
-
-(define (assoc obj list . opts)
-  (let ((compare (if (null? opts) equal? (car opts))))
-    (if (null? list)
-	#f
-	(if (compare obj (caar list))
-	    (car list)
-	    (assoc obj (cdr list) compare)))))
-
-(export member assoc)
-
-;;; 6.5. Symbols
-
-(define (symbol=? . objs)
-  (let ((sym (car objs)))
-    (if (symbol? sym)
-	(every (lambda (x)
-		 (and (symbol? x)
-		      (eq? x sym)))
-	       (cdr objs))
-	#f)))
-
-(export symbol=?)
 
 ;;; 6.6 Characters
 
@@ -714,70 +646,7 @@
 ;;; 6.8. Vector
 
 (define (vector . objs)
-  (let ((len (length objs)))
-    (let ((v (make-vector len)))
-      (do ((i 0 (+ i 1))
-	   (l objs (cdr l)))
-	  ((= i len)
-	   v)
-	(vector-set! v i (car l))))))
-
-(define (vector->list vector . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length vector))))
-    (do ((i start (+ i 1))
-	 (res '()))
-	((= i end)
-	 (reverse res))
-      (set! res (cons (vector-ref vector i) res)))))
-
-(define (list->vector list)
-  (apply vector list))
-
-(define (vector-copy! to at from . opts)
-  (let* ((start (if (pair? opts) (car opts) 0))
-         (end (if (>= (length opts) 2)
-                  (cadr opts)
-                  (vector-length from)))
-         (vs #f))
-    (if (eq? from to)
-        (begin
-          (set! vs (make-vector (- end start)))
-          (vector-copy! vs 0 from start end)
-          (vector-copy! to at vs))
-        (do ((i at (+ i 1))
-             (j start (+ j 1)))
-            ((= j end))
-          (vector-set! to i (vector-ref from j))))))
-
-(define (vector-copy v . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length v))))
-    (let ((res (make-vector (- end start))))
-      (vector-copy! res 0 v start end)
-      res)))
-
-(define (vector-append . vs)
-  (define (vector-append-2-inv w v)
-    (let ((res (make-vector (+ (vector-length v) (vector-length w)))))
-      (vector-copy! res 0 v)
-      (vector-copy! res (vector-length v) w)
-      res))
-  (fold vector-append-2-inv #() vs))
-
-(define (vector-fill! v fill . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (vector-length v))))
-    (do ((i start (+ i 1)))
-	((= i end)
-	 #f)
-      (vector-set! v i fill))))
+  (list->vector objs))
 
 (define (vector->string . args)
   (list->string (apply vector->list args)))
@@ -785,10 +654,7 @@
 (define (string->vector . args)
   (list->vector (apply string->list args)))
 
-(export vector vector->list list->vector
-        vector-copy! vector-copy
-        vector-append vector-fill!
-        vector->string string->vector)
+(export vector vector->string string->vector)
 
 ;;; 6.9 bytevector
 
@@ -800,39 +666,6 @@
 	  ((= i len)
 	   v)
 	(bytevector-u8-set! v i (car l))))))
-
-(define (bytevector-copy! to at from . opts)
-  (let* ((start (if (pair? opts) (car opts) 0))
-         (end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (bytevector-length from)))
-         (vs #f))
-    (if (eq? from to)
-        (begin
-          (set! vs (make-bytevector (- end start)))
-          (bytevector-copy! vs 0 from start end)
-          (bytevector-copy! to at vs))
-        (do ((i at (+ i 1))
-             (j start (+ j 1)))
-            ((= j end))
-          (bytevector-u8-set! to i (bytevector-u8-ref from j))))))
-
-(define (bytevector-copy v . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (bytevector-length v))))
-    (let ((res (make-bytevector (- end start))))
-      (bytevector-copy! res 0 v start end)
-      res)))
-
-(define (bytevector-append . vs)
-  (define (bytevector-append-2-inv w v)
-    (let ((res (make-bytevector (+ (bytevector-length v) (bytevector-length w)))))
-      (bytevector-copy! res 0 v)
-      (bytevector-copy! res (bytevector-length v) w)
-      res))
-  (fold bytevector-append-2-inv #u8() vs))
 
 (define (bytevector->list v start end)
     (do ((i start (+ i 1))
@@ -859,9 +692,8 @@
     (list->bytevector (map char->integer (string->list s start end)))))
 
 (export bytevector
-        bytevector-copy!
-        bytevector-copy
-        bytevector-append
+        bytevector->list
+        list->bytevector
         utf8->string
         string->utf8)
 
@@ -927,28 +759,6 @@
       (lambda () (close-port port))))
 
 (export call-with-port)
-
-;;; include syntax
-
-(import (scheme read)
-        (scheme file))
-
-(define (read-many filename)
-  (call-with-port (open-input-file filename)
-    (lambda (port)
-      (let loop ((expr (read port)) (exprs '()))
-        (if (eof-object? expr)
-            (reverse exprs)
-            (loop (read port) (cons expr exprs)))))))
-
-(define-syntax include
-  (er-macro-transformer
-   (lambda (form rename compare)
-     (let ((filenames (cdr form)))
-       (let ((exprs (apply append (map read-many filenames))))
-         `(,(rename 'begin) ,@exprs))))))
-
-(export include)
 
 ;;; syntax-rules
 (define-library (picrin syntax-rules)

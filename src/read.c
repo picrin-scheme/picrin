@@ -438,7 +438,7 @@ static pic_value
 read_unsigned_blob(pic_state *pic, struct pic_port *port, char c)
 {
   int nbits, n;
-  size_t len;
+  size_t len, i;
   char *dat, buf[256];
   pic_blob *blob;
 
@@ -471,7 +471,11 @@ read_unsigned_blob(pic_state *pic, struct pic_port *port, char c)
     c = next(port);
   }
 
-  blob = pic_blob_new(pic, dat, len);
+  blob = pic_blob_new(pic, len);
+  for (i = 0; i < len; ++i) {
+    blob->data[i] = dat[i];
+  }
+
   pic_free(pic, dat);
   return pic_obj_value(blob);
 }

@@ -25,12 +25,12 @@ pic_strdup(pic_state *pic, const char *s)
 }
 
 struct pic_blob *
-pic_blob_new(pic_state *pic, char *dat, size_t len)
+pic_blob_new(pic_state *pic, size_t len)
 {
   struct pic_blob *bv;
 
   bv = (struct pic_blob *)pic_obj_alloc(pic, sizeof(struct pic_blob), PIC_TT_BLOB);
-  bv->data = pic_strndup(pic, dat, len);
+  bv->data = pic_alloc(pic, len);
   bv->len = len;
   return bv;
 }
@@ -48,20 +48,20 @@ pic_blob_bytevector_p(pic_state *pic)
 static pic_value
 pic_blob_make_bytevector(pic_state *pic)
 {
+  pic_blob *blob;
   int k, b = 0, i;
-  char *dat;
 
   pic_get_args(pic, "i|i", &k, &b);
 
   if (b < 0 || b > 255)
     pic_error(pic, "byte out of range");
 
-  dat = pic_alloc(pic, k);
+  blob = pic_blob_new(pic, k);
   for (i = 0; i < k; ++i) {
-    dat[i] = b;
+    blob->data[i] = b;
   }
 
-  return pic_obj_value(pic_blob_new(pic, dat, k));
+  return pic_obj_value(blob);
 }
 
 static pic_value
@@ -100,6 +100,88 @@ pic_blob_bytevector_u8_set(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_blob_bytevector_copy_i(pic_state *pic)
+{
+  pic_blob *to, *from;
+  int n, at, start, end;
+
+  n = pic_get_args(pic, "bib|ii", &to, &at, &from, &start, &end);
+
+  switch (n) {
+  case 3:
+    start = 0;
+  case 4:
+    end = from->len;
+  }
+
+  if (to == from && (start <= at && at < end)) {
+    /* copy in reversed order */
+    at += end - start;
+    while (start < end) {
+      to->data[--at] = from->data[--end];
+    }
+    return pic_none_value();
+  }
+
+  while (start < end) {
+    to->data[at++] = from->data[start++];
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+pic_blob_bytevector_copy(pic_state *pic)
+{
+  pic_blob *from, *to;
+  int n, start, end, i = 0;
+
+  n = pic_get_args(pic, "b|ii", &from, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = from->len;
+  }
+
+  to = pic_blob_new(pic, end - start);
+  while (start < end) {
+    to->data[i++] = from->data[start++];
+  }
+
+  return pic_obj_value(to);
+}
+
+static pic_value
+pic_blob_bytevector_append(pic_state *pic)
+{
+  size_t argc, i, j, len;
+  pic_value *argv;
+  pic_blob *blob;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  len = 0;
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], blob);
+    len += pic_blob_ptr(argv[i])->len;
+  }
+
+  blob = pic_blob_new(pic, len);
+
+  len = 0;
+  for (i = 0; i < argc; ++i) {
+    for (j = 0; j < pic_blob_ptr(argv[i])->len; ++j) {
+      blob->data[len + j] = pic_blob_ptr(argv[i])->data[j];
+    }
+    len += pic_blob_ptr(argv[i])->len;
+  }
+
+  return pic_obj_value(blob);
+}
+
 void
 pic_init_blob(pic_state *pic)
 {
@@ -108,4 +190,7 @@ pic_init_blob(pic_state *pic)
   pic_defun(pic, "bytevector-length", pic_blob_bytevector_length);
   pic_defun(pic, "bytevector-u8-ref", pic_blob_bytevector_u8_ref);
   pic_defun(pic, "bytevector-u8-set!", pic_blob_bytevector_u8_set);
+  pic_defun(pic, "bytevector-copy!", pic_blob_bytevector_copy_i);
+  pic_defun(pic, "bytevector-copy", pic_blob_bytevector_copy);
+  pic_defun(pic, "bytevector-append", pic_blob_bytevector_append);
 }

@@ -292,6 +292,26 @@ pic_memv(pic_state *pic, pic_value key, pic_value list)
 }
 
 pic_value
+pic_member(pic_state *pic, pic_value key, pic_value list, struct pic_proc *compar)
+{
+ enter:
+
+  if (pic_nil_p(list))
+    return pic_false_value();
+
+  if (compar == NULL) {
+    if (pic_equal_p(pic, key, pic_car(pic, list)))
+      return list;
+  } else {
+    if (pic_test(pic_apply2(pic, compar, key, pic_car(pic, list))))
+      return list;
+  }
+
+  list = pic_cdr(pic, list);
+  goto enter;
+}
+
+pic_value
 pic_assq(pic_state *pic, pic_value key, pic_value assoc)
 {
   pic_value cell;
@@ -328,7 +348,7 @@ pic_assv(pic_state *pic, pic_value key, pic_value assoc)
 }
 
 pic_value
-pic_assoc(pic_state *pic, pic_value key, pic_value assoc)
+pic_assoc(pic_state *pic, pic_value key, pic_value assoc, struct pic_proc *compar)
 {
   pic_value cell;
 
@@ -338,8 +358,13 @@ pic_assoc(pic_state *pic, pic_value key, pic_value assoc)
     return pic_false_value();
 
   cell = pic_car(pic, assoc);
-  if (pic_equal_p(pic, key, pic_car(pic, cell)))
-    return cell;
+  if (compar == NULL) {
+    if (pic_equal_p(pic, key, pic_car(pic, cell)))
+      return cell;
+  } else {
+    if (pic_test(pic_apply2(pic, compar, key, pic_car(pic, cell))))
+      return cell;
+  }
 
   assoc = pic_cdr(pic, assoc);
   goto enter;
@@ -663,6 +688,17 @@ pic_pair_memv(pic_state *pic)
 }
 
 static pic_value
+pic_pair_member(pic_state *pic)
+{
+  struct pic_proc *proc = NULL;
+  pic_value key, list;
+
+  pic_get_args(pic, "oo|l", &key, &list, &proc);
+
+  return pic_member(pic, key, list, proc);
+}
+
+static pic_value
 pic_pair_assq(pic_state *pic)
 {
   pic_value key, list;
@@ -680,6 +716,17 @@ pic_pair_assv(pic_state *pic)
   pic_get_args(pic, "oo", &key, &list);
 
   return pic_assv(pic, key, list);
+}
+
+static pic_value
+pic_pair_assoc(pic_state *pic)
+{
+  struct pic_proc *proc = NULL;
+  pic_value key, list;
+
+  pic_get_args(pic, "oo|l", &key, &list, &proc);
+
+  return pic_assoc(pic, key, list, proc);
 }
 
 void
@@ -708,6 +755,8 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "list-copy", pic_pair_list_copy);
   pic_defun(pic, "memq", pic_pair_memq);
   pic_defun(pic, "memv", pic_pair_memv);
+  pic_defun(pic, "member", pic_pair_member);
   pic_defun(pic, "assq", pic_pair_assq);
   pic_defun(pic, "assv", pic_pair_assv);
+  pic_defun(pic, "assoc", pic_pair_assoc);
 }
