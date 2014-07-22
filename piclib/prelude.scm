@@ -577,13 +577,6 @@
 
 (export define-record-type)
 
-(define (every pred list)
-  (if (null? list)
-      #t
-      (if (pred (car list))
-	  (every pred (cdr list))
-	  #f)))
-
 (define (fold f s xs)
   (if (null? xs)
       s
