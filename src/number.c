@@ -662,6 +662,19 @@ pic_number_atan(pic_state *pic)
 }
 
 static pic_value
+pic_number_exact_integer_sqrt(pic_state *pic)
+{
+  int k, n, m;
+
+  pic_get_args(pic, "i", &k);
+
+  n = sqrt(k);
+  m = k - n * n;
+
+  return pic_values2(pic, pic_int_value(n), pic_int_value(m));
+}
+
+static pic_value
 pic_number_square(pic_state *pic)
 {
   double f;
@@ -840,6 +853,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "round", pic_number_round);
   pic_gc_arena_restore(pic, ai);
 
+  pic_defun(pic, "exact-integer-sqrt", pic_number_exact_integer_sqrt);
   pic_defun(pic, "square", pic_number_square);
   pic_defun(pic, "expt", pic_number_expt);
   pic_gc_arena_restore(pic, ai);

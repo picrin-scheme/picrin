@@ -589,18 +589,6 @@
       s
       (fold f (f (car xs) s) (cdr xs))))
 
-;;; 6.2. Numbers
-
-; (import (only (scheme inexact) sqrt))
-(import (scheme inexact))
-
-(define (exact-integer-sqrt k)
-  (let ((n (exact (floor (sqrt k)))))
-    (values n (- k (square n)))))
-
-(export floor/ truncate/
-        exact-integer-sqrt)
-
 ;;; 6.3 Booleans
 
 (define (boolean=? . objs)
