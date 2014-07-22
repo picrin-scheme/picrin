@@ -174,6 +174,29 @@ pic_vec_vector_copy(pic_state *pic)
 }
 
 static pic_value
+pic_vec_vector_fill_i(pic_state *pic)
+{
+  pic_vec *vec;
+  pic_value obj;
+  int n, start, end;
+
+  n = pic_get_args(pic, "vo|ii", &vec, &obj, &start, &end);
+
+  switch (n) {
+  case 2:
+    start = 0;
+  case 3:
+    end = vec->len;
+  }
+
+  while (start < end) {
+    vec->data[start++] = obj;
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
 pic_vec_list_to_vector(pic_state *pic)
 {
   struct pic_vector *vec;
@@ -225,6 +248,7 @@ pic_init_vector(pic_state *pic)
   pic_defun(pic, "vector-set!", pic_vec_vector_set);
   pic_defun(pic, "vector-copy!", pic_vec_vector_copy_i);
   pic_defun(pic, "vector-copy", pic_vec_vector_copy);
+  pic_defun(pic, "vector-fill!", pic_vec_vector_fill_i);
   pic_defun(pic, "list->vector", pic_vec_list_to_vector);
   pic_defun(pic, "vector->list", pic_vec_vector_to_list);
 }
