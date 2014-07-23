@@ -707,16 +707,6 @@
 
 ;;; 6.13. Input and output
 
-(import (picrin port))
-
-(define current-input-port (make-parameter standard-input-port))
-(define current-output-port (make-parameter standard-output-port))
-(define current-error-port (make-parameter standard-error-port))
-
-(export current-input-port
-        current-output-port
-        current-error-port)
-
 (define (call-with-port port proc)
   (dynamic-wind
       (lambda () #f)
