@@ -7,12 +7,13 @@
 #include "picrin/pair.h"
 
 struct pic_var *
-pic_var_new(pic_state *pic, pic_value init)
+pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv)
 {
   struct pic_var *var;
 
   var = (struct pic_var *)pic_obj_alloc(pic, sizeof(struct pic_var), PIC_TT_VAR);
   var->stack = pic_nil_value();
+  var->conv = conv;
 
   pic_var_push(pic, var, init);
 
@@ -28,12 +29,18 @@ pic_var_ref(pic_state *pic, struct pic_var *var)
 void
 pic_var_set(pic_state *pic, struct pic_var *var, pic_value value)
 {
+  if (var->conv != NULL) {
+    value = pic_apply1(pic, var->conv, value);
+  }
   pic_set_car(pic, var->stack, value);
 }
 
 void
 pic_var_push(pic_state *pic, struct pic_var *var, pic_value value)
 {
+  if (var->conv != NULL) {
+    value = pic_apply1(pic, var->conv, value);
+  }
   var->stack = pic_cons(pic, value, var->stack);
 }
 
@@ -46,11 +53,12 @@ pic_var_pop(pic_state *pic, struct pic_var *var)
 static pic_value
 pic_var_make_var(pic_state *pic)
 {
+  struct pic_proc *conv = NULL;
   pic_value init;
 
-  pic_get_args(pic, "o", &init);
+  pic_get_args(pic, "o|l", &init, &conv);
 
-  return pic_obj_value(pic_var_new(pic, init));
+  return pic_obj_value(pic_var_new(pic, init, conv));
 }
 
 static pic_value
