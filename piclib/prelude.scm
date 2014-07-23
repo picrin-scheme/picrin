@@ -664,43 +664,17 @@
 
 ;;; 6.10 control features
 
-(define (string-map f v . vs)
-  (let* ((len (fold min (string-length v) (map string-length vs)))
-	 (vec (make-string len)))
-    (let loop ((n 0))
-      (if (= n len)
-	  vec
-	  (begin (string-set! vec n
-			      (apply f (cons (string-ref v n)
-					     (map (lambda (v) (string-ref v n)) vs))))
-		 (loop (+ n 1)))))))
+(define (string-map f . strings)
+  (list->string (apply map f (map string->list strings))))
 
-(define (string-for-each f v . vs)
-  (let* ((len (fold min (string-length v) (map string-length vs))))
-    (let loop ((n 0))
-      (unless (= n len)
-	(apply f (string-ref v n)
-	       (map (lambda (v) (string-ref v n)) vs))
-	(loop (+ n 1))))))
+(define (string-for-each f . strings)
+  (apply for-each f (map string->list strings)))
 
-(define (vector-map f v . vs)
-  (let* ((len (fold min (vector-length v) (map vector-length vs)))
-	 (vec (make-vector len)))
-    (let loop ((n 0))
-      (if (= n len)
-	  vec
-	  (begin (vector-set! vec n
-			      (apply f (cons (vector-ref v n)
-					     (map (lambda (v) (vector-ref v n)) vs))))
-		 (loop (+ n 1)))))))
+(define (vector-map f . vectors)
+  (list->vector (apply map f (map vector->list vectors))))
 
-(define (vector-for-each f v . vs)
-  (let* ((len (fold min (vector-length v) (map vector-length vs))))
-    (let loop ((n 0))
-      (unless (= n len)
-	(apply f (vector-ref v n)
-	       (map (lambda (v) (vector-ref v n)) vs))
-	(loop (+ n 1))))))
+(define (vector-for-each f . vectors)
+  (apply for-each f (map vector->list vectors)))
 
 (export string-map string-for-each
         vector-map vector-for-each)
