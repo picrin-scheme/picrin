@@ -11,6 +11,7 @@
 #include "picrin/port.h"
 #include "picrin/string.h"
 #include "picrin/blob.h"
+#include "picrin/var.h"
 
 pic_value
 pic_eof_object()
@@ -42,7 +43,7 @@ pic_stdout(pic_state *pic)
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }
 
-static pic_value
+static struct pic_port *
 port_new_stdport(pic_state *pic, xFILE *file, short dir)
 {
   struct pic_port *port;
@@ -51,7 +52,7 @@ port_new_stdport(pic_state *pic, xFILE *file, short dir)
   port->file = file;
   port->flags = dir | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
-  return pic_obj_value(port);
+  return port;
 }
 
 struct pic_port *
@@ -688,11 +689,21 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
+  struct pic_port *STDIN, *STDOUT, *STDERR;
+
+  STDIN = port_new_stdport(pic, xstdin, PIC_PORT_IN);
+  STDOUT = port_new_stdport(pic, xstdout, PIC_PORT_OUT);
+  STDERR = port_new_stdport(pic, xstderr, PIC_PORT_OUT);
+
   pic_deflibrary ("(picrin port)") {
-    pic_define(pic, "standard-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
-    pic_define(pic, "standard-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
-    pic_define(pic, "standard-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
+    pic_define(pic, "standard-input-port", pic_obj_value(STDIN));
+    pic_define(pic, "standard-output-port", pic_obj_value(STDOUT));
+    pic_define(pic, "standard-error-port", pic_obj_value(STDERR));
   }
+
+  pic_define(pic, "current-input-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDIN), NULL)));
+  pic_define(pic, "current-output-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDOUT), NULL)));
+  pic_define(pic, "current-error-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDERR), NULL)));
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);
