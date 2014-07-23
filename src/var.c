@@ -51,7 +51,7 @@ pic_var_pop(pic_state *pic, struct pic_var *var)
 }
 
 static pic_value
-pic_var_make_var(pic_state *pic)
+pic_var_make_parameter(pic_state *pic)
 {
   struct pic_proc *conv = NULL;
   pic_value init;
@@ -62,7 +62,7 @@ pic_var_make_var(pic_state *pic)
 }
 
 static pic_value
-pic_var_var_ref(pic_state *pic)
+pic_var_parameter_ref(pic_state *pic)
 {
   struct pic_var *var;
   pic_value v;
@@ -77,7 +77,7 @@ pic_var_var_ref(pic_state *pic)
 }
 
 static pic_value
-pic_var_var_set(pic_state *pic)
+pic_var_parameter_set(pic_state *pic)
 {
   struct pic_var *var;
   pic_value v, val;
@@ -92,7 +92,7 @@ pic_var_var_set(pic_state *pic)
 }
 
 static pic_value
-pic_var_var_push(pic_state *pic)
+pic_var_parameter_push(pic_state *pic)
 {
   struct pic_var *var;
   pic_value v, val;
@@ -107,7 +107,7 @@ pic_var_var_push(pic_state *pic)
 }
 
 static pic_value
-pic_var_var_pop(pic_state *pic)
+pic_var_parameter_pop(pic_state *pic)
 {
   struct pic_var *var;
   pic_value v;
@@ -124,11 +124,11 @@ pic_var_var_pop(pic_state *pic)
 void
 pic_init_var(pic_state *pic)
 {
-  pic_deflibrary ("(picrin var)") {
-    pic_defun(pic, "make-var", pic_var_make_var);
-    pic_defun(pic, "var-ref", pic_var_var_ref);
-    pic_defun(pic, "var-set!", pic_var_var_set);
-    pic_defun(pic, "var-push!", pic_var_var_push);
-    pic_defun(pic, "var-pop!", pic_var_var_pop);
+  pic_deflibrary ("(picrin parameter)") {
+    pic_defun(pic, "make-parameter", pic_var_make_parameter);
+    pic_defun(pic, "parameter-ref", pic_var_parameter_ref);
+    pic_defun(pic, "parameter-set!", pic_var_parameter_set);
+    pic_defun(pic, "parameter-push!", pic_var_parameter_push);
+    pic_defun(pic, "parameter-pop!", pic_var_parameter_pop);
   }
 }

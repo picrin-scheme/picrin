@@ -373,40 +373,7 @@
 ;;; parameter
 (define-library (picrin parameter)
   (import (scheme base)
-          (picrin macro)
-          (picrin var)
-          (picrin attribute)
-          (picrin dictionary))
-
-  (define (single? x)
-    (and (list? x) (= (length x) 1)))
-
-  (define (double? x)
-    (and (list? x) (= (length x) 2)))
-
-  (define (%make-parameter init conv)
-    (let ((var (make-var (conv init))))
-      (define (parameter . args)
-        (cond
-         ((null? args)
-          (var-ref var))
-         ((single? args)
-          (var-set! var (conv (car args))))
-         ((double? args)
-          (var-set! var ((cadr args) (car args))))
-         (else
-          (error "invalid arguments for parameter"))))
-
-      (dictionary-set! (attribute parameter) '@@var var)
-
-      parameter))
-
-  (define (make-parameter init . conv)
-    (let ((conv
-           (if (null? conv)
-               (lambda (x) x)
-               (car conv))))
-      (%make-parameter init conv)))
+          (picrin macro))
 
   (define-syntax with
     (ir-macro-transformer
@@ -420,9 +387,6 @@
               (,after)
               result))))))
 
-  (define (var-of parameter)
-    (dictionary-ref (attribute parameter) '@@var))
-
   (define-syntax parameterize
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -431,12 +395,13 @@
          (let ((vars (map car formal))
                (vals (map cadr formal)))
            `(with
-             (lambda () ,@(map (lambda (var val) `(var-push! (var-of ,var) ,val)) vars vals))
-             (lambda () ,@(map (lambda (var) `(var-pop! (var-of ,var))) vars))
+             (lambda ()
+               ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals))
+             (lambda ()
+               ,@(map (lambda (var) `(parameter-pop! ,var)) vars))
              ,@body))))))
 
-  (export make-parameter
-          parameterize))
+  (export parameterize))
 
 ;;; Record Type
 (define-library (picrin record)
