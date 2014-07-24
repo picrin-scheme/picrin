@@ -180,19 +180,18 @@ static pic_value
 pic_error_raise_continuable(pic_state *pic)
 {
   pic_value v;
-  size_t i;
 
   pic_get_args(pic, "o", &v);
 
-  if (pic->try_jmps->handler == NULL) {
-    pic_errorf(pic, "uncontinuable exception handler is on top");
-  }
-  if ((i = pic->try_jmp_idx) == 0) {
+  if (pic->try_jmp_idx == 0) {
     pic_errorf(pic, "no exception handler registered");
+  }
+  if (pic->try_jmps[pic->try_jmp_idx - 1].handler == NULL) {
+    pic_errorf(pic, "uncontinuable exception handler is on top");
   }
   else {
     pic->try_jmp_idx--;
-    v = pic_apply1(pic, pic->try_jmps->handler, v);
+    v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, v);
     ++pic->try_jmp_idx;
   }
   return v;
