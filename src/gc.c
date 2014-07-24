@@ -403,7 +403,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_cont *cont = (struct pic_cont *)obj;
     pic_value *stack;
     pic_callinfo *ci;
-    int i;
+    size_t i;
 
     /* block */
     gc_mark_object(pic, (struct pic_object *)cont->blk);
@@ -421,8 +421,15 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
 
     /* arena */
-    for (i = 0; i < cont->arena_idx; ++i) {
+    for (i = 0; i < (size_t)cont->arena_idx; ++i) {
       gc_mark_object(pic, cont->arena[i]);
+    }
+
+    /* error handlers */
+    for (i = 0; i < cont->try_jmp_idx; ++i) {
+      if (cont->try_jmps[i].handler) {
+        gc_mark_object(pic, (struct pic_object *)cont->try_jmps[i].handler);
+      }
     }
 
     /* result values */
@@ -576,6 +583,13 @@ gc_mark_phase(pic_state *pic)
   xh_begin(&it, &pic->macros);
   while (xh_next(&it)) {
     gc_mark_object(pic, xh_val(it.e, struct pic_object *));
+  }
+
+  /* error handlers */
+  for (i = 0; i < pic->try_jmp_idx; ++i) {
+    if (pic->try_jmps[i].handler) {
+      gc_mark_object(pic, (struct pic_object *)pic->try_jmps[i].handler);
+    }
   }
 
   /* library table */
