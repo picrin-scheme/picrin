@@ -1596,7 +1596,6 @@
 
 (test -1 (call-with-values * -))
 
-#;
 (test '(connect talk1 disconnect
                 connect talk2 disconnect)
       (let ((path '())
