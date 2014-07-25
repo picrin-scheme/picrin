@@ -416,6 +416,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
   case PIC_TT_IREP:
   case PIC_TT_DATA:
   case PIC_TT_DICT:
+  case PIC_TT_BLK:
     pic_errorf(pic, "unexpected value type: ~s", expr);
   }
   UNREACHABLE();

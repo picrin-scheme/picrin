@@ -23,17 +23,13 @@ pic_open(int argc, char *argv[], char **envp)
 
   pic = (pic_state *)malloc(sizeof(pic_state));
 
+  /* root block */
+  pic->blk = NULL;
+
   /* command line */
   pic->argc = argc;
   pic->argv = argv;
   pic->envp = envp;
-
-  /* root block */
-  pic->blk = (pic_block *)malloc(sizeof(pic_block));
-  pic->blk->prev = NULL;
-  pic->blk->depth = 0;
-  pic->blk->in = pic->blk->out = NULL;
-  pic->blk->refcnt = 1;
 
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)calloc(PIC_STACK_SIZE, sizeof(pic_value));
@@ -135,6 +131,12 @@ pic_open(int argc, char *argv[], char **envp)
   register_renamed_symbol(pic, rEXPORT, "export");
   pic_gc_arena_restore(pic, ai);
 
+  /* root block */
+  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
+  pic->blk->prev = NULL;
+  pic->blk->depth = 0;
+  pic->blk->in = pic->blk->out = NULL;
+
   pic_init_core(pic);
 
   /* set library */
@@ -150,7 +152,12 @@ pic_close(pic_state *pic)
   xh_iter it;
 
   /* invoke exit handlers */
-  PIC_BLK_EXIT(pic);
+  while (pic->blk) {
+    if (pic->blk->out) {
+      pic_apply0(pic, pic->blk->out);
+    }
+    pic->blk = pic->blk->prev;
+  }
 
   /* clear out root objects */
   pic->sp = pic->stbase;

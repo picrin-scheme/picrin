@@ -47,7 +47,7 @@ pic_system_exit(pic_state *pic)
     }
   }
 
-  PIC_BLK_EXIT(pic);
+  pic_close(pic);
 
   exit(status);
 }

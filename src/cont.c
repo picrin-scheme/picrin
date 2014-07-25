@@ -119,7 +119,6 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
   cont->blk = pic->blk;
-  PIC_BLK_INCREF(pic, cont->blk);
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
@@ -167,7 +166,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   void pic_vm_tear_off(pic_state *);
   char v;
   struct pic_cont *tmp = cont;
-  pic_block *blk;
+  struct pic_block *blk;
 
   pic_vm_tear_off(pic);         /* tear off */
 
@@ -180,8 +179,6 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 
   blk = pic->blk;
   pic->blk = cont->blk;
-  PIC_BLK_INCREF(pic, pic->blk);
-  PIC_BLK_DECREF(pic, blk);
 
   pic->stbase = (pic_value *)pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
@@ -211,7 +208,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 }
 
 static void
-walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
+walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
 {
   if (here == there)
     return;
@@ -229,7 +226,7 @@ walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
 static pic_value
 pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
 {
-  pic_block *here;
+  struct pic_block *here;
   pic_value val;
 
   if (in != NULL) {
@@ -237,17 +234,14 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   }
 
   here = pic->blk;
-  pic->blk = (pic_block *)pic_alloc(pic, sizeof(pic_block));
+  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
   pic->blk->prev = here;
   pic->blk->depth = here->depth + 1;
   pic->blk->in = in;
   pic->blk->out = out;
-  pic->blk->refcnt = 1;
-  PIC_BLK_INCREF(pic, here);
 
   val = pic_apply0(pic, thunk);
 
-  PIC_BLK_DECREF(pic, pic->blk);
   pic->blk = here;
 
   if (out != NULL) {

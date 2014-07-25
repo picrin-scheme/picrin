@@ -57,18 +57,11 @@ typedef struct {
   struct pic_env *up;
 } pic_callinfo;
 
-typedef struct pic_block {
-  struct pic_block *prev;
-  int depth;
-  struct pic_proc *in, *out;
-  unsigned refcnt;
-} pic_block;
-
 typedef struct {
   int argc;
   char **argv, **envp;
 
-  pic_block *blk;
+  struct pic_block *blk;
 
   pic_value *sp;
   pic_value *stbase, *stend;

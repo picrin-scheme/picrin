@@ -322,18 +322,6 @@ gc_free(pic_state *pic, union header *bp)
 static void gc_mark(pic_state *, pic_value);
 static void gc_mark_object(pic_state *pic, struct pic_object *obj);
 
-static void
-gc_mark_block(pic_state *pic, pic_block *blk)
-{
-  while (blk) {
-    if (blk->in)
-      gc_mark_object(pic, (struct pic_object *)blk->in);
-    if (blk->out)
-      gc_mark_object(pic, (struct pic_object *)blk->out);
-    blk = blk->prev;
-  }
-}
-
 static bool
 gc_is_marked(union header *p)
 {
@@ -418,7 +406,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     int i;
 
     /* block */
-    gc_mark_block(pic, cont->blk);
+    gc_mark_object(pic, (struct pic_object *)cont->blk);
 
     /* stack */
     for (stack = cont->st_ptr; stack != cont->st_ptr + cont->sp_offset; ++stack) {
@@ -506,6 +494,20 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_BLK: {
+    struct pic_block *blk = (struct pic_block *)obj;
+
+    if (blk->prev) {
+      gc_mark_object(pic, (struct pic_object *)blk->prev);
+    }
+    if (blk->in) {
+      gc_mark_object(pic, (struct pic_object *)blk->in);
+    }
+    if (blk->out) {
+      gc_mark_object(pic, (struct pic_object *)blk->out);
+    }
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -539,7 +541,9 @@ gc_mark_phase(pic_state *pic)
   xh_iter it;
 
   /* block */
-  gc_mark_block(pic, pic->blk);
+  if (pic->blk) {
+    gc_mark_object(pic, (struct pic_object *)pic->blk);
+  }
 
   /* stack */
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
@@ -622,7 +626,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->ci_ptr);
     pic_free(pic, cont->arena);
     pic_free(pic, cont->try_jmps);
-    PIC_BLK_DECREF(pic, cont->blk);
     break;
   }
   case PIC_TT_SENV: {
@@ -657,6 +660,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
     xh_destroy(&dict->hash);
+    break;
+  }
+  case PIC_TT_BLK: {
     break;
   }
   case PIC_TT_NIL:
