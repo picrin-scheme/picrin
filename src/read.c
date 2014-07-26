@@ -69,6 +69,18 @@ isdelim(char c)
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
+static bool
+strcaseeq(const char *s1, const char *s2)
+{
+  char a, b;
+
+  while ((a = *s1++) * (b = *s2++)) {
+    if (tolower(a) != tolower(b))
+      return false;
+  }
+  return a == b;
+}
+
 static pic_value
 read_comment(pic_state *pic, struct pic_port *port, char c)
 {
@@ -262,10 +274,10 @@ read_minus(pic_state *pic, struct pic_port *port, char c)
   }
   else {
     sym = read_symbol(pic, port, c);
-    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "-inf.0")))) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "-inf.0")) {
       return pic_float_value(-INFINITY);
     }
-    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "-nan.0")))) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "-nan.0")) {
       return pic_float_value(-NAN);
     }
     return sym;
@@ -282,10 +294,10 @@ read_plus(pic_state *pic, struct pic_port *port, char c)
   }
   else {
     sym = read_symbol(pic, port, c);
-    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "+inf.0")))) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "+inf.0")) {
       return pic_float_value(INFINITY);
     }
-    if (pic_eq_p(sym, pic_sym_value(pic_intern_cstr(pic, "+nan.0")))) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "+nan.0")) {
       return pic_float_value(NAN);
     }
     return read_symbol(pic, port, c);
