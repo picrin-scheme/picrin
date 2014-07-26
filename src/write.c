@@ -2,6 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
+#include <math.h>
+
 #include "picrin.h"
 #include "picrin/port.h"
 #include "picrin/pair.h"
@@ -185,6 +187,7 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e;
   int c;
+  float f;
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
@@ -257,7 +260,14 @@ write_core(struct writer_control *p, pic_value obj)
     }
     break;
   case PIC_TT_FLOAT:
-    xfprintf(file, "%f", pic_float(obj));
+    f = pic_float(obj);
+    if (isnan(f)) {
+      xfprintf(file, signbit(f) ? "-nan.0" : "+nan.0");
+    } else if (isinf(f)) {
+      xfprintf(file, signbit(f) ? "-inf.0" : "+inf.0");
+    } else {
+      xfprintf(file, "%f", pic_float(obj));
+    }
     break;
   case PIC_TT_INT:
     xfprintf(file, "%d", pic_int(obj));
