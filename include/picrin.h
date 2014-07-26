@@ -153,6 +153,7 @@ pic_sym pic_intern(pic_state *, const char *, size_t);
 pic_sym pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym);
 pic_sym pic_gensym(pic_state *, pic_sym);
+pic_sym pic_ungensym(pic_state *, pic_sym);
 bool pic_interned_p(pic_state *, pic_sym);
 
 char *pic_strdup(pic_state *, const char *);
