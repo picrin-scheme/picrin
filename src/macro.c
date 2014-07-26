@@ -286,6 +286,8 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   sym = pic_sym(var);
   if (! pic_find_rename(pic, senv, sym, &rename)) {
     rename = pic_add_rename(pic, senv, sym);
+  } else {
+    pic_warnf(pic, "redefining syntax variable: ~s", pic_sym_value(sym));
   }
 
   val = pic_cadr(pic, pic_cdr(pic, expr));
