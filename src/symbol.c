@@ -41,12 +41,18 @@ pic_sym
 pic_gensym(pic_state *pic, pic_sym base)
 {
   int uid = pic->uniq_sym_cnt++, len;
-  char *str;
+  char *str, mark;
   pic_sym uniq;
 
-  len = snprintf(NULL, 0, "%s@%d", pic_symbol_name(pic, base), uid);
+  if (pic_interned_p(pic, base)) {
+    mark = '@';
+  } else {
+    mark = '.';
+  }
+
+  len = snprintf(NULL, 0, "%s%c%d", pic_symbol_name(pic, base), mark, uid);
   str = pic_alloc(pic, len + 1);
-  sprintf(str, "%s@%d", pic_symbol_name(pic, base), uid);
+  sprintf(str, "%s%c%d", pic_symbol_name(pic, base), mark, uid);
 
   /* don't put the symbol to pic->syms to keep it uninterned */
   uniq = pic->sym_cnt++;
