@@ -397,7 +397,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
   default:
     return expr;
   }
-  UNREACHABLE();
 }
 
 static pic_value
