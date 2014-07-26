@@ -578,6 +578,16 @@ pic_macro_gensym(pic_state *pic)
 }
 
 static pic_value
+pic_macro_ungensym(pic_state *pic)
+{
+  pic_sym sym;
+
+  pic_get_args(pic, "m", &sym);
+
+  return pic_sym_value(pic_ungensym(pic, sym));
+}
+
+static pic_value
 pic_macro_macroexpand(pic_state *pic)
 {
   pic_value expr;
@@ -652,6 +662,7 @@ pic_init_macro(pic_state *pic)
 {
   pic_deflibrary ("(picrin macro)") {
     pic_defun(pic, "gensym", pic_macro_gensym);
+    pic_defun(pic, "ungensym", pic_macro_ungensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
     pic_defun(pic, "macroexpand-1", pic_macro_macroexpand_1);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);

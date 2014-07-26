@@ -49,6 +49,7 @@ Utility functions and syntaces for macro definition.
 
 - define-macro
 - gensym
+- ungensym
 - macroexpand
 - macroexpand-1
 
