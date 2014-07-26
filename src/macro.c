@@ -394,32 +394,8 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
     return pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), senv));
   }
-  case PIC_TT_EOF:
-  case PIC_TT_NIL:
-  case PIC_TT_BOOL:
-  case PIC_TT_FLOAT:
-  case PIC_TT_INT:
-  case PIC_TT_CHAR:
-  case PIC_TT_STRING:
-  case PIC_TT_VECTOR:
-  case PIC_TT_BLOB: {
+  default:
     return expr;
-  }
-  case PIC_TT_PROC:
-  case PIC_TT_PORT:
-  case PIC_TT_ERROR:
-  case PIC_TT_ENV:
-  case PIC_TT_CONT:
-  case PIC_TT_UNDEF:
-  case PIC_TT_SENV:
-  case PIC_TT_MACRO:
-  case PIC_TT_LIB:
-  case PIC_TT_VAR:
-  case PIC_TT_IREP:
-  case PIC_TT_DATA:
-  case PIC_TT_DICT:
-  case PIC_TT_BLK:
-    pic_errorf(pic, "unexpected value type: ~s", expr);
   }
   UNREACHABLE();
 }
