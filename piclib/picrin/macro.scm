@@ -106,6 +106,9 @@
                   (rename sym)))
             (f (walk inject expr) inject compare))))
 
+  (define (strip-syntax form)
+    (walk ungensym form))
+
   (define-syntax define-macro
     (er-macro-transformer
      (lambda (expr r c)
@@ -127,4 +130,5 @@
           rsc-macro-transformer
           er-macro-transformer
           ir-macro-transformer
+          strip-syntax
           define-macro))
