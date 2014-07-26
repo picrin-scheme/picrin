@@ -69,6 +69,7 @@ Syntactic closures.
 
 - er-macro-transformer
 - ir-macro-transformer
+- strip-syntax
 
 Explicit renaming macro family.
 
