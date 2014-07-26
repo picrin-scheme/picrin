@@ -20,7 +20,7 @@
                     expr)))))
 
   (define (memoize f)
-    "memoize on a symbol"
+    "memoize on symbols"
     (define cache (make-dictionary))
     (lambda (sym)
       (if (dictionary-has? cache sym)
