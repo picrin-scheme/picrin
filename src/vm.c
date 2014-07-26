@@ -51,6 +51,7 @@ pic_get_proc(pic_state *pic)
  *  l   lambda object
  *  p   port object
  *  d   dictionary object
+ *  e   error object
  *
  *  |  optional operator
  *  *  variable length operator
@@ -346,8 +347,25 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+    case 'e': {
+      struct pic_error **e;
+      pic_value v;
+
+      e = va_arg(ap, struct pic_error **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_error_p(v)) {
+          *e = pic_error_ptr(v);
+        }
+        else {
+          pic_error(pic, "pic_get_args, expected error");
+        }
+        i++;
+      }
+      break;
+    }
     default:
-      pic_error(pic, "pic_get_args: invalid argument specifier given");
+      pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
     }
   }
   if ('*' == c) {
@@ -485,10 +503,26 @@ vm_tear_off(pic_state *pic)
   assert(pic->ci->env != NULL);
 
   env = pic->ci->env;
+
+  if (env->regs == env->storage) {
+    return;                     /* is torn off */
+  }
   for (i = 0; i < env->regc; ++i) {
     env->storage[i] = env->regs[i];
   }
   env->regs = env->storage;
+}
+
+void
+pic_vm_tear_off(pic_state *pic)
+{
+  pic_callinfo *ci;
+
+  for (ci = pic->ci; ci > pic->cibase; ci--) {
+    if (pic->ci->env != NULL) {
+      vm_tear_off(pic);
+    }
+  }
 }
 
 pic_value

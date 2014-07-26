@@ -47,7 +47,7 @@ section                                          status     comments
 4.2.4 Iteration                                  yes
 4.2.5 Delayed evaluation                         N/A
 4.2.6 Dynamic bindings                           yes
-4.2.7 Exception handling                         no         ``guard`` syntax.
+4.2.7 Exception handling                         yes        ``guard`` syntax.
 4.2.8 Quasiquotation                             yes        can be safely nested. TODO: multiple argument for unquote
 4.2.9 Case-lambda                                N/A
 4.3.1 Bindings constructs for syntactic keywords incomplete [#]_
