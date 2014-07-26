@@ -343,12 +343,6 @@ macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct 
 static pic_value
 macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
-#if DEBUG
-  printf("[macroexpand] expanding... ");
-  pic_debug(pic, expr);
-  puts("");
-#endif
-
   switch (pic_type(expr)) {
   case PIC_TT_SYMBOL: {
     return macroexpand_symbol(pic, pic_sym(expr), senv);
@@ -404,6 +398,12 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value v;
+
+#if DEBUG
+  printf("[macroexpand] expanding... ");
+  pic_debug(pic, expr);
+  puts("");
+#endif
 
   v = macroexpand_node(pic, expr, senv);
 
