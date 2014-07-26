@@ -532,15 +532,6 @@ pic_identifier_p(pic_state *pic, pic_value obj)
   return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym(obj));
 }
 
-bool
-pic_identifier_eq_p(pic_state *pic, struct pic_senv *e1, pic_sym x, struct pic_senv *e2, pic_sym y)
-{
-  x = make_identifier(pic, x, e1);
-  y = make_identifier(pic, y, e2);
-
-  return x == y;
-}
-
 static pic_value
 pic_macro_gensym(pic_state *pic)
 {
@@ -600,27 +591,6 @@ pic_macro_identifier_p(pic_state *pic)
 }
 
 static pic_value
-pic_macro_identifier_eq_p(pic_state *pic)
-{
-  pic_sym x, y;
-  pic_value e, f;
-  struct pic_senv *e1, *e2;
-
-  pic_get_args(pic, "omom", &e, &x, &f, &y);
-
-  if (! pic_senv_p(e)) {
-    pic_error(pic, "unexpected type of argument 1");
-  }
-  e1 = pic_senv_ptr(e);
-  if (! pic_senv_p(f)) {
-    pic_error(pic, "unexpected type of argument 3");
-  }
-  e2 = pic_senv_ptr(f);
-
-  return pic_bool_value(pic_identifier_eq_p(pic, e1, x, e2, y));
-}
-
-static pic_value
 pic_macro_make_identifier(pic_state *pic)
 {
   pic_value obj;
@@ -642,7 +612,6 @@ pic_init_macro(pic_state *pic)
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
     pic_defun(pic, "macroexpand-1", pic_macro_macroexpand_1);
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
-    pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
     pic_defun(pic, "make-identifier", pic_macro_make_identifier);
   }
 }

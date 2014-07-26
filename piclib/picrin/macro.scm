@@ -30,6 +30,10 @@
             (dictionary-set! cache sym val)
             val))))
 
+  (define (identifier=? env1 sym1 env2 sym2)
+    (eq? (make-identifier sym1 env1)
+         (make-identifier sym2 env2)))
+
   (define (make-syntactic-closure env free form)
 
     (define resolve
@@ -123,7 +127,8 @@
                        (cons (cdr formal)
                              body)))))))
 
-  (export make-syntactic-closure
+  (export identifier=?
+          make-syntactic-closure
           close-syntax
           capture-syntactic-environment
           sc-macro-transformer
