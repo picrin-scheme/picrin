@@ -168,7 +168,7 @@ macroexpand_deflibrary(pic_state *pic, pic_value expr)
     pic_in_library(pic, pic_cadr(pic, expr));
 
     pic_for_each (v, pic_cddr(pic, expr)) {
-      pic_void(pic_eval(pic, v));
+      pic_void(pic_eval(pic, v, pic->lib));
     }
 
     pic_in_library(pic, prev->name);
@@ -293,7 +293,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   val = pic_cadr(pic, pic_cdr(pic, expr));
 
   pic_try {
-    val = pic_eval(pic, val);
+    val = pic_eval(pic, val, pic->lib);
   } pic_catch {
     pic_errorf(pic, "macroexpand error while definition: %s", pic_errmsg(pic));
   }
@@ -413,8 +413,9 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_senv *senv)
 }
 
 pic_value
-pic_macroexpand(pic_state *pic, pic_value expr)
+pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
 {
+  struct pic_lib *prev;
   pic_value v;
 
 #if DEBUG
@@ -423,7 +424,13 @@ pic_macroexpand(pic_state *pic, pic_value expr)
   puts("");
 #endif
 
-  v = macroexpand(pic, expr, pic->lib->env);
+  /* change library for macro-expansion time processing */
+  prev = pic->lib;
+  pic->lib = lib;
+
+  v = macroexpand(pic, expr, lib->env);
+
+  pic->lib = prev;
 
 #if DEBUG
   puts("after expand:");
@@ -560,7 +567,7 @@ pic_macro_macroexpand(pic_state *pic)
 
   pic_get_args(pic, "o", &expr);
 
-  return pic_macroexpand(pic, expr);
+  return pic_macroexpand(pic, expr, pic->lib);
 }
 
 static pic_value
