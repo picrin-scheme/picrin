@@ -105,54 +105,6 @@ macroexpand_quote(pic_state *pic, pic_value expr)
 }
 
 static pic_value
-macroexpand_import(pic_state *pic, pic_value expr)
-{
-  pic_value spec;
-
-  pic_for_each (spec, pic_cdr(pic, expr)) {
-    pic_import(pic, spec);
-  }
-
-  return pic_none_value();
-}
-
-static pic_value
-macroexpand_export(pic_state *pic, pic_value expr)
-{
-  extern pic_value pic_export_as(pic_state *, pic_sym, pic_sym);
-  pic_value spec;
-  pic_sym sRENAME, sym, as;
-
-  sRENAME = pic_intern_cstr(pic, "rename");
-
-  pic_for_each (spec, pic_cdr(pic, expr)) {
-    if (pic_sym_p(spec)) {
-      sym = as = pic_sym(spec);
-    }
-    else if (pic_list_p(spec) && pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME))) {
-      if (pic_length(pic, spec) != 3) {
-        pic_error(pic, "syntax error");
-      }
-      if (! pic_sym_p(pic_list_ref(pic, spec, 1))) {
-        pic_error(pic, "syntax error");
-      }
-      sym = pic_sym(pic_list_ref(pic, spec, 1));
-      if (! pic_sym_p(pic_list_ref(pic, spec, 2))) {
-        pic_error(pic, "syntax error");
-      }
-      as = pic_sym(pic_list_ref(pic, spec, 2));
-    }
-    else {
-      pic_error(pic, "syntax error");
-    }
-    /* TODO: warn if symbol is shadowed by local variable */
-    pic_export_as(pic, sym, as);
-  }
-
-  return pic_none_value();
-}
-
-static pic_value
 macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv)
 {
   size_t ai = pic_gc_arena_preserve(pic);
@@ -330,13 +282,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
     if (pic_sym_p(car)) {
       pic_sym tag = pic_sym(car);
 
-      if (tag == pic->rIMPORT) {
-        return macroexpand_import(pic, expr);
-      }
-      else if (tag == pic->rEXPORT) {
-        return macroexpand_export(pic, expr);
-      }
-      else if (tag == pic->rDEFINE_SYNTAX) {
+      if (tag == pic->rDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, senv);
       }
       else if (tag == pic->rLAMBDA) {

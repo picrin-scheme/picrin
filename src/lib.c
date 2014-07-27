@@ -116,6 +116,56 @@ pic_export_as(pic_state *pic, pic_sym sym, pic_sym as)
 }
 
 static pic_value
+pic_lib_import(pic_state *pic)
+{
+  size_t argc, i;
+  pic_value *argv;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  for (i = 0; i < argc; ++i) {
+    pic_import(pic, argv[i]);
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
+pic_lib_export(pic_state *pic)
+{
+  const pic_sym sRENAME = pic_intern_cstr(pic, "rename");
+  size_t argc, i;
+  pic_value *argv, spec, a, b;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  for (i = 0; i < argc; ++i) {
+    spec = argv[i];
+    if (pic_sym_p(spec)) {      /* (export a) */
+      pic_export(pic, pic_sym(spec));
+    }
+    else {                      /* (export (rename a b)) */
+      if (! pic_list_p(spec))
+        goto fail;
+      if (! pic_length(pic, spec) == 3)
+        goto fail;
+      if (! pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME)))
+        goto fail;
+      if (! pic_sym_p(a = pic_list_ref(pic, spec, 1)))
+        goto fail;
+      if (! pic_sym_p(b = pic_list_ref(pic, spec, 2)))
+        goto fail;
+      pic_export_as(pic, pic_sym(a), pic_sym(b));
+    }
+  }
+
+  return pic_none_value();
+
+ fail:
+  pic_errorf(pic, "illegal export spec: ~s", spec);
+}
+
+static pic_value
 pic_lib_define_library(pic_state *pic)
 {
   struct pic_lib *prev = pic->lib;
@@ -148,7 +198,7 @@ pic_init_lib(pic_state *pic)
 {
   void pic_defmacro(pic_state *, pic_sym, pic_sym, pic_func_t);
 
-  /* pic_define_library_syntax(pic, "import", pic_lib_import); */
-  /* pic_define_library_syntax(pic, "export", pic_lib_export); */
+  pic_defmacro(pic, pic->sIMPORT, pic->rIMPORT, pic_lib_import);
+  pic_defmacro(pic, pic->sEXPORT, pic->rEXPORT, pic_lib_export);
   pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY, pic_lib_define_library);
 }
