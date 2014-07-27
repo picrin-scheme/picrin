@@ -56,29 +56,22 @@ struct writer_control {
 #define WRITE_MODE 1
 #define DISPLAY_MODE 2
 
-static struct writer_control *
-writer_control_new(pic_state *pic, xFILE *file, int mode)
+static void
+writer_control_init(struct writer_control *p, pic_state *pic, xFILE *file, int mode)
 {
-  struct writer_control *p;
-
-  p = (struct writer_control *)pic_alloc(pic, sizeof(struct writer_control));
   p->pic = pic;
   p->file = file;
   p->mode = mode;
   p->cnt = 0;
   xh_init_ptr(&p->labels, sizeof(int));
   xh_init_ptr(&p->visited, sizeof(int));
-  return p;
 }
 
 static void
 writer_control_destroy(struct writer_control *p)
 {
-  pic_state *pic = p->pic;
-
   xh_destroy(&p->labels);
   xh_destroy(&p->visited);
-  pic_free(pic, p);
 }
 
 static void
@@ -321,57 +314,57 @@ write_core(struct writer_control *p, pic_value obj)
 static void
 write(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, WRITE_MODE);
+  writer_control_init(&p, pic, file, WRITE_MODE);
 
-  traverse_shared(p, obj);      /* FIXME */
+  traverse_shared(&p, obj);      /* FIXME */
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 static void
 write_simple(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, WRITE_MODE);
+  writer_control_init(&p, pic, file, WRITE_MODE);
 
   /* no traverse here! */
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 static void
 write_shared(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, WRITE_MODE);
+  writer_control_init(&p, pic, file, WRITE_MODE);
 
-  traverse_shared(p, obj);
+  traverse_shared(&p, obj);
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 static void
 display(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, DISPLAY_MODE);
+  writer_control_init(&p, pic, file, DISPLAY_MODE);
 
-  traverse_shared(p, obj);      /* FIXME */
+  traverse_shared(&p, obj);      /* FIXME */
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 pic_value
