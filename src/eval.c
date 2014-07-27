@@ -19,10 +19,15 @@ static pic_value
 pic_eval_eval(pic_state *pic)
 {
   pic_value program, spec;
+  struct pic_lib *lib;
 
   pic_get_args(pic, "oo", &program, &spec);
 
-  return pic_eval(pic, program, pic_find_library(pic, spec));
+  lib = pic_find_library(pic, spec);
+  if (lib == NULL) {
+    pic_errorf(pic, "no library found: ~s", spec);
+  }
+  return pic_eval(pic, program, lib);
 }
 
 void
