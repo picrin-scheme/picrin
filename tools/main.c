@@ -134,7 +134,7 @@ repl(pic_state *pic)
         pic_for_each (v, exprs) {
 
           /* eval */
-          v = pic_eval(pic, v);
+          v = pic_eval(pic, v, pic->lib);
 
           /* print */
           pic_printf(pic, "=> ~s\n", v);
@@ -185,7 +185,7 @@ exec_file(pic_state *pic, const char *fname)
 
   pic_for_each (v, exprs) {
 
-    proc = pic_compile(pic, v);
+    proc = pic_compile(pic, v, pic->lib);
     if (proc == NULL) {
       fputs(pic_errmsg(pic), stderr);
       fprintf(stderr, "fatal error: %s compilation failure\n", fname);
@@ -223,7 +223,7 @@ exec_string(pic_state *pic, const char *str)
   ai = pic_gc_arena_preserve(pic);
   pic_for_each (v, exprs) {
 
-    proc = pic_compile(pic, v);
+    proc = pic_compile(pic, v, pic->lib);
     if (proc == NULL) {
       goto abort;
     }
