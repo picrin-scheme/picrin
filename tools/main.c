@@ -71,7 +71,7 @@ repl(pic_state *pic)
 #if PIC_ENABLE_READLINE
   char *read_line;
 #else
-  char last_char;
+  int last_char;
   int char_index;
 #endif
 
@@ -111,7 +111,7 @@ repl(pic_state *pic)
 	goto eof;
       if (char_index == LINE_MAX_LENGTH)
 	goto overflow;
-      line[char_index++] = last_char;
+      line[char_index++] = (char)last_char;
     }
     line[char_index] = '\0';
 #endif
