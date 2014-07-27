@@ -133,7 +133,7 @@ import(pic_state *pic, pic_value spec)
   xh_begin(&it, &imports->hash);
   while (xh_next(&it)) {
 
-#if 1
+#if DEBUG
     printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, pic_sym(xh_val(it.e, pic_value))));
 #endif
 
