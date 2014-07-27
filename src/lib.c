@@ -6,6 +6,7 @@
 #include "picrin/lib.h"
 #include "picrin/pair.h"
 #include "picrin/macro.h"
+#include "picrin/error.h"
 
 struct pic_lib *
 pic_make_library(pic_state *pic, pic_value name)
@@ -112,4 +113,42 @@ pic_export_as(pic_state *pic, pic_sym sym, pic_sym as)
 #endif
 
   xh_put_int(&pic->lib->exports, as, &rename);
+}
+
+static pic_value
+pic_lib_define_library(pic_state *pic)
+{
+  struct pic_lib *prev = pic->lib;
+  size_t argc, i;
+  pic_value spec, *argv;
+
+  pic_get_args(pic, "o*", &spec, &argc, &argv);
+
+  pic_make_library(pic, spec);
+
+  pic_try {
+    pic_in_library(pic, spec);
+
+    for (i = 0; i < argc; ++i) {
+      pic_void(pic_eval(pic, argv[i], pic->lib));
+    }
+
+    pic_in_library(pic, prev->name);
+  }
+  pic_catch {
+    pic_in_library(pic, prev->name); /* restores pic->lib even if an error occurs */
+    pic_throw_error(pic, pic->err);
+  }
+
+  return pic_none_value();
+}
+
+void
+pic_init_lib(pic_state *pic)
+{
+  void pic_defmacro(pic_state *, pic_sym, pic_sym, pic_func_t);
+
+  /* pic_define_library_syntax(pic, "import", pic_lib_import); */
+  /* pic_define_library_syntax(pic, "export", pic_lib_export); */
+  pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY, pic_lib_define_library);
 }

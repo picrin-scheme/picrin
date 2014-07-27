@@ -32,6 +32,7 @@ void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
 void pic_init_eval(pic_state *);
+void pic_init_lib(pic_state *);
 void pic_init_contrib(pic_state *);
 
 void pic_load_piclib(pic_state *);
@@ -94,6 +95,7 @@ pic_init_core(pic_state *pic)
     pic_init_read(pic); DONE;
     pic_init_dict(pic); DONE;
     pic_init_eval(pic); DONE;
+    pic_init_lib(pic); DONE;
 
     pic_load_piclib(pic); DONE;
 

@@ -153,35 +153,6 @@ macroexpand_export(pic_state *pic, pic_value expr)
 }
 
 static pic_value
-macroexpand_deflibrary(pic_state *pic, pic_value expr)
-{
-  struct pic_lib *prev = pic->lib;
-  pic_value v;
-
-  if (pic_length(pic, expr) < 2) {
-    pic_error(pic, "syntax error");
-  }
-
-  pic_make_library(pic, pic_cadr(pic, expr));
-
-  pic_try {
-    pic_in_library(pic, pic_cadr(pic, expr));
-
-    pic_for_each (v, pic_cddr(pic, expr)) {
-      pic_void(pic_eval(pic, v, pic->lib));
-    }
-
-    pic_in_library(pic, prev->name);
-  }
-  pic_catch {
-    pic_in_library(pic, prev->name); /* restores pic->lib even if an error occurs */
-    pic_throw_error(pic, pic->err);
-  }
-
-  return pic_none_value();
-}
-
-static pic_value
 macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv)
 {
   size_t ai = pic_gc_arena_preserve(pic);
@@ -359,10 +330,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
     if (pic_sym_p(car)) {
       pic_sym tag = pic_sym(car);
 
-      if (tag == pic->rDEFINE_LIBRARY) {
-        return macroexpand_deflibrary(pic, expr);
-      }
-      else if (tag == pic->rIMPORT) {
+      if (tag == pic->rIMPORT) {
         return macroexpand_import(pic, expr);
       }
       else if (tag == pic->rEXPORT) {
@@ -519,17 +487,15 @@ pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym,
 }
 
 void
-pic_defmacro(pic_state *pic, const char *name, struct pic_proc *macro)
+pic_defmacro(pic_state *pic, pic_sym name, pic_sym id, pic_func_t func)
 {
-  pic_sym sym, rename;
+  pic_put_rename(pic, pic->lib->env, name, id);
 
   /* symbol registration */
-  sym = pic_intern_cstr(pic, name);
-  rename = pic_add_rename(pic, pic->lib->env, sym);
-  define_macro(pic, rename, macro, NULL);
+  define_macro(pic, id, pic_proc_new(pic, func, pic_symbol_name(pic, name)), NULL);
 
   /* auto export! */
-  pic_export(pic, sym);
+  pic_export(pic, name);
 }
 
 bool
