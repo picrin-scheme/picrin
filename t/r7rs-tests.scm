@@ -1627,10 +1627,10 @@
 
 (test #t
     (error-object? (guard (exn (else exn)) (error "BOOM!" 1 2 3))))
-;; (test "BOOM!"
-;;     (error-object-message (guard (exn (else exn)) (error "BOOM!" 1 2 3))))
-;; (test '(1 2 3)
-;;     (error-object-irritants (guard (exn (else exn)) (error "BOOM!" 1 2 3))))
+(test "BOOM!"
+    (error-object-message (guard (exn (else exn)) (error "BOOM!" 1 2 3))))
+(test '(1 2 3)
+    (error-object-irritants (guard (exn (else exn)) (error "BOOM!" 1 2 3))))
 
 (test #f
     (file-error? (guard (exn (else exn)) (error "BOOM!"))))
@@ -1737,30 +1737,30 @@
   (test "reraised 0!" (get-output-string out))
   (test 'zero value))
 
-;; ;; From SRFI-34 "Examples" section - #8
-;; (test 42
-;;     (guard (condition
-;;             ((assq 'a condition) => cdr)
-;;             ((assq 'b condition)))
-;;       (raise (list (cons 'a 42)))))
+;; From SRFI-34 "Examples" section - #8
+(test 42
+    (guard (condition
+            ((assq 'a condition) => cdr)
+            ((assq 'b condition)))
+      (raise (list (cons 'a 42)))))
 
-;; ;; From SRFI-34 "Examples" section - #9
-;; (test '(b . 23)
-;;     (guard (condition
-;;             ((assq 'a condition) => cdr)
-;;             ((assq 'b condition)))
-;;       (raise (list (cons 'b 23)))))
+;; From SRFI-34 "Examples" section - #9
+(test '(b . 23)
+    (guard (condition
+            ((assq 'a condition) => cdr)
+            ((assq 'b condition)))
+      (raise (list (cons 'b 23)))))
 
-;; (test 'caught-d
-;;     (guard (condition
-;;             ((assq 'c condition) 'caught-c)
-;;             ((assq 'd condition) 'caught-d))
-;;       (list
-;;        (sqrt 8)
-;;        (guard (condition
-;;                ((assq 'a condition) => cdr)
-;;                ((assq 'b condition)))
-;;          (raise (list (cons 'd 24)))))))
+(test 'caught-d
+    (guard (condition
+            ((assq 'c condition) 'caught-c)
+            ((assq 'd condition) 'caught-d))
+      (list
+       (sqrt 8)
+       (guard (condition
+               ((assq 'a condition) => cdr)
+               ((assq 'b condition)))
+         (raise (list (cons 'd 24)))))))
 
 (test-end)
 
@@ -2024,6 +2024,12 @@
 (test '(a e) (read (open-input-string "(a #;(b #;c d) e)")))
 (test '(a . c) (read (open-input-string "(a . #;b c)")))
 (test '(a . b) (read (open-input-string "(a . b #;c)")))
+
+;; (define (test-read-error str)
+;;   (test #t
+;;       (guard (exn (else #t))
+;;         (read (open-input-string str))
+;;         #f)))
 
 ;; (test-read-error "(#;a . b)")
 ;; (test-read-error "(a . #;b)")

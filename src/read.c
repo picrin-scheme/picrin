@@ -668,6 +668,8 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
   }
 
   switch ((char)c) {
+  case ')':
+    read_error(pic, "unmatched parenthesis");
   case ';':
     return read_comment(pic, port, c);
   case '#':
