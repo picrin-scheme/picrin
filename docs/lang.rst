@@ -55,7 +55,7 @@ section                                          status     comments
 4.3.2 Pattern language                           yes        ``syntax-rules``
 4.3.3 Signaling errors in macro transformers     yes
 5.1 Programs                                     yes
-5.2 Import declarations                          incomplete only simple import declarations, no support for import with renaming.
+5.2 Import declarations                          yes
 5.3.1 Top level definitions                      yes
 5.3.2 Internal definitions                       yes        TODO: interreferential definitions
 5.3.3 Multiple-value definitions                 yes
@@ -71,7 +71,7 @@ section                                          status     comments
 6.2.4 Implementation extensions                  yes
 6.2.5 Syntax of numerical constants              yes
 6.2.6 Numerical operations                       yes        ``denominator``, ``numerator``, and ``rationalize`` are not supported for now. Also, picrin does not provide complex library procedures.
-6.2.7 Numerical input and output                 incomplete only partial support supplied.
+6.2.7 Numerical input and output                 yes
 6.3 Booleans                                     yes
 6.4 Pairs and lists                              yes        ``list?`` is safe for using against circular list.
 6.5 Symbols                                      yes
