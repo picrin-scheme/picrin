@@ -313,39 +313,8 @@ write_core(struct writer_control *p, pic_value obj)
     }
     xfprintf(file, ")");
     break;
-  case PIC_TT_ERROR:
-    xfprintf(file, "#<error %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_ENV:
-    xfprintf(file, "#<env %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_CONT:
-    xfprintf(file, "#<cont %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_SENV:
-    xfprintf(file, "#<senv %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_MACRO:
-    xfprintf(file, "#<macro %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_LIB:
-    xfprintf(file, "#<lib %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_VAR:
-    xfprintf(file, "#<var %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_IREP:
-    xfprintf(file, "#<irep %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_DATA:
-    xfprintf(file, "#<data %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_DICT:
-    xfprintf(file, "#<dict %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_BLK:
-    xfprintf(file, "#<blk %p>", pic_ptr(obj));
-    break;
+  default:
+    xfprintf(file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
   }
 }
 
