@@ -107,7 +107,7 @@ pic_get_output_string(pic_state *pic, struct pic_port *port)
 void
 pic_close_port(pic_state *pic, struct pic_port *port)
 {
-  if ((int)xfclose(port->file) == (int)EOF) {
+  if (xfclose(port->file) == EOF) {
     pic_error(pic, "close-port: failure");
   }
   port->status = PIC_PORT_CLOSE;
@@ -462,8 +462,7 @@ pic_port_read_string(pic_state *pic){
   c = EOF;
   buf = pic_open_output_string(pic);
   for(i = 0; i < k; ++i) {
-    c = xfgetc(port->file);
-    if( c == EOF){
+    if((c = xfgetc(port->file)) == EOF){
       break;
     }
     xfputc(c, buf->file);
