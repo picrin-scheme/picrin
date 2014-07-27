@@ -2068,6 +2068,15 @@
 
 (test-begin "Numeric syntax")
 
+(define-syntax test-numeric-syntax
+  (syntax-rules ()
+    ((test-numeric-syntax str expect strs ...)
+     (let* ((z (read (open-input-string str)))
+            (out (open-output-string))
+            (z-str (begin (write z out) (get-output-string out))))
+       (test expect (values z))
+       (test #t (and (member z-str '(str strs ...)) #t))))))
+
 ;; Simple
 (test-numeric-syntax "1" 1)
 ;; (test-numeric-syntax "+1" 1 "1")
