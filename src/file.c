@@ -101,7 +101,7 @@ pic_file_delete(pic_state *pic)
 void
 pic_init_file(pic_state *pic)
 {
-  pic_deflibrary ("(scheme file)") {
+  pic_deflibrary (pic, "(scheme file)") {
     pic_defun(pic, "open-input-file", pic_file_open_input_file);
     pic_defun(pic, "open-input-binary-file", pic_file_open_input_binary_file);
     pic_defun(pic, "open-output-file", pic_file_open_output_file);

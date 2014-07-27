@@ -60,7 +60,7 @@ pic_init_core(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_deflibrary ("(scheme base)") {
+  pic_deflibrary (pic, "(scheme base)") {
 
     /* load core syntaces */
     pic->lib->env = pic_null_syntactic_environment(pic);

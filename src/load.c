@@ -81,7 +81,7 @@ pic_load_load(pic_state *pic)
 void
 pic_init_load(pic_state *pic)
 {
-  pic_deflibrary ("(scheme load)") {
+  pic_deflibrary (pic, "(scheme load)") {
     pic_defun(pic, "load", pic_load_load);
   }
 }

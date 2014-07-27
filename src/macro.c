@@ -612,7 +612,7 @@ pic_macro_make_identifier(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
-  pic_deflibrary ("(picrin macro)") {
+  pic_deflibrary (pic, "(picrin macro)") {
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "ungensym", pic_macro_ungensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);

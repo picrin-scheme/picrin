@@ -183,9 +183,9 @@ void pic_in_library(pic_state *, pic_value);
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
-#define pic_deflibrary(spec)                                            \
-  pic_deflibrary_helper__(GENSYM(i), GENSYM(prev_lib), spec)
-#define pic_deflibrary_helper__(i, prev_lib, spec)                      \
+#define pic_deflibrary(pic, spec)                                       \
+  pic_deflibrary_helper__(pic, GENSYM(i), GENSYM(prev_lib), spec)
+#define pic_deflibrary_helper__(pic, i, prev_lib, spec)                 \
   for (int i = 0; ! i; )                                                \
     for (struct pic_lib *prev_lib; ! i; )                               \
       for ((prev_lib = pic->lib), pic_make_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)

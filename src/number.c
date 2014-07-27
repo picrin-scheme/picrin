@@ -866,7 +866,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "string->number", pic_number_string_to_number);
   pic_gc_arena_restore(pic, ai);
 
-  pic_deflibrary ("(scheme inexact)") {
+  pic_deflibrary (pic, "(scheme inexact)") {
     pic_defun(pic, "finite?", pic_number_finite_p);
     pic_defun(pic, "infinite?", pic_number_infinite_p);
     pic_defun(pic, "nan?", pic_number_nan_p);
