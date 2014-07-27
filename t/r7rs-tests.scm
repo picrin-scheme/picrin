@@ -2108,8 +2108,8 @@
 ;; (test-numeric-syntax "1l2" 100.0 "100.0" "100.")
 ;; (test-numeric-syntax "1L2" 100.0 "100.0" "100.")
 ;; ;; NaN, Inf
-(test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
-(test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
+;; (test-numeric-syntax "+nan.0" +nan.0 "+nan.0" "+NaN.0")
+;; (test-numeric-syntax "+NAN.0" +nan.0 "+nan.0" "+NaN.0")
 (test-numeric-syntax "+inf.0" +inf.0 "+inf.0" "+Inf.0")
 (test-numeric-syntax "+InF.0" +inf.0 "+inf.0" "+Inf.0")
 (test-numeric-syntax "-inf.0" -inf.0 "-inf.0" "-Inf.0")
