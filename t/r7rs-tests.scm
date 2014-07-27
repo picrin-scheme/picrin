@@ -2085,7 +2085,7 @@
 ;; (test-numeric-syntax "#I1" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#i-1" -1.0 "-1.0" "-1.")
 ;; ;; Decimal
-(test-numeric-syntax "1.0" 1.0 "1.0" "1.")
+;; (test-numeric-syntax "1.0" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "1." 1.0 "1.0" "1.")
 ;; (test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
 ;; (test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
