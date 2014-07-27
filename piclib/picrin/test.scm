@@ -83,10 +83,4 @@
     (syntax-rules ()
       ((_) (syntax-error "invalid use of test-syntax-error"))))
 
-  ;; (define (test-read-error str)
-  ;;   (test-assert
-  ;;       (guard (exn (else #t))
-  ;;         (read (open-input-string str))
-  ;;         #f)))
-
   (export test test-begin test-end test-values test-exit test-syntax-error))

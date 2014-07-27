@@ -2025,6 +2025,12 @@
 (test '(a . c) (read (open-input-string "(a . #;b c)")))
 (test '(a . b) (read (open-input-string "(a . b #;c)")))
 
+;; (define (test-read-error str)
+;;   (test #t
+;;       (guard (exn (else #t))
+;;         (read (open-input-string str))
+;;         #f)))
+
 ;; (test-read-error "(#;a . b)")
 ;; (test-read-error "(a . #;b)")
 ;; (test-read-error "(a #;. b)")
