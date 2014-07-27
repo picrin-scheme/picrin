@@ -387,20 +387,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return i - 1;
 }
 
-static xh_entry *
-global_ref(pic_state *pic, const char *name)
-{
-  pic_sym sym, rename;
-
-  sym = pic_intern_cstr(pic, name);
-  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
-    return NULL;
-  }
-  return xh_get_int(&pic->globals, rename);
-}
-
-static void
-global_def(pic_state *pic, const char *name, pic_value val)
+void
+pic_define(pic_state *pic, const char *name, pic_value val)
 {
   pic_sym sym, rename;
 
@@ -412,29 +400,25 @@ global_def(pic_state *pic, const char *name, pic_value val)
     pic_warn(pic, "redefining global");
   }
 
-  xh_put_int(&pic->globals, rename, &val);
-}
-
-void
-pic_define(pic_state *pic, const char *name, pic_value val)
-{
   /* push to the global arena */
-  global_def(pic, name, val);
+  xh_put_int(&pic->globals, rename, &val);
 
   /* export! */
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_export(pic, sym);
 }
 
 pic_value
 pic_ref(pic_state *pic, const char *name)
 {
-  xh_entry *e;
+  pic_sym sym, rename;
 
-  e = global_ref(pic, name);
-  if (e == NULL) {
+  sym = pic_intern_cstr(pic, name);
+
+  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
     pic_errorf(pic, "symbol \"%s\" not defined", name);
   }
-  return xh_val(e, pic_value);
+
+  return xh_val(xh_get_int(&pic->globals, rename), pic_value);
 }
 
 /* void */
