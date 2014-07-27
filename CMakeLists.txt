@@ -16,7 +16,7 @@ execute_process(
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
-set(CMAKE_C_FLAGS "-Wall -Wextra")
+set(CMAKE_C_FLAGS "-O2 -Wall -Wextra")
 set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG=1")
 
 option(USE_C11_FEATURE "Enable c11 feature" OFF)
