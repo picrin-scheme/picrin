@@ -243,8 +243,7 @@ macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct 
 
   if (mac->senv == NULL) { /* legacy macro */
     args = pic_cdr(pic, expr);
-  }
-  else {
+  } else {
     args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
   }
 
@@ -260,7 +259,7 @@ macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct 
   puts("");
 #endif
 
-  return macroexpand(pic, v, senv);
+  return v;
 }
 
 static pic_value
@@ -296,7 +295,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
 
       if ((mac = find_macro(pic, tag)) != NULL) {
-        return macroexpand_macro(pic, mac, expr, senv);
+        return macroexpand(pic, macroexpand_macro(pic, mac, expr, senv), senv);
       }
     }
 
@@ -353,47 +352,6 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
 #endif
 
   return v;
-}
-
-static pic_value
-macroexpand_one(pic_state *pic, pic_value expr, struct pic_senv *senv)
-{
-  struct pic_macro *mac;
-  pic_value v, args;
-
-  if (pic_sym_p(expr)) {
-    pic_sym sym;
-
-    sym = pic_sym(expr);
-
-    if (pic_interned_p(pic, sym)) {
-      return pic_sym_value(make_identifier(pic, pic_sym(expr), senv));
-    }
-  }
-  if (pic_pair_p(expr) && pic_sym_p(pic_car(pic, expr))) {
-    pic_sym sym;
-
-    sym = make_identifier(pic, pic_sym(pic_car(pic, expr)), senv);
-
-    if ((mac = find_macro(pic, sym)) != NULL) {
-      if (mac->senv == NULL) { /* legacy macro */
-        args = pic_cdr(pic, expr);
-      }
-      else {
-        args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
-      }
-
-      pic_try {
-        v = pic_apply(pic, mac->proc, args);
-      } pic_catch {
-        pic_errorf(pic, "macroexpand error while application: %s", pic_errmsg(pic));
-      }
-
-      return v;
-    }
-  }
-
-  return pic_undef_value();     /* no expansion occurred */
 }
 
 struct pic_senv *
@@ -485,17 +443,26 @@ pic_macro_macroexpand(pic_state *pic)
 static pic_value
 pic_macro_macroexpand_1(pic_state *pic)
 {
-  pic_value expr, val;
+  struct pic_senv *senv = pic->lib->env;
+  struct pic_macro *mac;
+  pic_value expr;
+  pic_sym sym;
 
   pic_get_args(pic, "o", &expr);
 
-  val = macroexpand_one(pic, expr, pic->lib->env);
-  if (pic_undef_p(val)) {
-    return pic_values2(pic, expr, pic_false_value());
+  if (pic_sym_p(expr)) {
+    if (pic_interned_p(pic, pic_sym(expr))) {
+      return pic_values2(pic, macroexpand_symbol(pic, pic_sym(expr), senv), pic_true_value());
+    }
   }
-  else {
-    return pic_values2(pic, val, pic_true_value());
+  if (pic_pair_p(expr) && pic_sym_p(pic_car(pic, expr))) {
+    sym = make_identifier(pic, pic_sym(pic_car(pic, expr)), senv);
+    if ((mac = find_macro(pic, sym)) != NULL) {
+      return pic_values2(pic, macroexpand_macro(pic, mac, expr, senv), pic_true_value());
+    }
   }
+
+  return pic_values2(pic, expr, pic_false_value());     /* no expansion occurred */
 }
 
 static pic_value
