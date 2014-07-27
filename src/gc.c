@@ -575,8 +575,9 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* global variables */
-  for (i = 0; i < pic->glen; ++i) {
-    gc_mark(pic, pic->globals[i]);
+  xh_begin(&it, &pic->globals);
+  while (xh_next(&it)) {
+    gc_mark(pic, xh_val(it.e, pic_value));
   }
 
   /* macro objects */

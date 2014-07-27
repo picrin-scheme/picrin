@@ -26,8 +26,6 @@
 
 /* #define PIC_RESCUE_SIZE 30 */
 
-/* #define PIC_GLOBALS_SIZE 1024 */
-
 /* #define PIC_SYM_POOL_SIZE 128 */
 
 /* #define PIC_IREP_SIZE 8 */
@@ -91,10 +89,6 @@
 
 #ifndef PIC_RESCUE_SIZE
 # define PIC_RESCUE_SIZE 30
-#endif
-
-#ifndef PIC_GLOBALS_SIZE
-# define PIC_GLOBALS_SIZE 1024
 #endif
 
 #ifndef PIC_SYM_POOL_SIZE

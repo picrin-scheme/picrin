@@ -88,10 +88,7 @@ typedef struct {
   int sym_cnt;
   int uniq_sym_cnt;
 
-  xhash global_tbl;
-  pic_value *globals;
-  size_t glen, gcapa;
-
+  xhash globals;
   xhash macros;
 
   pic_value lib_tbl;
