@@ -2086,12 +2086,12 @@
 ;; (test-numeric-syntax "#i-1" -1.0 "-1.0" "-1.")
 ;; ;; Decimal
 (test-numeric-syntax "1.0" 1.0 "1.0" "1.")
-(test-numeric-syntax "1." 1.0 "1.0" "1.")
-(test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
-(test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
+;; (test-numeric-syntax "1." 1.0 "1.0" "1.")
+;; (test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
+;; (test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
 ;; ;; Some Schemes don't allow negative zero. This is okay with the standard
-(test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
-(test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
+;; (test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
+;; (test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
 ;; (test-numeric-syntax "#i1.0" 1.0 "1.0" "1.")
 ;; (test-numeric-syntax "#e1.0" 1 "1")
 ;; (test-numeric-syntax "#e-.0" 0 "0")
