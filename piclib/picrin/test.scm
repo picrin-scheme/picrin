@@ -24,7 +24,7 @@
     (for-each
      (lambda (fail)
        (display fail))
-     fails))
+     (reverse fails)))
 
   (define (test-begin . o)
     (set! test-counter (+ test-counter 1)))
