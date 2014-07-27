@@ -495,14 +495,14 @@ vm_push_env(pic_state *pic)
 }
 
 static void
-vm_tear_off(pic_state *pic)
+vm_tear_off(pic_callinfo *ci)
 {
   struct pic_env *env;
   int i;
 
-  assert(pic->ci->env != NULL);
+  assert(ci->env != NULL);
 
-  env = pic->ci->env;
+  env = ci->env;
 
   if (env->regs == env->storage) {
     return;                     /* is torn off */
@@ -519,8 +519,8 @@ pic_vm_tear_off(pic_state *pic)
   pic_callinfo *ci;
 
   for (ci = pic->ci; ci > pic->cibase; ci--) {
-    if (pic->ci->env != NULL) {
-      vm_tear_off(pic);
+    if (ci->env != NULL) {
+      vm_tear_off(ci);
     }
   }
 }
@@ -844,7 +844,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
 
       if (pic->ci->env != NULL) {
-        vm_tear_off(pic);
+        vm_tear_off(pic->ci);
       }
 
       if (c.u.i == -1) {
@@ -870,7 +870,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
 
       if (pic->ci->env != NULL) {
-        vm_tear_off(pic);
+        vm_tear_off(pic->ci);
       }
 
       pic->ci->retc = c.u.i;
