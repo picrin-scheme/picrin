@@ -7,6 +7,8 @@
 #include "picrin/pair.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"
+#include "picrin/dict.h"
+#include "picrin/string.h"
 
 struct pic_lib *
 pic_make_library(pic_state *pic, pic_value name)
@@ -62,57 +64,131 @@ pic_find_library(pic_state *pic, pic_value spec)
   return pic_lib_ptr(pic_cdr(pic, v));
 }
 
-void
-pic_import(pic_state *pic, pic_value spec)
+static struct pic_dict *
+import_table(pic_state *pic, pic_value spec)
 {
+  const pic_sym sONLY = pic_intern_cstr(pic, "only");
+  const pic_sym sRENAME = pic_intern_cstr(pic, "rename");
+  const pic_sym sPREFIX = pic_intern_cstr(pic, "prefix");
+  const pic_sym sEXCEPT = pic_intern_cstr(pic, "except");
   struct pic_lib *lib;
+  struct pic_dict *imports, *dict;
+  pic_value val, id;
   xh_iter it;
 
+  imports = pic_dict_new(pic);
+
+  if (pic_list_p(spec)) {
+    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sONLY))) {
+      dict = import_table(pic, pic_cadr(pic, spec));
+      pic_for_each (val, pic_cddr(pic, spec)) {
+        pic_dict_set(pic, imports, pic_sym(val), pic_dict_ref(pic, dict, pic_sym(val)));
+      }
+      return imports;
+    }
+    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME))) {
+      imports = import_table(pic, pic_cadr(pic, spec));
+      pic_for_each (val, pic_cddr(pic, spec)) {
+        id = pic_dict_ref(pic, imports, pic_sym(pic_car(pic, val)));
+        pic_dict_del(pic, imports, pic_sym(pic_car(pic, val)));
+        pic_dict_set(pic, imports, pic_sym(pic_cadr(pic, val)), id);
+      }
+      return imports;
+    }
+    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sPREFIX))) {
+      dict = import_table(pic, pic_cadr(pic, spec));
+      xh_begin(&it, &dict->hash);
+      while (xh_next(&it)) {
+        pic_dict_set(pic, imports, pic_intern_cstr(pic, pic_str_cstr(pic_strcat(pic, pic_str_new_cstr(pic, pic_symbol_name(pic, pic_sym(pic_car(pic, pic_cddr(pic, spec))))), pic_str_new_cstr(pic, pic_symbol_name(pic, xh_key(it.e, pic_sym)))))), xh_val(it.e, pic_value));
+      }
+      return imports;
+    }
+    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sEXCEPT))) {
+      imports = import_table(pic, pic_cadr(pic, spec));
+      pic_for_each (val, pic_cddr(pic, spec)) {
+        pic_dict_del(pic, imports, pic_sym(val));
+      }
+      return imports;
+    }
+  }
   lib = pic_find_library(pic, spec);
   if (! lib) {
     pic_errorf(pic, "library not found: ~a", spec);
   }
   xh_begin(&it, &lib->exports);
   while (xh_next(&it)) {
+    pic_dict_set(pic, imports, xh_key(it.e, pic_sym), pic_sym_value(xh_val(it.e, pic_sym)));
+  }
+  return imports;
+}
 
-#if DEBUG
-    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, xh_val(it.e, pic_sym)));
+static void
+import(pic_state *pic, pic_value spec)
+{
+  struct pic_dict *imports;
+  xh_iter it;
+
+  imports = import_table(pic, spec);
+
+  xh_begin(&it, &imports->hash);
+  while (xh_next(&it)) {
+
+#if 1
+    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, pic_sym(xh_val(it.e, pic_value))));
 #endif
 
-    pic_put_rename(pic, pic->lib->env, xh_key(it.e, pic_sym), xh_val(it.e, pic_sym));
+    pic_put_rename(pic, pic->lib->env, xh_key(it.e, pic_sym), pic_sym(xh_val(it.e, pic_value)));
   }
+}
+
+static void
+export(pic_state *pic, pic_value spec)
+{
+  const pic_sym sRENAME = pic_intern_cstr(pic, "rename");
+  pic_value a, b;
+  pic_sym rename;
+
+  if (pic_sym_p(spec)) {        /* (export a) */
+    a = b = spec;
+  } else {                      /* (export (rename a b)) */
+    if (! pic_list_p(spec))
+      goto fail;
+    if (! pic_length(pic, spec) == 3)
+      goto fail;
+    if (! pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME)))
+      goto fail;
+    if (! pic_sym_p(a = pic_list_ref(pic, spec, 1)))
+      goto fail;
+    if (! pic_sym_p(b = pic_list_ref(pic, spec, 2)))
+      goto fail;
+  }
+
+  if (! pic_find_rename(pic, pic->lib->env, pic_sym(a), &rename)) {
+    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, pic_sym(a)));
+  }
+
+#if DEBUG
+  printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym(b)), pic_symbol_name(pic, rename));
+#endif
+
+  xh_put_int(&pic->lib->exports, pic_sym(b), &rename);
+
+  return;
+
+ fail:
+  pic_errorf(pic, "illegal export spec: ~s", spec);
+}
+
+void
+pic_import(pic_state *pic, pic_value spec)
+{
+  import(pic, spec);
 }
 
 void
 pic_export(pic_state *pic, pic_sym sym)
 {
-  pic_sym rename;
-
-  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
-    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
-  }
-
-#if DEBUG
-  printf("* exporting %s as %s\n", pic_symbol_name(pic, sym), pic_symbol_name(pic, rename));
-#endif
-
-  xh_put_int(&pic->lib->exports, sym, &rename);
-}
-
-void
-pic_export_as(pic_state *pic, pic_sym sym, pic_sym as)
-{
-  pic_sym rename;
-
-  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
-    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, sym));
-  }
-
-#if DEBUG
-  printf("* exporting %s as %s\n", pic_symbol_name(pic, as), pic_symbol_name(pic, rename));
-#endif
-
-  xh_put_int(&pic->lib->exports, as, &rename);
+  export(pic, pic_sym_value(sym));
 }
 
 static pic_value
@@ -124,7 +200,7 @@ pic_lib_import(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    pic_import(pic, argv[i]);
+    import(pic, argv[i]);
   }
 
   return pic_none_value();
@@ -133,36 +209,16 @@ pic_lib_import(pic_state *pic)
 static pic_value
 pic_lib_export(pic_state *pic)
 {
-  const pic_sym sRENAME = pic_intern_cstr(pic, "rename");
   size_t argc, i;
-  pic_value *argv, spec, a, b;
+  pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    spec = argv[i];
-    if (pic_sym_p(spec)) {      /* (export a) */
-      pic_export(pic, pic_sym(spec));
-    }
-    else {                      /* (export (rename a b)) */
-      if (! pic_list_p(spec))
-        goto fail;
-      if (! pic_length(pic, spec) == 3)
-        goto fail;
-      if (! pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME)))
-        goto fail;
-      if (! pic_sym_p(a = pic_list_ref(pic, spec, 1)))
-        goto fail;
-      if (! pic_sym_p(b = pic_list_ref(pic, spec, 2)))
-        goto fail;
-      pic_export_as(pic, pic_sym(a), pic_sym(b));
-    }
+    export(pic, argv[i]);
   }
 
   return pic_none_value();
-
- fail:
-  pic_errorf(pic, "illegal export spec: ~s", spec);
 }
 
 static pic_value
