@@ -6,6 +6,7 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/irep.h"
+#include "picrin/dict.h"
 
 struct pic_proc *
 pic_proc_new(pic_state *pic, pic_func_t func, const char *name)
@@ -19,6 +20,7 @@ pic_proc_new(pic_state *pic, pic_func_t func, const char *name)
   proc->u.func.f = func;
   proc->u.func.name = pic_intern_cstr(pic, name);
   proc->env = NULL;
+  proc->attr = NULL;
   return proc;
 }
 
@@ -31,6 +33,7 @@ pic_proc_new_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
   proc->kind = PIC_PROC_KIND_IREP;
   proc->u.irep = irep;
   proc->env = env;
+  proc->attr = NULL;
   return proc;
 }
 
@@ -46,75 +49,25 @@ pic_proc_name(struct pic_proc *proc)
   UNREACHABLE();
 }
 
-void
-pic_proc_cv_init(pic_state *pic, struct pic_proc *proc, size_t cv_size)
+struct pic_dict *
+pic_attr(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_env *env;
-
-  if (proc->env != NULL) {
-    pic_error(pic, "env slot already in use");
+  if (proc->attr == NULL) {
+    proc->attr = pic_dict_new(pic);
   }
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-  env->regc = cv_size;
-  env->regs = (pic_value *)pic_calloc(pic, cv_size, sizeof(pic_value));
-  env->up = NULL;
-
-  proc->env = env;
-}
-
-int
-pic_proc_cv_size(pic_state *pic, struct pic_proc *proc)
-{
-  UNUSED(pic);
-  return proc->env ? proc->env->regc : 0;
+  return proc->attr;
 }
 
 pic_value
-pic_proc_cv_ref(pic_state *pic, struct pic_proc *proc, size_t i)
+pic_attr_ref(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  if (proc->env == NULL) {
-    pic_error(pic, "no closed env");
-  }
-  return proc->env->regs[i];
+  return pic_dict_ref(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key));
 }
 
 void
-pic_proc_cv_set(pic_state *pic, struct pic_proc *proc, size_t i, pic_value v)
+pic_attr_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value v)
 {
-  if (proc->env == NULL) {
-    pic_error(pic, "no closed env");
-  }
-  proc->env->regs[i] = v;
-}
-
-static pic_value
-papply_call(pic_state *pic)
-{
-  size_t argc;
-  pic_value *argv, arg, arg_list;
-  struct pic_proc *proc;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  proc = pic_proc_ptr(pic_proc_cv_ref(pic, pic_get_proc(pic), 0));
-  arg = pic_proc_cv_ref(pic, pic_get_proc(pic), 1);
-
-  arg_list = pic_list_by_array(pic, argc, argv);
-  arg_list = pic_cons(pic, arg, arg_list);
-  return pic_apply(pic, proc, arg_list);
-}
-
-struct pic_proc *
-pic_papply(pic_state *pic, struct pic_proc *proc, pic_value arg)
-{
-  struct pic_proc *pa_proc;
-
-  pa_proc = pic_proc_new(pic, papply_call, "<partial-applied-procedure>");
-  pic_proc_cv_init(pic, pa_proc, 2);
-  pic_proc_cv_set(pic, pa_proc, 0, pic_obj_value(proc));
-  pic_proc_cv_set(pic, pa_proc, 1, arg);
-
-  return pa_proc;
+  pic_dict_set(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key), v);
 }
 
 static pic_value
@@ -206,6 +159,16 @@ pic_proc_for_each(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_proc_attribute(pic_state *pic)
+{
+  struct pic_proc *proc;
+
+  pic_get_args(pic, "l", &proc);
+
+  return pic_obj_value(pic_attr(pic, proc));
+}
+
 void
 pic_init_proc(pic_state *pic)
 {
@@ -213,4 +176,8 @@ pic_init_proc(pic_state *pic)
   pic_defun(pic, "apply", pic_proc_apply);
   pic_defun(pic, "map", pic_proc_map);
   pic_defun(pic, "for-each", pic_proc_for_each);
+
+  pic_deflibrary (pic, "(picrin attribute)") {
+    pic_defun(pic, "attribute", pic_proc_attribute);
+  }
 }

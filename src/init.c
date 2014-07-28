@@ -31,14 +31,11 @@ void pic_init_load(pic_state *);
 void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
+void pic_init_eval(pic_state *);
+void pic_init_lib(pic_state *);
+void pic_init_contrib(pic_state *);
 
 void pic_load_piclib(pic_state *);
-
-void
-pic_init_contrib(pic_state *pic)
-{
-  PIC_CONTRIB_INITS
-}
 
 #define push_sym(pic, name, list)                                       \
   pic_push(pic, pic_symbol_value(pic_intern_cstr(pic, name)), list)
@@ -64,17 +61,17 @@ pic_init_core(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_deflibrary ("(scheme base)") {
+  pic_deflibrary (pic, "(scheme base)") {
 
     /* load core syntaces */
-    pic->lib->senv = pic_null_syntactic_environment(pic);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sSETBANG);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sQUOTE);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sLAMBDA);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sIF);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sBEGIN);
-    pic_define_syntactic_keyword(pic, pic->lib->senv, pic->sDEFINE_SYNTAX);
+    pic->lib->env = pic_null_syntactic_environment(pic);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->rSETBANG);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->rQUOTE);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sLAMBDA, pic->rLAMBDA);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->rIF);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->rBEGIN);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
 
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
@@ -97,6 +94,8 @@ pic_init_core(pic_state *pic)
     pic_init_write(pic); DONE;
     pic_init_read(pic); DONE;
     pic_init_dict(pic); DONE;
+    pic_init_eval(pic); DONE;
+    pic_init_lib(pic); DONE;
 
     pic_load_piclib(pic); DONE;
 

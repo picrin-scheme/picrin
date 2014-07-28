@@ -9,6 +9,7 @@
 #include "picrin.h"
 #include "picrin/number.h"
 #include "picrin/string.h"
+#include "picrin/cont.h"
 
 void
 pic_number_normalize(pic_state *pic, pic_value *v, enum exactness exactp)
@@ -519,6 +520,58 @@ DEFINE_COMP_FUNCTION(>, gt)
 DEFINE_COMP_FUNCTION(<=, le)
 DEFINE_COMP_FUNCTION(>=, ge)
 
+/**
+ * Returns the length of string representing val.
+ * radix is between 2 and 36 (inclusive).
+ * No error checks are performed in this function.
+ */
+static int
+number_string_length(int val, int radix)
+{
+  long long v = val; /* in case val == INT_MIN */
+  int count = 0;
+  if (val == 0) {
+    return 1;
+  }
+  if (val < 0) {
+    v = - v;
+    count = 1;
+  }
+  while (v > 0) {
+    ++count;
+    v /= radix;
+  }
+  return count;
+}
+
+/**
+ * Returns the string representing val.
+ * radix is between 2 and 36 (inclusive).
+ * This function overwrites buffer and stores the result.
+ * No error checks are performed in this function. It is caller's responsibility to avoid buffer-overrun.
+ */
+static void
+number_string(int val, int radix, int length, char *buffer) {
+  const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
+  long long v = val;
+  int i;
+  if (val == 0) {
+    buffer[0] = '0';
+    buffer[1] = '\0';
+    return;
+  }
+  if (val < 0) {
+    buffer[0] = '-';
+    v = -v;
+  }
+
+  for(i = length - 1; v > 0; --i) {
+    buffer[i] = digits[v % radix];
+    v /= radix;
+  }
+  buffer[length] = '\0';
+  return;
+}
 
 static pic_value
 pic_number_real_p(pic_state *pic)
@@ -907,6 +960,26 @@ pic_number_floor_remainder(pic_state *pic)
 }
 
 static pic_value
+pic_number_floor2(pic_state *pic)
+{
+  int i, j;
+  bool e1, e2;
+  double q, r;
+
+  pic_get_args(pic, "II", &i, &e1, &j, &e2);
+
+  q = floor((double)i/j);
+  r = i - j * q;
+
+  if (e1 && e2) {
+    return pic_values2(pic, pic_int_value(q), pic_int_value(r));
+  }
+  else {
+    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
+  }
+}
+
+static pic_value
 pic_number_trunc_quotient(pic_state *pic)
 {
   pic_bigfloat *f;
@@ -1118,6 +1191,19 @@ pic_number_atan(pic_state *pic)
   }
   mpfr_clear(g);
   return pic_obj_value(f);
+}
+
+static pic_value
+pic_number_exact_integer_sqrt(pic_state *pic)
+{
+  int k, n, m;
+
+  pic_get_args(pic, "i", &k);
+
+  n = sqrt(k);
+  m = k - n * n;
+
+  return pic_values2(pic, pic_int_value(n), pic_int_value(m));
 }
 
 static pic_value
@@ -1536,8 +1622,18 @@ pic_number_number_to_string(pic_state *pic)
   pic_value n;
   int radix = 10;
 
-  pic_get_args(pic, "n|i", &n, &radix);
-  return pic_number_to_string(pic, n, radix);
+  pic_get_args(pic, "F|i", &f, &e, &radix);
+
+  if (radix < 2 || radix > 36) {
+    pic_errorf(pic, "number->string: invalid radix %d (between 2 and 36, inclusive)", radix);
+  }
+
+  if (e) {
+    int ival = (int) f;
+    int ilen = number_string_length(ival, radix);
+    char buf[ilen + 1];
+
+    number_string(ival, radix, ilen, buf);
 
 }
 
@@ -1679,8 +1775,10 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "abs", pic_number_abs);
   pic_defun(pic, "floor-quotient", pic_number_floor_quotient);
   pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
+  pic_defun(pic, "floor/", pic_number_floor2);
   pic_defun(pic, "truncate-quotient", pic_number_trunc_quotient);
   pic_defun(pic, "truncate-remainder", pic_number_trunc_remainder);
+  pic_defun(pic, "truncate/", pic_number_trunc2);
   pic_defun(pic, "modulo", pic_number_floor_remainder);
   pic_defun(pic, "quotient", pic_number_trunc_quotient);
   pic_defun(pic, "remainder", pic_number_trunc_remainder);
@@ -1696,6 +1794,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "round", pic_number_round);
   pic_gc_arena_restore(pic, ai);
 
+  pic_defun(pic, "exact-integer-sqrt", pic_number_exact_integer_sqrt);
   pic_defun(pic, "square", pic_number_square);
   pic_defun(pic, "integer-sqrt", pic_number_integer_sqrt);
   pic_defun(pic, "expt", pic_number_expt);
@@ -1709,7 +1808,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "string->number", pic_number_string_to_number);
   pic_gc_arena_restore(pic, ai);
 
-  pic_deflibrary ("(scheme inexact)") {
+  pic_deflibrary (pic, "(scheme inexact)") {
     pic_defun(pic, "finite?", pic_number_finite_p);
     pic_defun(pic, "infinite?", pic_number_infinite_p);
     pic_defun(pic, "nan?", pic_number_nan_p);

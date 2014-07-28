@@ -10,6 +10,7 @@
 #include "picrin/proc.h"
 #include "picrin/cont.h"
 #include "picrin/pair.h"
+#include "picrin/error.h"
 
 pic_value
 pic_values0(pic_state *pic)
@@ -118,7 +119,6 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
   cont->blk = pic->blk;
-  PIC_BLK_INCREF(pic, cont->blk);
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
@@ -143,6 +143,11 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
+  cont->try_jmp_idx = pic->try_jmp_idx;
+  cont->try_jmp_size = pic->try_jmp_size;
+  cont->try_jmps = pic_alloc(pic, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  memcpy(cont->try_jmps, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+
   cont->results = pic_undef_value();
 }
 
@@ -158,8 +163,12 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
 noreturn static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
+  void pic_vm_tear_off(pic_state *);
   char v;
   struct pic_cont *tmp = cont;
+  struct pic_block *blk;
+
+  pic_vm_tear_off(pic);         /* tear off */
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
@@ -168,8 +177,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
-  PIC_BLK_DECREF(pic, pic->blk);
-  PIC_BLK_INCREF(pic, cont->blk);
+  blk = pic->blk;
   pic->blk = cont->blk;
 
   pic->stbase = (pic_value *)pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
@@ -189,13 +197,18 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
 
+  pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
+  memcpy(pic->try_jmps, cont->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
+  pic->try_jmp_size = cont->try_jmp_size;
+  pic->try_jmp_idx = cont->try_jmp_idx;
+
   memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);
 
   longjmp(tmp->jmp, 1);
 }
 
 static void
-walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
+walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
 {
   if (here == there)
     return;
@@ -210,6 +223,34 @@ walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
   }
 }
 
+static pic_value
+pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
+{
+  struct pic_block *here;
+  pic_value val;
+
+  if (in != NULL) {
+    pic_apply0(pic, in);        /* enter */
+  }
+
+  here = pic->blk;
+  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
+  pic->blk->prev = here;
+  pic->blk->depth = here->depth + 1;
+  pic->blk->in = in;
+  pic->blk->out = out;
+
+  val = pic_apply0(pic, thunk);
+
+  pic->blk = here;
+
+  if (out != NULL) {
+    pic_apply0(pic, out);       /* exit */
+  }
+
+  return val;
+}
+
 noreturn static pic_value
 cont_call(pic_state *pic)
 {
@@ -221,7 +262,7 @@ cont_call(pic_state *pic)
   proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
 
-  cont = (struct pic_cont *)pic_ptr(pic_proc_cv_ref(pic, proc, 0));
+  cont = (struct pic_cont *)pic_ptr(pic_attr_ref(pic, proc, "@@cont"));
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
@@ -245,8 +286,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
     c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
-    pic_proc_cv_init(pic, c, 1);
-    pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
 
     return pic_apply1(pic, proc, pic_obj_value(c));
   }
@@ -267,8 +307,7 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
     c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
-    pic_proc_cv_init(pic, c, 1);
-    pic_proc_cv_set(pic, c, 0, pic_obj_value(cont));
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
 
     return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
   }
@@ -288,33 +327,10 @@ static pic_value
 pic_cont_dynamic_wind(pic_state *pic)
 {
   struct pic_proc *in, *thunk, *out;
-  pic_value v;
 
   pic_get_args(pic, "lll", &in, &thunk, &out);
 
-  /* enter */
-  pic_apply0(pic, in);
-  {
-    pic_block *here;
-
-    here = pic->blk;
-    pic->blk = (pic_block *)pic_alloc(pic, sizeof(pic_block));
-    pic->blk->prev = here;
-    pic->blk->depth = here->depth + 1;
-    pic->blk->in = in;
-    pic->blk->out = out;
-    pic->blk->refcnt = 1;
-    PIC_BLK_INCREF(pic, here);
-
-    v = pic_apply0(pic, thunk);
-
-    PIC_BLK_DECREF(pic, pic->blk);
-    pic->blk = here;
-  }
-  /* exit */
-  pic_apply0(pic, out);
-
-  return v;
+  return pic_dynamic_wind(pic, in, thunk, out);
 }
 
 static pic_value

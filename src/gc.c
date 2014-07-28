@@ -20,7 +20,6 @@
 #include "picrin/lib.h"
 #include "picrin/var.h"
 #include "picrin/data.h"
-#include "picrin/box.h"
 #include "picrin/dict.h"
 
 #if GC_DEBUG
@@ -324,18 +323,6 @@ gc_free(pic_state *pic, union header *bp)
 static void gc_mark(pic_state *, pic_value);
 static void gc_mark_object(pic_state *pic, struct pic_object *obj);
 
-static void
-gc_mark_block(pic_state *pic, pic_block *blk)
-{
-  while (blk) {
-    if (blk->in)
-      gc_mark_object(pic, (struct pic_object *)blk->in);
-    if (blk->out)
-      gc_mark_object(pic, (struct pic_object *)blk->out);
-    blk = blk->prev;
-  }
-}
-
 static bool
 gc_is_marked(union header *p)
 {
@@ -382,6 +369,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (proc->env) {
       gc_mark_object(pic, (struct pic_object *)proc->env);
     }
+    if (proc->attr) {
+      gc_mark_object(pic, (struct pic_object *)proc->attr);
+    }
     if (pic_proc_irep_p(proc)) {
       gc_mark_object(pic, (struct pic_object *)proc->u.irep);
     }
@@ -423,10 +413,10 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_cont *cont = (struct pic_cont *)obj;
     pic_value *stack;
     pic_callinfo *ci;
-    int i;
+    size_t i;
 
     /* block */
-    gc_mark_block(pic, cont->blk);
+    gc_mark_object(pic, (struct pic_object *)cont->blk);
 
     /* stack */
     for (stack = cont->st_ptr; stack != cont->st_ptr + cont->sp_offset; ++stack) {
@@ -441,8 +431,15 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
 
     /* arena */
-    for (i = 0; i < cont->arena_idx; ++i) {
+    for (i = 0; i < (size_t)cont->arena_idx; ++i) {
       gc_mark_object(pic, cont->arena[i]);
+    }
+
+    /* error handlers */
+    for (i = 0; i < cont->try_jmp_idx; ++i) {
+      if (cont->try_jmps[i].handler) {
+        gc_mark_object(pic, (struct pic_object *)cont->try_jmps[i].handler);
+      }
     }
 
     /* result values */
@@ -468,21 +465,15 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_SC: {
-    struct pic_sc *sc = (struct pic_sc *)obj;
-    gc_mark(pic, sc->expr);
-    gc_mark_object(pic, (struct pic_object *)sc->senv);
-    break;
-  }
   case PIC_TT_LIB: {
     struct pic_lib *lib = (struct pic_lib *)obj;
     gc_mark(pic, lib->name);
-    gc_mark_object(pic, (struct pic_object *)lib->senv);
+    gc_mark_object(pic, (struct pic_object *)lib->env);
     break;
   }
   case PIC_TT_VAR: {
     struct pic_var *var = (struct pic_var *)obj;
-    gc_mark(pic, var->value);
+    gc_mark(pic, var->stack);
     if (var->conv) {
       gc_mark_object(pic, (struct pic_object *)var->conv);
     }
@@ -510,11 +501,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_BOX: {
-    struct pic_box *box = (struct pic_box *)obj;
-    gc_mark(pic, box->value);
-    break;
-  }
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
     xh_iter it;
@@ -522,6 +508,20 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     xh_begin(&it, &dict->hash);
     while (xh_next(&it)) {
       gc_mark(pic, xh_val(it.e, pic_value));
+    }
+    break;
+  }
+  case PIC_TT_BLK: {
+    struct pic_block *blk = (struct pic_block *)obj;
+
+    if (blk->prev) {
+      gc_mark_object(pic, (struct pic_object *)blk->prev);
+    }
+    if (blk->in) {
+      gc_mark_object(pic, (struct pic_object *)blk->in);
+    }
+    if (blk->out) {
+      gc_mark_object(pic, (struct pic_object *)blk->out);
     }
     break;
   }
@@ -558,7 +558,9 @@ gc_mark_phase(pic_state *pic)
   xh_iter it;
 
   /* block */
-  gc_mark_block(pic, pic->blk);
+  if (pic->blk) {
+    gc_mark_object(pic, (struct pic_object *)pic->blk);
+  }
 
   /* stack */
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
@@ -591,6 +593,13 @@ gc_mark_phase(pic_state *pic)
   xh_begin(&it, &pic->macros);
   while (xh_next(&it)) {
     gc_mark_object(pic, xh_val(it.e, struct pic_object *));
+  }
+
+  /* error handlers */
+  for (i = 0; i < pic->try_jmp_idx; ++i) {
+    if (pic->try_jmps[i].handler) {
+      gc_mark_object(pic, (struct pic_object *)pic->try_jmps[i].handler);
+    }
   }
 
   /* library table */
@@ -652,18 +661,15 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->st_ptr);
     pic_free(pic, cont->ci_ptr);
     pic_free(pic, cont->arena);
-    PIC_BLK_DECREF(pic, cont->blk);
+    pic_free(pic, cont->try_jmps);
     break;
   }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destroy(&senv->renames);
+    xh_destroy(&senv->map);
     break;
   }
   case PIC_TT_MACRO: {
-    break;
-  }
-  case PIC_TT_SC: {
     break;
   }
   case PIC_TT_LIB: {
@@ -687,12 +693,12 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     xh_destroy(&data->storage);
     break;
   }
-  case PIC_TT_BOX: {
-    break;
-  }
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
     xh_destroy(&dict->hash);
+    break;
+  }
+  case PIC_TT_BLK: {
     break;
   }
   case PIC_TT_NIL:

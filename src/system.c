@@ -47,7 +47,7 @@ pic_system_exit(pic_state *pic)
     }
   }
 
-  PIC_BLK_EXIT(pic);
+  pic_close(pic);
 
   exit(status);
 }
@@ -126,7 +126,7 @@ pic_system_getenvs(pic_state *pic)
 void
 pic_init_system(pic_state *pic)
 {
-  pic_deflibrary ("(scheme process-context)") {
+  pic_deflibrary (pic, "(scheme process-context)") {
     pic_defun(pic, "command-line", pic_system_cmdline);
     pic_defun(pic, "exit", pic_system_exit);
     pic_defun(pic, "emergency-exit", pic_system_emergency_exit);

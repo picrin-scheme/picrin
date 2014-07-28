@@ -11,6 +11,7 @@
 #include "picrin/port.h"
 #include "picrin/string.h"
 #include "picrin/blob.h"
+#include "picrin/var.h"
 
 pic_value
 pic_eof_object()
@@ -42,7 +43,7 @@ pic_stdout(pic_state *pic)
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }
 
-static pic_value
+static struct pic_port *
 port_new_stdport(pic_state *pic, xFILE *file, short dir)
 {
   struct pic_port *port;
@@ -51,7 +52,7 @@ port_new_stdport(pic_state *pic, xFILE *file, short dir)
   port->file = file;
   port->flags = dir | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
-  return pic_obj_value(port);
+  return port;
 }
 
 struct pic_port *
@@ -306,7 +307,7 @@ pic_port_open_output_string(pic_state *pic)
 static pic_value
 pic_port_get_output_string(pic_state *pic)
 {
-  struct pic_port *port = pic_stdout(pic);;
+  struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "|p", &port);
 
@@ -353,9 +354,9 @@ pic_port_open_output_bytevector(pic_state *pic)
 static pic_value
 pic_port_get_output_bytevector(pic_state *pic)
 {
-  struct pic_port *port = pic_stdout(pic);;
+  struct pic_port *port = pic_stdout(pic);
+  pic_blob *blob;
   long endpos;
-  char *buf;
 
   pic_get_args(pic, "|p", &port);
 
@@ -367,16 +368,16 @@ pic_port_get_output_bytevector(pic_state *pic)
   xrewind(port->file);
 
   /* copy to buf */
-  buf = (char *)pic_alloc(pic, endpos);
-  xfread(buf, 1, endpos, port->file);
+  blob = pic_blob_new(pic, endpos);
+  xfread(blob->data, 1, endpos, port->file);
 
-  return pic_obj_value(pic_blob_new(pic, buf, endpos));
+  return pic_obj_value(blob);
 }
 
 static pic_value
 pic_port_read_char(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic);
 
   pic_get_args(pic, "|p", &port);
@@ -387,14 +388,14 @@ pic_port_read_char(pic_state *pic)
     return pic_eof_object();
   }
   else {
-    return pic_char_value(c);
+    return pic_char_value((char)c);
   }
 }
 
 static pic_value
 pic_port_peek_char(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic);
 
   pic_get_args(pic, "|p", &port);
@@ -406,14 +407,14 @@ pic_port_peek_char(pic_state *pic)
   }
   else {
     xungetc(c, port->file);
-    return pic_char_value(c);
+    return pic_char_value((char)c);
   }
 }
 
 static pic_value
 pic_port_read_line(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic), *buf;
   struct pic_string *str;
 
@@ -452,16 +453,16 @@ pic_port_read_string(pic_state *pic){
   struct pic_port *port = pic_stdin(pic), *buf;
   pic_str *str;
   int k, i;
-  char c;
+  int c;
 
   pic_get_args(pic, "i|p", &k,  &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-stritg");
 
+  c = EOF;
   buf = pic_open_output_string(pic);
   for(i = 0; i < k; ++i) {
-    c = xfgetc(port->file);
-    if( c == EOF){
+    if((c = xfgetc(port->file)) == EOF){
       break;
     }
     xfputc(c, buf->file);
@@ -480,7 +481,7 @@ pic_port_read_string(pic_state *pic){
 static pic_value
 pic_port_read_byte(pic_state *pic){
   struct pic_port *port = pic_stdin(pic);
-  char c;
+  int c;
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-u8");
@@ -494,14 +495,15 @@ pic_port_read_byte(pic_state *pic){
 static pic_value
 pic_port_peek_byte(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic);
 
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "peek-u8");
 
-  if ((c = xfgetc(port->file)) == EOF) {
+  c = xfgetc(port->file);
+  if (c == EOF) {
     return pic_eof_object();
   }
   else {
@@ -524,28 +526,32 @@ pic_port_byte_ready_p(pic_state *pic)
 
 
 static pic_value
-pic_port_read_blob(pic_state *pic){
+pic_port_read_blob(pic_state *pic)
+{
   struct pic_port *port = pic_stdin(pic);
+  pic_blob *blob;
   int k, i;
-  char *buf;
 
   pic_get_args(pic, "i|p", &k,  &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector");
 
-  buf = pic_calloc(pic, k, sizeof(char));
-  i = xfread(buf, sizeof(char), k, port->file);
+  blob = pic_blob_new(pic, k);
+
+  i = xfread(blob->data, sizeof(char), k, port->file);
   if ( i == 0 ) {
     return pic_eof_object();
   }
   else {
-    pic_realloc(pic, buf, i);
-    return pic_obj_value(pic_blob_new(pic, buf, i));
+    pic_realloc(pic, blob->data, i);
+    blob->len = i;
+    return pic_obj_value(blob);
   }
 }
 
 static pic_value
-pic_port_read_blob_ip(pic_state *pic){
+pic_port_read_blob_ip(pic_state *pic)
+{
   struct pic_port *port;
   struct pic_blob *bv;
   int i, n, start, end, len;
@@ -568,7 +574,7 @@ pic_port_read_blob_ip(pic_state *pic){
   i = xfread(buf, sizeof(char), len, port->file);
   memcpy(bv->data + start, buf, i);
   pic_free(pic, buf);
-  
+
   if ( i == 0) {
     return pic_eof_object();
   }
@@ -684,9 +690,21 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_defvar(pic, "current-input-port", port_new_stdport(pic, xstdin, PIC_PORT_IN));
-  pic_defvar(pic, "current-output-port", port_new_stdport(pic, xstdout, PIC_PORT_OUT));
-  pic_defvar(pic, "current-error-port", port_new_stdport(pic, xstderr, PIC_PORT_OUT));
+  struct pic_port *STDIN, *STDOUT, *STDERR;
+
+  STDIN = port_new_stdport(pic, xstdin, PIC_PORT_IN);
+  STDOUT = port_new_stdport(pic, xstdout, PIC_PORT_OUT);
+  STDERR = port_new_stdport(pic, xstderr, PIC_PORT_OUT);
+
+  pic_deflibrary (pic, "(picrin port)") {
+    pic_define(pic, "standard-input-port", pic_obj_value(STDIN));
+    pic_define(pic, "standard-output-port", pic_obj_value(STDOUT));
+    pic_define(pic, "standard-error-port", pic_obj_value(STDERR));
+  }
+
+  pic_define(pic, "current-input-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDIN), NULL)));
+  pic_define(pic, "current-output-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDOUT), NULL)));
+  pic_define(pic, "current-error-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDERR), NULL)));
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);

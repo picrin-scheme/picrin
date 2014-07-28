@@ -116,13 +116,12 @@ enum pic_tt {
   PIC_TT_CONT,
   PIC_TT_SENV,
   PIC_TT_MACRO,
-  PIC_TT_SC,
   PIC_TT_LIB,
   PIC_TT_VAR,
   PIC_TT_IREP,
   PIC_TT_DATA,
-  PIC_TT_BOX,
-  PIC_TT_DICT
+  PIC_TT_DICT,
+  PIC_TT_BLK,
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -285,8 +284,6 @@ pic_type_repr(enum pic_tt tt)
     return "cont";
   case PIC_TT_PROC:
     return "proc";
-  case PIC_TT_SC:
-    return "sc";
   case PIC_TT_SENV:
     return "senv";
   case PIC_TT_MACRO:
@@ -299,10 +296,10 @@ pic_type_repr(enum pic_tt tt)
     return "irep";
   case PIC_TT_DATA:
     return "data";
-  case PIC_TT_BOX:
-    return "box";
   case PIC_TT_DICT:
     return "dict";
+  case PIC_TT_BLK:
+    return "block";
   }
   UNREACHABLE();
 }

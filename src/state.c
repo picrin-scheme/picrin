@@ -9,6 +9,7 @@
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/cont.h"
+#include "picrin/error.h"
 
 void pic_init_core(pic_state *);
 
@@ -22,17 +23,13 @@ pic_open(int argc, char *argv[], char **envp)
 
   pic = (pic_state *)malloc(sizeof(pic_state));
 
+  /* root block */
+  pic->blk = NULL;
+
   /* command line */
   pic->argc = argc;
   pic->argv = argv;
   pic->envp = envp;
-
-  /* root block */
-  pic->blk = (pic_block *)malloc(sizeof(pic_block));
-  pic->blk->prev = NULL;
-  pic->blk->depth = 0;
-  pic->blk->in = pic->blk->out = NULL;
-  pic->blk->refcnt = 1;
 
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)calloc(PIC_STACK_SIZE, sizeof(pic_value));
@@ -70,7 +67,9 @@ pic_open(int argc, char *argv[], char **envp)
   /* error handling */
   pic->jmp = NULL;
   pic->err = NULL;
-  pic->try_jmps = NULL;
+  pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
+  pic->try_jmp_idx = 0;
+  pic->try_jmp_size = PIC_RESCUE_SIZE;
 
   /* GC arena */
   pic->arena = (struct pic_object **)calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
@@ -95,7 +94,6 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sUNQUOTE, "unquote");
   register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
   register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
-  register_core_symbol(pic, sDEFINE_MACRO, "define-macro");
   register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
   register_core_symbol(pic, sIMPORT, "import");
   register_core_symbol(pic, sEXPORT, "export");
@@ -116,6 +114,29 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sNOT, "not");
   pic_gc_arena_restore(pic, ai);
 
+#define register_renamed_symbol(pic,slot,name) do {              \
+    pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));     \
+  } while (0)
+
+  ai = pic_gc_arena_preserve(pic);
+  register_renamed_symbol(pic, rDEFINE, "define");
+  register_renamed_symbol(pic, rLAMBDA, "lambda");
+  register_renamed_symbol(pic, rIF, "if");
+  register_renamed_symbol(pic, rBEGIN, "begin");
+  register_renamed_symbol(pic, rSETBANG, "set!");
+  register_renamed_symbol(pic, rQUOTE, "quote");
+  register_renamed_symbol(pic, rDEFINE_SYNTAX, "define-syntax");
+  register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
+  register_renamed_symbol(pic, rIMPORT, "import");
+  register_renamed_symbol(pic, rEXPORT, "export");
+  pic_gc_arena_restore(pic, ai);
+
+  /* root block */
+  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
+  pic->blk->prev = NULL;
+  pic->blk->depth = 0;
+  pic->blk->in = pic->blk->out = NULL;
+
   pic_init_core(pic);
 
   /* set library */
@@ -131,7 +152,12 @@ pic_close(pic_state *pic)
   xh_iter it;
 
   /* invoke exit handlers */
-  PIC_BLK_EXIT(pic);
+  while (pic->blk) {
+    if (pic->blk->out) {
+      pic_apply0(pic, pic->blk->out);
+    }
+    pic->blk = pic->blk->prev;
+  }
 
   /* clear out root objects */
   pic->sp = pic->stbase;
@@ -154,6 +180,7 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   free(pic->globals);
+  free(pic->try_jmps);
   xh_destroy(&pic->syms);
   xh_destroy(&pic->global_tbl);
   xh_destroy(&pic->macros);

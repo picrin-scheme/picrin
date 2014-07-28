@@ -7,7 +7,7 @@ if (REGEX_FOUND)
 
   file(GLOB PICRIN_REGEX_SOURCES ${PROJECT_SOURCE_DIR}/contrib/10.regexp/src/*.c)
 
-  list(APPEND PICRIN_CONTRIB_INITS "void pic_init_regexp(pic_state *)\; pic_init_regexp(pic)\;")
+  list(APPEND PICRIN_CONTRIB_INITS regexp)
   list(APPEND PICRIN_CONTRIB_LIBRARIES ${REGEX_LIBRARIES})
   list(APPEND PICRIN_CONTRIB_SOURCES ${PICRIN_REGEX_SOURCES})
 endif()

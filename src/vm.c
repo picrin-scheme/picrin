@@ -53,6 +53,7 @@ pic_get_proc(pic_state *pic)
  *  l   lambda object
  *  p   port object
  *  d   dictionary object
+ *  e   error object
  *
  *  |  optional operator
  *  *  variable length operator
@@ -126,7 +127,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *f = mpfr_get_d(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
           break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int or rational");
+          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
         }
         i++;
       }
@@ -164,7 +165,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *e = true;
           break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int or rational");
+          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
         }
         i++;
       }
@@ -202,7 +203,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *e = true;
           break;
         default:
-          pic_error(pic, "pic_get_args: expected float or int or rational");
+          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
         }
         i++;
       }
@@ -233,7 +234,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *k = mpfr_get_si(pic_bigfloat_ptr(v)->f, MPFR_RNDN);
           break;
         default:
-          pic_error(pic, "pic_get_args: expected int");
+          pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
         }
         i++;
       }
@@ -373,23 +374,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *str = pic_str_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected string");
+          pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
         }
         i++;
       }
       break;
     }
     case 'z': {
-      pic_value str;
       const char **cstr;
+      pic_value v;
 
       cstr = va_arg(ap, const char **);
       if (i < argc) {
-        str = GET_OPERAND(pic,i);
-        if (! pic_str_p(str)) {
-          pic_error(pic, "pic_get_args: expected string");
+        v = GET_OPERAND(pic,i);
+        if (! pic_str_p(v)) {
+          pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
         }
-        *cstr = pic_str_cstr(pic_str_ptr(str));
+        *cstr = pic_str_cstr(pic_str_ptr(v));
         i++;
       }
       break;
@@ -405,7 +406,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *m = pic_sym(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected symbol");
+          pic_errorf(pic, "pic_get_args: expected symbol, but got ~s", v);
         }
         i++;
       }
@@ -422,7 +423,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *vec = pic_vec_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected vector");
+          pic_errorf(pic, "pic_get_args: expected vector, but got ~s", v);
         }
         i++;
       }
@@ -439,7 +440,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *b = pic_blob_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected bytevector");
+          pic_errorf(pic, "pic_get_args: expected bytevector, but got ~s", v);
         }
         i++;
       }
@@ -456,7 +457,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *c = pic_char(v);
         }
         else {
-          pic_error(pic, "pic_get_args: expected char");
+          pic_errorf(pic, "pic_get_args: expected char, but got ~s", v);
         }
         i++;
       }
@@ -473,7 +474,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *l = pic_proc_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args, expected procedure");
+          pic_errorf(pic, "pic_get_args, expected procedure, but got ~s", v);
         }
         i++;
       }
@@ -490,7 +491,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *p = pic_port_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args, expected port");
+          pic_errorf(pic, "pic_get_args, expected port, but got ~s", v);
         }
         i++;
       }
@@ -507,14 +508,31 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *d = pic_dict_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args, expected dictionary");
+          pic_errorf(pic, "pic_get_args, expected dictionary, but got ~s", v);
+        }
+        i++;
+      }
+      break;
+    }
+    case 'e': {
+      struct pic_error **e;
+      pic_value v;
+
+      e = va_arg(ap, struct pic_error **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_error_p(v)) {
+          *e = pic_error_ptr(v);
+        }
+        else {
+          pic_error(pic, "pic_get_args, expected error");
         }
         i++;
       }
       break;
     }
     default:
-      pic_error(pic, "pic_get_args: invalid argument specifier given");
+      pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
     }
   }
   if ('*' == c) {
@@ -543,7 +561,7 @@ global_ref(pic_state *pic, const char *name)
   pic_sym sym, rename;
 
   sym = pic_intern_cstr(pic, name);
-  if (! pic_find_rename(pic, pic->lib->senv, sym, &rename)) {
+  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
     return SIZE_MAX;
   }
   if (! (e = xh_get_int(&pic->global_tbl, rename))) {
@@ -565,7 +583,7 @@ global_def(pic_state *pic, const char *name)
   }
 
   /* register to the senv */
-  rename = pic_add_rename(pic, pic->lib->senv, sym);
+  rename = pic_add_rename(pic, pic->lib->env, sym);
 
   /* register to the global table */
   gidx = pic->glen++;
@@ -594,7 +612,7 @@ pic_ref(pic_state *pic, const char *name)
 
   gid = global_ref(pic, name);
   if (gid == SIZE_MAX) {
-    pic_error(pic, "symbol not defined");
+    pic_errorf(pic, "symbol \"%s\" not defined", name);
   }
   return pic->globals[gid];
 }
@@ -611,6 +629,18 @@ pic_set(pic_state *pic, const char *name, pic_value value)
   pic->globals[gid] = value;
 }
 
+pic_value
+pic_funcall(pic_state *pic, const char *name, pic_list args)
+{
+  pic_value proc;
+
+  proc = pic_ref(pic, name);
+
+  pic_assert_type(pic, proc, proc);
+
+  return pic_apply(pic, pic_proc_ptr(proc), args);
+}
+
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
@@ -618,15 +648,6 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 
   proc = pic_proc_new(pic, cfunc, name);
   pic_define(pic, name, pic_obj_value(proc));
-}
-
-void
-pic_defvar(pic_state *pic, const char *name, pic_value init)
-{
-  struct pic_var *var;
-
-  var = pic_var_new(pic, init, NULL);
-  pic_define(pic, name, pic_obj_value(pic_wrap_var(pic, var)));
 }
 
 static void
@@ -641,18 +662,34 @@ vm_push_env(pic_state *pic)
 }
 
 static void
-vm_tear_off(pic_state *pic)
+vm_tear_off(pic_callinfo *ci)
 {
   struct pic_env *env;
   int i;
 
-  assert(pic->ci->env != NULL);
+  assert(ci->env != NULL);
 
-  env = pic->ci->env;
+  env = ci->env;
+
+  if (env->regs == env->storage) {
+    return;                     /* is torn off */
+  }
   for (i = 0; i < env->regc; ++i) {
     env->storage[i] = env->regs[i];
   }
   env->regs = env->storage;
+}
+
+void
+pic_vm_tear_off(pic_state *pic)
+{
+  pic_callinfo *ci;
+
+  for (ci = pic->ci; ci > pic->cibase; ci--) {
+    if (ci->env != NULL) {
+      vm_tear_off(ci);
+    }
+  }
 }
 
 pic_value
@@ -876,6 +913,15 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     L_CALL:
       x = pic->sp[-c.u.i];
       if (! pic_proc_p(x)) {
+
+        if (pic_var_p(x)) {
+          if (c.u.i != 1) {
+            pic_errorf(pic, "invalid call-sequence for var object");
+          }
+          POP();
+          PUSH(pic_var_ref(pic, pic_var_ptr(x)));
+          NEXT;
+        }
 	pic_errorf(pic, "invalid application: ~s", x);
       }
       proc = pic_proc_ptr(x);
@@ -965,7 +1011,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
 
       if (pic->ci->env != NULL) {
-        vm_tear_off(pic);
+        vm_tear_off(pic->ci);
       }
 
       if (c.u.i == -1) {
@@ -991,7 +1037,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
 
       if (pic->ci->env != NULL) {
-        vm_tear_off(pic);
+        vm_tear_off(pic->ci);
       }
 
       pic->ci->retc = c.u.i;
@@ -1169,14 +1215,4 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   ci->fp = pic->sp;
   ci->retc = pic_length(pic, args);
   return pic_obj_value(proc);
-}
-
-pic_value
-pic_eval(pic_state *pic, pic_value program)
-{
-  struct pic_proc *proc;
-
-  proc = pic_compile(pic, program);
-
-  return pic_apply(pic, proc, pic_nil_value());
 }

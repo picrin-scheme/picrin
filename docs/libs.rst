@@ -49,18 +49,27 @@ Utility functions and syntaces for macro definition.
 
 - define-macro
 - gensym
-- macroexpand expr
+- ungensym
+- macroexpand
+- macroexpand-1
 
 Old-fashioned macro.
 
-- make-syntactic-closure
 - identifier?
 - identifier=?
+
+- make-syntactic-closure
+- close-syntax
+- capture-syntactic-environment
+
+- sc-macro-transformer
+- rsc-macro-transformer
 
 Syntactic closures.
 
 - er-macro-transformer
 - ir-macro-transformer
+- strip-syntax
 
 Explicit renaming macro family.
 
@@ -137,6 +146,70 @@ This expression is equivalent to ``(filter even? (iota 10))`` but it is more pro
   Returns ``()`` whatever value is given. The identity element of list composition. This operator corresponds to Haskell's fail method of Monad class.
 
 
+(picrin array)
+--------------
+
+Resizable random-access list.
+
+Technically, picrin's array is implemented as a ring-buffer, effective double-ended queue data structure (deque) that can operate pushing and poping from both of front and back in constant time. In addition to the deque interface, array provides standard sequence interface similar to functions specified by R7RS.
+
+- **(make-array [capacity])**
+
+  Returns a newly allocated array object. If capacity is given, internal data chunk of the array object will be initialized by capacity size.
+
+- **(array . objs)**
+
+  Returns an array initialized with objs.
+
+- **(array? . obj)**
+
+  Returns #t if obj is an array.
+
+- **(array-length ary)**
+
+  Returns the length of ary.
+
+- **(array-ref ary i)**
+
+  Like ``list-ref``, return the object pointed by the index i.
+
+- **(array-set! ary i obj)**
+
+  Like ``list-set!``, substitutes the object pointed by the index i with given obj.
+
+- **(array-push! ary obj)**
+
+  Adds obj to the end of ary.
+
+- **(array-pop! ary)**
+
+  Removes the last element of ary, and returns it.
+
+- **(array-unshift! ary obj)**
+
+  Adds obj to the front of ary.
+
+- **(array-shift! ary)**
+
+  Removes the first element of ary, and returns it.
+
+- **(array-map proc ary)**
+
+  Performs mapping operation on ary.
+
+- **(array-for-each proc ary)**
+
+  Performs mapping operation on ary, but discards the result.
+
+- **(array->list ary)**
+
+  Converts ary into list.
+
+- **(list->array list)**
+
+  Converts list into array.
+
+
 (picrin dictionary)
 -------------------
 
@@ -144,9 +217,9 @@ Symbol to Object table. Internally it is implemented on hash-table.
 
 Note that dictionary is not a weak map; if you are going to make a highly memory-consuming program with dictionaries, you should know that dictionaries keep their bound objects and never let them free until you explicitly deletes bindings.
 
-- **(dictionary)**
+- **(dictionary . plist)**
 
-  Returns a newly allocated empty dictionary. In the future, it is planned to extend this function to take optional arguments for initial key/values.
+  Returns a newly allocated empty dictionary. The dictionary is initialized with the content of plist.
 
 - **(dictionary? obj)**
 
@@ -167,6 +240,31 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 - **(dictionary-size dict)**
 
   Returns the number of registered elements in dict.
+
+- **(dicitonary-map proc dict)**
+
+  Perform mapping action onto dictionary object. ``proc`` is called by a sequence ``(proc key val)``.
+
+- **(dictionary-for-each proc dict)**
+
+  Similar to ``dictionary-map``, but discards the result.
+
+- **(dictionary->plist dict)**
+- **(plist->dictionary plist)**
+- **(dictionary->alist dict)**
+- **(alist->dictionary alist)**
+
+  Conversion between dictionary and alist/plist.
+
+
+(picrin pretty-print)
+---------------------
+
+Pretty-printer.
+
+- **(pretty-print obj)**
+
+  Prints obj with human-readable indention to current-output-port.
 
 
 (picrin user)

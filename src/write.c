@@ -2,6 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
+#include <math.h>
+
 #include "picrin.h"
 #include "picrin/port.h"
 #include "picrin/pair.h"
@@ -55,29 +57,22 @@ struct writer_control {
 #define WRITE_MODE 1
 #define DISPLAY_MODE 2
 
-static struct writer_control *
-writer_control_new(pic_state *pic, xFILE *file, int mode)
+static void
+writer_control_init(struct writer_control *p, pic_state *pic, xFILE *file, int mode)
 {
-  struct writer_control *p;
-
-  p = (struct writer_control *)pic_alloc(pic, sizeof(struct writer_control));
   p->pic = pic;
   p->file = file;
   p->mode = mode;
   p->cnt = 0;
   xh_init_ptr(&p->labels, sizeof(int));
   xh_init_ptr(&p->visited, sizeof(int));
-  return p;
 }
 
 static void
 writer_control_destroy(struct writer_control *p)
 {
-  pic_state *pic = p->pic;
-
   xh_destroy(&p->labels);
   xh_destroy(&p->visited);
-  pic_free(pic, p);
 }
 
 static void
@@ -186,6 +181,7 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e;
   int c;
+  float f;
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
@@ -258,6 +254,15 @@ write_core(struct writer_control *p, pic_value obj)
     }
     break;
   case PIC_TT_FLOAT:
+    f = pic_float(obj);
+    if (isnan(f)) {
+      xfprintf(file, signbit(f) ? "-nan.0" : "+nan.0");
+    } else if (isinf(f)) {
+      xfprintf(file, signbit(f) ? "-inf.0" : "+inf.0");
+    } else {
+      xfprintf(file, "%f", pic_float(obj));
+    }
+    break;
   case PIC_TT_INT:
   case PIC_TT_BIGINT:
   case PIC_TT_BIGRAT:
@@ -305,101 +310,65 @@ write_core(struct writer_control *p, pic_value obj)
     }
     xfprintf(file, ")");
     break;
-  case PIC_TT_ERROR:
-    xfprintf(file, "#<error %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_ENV:
-    xfprintf(file, "#<env %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_CONT:
-    xfprintf(file, "#<cont %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_SENV:
-    xfprintf(file, "#<senv %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_MACRO:
-    xfprintf(file, "#<macro %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_SC:
-    xfprintf(file, "#<sc %p: ", pic_ptr(obj));
-    write_core(p, pic_sc_ptr(obj)->expr);
-    xfprintf(file, ">");
-    break;
-  case PIC_TT_LIB:
-    xfprintf(file, "#<lib %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_VAR:
-    xfprintf(file, "#<var %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_IREP:
-    xfprintf(file, "#<irep %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_DATA:
-    xfprintf(file, "#<data %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_BOX:
-    xfprintf(file, "#<box %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_DICT:
-    xfprintf(file, "#<dict %p>", pic_ptr(obj));
-    break;
+  default:
+    xfprintf(file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
   }
 }
 
 static void
 write(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, WRITE_MODE);
+  writer_control_init(&p, pic, file, WRITE_MODE);
 
-  traverse_shared(p, obj);      /* FIXME */
+  traverse_shared(&p, obj);      /* FIXME */
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 static void
 write_simple(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, WRITE_MODE);
+  writer_control_init(&p, pic, file, WRITE_MODE);
 
   /* no traverse here! */
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 static void
 write_shared(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, WRITE_MODE);
+  writer_control_init(&p, pic, file, WRITE_MODE);
 
-  traverse_shared(p, obj);
+  traverse_shared(&p, obj);
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 static void
 display(pic_state *pic, pic_value obj, xFILE *file)
 {
-  struct writer_control *p;
+  struct writer_control p;
 
-  p = writer_control_new(pic, file, DISPLAY_MODE);
+  writer_control_init(&p, pic, file, DISPLAY_MODE);
 
-  traverse_shared(p, obj);      /* FIXME */
+  traverse_shared(&p, obj);      /* FIXME */
 
-  write_core(p, obj);
+  write_core(&p, obj);
 
-  writer_control_destroy(p);
+  writer_control_destroy(&p);
 }
 
 pic_value
@@ -493,7 +462,7 @@ pic_write_display(pic_state *pic)
 void
 pic_init_write(pic_state *pic)
 {
-  pic_deflibrary ("(scheme write)") {
+  pic_deflibrary (pic, "(scheme write)") {
     pic_defun(pic, "write", pic_write_write);
     pic_defun(pic, "write-simple", pic_write_write_simple);
     pic_defun(pic, "write-shared", pic_write_write_shared);
