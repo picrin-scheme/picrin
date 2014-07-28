@@ -57,9 +57,7 @@
     (display "> ")
     (let ((expr (read)))
       (if (eof-object? expr)
-          (begin
-            (newline)
-            (exit 0))
+          (newline)                     ; exit
           (begin
             (call/cc
              (lambda (leave)
