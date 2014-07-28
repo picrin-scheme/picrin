@@ -77,8 +77,8 @@
       (parameterize
           ((current-input-port
             (if program
-                (current-input-port)
-                (open-input-string program))))
+                (open-input-string program)
+                (current-input-port))))
         (main-loop))))
 
   (export repl))
