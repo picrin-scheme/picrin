@@ -14,6 +14,11 @@
               ""
               (string-append line (loop (read-line))))))))
 
+  (define (print obj . port)
+    (write obj (if (null? port) (current-output-port) (car port)))
+    (newline)
+    obj)
+
   (define (print-help)
     (display "picrin scheme\n")
     (display "\n")
@@ -35,10 +40,6 @@
              (cadr args))
             (else
              (file->string (car args)))))))
-
-  (define (print obj)
-    (write obj)
-    (newline))
 
   (define (main-loop)
     (display "> ")
