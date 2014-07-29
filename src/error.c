@@ -62,7 +62,7 @@ pic_pop_try(pic_state *pic)
 
   try_jmp = pic->try_jmps + --pic->try_jmp_idx;
 
-  assert(pic->jmp == &try_jmp->here);
+  /* assert(pic->jmp == &try_jmp->here); */
 
   pic->ci = try_jmp->ci_offset + pic->cibase;
   pic->sp = try_jmp->sp_offset + pic->stbase;
