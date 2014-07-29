@@ -35,7 +35,7 @@
           (case (string->symbol (car args))
             ((-h --help)
              (print-help)
-             (exit 0))
+             (exit 1))
             ((-e)
              (cadr args))
             (else
