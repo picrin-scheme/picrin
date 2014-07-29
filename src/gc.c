@@ -594,7 +594,7 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* library table */
-  gc_mark(pic, pic->lib_tbl);
+  gc_mark(pic, pic->libs);
 }
 
 static void

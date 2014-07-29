@@ -35,7 +35,7 @@ pic_make_library(pic_state *pic, pic_value name)
   xh_init_int(&lib->exports, sizeof(pic_sym));
 
   /* register! */
-  pic->lib_tbl = pic_acons(pic, name, pic_obj_value(lib), pic->lib_tbl);
+  pic->libs = pic_acons(pic, name, pic_obj_value(lib), pic->libs);
 
   return lib;
 }
@@ -57,7 +57,7 @@ pic_find_library(pic_state *pic, pic_value spec)
 {
   pic_value v;
 
-  v = pic_assoc(pic, spec, pic->lib_tbl, NULL);
+  v = pic_assoc(pic, spec, pic->libs, NULL);
   if (pic_false_p(v)) {
     return NULL;
   }

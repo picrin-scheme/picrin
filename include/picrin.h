@@ -71,6 +71,8 @@ typedef struct {
 
   pic_code *ip;
 
+  struct pic_lib *lib;
+
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX;
@@ -90,9 +92,7 @@ typedef struct {
 
   xhash globals;
   xhash macros;
-
-  pic_value lib_tbl;
-  struct pic_lib *lib;
+  pic_value libs;
 
   xhash rlabels;
 

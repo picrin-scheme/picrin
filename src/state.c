@@ -55,7 +55,7 @@ pic_open(int argc, char *argv[], char **envp)
   xh_init_int(&pic->macros, sizeof(struct pic_macro *));
 
   /* libraries */
-  pic->lib_tbl = pic_nil_value();
+  pic->libs = pic_nil_value();
   pic->lib = NULL;
 
   /* reader */
@@ -162,7 +162,7 @@ pic_close(pic_state *pic)
   pic->arena_idx = 0;
   pic->err = NULL;
   xh_clear(&pic->macros);
-  pic->lib_tbl = pic_nil_value();
+  pic->libs = pic_nil_value();
 
   /* free all heap objects */
   pic_gc_run(pic);
