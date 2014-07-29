@@ -421,18 +421,6 @@ pic_ref(pic_state *pic, const char *name)
   return xh_val(xh_get_int(&pic->globals, rename), pic_value);
 }
 
-/* void */
-/* pic_set(pic_state *pic, const char *name, pic_value value) */
-/* { */
-/*   size_t gid; */
-
-/*   gid = global_ref(pic, name); */
-/*   if (gid == SIZE_MAX) { */
-/*     pic_error(pic, "symbol not defined"); */
-/*   } */
-/*   pic->globals[gid] = value; */
-/* } */
-
 pic_value
 pic_funcall(pic_state *pic, const char *name, pic_list args)
 {
