@@ -6,13 +6,19 @@
           (scheme eval)
           (scheme process-context))
 
+  (define (join sep strs)
+    (let loop ((result (car strs)) (rest (cdr strs)))
+      (if (null? rest)
+          result
+          (loop (string-append result sep (car rest)) (cdr rest)))))
+
   (define (file->string file)
     (with-input-from-file file
       (lambda ()
-        (let loop ((line (read-line)))
+        (let loop ((line (read-line)) (acc '()))
           (if (eof-object? line)
-              ""
-              (string-append line (loop (read-line))))))))
+              (join "\n" (reverse acc))
+              (loop (read-line) (cons line acc)))))))
 
   (define (print obj . port)
     (let ((port (if (null? port) (current-output-port) (car port))))
