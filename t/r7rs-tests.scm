@@ -2124,10 +2124,10 @@
 ;; (test-numeric-syntax "#i+inf.0" +inf.0 "+inf.0" "+Inf.0")
 ;; (test-numeric-syntax "#i-inf.0" -inf.0 "-inf.0" "-Inf.0")
 ;; ;; Exact ratios
-(test-numeric-syntax "1/2" (/ 1 2))
+;; (test-numeric-syntax "1/2" (/ 1 2))
 ;; (test-numeric-syntax "#e1/2" (/ 1 2) "1/2")
 (test-numeric-syntax "10/2" 5 "5")
-(test-numeric-syntax "-1/2" (- (/ 1 2)))
+;; (test-numeric-syntax "-1/2" (- (/ 1 2)))
 (test-numeric-syntax "0/10" 0 "0")
 ;; (test-numeric-syntax "#e0/10" 0 "0")
 ;; (test-numeric-syntax "#i3/2" (/ 3.0 2.0) "1.5")
