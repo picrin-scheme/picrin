@@ -13,7 +13,8 @@ main(int argc, char *argv[], char **envp)
   pic = pic_open(argc, argv, envp);
 
   pic_try {
-    pic_load(pic, "/Users/yuichi/workspace/picrin/tools/main.scm");
+    pic_import(pic, pic_read_cstr(pic, "(picrin repl)"));
+    pic_funcall(pic, "repl", pic_nil_value());
   }
   pic_catch {
     pic_print_backtrace(pic, pic->err);

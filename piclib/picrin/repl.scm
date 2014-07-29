@@ -1,16 +1,3 @@
-(define-library (picrin user)
-  (import (scheme base)
-          (scheme load)
-          (scheme process-context)
-          (scheme read)
-          (scheme write)
-          (scheme file)
-          (scheme inexact)
-          (scheme cxr)
-          (scheme lazy)
-          (scheme time)
-          (picrin macro)))
-
 (define-library (picrin repl)
   (import (scheme base)
           (scheme read)
@@ -80,8 +67,3 @@
         (main-loop))))
 
   (export repl))
-
-(import (picrin repl))
-
-(repl)
-

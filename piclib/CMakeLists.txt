@@ -17,4 +17,7 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/srfi/60.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/95.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/111.scm
+
+  ${PROJECT_SOURCE_DIR}/piclib/picrin/user.scm
+  ${PROJECT_SOURCE_DIR}/piclib/picrin/repl.scm
   )
