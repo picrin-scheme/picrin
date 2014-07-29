@@ -15,9 +15,10 @@
               (string-append line (loop (read-line))))))))
 
   (define (print obj . port)
-    (write obj (if (null? port) (current-output-port) (car port)))
-    (newline)
-    obj)
+    (let ((port (if (null? port) (current-output-port) (car port))))
+      (write obj port)
+      (newline port)
+      obj))
 
   (define (print-help)
     (display "picrin scheme\n")
