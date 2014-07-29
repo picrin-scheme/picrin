@@ -2012,7 +2012,7 @@
 (test 'Hello (read (open-input-string "|H\\x65;llo|")))
 
 (test 'abc (read (open-input-string "#!fold-case ABC")))
-(test 'ABC (read (open-input-string "#!fold-case #!no-fold-case ABC")))
+(test '|ABC| (read (open-input-string "#!fold-case #!no-fold-case ABC")))
 
 (test 'def (read (open-input-string "#; abc def")))
 (test 'def (read (open-input-string "; abc \ndef")))
