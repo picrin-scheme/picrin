@@ -364,6 +364,7 @@ pic_null_syntactic_environment(pic_state *pic)
   pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
   pic_define_syntactic_keyword(pic, senv, pic->sIMPORT, pic->rIMPORT);
   pic_define_syntactic_keyword(pic, senv, pic->sEXPORT, pic->rEXPORT);
+  pic_define_syntactic_keyword(pic, senv, pic->sIN_LIBRARY, pic->rIN_LIBRARY);
 
   return senv;
 }
