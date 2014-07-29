@@ -21,17 +21,17 @@
     (display "\n")
     (display "Options:\n")
     (display "  -e [program]		run one liner script\n")
-    (display "  -h			show this help\n"))
+    (display "  -h or --help		show this help\n"))
 
   (define (getopt)
     (let ((args (cdr (command-line))))
       (if (null? args)
           #f
-          (case (car args)
-            (("-h")
+          (case (string->symbol (car args))
+            ((-h --help)
              (print-help)
              (exit 0))
-            (("-e")
+            ((-e)
              (cadr args))
             (else
              (file->string (car args)))))))
