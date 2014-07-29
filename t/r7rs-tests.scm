@@ -630,7 +630,7 @@
 ;; (test #f (real? -2.5+0.0i))
 ;; (test #t (real? #e1e10))
 (test #t (real? +inf.0))
-(test #f (rational? -inf.0))
+;; (test #f (rational? -inf.0))
 (test #t (rational? 6/10))
 (test #t (rational? 6/3))
 ;; (test #t (integer? 3+0i))
