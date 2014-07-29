@@ -41,30 +41,34 @@
             (else
              (file->string (car args)))))))
 
-  (define (main-loop)
-    (display "> ")
-    (let ((expr (read)))
+  (define (main-loop in out)
+    (display "> " out)
+    (let ((expr (read in)))
       (if (eof-object? expr)
-          (newline)                     ; exit
+          (newline out)                 ; exit
           (begin
             (call/cc
              (lambda (leave)
               (with-exception-handler
                (lambda (condition)
-                 (display (error-object-message condition))
+                 (display (error-object-message condition) (current-error-port))
                  (newline)
                  (leave))
                (lambda ()
-                 (print (eval expr '(picrin user)))))))
-            (main-loop)))))
+                 (print (eval expr '(picrin user)) out)))))
+            (main-loop in out)))))
+
+  (define (run-repl program)
+    (let ((in (if program
+                  (open-input-string program)
+                  (current-input-port)))
+          (out (if program
+                   (open-output-string) ; ignore output
+                   (current-output-port))))
+      (main-loop in out)))
 
   (define (repl)
     (let ((program (getopt)))
-      (parameterize
-          ((current-input-port
-            (if program
-                (open-input-string program)
-                (current-input-port))))
-        (main-loop))))
+      (run-repl program)))
 
   (export repl))
