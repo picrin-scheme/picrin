@@ -9,6 +9,7 @@ int
 main(int argc, char *argv[], char **envp)
 {
   pic_state *pic;
+  int status = 0;
 
   pic = pic_open(argc, argv, envp);
 
@@ -18,9 +19,10 @@ main(int argc, char *argv[], char **envp)
   }
   pic_catch {
     pic_print_backtrace(pic, pic->err);
+    status = 1;
   }
 
   pic_close(pic);
 
-  return 0;
+  return status;
 }
