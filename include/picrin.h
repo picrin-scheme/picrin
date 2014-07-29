@@ -94,6 +94,7 @@ typedef struct {
   xhash macros;
   pic_value libs;
 
+  bool rfcase;
   xhash rlabels;
 
   jmp_buf *jmp;

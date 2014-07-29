@@ -59,6 +59,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->lib = NULL;
 
   /* reader */
+  pic->rfcase = false;
   xh_init_int(&pic->rlabels, sizeof(pic_value));
 
   /* error handling */
