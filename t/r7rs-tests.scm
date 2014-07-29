@@ -831,7 +831,7 @@
 (test 1.0 (inexact (cos 0))) ;; may return exact number
 (test -1.0 (cos 3.14159265358979))
 (test 0.0 (inexact (tan 0))) ;; may return exact number
-(test 1.5574077246549020703 (tan 1))
+(test 1.557407724654902292371616567834 (tan 1))
 
 (test 0.0 (asin 0))
 (test 1.5707963267948965580 (asin 1))
