@@ -24,7 +24,7 @@ pic_system_cmdline(pic_state *pic)
     pic_gc_arena_restore(pic, ai);
   }
 
-  return v;
+  return pic_reverse(pic, v);
 }
 
 static pic_value
