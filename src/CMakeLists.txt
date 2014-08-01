@@ -1,5 +1,12 @@
 find_package(Perl REQUIRED)
 
+find_package(LibUV)
+if (LIBUV_FOUND)
+  include_directories(${LIBUV_INCLUDE_DIRS})
+  add_definitions(${LIBUV_DEFINITIONS} -DPIC_LIBUV_FOUND=1)
+  list(APPEND PICRIN_LIBRARIES ${LIBUV_LIBRARIES})
+endif()
+
 # xfile
 set(XFILE_SOURCES extlib/xfile/xfile.c)
 
@@ -24,7 +31,7 @@ add_custom_command(
 # build!
 file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
 add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES} ${CONTRIB_INIT})
-target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
+target_link_libraries(picrin m ${PICRIN_LIBRARIES} ${PICRIN_CONTRIB_LIBRARIES})
 
 # install
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)

@@ -15,7 +15,10 @@ main(int argc, char *argv[], char **envp)
 
   pic_try {
     pic_import(pic, pic_read_cstr(pic, "(picrin repl)"));
+
     pic_funcall(pic, "repl", pic_nil_value());
+
+    pic_run(pic);
   }
   pic_catch {
     pic_print_backtrace(pic, pic->err);

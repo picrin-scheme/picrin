@@ -11,6 +11,9 @@
 /** switch internal value representation */
 /* #define PIC_NAN_BOXING 1 */
 
+/** turn on asynchronous promises */
+/* #define PIC_ENABLE_LIBUV 1 */
+
 /** enable readline module */
 /* #define PIC_ENABLE_READLINE 1 */
 
@@ -60,6 +63,14 @@
 #ifndef PIC_NAN_BOXING
 # if __x86_64__ && __STDC_VERSION__ >= 201112L
 #  define PIC_NAN_BOXING 1
+# endif
+#endif
+
+#ifndef PIC_ENABLE_LIBUV
+# if PIC_LIBUV_FOUND
+#  define PIC_ENABLE_LIBUV 1
+# else
+#  define PIC_ENABLE_LIBUV 0
 # endif
 #endif
 

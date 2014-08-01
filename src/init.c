@@ -10,6 +10,10 @@
 #include "picrin/macro.h"
 #include "picrin/error.h"
 
+#if PIC_ENABLE_LIBUV
+# include <uv.h>
+#endif
+
 static pic_value
 pic_features(pic_state *pic)
 {
@@ -118,4 +122,14 @@ pic_init_core(pic_state *pic)
     pic_load_piclib(pic); DONE;
     pic_init_contrib(pic); DONE;
   }
+}
+
+void
+pic_run(pic_state *pic)
+{
+  UNUSED(pic);
+
+#if PIC_ENABLE_LIBUV
+  uv_run(uv_default_loop(), UV_RUN_DEFAULT);
+#endif
 }

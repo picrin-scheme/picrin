@@ -133,6 +133,7 @@ void pic_gc_arena_restore(pic_state *, size_t);
 
 pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
+void pic_run(pic_state *);
 
 void pic_define(pic_state *, const char *, pic_value); /* automatic export */
 pic_value pic_ref(pic_state *, const char *);
