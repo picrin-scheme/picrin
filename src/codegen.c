@@ -33,7 +33,7 @@ typedef struct analyze_scope {
 typedef struct analyze_state {
   pic_state *pic;
   analyze_scope *scope;
-  pic_sym rCONS, rCAR, rCDR, rNILP;
+  pic_sym rCONS, rCAR, rCDR, rNULLP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
   pic_sym rVALUES, rCALL_WITH_VALUES;
@@ -74,7 +74,7 @@ new_analyze_state(pic_state *pic)
   register_renamed_symbol(pic, state, rCONS, stdlib, "cons");
   register_renamed_symbol(pic, state, rCAR, stdlib, "car");
   register_renamed_symbol(pic, state, rCDR, stdlib, "cdr");
-  register_renamed_symbol(pic, state, rNILP, stdlib, "null?");
+  register_renamed_symbol(pic, state, rNULLP, stdlib, "null?");
   register_renamed_symbol(pic, state, rADD, stdlib, "+");
   register_renamed_symbol(pic, state, rSUB, stdlib, "-");
   register_renamed_symbol(pic, state, rMUL, stdlib, "*");
@@ -98,7 +98,7 @@ new_analyze_state(pic_state *pic)
   register_symbol(pic, state, sRETURN, "return");
 
   /* push initial scope */
-  push_scope(state, pic_nil_value());
+  push_scope(state, pic_null_value());
 
   xh_begin(&it, &pic->globals);
   while (xh_next(&it)) {
@@ -128,7 +128,7 @@ analyze_args(pic_state *pic, pic_value formals, bool *varg, xvect *args, xvect *
     }
     xv_push(args, &pic_sym(sym));
   }
-  if (pic_nil_p(v)) {
+  if (pic_null_p(v)) {
     *varg = false;
   }
   else if (pic_sym_p(v)) {
@@ -343,7 +343,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     pic_sym *var;
     size_t i;
 
-    args = pic_nil_value();
+    args = pic_null_value();
     for (i = scope->args.size; i > 0; --i) {
       var = xv_get(&scope->args, i - 1);
       pic_push(pic, pic_sym_value(*var), args);
@@ -356,13 +356,13 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     /* To know what kind of local variables are defined, analyze body at first. */
     body = analyze(state, pic_cons(pic, pic_sym_value(pic->rBEGIN), body_exprs), true);
 
-    locals = pic_nil_value();
+    locals = pic_null_value();
     for (i = scope->locals.size; i > 0; --i) {
       var = xv_get(&scope->locals, i - 1);
       pic_push(pic, pic_sym_value(*var), locals);
     }
 
-    captures = pic_nil_value();
+    captures = pic_null_value();
     for (i = scope->captures.size; i > 0; --i) {
       var = xv_get(&scope->captures, i - 1);
       pic_push(pic, pic_sym_value(*var), captures);
@@ -479,8 +479,8 @@ analyze_begin(analyze_state *state, pic_value obj, bool tailpos)
     return analyze(state, pic_list_ref(pic, obj, 1), tailpos);
   default:
     seq = pic_list1(pic, pic_symbol_value(pic->sBEGIN));
-    for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
-      if (pic_nil_p(pic_cdr(pic, obj))) {
+    for (obj = pic_cdr(pic, obj); ! pic_null_p(obj); obj = pic_cdr(pic, obj)) {
+      if (pic_null_p(pic_cdr(pic, obj))) {
         tail = tailpos;
       } else {
         tail = false;
@@ -744,9 +744,9 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	ARGC_ASSERT(1);
         return CONSTRUCT_OP1(pic->sCDR);
       }
-      else if (sym == state->rNILP) {
+      else if (sym == state->rNULLP) {
 	ARGC_ASSERT(1);
-        return CONSTRUCT_OP1(pic->sNILP);
+        return CONSTRUCT_OP1(pic->sNULLP);
       }
       else if (sym == state->rADD) {
         return analyze_add(state, obj, tailpos);
@@ -798,7 +798,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
-  case PIC_TT_NIL:
+  case PIC_TT_NULL:
   case PIC_TT_CHAR:
   case PIC_TT_STRING:
   case PIC_TT_VECTOR:
@@ -893,7 +893,7 @@ new_codegen_state(pic_state *pic)
   register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
   register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
 
-  push_codegen_context(state, pic_false_value(), pic_nil_value(), pic_nil_value(), false, pic_nil_value());
+  push_codegen_context(state, pic_false_value(), pic_null_value(), pic_null_value(), false, pic_null_value());
 
   return state;
 }
@@ -1231,8 +1231,8 @@ codegen(codegen_state *state, pic_value obj)
       cxt->code[cxt->clen].u.i = pic_int(obj);
       cxt->clen++;
       return;
-    case PIC_TT_NIL:
-      cxt->code[cxt->clen].insn = OP_PUSHNIL;
+    case PIC_TT_NULL:
+      cxt->code[cxt->clen].insn = OP_PUSHNULL;
       cxt->clen++;
       return;
     case PIC_TT_CHAR:
@@ -1272,9 +1272,9 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   }
-  else if (sym == pic->sNILP) {
+  else if (sym == pic->sNULLP) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_NILP;
+    cxt->code[cxt->clen].insn = OP_NULLP;
     cxt->clen++;
     return;
   }

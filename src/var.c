@@ -12,7 +12,7 @@ pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv)
   struct pic_var *var;
 
   var = (struct pic_var *)pic_obj_alloc(pic, sizeof(struct pic_var), PIC_TT_VAR);
-  var->stack = pic_nil_value();
+  var->stack = pic_null_value();
   var->conv = conv;
 
   pic_var_push(pic, var, init);

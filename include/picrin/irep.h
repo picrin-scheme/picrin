@@ -12,7 +12,7 @@ extern "C" {
 enum pic_opcode {
   OP_NOP,
   OP_POP,
-  OP_PUSHNIL,
+  OP_PUSHNULL,
   OP_PUSHTRUE,
   OP_PUSHFALSE,
   OP_PUSHINT,
@@ -34,7 +34,7 @@ enum pic_opcode {
   OP_CONS,
   OP_CAR,
   OP_CDR,
-  OP_NILP,
+  OP_NULLP,
   OP_ADD,
   OP_SUB,
   OP_MUL,
@@ -83,8 +83,8 @@ pic_dump_code(pic_code c)
   case OP_POP:
     puts("OP_POP");
     break;
-  case OP_PUSHNIL:
-    puts("OP_PUSHNIL");
+  case OP_PUSHNULL:
+    puts("OP_PUSHNULL");
     break;
   case OP_PUSHTRUE:
     puts("OP_PUSHTRUE");
@@ -146,8 +146,8 @@ pic_dump_code(pic_code c)
   case OP_CAR:
     puts("OP_CAR");
     break;
-  case OP_NILP:
-    puts("OP_NILP");
+  case OP_NULLP:
+    puts("OP_NULLP");
     break;
   case OP_CDR:
     puts("OP_CDR");

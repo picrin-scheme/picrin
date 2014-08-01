@@ -30,7 +30,7 @@ pic_stdin(pic_state *pic)
 
   proc = pic_proc_ptr(pic_ref(pic, "current-input-port"));
 
-  return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
+  return pic_port_ptr(pic_apply(pic, proc, pic_null_value()));
 }
 
 struct pic_port *
@@ -40,7 +40,7 @@ pic_stdout(pic_state *pic)
 
   proc = pic_proc_ptr(pic_ref(pic, "current-output-port"));
 
-  return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
+  return pic_port_ptr(pic_apply(pic, proc, pic_null_value()));
 }
 
 static struct pic_port *

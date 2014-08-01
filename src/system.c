@@ -12,7 +12,7 @@
 static pic_value
 pic_system_cmdline(pic_state *pic)
 {
-  pic_value v = pic_nil_value();
+  pic_value v = pic_null_value();
   int i;
 
   pic_get_args(pic, "");
@@ -85,7 +85,7 @@ pic_system_getenv(pic_state *pic)
   val = getenv(str);
 
   if (val == NULL)
-    return pic_nil_value();
+    return pic_null_value();
   else
     return pic_obj_value(pic_str_new_cstr(pic, val));
 }
@@ -94,13 +94,13 @@ static pic_value
 pic_system_getenvs(pic_state *pic)
 {
   char **envp;
-  pic_value data = pic_nil_value();
+  pic_value data = pic_null_value();
   size_t ai = pic_gc_arena_preserve(pic);
 
   pic_get_args(pic, "");
 
   if (! pic->envp) {
-    return pic_nil_value();
+    return pic_null_value();
   }
 
   for (envp = pic->envp; *envp; ++envp) {

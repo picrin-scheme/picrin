@@ -88,7 +88,7 @@ pic_list_p(pic_value obj)
         rapid = pic_pair_ptr(rapid)->cdr;
       }
       else {
-        return pic_nil_p(rapid);
+        return pic_null_p(rapid);
       }
     }
 
@@ -104,7 +104,7 @@ pic_list_p(pic_value obj)
 pic_value
 pic_list1(pic_state *pic, pic_value obj1)
 {
-  return pic_cons(pic, obj1, pic_nil_value());
+  return pic_cons(pic, obj1, pic_null_value());
 }
 
 pic_value
@@ -190,7 +190,7 @@ pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
 {
   pic_value v;
 
-  v = pic_nil_value();
+  v = pic_null_value();
   while (c--) {
     v = pic_cons(pic, vs[c], v);
   }
@@ -203,7 +203,7 @@ pic_make_list(pic_state *pic, int k, pic_value fill)
   pic_value list;
   int i;
 
-  list = pic_nil_value();
+  list = pic_null_value();
   for (i = 0; i < k; ++i) {
     list = pic_cons(pic, fill, list);
   }
@@ -220,7 +220,7 @@ pic_length(pic_state *pic, pic_value obj)
     pic_errorf(pic, "length: expected list, but got ~s", obj);
   }
 
-  while (! pic_nil_p(obj)) {
+  while (! pic_null_p(obj)) {
     obj = pic_cdr(pic, obj);
     ++c;
   }
@@ -234,7 +234,7 @@ pic_reverse(pic_state *pic, pic_value list)
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value v, acc;
 
-  acc = pic_nil_value();
+  acc = pic_null_value();
   pic_for_each(v, list) {
     acc = pic_cons(pic, v, acc);
 
@@ -266,7 +266,7 @@ pic_memq(pic_state *pic, pic_value key, pic_value list)
 {
  enter:
 
-  if (pic_nil_p(list))
+  if (pic_null_p(list))
     return pic_false_value();
 
   if (pic_eq_p(key, pic_car(pic, list)))
@@ -281,7 +281,7 @@ pic_memv(pic_state *pic, pic_value key, pic_value list)
 {
  enter:
 
-  if (pic_nil_p(list))
+  if (pic_null_p(list))
     return pic_false_value();
 
   if (pic_eqv_p(key, pic_car(pic, list)))
@@ -296,7 +296,7 @@ pic_member(pic_state *pic, pic_value key, pic_value list, struct pic_proc *compa
 {
  enter:
 
-  if (pic_nil_p(list))
+  if (pic_null_p(list))
     return pic_false_value();
 
   if (compar == NULL) {
@@ -318,7 +318,7 @@ pic_assq(pic_state *pic, pic_value key, pic_value assoc)
 
  enter:
 
-  if (pic_nil_p(assoc))
+  if (pic_null_p(assoc))
     return pic_false_value();
 
   cell = pic_car(pic, assoc);
@@ -336,7 +336,7 @@ pic_assv(pic_state *pic, pic_value key, pic_value assoc)
 
  enter:
 
-  if (pic_nil_p(assoc))
+  if (pic_null_p(assoc))
     return pic_false_value();
 
   cell = pic_car(pic, assoc);
@@ -354,7 +354,7 @@ pic_assoc(pic_state *pic, pic_value key, pic_value assoc, struct pic_proc *compa
 
  enter:
 
-  if (pic_nil_p(assoc))
+  if (pic_null_p(assoc))
     return pic_false_value();
 
   cell = pic_car(pic, assoc);
@@ -547,7 +547,7 @@ pic_pair_null_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_nil_p(v));
+  return pic_bool_value(pic_null_p(v));
 }
 
 static pic_value
@@ -601,7 +601,7 @@ pic_pair_append(pic_state *pic)
   pic_get_args(pic, "*", &argc, &args);
 
   if (argc == 0) {
-    return pic_nil_value();
+    return pic_null_value();
   }
 
   list = args[--argc];

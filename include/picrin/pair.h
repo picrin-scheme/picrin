@@ -39,7 +39,7 @@ pic_value pic_make_list(pic_state *, int, pic_value);
   pic_for_each_helper__(var, GENSYM(tmp), list)
 #define pic_for_each_helper__(var, tmp, list)                           \
   for (pic_value tmp = (list);                                          \
-       pic_nil_p(tmp) ? false : ((var = pic_car(pic, tmp)), true);      \
+       pic_null_p(tmp) ? false : ((var = pic_car(pic, tmp)), true);     \
        tmp = pic_cdr(pic, tmp))
 
 #define pic_push(pic, item, place) (place = pic_cons(pic, item, place))

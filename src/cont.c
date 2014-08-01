@@ -15,7 +15,7 @@
 pic_value
 pic_values0(pic_state *pic)
 {
-  return pic_values_by_list(pic, pic_nil_value());
+  return pic_values_by_list(pic, pic_null_value());
 }
 
 pic_value
@@ -73,7 +73,7 @@ pic_values_by_list(pic_state *pic, pic_value list)
   }
   pic->ci->retc = i;
 
-  return pic_nil_p(list) ? pic_none_value() : pic->sp[0];
+  return pic_null_p(list) ? pic_none_value() : pic->sp[0];
 }
 
 size_t
@@ -353,7 +353,7 @@ pic_cont_call_with_values(pic_state *pic)
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
-  pic_apply(pic, producer, pic_nil_value());
+  pic_apply(pic, producer, pic_null_value());
 
   argc = pic_receive(pic, 256, args);
 

@@ -21,7 +21,7 @@ static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
 static noreturn void
 read_error(pic_state *pic, const char *msg)
 {
-  pic_throw(pic, PIC_ERROR_READ, msg, pic_nil_value());
+  pic_throw(pic, PIC_ERROR_READ, msg, pic_null_value());
 }
 
 static int
@@ -505,7 +505,7 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
   c = skip(port, ' ');
 
   if (c == tCLOSE) {
-    return pic_nil_value();
+    return pic_null_value();
   }
   if (c == '.' && isdelim(peek(port))) {
     cdr = read(pic, port, next(port));
@@ -755,7 +755,7 @@ pic_parse(pic_state *pic, struct pic_port *port)
   pic_value val, acc;
 
   pic_try {
-    acc = pic_nil_value();
+    acc = pic_null_value();
     while (! pic_eof_p(val = pic_read(pic, port))) {
       pic_push(pic, val, acc);
     }

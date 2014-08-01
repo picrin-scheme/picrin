@@ -93,8 +93,8 @@ pic_regexp_regexp_match(pic_state *pic)
 
   pic_assert_type(pic, reg, regexp);
 
-  matches = pic_nil_value();
-  positions = pic_nil_value();
+  matches = pic_null_value();
+  positions = pic_null_value();
 
   if (strchr(pic_regexp_data_ptr(reg)->flags, 'g') != NULL) {
     /* global search */
@@ -122,7 +122,7 @@ pic_regexp_regexp_match(pic_state *pic)
     }
   }
 
-  if (pic_nil_p(matches)) {
+  if (pic_null_p(matches)) {
     matches = pic_false_value();
     positions = pic_false_value();
   } else {
@@ -138,7 +138,7 @@ pic_regexp_regexp_split(pic_state *pic)
   pic_value reg;
   const char *input;
   regmatch_t match;
-  pic_value output = pic_nil_value();
+  pic_value output = pic_null_value();
 
   pic_get_args(pic, "oz", &reg, &input);
 

@@ -113,9 +113,9 @@ pic_proc_map(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
-  ret = pic_nil_value();
+  ret = pic_null_value();
   do {
-    cars = pic_nil_value();
+    cars = pic_null_value();
     for (i = argc - 1; i >= 0; --i) {
       if (! pic_pair_p(args[i])) {
         break;
@@ -143,7 +143,7 @@ pic_proc_for_each(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   do {
-    cars = pic_nil_value();
+    cars = pic_null_value();
     for (i = argc - 1; i >= 0; --i) {
       if (! pic_pair_p(args[i])) {
         break;

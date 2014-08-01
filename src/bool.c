@@ -34,7 +34,7 @@ blob_equal_p(struct pic_blob *blob1, struct pic_blob *blob2)
 static bool
 internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *ht)
 {
-  pic_value local = pic_nil_value();
+  pic_value local = pic_null_value();
   size_t c;
 
   if (depth > 10) {
@@ -68,7 +68,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
     return blob_equal_p(pic_blob_ptr(x), pic_blob_ptr(y));
 
   case PIC_TT_PAIR: {
-    if (pic_nil_p(local)) {
+    if (pic_null_p(local)) {
       local = x;
     }
     if (internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, ht)) {

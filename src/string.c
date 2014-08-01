@@ -140,7 +140,7 @@ pic_value
 pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 {
   char c;
-  pic_value irrs = pic_nil_value();
+  pic_value irrs = pic_null_value();
 
   while ((c = *fmt++)) {
     switch (c) {

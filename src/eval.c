@@ -12,7 +12,7 @@ pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
 
   proc = pic_compile(pic, program, lib);
 
-  return pic_apply(pic, proc, pic_nil_value());
+  return pic_apply(pic, proc, pic_null_value());
 }
 
 static pic_value

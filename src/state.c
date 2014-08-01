@@ -55,7 +55,7 @@ pic_open(int argc, char *argv[], char **envp)
   xh_init_int(&pic->macros, sizeof(struct pic_macro *));
 
   /* libraries */
-  pic->libs = pic_nil_value();
+  pic->libs = pic_null_value();
   pic->lib = NULL;
 
   /* reader */
@@ -98,7 +98,7 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sCONS, "cons");
   register_core_symbol(pic, sCAR, "car");
   register_core_symbol(pic, sCDR, "cdr");
-  register_core_symbol(pic, sNILP, "null?");
+  register_core_symbol(pic, sNULLP, "null?");
   register_core_symbol(pic, sADD, "+");
   register_core_symbol(pic, sSUB, "-");
   register_core_symbol(pic, sMUL, "*");
@@ -163,7 +163,7 @@ pic_close(pic_state *pic)
   pic->arena_idx = 0;
   pic->err = NULL;
   xh_clear(&pic->macros);
-  pic->libs = pic_nil_value();
+  pic->libs = pic_null_value();
 
   /* free all heap objects */
   pic_gc_run(pic);

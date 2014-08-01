@@ -43,7 +43,7 @@ void pic_load_piclib(pic_state *);
 static pic_value
 pic_features(pic_state *pic)
 {
-  pic_value features = pic_nil_value();
+  pic_value features = pic_null_value();
 
   pic_get_args(pic, "");
 

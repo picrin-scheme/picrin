@@ -25,7 +25,7 @@ pic_load_cstr(pic_state *pic, const char *src)
       pic_error(pic, "load: compilation failure");
     }
 
-    pic_apply(pic, proc, pic_nil_value());
+    pic_apply(pic, proc, pic_null_value());
 
     pic_gc_arena_restore(pic, ai);
   }
@@ -59,7 +59,7 @@ pic_load(pic_state *pic, const char *fn)
       pic_error(pic, "load: compilation failure");
     }
 
-    pic_apply(pic, proc, pic_nil_value());
+    pic_apply(pic, proc, pic_null_value());
 
     pic_gc_arena_restore(pic, ai);
   }

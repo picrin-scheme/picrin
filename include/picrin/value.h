@@ -21,7 +21,7 @@ typedef int pic_sym;
  */
 
 enum pic_vtype {
-  PIC_VTYPE_NIL = 1,
+  PIC_VTYPE_NULL = 1,
   PIC_VTYPE_TRUE,
   PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
@@ -91,7 +91,7 @@ typedef struct {
 
 enum pic_tt {
   /* immediate */
-  PIC_TT_NIL,
+  PIC_TT_NULL,
   PIC_TT_BOOL,
   PIC_TT_FLOAT,
   PIC_TT_INT,
@@ -149,7 +149,7 @@ typedef struct pic_blob pic_blob;
 #define pic_obj_p(v) (pic_vtype(v) == PIC_VTYPE_HEAP)
 #define pic_obj_ptr(v) ((struct pic_object *)pic_ptr(v))
 
-#define pic_nil_p(v) (pic_vtype(v) == PIC_VTYPE_NIL)
+#define pic_null_p(v) (pic_vtype(v) == PIC_VTYPE_NULL)
 #define pic_true_p(v) (pic_vtype(v) == PIC_VTYPE_TRUE)
 #define pic_false_p(v) (pic_vtype(v) == PIC_VTYPE_FALSE)
 #define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
@@ -171,7 +171,7 @@ static inline const char *pic_type_repr(enum pic_tt);
 
 static inline bool pic_valid_int(double);
 
-static inline pic_value pic_nil_value();
+static inline pic_value pic_null_value();
 static inline pic_value pic_true_value();
 static inline pic_value pic_false_value();
 static inline pic_value pic_bool_value(bool);
@@ -192,8 +192,8 @@ static inline enum pic_tt
 pic_type(pic_value v)
 {
   switch (pic_vtype(v)) {
-  case PIC_VTYPE_NIL:
-    return PIC_TT_NIL;
+  case PIC_VTYPE_NULL:
+    return PIC_TT_NULL;
   case PIC_VTYPE_TRUE:
     return PIC_TT_BOOL;
   case PIC_VTYPE_FALSE:
@@ -221,8 +221,8 @@ static inline const char *
 pic_type_repr(enum pic_tt tt)
 {
   switch (tt) {
-  case PIC_TT_NIL:
-    return "nil";
+  case PIC_TT_NULL:
+    return "null";
   case PIC_TT_BOOL:
     return "boolean";
   case PIC_TT_FLOAT:
@@ -282,11 +282,11 @@ pic_valid_int(double v)
 }
 
 static inline pic_value
-pic_nil_value()
+pic_null_value()
 {
   pic_value v;
 
-  pic_init_value(v, PIC_VTYPE_NIL);
+  pic_init_value(v, PIC_VTYPE_NULL);
   return v;
 }
 
@@ -439,7 +439,7 @@ pic_eq_p(pic_value x, pic_value y)
     return false;
 
   switch (pic_type(x)) {
-  case PIC_TT_NIL:
+  case PIC_TT_NULL:
     return true;
   case PIC_TT_BOOL:
     return pic_vtype(x) == pic_vtype(y);
@@ -457,7 +457,7 @@ pic_eqv_p(pic_value x, pic_value y)
     return false;
 
   switch (pic_type(x)) {
-  case PIC_TT_NIL:
+  case PIC_TT_NULL:
     return true;
   case PIC_TT_BOOL:
     return pic_vtype(x) == pic_vtype(y);

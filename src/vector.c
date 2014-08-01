@@ -258,7 +258,7 @@ pic_vec_vector_to_list(pic_state *pic)
     end = vec->len;
   }
 
-  list = pic_nil_value();
+  list = pic_null_value();
 
   for (i = start; i < end; ++i) {
     pic_push(pic, vec->data[i], list);

@@ -16,7 +16,7 @@ static bool
 is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
 {
   return pic_pair_p(pic_cdr(pic, pair))
-    && pic_nil_p(pic_cddr(pic, pair))
+    && pic_null_p(pic_cddr(pic, pair))
     && pic_eq_p(pic_car(pic, pair), pic_symbol_value(tag));
 }
 
@@ -124,7 +124,7 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
 
   write_core(p, pair->car);
 
-  if (pic_nil_p(pair->cdr)) {
+  if (pic_null_p(pair->cdr)) {
     return;
   }
   else if (pic_pair_p(pair->cdr)) {
@@ -198,7 +198,7 @@ write_core(struct writer_control *p, pic_value obj)
   }
 
   switch (pic_type(obj)) {
-  case PIC_TT_NIL:
+  case PIC_TT_NULL:
     xfprintf(file, "()");
     break;
   case PIC_TT_BOOL:

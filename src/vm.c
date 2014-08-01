@@ -487,7 +487,7 @@ pic_vm_tear_off(pic_state *pic)
 pic_value
 pic_apply0(pic_state *pic, struct pic_proc *proc)
 {
-  return pic_apply(pic, proc, pic_nil_value());
+  return pic_apply(pic, proc, pic_null_value());
 }
 
 pic_value
@@ -556,11 +556,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
-    &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE,
+    &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHNULL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE,
     &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHCONST,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
-    &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
+    &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NULLP,
     &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_MINUS,
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
@@ -598,8 +598,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       POP();
       NEXT;
     }
-    CASE(OP_PUSHNIL) {
-      PUSH(pic_nil_value());
+    CASE(OP_PUSHNULL) {
+      PUSH(pic_null_value());
       NEXT;
     }
     CASE(OP_PUSHTRUE) {
@@ -777,7 +777,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	}
 	/* prepare rest args */
 	if (irep->varg) {
-	  rest = pic_nil_value();
+	  rest = pic_null_value();
 	  for (i = 0; i < ci->argc - irep->argc; ++i) {
 	    pic_gc_protect(pic, v = POP());
 	    rest = pic_cons(pic, v, rest);
@@ -900,10 +900,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       PUSH(pic_cdr(pic, p));
       NEXT;
     }
-    CASE(OP_NILP) {
+    CASE(OP_NULLP) {
       pic_value p;
       p = POP();
-      PUSH(pic_bool_value(pic_nil_p(p)));
+      PUSH(pic_bool_value(pic_null_p(p)));
       NEXT;
     }
 

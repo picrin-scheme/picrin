@@ -147,7 +147,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
   if (pic_sym_p(a)) {
     pic_add_rename(pic, in, pic_sym(a));
   }
-  else if (! pic_nil_p(a)) {
+  else if (! pic_null_p(a)) {
     pic_error(pic, "syntax error");
   }
 
