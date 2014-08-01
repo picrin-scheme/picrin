@@ -20,13 +20,13 @@ pic_intern(pic_state *pic, const char *str, size_t len)
   cstr[len] = '\0';
   memcpy(cstr, str, len);
 
-  e = xh_get(&pic->syms, cstr);
+  e = xh_get_str(&pic->syms, cstr);
   if (e) {
     return xh_val(e, pic_sym);
   }
 
   id = pic->sym_cnt++;
-  xh_put(&pic->syms, cstr, &id);
+  xh_put_str(&pic->syms, cstr, &id);
   xh_put_int(&pic->sym_names, id, &cstr);
   return id;
 }
