@@ -362,18 +362,6 @@
   (import (scheme base)
           (picrin macro))
 
-  (define-syntax with
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let ((before (car (cdr form)))
-             (after  (car (cdr (cdr form))))
-             (body   (cdr (cdr (cdr form)))))
-         `(begin
-            (,before)
-            (let ((result (begin ,@body)))
-              (,after)
-              result))))))
-
   (define-syntax parameterize
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -381,12 +369,11 @@
              (body   (cdr (cdr form))))
          (let ((vars (map car formal))
                (vals (map cadr formal)))
-           `(with
-             (lambda ()
-               ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals))
-             (lambda ()
-               ,@(map (lambda (var) `(parameter-pop! ,var)) vars))
-             ,@body))))))
+           `(begin
+              ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals)
+              (let ((result (begin ,@body)))
+                ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
+                result)))))))
 
   (export parameterize))
 
