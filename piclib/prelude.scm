@@ -380,6 +380,7 @@
 ;;; Record Type
 (define-library (picrin record)
   (import (scheme base)
+          (scheme eval)
           (picrin macro))
 
   (define record-marker (list 'record-marker))
@@ -387,20 +388,11 @@
   (define real-vector? vector?)
 
   (set! vector?
-        (lambda (x)
-          (and (real-vector? x)
-               (or (= 0 (vector-length x))
-                   (not (eq? (vector-ref x 0)
-                             record-marker))))))
-
-  #|
-  ;; (scheme eval) is not provided for now
-  (define eval
-    (let ((real-eval eval))
-      (lambda (exp env)
-	((real-eval `(lambda (vector?) ,exp))
-	 vector?))))
-  |#
+    (lambda (x)
+      (and (real-vector? x)
+           (or (= 0 (vector-length x))
+               (not (eq? (vector-ref x 0)
+                         record-marker))))))
 
   (define (record? x)
     (and (real-vector? x)
