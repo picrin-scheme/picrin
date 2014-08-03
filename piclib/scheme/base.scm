@@ -732,76 +732,70 @@
 
   (export parameterize make-parameter)
 
-;;; Record Type
-  (define-library (picrin record)
-    (import (scheme base)
-	    (picrin macro)
-	    (picrin record-primitive))
-
-    (define (caddr x) (car (cddr x)))
-    (define (cdddr x) (cdr (cddr x)))
-    (define (cadddr x) (car (cdddr x)))
-    (define (cddddr x) (cdr (cdddr x)))
-
-    (define (make-record-type name)
-      (let ((rectype (make-record #t)))
-	(record-set! rectype #t 'name name)
-	rectype))
-
-    (define-syntax define-record-constructor
-      (ir-macro-transformer
-       (lambda (form inject compare?)
-	 (let ((rectype (cadr form))
-	       (name  (caddr form))
-	       (fields (cdddr form)))
-	   `(define (,name ,@fields)
-	      (let ((record (make-record ,rectype)))
-		,@(map (lambda (field)
-			 `(record-set! record ,rectype ',field ,field))
-		       fields)
-		record))))))
-
-    (define-syntax define-record-predicate
-      (ir-macro-transformer
-       (lambda (form inject compare?)
-	 (let ((rectype (cadr form))
-	       (name (caddr form)))
-	   `(define (,name obj)
-	      (record-of? obj ,rectype))))))
-
-    (define-syntax define-record-field
-      (ir-macro-transformer
-       (lambda (form inject compare?)
-	 (let ((rectype (cadr form))
-	       (field-name (caddr form))
-	       (accessor (cadddr form))
-	       (modifier? (cddddr form)))
-	   (if (null? modifier?)
-	       `(define (,accessor record)
-		  (record-ref record ,rectype ',field-name))
-	       `(begin
-		  (define (,accessor record)
-		    (record-ref record ,rectype ',field-name))
-		  (define (,(car modifier?) record val)
-		    (record-set! record ,rectype ',field-name val))))))))
-
-    (define-syntax define-record-type
-      (ir-macro-transformer
-       (lambda (form inject compare?)
-	 (let ((name (cadr form))
-	       (constructor (caddr form))
-	       (pred (cadddr form))
-	       (fields (cddddr form)))
-	   `(begin
-	      (define ,name (make-record-type ',name))
-	      (define-record-constructor ,name ,@constructor)
-	      (define-record-predicate ,name ,pred)
-	      ,@(map (lambda (field) `(define-record-field ,name ,@field))
-		     fields))))))
-
-    (export define-record-type))
+  ;; 5.5 Recored-type definitions
 
   (import (picrin record))
+
+  (define (caddr x) (car (cddr x)))
+  (define (cdddr x) (cdr (cddr x)))
+  (define (cadddr x) (car (cdddr x)))
+  (define (cddddr x) (cdr (cdddr x)))
+
+  (define (make-record-type name)
+    (let ((rectype (make-record #t)))
+      (record-set! rectype #t 'name name)
+      rectype))
+
+  (define-syntax define-record-constructor
+    (ir-macro-transformer
+     (lambda (form inject compare?)
+       (let ((rectype (cadr form))
+	     (name  (caddr form))
+	     (fields (cdddr form)))
+	 `(define (,name ,@fields)
+	    (let ((record (make-record ,rectype)))
+	      ,@(map (lambda (field)
+		       `(record-set! record ,rectype ',field ,field))
+		     fields)
+	      record))))))
+
+  (define-syntax define-record-predicate
+    (ir-macro-transformer
+     (lambda (form inject compare?)
+       (let ((rectype (cadr form))
+	     (name (caddr form)))
+	 `(define (,name obj)
+	    (record-of? obj ,rectype))))))
+
+  (define-syntax define-record-field
+    (ir-macro-transformer
+     (lambda (form inject compare?)
+       (let ((rectype (cadr form))
+	     (field-name (caddr form))
+	     (accessor (cadddr form))
+	     (modifier? (cddddr form)))
+	 (if (null? modifier?)
+	     `(define (,accessor record)
+		(record-ref record ,rectype ',field-name))
+	     `(begin
+		(define (,accessor record)
+		  (record-ref record ,rectype ',field-name))
+		(define (,(car modifier?) record val)
+		  (record-set! record ,rectype ',field-name val))))))))
+
+  (define-syntax define-record-type
+    (ir-macro-transformer
+     (lambda (form inject compare?)
+       (let ((name (cadr form))
+	     (constructor (caddr form))
+	     (pred (cadddr form))
+	     (fields (cddddr form)))
+	 `(begin
+	    (define ,name (make-record-type ',name))
+	    (define-record-constructor ,name ,@constructor)
+	    (define-record-predicate ,name ,pred)
+	    ,@(map (lambda (field) `(define-record-field ,name ,@field))
+		   fields))))))
 
   (export define-record-type)
 
