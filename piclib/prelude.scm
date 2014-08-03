@@ -558,11 +558,6 @@
 
 (export define-record-type)
 
-(define (fold f s xs)
-  (if (null? xs)
-      s
-      (fold f (f (car xs) s) (cdr xs))))
-
 ;;; 6.6 Characters
 
 (define-macro (define-char-transitive-predicate name op)
