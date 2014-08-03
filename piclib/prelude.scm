@@ -145,19 +145,6 @@
        (let ((x (cadr form)))
          (qq 1 x)))))
 
-  #;
-  (define-syntax let*
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let ((bindings (cadr form))
-             (body (cddr form)))
-         (if (null? bindings)
-             `(let () ,@body)
-             `(let ((,(caar bindings)
-                     ,@(cdar bindings)))
-                (let* (,@(cdr bindings))
-                  ,@body)))))))
-
   (define-syntax let*
     (er-macro-transformer
      (lambda (form r compare)
