@@ -48,7 +48,7 @@
             (else
              (file->string (car args)))))))
 
-  (define (main-loop in out)
+  (define (main-loop in out on-err)
     (display "> " out)
     (let ((expr (read in)))
       (if (eof-object? expr)
@@ -60,10 +60,12 @@
                (lambda (condition)
                  (display (error-object-message condition) (current-error-port))
                  (newline)
-                 (leave))
+                 (if on-err
+                     (on-err)
+                     (leave)))
                (lambda ()
                  (print (eval expr '(picrin user)) out)))))
-            (main-loop in out)))))
+            (main-loop in out on-err)))))
 
   (define (run-repl program)
     (let ((in (if program
@@ -71,8 +73,11 @@
                   (current-input-port)))
           (out (if program
                    (open-output-string) ; ignore output
-                   (current-output-port))))
-      (main-loop in out)))
+                   (current-output-port)))
+          (on-err (if program
+                      (lambda () (exit 1))
+                      #f)))
+      (main-loop in out on-err)))
 
   (define (repl)
     (let ((program (getopt)))
