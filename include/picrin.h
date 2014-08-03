@@ -57,18 +57,11 @@ typedef struct {
   struct pic_env *up;
 } pic_callinfo;
 
-typedef struct pic_block {
-  struct pic_block *prev;
-  int depth;
-  struct pic_proc *in, *out;
-  unsigned refcnt;
-} pic_block;
-
 typedef struct {
   int argc;
   char **argv, **envp;
 
-  pic_block *blk;
+  struct pic_block *blk;
 
   pic_value *sp;
   pic_value *stbase, *stend;
@@ -77,6 +70,8 @@ typedef struct {
   pic_callinfo *cibase, *ciend;
 
   pic_code *ip;
+
+  struct pic_lib *lib;
 
   pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
@@ -95,20 +90,17 @@ typedef struct {
   int sym_cnt;
   int uniq_sym_cnt;
 
-  xhash global_tbl;
-  pic_value *globals;
-  size_t glen, gcapa;
-
+  xhash globals;
   xhash macros;
+  pic_value libs;
 
-  pic_value lib_tbl;
-  struct pic_lib *lib;
-
+  bool rfcase;
   xhash rlabels;
 
   jmp_buf *jmp;
   struct pic_error *err;
   struct pic_jmpbuf *try_jmps;
+  size_t try_jmp_size, try_jmp_idx;
 
   struct pic_heap *heap;
   struct pic_object **arena;
@@ -151,7 +143,6 @@ pic_value pic_funcall(pic_state *pic, const char *name, pic_list args);
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 void pic_defun(pic_state *, const char *, pic_func_t);
-void pic_defmacro(pic_state *, const char *, struct pic_proc *);
 
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
@@ -159,6 +150,7 @@ pic_sym pic_intern(pic_state *, const char *, size_t);
 pic_sym pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym);
 pic_sym pic_gensym(pic_state *, pic_sym);
+pic_sym pic_ungensym(pic_state *, pic_sym);
 bool pic_interned_p(pic_state *, pic_sym);
 
 char *pic_strdup(pic_state *, const char *);
@@ -180,17 +172,17 @@ pic_value pic_apply3(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply4(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, pic_value);
-pic_value pic_eval(pic_state *, pic_value);
-struct pic_proc *pic_compile(pic_state *, pic_value);
-pic_value pic_macroexpand(pic_state *, pic_value);
+pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
+struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_lib *);
+pic_value pic_macroexpand(pic_state *, pic_value, struct pic_lib *);
 
 void pic_in_library(pic_state *, pic_value);
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
-#define pic_deflibrary(spec)                                            \
-  pic_deflibrary_helper__(GENSYM(i), GENSYM(prev_lib), spec)
-#define pic_deflibrary_helper__(i, prev_lib, spec)                      \
+#define pic_deflibrary(pic, spec)                                       \
+  pic_deflibrary_helper__(pic, GENSYM(i), GENSYM(prev_lib), spec)
+#define pic_deflibrary_helper__(pic, i, prev_lib, spec)                 \
   for (int i = 0; ! i; )                                                \
     for (struct pic_lib *prev_lib; ! i; )                               \
       for ((prev_lib = pic->lib), pic_make_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)

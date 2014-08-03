@@ -4,6 +4,13 @@
 
 #include "picrin.h"
 #include "picrin/port.h"
+#include "picrin/error.h"
+
+static noreturn void
+file_error(pic_state *pic, const char *msg)
+{
+  pic_throw(pic, PIC_ERROR_FILE, msg, pic_nil_value());
+}
 
 static pic_value
 generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
@@ -13,7 +20,7 @@ generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
 
   file = xfopen(fname, mode);
   if (! file) {
-    pic_error(pic, "could not open file");
+    file_error(pic, "could not open file");
   }
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
@@ -93,7 +100,7 @@ pic_file_delete(pic_state *pic)
   pic_get_args(pic, "z", &fname);
 
   if (remove(fname) != 0) {
-    pic_error(pic, "file cannot be deleted");
+    file_error(pic, "file cannot be deleted");
   }
   return pic_none_value();
 }
@@ -101,7 +108,7 @@ pic_file_delete(pic_state *pic)
 void
 pic_init_file(pic_state *pic)
 {
-  pic_deflibrary ("(scheme file)") {
+  pic_deflibrary (pic, "(scheme file)") {
     pic_defun(pic, "open-input-file", pic_file_open_input_file);
     pic_defun(pic, "open-input-binary-file", pic_file_open_input_binary_file);
     pic_defun(pic, "open-output-file", pic_file_open_output_file);

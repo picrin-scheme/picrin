@@ -24,7 +24,7 @@
     (for-each
      (lambda (fail)
        (display fail))
-     fails))
+     (reverse fails)))
 
   (define (test-begin . o)
     (set! test-counter (+ test-counter 1)))
@@ -83,19 +83,4 @@
     (syntax-rules ()
       ((_) (syntax-error "invalid use of test-syntax-error"))))
 
-  (define-syntax test-numeric-syntax
-    (syntax-rules ()
-      ((test-numeric-syntax str expect strs ...)
-       (let* ((z (read (open-input-string str)))
-              (out (open-output-string))
-              (z-str (begin (write z out) (get-output-string out))))
-         (test expect (values z))
-         (test #t (and (member z-str '(str strs ...)) #t))))))
-
-  ;; (define (test-read-error str)
-  ;;   (test-assert
-  ;;       (guard (exn (else #t))
-  ;;         (read (open-input-string str))
-  ;;         #f)))
-  (export test test-begin test-end test-values test-exit test-syntax-error test-numeric-syntax)
-  )
+  (export test test-begin test-end test-values test-exit test-syntax-error))

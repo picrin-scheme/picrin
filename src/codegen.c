@@ -100,7 +100,7 @@ new_analyze_state(pic_state *pic)
   /* push initial scope */
   push_scope(state, pic_nil_value());
 
-  xh_begin(&it, &pic->global_tbl);
+  xh_begin(&it, &pic->globals);
   while (xh_next(&it)) {
     pic_sym sym = xh_key(it.e, pic_sym);
     xv_push(&state->scope->locals, &sym);
@@ -291,20 +291,8 @@ static pic_value
 analyze_global_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
-  xh_entry *e;
-  size_t i;
 
-  if ((e = xh_get_int(&pic->global_tbl, sym))) {
-    i = xh_val(e, size_t);
-  }
-  else {
-    i = pic->glen++;
-    if (i >= pic->gcapa) {
-      pic_error(pic, "global table overflow");
-    }
-    xh_put_int(&pic->global_tbl, sym, &i);
-  }
-  return pic_list2(pic, pic_symbol_value(state->sGREF), pic_int_value(i));
+  return pic_list2(pic, pic_symbol_value(state->sGREF), pic_sym_value(sym));
 }
 
 static pic_value
@@ -832,6 +820,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_DATA:
   case PIC_TT_DICT:
   case PIC_TT_RECORD:
+  case PIC_TT_BLK:
     pic_errorf(pic, "invalid expression given: ~s", obj);
   }
   UNREACHABLE();
@@ -1096,7 +1085,7 @@ codegen(codegen_state *state, pic_value obj)
   sym = pic_sym(pic_car(pic, obj));
   if (sym == state->sGREF) {
     cxt->code[cxt->clen].insn = OP_GREF;
-    cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, obj, 1));
+    cxt->code[cxt->clen].u.i = pic_sym(pic_list_ref(pic, obj, 1));
     cxt->clen++;
     return;
   } else if (sym == state->sCREF) {
@@ -1442,7 +1431,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 }
 
 struct pic_proc *
-pic_compile(pic_state *pic, pic_value obj)
+pic_compile(pic_state *pic, pic_value obj, struct pic_lib *lib)
 {
   struct pic_irep *irep;
   size_t ai = pic_gc_arena_preserve(pic);
@@ -1458,7 +1447,7 @@ pic_compile(pic_state *pic, pic_value obj)
 #endif
 
   /* macroexpand */
-  obj = pic_macroexpand(pic, obj);
+  obj = pic_macroexpand(pic, obj, lib);
 #if DEBUG
   fprintf(stdout, "## macroexpand completed\n");
   pic_debug(pic, obj);

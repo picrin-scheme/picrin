@@ -20,7 +20,7 @@ pic_load_cstr(pic_state *pic, const char *src)
   pic_for_each (v, exprs) {
     ai = pic_gc_arena_preserve(pic);
 
-    proc = pic_compile(pic, v);
+    proc = pic_compile(pic, v, pic->lib);
     if (proc == NULL) {
       pic_error(pic, "load: compilation failure");
     }
@@ -54,7 +54,7 @@ pic_load(pic_state *pic, const char *fn)
   pic_for_each (v, exprs) {
     ai = pic_gc_arena_preserve(pic);
 
-    proc = pic_compile(pic, v);
+    proc = pic_compile(pic, v, pic->lib);
     if (proc == NULL) {
       pic_error(pic, "load: compilation failure");
     }
@@ -81,7 +81,7 @@ pic_load_load(pic_state *pic)
 void
 pic_init_load(pic_state *pic)
 {
-  pic_deflibrary ("(scheme load)") {
+  pic_deflibrary (pic, "(scheme load)") {
     pic_defun(pic, "load", pic_load_load);
   }
 }

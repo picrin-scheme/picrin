@@ -32,6 +32,8 @@ void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
+void pic_init_eval(pic_state *);
+void pic_init_lib(pic_state *);
 void pic_init_contrib(pic_state *);
 
 void pic_load_piclib(pic_state *);
@@ -60,7 +62,7 @@ pic_init_core(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_deflibrary ("(scheme base)") {
+  pic_deflibrary (pic, "(scheme base)") {
 
     /* load core syntaces */
     pic->lib->env = pic_null_syntactic_environment(pic);
@@ -94,6 +96,8 @@ pic_init_core(pic_state *pic)
     pic_init_read(pic); DONE;
     pic_init_dict(pic); DONE;
     pic_init_record(pic); DONE;
+    pic_init_eval(pic); DONE;
+    pic_init_lib(pic); DONE;
 
     pic_load_piclib(pic); DONE;
 

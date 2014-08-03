@@ -52,6 +52,7 @@ pic_get_proc(pic_state *pic)
  *  l   lambda object
  *  p   port object
  *  d   dictionary object
+ *  e   error object
  *
  *  |  optional operator
  *  *  variable length operator
@@ -364,8 +365,25 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+    case 'e': {
+      struct pic_error **e;
+      pic_value v;
+
+      e = va_arg(ap, struct pic_error **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_error_p(v)) {
+          *e = pic_error_ptr(v);
+        }
+        else {
+          pic_error(pic, "pic_get_args, expected error");
+        }
+        i++;
+      }
+      break;
+    }
     default:
-      pic_error(pic, "pic_get_args: invalid argument specifier given");
+      pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
     }
   }
   if ('*' == c) {
@@ -387,79 +405,38 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return i - 1;
 }
 
-static size_t
-global_ref(pic_state *pic, const char *name)
-{
-  xh_entry *e;
-  pic_sym sym, rename;
-
-  sym = pic_intern_cstr(pic, name);
-  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
-    return SIZE_MAX;
-  }
-  if (! (e = xh_get_int(&pic->global_tbl, rename))) {
-    return SIZE_MAX;
-  }
-  return xh_val(e, size_t);
-}
-
-static size_t
-global_def(pic_state *pic, const char *name)
-{
-  pic_sym sym, rename;
-  size_t gidx;
-
-  sym = pic_intern_cstr(pic, name);
-  if ((gidx = global_ref(pic, name)) != SIZE_MAX) {
-    pic_warn(pic, "redefining global");
-    return gidx;
-  }
-
-  /* register to the senv */
-  rename = pic_add_rename(pic, pic->lib->env, sym);
-
-  /* register to the global table */
-  gidx = pic->glen++;
-  if (pic->glen >= pic->gcapa) {
-    pic_error(pic, "global table overflow");
-  }
-  xh_put_int(&pic->global_tbl, rename, &gidx);
-
-  return gidx;
-}
-
 void
 pic_define(pic_state *pic, const char *name, pic_value val)
 {
+  pic_sym sym, rename;
+
+  sym = pic_intern_cstr(pic, name);
+
+  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
+    rename = pic_add_rename(pic, pic->lib->env, sym);
+  } else {
+    pic_warn(pic, "redefining global");
+  }
+
   /* push to the global arena */
-  pic->globals[global_def(pic, name)] = val;
+  xh_put_int(&pic->globals, rename, &val);
 
   /* export! */
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_export(pic, sym);
 }
 
 pic_value
 pic_ref(pic_state *pic, const char *name)
 {
-  size_t gid;
+  pic_sym sym, rename;
 
-  gid = global_ref(pic, name);
-  if (gid == SIZE_MAX) {
+  sym = pic_intern_cstr(pic, name);
+
+  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
     pic_errorf(pic, "symbol \"%s\" not defined", name);
   }
-  return pic->globals[gid];
-}
 
-void
-pic_set(pic_state *pic, const char *name, pic_value value)
-{
-  size_t gid;
-
-  gid = global_ref(pic, name);
-  if (gid == SIZE_MAX) {
-    pic_error(pic, "symbol not defined");
-  }
-  pic->globals[gid] = value;
+  return xh_val(xh_get_int(&pic->globals, rename), pic_value);
 }
 
 pic_value
@@ -495,18 +472,34 @@ vm_push_env(pic_state *pic)
 }
 
 static void
-vm_tear_off(pic_state *pic)
+vm_tear_off(pic_callinfo *ci)
 {
   struct pic_env *env;
   int i;
 
-  assert(pic->ci->env != NULL);
+  assert(ci->env != NULL);
 
-  env = pic->ci->env;
+  env = ci->env;
+
+  if (env->regs == env->storage) {
+    return;                     /* is torn off */
+  }
   for (i = 0; i < env->regc; ++i) {
     env->storage[i] = env->regs[i];
   }
   env->regs = env->storage;
+}
+
+void
+pic_vm_tear_off(pic_state *pic)
+{
+  pic_callinfo *ci;
+
+  for (ci = pic->ci; ci > pic->cibase; ci--) {
+    if (ci->env != NULL) {
+      vm_tear_off(ci);
+    }
+  }
 }
 
 pic_value
@@ -659,11 +652,19 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(pic->globals[c.u.i]);
+      xh_entry *e;
+
+      if ((e = xh_get_int(&pic->globals, c.u.i)) == NULL) {
+        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: ~s", pic_symbol_name(pic, c.u.i));
+      }
+      PUSH(xh_val(e, pic_value));
       NEXT;
     }
     CASE(OP_GSET) {
-      pic->globals[c.u.i] = POP();
+      pic_value val;
+
+      val = POP();
+      xh_put_int(&pic->globals, c.u.i, &val);
       NEXT;
     }
     CASE(OP_LREF) {
@@ -828,7 +829,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
 
       if (pic->ci->env != NULL) {
-        vm_tear_off(pic);
+        vm_tear_off(pic->ci);
       }
 
       if (c.u.i == -1) {
@@ -854,7 +855,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       pic_callinfo *ci;
 
       if (pic->ci->env != NULL) {
-        vm_tear_off(pic);
+        vm_tear_off(pic->ci);
       }
 
       pic->ci->retc = c.u.i;
@@ -1044,14 +1045,4 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   ci->fp = pic->sp;
   ci->retc = pic_length(pic, args);
   return pic_obj_value(proc);
-}
-
-pic_value
-pic_eval(pic_state *pic, pic_value program)
-{
-  struct pic_proc *proc;
-
-  proc = pic_compile(pic, program);
-
-  return pic_apply(pic, proc, pic_nil_value());
 }

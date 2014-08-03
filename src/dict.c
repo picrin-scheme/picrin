@@ -163,7 +163,7 @@ pic_dict_dict_for_each(pic_state *pic)
 void
 pic_init_dict(pic_state *pic)
 {
-  pic_deflibrary ("(picrin dictionary)") {
+  pic_deflibrary (pic, "(picrin dictionary)") {
     pic_defun(pic, "make-dictionary", pic_dict_dict);
     pic_defun(pic, "dictionary?", pic_dict_dict_p);
     pic_defun(pic, "dictionary-has?", pic_dict_dict_has_p);

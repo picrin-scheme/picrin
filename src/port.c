@@ -377,7 +377,7 @@ pic_port_get_output_bytevector(pic_state *pic)
 static pic_value
 pic_port_read_char(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic);
 
   pic_get_args(pic, "|p", &port);
@@ -388,14 +388,14 @@ pic_port_read_char(pic_state *pic)
     return pic_eof_object();
   }
   else {
-    return pic_char_value(c);
+    return pic_char_value((char)c);
   }
 }
 
 static pic_value
 pic_port_peek_char(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic);
 
   pic_get_args(pic, "|p", &port);
@@ -407,14 +407,14 @@ pic_port_peek_char(pic_state *pic)
   }
   else {
     xungetc(c, port->file);
-    return pic_char_value(c);
+    return pic_char_value((char)c);
   }
 }
 
 static pic_value
 pic_port_read_line(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic), *buf;
   struct pic_string *str;
 
@@ -453,16 +453,16 @@ pic_port_read_string(pic_state *pic){
   struct pic_port *port = pic_stdin(pic), *buf;
   pic_str *str;
   int k, i;
-  char c;
+  int c;
 
   pic_get_args(pic, "i|p", &k,  &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, PIC_PORT_OPEN, "read-stritg");
 
+  c = EOF;
   buf = pic_open_output_string(pic);
   for(i = 0; i < k; ++i) {
-    c = xfgetc(port->file);
-    if( c == EOF){
+    if((c = xfgetc(port->file)) == EOF){
       break;
     }
     xfputc(c, buf->file);
@@ -481,7 +481,7 @@ pic_port_read_string(pic_state *pic){
 static pic_value
 pic_port_read_byte(pic_state *pic){
   struct pic_port *port = pic_stdin(pic);
-  char c;
+  int c;
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-u8");
@@ -495,14 +495,15 @@ pic_port_read_byte(pic_state *pic){
 static pic_value
 pic_port_peek_byte(pic_state *pic)
 {
-  char c;
+  int c;
   struct pic_port *port = pic_stdin(pic);
 
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "peek-u8");
 
-  if ((c = xfgetc(port->file)) == EOF) {
+  c = xfgetc(port->file);
+  if (c == EOF) {
     return pic_eof_object();
   }
   else {
@@ -695,7 +696,7 @@ pic_init_port(pic_state *pic)
   STDOUT = port_new_stdport(pic, xstdout, PIC_PORT_OUT);
   STDERR = port_new_stdport(pic, xstderr, PIC_PORT_OUT);
 
-  pic_deflibrary ("(picrin port)") {
+  pic_deflibrary (pic, "(picrin port)") {
     pic_define(pic, "standard-input-port", pic_obj_value(STDIN));
     pic_define(pic, "standard-output-port", pic_obj_value(STDOUT));
     pic_define(pic, "standard-error-port", pic_obj_value(STDERR));

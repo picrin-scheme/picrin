@@ -9,6 +9,7 @@
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/cont.h"
+#include "picrin/error.h"
 
 void pic_init_core(pic_state *);
 
@@ -22,17 +23,13 @@ pic_open(int argc, char *argv[], char **envp)
 
   pic = (pic_state *)malloc(sizeof(pic_state));
 
+  /* root block */
+  pic->blk = NULL;
+
   /* command line */
   pic->argc = argc;
   pic->argv = argv;
   pic->envp = envp;
-
-  /* root block */
-  pic->blk = (pic_block *)malloc(sizeof(pic_block));
-  pic->blk->prev = NULL;
-  pic->blk->depth = 0;
-  pic->blk->in = pic->blk->out = NULL;
-  pic->blk->refcnt = 1;
 
   /* prepare VM stack */
   pic->stbase = pic->sp = (pic_value *)calloc(PIC_STACK_SIZE, sizeof(pic_value));
@@ -52,25 +49,25 @@ pic_open(int argc, char *argv[], char **envp)
   pic->uniq_sym_cnt = 0;
 
   /* global variables */
-  xh_init_int(&pic->global_tbl, sizeof(size_t));
-  pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
-  pic->glen = 0;
-  pic->gcapa = PIC_GLOBALS_SIZE;
+  xh_init_int(&pic->globals, sizeof(pic_value));
 
   /* macros */
   xh_init_int(&pic->macros, sizeof(struct pic_macro *));
 
   /* libraries */
-  pic->lib_tbl = pic_nil_value();
+  pic->libs = pic_nil_value();
   pic->lib = NULL;
 
   /* reader */
+  pic->rfcase = false;
   xh_init_int(&pic->rlabels, sizeof(pic_value));
 
   /* error handling */
   pic->jmp = NULL;
   pic->err = NULL;
-  pic->try_jmps = NULL;
+  pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
+  pic->try_jmp_idx = 0;
+  pic->try_jmp_size = PIC_RESCUE_SIZE;
 
   /* GC arena */
   pic->arena = (struct pic_object **)calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
@@ -132,6 +129,12 @@ pic_open(int argc, char *argv[], char **envp)
   register_renamed_symbol(pic, rEXPORT, "export");
   pic_gc_arena_restore(pic, ai);
 
+  /* root block */
+  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
+  pic->blk->prev = NULL;
+  pic->blk->depth = 0;
+  pic->blk->in = pic->blk->out = NULL;
+
   pic_init_core(pic);
 
   /* set library */
@@ -147,16 +150,20 @@ pic_close(pic_state *pic)
   xh_iter it;
 
   /* invoke exit handlers */
-  PIC_BLK_EXIT(pic);
+  while (pic->blk) {
+    if (pic->blk->out) {
+      pic_apply0(pic, pic->blk->out);
+    }
+    pic->blk = pic->blk->prev;
+  }
 
   /* clear out root objects */
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
   pic->arena_idx = 0;
   pic->err = NULL;
-  pic->glen = 0;
   xh_clear(&pic->macros);
-  pic->lib_tbl = pic_nil_value();
+  pic->libs = pic_nil_value();
 
   /* free all heap objects */
   pic_gc_run(pic);
@@ -169,9 +176,9 @@ pic_close(pic_state *pic)
   free(pic->cibase);
 
   /* free global stacks */
-  free(pic->globals);
+  free(pic->try_jmps);
   xh_destroy(&pic->syms);
-  xh_destroy(&pic->global_tbl);
+  xh_destroy(&pic->globals);
   xh_destroy(&pic->macros);
   xh_destroy(&pic->rlabels);
 

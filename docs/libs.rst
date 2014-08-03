@@ -49,6 +49,7 @@ Utility functions and syntaces for macro definition.
 
 - define-macro
 - gensym
+- ungensym
 - macroexpand
 - macroexpand-1
 
@@ -68,6 +69,7 @@ Syntactic closures.
 
 - er-macro-transformer
 - ir-macro-transformer
+- strip-syntax
 
 Explicit renaming macro family.
 

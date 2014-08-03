@@ -62,13 +62,13 @@ pic_strlen(pic_str *str)
 char
 pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 {
-  char c;
+  int c;
 
   c = xr_at(str->rope, i);
   if (c == -1) {
     pic_errorf(pic, "index out of range %d", i);
   }
-  return c;
+  return (char)c;
 }
 
 static xrope *

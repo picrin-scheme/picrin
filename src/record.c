@@ -105,7 +105,7 @@ pic_record_record_set(pic_state *pic)
 void
 pic_init_record(pic_state *pic)
 {
-  pic_deflibrary ("(picrin record-primitive)") {
+  pic_deflibrary (pic, "(picrin record-primitive)") {
     pic_defun(pic, "make-record", pic_record_record);
     pic_defun(pic, "record-of?", pic_record_record_of);
     pic_defun(pic, "record-ref", pic_record_record_ref);

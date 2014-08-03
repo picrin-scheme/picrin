@@ -145,19 +145,6 @@
        (let ((x (cadr form)))
          (qq 1 x)))))
 
-  #;
-  (define-syntax let*
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let ((bindings (cadr form))
-             (body (cddr form)))
-         (if (null? bindings)
-             `(let () ,@body)
-             `(let ((,(caar bindings)
-                     ,@(cdar bindings)))
-                (let* (,@(cdr bindings))
-                  ,@body)))))))
-
   (define-syntax let*
     (er-macro-transformer
      (lambda (form r compare)
@@ -375,18 +362,6 @@
   (import (scheme base)
           (picrin macro))
 
-  (define-syntax with
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let ((before (car (cdr form)))
-             (after  (car (cdr (cdr form))))
-             (body   (cdr (cdr (cdr form)))))
-         `(begin
-            (,before)
-            (let ((result (begin ,@body)))
-              (,after)
-              result))))))
-
   (define-syntax parameterize
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -394,12 +369,11 @@
              (body   (cdr (cdr form))))
          (let ((vars (map car formal))
                (vals (map cadr formal)))
-           `(with
-             (lambda ()
-               ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals))
-             (lambda ()
-               ,@(map (lambda (var) `(parameter-pop! ,var)) vars))
-             ,@body))))))
+           `(begin
+              ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals)
+              (let ((result (begin ,@body)))
+                ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
+                result)))))))
 
   (export parameterize))
 
@@ -486,11 +460,6 @@
 
 (export define-record-type)
 
-(define (fold f s xs)
-  (if (null? xs)
-      s
-      (fold f (f (car xs) s) (cdr xs))))
-
 ;;; 6.6 Characters
 
 (define-macro (define-char-transitive-predicate name op)
@@ -551,24 +520,24 @@
 
 ;;; 6.9 bytevector
 
-(define (bytevector . objs)
-  (let ((len (length objs)))
+(define (bytevector->list v start end)
+  (do ((i start (+ i 1))
+       (res '()))
+      ((= i end)
+       (reverse res))
+    (set! res (cons (bytevector-u8-ref v i) res))))
+
+(define (list->bytevector list)
+  (let ((len (length list)))
     (let ((v (make-bytevector len)))
       (do ((i 0 (+ i 1))
-	   (l objs (cdr l)))
+	   (l list (cdr l)))
 	  ((= i len)
 	   v)
 	(bytevector-u8-set! v i (car l))))))
 
-(define (bytevector->list v start end)
-    (do ((i start (+ i 1))
-	 (res '()))
-	((= i end)
-	 (reverse res))
-      (set! res (cons (bytevector-u8-ref v i) res))))
-
-(define (list->bytevector v)
-  (apply bytevector v))
+(define (bytevector . objs)
+  (list->bytevector objs))
 
 (define (utf8->string v . opts)
   (let ((start (if (pair? opts) (car opts) 0))
@@ -941,4 +910,64 @@
 
 (import (picrin syntax-rules))
 (export syntax-rules)
+
+(define-syntax guard-aux
+  (syntax-rules (else =>)
+    ((guard-aux reraise (else result1 result2 ...))
+     (begin result1 result2 ...))
+    ((guard-aux reraise (test => result))
+     (let ((temp test))
+       (if temp
+           (result temp)
+           reraise)))
+    ((guard-aux reraise (test => result)
+                clause1 clause2 ...)
+     (let ((temp test))
+       (if temp
+           (result temp)
+           (guard-aux reraise clause1 clause2 ...))))
+    ((guard-aux reraise (test))
+     (or test reraise))
+    ((guard-aux reraise (test) clause1 clause2 ...)
+     (let ((temp test))
+       (if temp
+           temp
+           (guard-aux reraise clause1 clause2 ...))))
+    ((guard-aux reraise (test result1 result2 ...))
+     (if test
+         (begin result1 result2 ...)
+         reraise))
+    ((guard-aux reraise
+                (test result1 result2 ...)
+                clause1 clause2 ...)
+     (if test
+         (begin result1 result2 ...)
+         (guard-aux reraise clause1 clause2 ...)))))
+
+(define-syntax guard
+  (syntax-rules ()
+    ((guard (var clause ...) e1 e2 ...)
+     ((call/cc
+       (lambda (guard-k)
+         (with-exception-handler
+          (lambda (condition)
+            ((call/cc
+              (lambda (handler-k)
+                (guard-k
+                 (lambda ()
+                   (let ((var condition))
+                     (guard-aux
+                      (handler-k
+                       (lambda ()
+                         (raise-continuable condition)))
+                      clause ...))))))))
+          (lambda ()
+            (call-with-values
+                (lambda () e1 e2 ...)
+              (lambda args
+                (guard-k
+                 (lambda ()
+                   (apply values args)))))))))))))
+
+(export guard)
 

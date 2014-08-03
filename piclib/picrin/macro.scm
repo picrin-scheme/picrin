@@ -20,7 +20,7 @@
                     expr)))))
 
   (define (memoize f)
-    "memoize on a symbol"
+    "memoize on symbols"
     (define cache (make-dictionary))
     (lambda (sym)
       (if (dictionary-has? cache sym)
@@ -29,6 +29,10 @@
             (define val (f sym))
             (dictionary-set! cache sym val)
             val))))
+
+  (define (identifier=? env1 sym1 env2 sym2)
+    (eq? (make-identifier sym1 env1)
+         (make-identifier sym2 env2)))
 
   (define (make-syntactic-closure env free form)
 
@@ -106,6 +110,9 @@
                   (rename sym)))
             (f (walk inject expr) inject compare))))
 
+  (define (strip-syntax form)
+    (walk ungensym form))
+
   (define-syntax define-macro
     (er-macro-transformer
      (lambda (expr r c)
@@ -120,11 +127,13 @@
                        (cons (cdr formal)
                              body)))))))
 
-  (export make-syntactic-closure
+  (export identifier=?
+          make-syntactic-closure
           close-syntax
           capture-syntactic-environment
           sc-macro-transformer
           rsc-macro-transformer
           er-macro-transformer
           ir-macro-transformer
+          strip-syntax
           define-macro))

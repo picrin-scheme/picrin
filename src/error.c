@@ -34,39 +34,41 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
 }
 
 void
-pic_push_try(pic_state *pic)
+pic_push_try(pic_state *pic, struct pic_proc *handler)
 {
   struct pic_jmpbuf *try_jmp;
 
-  try_jmp = pic_alloc(pic, sizeof(struct pic_jmpbuf));
+  if (pic->try_jmp_idx >= pic->try_jmp_size) {
+    pic->try_jmp_size *= 2;
+    pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  }
 
-  try_jmp->ci = pic->ci;
-  try_jmp->sp = pic->sp;
+  try_jmp = pic->try_jmps + pic->try_jmp_idx++;
+
+  try_jmp->handler = handler;
+
+  try_jmp->ci_offset = pic->ci - pic->cibase;
+  try_jmp->sp_offset = pic->sp - pic->stbase;
   try_jmp->ip = pic->ip;
 
   try_jmp->prev_jmp = pic->jmp;
   pic->jmp = &try_jmp->here;
-
-  try_jmp->prev = pic->try_jmps;
-  pic->try_jmps = try_jmp;
 }
 
 void
 pic_pop_try(pic_state *pic)
 {
-  struct pic_jmpbuf *prev;
+  struct pic_jmpbuf *try_jmp;
 
-  assert(pic->jmp == &pic->try_jmps->here);
+  try_jmp = pic->try_jmps + --pic->try_jmp_idx;
 
-  pic->ci = pic->try_jmps->ci;
-  pic->sp = pic->try_jmps->sp;
-  pic->ip = pic->try_jmps->ip;
+  /* assert(pic->jmp == &try_jmp->here); */
 
-  pic->jmp = pic->try_jmps->prev_jmp;
+  pic->ci = try_jmp->ci_offset + pic->cibase;
+  pic->sp = try_jmp->sp_offset + pic->stbase;
+  pic->ip = try_jmp->ip;
 
-  prev = pic->try_jmps->prev;
-  pic_free(pic, pic->try_jmps);
-  pic->try_jmps = prev;
+  pic->jmp = try_jmp->prev_jmp;
 }
 
 static struct pic_error *
@@ -89,11 +91,16 @@ error_new(pic_state *pic, short type, pic_str *msg, pic_value irrs)
 noreturn void
 pic_throw_error(pic_state *pic, struct pic_error *e)
 {
+  void pic_vm_tear_off(pic_state *);
+
+  pic_vm_tear_off(pic);         /* tear off */
+
   pic->err = e;
   if (! pic->jmp) {
     puts(pic_errmsg(pic));
     abort();
   }
+
   longjmp(*pic->jmp, 1);
 }
 
@@ -140,14 +147,20 @@ pic_error_with_exception_handler(pic_state *pic)
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  pic_try {
+  pic_try_with_handler(handler) {
     v = pic_apply0(pic, thunk);
   }
   pic_catch {
     struct pic_error *e = pic->err;
 
     pic->err = NULL;
-    v = pic_apply1(pic, handler, pic_obj_value(e));
+
+    if (e->type == PIC_ERROR_RAISED) {
+      v = pic_list_ref(pic, e->irrs, 0);
+    } else {
+      v = pic_obj_value(e);
+    }
+    v = pic_apply1(pic, handler, v);
     pic_errorf(pic, "error handler returned ~s, by error ~s", v, pic_obj_value(e));
   }
   return v;
@@ -161,6 +174,27 @@ pic_error_raise(pic_state *pic)
   pic_get_args(pic, "o", &v);
 
   pic_throw(pic, PIC_ERROR_RAISED, "object is raised", pic_list1(pic, v));
+}
+
+static pic_value
+pic_error_raise_continuable(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  if (pic->try_jmp_idx == 0) {
+    pic_errorf(pic, "no exception handler registered");
+  }
+  if (pic->try_jmps[pic->try_jmp_idx - 1].handler == NULL) {
+    pic_errorf(pic, "uncontinuable exception handler is on top");
+  }
+  else {
+    pic->try_jmp_idx--;
+    v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, v);
+    ++pic->try_jmp_idx;
+  }
+  return v;
 }
 
 noreturn static pic_value
@@ -242,6 +276,7 @@ pic_init_error(pic_state *pic)
 {
   pic_defun(pic, "with-exception-handler", pic_error_with_exception_handler);
   pic_defun(pic, "raise", pic_error_raise);
+  pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
   pic_defun(pic, "error", pic_error_error);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);

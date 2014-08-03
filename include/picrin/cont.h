@@ -9,11 +9,18 @@
 extern "C" {
 #endif
 
+struct pic_block {
+  PIC_OBJECT_HEADER
+  struct pic_block *prev;
+  int depth;
+  struct pic_proc *in, *out;
+};
+
 struct pic_cont {
   PIC_OBJECT_HEADER
   jmp_buf jmp;
 
-  pic_block *blk;
+  struct pic_block *blk;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;
@@ -30,36 +37,11 @@ struct pic_cont {
   size_t arena_size;
   int arena_idx;
 
+  struct pic_jmpbuf *try_jmps;
+  size_t try_jmp_idx, try_jmp_size;
+
   pic_value results;
 };
-
-#define PIC_BLK_INCREF(pic,blk) do {		\
-    (blk)->refcnt++;				\
-  } while (0)
-
-#define PIC_BLK_DECREF(pic,blk) do {			\
-    pic_block *_a = (blk), *_b;                         \
-    while (_a) {					\
-      if (! --_a->refcnt) {				\
-	_b = _a->prev;					\
-	pic_free((pic), _a);				\
-	_a = _b;					\
-      } else {						\
-	break;						\
-      }							\
-    }							\
-  } while (0)
-
-#define PIC_BLK_EXIT(pic) do {                           \
-    pic_block *_a;                                       \
-    while (pic->blk) {                                   \
-      if (pic->blk->out)                                 \
-        pic_apply0(pic, pic->blk->out);                  \
-      _a = pic->blk->prev;                               \
-      PIC_BLK_DECREF(pic, pic->blk);                     \
-      pic->blk = _a;                                     \
-    }                                                    \
-  } while (0)
 
 pic_value pic_values0(pic_state *);
 pic_value pic_values1(pic_state *, pic_value);

@@ -20,13 +20,13 @@ pic_intern(pic_state *pic, const char *str, size_t len)
   cstr[len] = '\0';
   memcpy(cstr, str, len);
 
-  e = xh_get(&pic->syms, cstr);
+  e = xh_get_str(&pic->syms, cstr);
   if (e) {
     return xh_val(e, pic_sym);
   }
 
   id = pic->sym_cnt++;
-  xh_put(&pic->syms, cstr, &id);
+  xh_put_str(&pic->syms, cstr, &id);
   xh_put_int(&pic->sym_names, id, &cstr);
   return id;
 }
@@ -41,18 +41,40 @@ pic_sym
 pic_gensym(pic_state *pic, pic_sym base)
 {
   int uid = pic->uniq_sym_cnt++, len;
-  char *str;
+  char *str, mark;
   pic_sym uniq;
 
-  len = snprintf(NULL, 0, "%s@%d", pic_symbol_name(pic, base), uid);
+  if (pic_interned_p(pic, base)) {
+    mark = '@';
+  } else {
+    mark = '.';
+  }
+
+  len = snprintf(NULL, 0, "%s%c%d", pic_symbol_name(pic, base), mark, uid);
   str = pic_alloc(pic, len + 1);
-  sprintf(str, "%s@%d", pic_symbol_name(pic, base), uid);
+  sprintf(str, "%s%c%d", pic_symbol_name(pic, base), mark, uid);
 
   /* don't put the symbol to pic->syms to keep it uninterned */
   uniq = pic->sym_cnt++;
   xh_put_int(&pic->sym_names, uniq, &str);
 
   return uniq;
+}
+
+pic_sym
+pic_ungensym(pic_state *pic, pic_sym base)
+{
+  const char *name, *occr;
+
+  if (pic_interned_p(pic, base)) {
+    return base;
+  }
+
+  name = pic_symbol_name(pic, base);
+  if ((occr = strrchr(name, '@')) == NULL) {
+    pic_abort(pic, "logic flaw");
+  }
+  return pic_intern(pic, name, occr - name);
 }
 
 bool

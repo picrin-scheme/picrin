@@ -177,7 +177,7 @@ pic_init_proc(pic_state *pic)
   pic_defun(pic, "map", pic_proc_map);
   pic_defun(pic, "for-each", pic_proc_for_each);
 
-  pic_deflibrary ("(picrin attribute)") {
+  pic_deflibrary (pic, "(picrin attribute)") {
     pic_defun(pic, "attribute", pic_proc_attribute);
   }
 }

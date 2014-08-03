@@ -10,6 +10,7 @@
 #include "picrin/proc.h"
 #include "picrin/cont.h"
 #include "picrin/pair.h"
+#include "picrin/error.h"
 
 pic_value
 pic_values0(pic_state *pic)
@@ -118,7 +119,6 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
   cont->blk = pic->blk;
-  PIC_BLK_INCREF(pic, cont->blk);
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
@@ -143,6 +143,11 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
+  cont->try_jmp_idx = pic->try_jmp_idx;
+  cont->try_jmp_size = pic->try_jmp_size;
+  cont->try_jmps = pic_alloc(pic, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  memcpy(cont->try_jmps, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+
   cont->results = pic_undef_value();
 }
 
@@ -158,8 +163,12 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
 noreturn static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
+  void pic_vm_tear_off(pic_state *);
   char v;
   struct pic_cont *tmp = cont;
+  struct pic_block *blk;
+
+  pic_vm_tear_off(pic);         /* tear off */
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
@@ -168,8 +177,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
-  PIC_BLK_DECREF(pic, pic->blk);
-  PIC_BLK_INCREF(pic, cont->blk);
+  blk = pic->blk;
   pic->blk = cont->blk;
 
   pic->stbase = (pic_value *)pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
@@ -189,13 +197,18 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
 
+  pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
+  memcpy(pic->try_jmps, cont->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
+  pic->try_jmp_size = cont->try_jmp_size;
+  pic->try_jmp_idx = cont->try_jmp_idx;
+
   memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);
 
   longjmp(tmp->jmp, 1);
 }
 
 static void
-walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
+walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
 {
   if (here == there)
     return;
@@ -213,7 +226,7 @@ walk_to_block(pic_state *pic, pic_block *here, pic_block *there)
 static pic_value
 pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
 {
-  pic_block *here;
+  struct pic_block *here;
   pic_value val;
 
   if (in != NULL) {
@@ -221,17 +234,14 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   }
 
   here = pic->blk;
-  pic->blk = (pic_block *)pic_alloc(pic, sizeof(pic_block));
+  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
   pic->blk->prev = here;
   pic->blk->depth = here->depth + 1;
   pic->blk->in = in;
   pic->blk->out = out;
-  pic->blk->refcnt = 1;
-  PIC_BLK_INCREF(pic, here);
 
   val = pic_apply0(pic, thunk);
 
-  PIC_BLK_DECREF(pic, pic->blk);
   pic->blk = here;
 
   if (out != NULL) {

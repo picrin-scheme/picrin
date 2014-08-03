@@ -124,7 +124,7 @@ pic_var_parameter_pop(pic_state *pic)
 void
 pic_init_var(pic_state *pic)
 {
-  pic_deflibrary ("(picrin parameter)") {
+  pic_deflibrary (pic, "(picrin parameter)") {
     pic_defun(pic, "make-parameter", pic_var_make_parameter);
     pic_defun(pic, "parameter-ref", pic_var_parameter_ref);
     pic_defun(pic, "parameter-set!", pic_var_parameter_set);
