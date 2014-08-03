@@ -8,6 +8,7 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/scheme/file.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/case-lambda.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/lazy.scm
+  ${PROJECT_SOURCE_DIR}/piclib/scheme/eval.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/r5rs.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/null.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/1.scm
