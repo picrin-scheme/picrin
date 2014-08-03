@@ -295,7 +295,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
 
       if ((mac = find_macro(pic, tag)) != NULL) {
-        return macroexpand(pic, macroexpand_macro(pic, mac, expr, senv), senv);
+        return macroexpand_node(pic, macroexpand_macro(pic, mac, expr, senv), senv);
       }
     }
 
