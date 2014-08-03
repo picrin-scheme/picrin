@@ -1,7 +1,7 @@
-;;; core syntaces
-(define-library (picrin core-syntax)
-  (import (scheme base)
-          (picrin macro))
+(define-library (scheme base)
+  (import (picrin macro))
+
+  ;; core syntax
 
   (define-syntax syntax-error
     (er-macro-transformer
@@ -275,23 +275,46 @@
           do when unless
           let-syntax letrec-syntax
           include
-          _ ... syntax-error))
+          _ ... syntax-error)
 
-(import (picrin core-syntax))
 
-(export let let* letrec letrec*
-        quasiquote unquote unquote-splicing
-        and or
-        cond case else =>
-        do when unless
-        let-syntax letrec-syntax
-        include
-        _ ... syntax-error)
+  ;; utility functions
 
-;;; multiple value
-(define-library (picrin values)
-  (import (scheme base)
-          (picrin macro))
+  (define (walk proc expr)
+    (cond
+     ((null? expr)
+      '())
+     ((pair? expr)
+      (cons (walk proc (car expr))
+            (walk proc (cdr expr))))
+     ((vector? expr)
+      (list->vector (map proc (vector->list expr))))
+     (else
+      (proc expr))))
+
+  (define (flatten expr)
+    (let ((list '()))
+      (walk
+       (lambda (x)
+         (set! list (cons x list)))
+       expr)
+      (reverse list)))
+
+  (define (reverse* l)
+    ;; (reverse* '(a b c d . e)) => (e d c b a)
+    (let loop ((a '())
+	       (d l))
+      (if (pair? d)
+	  (loop (cons (car d) a) (cdr d))
+	  (cons d a))))
+
+  (define (every? pred l)
+    (if (null? l)
+	#t
+	(and (pred (car l)) (every? pred (cdr l)))))
+
+
+  ;; extra syntax
 
   (define-syntax let*-values
     (er-macro-transformer
@@ -308,26 +331,6 @@
     (er-macro-transformer
      (lambda (form r c)
        `(,(r 'let*-values) ,@(cdr form)))))
-
-  (define (walk proc expr)
-    (cond
-     ((null? expr)
-      '())
-     ((pair? expr)
-      (cons (proc (car expr))
-            (walk proc (cdr expr))))
-     ((vector? expr)
-      (list->vector (map proc (vector->list expr))))
-     (else
-      (proc expr))))
-
-  (define (flatten expr)
-    (let ((list '()))
-      (walk
-       (lambda (x)
-         (set! list (cons x list)))
-       expr)
-      (reverse list)))
 
   (define uniq
     (let ((counter 0))
@@ -355,338 +358,8 @@
 
   (export let-values
           let*-values
-          define-values))
+          define-values)
 
-;;; parameter
-(define-library (picrin parameter)
-  (import (scheme base)
-          (picrin macro))
-
-  (define-syntax parameterize
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let ((formal (car (cdr form)))
-             (body   (cdr (cdr form))))
-         (let ((vars (map car formal))
-               (vals (map cadr formal)))
-           `(begin
-              ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals)
-              (let ((result (begin ,@body)))
-                ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
-                result)))))))
-
-  (export parameterize))
-
-;;; Record Type
-(define-library (picrin record)
-  (import (scheme base)
-          (scheme eval)
-          (picrin macro))
-
-  (define record-marker (list 'record-marker))
-
-  (define real-vector? vector?)
-
-  (set! vector?
-    (lambda (x)
-      (and (real-vector? x)
-           (or (= 0 (vector-length x))
-               (not (eq? (vector-ref x 0)
-                         record-marker))))))
-
-  (define (record? x)
-    (and (real-vector? x)
-	 (< 0 (vector-length x))
-	 (eq? (vector-ref x 0) record-marker)))
-
-  (define (make-record size)
-    (let ((new (make-vector (+ size 1))))
-      (vector-set! new 0 record-marker)
-      new))
-
-  (define (record-ref record index)
-    (vector-ref record (+ index 1)))
-
-  (define (record-set! record index value)
-    (vector-set! record (+ index 1) value))
-
-  (define record-type% (make-record 3))
-  (record-set! record-type% 0 record-type%)
-  (record-set! record-type% 1 'record-type%)
-  (record-set! record-type% 2 '(name field-tags))
-
-  (define (make-record-type name field-tags)
-    (let ((new (make-record 3)))
-      (record-set! new 0 record-type%)
-      (record-set! new 1 name)
-      (record-set! new 2 field-tags)
-      new))
-
-  (define (record-type record)
-    (record-ref record 0))
-
-  (define (record-type-name record-type)
-    (record-ref record-type 1))
-
-  (define (record-type-field-tags record-type)
-    (record-ref record-type 2))
-
-  (define (field-index type tag)
-    (let rec ((i 1) (tags (record-type-field-tags type)))
-      (cond ((null? tags)
-	     (error "record type has no such field" type tag))
-	    ((eq? tag (car tags)) i)
-	    (else (rec (+ i 1) (cdr tags))))))
-
-  (define (record-constructor type tags)
-    (let ((size (length (record-type-field-tags type)))
-	  (arg-count (length tags))
-	  (indexes (map (lambda (tag) (field-index type tag)) tags)))
-      (lambda args
-	(if (= (length args) arg-count)
-	    (let ((new (make-record (+ size 1))))
-	      (record-set! new 0 type)
-	      (for-each (lambda (arg i) (record-set! new i arg)) args indexes)
-	      new)
-	    (error "wrong number of arguments to constructor" type args)))))
-
-  (define (record-predicate type)
-    (lambda (thing)
-      (and (record? thing)
-	   (eq? (record-type thing)
-		type))))
-
-  (define (record-accessor type tag)
-    (let ((index (field-index type tag)))
-      (lambda (thing)
-	(if (and (record? thing)
-		 (eq? (record-type thing)
-		      type))
-	    (record-ref thing index)
-	    (error "accessor applied to bad value" type tag thing)))))
-
-  (define (record-modifier type tag)
-    (let ((index (field-index type tag)))
-      (lambda (thing value)
-	(if (and (record? thing)
-		 (eq? (record-type thing)
-		      type))
-	    (record-set! thing index value)
-	    (error "modifier applied to bad value" type tag thing)))))
-
-  (define-syntax define-record-field
-    (ir-macro-transformer
-     (lambda (form inject compare?)
-       (let ((type      (car (cdr form)))
-	     (field-tag (car (cdr (cdr form))))
-	     (acc-mod   (cdr (cdr (cdr form)))))
-	 (if (= 1 (length acc-mod))
-	     `(define ,(car acc-mod)
-		(record-accessor ,type ',field-tag))
-	     `(begin
-		(define ,(car acc-mod)
-		  (record-accessor ,type ',field-tag))
-		(define ,(cadr acc-mod)
-		  (record-modifier ,type ',field-tag))))))))
-
-  (define-syntax define-record-type
-    (ir-macro-transformer
-     (lambda (form inject compare?)
-       (let ((type (cadr form))
-	     (constructor (car (cdr (cdr form))))
-	     (predicate   (car (cdr (cdr (cdr form)))))
-	     (field-tag   (cdr (cdr (cdr (cdr form))))))
-	 `(begin
-	    (define ,type
-	      (make-record-type ',type ',(cdr constructor)))
-	    (define ,(car constructor)
-	      (record-constructor ,type ',(cdr constructor)))
-	    (define ,predicate
-	      (record-predicate ,type))
-	    ,@(map
-	       (lambda (x)
-		 `(define-record-field ,type ,(car x) ,(cadr x) ,@(cddr x)))
-	       field-tag))))))
-
-  (export define-record-type))
-
-(import (picrin macro)
-        (picrin values)
-        (picrin parameter)
-        (picrin record))
-
-(export let-values
-        let*-values
-        define-values)
-
-(export make-parameter
-        parameterize)
-
-(export define-record-type)
-
-;;; 6.6 Characters
-
-(define-macro (define-char-transitive-predicate name op)
-  `(define (,name . cs)
-     (apply ,op (map char->integer cs))))
-
-(define-char-transitive-predicate char=? =)
-(define-char-transitive-predicate char<? <)
-(define-char-transitive-predicate char>? >)
-(define-char-transitive-predicate char<=? <=)
-(define-char-transitive-predicate char>=? >=)
-
-(export char=?
-        char<?
-        char>?
-        char<=?
-        char>=?)
-
-;;; 6.7 String
-
-(define (string->list string . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-	(end (if (>= (length opts) 2)
-		 (cadr opts)
-		 (string-length string))))
-    (do ((i start (+ i 1))
-	 (res '()))
-	((= i end)
-	 (reverse res))
-      (set! res (cons (string-ref string i) res)))))
-
-(define (list->string list)
-  (let ((len (length list)))
-    (let ((v (make-string len)))
-      (do ((i 0 (+ i 1))
-	   (l list (cdr l)))
-	  ((= i len)
-	   v)
-	(string-set! v i (car l))))))
-
-(define (string . objs)
-  (list->string objs))
-
-(export string string->list list->string)
-
-;;; 6.8. Vector
-
-(define (vector . objs)
-  (list->vector objs))
-
-(define (vector->string . args)
-  (list->string (apply vector->list args)))
-
-(define (string->vector . args)
-  (list->vector (apply string->list args)))
-
-(export vector vector->string string->vector)
-
-;;; 6.9 bytevector
-
-(define (bytevector->list v start end)
-  (do ((i start (+ i 1))
-       (res '()))
-      ((= i end)
-       (reverse res))
-    (set! res (cons (bytevector-u8-ref v i) res))))
-
-(define (list->bytevector list)
-  (let ((len (length list)))
-    (let ((v (make-bytevector len)))
-      (do ((i 0 (+ i 1))
-	   (l list (cdr l)))
-	  ((= i len)
-	   v)
-	(bytevector-u8-set! v i (car l))))))
-
-(define (bytevector . objs)
-  (list->bytevector objs))
-
-(define (utf8->string v . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-        (end (if (>= (length opts) 2)
-                 (cadr opts)
-                 (bytevector-length v))))
-    (list->string (map integer->char (bytevector->list v start end)))))
-
-(define (string->utf8 s . opts)
-  (let ((start (if (pair? opts) (car opts) 0))
-        (end (if (>= (length opts) 2)
-                 (cadr opts)
-                 (string-length s))))
-    (list->bytevector (map char->integer (string->list s start end)))))
-
-(export bytevector
-        bytevector->list
-        list->bytevector
-        utf8->string
-        string->utf8)
-
-;;; 6.10 control features
-
-(define (string-map f . strings)
-  (list->string (apply map f (map string->list strings))))
-
-(define (string-for-each f . strings)
-  (apply for-each f (map string->list strings)))
-
-(define (vector-map f . vectors)
-  (list->vector (apply map f (map vector->list vectors))))
-
-(define (vector-for-each f . vectors)
-  (apply for-each f (map vector->list vectors)))
-
-(export string-map string-for-each
-        vector-map vector-for-each)
-
-;;; 6.13. Input and output
-
-(define (call-with-port port proc)
-  (dynamic-wind
-      (lambda () #f)
-      (lambda () (proc port))
-      (lambda () (close-port port))))
-
-(export call-with-port)
-
-;;; syntax-rules
-(define-library (picrin syntax-rules)
-  (import (scheme base)
-          (picrin macro))
-
-  ;;; utility functions
-  (define (reverse* l)
-    ;; (reverse* '(a b c d . e)) => (e d c b a)
-    (let loop ((a '())
-	       (d l))
-      (if (pair? d)
-	  (loop (cons (car d) a) (cdr d))
-	  (cons d a))))
-
-  (define (var->sym v)
-    (let loop ((cnt 0)
-	       (v v))
-      (if (symbol? v)
-	  (string->symbol (string-append (symbol->string v) "/" (number->string cnt)))
-	  (loop (+ 1 cnt) (car v)))))
-
-  (define push-var list)
-
-  (define (every? pred l)
-    (if (null? l)
-	#t
-	(and (pred (car l)) (every? pred (cdr l)))))
-
-  (define (flatten l)
-    (cond
-     ((null? l) '())
-     ((pair? (car l))
-      (append (flatten (car l)) (flatten (cdr l))))
-     (else
-      (cons (car l) (flatten (cdr l))))))
-
-  ;;; main function
   (define-syntax syntax-rules
     (er-macro-transformer
      (lambda (form r compare)
@@ -716,6 +389,16 @@
        (define _syntax-error (r 'syntax-error))
        (define _call/cc (r 'call/cc))
        (define _er-macro-transformer (r 'er-macro-transformer))
+
+       (define (var->sym v)
+         (let loop ((cnt 0)
+                    (v v))
+           (if (symbol? v)
+               (string->symbol
+                (string-append (symbol->string v) "/" (number->string cnt)))
+               (loop (+ 1 cnt) (car v)))))
+
+       (define push-var list)
 
        (define (compile-match ellipsis literals pattern)
 	 (letrec ((compile-match-base
@@ -970,68 +653,344 @@
 
 	     `(,_syntax-error "malformed syntax-rules"))))))
 
-  (export syntax-rules))
+  (export syntax-rules)
 
-(import (picrin syntax-rules))
-(export syntax-rules)
+  (define-syntax guard-aux
+    (syntax-rules (else =>)
+      ((guard-aux reraise (else result1 result2 ...))
+       (begin result1 result2 ...))
+      ((guard-aux reraise (test => result))
+       (let ((temp test))
+         (if temp
+             (result temp)
+             reraise)))
+      ((guard-aux reraise (test => result)
+                  clause1 clause2 ...)
+       (let ((temp test))
+         (if temp
+             (result temp)
+             (guard-aux reraise clause1 clause2 ...))))
+      ((guard-aux reraise (test))
+       (or test reraise))
+      ((guard-aux reraise (test) clause1 clause2 ...)
+       (let ((temp test))
+         (if temp
+             temp
+             (guard-aux reraise clause1 clause2 ...))))
+      ((guard-aux reraise (test result1 result2 ...))
+       (if test
+           (begin result1 result2 ...)
+           reraise))
+      ((guard-aux reraise
+                  (test result1 result2 ...)
+                  clause1 clause2 ...)
+       (if test
+           (begin result1 result2 ...)
+           (guard-aux reraise clause1 clause2 ...)))))
 
-(define-syntax guard-aux
-  (syntax-rules (else =>)
-    ((guard-aux reraise (else result1 result2 ...))
-     (begin result1 result2 ...))
-    ((guard-aux reraise (test => result))
-     (let ((temp test))
-       (if temp
-           (result temp)
-           reraise)))
-    ((guard-aux reraise (test => result)
-                clause1 clause2 ...)
-     (let ((temp test))
-       (if temp
-           (result temp)
-           (guard-aux reraise clause1 clause2 ...))))
-    ((guard-aux reraise (test))
-     (or test reraise))
-    ((guard-aux reraise (test) clause1 clause2 ...)
-     (let ((temp test))
-       (if temp
-           temp
-           (guard-aux reraise clause1 clause2 ...))))
-    ((guard-aux reraise (test result1 result2 ...))
-     (if test
-         (begin result1 result2 ...)
-         reraise))
-    ((guard-aux reraise
-                (test result1 result2 ...)
-                clause1 clause2 ...)
-     (if test
-         (begin result1 result2 ...)
-         (guard-aux reraise clause1 clause2 ...)))))
+  (define-syntax guard
+    (syntax-rules ()
+      ((guard (var clause ...) e1 e2 ...)
+       ((call/cc
+         (lambda (guard-k)
+           (with-exception-handler
+            (lambda (condition)
+              ((call/cc
+                (lambda (handler-k)
+                  (guard-k
+                   (lambda ()
+                     (let ((var condition))
+                       (guard-aux
+                        (handler-k
+                         (lambda ()
+                           (raise-continuable condition)))
+                        clause ...))))))))
+            (lambda ()
+              (call-with-values
+                  (lambda () e1 e2 ...)
+                (lambda args
+                  (guard-k
+                   (lambda ()
+                     (apply values args)))))))))))))
 
-(define-syntax guard
-  (syntax-rules ()
-    ((guard (var clause ...) e1 e2 ...)
-     ((call/cc
-       (lambda (guard-k)
-         (with-exception-handler
-          (lambda (condition)
-            ((call/cc
-              (lambda (handler-k)
-                (guard-k
-                 (lambda ()
-                   (let ((var condition))
-                     (guard-aux
-                      (handler-k
-                       (lambda ()
-                         (raise-continuable condition)))
-                      clause ...))))))))
-          (lambda ()
-            (call-with-values
-                (lambda () e1 e2 ...)
-              (lambda args
-                (guard-k
-                 (lambda ()
-                   (apply values args)))))))))))))
+  (export guard)
 
-(export guard)
+  (import (picrin parameter))
 
+  (define-syntax parameterize
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((formal (car (cdr form)))
+             (body   (cdr (cdr form))))
+         (let ((vars (map car formal))
+               (vals (map cadr formal)))
+           `(begin
+              ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals)
+              (let ((result (begin ,@body)))
+                ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
+                result)))))))
+
+  (export parameterize make-parameter)
+
+  (define-library (picrin record)
+    (import (scheme base)
+            (scheme eval)
+            (picrin macro))
+
+    (define record-marker (list 'record-marker))
+
+    (define real-vector? vector?)
+
+    (set! vector?
+          (lambda (x)
+            (and (real-vector? x)
+                 (or (= 0 (vector-length x))
+                     (not (eq? (vector-ref x 0)
+                               record-marker))))))
+
+    (define (record? x)
+      (and (real-vector? x)
+           (< 0 (vector-length x))
+           (eq? (vector-ref x 0) record-marker)))
+
+    (define (make-record size)
+      (let ((new (make-vector (+ size 1))))
+        (vector-set! new 0 record-marker)
+        new))
+
+    (define (record-ref record index)
+      (vector-ref record (+ index 1)))
+
+    (define (record-set! record index value)
+      (vector-set! record (+ index 1) value))
+
+    (define record-type% (make-record 3))
+    (record-set! record-type% 0 record-type%)
+    (record-set! record-type% 1 'record-type%)
+    (record-set! record-type% 2 '(name field-tags))
+
+    (define (make-record-type name field-tags)
+      (let ((new (make-record 3)))
+        (record-set! new 0 record-type%)
+        (record-set! new 1 name)
+        (record-set! new 2 field-tags)
+        new))
+
+    (define (record-type record)
+      (record-ref record 0))
+
+    (define (record-type-name record-type)
+      (record-ref record-type 1))
+
+    (define (record-type-field-tags record-type)
+      (record-ref record-type 2))
+
+    (define (field-index type tag)
+      (let rec ((i 1) (tags (record-type-field-tags type)))
+        (cond ((null? tags)
+               (error "record type has no such field" type tag))
+              ((eq? tag (car tags)) i)
+              (else (rec (+ i 1) (cdr tags))))))
+
+    (define (record-constructor type tags)
+      (let ((size (length (record-type-field-tags type)))
+            (arg-count (length tags))
+            (indexes (map (lambda (tag) (field-index type tag)) tags)))
+        (lambda args
+          (if (= (length args) arg-count)
+              (let ((new (make-record (+ size 1))))
+                (record-set! new 0 type)
+                (for-each (lambda (arg i) (record-set! new i arg)) args indexes)
+                new)
+              (error "wrong number of arguments to constructor" type args)))))
+
+    (define (record-predicate type)
+      (lambda (thing)
+        (and (record? thing)
+             (eq? (record-type thing)
+                  type))))
+
+    (define (record-accessor type tag)
+      (let ((index (field-index type tag)))
+        (lambda (thing)
+          (if (and (record? thing)
+                   (eq? (record-type thing)
+                        type))
+              (record-ref thing index)
+              (error "accessor applied to bad value" type tag thing)))))
+
+    (define (record-modifier type tag)
+      (let ((index (field-index type tag)))
+        (lambda (thing value)
+          (if (and (record? thing)
+                   (eq? (record-type thing)
+                        type))
+              (record-set! thing index value)
+              (error "modifier applied to bad value" type tag thing)))))
+
+    (define-syntax define-record-field
+      (ir-macro-transformer
+       (lambda (form inject compare?)
+         (let ((type      (car (cdr form)))
+               (field-tag (car (cdr (cdr form))))
+               (acc-mod   (cdr (cdr (cdr form)))))
+           (if (= 1 (length acc-mod))
+               `(define ,(car acc-mod)
+                  (record-accessor ,type ',field-tag))
+               `(begin
+                  (define ,(car acc-mod)
+                    (record-accessor ,type ',field-tag))
+                  (define ,(cadr acc-mod)
+                    (record-modifier ,type ',field-tag))))))))
+
+    (define-syntax define-record-type
+      (ir-macro-transformer
+       (lambda (form inject compare?)
+         (let ((type (cadr form))
+               (constructor (car (cdr (cdr form))))
+               (predicate   (car (cdr (cdr (cdr form)))))
+               (field-tag   (cdr (cdr (cdr (cdr form))))))
+           `(begin
+              (define ,type
+                (make-record-type ',type ',(cdr constructor)))
+              (define ,(car constructor)
+                (record-constructor ,type ',(cdr constructor)))
+              (define ,predicate
+                (record-predicate ,type))
+              ,@(map
+                 (lambda (x)
+                   `(define-record-field ,type ,(car x) ,(cadr x) ,@(cddr x)))
+                 field-tag))))))
+
+    (export define-record-type))
+
+  (import (picrin record))
+
+  (export define-record-type)
+
+
+  ;; 6.6 Characters
+
+  (define-macro (define-char-transitive-predicate name op)
+    `(define (,name . cs)
+       (apply ,op (map char->integer cs))))
+
+  (define-char-transitive-predicate char=? =)
+  (define-char-transitive-predicate char<? <)
+  (define-char-transitive-predicate char>? >)
+  (define-char-transitive-predicate char<=? <=)
+  (define-char-transitive-predicate char>=? >=)
+
+  (export char=?
+          char<?
+          char>?
+          char<=?
+          char>=?)
+
+  ;; 6.7 String
+
+  (define (string->list string . opts)
+    (let ((start (if (pair? opts) (car opts) 0))
+          (end (if (>= (length opts) 2)
+                   (cadr opts)
+                   (string-length string))))
+      (do ((i start (+ i 1))
+           (res '()))
+          ((= i end)
+           (reverse res))
+        (set! res (cons (string-ref string i) res)))))
+
+  (define (list->string list)
+    (let ((len (length list)))
+      (let ((v (make-string len)))
+        (do ((i 0 (+ i 1))
+             (l list (cdr l)))
+            ((= i len)
+             v)
+          (string-set! v i (car l))))))
+
+  (define (string . objs)
+    (list->string objs))
+
+  (export string string->list list->string)
+
+  ;; 6.8. Vector
+
+  (define (vector . objs)
+    (list->vector objs))
+
+  (define (vector->string . args)
+    (list->string (apply vector->list args)))
+
+  (define (string->vector . args)
+    (list->vector (apply string->list args)))
+
+  (export vector vector->string string->vector)
+
+  ;; 6.9 bytevector
+
+  (define (bytevector->list v start end)
+    (do ((i start (+ i 1))
+         (res '()))
+        ((= i end)
+         (reverse res))
+      (set! res (cons (bytevector-u8-ref v i) res))))
+
+  (define (list->bytevector list)
+    (let ((len (length list)))
+      (let ((v (make-bytevector len)))
+        (do ((i 0 (+ i 1))
+             (l list (cdr l)))
+            ((= i len)
+             v)
+          (bytevector-u8-set! v i (car l))))))
+
+  (define (bytevector . objs)
+    (list->bytevector objs))
+
+  (define (utf8->string v . opts)
+    (let ((start (if (pair? opts) (car opts) 0))
+          (end (if (>= (length opts) 2)
+                   (cadr opts)
+                   (bytevector-length v))))
+      (list->string (map integer->char (bytevector->list v start end)))))
+
+  (define (string->utf8 s . opts)
+    (let ((start (if (pair? opts) (car opts) 0))
+          (end (if (>= (length opts) 2)
+                   (cadr opts)
+                   (string-length s))))
+      (list->bytevector (map char->integer (string->list s start end)))))
+
+  (export bytevector
+          bytevector->list
+          list->bytevector
+          utf8->string
+          string->utf8)
+
+  ;; 6.10 control features
+
+  (define (string-map f . strings)
+    (list->string (apply map f (map string->list strings))))
+
+  (define (string-for-each f . strings)
+    (apply for-each f (map string->list strings)))
+
+  (define (vector-map f . vectors)
+    (list->vector (apply map f (map vector->list vectors))))
+
+  (define (vector-for-each f . vectors)
+    (apply for-each f (map vector->list vectors)))
+
+  (export string-map string-for-each
+          vector-map vector-for-each)
+
+  ;; 6.13. Input and output
+
+  (define (call-with-port port proc)
+    (dynamic-wind
+        (lambda () #f)
+        (lambda () (proc port))
+        (lambda () (close-port port))))
+
+  (export call-with-port))
