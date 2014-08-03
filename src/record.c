@@ -18,7 +18,8 @@ pic_record_new(pic_state *pic, pic_value rectype)
 }
 
 bool
-pic_record_of(pic_state *pic, struct pic_record *rec, pic_value rectype) {
+pic_record_of(pic_state *pic, struct pic_record *rec, pic_value rectype)
+{
   UNUSED(pic);
 
   return pic_eq_p(rec->rectype, rectype);
