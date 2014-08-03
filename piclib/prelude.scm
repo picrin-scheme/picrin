@@ -605,24 +605,24 @@
 
 ;;; 6.9 bytevector
 
-(define (bytevector . objs)
-  (let ((len (length objs)))
+(define (bytevector->list v start end)
+  (do ((i start (+ i 1))
+       (res '()))
+      ((= i end)
+       (reverse res))
+    (set! res (cons (bytevector-u8-ref v i) res))))
+
+(define (list->bytevector list)
+  (let ((len (length list)))
     (let ((v (make-bytevector len)))
       (do ((i 0 (+ i 1))
-	   (l objs (cdr l)))
+	   (l list (cdr l)))
 	  ((= i len)
 	   v)
 	(bytevector-u8-set! v i (car l))))))
 
-(define (bytevector->list v start end)
-    (do ((i start (+ i 1))
-	 (res '()))
-	((= i end)
-	 (reverse res))
-      (set! res (cons (bytevector-u8-ref v i) res))))
-
-(define (list->bytevector v)
-  (apply bytevector v))
+(define (bytevector . objs)
+  (list->bytevector objs))
 
 (define (utf8->string v . opts)
   (let ((start (if (pair? opts) (car opts) 0))
