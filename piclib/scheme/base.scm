@@ -655,6 +655,29 @@
 
   (export syntax-rules)
 
+
+  ;; 4.2.6. Dynamic bindings
+
+  (import (picrin parameter))
+
+  (define-syntax parameterize
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((formal (car (cdr form)))
+             (body   (cdr (cdr form))))
+         (let ((vars (map car formal))
+               (vals (map cadr formal)))
+           `(begin
+              ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals)
+              (let ((result (begin ,@body)))
+                ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
+                result)))))))
+
+  (export parameterize make-parameter)
+
+
+  ;; 4.2.7. Exception handling
+
   (define-syntax guard-aux
     (syntax-rules (else =>)
       ((guard-aux reraise (else result1 result2 ...))
@@ -714,23 +737,6 @@
                      (apply values args)))))))))))))
 
   (export guard)
-
-  (import (picrin parameter))
-
-  (define-syntax parameterize
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let ((formal (car (cdr form)))
-             (body   (cdr (cdr form))))
-         (let ((vars (map car formal))
-               (vals (map cadr formal)))
-           `(begin
-              ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals)
-              (let ((result (begin ,@body)))
-                ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
-                result)))))))
-
-  (export parameterize make-parameter)
 
   ;; 5.5 Recored-type definitions
 
