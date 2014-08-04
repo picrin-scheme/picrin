@@ -21,8 +21,8 @@ struct pic_record {
 struct pic_record *pic_record_new(pic_state *, pic_value);
 
 bool pic_record_of(pic_state *, struct pic_record *, pic_value);
-pic_value pic_record_ref(pic_state *, struct pic_record *, pic_value, pic_sym);
-void pic_record_set(pic_state *, struct pic_record *, pic_value, pic_sym, pic_value);
+pic_value pic_record_ref(pic_state *, struct pic_record *, pic_sym);
+void pic_record_set(pic_state *, struct pic_record *, pic_sym, pic_value);
 
 #if defined(__cplusplus)
 }

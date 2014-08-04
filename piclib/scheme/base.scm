@@ -743,7 +743,7 @@
 
   (define (make-record-type name)
     (let ((rectype (make-record #t)))
-      (record-set! rectype #t 'name name)
+      (record-set! rectype 'name name)
       rectype))
 
   (define-syntax define-record-constructor
@@ -755,7 +755,7 @@
 	 `(define (,name ,@fields)
 	    (let ((record (make-record ,rectype)))
 	      ,@(map (lambda (field)
-		       `(record-set! record ,rectype ',field ,field))
+		       `(record-set! record ',field ,field))
 		     fields)
 	      record))))))
 
@@ -770,18 +770,24 @@
   (define-syntax define-record-field
     (ir-macro-transformer
      (lambda (form inject compare?)
-       (let ((rectype (cadr form))
+       (let ((pred (cadr form))
 	     (field-name (caddr form))
 	     (accessor (cadddr form))
 	     (modifier? (cddddr form)))
 	 (if (null? modifier?)
 	     `(define (,accessor record)
-		(record-ref record ,rectype ',field-name))
+		(if (,pred record)
+		    (record-ref record ',field-name)
+		    (error "wrong record type")))
 	     `(begin
 		(define (,accessor record)
-		  (record-ref record ,rectype ',field-name))
+		  (if (,pred record)
+		      (record-ref record ',field-name)
+		      (error "wrong record type")))
 		(define (,(car modifier?) record val)
-		  (record-set! record ,rectype ',field-name val))))))))
+		  (if (,pred record)
+		      (record-set! record ',field-name val)
+		      (error "wrong record type")))))))))
 
   (define-syntax define-record-type
     (ir-macro-transformer
@@ -794,7 +800,7 @@
 	    (define ,name (make-record-type ',name))
 	    (define-record-constructor ,name ,@constructor)
 	    (define-record-predicate ,name ,pred)
-	    ,@(map (lambda (field) `(define-record-field ,name ,@field))
+	    ,@(map (lambda (field) `(define-record-field ,pred ,@field))
 		   fields))))))
 
   (export define-record-type)
