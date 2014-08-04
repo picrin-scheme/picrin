@@ -60,6 +60,16 @@ pic_record_record(pic_state *pic)
 }
 
 static pic_value
+pic_record_record_p(pic_state *pic)
+{
+  pic_value rec;
+
+  pic_get_args(pic, "o", &rec);
+
+  return pic_bool_value(pic_record_p(rec));
+}
+
+static pic_value
 pic_record_record_of(pic_state *pic)
 {
   struct pic_record *rec;
@@ -100,6 +110,7 @@ pic_init_record(pic_state *pic)
 {
   pic_deflibrary (pic, "(picrin record)") {
     pic_defun(pic, "make-record", pic_record_record);
+    pic_defun(pic, "record?", pic_record_record_p);
     pic_defun(pic, "record-of?", pic_record_record_of);
     pic_defun(pic, "record-ref", pic_record_record_ref);
     pic_defun(pic, "record-set!", pic_record_record_set);

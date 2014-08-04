@@ -765,7 +765,8 @@
        (let ((rectype (cadr form))
 	     (name (caddr form)))
 	 `(define (,name obj)
-	    (record-of? obj ,rectype))))))
+	    (and (record? obj)
+		 (record-of? obj ,rectype)))))))
 
   (define-syntax define-record-field
     (ir-macro-transformer
