@@ -736,11 +736,6 @@
 
   (import (picrin record))
 
-  (define (caddr x) (car (cddr x)))
-  (define (cdddr x) (cdr (cddr x)))
-  (define (cadddr x) (car (cdddr x)))
-  (define (cddddr x) (cdr (cdddr x)))
-
   (define (make-record-type name)
     (let ((rectype (make-record #t)))
       (record-set! rectype 'name name)
@@ -749,9 +744,9 @@
   (define-syntax define-record-constructor
     (ir-macro-transformer
      (lambda (form inject compare?)
-       (let ((rectype (cadr form))
-	     (name  (caddr form))
-	     (fields (cdddr form)))
+       (let ((rectype (car (cdr form)))
+	     (name    (car (cdr (cdr form))))
+	     (fields  (cdr (cdr (cdr form)))))
 	 `(define (,name ,@fields)
 	    (let ((record (make-record ,rectype)))
 	      ,@(map (lambda (field)
@@ -762,8 +757,8 @@
   (define-syntax define-record-predicate
     (ir-macro-transformer
      (lambda (form inject compare?)
-       (let ((rectype (cadr form))
-	     (name (caddr form)))
+       (let ((rectype (car (cdr form)))
+	     (name    (car (cdr (cdr form)))))
 	 `(define (,name obj)
 	    (and (record? obj)
 		 (record-of? obj ,rectype)))))))
@@ -771,10 +766,10 @@
   (define-syntax define-record-field
     (ir-macro-transformer
      (lambda (form inject compare?)
-       (let ((pred (cadr form))
-	     (field-name (caddr form))
-	     (accessor (cadddr form))
-	     (modifier? (cddddr form)))
+       (let ((pred       (car (cdr form)))
+	     (field-name (car (cdr (cdr form))))
+	     (accessor   (car (cdr (cdr (cdr form)))))
+	     (modifier?  (cdr (cdr (cdr (cdr form))))))
 	 (if (null? modifier?)
 	     `(define (,accessor record)
 		(if (,pred record)
@@ -793,13 +788,13 @@
   (define-syntax define-record-type
     (ir-macro-transformer
      (lambda (form inject compare?)
-       (let ((name (cadr form))
-	     (constructor (caddr form))
-	     (pred (cadddr form))
-	     (fields (cddddr form)))
+       (let ((name   (car (cdr form)))
+	     (ctor   (car (cdr (cdr form))))
+	     (pred   (car (cdr (cdr (cdr form)))))
+	     (fields (cdr (cdr (cdr (cdr form))))))
 	 `(begin
 	    (define ,name (make-record-type ',name))
-	    (define-record-constructor ,name ,@constructor)
+	    (define-record-constructor ,name ,@ctor)
 	    (define-record-predicate ,name ,pred)
 	    ,@(map (lambda (field) `(define-record-field ,pred ,@field))
 		   fields))))))
