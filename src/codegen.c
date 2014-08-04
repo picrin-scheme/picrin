@@ -819,6 +819,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_IREP:
   case PIC_TT_DATA:
   case PIC_TT_DICT:
+  case PIC_TT_RECORD:
   case PIC_TT_BLK:
     pic_errorf(pic, "invalid expression given: ~s", obj);
   }

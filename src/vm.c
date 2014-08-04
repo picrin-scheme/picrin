@@ -20,6 +20,7 @@
 #include "picrin/macro.h"
 #include "picrin/error.h"
 #include "picrin/dict.h"
+#include "picrin/record.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -342,6 +343,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
         }
         else {
           pic_errorf(pic, "pic_get_args, expected dictionary, but got ~s", v);
+        }
+        i++;
+      }
+      break;
+    }
+    case 'r': {
+      struct pic_record **r;
+      pic_value v;
+
+      r = va_arg(ap, struct pic_record **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_record_p(v)) {
+          *r = pic_record_ptr(v);
+        }
+        else {
+          pic_errorf(pic, "pic_get_args: expected record, but got ~s", v);
         }
         i++;
       }
