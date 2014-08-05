@@ -1,11 +1,10 @@
 (define-library (picrin experimental lambda)
-  (import (rename (scheme base)
-                  (lambda lambda%))
+  (import (scheme base)
           (picrin macro))
 
   (define-syntax bind
     (ir-macro-transformer
-     (lambda% (form inject compare)
+     (lambda (form inject compare)
        (let ((formal (car (cdr form)))
              (value  (car (cdr (cdr form))))
              (body   (cdr (cdr (cdr form)))))
@@ -27,11 +26,11 @@
                   ,@body)
                 (error "match failure" ,value ',formal))))))))
 
-  (define-syntax lambda
+  (define-syntax destructuring-lambda
     (ir-macro-transformer
-     (lambda% (form inject compare)
+     (lambda (form inject compare)
        (let ((args (car (cdr form)))
              (body (cdr (cdr form))))
-         `(lambda% formal# (bind ,args formal# ,@body))))))
+         `(lambda formal# (bind ,args formal# ,@body))))))
 
-  (export lambda))
+  (export (rename destructuring-lambda lambda)))
