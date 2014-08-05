@@ -1,7 +1,7 @@
 (define-library (picrin base)
   (import (rename (picrin base core) (define define*))
-          (scheme base)
-          (picrin macro))
+          (picrin base macro)
+          (scheme base))
 
   (define-syntax define
     (lambda (form use-env mac-env)

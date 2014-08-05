@@ -2,6 +2,7 @@
 
 (define-library (picrin macro)
   (import (picrin base)
+          (picrin base macro)
           (scheme base)
           (picrin dictionary))
 
@@ -128,7 +129,9 @@
                        (cons (cdr formal)
                              body)))))))
 
-  (export identifier=?
+  (export identifier?
+          identifier=?
+          make-identifier
           make-syntactic-closure
           close-syntax
           capture-syntactic-environment
