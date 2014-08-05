@@ -47,7 +47,7 @@ pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym slotname, pic_val
 }
 
 static pic_value
-pic_record_record(pic_state *pic)
+pic_record_make_record(pic_state *pic)
 {
   struct pic_record * rec;
   pic_value rectype;
@@ -109,7 +109,7 @@ void
 pic_init_record(pic_state *pic)
 {
   pic_deflibrary (pic, "(picrin record)") {
-    pic_defun(pic, "make-record", pic_record_record);
+    pic_defun(pic, "make-record", pic_record_make_record);
     pic_defun(pic, "record?", pic_record_record_p);
     pic_defun(pic, "record-of?", pic_record_record_of);
     pic_defun(pic, "record-ref", pic_record_record_ref);
