@@ -1,4 +1,5 @@
 list(APPEND PICLIB_SCHEME_LIBS
+  ${PROJECT_SOURCE_DIR}/piclib/picrin/base.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/macro.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/base.scm
 
