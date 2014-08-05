@@ -33,4 +33,15 @@
              (body (cdr (cdr form))))
          `(lambda formal# (bind ,args formal# ,@body))))))
 
-  (export (rename destructuring-lambda lambda)))
+  (define-syntax destructuring-define
+    (ir-macro-transformer
+     (lambda (form inject compare)
+       (let ((maybe-formal (cadr form)))
+         (if (symbol? maybe-formal)
+             `(define ,@(cdr form))
+             `(destructuring-define ,(car maybe-formal)
+                (destructuring-lambda ,(cdr maybe-formal)
+                  ,@(cddr form))))))))
+
+  (export (rename destructuring-lambda lambda)
+          (rename destructuring-define define)))
