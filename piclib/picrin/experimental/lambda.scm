@@ -3,39 +3,35 @@
                   (lambda lambda%))
           (picrin macro))
 
-  (define uniq
-    (let ((counter 0))
-      (lambda% ()
-        (let ((sym (string->symbol (string-append "lv$" (number->string counter)))))
-          (set! counter (+ counter 1))
-          sym))))
+  (define-syntax bind
+    (ir-macro-transformer
+     (lambda% (form inject compare)
+       (let ((formal (car (cdr form)))
+             (value  (car (cdr (cdr form))))
+             (body   (cdr (cdr (cdr form)))))
+         (cond
+          ((symbol? formal)
+           `(let ((,formal ,value))
+              ,@body))
+          ((pair? formal)
+           `(let ((value# ,value))
+              (bind ,(car formal) (car value#)
+                (bind ,(cdr formal) (cdr value#)
+                  ,@body))))
+          ((vector? formal)
+           ;; TODO
+           (error "fixme"))
+          (else
+           `(if (equal? ,value ',formal)
+                (begin
+                  ,@body)
+                (error "match failure" ,value ',formal))))))))
 
   (define-syntax lambda
     (ir-macro-transformer
      (lambda% (form inject compare)
-
-       (define (bind val args)
-         (cond
-          ((symbol? args)
-           `(define ,args ,val))
-          ((pair? args)
-           (let ((a (uniq))
-                 (b (uniq)))
-             `(begin
-                (define ,a (car ,val))
-                (define ,b (cdr ,val))
-                ,(bind a (car args))
-                ,(bind b (cdr args)))))
-          ((vector? args)
-           ;; TODO
-           (error "fixme"))
-          (else
-           `(unless (equal? ,val ',args)
-              (error "match failure" ,val ',args)))))
-
        (let ((args (car (cdr form)))
              (body (cdr (cdr form))))
-         (let ((var (uniq)))
-          `(lambda% ,var ,(bind var args) ,@body))))))
+         `(lambda% formal# (bind ,args formal# ,@body))))))
 
   (export lambda))
