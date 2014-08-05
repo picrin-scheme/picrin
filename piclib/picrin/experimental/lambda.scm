@@ -2,7 +2,7 @@
   (import (scheme base)
           (picrin macro))
 
-  (define-syntax bind
+  (define-syntax destructuring-bind
     (ir-macro-transformer
      (lambda (form inject compare)
        (let ((formal (car (cdr form)))
@@ -14,8 +14,8 @@
               ,@body))
           ((pair? formal)
            `(let ((value# ,value))
-              (bind ,(car formal) (car value#)
-                (bind ,(cdr formal) (cdr value#)
+              (destructuring-bind ,(car formal) (car value#)
+                (destructuring-bind ,(cdr formal) (cdr value#)
                   ,@body))))
           ((vector? formal)
            ;; TODO
@@ -31,7 +31,7 @@
      (lambda (form inject compare)
        (let ((args (car (cdr form)))
              (body (cdr (cdr form))))
-         `(lambda formal# (bind ,args formal# ,@body))))))
+         `(lambda formal# (destructuring-bind ,args formal# ,@body))))))
 
   (define-syntax destructuring-define
     (ir-macro-transformer
@@ -43,5 +43,6 @@
                 (destructuring-lambda ,(cdr maybe-formal)
                   ,@(cddr form))))))))
 
-  (export (rename destructuring-lambda lambda)
+  (export (rename destructuring-bind bind)
+          (rename destructuring-lambda lambda)
           (rename destructuring-define define)))
