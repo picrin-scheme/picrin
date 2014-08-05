@@ -62,19 +62,20 @@ new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
   xh_iter it;
-  struct pic_lib *stdlib;
+  struct pic_lib *stdlib, *listlib;
 
   state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
   state->scope = NULL;
 
   stdlib = pic_find_library(pic, pic_read_cstr(pic, "(scheme base)"));
+  listlib = pic_find_library(pic, pic_read_cstr(pic, "(picrin base list)"));
 
   /* native VM procedures */
-  register_renamed_symbol(pic, state, rCONS, stdlib, "cons");
-  register_renamed_symbol(pic, state, rCAR, stdlib, "car");
-  register_renamed_symbol(pic, state, rCDR, stdlib, "cdr");
-  register_renamed_symbol(pic, state, rNILP, stdlib, "null?");
+  register_renamed_symbol(pic, state, rCONS, listlib, "cons");
+  register_renamed_symbol(pic, state, rCAR, listlib, "car");
+  register_renamed_symbol(pic, state, rCDR, listlib, "cdr");
+  register_renamed_symbol(pic, state, rNILP, listlib, "null?");
   register_renamed_symbol(pic, state, rADD, stdlib, "+");
   register_renamed_symbol(pic, state, rSUB, stdlib, "-");
   register_renamed_symbol(pic, state, rMUL, stdlib, "*");

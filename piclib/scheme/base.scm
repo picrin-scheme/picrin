@@ -1,5 +1,6 @@
 (define-library (scheme base)
   (import (picrin base)
+          (picrin list)
           (picrin macro))
 
   (export define set! lambda quote
@@ -811,6 +812,35 @@
 
   (export define-record-type)
 
+  ;; 6.4 Pairs and lists
+
+  (export pair?
+          cons
+          car
+          cdr
+          set-car!
+          set-cdr!
+          null?
+          caar
+          cadr
+          cdar
+          cddr
+          list?
+          make-list
+          list
+          length
+          append
+          reverse
+          list-tail
+          list-ref
+          list-set!
+          list-copy
+          memq
+          memv
+          member
+          assq
+          assv
+          assoc)
 
   ;; 6.6 Characters
 
