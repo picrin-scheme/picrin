@@ -1,5 +1,5 @@
 (define-library (scheme base)
-  (import (picrin base core)
+  (import (picrin base)
           (picrin macro))
 
   (export define set! lambda quote

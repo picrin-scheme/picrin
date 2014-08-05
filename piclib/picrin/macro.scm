@@ -1,7 +1,7 @@
 ;;; Hygienic Macros
 
 (define-library (picrin macro)
-  (import (picrin base core)
+  (import (picrin base)
           (scheme base)
           (picrin dictionary))
 
