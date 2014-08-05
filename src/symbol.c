@@ -149,8 +149,13 @@ pic_symbol_string_to_symbol(pic_state *pic)
 void
 pic_init_symbol(pic_state *pic)
 {
-  pic_defun(pic, "symbol?", pic_symbol_symbol_p);
-  pic_defun(pic, "symbol=?", pic_symbol_symbol_eq_p);
-  pic_defun(pic, "symbol->string", pic_symbol_symbol_to_string);
-  pic_defun(pic, "string->symbol", pic_symbol_string_to_symbol);
+  pic_deflibrary (pic, "(picrin base symbol)") {
+    pic_defun(pic, "symbol?", pic_symbol_symbol_p);
+    pic_defun(pic, "symbol->string", pic_symbol_symbol_to_string);
+    pic_defun(pic, "string->symbol", pic_symbol_string_to_symbol);
+  }
+
+  pic_deflibrary (pic, "(picrin symbol)") {
+    pic_defun(pic, "symbol=?", pic_symbol_symbol_eq_p);
+  }
 }

@@ -4,6 +4,7 @@
   (import (picrin base macro)
           (picrin base)
           (picrin list)
+          (picrin symbol)
           (scheme base)
           (picrin dictionary))
 

@@ -1,6 +1,7 @@
 (define-library (scheme base)
   (import (picrin base)
           (picrin list)
+          (picrin symbol)
           (picrin macro))
 
   (export define set! lambda quote
@@ -841,6 +842,13 @@
           assq
           assv
           assoc)
+
+  ;; 6.5 Symbols
+
+  (export symbol?
+          symbol=?
+          symbol->string
+          string->symbol)
 
   ;; 6.6 Characters
 
