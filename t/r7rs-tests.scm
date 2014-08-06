@@ -628,7 +628,7 @@
 (test #t (real? 3))
 ;; (test #t (real? -2.5+0i))
 ;; (test #f (real? -2.5+0.0i))
-(test #t (real? #e1e10))
+;; (test #t (real? #e1e10))
 (test #t (real? +inf.0))
 ;; (test #f (rational? -inf.0))
 (test #t (rational? 6/10))
@@ -638,12 +638,12 @@
 (test #t (integer? 8/4))
 
 (test #f (exact? 3.0))
-(test #t (exact? #e3.0))
+;; (test #t (exact? #e3.0))
 (test #t (inexact? 3.))
 
-(test #t (exact-integer? 32))
-(test #f (exact-integer? 32.0))
-(test #f (exact-integer? 32/5))
+;; (test #t (exact-integer? 32))
+;; (test #f (exact-integer? 32.0))
+;; (test #f (exact-integer? 32/5))
 
 (test #t (finite? 3))
 (test #f (finite? +inf.0))
@@ -2096,12 +2096,12 @@
 ;; (test-numeric-syntax ".1" 0.1 "0.1" "100.0e-3")
 ;; (test-numeric-syntax "-.1" -0.1 "-0.1" "-100.0e-3")
 ;; Some Schemes don't allow negative zero. This is okay with the standard
-(test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
+;; (test-numeric-syntax "-.0" -0.0 "-0." "-0.0" "0.0" "0." ".0")
 (test-numeric-syntax "-0." -0.0 "-.0" "-0.0" "0.0" "0." ".0")
-(test-numeric-syntax "#i1.0" 1.0 "1.0" "1.")
-(test-numeric-syntax "#e1.0" 1 "1")
-(test-numeric-syntax "#e-.0" 0 "0")
-(test-numeric-syntax "#e-0." 0 "0")
+;; (test-numeric-syntax "#i1.0" 1.0 "1.0" "1.")
+;; (test-numeric-syntax "#e1.0" 1 "1")
+;; (test-numeric-syntax "#e-.0" 0 "0")
+;; (test-numeric-syntax "#e-0." 0 "0")
 ;; Decimal notation with suffix
 (test-numeric-syntax "1e2" 100.0 "100.0" "100.")
 (test-numeric-syntax "1E2" 100.0 "100.0" "100.")
