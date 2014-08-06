@@ -271,12 +271,6 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_UNDEF:
     xfprintf(file, "#<undef>");
     break;
-  case PIC_TT_PROC:
-    xfprintf(file, "#<proc %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_PORT:
-    xfprintf(file, "#<port %p>", pic_ptr(obj));
-    break;
   case PIC_TT_STRING:
     if (p->mode == DISPLAY_MODE) {
       xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(obj)));
