@@ -4,7 +4,7 @@
   (import (scheme base)
 	  (picrin macro))
 
-  (define-record-type promise
+  (define-record-type <promise>
     (make-promise% done obj)
     promise?
     (done promise-done? promise-done!)
