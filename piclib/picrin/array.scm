@@ -1,5 +1,7 @@
 (define-library (picrin array)
-  (import (scheme base))
+  (import (scheme base)
+          (scheme write)
+          (picrin record))
 
   (define-record-type <array>
     (create-array data size head tail)
@@ -86,6 +88,20 @@
 
   (define (array-for-each proc ary)
     (for-each proc (array->list ary)))
+
+  (define (print-array array)
+    (call-with-port (open-output-string)
+      (lambda (port)
+        (display "#.(array" port)
+        (array-for-each
+         (lambda (obj)
+           (display " " port)
+           (write obj port))
+         array)
+        (display ")" port)
+        (get-output-string port))))
+
+  (record-set! <array> 'writer print-array)
 
   (export make-array
           array

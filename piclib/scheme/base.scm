@@ -750,19 +750,34 @@
 
   ;; 5.5 Recored-type definitions
 
-  (import (picrin record))
+  (import (picrin record)
+          (scheme write))
+
+  (define ((default-record-writer ctor) obj)
+    (let ((port (open-output-string)))
+      (display "#.(" port)
+      (display (car ctor) port)
+      (for-each
+       (lambda (field)
+         (display " " port)
+         (write (record-ref obj field) port))
+       (cdr ctor))
+      (display ")" port)
+      (get-output-string port)))
+
+  (define ((boot-make-record-type <meta-type>) name ctor)
+    (let ((rectype (make-record <meta-type>)))
+      (record-set! rectype 'name name)
+      (record-set! rectype 'writer (default-record-writer ctor))
+      rectype))
 
   (define <record-type>
-    (let ((<record-type> (make-record #t)))    ; bootstrap
-      (let ((type-type (make-record <record-type>)))
-        (record-set! <record-type> '@@type type-type)
-        (record-set! type-type 'name '<record-type>)
-        <record-type>)))
+    (let ((<record-type>
+           ((boot-make-record-type #t) 'record-type '(record-type name writer))))
+      (record-set! <record-type> '@@type <record-type>)
+      <record-type>))
 
-  (define (make-record-type name)
-    (let ((rectype (make-record <record-type>)))
-      (record-set! rectype 'name name)
-      rectype))
+  (define make-record-type (boot-make-record-type <record-type>))
 
   (define-syntax define-record-constructor
     (ir-macro-transformer
@@ -817,7 +832,7 @@
 	     (pred   (car (cdr (cdr (cdr form)))))
 	     (fields (cdr (cdr (cdr (cdr form))))))
 	 `(begin
-	    (define ,name (make-record-type ',name))
+	    (define ,name (make-record-type ',name ',ctor))
 	    (define-record-constructor ,name ,@ctor)
 	    (define-record-predicate ,name ,pred)
 	    ,@(map (lambda (field) `(define-record-field ,pred ,@field))

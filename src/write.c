@@ -10,7 +10,9 @@
 #include "picrin/string.h"
 #include "picrin/vector.h"
 #include "picrin/blob.h"
-#include "picrin/macro.h"
+#include "picrin/dict.h"
+#include "picrin/record.h"
+#include "picrin/proc.h"
 
 static bool
 is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
@@ -173,12 +175,42 @@ write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 }
 
 static void
+write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
+{
+  const pic_sym sWRITER = pic_intern_cstr(pic, "writer");
+  pic_value type, writer, str;
+
+#if DEBUG
+
+  xfprintf(file, "#<record %p>", rec);
+
+#else
+
+  type = pic_record_type(pic, rec);
+  if (! pic_record_p(type)) {
+    pic_errorf(pic, "\"@@type\" property of record object is not of record type");
+  }
+  writer = pic_record_ref(pic, pic_record_ptr(type), sWRITER);
+  if (! pic_proc_p(writer)) {
+    pic_errorf(pic, "\"writer\" property of record type object is not a procedure");
+  }
+  str = pic_apply1(pic, pic_proc_ptr(writer), pic_obj_value(rec));
+  if (! pic_str_p(str)) {
+    pic_errorf(pic, "return value from writer procedure is not of string type");
+  }
+  xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(str)));
+
+#endif
+}
+
+static void
 write_core(struct writer_control *p, pic_value obj)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
   size_t i;
   xh_entry *e;
+  xh_iter it;
   int c;
   float f;
 
@@ -198,6 +230,9 @@ write_core(struct writer_control *p, pic_value obj)
   }
 
   switch (pic_type(obj)) {
+  case PIC_TT_UNDEF:
+    xfprintf(file, "#<undef>");
+    break;
   case PIC_TT_NIL:
     xfprintf(file, "()");
     break;
@@ -266,16 +301,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, "%d", pic_int(obj));
     break;
   case PIC_TT_EOF:
-    xfprintf(file, "#<eof-object>");
-    break;
-  case PIC_TT_UNDEF:
-    xfprintf(file, "#<undef>");
-    break;
-  case PIC_TT_PROC:
-    xfprintf(file, "#<proc %p>", pic_ptr(obj));
-    break;
-  case PIC_TT_PORT:
-    xfprintf(file, "#<port %p>", pic_ptr(obj));
+    xfprintf(file, "#.(eof-object)");
     break;
   case PIC_TT_STRING:
     if (p->mode == DISPLAY_MODE) {
@@ -306,8 +332,21 @@ write_core(struct writer_control *p, pic_value obj)
     }
     xfprintf(file, ")");
     break;
+  case PIC_TT_DICT:
+    xfprintf(file, "#.(dictionary");
+    xh_begin(&it, &pic_dict_ptr(obj)->hash);
+    while (xh_next(&it)) {
+      xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it.e, pic_sym)));
+      write_core(p, xh_val(it.e, pic_value));
+    }
+    xfprintf(file, ")");
+    break;
+  case PIC_TT_RECORD:
+    write_record(pic, pic_record_ptr(obj), file);
+    break;
   default:
     xfprintf(file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
+    break;
   }
 }
 

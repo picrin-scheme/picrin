@@ -11,4 +11,6 @@
           (scheme cxr)
           (scheme lazy)
           (scheme time)
-          (picrin macro)))
+          (picrin macro)
+          (picrin dictionary)
+          (picrin array)))
