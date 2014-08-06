@@ -26,24 +26,24 @@ pic_record_of(pic_state *pic, struct pic_record *rec, pic_value rectype)
 }
 
 pic_value
-pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym slotname)
+pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym slot)
 {
   xh_entry *e;
 
-  e = xh_get_int(&rec->hash, slotname);
+  e = xh_get_int(&rec->hash, slot);
   if (! e) {
-    pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_sym_value(slotname), rec);
+    pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_sym_value(slot), rec);
   }
   return xh_val(e, pic_value);
 }
 
 
 void
-pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym slotname, pic_value val)
+pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym slot, pic_value val)
 {
   UNUSED(pic);
 
-  xh_put_int(&rec->hash, slotname, &val);
+  xh_put_int(&rec->hash, slot, &val);
 }
 
 static pic_value
@@ -84,23 +84,23 @@ static pic_value
 pic_record_record_ref(pic_state *pic)
 {
   struct pic_record *rec;
-  pic_sym slotname;
+  pic_sym slot;
 
-  pic_get_args(pic, "rm", &rec, &slotname);
+  pic_get_args(pic, "rm", &rec, &slot);
 
-  return pic_record_ref(pic, rec, slotname);
+  return pic_record_ref(pic, rec, slot);
 }
 
 static pic_value
 pic_record_record_set(pic_state *pic)
 {
   struct pic_record *rec;
-  pic_sym slotname;
+  pic_sym slot;
   pic_value val;
 
-  pic_get_args(pic, "rmo", &rec, &slotname, &val);
+  pic_get_args(pic, "rmo", &rec, &slot, &val);
 
-  pic_record_set(pic, rec, slotname, val);
+  pic_record_set(pic, rec, slot, val);
 
   return pic_none_value();
 }
