@@ -410,13 +410,13 @@
        (define (compile-match ellipsis literals pattern)
 	 (letrec ((compile-match-base
 		   (lambda (pattern)
-		     (cond ((compare pattern (r '_)) (values #f '()))
-			   ((member pattern literals compare)
+		     (cond ((member pattern literals compare)
 			    (values
 			     `(,_if (,_and (,_symbol? expr) (cmp expr (rename ',pattern)))
 				    #f
 				    (exit #f))
 			     '()))
+			   ((compare pattern (r '_)) (values #f '()))
 			   ((and ellipsis (compare pattern ellipsis))
 			    (values `(,_syntax-error "invalid pattern") '()))
 			   ((symbol? pattern)
