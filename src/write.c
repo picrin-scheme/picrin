@@ -270,7 +270,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, "%d", pic_int(obj));
     break;
   case PIC_TT_EOF:
-    xfprintf(file, "#,(eof-object)");
+    xfprintf(file, "#.(eof-object)");
     break;
   case PIC_TT_STRING:
     if (p->mode == DISPLAY_MODE) {
@@ -302,7 +302,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, ")");
     break;
   case PIC_TT_DICT:
-    xfprintf(file, "#,(dictionary");
+    xfprintf(file, "#.(dictionary");
     xh_begin(&it, &pic_dict_ptr(obj)->hash);
     while (xh_next(&it)) {
       xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it.e, pic_sym)));
