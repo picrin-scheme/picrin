@@ -150,6 +150,18 @@ read_directive(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
+read_eval(pic_state *pic, struct pic_port *port, int c)
+{
+  pic_value form;
+
+  UNUSED(c);
+
+  form = read(pic, port, next(port));
+
+  return pic_eval(pic, form, pic->lib);
+}
+
+static pic_value
 read_quote(pic_state *pic, struct pic_port *port, int c)
 {
   UNUSED(c);
@@ -655,6 +667,8 @@ read_dispatch(pic_state *pic, struct pic_port *port, int c)
     return read_label(pic, port, c);
   case 'u':
     return read_unsigned_blob(pic, port, c);
+  case '.':
+    return read_eval(pic, port, c);
   default:
     read_error(pic, "unexpected dispatch character");
   }
