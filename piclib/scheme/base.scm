@@ -750,13 +750,26 @@
 
   (define <record-type> #t)             ; bootstrap
 
-  (define (make-record-type name)
+  (import (scheme write))
+
+  (define (make-record-type name ctor)
     (let ((rectype (make-record <record-type>)))
       (record-set! rectype 'name name)
+      (record-set! rectype 'writer (lambda (obj)
+                                     (let ((port (open-output-string)))
+                                       (display "#.(" port)
+                                       (display (car ctor) port)
+                                       (for-each
+                                        (lambda (field)
+                                          (display " " port)
+                                          (write (record-ref obj field) port))
+                                        (cdr ctor))
+                                       (display ")" port)
+                                       (get-output-string port))))
       rectype))
 
   (set! <record-type>
-        (let ((<record-type> (make-record-type '<record-type>)))
+        (let ((<record-type> (make-record-type '<record-type> '(name writer))))
           (record-set! <record-type> '@@type <record-type>)
           <record-type>))
 
@@ -813,7 +826,7 @@
 	     (pred   (car (cdr (cdr (cdr form)))))
 	     (fields (cdr (cdr (cdr (cdr form))))))
 	 `(begin
-	    (define ,name (make-record-type ',name))
+	    (define ,name (make-record-type ',name ',ctor))
 	    (define-record-constructor ,name ,@ctor)
 	    (define-record-predicate ,name ,pred)
 	    ,@(map (lambda (field) `(define-record-field ,pred ,@field))
