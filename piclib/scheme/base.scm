@@ -748,15 +748,15 @@
 
   (import (picrin record))
 
-  (define <type>
-    (let ((<type> (make-record #t)))    ; bootstrap
-      (let ((type-type (make-record <type>)))
-        (record-set! <type> '@@type type-type)
-        (record-set! type-type 'name '<type>)
-        <type>)))
+  (define <record-type>
+    (let ((<record-type> (make-record #t)))    ; bootstrap
+      (let ((type-type (make-record <record-type>)))
+        (record-set! <record-type> '@@type type-type)
+        (record-set! type-type 'name '<record-type>)
+        <record-type>)))
 
   (define (make-record-type name)
-    (let ((rectype (make-record <type>)))
+    (let ((rectype (make-record <record-type>)))
       (record-set! rectype 'name name)
       rectype))
 
