@@ -383,6 +383,7 @@
        (define _pair? (r 'pair?))
        (define _null? (r 'null?))
        (define _symbol? (r 'symbol?))
+       (define _vector? (r 'vector?))
        (define _eqv? (r 'eqv?))
        (define _string=? (r 'string=?))
        (define _map (r 'map))
@@ -409,13 +410,13 @@
        (define (compile-match ellipsis literals pattern)
 	 (letrec ((compile-match-base
 		   (lambda (pattern)
-		     (cond ((compare pattern (r '_)) (values #f '()))
-			   ((member pattern literals compare)
+		     (cond ((member pattern literals compare)
 			    (values
 			     `(,_if (,_and (,_symbol? expr) (cmp expr (rename ',pattern)))
 				    #f
 				    (exit #f))
 			     '()))
+			   ((compare pattern (r '_)) (values #f '()))
 			   ((and ellipsis (compare pattern ellipsis))
 			    (values `(,_syntax-error "invalid pattern") '()))
 			   ((symbol? pattern)
@@ -517,10 +518,12 @@
 
 		  (compile-match-vector
 		   (lambda (pattern)
-		     (let-values (((match vars) (compile-match-list (vector->list pattern))))
+		     (let-values (((match vars) (compile-match-base (vector->list pattern))))
 		       (values
-			`(,_let ((expr (,_vector->list expr)))
-				,match)
+			`(,_if (,_vector? expr)
+			       (,_let ((expr (,_vector->list expr)))
+				      ,match)
+			       (exit #f))
 			vars)))))
 
 	   (let-values (((match vars) (compile-match-base (cdr pattern))))
@@ -588,9 +591,10 @@
 		  (compile-expand-vector
 		   (lambda (template ellipsis-valid)
 		     (let-values (((expand1 vars1)
-				   (compile-expand-list (vector->list template) ellipsis-valid)))
-		       `(,_list->vector ,expand1)
-		       vars1))))
+				   (compile-expand-base (vector->list template) ellipsis-valid)))
+		       (values
+			`(,_list->vector ,expand1)
+			vars1)))))
 
 	   (compile-expand-base template ellipsis)))
 
