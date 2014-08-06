@@ -746,32 +746,34 @@
 
   ;; 5.5 Recored-type definitions
 
-  (import (picrin record))
+  (import (picrin record)
+          (scheme write))
 
-  (define <record-type> #t)             ; bootstrap
+  (define ((default-record-writer ctor) obj)
+    (let ((port (open-output-string)))
+      (display "#.(" port)
+      (display (car ctor) port)
+      (for-each
+       (lambda (field)
+         (display " " port)
+         (write (record-ref obj field) port))
+       (cdr ctor))
+      (display ")" port)
+      (get-output-string port)))
 
-  (import (scheme write))
-
-  (define (make-record-type name ctor)
-    (let ((rectype (make-record <record-type>)))
+  (define ((boot-make-record-type <meta-type>) name ctor)
+    (let ((rectype (make-record <meta-type>)))
       (record-set! rectype 'name name)
-      (record-set! rectype 'writer (lambda (obj)
-                                     (let ((port (open-output-string)))
-                                       (display "#.(" port)
-                                       (display (car ctor) port)
-                                       (for-each
-                                        (lambda (field)
-                                          (display " " port)
-                                          (write (record-ref obj field) port))
-                                        (cdr ctor))
-                                       (display ")" port)
-                                       (get-output-string port))))
+      (record-set! rectype 'writer (default-record-writer ctor))
       rectype))
 
-  (set! <record-type>
-        (let ((<record-type> (make-record-type '<record-type> '(name writer))))
-          (record-set! <record-type> '@@type <record-type>)
-          <record-type>))
+  (define <record-type>
+    (let ((<record-type>
+           ((boot-make-record-type #t) 'record-type '(record-type name writer))))
+      (record-set! <record-type> '@@type <record-type>)
+      <record-type>))
+
+  (define make-record-type (boot-make-record-type <record-type>))
 
   (define-syntax define-record-constructor
     (ir-macro-transformer
