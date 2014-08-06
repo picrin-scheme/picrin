@@ -17,12 +17,12 @@ pic_record_new(pic_state *pic, pic_value rectype)
   return rec;
 }
 
-bool
-pic_record_of(pic_state *pic, struct pic_record *rec, pic_value rectype)
+pic_value
+pic_record_type(pic_state *pic, struct pic_record *rec)
 {
   UNUSED(pic);
 
-  return pic_eq_p(rec->rectype, rectype);
+  return rec->rectype;
 }
 
 pic_value
@@ -36,7 +36,6 @@ pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym slot)
   }
   return xh_val(e, pic_value);
 }
-
 
 void
 pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym slot, pic_value val)
@@ -70,14 +69,13 @@ pic_record_record_p(pic_state *pic)
 }
 
 static pic_value
-pic_record_record_of(pic_state *pic)
+pic_record_record_type(pic_state *pic)
 {
   struct pic_record *rec;
-  pic_value rectype;
 
-  pic_get_args(pic, "ro", &rec, &rectype);
+  pic_get_args(pic, "r", &rec);
 
-  return pic_bool_value(pic_record_of(pic, rec, rectype));
+  return pic_record_type(pic, rec);
 }
 
 static pic_value
@@ -111,7 +109,7 @@ pic_init_record(pic_state *pic)
   pic_deflibrary (pic, "(picrin record)") {
     pic_defun(pic, "make-record", pic_record_make_record);
     pic_defun(pic, "record?", pic_record_record_p);
-    pic_defun(pic, "record-of?", pic_record_record_of);
+    pic_defun(pic, "record-type", pic_record_record_type);
     pic_defun(pic, "record-ref", pic_record_record_ref);
     pic_defun(pic, "record-set!", pic_record_record_set);
   }

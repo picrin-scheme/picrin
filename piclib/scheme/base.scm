@@ -773,7 +773,8 @@
 	     (name    (car (cdr (cdr form)))))
 	 `(define (,name obj)
 	    (and (record? obj)
-		 (record-of? obj ,rectype)))))))
+		 (eq? (record-type obj)
+                      ,rectype)))))))
 
   (define-syntax define-record-field
     (ir-macro-transformer
