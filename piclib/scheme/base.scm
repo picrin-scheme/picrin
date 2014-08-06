@@ -383,6 +383,7 @@
        (define _pair? (r 'pair?))
        (define _null? (r 'null?))
        (define _symbol? (r 'symbol?))
+       (define _vector? (r 'vector?))
        (define _eqv? (r 'eqv?))
        (define _string=? (r 'string=?))
        (define _map (r 'map))
@@ -519,8 +520,10 @@
 		   (lambda (pattern)
 		     (let-values (((match vars) (compile-match-base (vector->list pattern))))
 		       (values
-			`(,_let ((expr (,_vector->list expr)))
-				,match)
+			`(,_if (,_vector? expr)
+			       (,_let ((expr (,_vector->list expr)))
+				      ,match)
+			       (exit #f))
 			vars)))))
 
 	   (let-values (((match vars) (compile-match-base (cdr pattern))))
