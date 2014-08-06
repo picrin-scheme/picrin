@@ -517,7 +517,7 @@
 
 		  (compile-match-vector
 		   (lambda (pattern)
-		     (let-values (((match vars) (compile-match-list (vector->list pattern))))
+		     (let-values (((match vars) (compile-match-base (vector->list pattern))))
 		       (values
 			`(,_let ((expr (,_vector->list expr)))
 				,match)
@@ -588,9 +588,10 @@
 		  (compile-expand-vector
 		   (lambda (template ellipsis-valid)
 		     (let-values (((expand1 vars1)
-				   (compile-expand-list (vector->list template) ellipsis-valid)))
-		       `(,_list->vector ,expand1)
-		       vars1))))
+				   (compile-expand-base (vector->list template) ellipsis-valid)))
+		       (values
+			`(,_list->vector ,expand1)
+			vars1)))))
 
 	   (compile-expand-base template ellipsis)))
 
