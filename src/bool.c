@@ -37,6 +37,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
 {
   pic_value local = pic_nil_value();
   size_t c;
+  enum pic_tt type;
 
   if (depth > 10) {
     if (depth > 200) {
@@ -67,13 +68,6 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
 
   if(pic_number_p(x))
     return pic_eq(pic, x, y);
-
-  switch (type) {
-  case PIC_TT_PAIR:
-    return pic_equal_p(pic, pic_car(pic, x), pic_car(pic, y)) && pic_equal_p(pic, pic_cdr(pic, x), pic_cdr(pic, y));
-  case PIC_TT_BLOB: {
-    size_t i;
-    struct pic_blob *u = pic_blob_ptr(x), *v = pic_blob_ptr(y);
 
   switch (pic_type(x)) {
   case PIC_TT_STRING:

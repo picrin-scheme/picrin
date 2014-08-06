@@ -250,7 +250,7 @@ read_number(pic_state *pic, struct pic_port *port, int c, size_t base, enum exac
   size_t i;
   long n;
 
-  i = read_uinteger(pic, port, c, buf);
+  i = read_uinteger(pic, port, c, buf, base);
 
   switch ((char)peek(port)) {
   case '.':
@@ -263,7 +263,7 @@ read_number(pic_state *pic, struct pic_port *port, int c, size_t base, enum exac
   case '/':
     n = atoi(buf);
     next(port);
-    read_uinteger(pic, port, next(port), buf);
+    read_uinteger(pic, port, next(port), buf, base);
     if (n == n / atoi(buf) * atoi(buf)) {
       return pic_int_value(n / atoi(buf)); /* exact */
     } else {
@@ -273,8 +273,6 @@ read_number(pic_state *pic, struct pic_port *port, int c, size_t base, enum exac
   default:
     return pic_int_value(atoi(buf));
   }
-  pic_number_normalize(pic, &v, INEXACT);
-  return v;
 }
 
 static pic_value

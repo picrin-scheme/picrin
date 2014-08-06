@@ -45,6 +45,10 @@ pic_get_proc(pic_state *pic)
  *  I   int with exactness
  *  f   float
  *  F   float with exactness
+ *  n   number object
+ *  Z   mpz_t
+ *  q   mpfr_t
+ *  Q   mpfr_t with exactness
  *  s   string object
  *  z   c string
  *  m   symbol
@@ -295,7 +299,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
-    case 'r': {
+    case 'q': {
       mpfr_t *f;
 
       f = va_arg(ap, mpfr_t *);
@@ -326,7 +330,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
-    case 'R': {
+    case 'Q': {
       mpfr_t *f;
       bool *e;
 

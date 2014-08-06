@@ -922,7 +922,7 @@ pic_number_floor_quotient(pic_state *pic)
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
 
-  pic_get_args(pic, "rr", &(f->f), &g);
+  pic_get_args(pic, "qq", &(f->f), &g);
 
   mpfr_div(f->f, f->f, g, MPFR_RNDD);
   mpfr_floor(f->f, f->f);
@@ -945,7 +945,7 @@ pic_number_floor_remainder(pic_state *pic)
   mpfr_init(g);
   mpfr_init(h);
 
-  pic_get_args(pic, "RR", &(f->f), &e1, &g, &e2);
+  pic_get_args(pic, "QQ", &(f->f), &e1, &g, &e2);
 
   mpfr_div(h, f->f, g, MPFR_RNDD);
   mpfr_floor(h, h);
@@ -988,7 +988,7 @@ pic_number_trunc_quotient(pic_state *pic)
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
 
-  pic_get_args(pic, "rr", &(f->f), &g);
+  pic_get_args(pic, "qq", &(f->f), &g);
 
   mpfr_div(f->f, f->f, g, MPFR_RNDN);
   mpfr_trunc(f->f, f->f);
@@ -1010,7 +1010,7 @@ pic_number_trunc_remainder(pic_state *pic)
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
 
-  pic_get_args(pic, "RR", &(f->f), &e1, &g, &e2);
+  pic_get_args(pic, "QQ", &(f->f), &e1, &g, &e2);
 
   mpfr_remainder(f->f, f->f, g, MPFR_RNDN);
   mpfr_clear(g);
@@ -1116,6 +1116,25 @@ DEFINE_ROUNDING_FUNCTION(ceil);
 DEFINE_ROUNDING_FUNCTION(trunc);
 DEFINE_ROUNDING_FUNCTION(round);
 
+static pic_value
+pic_number_trunc2(pic_state *pic)
+{
+  int i, j;
+  bool e1, e2;
+  double q, r;
+
+  pic_get_args(pic, "II", &i, &e1, &j, &e2);
+
+  q = trunc((double)i/j);
+  r = i - j * q;
+
+  if (e1 && e2) {
+    return pic_values2(pic, pic_int_value(q), pic_int_value(r));
+  }
+  else {
+    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
+  }
+}
 
 
 static pic_value
@@ -1125,7 +1144,7 @@ pic_number_exp(pic_state *pic)
   pic_value v;
   
   f = pic_bigfloat_new(pic);
-  pic_get_args(pic, "r", &(f->f));
+  pic_get_args(pic, "q", &(f->f));
   mpfr_exp(f->f, f->f, MPFR_RNDN);
   v = pic_obj_value(f);
   pic_number_normalize(pic, &v, false);
@@ -1142,7 +1161,7 @@ pic_number_log(pic_state *pic)
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
   
-  argc = pic_get_args(pic, "r|r", &(f->f), &g);
+  argc = pic_get_args(pic, "q|q", &(f->f), &g);
   if (argc == 1) {
     mpfr_log(f->f, f->f, MPFR_RNDN);
   }
@@ -1162,7 +1181,7 @@ pic_number_log(pic_state *pic)
     pic_bigfloat *f;                            \
                                                 \
     f = pic_bigfloat_new(pic);                  \
-    pic_get_args(pic, "r", &(f->f));            \
+    pic_get_args(pic, "q", &(f->f));            \
     mpfr_##name(f->f, f->f, MPFR_RNDN);         \
     return pic_obj_value(f);                    \
   }
@@ -1182,7 +1201,7 @@ pic_number_atan(pic_state *pic)
 
   f = pic_bigfloat_new(pic);
   mpfr_init(g);
-  argc = pic_get_args(pic, "r|r", &(f->f), &g);
+  argc = pic_get_args(pic, "q|q", &(f->f), &g);
   if (argc == 1) {
     mpfr_atan(f->f, f->f, MPFR_RNDN);
   }
@@ -1260,7 +1279,7 @@ pic_number_sqrt(pic_state *pic)
 
   f = pic_bigfloat_new(pic);
 
-  pic_get_args(pic, "r", &(f->f));
+  pic_get_args(pic, "q", &(f->f));
 
   mpfr_sqrt(f->f, f->f, MPFR_RNDN);
   v = pic_obj_value(f);
@@ -1616,10 +1635,22 @@ pic_number_to_string(pic_state *pic, pic_value n, int radix)
 
 }
 
+/* static pic_value */
+/* pic_number_number_to_string(pic_state *pic) */
+/* { */
+/*   pic_value n; */
+/*   int radix = 10; */
+
+/*   pic_get_args(pic, "n|i", &n, &radix); */
+/*   return pic_number_to_string(pic, n, radix); */
+
+/* } */
+
 static pic_value
 pic_number_number_to_string(pic_state *pic)
 {
-  pic_value n;
+  double f;
+  bool e;
   int radix = 10;
 
   pic_get_args(pic, "F|i", &f, &e, &radix);
@@ -1635,8 +1666,16 @@ pic_number_number_to_string(pic_state *pic)
 
     number_string(ival, radix, ilen, buf);
 
-}
+    return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+  }
+  else {
+    char buf[snprintf(NULL, 0, "%a", f) + 1];
 
+    snprintf(buf, sizeof buf, "%a", f);
+
+    return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+  }
+}
 
 static pic_value
 pic_number_string_to_number(pic_state *pic)
