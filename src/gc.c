@@ -506,7 +506,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_record *rec = (struct pic_record *)obj;
     xh_iter it;
 
-    gc_mark(pic, rec->rectype);
     xh_begin(&it, &rec->hash);
     while (xh_next(&it)) {
       gc_mark(pic, xh_val(it.e, pic_value));

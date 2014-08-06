@@ -11,8 +11,9 @@ pic_record_new(pic_state *pic, pic_value rectype)
   struct pic_record *rec;
 
   rec = (struct pic_record *)pic_obj_alloc(pic, sizeof(struct pic_record), PIC_TT_RECORD);
-  rec->rectype = rectype;
   xh_init_int(&rec->hash, sizeof(pic_value));
+
+  pic_record_set(pic, rec, pic_intern_cstr(pic, "@@type"), rectype);
 
   return rec;
 }
@@ -20,9 +21,7 @@ pic_record_new(pic_state *pic, pic_value rectype)
 pic_value
 pic_record_type(pic_state *pic, struct pic_record *rec)
 {
-  UNUSED(pic);
-
-  return rec->rectype;
+  return pic_record_ref(pic, rec, pic_intern_cstr(pic, "@@type"));
 }
 
 pic_value

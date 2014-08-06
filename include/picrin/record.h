@@ -11,7 +11,6 @@ extern "C" {
 
 struct pic_record {
   PIC_OBJECT_HEADER
-  pic_value rectype;
   xhash     hash;
 };
 
