@@ -11,6 +11,7 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 #include "picrin/cont.h"
+#include "picrin/vector.h"
 
 pic_sym
 pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
@@ -90,6 +91,28 @@ make_identifier(pic_state *pic, pic_sym sym, struct pic_senv *senv)
   }
 }
 
+static pic_value
+strip_syntax(pic_state *pic, pic_value obj)
+{
+  pic_vec *vec;
+  size_t i;
+
+  switch (pic_type(obj)) {
+  case PIC_TT_SYMBOL:
+    return pic_sym_value(pic_ungensym(pic, pic_sym(obj)));
+  case PIC_TT_PAIR:
+    return pic_cons(pic, strip_syntax(pic, pic_car(pic, obj)), strip_syntax(pic, pic_cdr(pic, obj)));
+  case PIC_TT_VECTOR:
+    vec = pic_vec_new(pic, pic_vec_ptr(obj)->len);
+    for (i = 0; i < pic_vec_ptr(obj)->len; i++) {
+      vec->data[i] = strip_syntax(pic, pic_vec_ptr(obj)->data[i]);
+    }
+    return pic_obj_value(vec);
+  default:
+    return obj;
+  }
+}
+
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 
 static pic_value
@@ -101,7 +124,7 @@ macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 static pic_value
 macroexpand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, pic_sym_value(pic->rQUOTE), pic_cdr(pic, expr));
+  return pic_cons(pic, pic_sym_value(pic->rQUOTE), strip_syntax(pic, pic_cdr(pic, expr)));
 }
 
 static pic_value
