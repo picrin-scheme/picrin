@@ -180,6 +180,12 @@ write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
   const pic_sym sWRITER = pic_intern_cstr(pic, "writer");
   pic_value type, writer, str;
 
+#if DEBUG
+
+  xfprintf(file, "#<record %p>", rec);
+
+#else
+
   type = pic_record_type(pic, rec);
   if (! pic_record_p(type)) {
     pic_errorf(pic, "\"@@type\" property of record object is not of record type");
@@ -193,6 +199,8 @@ write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
     pic_errorf(pic, "return value from writer procedure is not of string type");
   }
   xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(str)));
+
+#endif
 }
 
 static void
