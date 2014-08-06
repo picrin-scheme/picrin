@@ -198,6 +198,9 @@ write_core(struct writer_control *p, pic_value obj)
   }
 
   switch (pic_type(obj)) {
+  case PIC_TT_UNDEF:
+    xfprintf(file, "#<undef>");
+    break;
   case PIC_TT_NIL:
     xfprintf(file, "()");
     break;
@@ -266,10 +269,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, "%d", pic_int(obj));
     break;
   case PIC_TT_EOF:
-    xfprintf(file, "#<eof-object>");
-    break;
-  case PIC_TT_UNDEF:
-    xfprintf(file, "#<undef>");
+    xfprintf(file, "#,(eof-object)");
     break;
   case PIC_TT_STRING:
     if (p->mode == DISPLAY_MODE) {
