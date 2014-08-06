@@ -160,36 +160,24 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
 static pic_value
 macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
-  pic_sym sym;
-  pic_value formal, body, var, val;
+  pic_sym sym, rename;
+  pic_value var, val;
 
-  if (pic_length(pic, expr) < 2) {
+  if (pic_length(pic, expr) != 3) {
     pic_error(pic, "syntax error");
   }
 
-  formal = pic_cadr(pic, expr);
-  if (pic_pair_p(formal)) {
-    var = pic_car(pic, formal);
-  } else {
-    if (pic_length(pic, expr) != 3) {
-      pic_error(pic, "syntax error");
-    }
-    var = formal;
-  }
+  var = pic_cadr(pic, expr);
   if (! pic_sym_p(var)) {
     pic_error(pic, "binding to non-symbol object");
   }
   sym = pic_sym(var);
-  if (! pic_find_rename(pic, senv, sym, NULL)) {
-    pic_add_rename(pic, senv, sym);
+  if (! pic_find_rename(pic, senv, sym, &rename)) {
+    rename = pic_add_rename(pic, senv, sym);
   }
-  body = pic_cddr(pic, expr);
-  if (pic_pair_p(formal)) {
-    val = macroexpand_lambda(pic, pic_cons(pic, pic_false_value(), pic_cons(pic, pic_cdr(pic, formal), body)), senv);
-  } else {
-    val = macroexpand(pic, pic_car(pic, body), senv);
-  }
-  return pic_list3(pic, pic_sym_value(pic->rDEFINE), macroexpand_symbol(pic, sym, senv), val);
+  val = macroexpand(pic, pic_list_ref(pic, expr, 2), senv);
+
+  return pic_list3(pic, pic_sym_value(pic->rDEFINE), pic_sym_value(rename), val);
 }
 
 static pic_value
@@ -295,7 +283,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
       }
 
       if ((mac = find_macro(pic, tag)) != NULL) {
-        return macroexpand(pic, macroexpand_macro(pic, mac, expr, senv), senv);
+        return macroexpand_node(pic, macroexpand_macro(pic, mac, expr, senv), senv);
       }
     }
 
@@ -491,12 +479,15 @@ pic_macro_make_identifier(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
+  pic_deflibrary (pic, "(picrin base macro)") {
+    pic_defun(pic, "identifier?", pic_macro_identifier_p);
+    pic_defun(pic, "make-identifier", pic_macro_make_identifier);
+  }
+
   pic_deflibrary (pic, "(picrin macro)") {
     pic_defun(pic, "gensym", pic_macro_gensym);
     pic_defun(pic, "ungensym", pic_macro_ungensym);
     pic_defun(pic, "macroexpand", pic_macro_macroexpand);
     pic_defun(pic, "macroexpand-1", pic_macro_macroexpand_1);
-    pic_defun(pic, "identifier?", pic_macro_identifier_p);
-    pic_defun(pic, "make-identifier", pic_macro_make_identifier);
   }
 }

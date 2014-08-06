@@ -62,19 +62,20 @@ new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
   xh_iter it;
-  struct pic_lib *stdlib;
+  struct pic_lib *stdlib, *listlib;
 
   state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
   state->scope = NULL;
 
   stdlib = pic_find_library(pic, pic_read_cstr(pic, "(scheme base)"));
+  listlib = pic_find_library(pic, pic_read_cstr(pic, "(picrin base list)"));
 
   /* native VM procedures */
-  register_renamed_symbol(pic, state, rCONS, stdlib, "cons");
-  register_renamed_symbol(pic, state, rCAR, stdlib, "car");
-  register_renamed_symbol(pic, state, rCDR, stdlib, "cdr");
-  register_renamed_symbol(pic, state, rNILP, stdlib, "null?");
+  register_renamed_symbol(pic, state, rCONS, listlib, "cons");
+  register_renamed_symbol(pic, state, rCAR, listlib, "car");
+  register_renamed_symbol(pic, state, rCDR, listlib, "cdr");
+  register_renamed_symbol(pic, state, rNILP, listlib, "null?");
   register_renamed_symbol(pic, state, rADD, stdlib, "+");
   register_renamed_symbol(pic, state, rSUB, stdlib, "-");
   register_renamed_symbol(pic, state, rMUL, stdlib, "*");
@@ -100,7 +101,7 @@ new_analyze_state(pic_state *pic)
   /* push initial scope */
   push_scope(state, pic_nil_value());
 
-  xh_begin(&it, &pic->global_tbl);
+  xh_begin(&it, &pic->globals);
   while (xh_next(&it)) {
     pic_sym sym = xh_key(it.e, pic_sym);
     xv_push(&state->scope->locals, &sym);
@@ -291,20 +292,8 @@ static pic_value
 analyze_global_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
-  xh_entry *e;
-  size_t i;
 
-  if ((e = xh_get_int(&pic->global_tbl, sym))) {
-    i = xh_val(e, size_t);
-  }
-  else {
-    i = pic->glen++;
-    if (i >= pic->gcapa) {
-      pic_error(pic, "global table overflow");
-    }
-    xh_put_int(&pic->global_tbl, sym, &i);
-  }
-  return pic_list2(pic, pic_symbol_value(state->sGREF), pic_int_value(i));
+  return pic_list2(pic, pic_symbol_value(state->sGREF), pic_sym_value(sym));
 }
 
 static pic_value
@@ -834,6 +823,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
   case PIC_TT_IREP:
   case PIC_TT_DATA:
   case PIC_TT_DICT:
+  case PIC_TT_RECORD:
   case PIC_TT_BLK:
     pic_errorf(pic, "invalid expression given: ~s", obj);
   }
@@ -1099,7 +1089,7 @@ codegen(codegen_state *state, pic_value obj)
   sym = pic_sym(pic_car(pic, obj));
   if (sym == state->sGREF) {
     cxt->code[cxt->clen].insn = OP_GREF;
-    cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, obj, 1));
+    cxt->code[cxt->clen].u.i = pic_sym(pic_list_ref(pic, obj, 1));
     cxt->clen++;
     return;
   } else if (sym == state->sCREF) {

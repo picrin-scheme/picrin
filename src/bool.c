@@ -43,10 +43,10 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
       pic_errorf(pic, "Stack overflow in equal\n");
     }
     if (pic_pair_p(x) || pic_vec_p(x)) {
-      if (xh_get(ht, pic_obj_ptr(x)) != NULL) {
+      if (xh_get_ptr(ht, pic_obj_ptr(x)) != NULL) {
         return true;            /* `x' was seen already.  */
       } else {
-        xh_put(ht, pic_obj_ptr(x), NULL);
+        xh_put_ptr(ht, pic_obj_ptr(x), NULL);
       }
     }
   }

@@ -15,7 +15,7 @@ extern "C" {
  * pic_sym is just an alias to unsigned int.
  */
 
-typedef unsigned pic_sym;
+typedef int pic_sym;
 
 /**
  * `undef` values never seen from user-end: that is,
@@ -121,6 +121,7 @@ enum pic_tt {
   PIC_TT_IREP,
   PIC_TT_DATA,
   PIC_TT_DICT,
+  PIC_TT_RECORD,
   PIC_TT_BLK,
 };
 
@@ -298,6 +299,8 @@ pic_type_repr(enum pic_tt tt)
     return "data";
   case PIC_TT_DICT:
     return "dict";
+  case PIC_TT_RECORD:
+    return "record";
   case PIC_TT_BLK:
     return "block";
   }

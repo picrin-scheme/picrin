@@ -21,6 +21,7 @@
 #include "picrin/var.h"
 #include "picrin/data.h"
 #include "picrin/dict.h"
+#include "picrin/record.h"
 
 #if GC_DEBUG
 # include <string.h>
@@ -511,6 +512,16 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_RECORD: {
+    struct pic_record *rec = (struct pic_record *)obj;
+    xh_iter it;
+
+    xh_begin(&it, &rec->hash);
+    while (xh_next(&it)) {
+      gc_mark(pic, xh_val(it.e, pic_value));
+    }
+    break;
+  }
   case PIC_TT_BLK: {
     struct pic_block *blk = (struct pic_block *)obj;
 
@@ -585,8 +596,9 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* global variables */
-  for (i = 0; i < pic->glen; ++i) {
-    gc_mark(pic, pic->globals[i]);
+  xh_begin(&it, &pic->globals);
+  while (xh_next(&it)) {
+    gc_mark(pic, xh_val(it.e, pic_value));
   }
 
   /* macro objects */
@@ -603,7 +615,7 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* library table */
-  gc_mark(pic, pic->lib_tbl);
+  gc_mark(pic, pic->libs);
 }
 
 static void
@@ -696,6 +708,11 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
     xh_destroy(&dict->hash);
+    break;
+  }
+  case PIC_TT_RECORD: {
+    struct pic_record *rec = (struct pic_record *)obj;
+    xh_destroy(&rec->hash);
     break;
   }
   case PIC_TT_BLK: {

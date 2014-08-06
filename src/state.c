@@ -49,19 +49,17 @@ pic_open(int argc, char *argv[], char **envp)
   pic->uniq_sym_cnt = 0;
 
   /* global variables */
-  xh_init_int(&pic->global_tbl, sizeof(size_t));
-  pic->globals = (pic_value *)calloc(PIC_GLOBALS_SIZE, sizeof(pic_value));
-  pic->glen = 0;
-  pic->gcapa = PIC_GLOBALS_SIZE;
+  xh_init_int(&pic->globals, sizeof(pic_value));
 
   /* macros */
   xh_init_int(&pic->macros, sizeof(struct pic_macro *));
 
   /* libraries */
-  pic->lib_tbl = pic_nil_value();
+  pic->libs = pic_nil_value();
   pic->lib = NULL;
 
   /* reader */
+  pic->rfcase = false;
   xh_init_int(&pic->rlabels, sizeof(pic_value));
 
   /* error handling */
@@ -164,9 +162,8 @@ pic_close(pic_state *pic)
   pic->ci = pic->cibase;
   pic->arena_idx = 0;
   pic->err = NULL;
-  pic->glen = 0;
   xh_clear(&pic->macros);
-  pic->lib_tbl = pic_nil_value();
+  pic->libs = pic_nil_value();
 
   /* free all heap objects */
   pic_gc_run(pic);
@@ -179,10 +176,9 @@ pic_close(pic_state *pic)
   free(pic->cibase);
 
   /* free global stacks */
-  free(pic->globals);
   free(pic->try_jmps);
   xh_destroy(&pic->syms);
-  xh_destroy(&pic->global_tbl);
+  xh_destroy(&pic->globals);
   xh_destroy(&pic->macros);
   xh_destroy(&pic->rlabels);
 

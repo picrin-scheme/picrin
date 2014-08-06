@@ -1,7 +1,7 @@
 (define-library (picrin array)
   (import (scheme base))
 
-  (define-record-type array-type
+  (define-record-type <array>
     (create-array data size head tail)
     array?
     (data array-data set-array-data!)

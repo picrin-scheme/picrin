@@ -31,6 +31,7 @@ void pic_init_load(pic_state *);
 void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
+void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_contrib(pic_state *);
@@ -61,10 +62,7 @@ pic_init_core(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_deflibrary (pic, "(scheme base)") {
-
-    /* load core syntaces */
-    pic->lib->env = pic_null_syntactic_environment(pic);
+  pic_deflibrary (pic, "(picrin base core)") {
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->rSETBANG);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->rQUOTE);
@@ -72,7 +70,9 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->rIF);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->rBEGIN);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
+  }
 
+  pic_deflibrary (pic, "(scheme base)") {
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
     pic_init_port(pic); DONE;
@@ -94,6 +94,7 @@ pic_init_core(pic_state *pic)
     pic_init_write(pic); DONE;
     pic_init_read(pic); DONE;
     pic_init_dict(pic); DONE;
+    pic_init_record(pic); DONE;
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
 

@@ -1,7 +1,11 @@
 ;;; Hygienic Macros
 
 (define-library (picrin macro)
-  (import (scheme base)
+  (import (picrin base macro)
+          (picrin base)
+          (picrin list)
+          (picrin symbol)
+          (scheme base)
           (picrin dictionary))
 
   ;; assumes no derived expressions are provided yet
@@ -127,7 +131,9 @@
                        (cons (cdr formal)
                              body)))))))
 
-  (export identifier=?
+  (export identifier?
+          identifier=?
+          make-identifier
           make-syntactic-closure
           close-syntax
           capture-syntactic-environment

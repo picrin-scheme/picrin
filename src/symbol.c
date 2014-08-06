@@ -20,13 +20,13 @@ pic_intern(pic_state *pic, const char *str, size_t len)
   cstr[len] = '\0';
   memcpy(cstr, str, len);
 
-  e = xh_get(&pic->syms, cstr);
+  e = xh_get_str(&pic->syms, cstr);
   if (e) {
     return xh_val(e, pic_sym);
   }
 
   id = pic->sym_cnt++;
-  xh_put(&pic->syms, cstr, &id);
+  xh_put_str(&pic->syms, cstr, &id);
   xh_put_int(&pic->sym_names, id, &cstr);
   return id;
 }
@@ -149,8 +149,13 @@ pic_symbol_string_to_symbol(pic_state *pic)
 void
 pic_init_symbol(pic_state *pic)
 {
-  pic_defun(pic, "symbol?", pic_symbol_symbol_p);
-  pic_defun(pic, "symbol=?", pic_symbol_symbol_eq_p);
-  pic_defun(pic, "symbol->string", pic_symbol_symbol_to_string);
-  pic_defun(pic, "string->symbol", pic_symbol_string_to_symbol);
+  pic_deflibrary (pic, "(picrin base symbol)") {
+    pic_defun(pic, "symbol?", pic_symbol_symbol_p);
+    pic_defun(pic, "symbol->string", pic_symbol_symbol_to_string);
+    pic_defun(pic, "string->symbol", pic_symbol_string_to_symbol);
+  }
+
+  pic_deflibrary (pic, "(picrin symbol)") {
+    pic_defun(pic, "symbol=?", pic_symbol_symbol_eq_p);
+  }
 }

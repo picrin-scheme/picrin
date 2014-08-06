@@ -153,13 +153,13 @@ read_directive(pic_state *pic, struct pic_port *port, int c)
   switch ((char)peek(port)) {
   case 'n':
     if (expect(port, "no-fold-case")) {
-      /* :FIXME: set no-fold-case flag */
+      pic->rfcase = false;
       return pic_undef_value();
     }
     break;
   case 'f':
     if (expect(port, "fold-case")) {
-      /* :FIXME: set fold-case flag */
+      pic->rfcase = true;
       return pic_undef_value();
     }
     break;
@@ -210,13 +210,15 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
     if (len != 0) {
       c = next(port);
     }
+    if (pic->rfcase) {
+      c = tolower(c);
+    }
     len += 1;
     buf = pic_realloc(pic, buf, len + 1);
     buf[len - 1] = (char)c;
   } while (! isdelim(peek(port)));
 
-  buf[len] = '\0';
-  sym = pic_intern_cstr(pic, buf);
+  sym = pic_intern(pic, buf, len);
   pic_free(pic, buf);
 
   return pic_sym_value(sym);
