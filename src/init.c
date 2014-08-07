@@ -10,6 +10,20 @@
 #include "picrin/macro.h"
 #include "picrin/error.h"
 
+static pic_value
+pic_features(pic_state *pic)
+{
+  pic_value features = pic_nil_value();
+
+  pic_get_args(pic, "");
+
+  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "r7rs")), features);
+  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "ieee-float")), features);
+  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "picrin")), features);
+
+  return features;
+}
+
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -37,23 +51,6 @@ void pic_init_lib(pic_state *);
 void pic_init_contrib(pic_state *);
 
 void pic_load_piclib(pic_state *);
-
-#define push_sym(pic, name, list)                                       \
-  pic_push(pic, pic_symbol_value(pic_intern_cstr(pic, name)), list)
-
-static pic_value
-pic_features(pic_state *pic)
-{
-  pic_value features = pic_nil_value();
-
-  pic_get_args(pic, "");
-
-  push_sym(pic, "r7rs", features);
-  push_sym(pic, "ieee-float", features);
-  push_sym(pic, "picrin", features);
-
-  return features;
-}
 
 #define DONE pic_gc_arena_restore(pic, ai);
 
