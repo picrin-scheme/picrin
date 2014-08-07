@@ -64,7 +64,6 @@ pic_rl_remove_history(pic_state *pic)
 
 void
 pic_init_readline(pic_state *pic){
-  using_history();
   pic_deflibrary (pic, "(picrin readline)") {
     pic_defun(pic, "readline", pic_rl_readline);
     pic_defun(pic, "add-history", pic_rl_add_history);
