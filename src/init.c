@@ -83,7 +83,13 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
   }
 
+  pic_deflibrary (pic, "(picrin library)") {
+    pic_defun(pic, "libraries", pic_libraries);
+  }
+
   pic_deflibrary (pic, "(scheme base)") {
+    pic_defun(pic, "features", pic_features);
+
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
     pic_init_port(pic); DONE;
@@ -111,11 +117,5 @@ pic_init_core(pic_state *pic)
 
     pic_load_piclib(pic); DONE;
     pic_init_contrib(pic); DONE;
-
-    pic_defun(pic, "features", pic_features);
-  }
-
-  pic_deflibrary (pic, "(picrin library)") {
-    pic_defun(pic, "libraries", pic_libraries);
   }
 }
