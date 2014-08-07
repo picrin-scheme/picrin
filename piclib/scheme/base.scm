@@ -190,14 +190,14 @@
                                         (list (r 'not) (compile-condition con))))
                    (compile-condition (lambda (form)
                                         (cond
-                                         ((compare 'else form) (r 'else))
+                                         ((compare (r 'else) form) (r 'else))
                                          ((symbol? form) (compile-feature form))
                                          ((not (pair? form)) (raise "error"))
                                          ;; form is ensured to be a pair
                                          ((eqv? 'library (car form)) (compile-library (cadr form)))
-                                         ((compare 'and     (car form)) (compile-and     (cdr form)))
-                                         ((compare 'or      (car form)) (compile-or      (cdr form)))
-                                         ((compare 'not     (car form)) (compile-not     (cadr form)))
+                                         ((compare (r 'and)     (car form)) (compile-and     (cdr form)))
+                                         ((compare (r 'or)      (car form)) (compile-or      (cdr form)))
+                                         ((compare (r 'not)     (car form)) (compile-not     (cadr form)))
                                          (else (raise "error"))))))
                   (cons (r 'cond)
                         (map (lambda (clause)
