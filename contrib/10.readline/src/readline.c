@@ -6,6 +6,7 @@
 forget to use the C++ extern "C" to get it to compile.
 */
 #include <editline/readline.h>
+#include <editline/history.h>
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/string.h"
@@ -130,7 +131,7 @@ pic_rl_read_history(pic_state *pic)
   pic_get_args(pic, "z", &filename);
 
   if(read_history(filename))
-    pic_errorf(pic, "cannot read history file :%s", filename);
+    pic_errorf(pic, "cannot read history file : %s", filename);
   
   return pic_undef_value();
 }
@@ -143,7 +144,7 @@ pic_rl_write_history(pic_state *pic)
   pic_get_args(pic, "z", &filename);
 
   if(write_history(filename))
-    pic_errorf(pic, "cannot write history file:%s", filename);
+    pic_errorf(pic, "cannot write history file: %s", filename);
   
   return pic_undef_value();
 }
