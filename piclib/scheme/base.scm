@@ -194,6 +194,8 @@
                                          ((symbol? form) (compile-feature form))
                                          ((not (pair? form)) (raise "error"))
                                          ;; form is ensured to be a pair
+
+                                         ;; you need compare 'library with `eqv?' due to picrin's problem
                                          ((eqv? 'library (car form)) (compile-library (cadr form)))
                                          ((compare (r 'and)     (car form)) (compile-and     (cdr form)))
                                          ((compare (r 'or)      (car form)) (compile-or      (cdr form)))
