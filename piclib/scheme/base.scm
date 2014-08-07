@@ -179,7 +179,7 @@
      (lambda (f r compare)
        (let ((clauses  (cdr f)))
          (letrec* ((compile-feature   (lambda (feature)
-                                        `(member ',feature (features))))
+                                        `(memq ',feature (features))))
                    (compile-library   (lambda (library-name)
                                         `(member ,library-name (libraries))))
                    (compile-and       (lambda (conds)
