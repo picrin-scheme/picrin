@@ -143,6 +143,23 @@
 (test #f (or #f #f #f))
 (test '(b c) (or (memq 'b '(a b c))
     (/ 3 0)))
+(test #t (cond-expand
+          (r7rs #t)
+          (else #f)))
+
+(test #t (cond-expand
+          ((library '(scheme write)) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((not r6rs) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((and r7rs (library '(picrin test))) #t)
+          (else #f)))
+
+(test #t (cond-expand
+          ((or r6rs r7rs) #t)
+          (else #f)))
 
 (test 6 (let ((x 2) (y 3))
   (* x y)))
