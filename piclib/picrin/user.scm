@@ -13,4 +13,5 @@
           (scheme time)
           (picrin macro)
           (picrin dictionary)
-          (picrin array)))
+          (picrin array)
+          (picrin library)))
