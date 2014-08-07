@@ -174,6 +174,36 @@
              ,@initials
              ,@body))))))
 
+  (define-syntax cond-expand
+    (er-macro-transformer
+     (lambda (f r compare)
+       (let ((clauses  (cdr f)))
+         (letrec* ((compile-feature   (lambda (feature)
+                                        `(member ',feature (features))))
+                   (compile-library   (lambda (library-name)
+                                        `(member ,library-name (libraries))))
+                   (compile-and       (lambda (conds)
+                                        (cons (r 'and) (map compile-condition conds))))
+                   (compile-or        (lambda (conds)
+                                        (cons (r 'or) (map compile-condition conds))))
+                   (compile-not       (lambda (con)
+                                        (list (r 'not) (compile-condition con))))
+                   (compile-condition (lambda (form)
+                                        (cond
+                                         ((compare 'else form) (r 'else))
+                                         ((symbol? form) (compile-feature form))
+                                         ((not (pair? form)) (raise "error"))
+                                         ;; form is ensured to be a pair
+                                         ((eqv? 'library (car form)) (compile-library (cadr form)))
+                                         ((compare 'and     (car form)) (compile-and     (cdr form)))
+                                         ((compare 'or      (car form)) (compile-or      (cdr form)))
+                                         ((compare 'not     (car form)) (compile-not     (cadr form)))
+                                         (else (raise "error"))))))
+                  (cons (r 'cond)
+                        (map (lambda (clause)
+                               (cons (compile-condition (car clause)) (cdr clause)))
+                             clauses)))))))
+
   (define-syntax letrec
     (er-macro-transformer
      (lambda (form rename compare)
@@ -277,7 +307,7 @@
   (export let let* letrec letrec*
           quasiquote unquote unquote-splicing
           and or
-          cond case else =>
+          cond case else => cond-expand
           do when unless
           let-syntax letrec-syntax
           include
