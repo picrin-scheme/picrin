@@ -241,7 +241,6 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 {
   char buf[256];
   size_t i;
-  long n;
 
   i = read_uinteger(pic, port, c, buf);
 
@@ -252,16 +251,6 @@ read_number(pic_state *pic, struct pic_port *port, int c)
     } while (isdigit(peek(port)));
     buf[i] = '\0';
     return pic_float_value(atof(buf));
-
-  case '/':
-    n = atoi(buf);
-    next(port);
-    read_uinteger(pic, port, next(port), buf);
-    if (n == n / atoi(buf) * atoi(buf)) {
-      return pic_int_value(n / atoi(buf)); /* exact */
-    } else {
-      return pic_float_value(n / (double)atoi(buf));
-    }
 
   default:
     return pic_int_value(atoi(buf));
