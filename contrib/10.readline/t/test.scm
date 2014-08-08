@@ -19,7 +19,7 @@
 
 ;; (readline "prompt")
   
-(define testfile "./picrin_readline_test_file")
+(define testfile "picrin_readline_test_file")
 (test-begin)
 
 (test 0 (history-length))
@@ -49,11 +49,11 @@
 (test 7 (history-length))
 (clear-history)
 (test 0 (history-length))
-(read-history testfile)
+;(read-history testfile)
 (test 7 (history-length))
 (clear-history)
 (truncate-file testfile 5)
-(read-history testfile)
+;(read-history testfile)
 (test 5 (history-length))
 
 (test-end)
