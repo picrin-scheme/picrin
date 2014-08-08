@@ -236,6 +236,30 @@ read_uinteger(pic_state *pic, struct pic_port *port, int c, char buf[])
   return i;
 }
 
+static size_t
+read_suffix(pic_state *pic, struct pic_port *port, char buf[])
+{
+  size_t i = 0;
+  char c;
+
+  c = peek(port);
+
+  if (c != 'e' && c != 'E') {
+    return i;
+  }
+
+  buf[i++] = next(port);
+
+  switch ((c = next(port))) {
+  case '-':
+  case '+':
+    buf[i++] = c;
+    c = next(port);
+  default:
+    return i + read_uinteger(pic, port, c, buf + i);
+  }
+}
+
 static pic_value
 read_number(pic_state *pic, struct pic_port *port, int c)
 {
@@ -246,14 +270,14 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 
   switch (peek(port)) {
   case '.':
-    do {
-      buf[i++] = next(port);
-    } while (isdigit(peek(port)));
-    buf[i] = '\0';
+    buf[i++] = next(port);
+    i += read_uinteger(pic, port, next(port), buf + i);
+    read_suffix(pic, port, buf + i);
     return pic_float_value(atof(buf));
 
   default:
-    return pic_int_value(atoi(buf));
+    read_suffix(pic, port, buf + i);
+    return pic_int_value((int)atof(buf));
   }
 }
 
