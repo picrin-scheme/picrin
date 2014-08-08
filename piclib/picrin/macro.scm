@@ -35,8 +35,16 @@
             val))))
 
   (define (identifier=? env1 sym1 env2 sym2)
-    (eq? (make-identifier sym1 env1)
-         (make-identifier sym2 env2)))
+
+    (define (resolve sym env)
+      (define x (make-identifier sym env))
+      (define y (make-identifier sym env))
+      (if (eq? x y)
+          x
+          sym))          ; resolved to no variable
+
+    (eq? (resolve sym1 env1)
+         (resolve sym2 env2)))
 
   (define (make-syntactic-closure env free form)
 
