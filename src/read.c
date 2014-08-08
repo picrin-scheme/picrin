@@ -66,7 +66,7 @@ expect(struct pic_port *port, const char *str)
 static bool
 isdelim(int c)
 {
-  return c == EOF || strchr("();,|\" \t\n\r", (char)c) != NULL; /* ignores "#", "'" */
+  return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
 static bool
@@ -131,7 +131,7 @@ read_datum_comment(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_directive(pic_state *pic, struct pic_port *port, int c)
 {
-  switch ((char)peek(port)) {
+  switch (peek(port)) {
   case 'n':
     if (expect(port, "no-fold-case")) {
       pic->rfcase = false;
@@ -182,7 +182,7 @@ read_comma(pic_state *pic, struct pic_port *port, int c)
 {
   c = next(port);
 
-  if ((char)c == '@') {
+  if (c == '@') {
     return pic_list2(pic, pic_sym_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
   } else {
     return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, c));
@@ -208,7 +208,7 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
     }
     len += 1;
     buf = pic_realloc(pic, buf, len + 1);
-    buf[len - 1] = (char)c;
+    buf[len - 1] = c;
   } while (! isdelim(peek(port)));
 
   sym = pic_intern(pic, buf, len);
@@ -226,9 +226,9 @@ read_uinteger(pic_state *pic, struct pic_port *port, int c, char buf[])
     read_error(pic, "expected one or more digits");
   }
 
-  buf[i++] = (char)c;
+  buf[i++] = c;
   while (isdigit(c = peek(port))) {
-    buf[i++] = (char)next(port);
+    buf[i++] = next(port);
   }
 
   buf[i] = '\0';
@@ -244,10 +244,10 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 
   i = read_uinteger(pic, port, c, buf);
 
-  switch ((char)peek(port)) {
+  switch (peek(port)) {
   case '.':
     do {
-      buf[i++] = (char)next(port);
+      buf[i++] = next(port);
     } while (isdigit(peek(port)));
     buf[i] = '\0';
     return pic_float_value(atof(buf));
@@ -314,7 +314,7 @@ read_boolean(pic_state *pic, struct pic_port *port, int c)
   UNUSED(port);
 
   if (! isdelim(peek(port))) {
-    if ((char)c == 't') {
+    if (c == 't') {
       if (! expect(port, "rue")) {
         goto fail;
       }
@@ -325,7 +325,7 @@ read_boolean(pic_state *pic, struct pic_port *port, int c)
     }
   }
 
-  if ((char)c == 't') {
+  if (c == 't') {
     return pic_true_value();
   } else {
     return pic_false_value();
@@ -341,7 +341,7 @@ read_char(pic_state *pic, struct pic_port *port, int c)
   c = next(port);
 
   if (! isdelim(peek(port))) {
-    switch ((char)c) {
+    switch (c) {
     default: read_error(pic, "unexpected character after char literal");
     case 'a': c = '\a'; if (! expect(port, "lerm")) goto fail; break;
     case 'b': c = '\b'; if (! expect(port, "ackspace")) goto fail; break;
@@ -393,7 +393,7 @@ read_string(pic_state *pic, struct pic_port *port, int c)
       case 'r': c = '\r'; break;
       }
     }
-    buf[cnt++] = (char)c;
+    buf[cnt++] = c;
     if (cnt >= size) {
       buf = pic_realloc(pic, buf, size *= 2);
     }
@@ -420,7 +420,7 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
   cnt = 0;
   while ((c = next(port)) != '|') {
     if (c == '\\') {
-      switch ((char)(c = next(port))) {
+      switch ((c = next(port))) {
       case 'a': c = '\a'; break;
       case 'b': c = '\b'; break;
       case 't': c = '\t'; break;
@@ -432,11 +432,11 @@ read_pipe(pic_state *pic, struct pic_port *port, char c)
           if (i >= sizeof HEX_BUF)
             read_error(pic, "expected ';'");
         }
-        c = (char)strtol(HEX_BUF, NULL, 16);
+        c = strtol(HEX_BUF, NULL, 16);
         break;
       }
     }
-    buf[cnt++] = (char)c;
+    buf[cnt++] = c;
     if (cnt >= size) {
       buf = pic_realloc(pic, buf, size *= 2);
     }
@@ -548,7 +548,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
   pic_value val;
   int c;
 
-  switch ((char)(c = skip(port, ' '))) {
+  switch ((c = skip(port, ' '))) {
   case '(': case '[':
     {
       pic_value tmp;
@@ -638,7 +638,7 @@ read_dispatch(pic_state *pic, struct pic_port *port, int c)
 {
   c = next(port);
 
-  switch ((char)c) {
+  switch (c) {
   case '!':
     return read_directive(pic, port, c);
   case '|':
@@ -672,7 +672,7 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "unexpected EOF");
   }
 
-  switch ((char)c) {
+  switch (c) {
   case ')':
     read_error(pic, "unmatched parenthesis");
   case ';':
