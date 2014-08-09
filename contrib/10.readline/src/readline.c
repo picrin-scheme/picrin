@@ -232,6 +232,21 @@ pic_rl_truncate_file(pic_state *pic)
   return pic_undef_value();
 }
 
+static pic_value
+pic_rl_history_expand(pic_state *pic)
+{
+  char *input, *result;
+  int status;
+
+  pic_get_args(pic, "z", &input);
+  
+  status = history_expand(input,  &result);
+  if(status == -1 || status == 2)
+    pic_errorf(pic, "%s\n", result);
+
+  return pic_obj_value(pic_str_new_cstr(pic, result));
+}
+
 void
 pic_init_readline(pic_state *pic){
   using_history();
@@ -258,5 +273,6 @@ pic_init_readline(pic_state *pic){
     pic_defun(pic, "read-history", pic_rl_read_history);
     pic_defun(pic, "write-history", pic_rl_write_history);
     pic_defun(pic, "truncate-file", pic_rl_truncate_file);
+    pic_defun(pic, "history-expand", pic_rl_history_expand);
   }
 }
