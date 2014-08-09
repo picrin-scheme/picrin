@@ -781,6 +781,8 @@ pic_gc_run(pic_state *pic)
   puts("gc run!");
 #endif
 
+  return;
+
   gc_mark_phase(pic);
   gc_sweep_phase(pic);
 
