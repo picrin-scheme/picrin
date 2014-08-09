@@ -1,23 +1,6 @@
 (import (scheme base)
-        (scheme read)
-        (scheme eval)
-        (scheme write)
-        (picrin readline)
         (picrin readline history)
         (picrin test))
-
-
-;; (let loop ((n 1))
-;;   (let ((input (readline "> ")))
-;;     (if (eof-object? input)
-;;         (newline)
-;;         (begin
-;;           (add-history input)
-;;           (write (eval (read (open-input-string input)) '(picrin user)))
-;;           (newline)
-;;           (loop 1)))))
-
-;; (readline "prompt")
   
 (define testfile "picrin_readline_test_file")
 (test-begin)
