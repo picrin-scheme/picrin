@@ -109,7 +109,7 @@
           (vector-set! v i result)
           (set! c (+ c 1))
           (when (= c (length promises))
-            (resolve v)))
+            (resolve (vector->list v))))
 
         (define (on-rejected reason)
           (reject reason))
@@ -134,7 +134,7 @@
           (vector-set! v i reason)
           (set! c (+ c 1))
           (when (= c (length promises))
-            (reject v)))
+            (reject (vector->list v))))
 
         (promise-chain (car x) on-resolved on-rejected)))
 
