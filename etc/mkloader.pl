@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
+use File::Basename qw/basename dirname/;
 
 print <<EOL;
 /**
@@ -34,22 +35,26 @@ print <<EOL;
 void
 pic_load_piclib(pic_state *pic)
 {
-  pic_try {
 EOL
 
 foreach my $file (@ARGV) {
+    print "  pic_try {\n";
     my $var = &escape_v($file);
+    my $basename = basename($file);
+    my $dirname = basename(dirname($file));
     print "    pic_load_cstr(pic, $var);\n";
-}
-
-print <<EOL;
+    print<<EOL
   }
   pic_catch {
     /* error! */
-    fputs("fatal error: failure in loading built-in.scm\\n", stderr);
+    fputs("fatal error: failure in loading $dirname/$basename\\n", stderr);
     fputs(pic_errmsg(pic), stderr);
     abort();
   }
+EOL
+}
+
+print <<EOL;
 
 #if DEBUG
   puts("successfully loaded stdlib");
