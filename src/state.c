@@ -6,6 +6,7 @@
 
 #include "picrin.h"
 #include "picrin/gc.h"
+#include "picrin/read.h"
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/cont.h"
@@ -59,8 +60,9 @@ pic_open(int argc, char *argv[], char **envp)
   pic->lib = NULL;
 
   /* reader */
-  pic->rfcase = false;
-  xh_init_int(&pic->rlabels, sizeof(pic_value));
+  pic->reader = malloc(sizeof(struct pic_reader));
+  pic->reader->typecase = PIC_CASE_DEFAULT;
+  xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
   /* error handling */
   pic->jmp = NULL;
@@ -177,12 +179,15 @@ pic_close(pic_state *pic)
   free(pic->stbase);
   free(pic->cibase);
 
+  /* free reader struct */
+  xh_destroy(&pic->reader->labels);
+  free(pic->reader);
+
   /* free global stacks */
   free(pic->try_jmps);
   xh_destroy(&pic->syms);
   xh_destroy(&pic->globals);
   xh_destroy(&pic->macros);
-  xh_destroy(&pic->rlabels);
 
   /* free GC arena */
   free(pic->arena);

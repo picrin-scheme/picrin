@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "picrin.h"
+#include "picrin/read.h"
 #include "picrin/error.h"
 #include "picrin/pair.h"
 #include "picrin/string.h"
@@ -134,13 +135,13 @@ read_directive(pic_state *pic, struct pic_port *port, int c)
   switch (peek(port)) {
   case 'n':
     if (expect(port, "no-fold-case")) {
-      pic->rfcase = false;
+      pic->reader->typecase = PIC_CASE_DEFAULT;
       return pic_undef_value();
     }
     break;
   case 'f':
     if (expect(port, "fold-case")) {
-      pic->rfcase = true;
+      pic->reader->typecase = PIC_CASE_FOLD;
       return pic_undef_value();
     }
     break;
@@ -203,7 +204,7 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
     if (len != 0) {
       c = next(port);
     }
-    if (pic->rfcase) {
+    if (pic->reader->typecase == PIC_CASE_FOLD) {
       c = tolower(c);
     }
     len += 1;
@@ -579,7 +580,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 
       val = pic_cons(pic, pic_none_value(), pic_none_value());
 
-      xh_put_int(&pic->rlabels, i, &val);
+      xh_put_int(&pic->reader->labels, i, &val);
 
       tmp = read(pic, port, c);
       pic_pair_ptr(val)->car = pic_car(pic, tmp);
@@ -602,7 +603,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 
         val = pic_obj_value(pic_vec_new(pic, 0));
 
-        xh_put_int(&pic->rlabels, i, &val);
+        xh_put_int(&pic->reader->labels, i, &val);
 
         tmp = pic_vec_ptr(read(pic, port, c));
         SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
@@ -617,7 +618,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
     {
       val = read(pic, port, c);
 
-      xh_put_int(&pic->rlabels, i, &val);
+      xh_put_int(&pic->reader->labels, i, &val);
 
       return val;
     }
@@ -631,7 +632,7 @@ read_label_ref(pic_state *pic, struct pic_port *port, int i)
 
   UNUSED(port);
 
-  e = xh_get_int(&pic->rlabels, i);
+  e = xh_get_int(&pic->reader->labels, i);
   if (! e) {
     read_error(pic, "label of given index not defined");
   }
