@@ -32,7 +32,8 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
   endif (${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 4)
   find_path(Libedit_INCLUDE_DIR
     NAMES
-      histedit.h
+      readline.h
+      history.h
     PATHS
       ${_Libedit_INCLUDEDIR}
       /usr/include
