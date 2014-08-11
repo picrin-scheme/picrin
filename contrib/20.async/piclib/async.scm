@@ -21,9 +21,4 @@
    (shift (lambda (f)
             (promise-bind m f))))
 
- (define (force m)
-   (call/cc
-    (lambda (f)
-      (promise-bind m f))))
-
- (export async await force))
+ (export async await))
