@@ -3,8 +3,6 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/contrib/10.readline/cmake/")
 
 find_package(Libedit)
-
-find_package(Libedit)
 if (Libedit_FOUND)
   add_definitions(${Libedit_DEFINITIONS} -DPIC_READLINE_FOUND=1)
   include_directories(${Libedit_INCLUDE_DIR})
