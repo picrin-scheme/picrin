@@ -659,6 +659,15 @@ read_label(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
+read_unmatch(pic_state *pic, struct pic_port *port, int c)
+{
+  UNUSED(port);
+  UNUSED(c);
+
+  read_error(pic, "unmatched parenthesis");
+}
+
+static pic_value
 read_dispatch(pic_state *pic, struct pic_port *port, int c)
 {
   c = next(port);
@@ -699,7 +708,7 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
 
   switch (c) {
   case ')':
-    read_error(pic, "unmatched parenthesis");
+    return read_unmatch(pic, port, c);
   case ';':
     return read_comment(pic, port, c);
   case '#':
