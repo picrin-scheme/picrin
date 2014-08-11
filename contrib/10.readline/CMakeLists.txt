@@ -5,6 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/contrib/10.rea
 find_package(Libedit)
 if (Libedit_FOUND)
   add_definitions(${Libedit_DEFINITIONS} -DPIC_READLINE_FOUND=1)
+  add_definitions(${Libedit_DEFINITIONS} -DPIC_READLINE_INCLUDE_DIR_SUFFIX=${Libedit_INCLUDE_DIR_SUFFIX})
   include_directories(${Libedit_INCLUDE_DIR})
 
   file(GLOB PICRIN_READLINE_SOURCES ${PROJECT_SOURCE_DIR}/contrib/10.readline/src/*.c)

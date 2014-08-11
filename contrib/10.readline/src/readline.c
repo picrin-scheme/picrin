@@ -5,8 +5,13 @@
 /* This will include all our libedit functions.  If you use C++ don't
 forget to use the C++ extern "C" to get it to compile.
 */
+#if PIC_READLINE_INCLUDE_DIR_SUFFIX == readline
+#include <readline/readline.h>
+#include <readline/history.h>
+#else
 #include <editline/readline.h>
 #include <editline/history.h>
+#endif
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/string.h"
