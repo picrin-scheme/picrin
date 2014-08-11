@@ -431,7 +431,7 @@ read_string(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_pipe(pic_state *pic, struct pic_port *port, char c)
+read_pipe(pic_state *pic, struct pic_port *port, int c)
 {
   char *buf;
   size_t size, cnt;
