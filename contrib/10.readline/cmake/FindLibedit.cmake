@@ -45,14 +45,13 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
   )
   if (Libedit_EDITLINE_INCLUDE_DIR)
     set(Libedit_INCLUDE_DIR_SUFFIX editline)
-    set(Libedit_INCLUDE_DIR Libedit_EDITLINE_INCLUDE_DIR)
+    set(Libedit_INCLUDE_DIR ${Libedit_EDITLINE_INCLUDE_DIR})
   else (Libedit_EDITLINE_INCLUDE_DIR)
     find_path(Libedit_READLINE_INCLUDE_DIR
       NAMES
         readline.h
         history.h
       PATHS
-        ${_Libedit_INCLUDEDIR}/edit
         /usr/include/edit
         /usr/local/include/edit
         /opt/local/include/edit
@@ -62,7 +61,7 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
         )
     if (Libedit_READLINE_INCLUDE_DIR)
       set(Libedit_INCLUDE_DIR_SUFFIX readline)
-      set(Libedit_INCLUDE_DIR Libedit_READLINE_INCLUDE_DIR)
+      set(Libedit_INCLUDE_DIR ${Libedit_READLINE_INCLUDE_DIR})
     endif (Libedit_READLINE_INCLUDE_DIR)
   endif (Libedit_EDITLINE_INCLUDE_DIR)
 
