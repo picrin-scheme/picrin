@@ -21,7 +21,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic_state *pic;
   size_t ai;
 
-  pic = (pic_state *)malloc(sizeof(pic_state));
+  pic = malloc(sizeof(pic_state));
 
   /* root block */
   pic->blk = NULL;
@@ -32,11 +32,11 @@ pic_open(int argc, char *argv[], char **envp)
   pic->envp = envp;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = (pic_value *)calloc(PIC_STACK_SIZE, sizeof(pic_value));
+  pic->stbase = pic->sp = calloc(PIC_STACK_SIZE, sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   /* callinfo */
-  pic->cibase = pic->ci = (pic_callinfo *)calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
+  pic->cibase = pic->ci = calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   /* memory heap */
@@ -70,7 +70,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->try_jmp_size = PIC_RESCUE_SIZE;
 
   /* GC arena */
-  pic->arena = (struct pic_object **)calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
