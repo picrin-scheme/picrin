@@ -178,15 +178,19 @@ read_quasiquote(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_comma(pic_state *pic, struct pic_port *port, int c)
+read_unquote(pic_state *pic, struct pic_port *port, int c)
 {
-  c = next(port);
+  UNUSED(c);
 
-  if (c == '@') {
-    return pic_list2(pic, pic_sym_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
-  } else {
-    return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, c));
-  }
+  return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, next(port)));
+}
+
+static pic_value
+read_unquote_splicing(pic_state *pic, struct pic_port *port, int c)
+{
+  UNUSED(c);
+
+  return pic_list2(pic, pic_sym_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -763,7 +767,8 @@ DEFINE_READER(read_unmatch)
 DEFINE_READER(read_comment)
 DEFINE_READER(read_quote)
 DEFINE_READER(read_quasiquote)
-DEFINE_READER(read_comma)
+DEFINE_READER(read_unquote)
+DEFINE_READER(read_unquote_splicing)
 DEFINE_READER(read_string)
 DEFINE_READER(read_pipe)
 DEFINE_READER(read_plus)
@@ -792,7 +797,8 @@ pic_init_reader(pic_state *pic)
   pic_define_reader(pic, ";", pic_read_comment);
   pic_define_reader(pic, "'", pic_read_quote);
   pic_define_reader(pic, "`", pic_read_quasiquote);
-  pic_define_reader(pic, ",", pic_read_comma);
+  pic_define_reader(pic, ",", pic_read_unquote);
+  pic_define_reader(pic, ",@", pic_read_unquote_splicing);
   pic_define_reader(pic, "\"", pic_read_string);
   pic_define_reader(pic, "|", pic_read_pipe);
   pic_define_reader(pic, "+", pic_read_plus);
