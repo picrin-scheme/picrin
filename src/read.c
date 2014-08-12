@@ -470,7 +470,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_unsigned_blob(pic_state *pic, struct pic_port *port, int c)
+read_blob(pic_state *pic, struct pic_port *port, int c)
 {
   int nbits, n;
   size_t len, i;
@@ -773,7 +773,7 @@ DEFINE_READER(read_true)
 DEFINE_READER(read_false)
 DEFINE_READER(read_char)
 DEFINE_READER(read_vector)
-DEFINE_READER(read_unsigned_blob)
+DEFINE_READER(read_blob)
 DEFINE_READER(read_eval)
 DEFINE_READER(read_symbol)
 DEFINE_READER(read_number)
@@ -808,7 +808,7 @@ pic_init_reader(pic_state *pic)
   pic_define_reader(pic, "#false", pic_read_false);
   pic_define_reader(pic, "#\\", pic_read_char);
   pic_define_reader(pic, "#(", pic_read_vector);
-  pic_define_reader(pic, "#u", pic_read_unsigned_blob);
+  pic_define_reader(pic, "#u", pic_read_blob);
   pic_define_reader(pic, "#.", pic_read_eval);
 
   /* read number */
