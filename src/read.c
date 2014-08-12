@@ -331,7 +331,7 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
     if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "+nan.0")) {
       return pic_float_value(NAN);
     }
-    return read_symbol(pic, port, c);
+    return sym;
   }
 }
 
