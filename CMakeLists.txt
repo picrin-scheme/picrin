@@ -30,7 +30,7 @@ include_directories(include extlib)
 
 # build picrin
 include(piclib/CMakeLists.txt)
-include(contrib/CMakeLists.txt)
+#include(contrib/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(tools/CMakeLists.txt)
 
