@@ -666,6 +666,8 @@ static pic_value
 read_nullable(pic_state *pic, struct pic_port *port, int c)
 {
   struct pic_trie *trie = pic->reader->trie;
+  char buf[128];
+  size_t i = 0;
 
   c = skip(port, c);
 
@@ -676,14 +678,28 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
   if (trie->table[c] == NULL) {
     read_error(pic, "invalid character at the seeker head");
   }
-  for (trie = trie->table[c]; trie->table[peek(port)] != NULL; trie = trie->table[c]) {
-    c = next(port);
+
+  buf[i++] = c;
+
+  while (i < sizeof buf) {
+    trie = trie->table[c];
+
+    if ((c = peek(port)) == EOF) {
+      break;
+    }
+    if (trie->table[c] == NULL) {
+      break;
+    }
+    buf[i++] = next(port);
+  }
+  if (i == sizeof buf) {
+    read_error(pic, "too long dispatch string");
   }
 
   if (trie->proc == NULL) {
     read_error(pic, "no reader registered for current string");
   }
-  return pic_apply2(pic, trie->proc, pic_obj_value(port), pic_char_value(c));
+  return pic_apply2(pic, trie->proc, pic_obj_value(port), pic_char_value(buf[i-1]));
 }
 
 static pic_value
