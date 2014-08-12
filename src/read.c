@@ -336,31 +336,23 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_boolean(pic_state *pic, struct pic_port *port, int c)
+read_true(pic_state *pic, struct pic_port *port, int c)
 {
   UNUSED(pic);
   UNUSED(port);
+  UNUSED(c);
 
-  if (! isdelim(peek(port))) {
-    if (c == 't') {
-      if (! expect(port, "rue")) {
-        goto fail;
-      }
-    } else {
-      if (! expect(port, "alse")) {
-        goto fail;
-      }
-    }
-  }
+  return pic_true_value();
+}
 
-  if (c == 't') {
-    return pic_true_value();
-  } else {
-    return pic_false_value();
-  }
+static pic_value
+read_false(pic_state *pic, struct pic_port *port, int c)
+{
+  UNUSED(pic);
+  UNUSED(port);
+  UNUSED(c);
 
- fail:
-  read_error(pic, "illegal character during reading boolean literal");
+  return pic_false_value();
 }
 
 static pic_value
@@ -777,7 +769,8 @@ DEFINE_READER(read_pair)
 DEFINE_READER(read_directive)
 DEFINE_READER(read_block_comment)
 DEFINE_READER(read_datum_comment)
-DEFINE_READER(read_boolean)
+DEFINE_READER(read_true)
+DEFINE_READER(read_false)
 DEFINE_READER(read_char)
 DEFINE_READER(read_vector)
 DEFINE_READER(read_unsigned_blob)
@@ -809,8 +802,10 @@ pic_init_reader(pic_state *pic)
   pic_define_reader(pic, "#!", pic_read_directive);
   pic_define_reader(pic, "#|", pic_read_block_comment);
   pic_define_reader(pic, "#;", pic_read_datum_comment);
-  pic_define_reader(pic, "#t", pic_read_boolean);
-  pic_define_reader(pic, "#f", pic_read_boolean);
+  pic_define_reader(pic, "#t", pic_read_true);
+  pic_define_reader(pic, "#true", pic_read_true);
+  pic_define_reader(pic, "#f", pic_read_false);
+  pic_define_reader(pic, "#false", pic_read_false);
   pic_define_reader(pic, "#\\", pic_read_char);
   pic_define_reader(pic, "#(", pic_read_vector);
   pic_define_reader(pic, "#u", pic_read_unsigned_blob);
