@@ -62,6 +62,7 @@ pic_open(int argc, char *argv[], char **envp)
   /* reader */
   pic->reader = malloc(sizeof(struct pic_reader));
   pic->reader->typecase = PIC_CASE_DEFAULT;
+  pic->reader->trie = pic_trie_new(pic);
   xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
   /* error handling */
@@ -181,6 +182,7 @@ pic_close(pic_state *pic)
 
   /* free reader struct */
   xh_destroy(&pic->reader->labels);
+  pic_trie_delete(pic, pic->reader->trie);
   free(pic->reader);
 
   /* free global stacks */

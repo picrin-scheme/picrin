@@ -13,6 +13,7 @@
 #include "picrin/vector.h"
 #include "picrin/blob.h"
 #include "picrin/port.h"
+#include "picrin/proc.h"
 
 static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
@@ -666,73 +667,27 @@ read_unmatch(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_dispatch(pic_state *pic, struct pic_port *port, int c)
-{
-  c = next(port);
-
-  switch (c) {
-  case '!':
-    return read_directive(pic, port, c);
-  case '|':
-    return read_block_comment(pic, port, c);
-  case ';':
-    return read_datum_comment(pic, port, c);
-  case 't': case 'f':
-    return read_boolean(pic, port, c);
-  case '\\':
-    return read_char(pic, port, c);
-  case '(':
-    return read_vector(pic, port, c);
-  case '0': case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-    return read_label(pic, port, c);
-  case 'u':
-    return read_unsigned_blob(pic, port, c);
-  case '.':
-    return read_eval(pic, port, c);
-  default:
-    read_error(pic, "unexpected dispatch character");
-  }
-}
-
-static pic_value
 read_nullable(pic_state *pic, struct pic_port *port, int c)
 {
+  struct pic_trie *trie = pic->reader->trie;
+
   c = skip(port, c);
 
   if (c == EOF) {
     read_error(pic, "unexpected EOF");
   }
 
-  switch (c) {
-  case ')':
-    return read_unmatch(pic, port, c);
-  case ';':
-    return read_comment(pic, port, c);
-  case '#':
-    return read_dispatch(pic, port, c);
-  case '\'':
-    return read_quote(pic, port, c);
-  case '`':
-    return read_quasiquote(pic, port, c);
-  case ',':
-    return read_comma(pic, port, c);
-  case '"':
-    return read_string(pic, port, c);
-  case '|':
-    return read_pipe(pic, port, c);
-  case '0': case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-    return read_number(pic, port, c);
-  case '+':
-    return read_plus(pic, port, c);
-  case '-':
-    return read_minus(pic, port, c);
-  case '(': case '[':
-    return read_pair(pic, port, c);
-  default:
-    return read_symbol(pic, port, c);
+  if (trie->table[c] == NULL) {
+    read_error(pic, "invalid character at the seeker head");
   }
+  for (trie = trie->table[c]; trie->table[peek(port)] != NULL; trie = trie->table[c]) {
+    c = next(port);
+  }
+
+  if (trie->proc == NULL) {
+    read_error(pic, "no reader registered for current string");
+  }
+  return pic_apply2(pic, trie->proc, pic_obj_value(port), pic_char_value(c));
 }
 
 static pic_value
@@ -749,6 +704,134 @@ read(pic_state *pic, struct pic_port *port, int c)
   }
 
   return val;
+}
+
+struct pic_trie *
+pic_trie_new(pic_state *pic)
+{
+  struct pic_trie *trie;
+
+  trie = pic_alloc(pic, sizeof(struct pic_trie));
+  trie->proc = NULL;
+  memset(trie->table, 0, sizeof trie->table);
+
+  return trie;
+}
+
+void
+pic_trie_delete(pic_state *pic, struct pic_trie *trie)
+{
+  size_t i;
+
+  for (i = 0; i < sizeof trie->table / sizeof(struct pic_trie *); ++i) {
+    if (trie->table[i] != NULL) {
+      pic_trie_delete(pic, trie->table[i]);
+    }
+  }
+
+  pic_free(pic, trie);
+}
+
+void
+pic_define_reader(pic_state *pic, const char *str, pic_func_t reader)
+{
+  struct pic_trie *trie = pic->reader->trie;
+  int c;
+
+  while ((c = *str++)) {
+    if (trie->table[c] == NULL) {
+      trie->table[c] = pic_trie_new(pic);
+    }
+    trie = trie->table[c];
+  }
+  trie->proc = pic_proc_new(pic, reader, "reader");
+}
+
+#define DEFINE_READER(name)                     \
+  static pic_value                              \
+  pic_##name(pic_state *pic)                    \
+  {                                             \
+    struct pic_port *port;                      \
+    char c;                                     \
+                                                \
+    pic_get_args(pic, "pc", &port, &c);         \
+                                                \
+    return name(pic, port, c);                  \
+  }
+
+DEFINE_READER(read_unmatch)
+DEFINE_READER(read_comment)
+DEFINE_READER(read_quote)
+DEFINE_READER(read_quasiquote)
+DEFINE_READER(read_comma)
+DEFINE_READER(read_string)
+DEFINE_READER(read_pipe)
+DEFINE_READER(read_plus)
+DEFINE_READER(read_minus)
+DEFINE_READER(read_pair)
+DEFINE_READER(read_directive)
+DEFINE_READER(read_block_comment)
+DEFINE_READER(read_datum_comment)
+DEFINE_READER(read_boolean)
+DEFINE_READER(read_char)
+DEFINE_READER(read_vector)
+DEFINE_READER(read_unsigned_blob)
+DEFINE_READER(read_eval)
+DEFINE_READER(read_symbol)
+DEFINE_READER(read_number)
+DEFINE_READER(read_label)
+
+void
+pic_init_reader(pic_state *pic)
+{
+  static const char INIT[] = "!$%&*./:<=>?@^_~";
+  char buf[3] = { 0 };
+  size_t i;
+
+  pic_define_reader(pic, ")", pic_read_unmatch);
+  pic_define_reader(pic, ";", pic_read_comment);
+  pic_define_reader(pic, "'", pic_read_quote);
+  pic_define_reader(pic, "`", pic_read_quasiquote);
+  pic_define_reader(pic, ",", pic_read_comma);
+  pic_define_reader(pic, "\"", pic_read_string);
+  pic_define_reader(pic, "|", pic_read_pipe);
+  pic_define_reader(pic, "+", pic_read_plus);
+  pic_define_reader(pic, "-", pic_read_minus);
+  pic_define_reader(pic, "(", pic_read_pair);
+  pic_define_reader(pic, "[", pic_read_pair);
+
+  pic_define_reader(pic, "#!", pic_read_directive);
+  pic_define_reader(pic, "#|", pic_read_block_comment);
+  pic_define_reader(pic, "#;", pic_read_datum_comment);
+  pic_define_reader(pic, "#t", pic_read_boolean);
+  pic_define_reader(pic, "#f", pic_read_boolean);
+  pic_define_reader(pic, "#\\", pic_read_char);
+  pic_define_reader(pic, "#(", pic_read_vector);
+  pic_define_reader(pic, "#u", pic_read_unsigned_blob);
+  pic_define_reader(pic, "#.", pic_read_eval);
+
+  /* read number */
+  for (buf[0] = '0'; buf[0] <= '9'; ++buf[0]) {
+    pic_define_reader(pic, buf, pic_read_number);
+  }
+
+  /* read symbol */
+  for (buf[0] = 'a'; buf[0] <= 'z'; ++buf[0]) {
+    pic_define_reader(pic, buf, pic_read_symbol);
+  }
+  for (buf[0] = 'A'; buf[0] <= 'Z'; ++buf[0]) {
+    pic_define_reader(pic, buf, pic_read_symbol);
+  }
+  for (i = 0; i < sizeof INIT; ++i) {
+    buf[0] = INIT[i];
+    pic_define_reader(pic, buf, pic_read_symbol);
+  }
+
+  /* read label */
+  buf[0] = '#';
+  for (buf[1] = '0'; buf[1] <= '9'; ++buf[1]) {
+    pic_define_reader(pic, buf, pic_read_label);
+  }
 }
 
 pic_value
