@@ -239,7 +239,7 @@ static size_t
 read_suffix(pic_state *pic, struct pic_port *port, char buf[])
 {
   size_t i = 0;
-  char c;
+  int c;
 
   c = peek(port);
 
@@ -521,7 +521,7 @@ read_unsigned_blob(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_pair(pic_state *pic, struct pic_port *port, int c)
 {
-  char tOPEN = c, tCLOSE = (tOPEN == '(') ? ')' : ']';
+  int tOPEN = c, tCLOSE = (tOPEN == '(') ? ')' : ']';
   pic_value car, cdr;
 
  retry:
