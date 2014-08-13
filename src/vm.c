@@ -775,9 +775,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       ci->fp = pic->sp - c.u.i;
       ci->env = NULL;
       if (pic_proc_func_p(pic_proc_ptr(x))) {
+        pic_value *sp;
 
         /* invoke! */
-	pic->sp[0] = proc->u.func.f(pic);
+        sp = pic->sp;
+        sp[0] = proc->u.func.f(pic);
         pic->sp += pic->ci->retc;
 
         pic_gc_arena_restore(pic, ai);
