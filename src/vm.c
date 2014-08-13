@@ -1029,7 +1029,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  static const pic_code iseq = { OP_TAILCALL, { .i = -1 } };
+  static const pic_code iseq[2] = {
+    { OP_NOP, {} },
+    { OP_TAILCALL, { .i = -1 } }
+  };
 
   pic_value v, *sp;
   pic_callinfo *ci;
@@ -1042,7 +1045,7 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   }
 
   ci = PUSHCI();
-  ci->ip = (pic_code *)&iseq - 1;
+  ci->ip = (pic_code *)iseq;
   ci->fp = pic->sp;
   ci->retc = pic_length(pic, args);
 
