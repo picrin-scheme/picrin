@@ -63,6 +63,7 @@ void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_contrib(pic_state *);
+void pic_init_trans(pic_state *);
 
 void pic_load_piclib(pic_state *);
 
@@ -114,6 +115,7 @@ pic_init_core(pic_state *pic)
     pic_init_record(pic); DONE;
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
+    pic_init_trans(pic); DONE;
 
     pic_load_piclib(pic); DONE;
     pic_init_contrib(pic); DONE;

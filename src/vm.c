@@ -21,6 +21,7 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
+#include "picrin/transient.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -53,6 +54,7 @@ pic_get_proc(pic_state *pic)
  *  p   port object
  *  d   dictionary object
  *  e   error object
+ *  t   transient string object
  *
  *  |  optional operator
  *  *  variable length operator
@@ -377,6 +379,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
         }
         else {
           pic_error(pic, "pic_get_args, expected error");
+        }
+        i++;
+      }
+      break;
+    }
+    case 't': {
+      pic_trans **trans;
+      pic_value v;
+
+      trans = va_arg(ap, pic_trans **);
+      if (i < argc) {
+        v = GET_OPERAND(pic,i);
+        if (pic_trans_p(v)) {
+          *trans = pic_trans_ptr(v);
+        }
+        else {
+          pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
         }
         i++;
       }
