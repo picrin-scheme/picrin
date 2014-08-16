@@ -21,6 +21,7 @@
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
+#include "picrin/transient.h"
 
 #if GC_DEBUG
 # include <string.h>
@@ -526,6 +527,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_TRANSIENT: {
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -694,6 +698,10 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_BLK: {
+    break;
+  }
+  case PIC_TT_TRANSIENT: {
+    pic_free(pic, ((pic_trans *)obj)->data);
     break;
   }
   case PIC_TT_NIL:

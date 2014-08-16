@@ -13,6 +13,7 @@
 #include "picrin/dict.h"
 #include "picrin/record.h"
 #include "picrin/proc.h"
+#include "picrin/transient.h"
 
 static bool
 is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
@@ -204,6 +205,22 @@ write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
 }
 
 static void
+write_trans(pic_state *pic, struct pic_transient *trans, xFILE *file)
+{
+  size_t i;
+  const char *cstr = pic_trans_cstr(trans);
+
+  UNUSED(pic);
+
+  for (i = 0; i < pic_trans_len(trans); ++i) {
+    if (cstr[i] == '"' || cstr[i] == '\\') {
+      xfputc('\\', file);
+    }
+    xfputc(cstr[i], file);
+  }
+}
+
+static void
 write_core(struct writer_control *p, pic_value obj)
 {
   pic_state *pic = p->pic;
@@ -344,6 +361,13 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_RECORD:
     write_record(pic, pic_record_ptr(obj), file);
     break;
+  case PIC_TT_TRANSIENT: {
+    pic_trans *trans = pic_trans_ptr(obj);
+    xfprintf(file, "trans-str:\"");
+    write_trans(pic, trans, file);
+    xfprintf(file, "\" (capacity = %d)", pic_trans_capacity(trans));
+    break;
+  }
   default:
     xfprintf(file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
     break;
