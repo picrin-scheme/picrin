@@ -6,6 +6,7 @@
 
 #include "picrin.h"
 #include "picrin/gc.h"
+#include "picrin/read.h"
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/cont.h"
@@ -21,7 +22,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic_state *pic;
   size_t ai;
 
-  pic = (pic_state *)malloc(sizeof(pic_state));
+  pic = malloc(sizeof(pic_state));
 
   /* root block */
   pic->blk = NULL;
@@ -32,11 +33,11 @@ pic_open(int argc, char *argv[], char **envp)
   pic->envp = envp;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = (pic_value *)calloc(PIC_STACK_SIZE, sizeof(pic_value));
+  pic->stbase = pic->sp = calloc(PIC_STACK_SIZE, sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   /* callinfo */
-  pic->cibase = pic->ci = (pic_callinfo *)calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
+  pic->cibase = pic->ci = calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   /* memory heap */
@@ -59,8 +60,10 @@ pic_open(int argc, char *argv[], char **envp)
   pic->lib = NULL;
 
   /* reader */
-  pic->rfcase = false;
-  xh_init_int(&pic->rlabels, sizeof(pic_value));
+  pic->reader = malloc(sizeof(struct pic_reader));
+  pic->reader->typecase = PIC_CASE_DEFAULT;
+  pic->reader->trie = pic_trie_new(pic);
+  xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
   /* error handling */
   pic->jmp = NULL;
@@ -70,7 +73,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->try_jmp_size = PIC_RESCUE_SIZE;
 
   /* GC arena */
-  pic->arena = (struct pic_object **)calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
@@ -92,9 +95,10 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sUNQUOTE, "unquote");
   register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
   register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
-  register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
   register_core_symbol(pic, sIMPORT, "import");
   register_core_symbol(pic, sEXPORT, "export");
+  register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
+  register_core_symbol(pic, sIN_LIBRARY, "in-library");
   register_core_symbol(pic, sCONS, "cons");
   register_core_symbol(pic, sCAR, "car");
   register_core_symbol(pic, sCDR, "cdr");
@@ -124,9 +128,10 @@ pic_open(int argc, char *argv[], char **envp)
   register_renamed_symbol(pic, rSETBANG, "set!");
   register_renamed_symbol(pic, rQUOTE, "quote");
   register_renamed_symbol(pic, rDEFINE_SYNTAX, "define-syntax");
-  register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
   register_renamed_symbol(pic, rIMPORT, "import");
   register_renamed_symbol(pic, rEXPORT, "export");
+  register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
+  register_renamed_symbol(pic, rIN_LIBRARY, "in-library");
   pic_gc_arena_restore(pic, ai);
 
   /* root block */
@@ -175,12 +180,16 @@ pic_close(pic_state *pic)
   free(pic->stbase);
   free(pic->cibase);
 
+  /* free reader struct */
+  xh_destroy(&pic->reader->labels);
+  pic_trie_delete(pic, pic->reader->trie);
+  free(pic->reader);
+
   /* free global stacks */
   free(pic->try_jmps);
   xh_destroy(&pic->syms);
   xh_destroy(&pic->globals);
   xh_destroy(&pic->macros);
-  xh_destroy(&pic->rlabels);
 
   /* free GC arena */
   free(pic->arena);

@@ -249,6 +249,18 @@ pic_lib_define_library(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_lib_in_library(pic_state *pic)
+{
+  pic_value spec;
+
+  pic_get_args(pic, "o", &spec);
+
+  pic_in_library(pic, spec);
+
+  return pic_none_value();
+}
+
 void
 pic_init_lib(pic_state *pic)
 {
@@ -257,4 +269,5 @@ pic_init_lib(pic_state *pic)
   pic_defmacro(pic, pic->sIMPORT, pic->rIMPORT, pic_lib_import);
   pic_defmacro(pic, pic->sEXPORT, pic->rEXPORT, pic_lib_export);
   pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY, pic_lib_define_library);
+  pic_defmacro(pic, pic->sIN_LIBRARY, pic->rIN_LIBRARY, pic_lib_in_library);
 }
