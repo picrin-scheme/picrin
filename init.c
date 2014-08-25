@@ -11,34 +11,6 @@
 #include "picrin/macro.h"
 #include "picrin/error.h"
 
-static pic_value
-pic_features(pic_state *pic)
-{
-  pic_value features = pic_nil_value();
-
-  pic_get_args(pic, "");
-
-  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "r7rs")), features);
-  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "ieee-float")), features);
-  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "picrin")), features);
-
-  return features;
-}
-
-static pic_value
-pic_libraries(pic_state *pic)
-{
-  pic_value libs = pic_nil_value(), lib;
-
-  pic_get_args(pic, "");
-
-  pic_for_each (lib, pic->libs) {
-    libs = pic_cons(pic, pic_car(pic, lib), libs);
-  }
-
-  return libs;
-}
-
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -79,13 +51,7 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
   }
 
-  pic_deflibrary (pic, "(picrin library)") {
-    pic_defun(pic, "libraries", pic_libraries);
-  }
-
   pic_deflibrary (pic, "(scheme base)") {
-    pic_defun(pic, "features", pic_features);
-
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
     pic_init_port(pic); DONE;
