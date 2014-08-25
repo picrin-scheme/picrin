@@ -15,7 +15,6 @@ void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
 void pic_init_number(pic_state *);
-void pic_init_file(pic_state *);
 void pic_init_proc(pic_state *);
 void pic_init_symbol(pic_state *);
 void pic_init_vector(pic_state *);
@@ -56,7 +55,6 @@ pic_init_core(pic_state *pic)
     pic_init_pair(pic); DONE;
     pic_init_port(pic); DONE;
     pic_init_number(pic); DONE;
-    pic_init_file(pic); DONE;
     pic_init_proc(pic); DONE;
     pic_init_symbol(pic); DONE;
     pic_init_vector(pic); DONE;
