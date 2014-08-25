@@ -398,63 +398,6 @@ pic_identifier_p(pic_state *pic, pic_value obj)
 }
 
 static pic_value
-pic_macro_gensym(pic_state *pic)
-{
-  static const char skel[] = ".g";
-  pic_sym uniq;
-
-  pic_get_args(pic, "");
-
-  uniq = pic_gensym(pic, pic_intern_cstr(pic, skel));
-  return pic_sym_value(uniq);
-}
-
-static pic_value
-pic_macro_ungensym(pic_state *pic)
-{
-  pic_sym sym;
-
-  pic_get_args(pic, "m", &sym);
-
-  return pic_sym_value(pic_ungensym(pic, sym));
-}
-
-static pic_value
-pic_macro_macroexpand(pic_state *pic)
-{
-  pic_value expr;
-
-  pic_get_args(pic, "o", &expr);
-
-  return pic_macroexpand(pic, expr, pic->lib);
-}
-
-static pic_value
-pic_macro_macroexpand_1(pic_state *pic)
-{
-  struct pic_senv *senv = pic->lib->env;
-  struct pic_macro *mac;
-  pic_value expr;
-  pic_sym sym;
-
-  pic_get_args(pic, "o", &expr);
-
-  if (pic_sym_p(expr)) {
-    if (pic_interned_p(pic, pic_sym(expr))) {
-      return pic_values2(pic, macroexpand_symbol(pic, pic_sym(expr), senv), pic_true_value());
-    }
-  }
-  if (pic_pair_p(expr) && pic_sym_p(pic_car(pic, expr))) {
-    sym = make_identifier(pic, pic_sym(pic_car(pic, expr)), senv);
-    if ((mac = find_macro(pic, sym)) != NULL) {
-      return pic_values2(pic, macroexpand_macro(pic, mac, expr, senv), pic_true_value());
-    }
-  }
-
-  return pic_values2(pic, expr, pic_false_value());     /* no expansion occurred */
-}
-
-static pic_value
 pic_macro_identifier_p(pic_state *pic)
 {
   pic_value obj;
@@ -483,12 +426,5 @@ pic_init_macro(pic_state *pic)
   pic_deflibrary (pic, "(picrin base macro)") {
     pic_defun(pic, "identifier?", pic_macro_identifier_p);
     pic_defun(pic, "make-identifier", pic_macro_make_identifier);
-  }
-
-  pic_deflibrary (pic, "(picrin macro)") {
-    pic_defun(pic, "gensym", pic_macro_gensym);
-    pic_defun(pic, "ungensym", pic_macro_ungensym);
-    pic_defun(pic, "macroexpand", pic_macro_macroexpand);
-    pic_defun(pic, "macroexpand-1", pic_macro_macroexpand_1);
   }
 }
