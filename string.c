@@ -420,5 +420,4 @@ pic_init_str(pic_state *pic)
   pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
   pic_defun(pic, "string-append", pic_str_string_append);
   pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
-  pic_defun(pic, "substring", pic_str_string_copy);
 }
