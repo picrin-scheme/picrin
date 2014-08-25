@@ -54,12 +54,10 @@ void pic_init_error(pic_state *);
 void pic_init_str(pic_state *);
 void pic_init_macro(pic_state *);
 void pic_init_var(pic_state *);
-void pic_init_load(pic_state *);
 void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
-void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 
 #define DONE pic_gc_arena_restore(pic, ai);
@@ -103,12 +101,10 @@ pic_init_core(pic_state *pic)
     pic_init_str(pic); DONE;
     pic_init_macro(pic); DONE;
     pic_init_var(pic); DONE;
-    pic_init_load(pic); DONE;
     pic_init_write(pic); DONE;
     pic_init_read(pic); DONE;
     pic_init_dict(pic); DONE;
     pic_init_record(pic); DONE;
-    pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
   }
 }

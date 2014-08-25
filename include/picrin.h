@@ -160,9 +160,6 @@ pic_value pic_read_cstr(pic_state *, const char *);
 pic_list pic_parse_file(pic_state *, FILE *); /* #f for incomplete input */
 pic_list pic_parse_cstr(pic_state *, const char *);
 
-pic_value pic_load(pic_state *, const char *);
-pic_value pic_load_cstr(pic_state *, const char *);
-
 pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply0(pic_state *, struct pic_proc *);
 pic_value pic_apply1(pic_state *, struct pic_proc *, pic_value);
