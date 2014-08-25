@@ -1,6 +1,6 @@
 # Benz
 
-Benz is a core module of the Picrin Scheme interpreter. It includes every components necessary to run in a stand-alone environment.
+Benz is core module of the Picrin Scheme interpreter. It includes all components necessary to run in a stand-alone environment.
 
 ## Authors
 
