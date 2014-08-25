@@ -36,10 +36,10 @@ extern "C" {
 #include <limits.h>
 #include <assert.h>
 
-#include "xvect/xvect.h"
-#include "xhash/xhash.h"
-#include "xfile/xfile.h"
-#include "xrope/xrope.h"
+#include "picrin/xvect.h"
+#include "picrin/xhash.h"
+#include "picrin/xfile.h"
+#include "picrin/xrope.h"
 
 #include "picrin/config.h"
 #include "picrin/util.h"
