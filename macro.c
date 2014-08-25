@@ -163,6 +163,13 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
   pic_sym sym, rename;
   pic_value var, val;
 
+  while (pic_length(pic, expr) >= 2 && pic_pair_p(pic_cadr(pic, expr))) {
+    var = pic_car(pic, pic_cadr(pic, expr));
+    val = pic_cdr(pic, pic_cadr(pic, expr));
+
+    expr = pic_list3(pic, pic_sym_value(pic->rDEFINE), var, pic_cons(pic, pic_sym_value(pic->rLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
+  }
+
   if (pic_length(pic, expr) != 3) {
     pic_error(pic, "syntax error");
   }
