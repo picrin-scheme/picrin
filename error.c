@@ -27,7 +27,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   pic_value err_line;
 
   va_start(ap, fmt);
-  err_line = pic_vformat(pic, fmt, ap);
+  err_line = pic_xvformat(pic, fmt, ap);
   va_end(ap);
 
   fprintf(stderr, "warn: %s\n", pic_str_cstr(pic_str_ptr(pic_car(pic, err_line))));
@@ -130,7 +130,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   const char *msg;
 
   va_start(ap, fmt);
-  err_line = pic_vformat(pic, fmt, ap);
+  err_line = pic_xvformat(pic, fmt, ap);
   va_end(ap);
 
   msg = pic_str_cstr(pic_str_ptr(pic_car(pic, err_line)));

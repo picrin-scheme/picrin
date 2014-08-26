@@ -137,7 +137,7 @@ pic_str_cstr(pic_str *str)
 }
 
 pic_value
-pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
+pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 {
   char c;
   pic_value irrs = pic_nil_value();
@@ -205,14 +205,14 @@ pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 }
 
 pic_value
-pic_vformat(pic_state *pic, const char *fmt, va_list ap)
+pic_xvformat(pic_state *pic, const char *fmt, va_list ap)
 {
   struct pic_port *port;
   pic_value irrs;
 
   port = pic_open_output_string(pic);
 
-  irrs = pic_vfformat(pic, port->file, fmt, ap);
+  irrs = pic_xvfformat(pic, port->file, fmt, ap);
   irrs = pic_cons(pic, pic_obj_value(pic_get_output_string(pic, port)), irrs);
 
   pic_close_port(pic, port);
@@ -220,16 +220,50 @@ pic_vformat(pic_state *pic, const char *fmt, va_list ap)
 }
 
 pic_value
-pic_format(pic_state *pic, const char *fmt, ...)
+pic_xformat(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
   pic_value objs;
 
   va_start(ap, fmt);
-  objs = pic_vformat(pic, fmt, ap);
+  objs = pic_xvformat(pic, fmt, ap);
   va_end(ap);
 
   return objs;
+}
+
+void
+pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
+{
+  pic_xvfformat(pic, file, fmt, ap);
+}
+
+pic_str *
+pic_vformat(pic_state *pic, const char *fmt, va_list ap)
+{
+  struct pic_port *port;
+  pic_str *str;
+
+  port = pic_open_output_string(pic);
+
+  pic_vfformat(pic, port->file, fmt, ap);
+  str = pic_get_output_string(pic, port);
+
+  pic_close_port(pic, port);
+  return str;
+}
+
+pic_str *
+pic_format(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  pic_str *str;
+
+  va_start(ap, fmt);
+  str = pic_vformat(pic, fmt, ap);
+  va_end(ap);
+
+  return str;
 }
 
 static pic_value

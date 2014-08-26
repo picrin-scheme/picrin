@@ -442,7 +442,7 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 
   va_start(ap, fmt);
 
-  str = pic_str_ptr(pic_car(pic, pic_vformat(pic, fmt, ap)));
+  str = pic_str_ptr(pic_car(pic, pic_xvformat(pic, fmt, ap)));
 
   va_end(ap);
 

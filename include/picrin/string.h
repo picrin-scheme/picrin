@@ -31,9 +31,13 @@ int pic_strcmp(pic_str *, pic_str *);
 
 const char *pic_str_cstr(pic_str *);
 
-pic_value pic_format(pic_state *, const char *, ...);
-pic_value pic_vformat(pic_state *, const char *, va_list);
-pic_value pic_vfformat(pic_state *, xFILE *, const char *, va_list);
+pic_str *pic_format(pic_state *, const char *, ...);
+pic_str *pic_vformat(pic_state *, const char *, va_list);
+void pic_vfformat(pic_state *, xFILE *, const char *, va_list);
+
+pic_value pic_xformat(pic_state *, const char *, ...);
+pic_value pic_xvformat(pic_state *, const char *, va_list);
+pic_value pic_xvfformat(pic_state *, xFILE *, const char *, va_list);
 
 #if defined(__cplusplus)
 }
