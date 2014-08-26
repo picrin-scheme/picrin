@@ -74,6 +74,7 @@ import_table(pic_state *pic, pic_value spec)
   struct pic_lib *lib;
   struct pic_dict *imports, *dict;
   pic_value val, id;
+  pic_sym sym;
   xh_iter it;
 
   imports = pic_dict_new(pic);
@@ -99,7 +100,10 @@ import_table(pic_state *pic, pic_value spec)
       dict = import_table(pic, pic_cadr(pic, spec));
       xh_begin(&it, &dict->hash);
       while (xh_next(&it)) {
-        pic_dict_set(pic, imports, pic_intern_cstr(pic, pic_str_cstr(pic_strcat(pic, pic_str_new_cstr(pic, pic_symbol_name(pic, pic_sym(pic_car(pic, pic_cddr(pic, spec))))), pic_str_new_cstr(pic, pic_symbol_name(pic, xh_key(it.e, pic_sym)))))), xh_val(it.e, pic_value));
+        id = pic_sym_value(xh_key(it.e, pic_sym));
+        val = pic_list_ref(pic, spec, 2);
+        sym = pic_intern_str(pic, pic_format(pic, "~s~s", val, id));
+        pic_dict_set(pic, imports, sym, xh_val(it.e, pic_value));
       }
       return imports;
     }
