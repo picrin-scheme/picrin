@@ -38,6 +38,12 @@ pic_intern_cstr(pic_state *pic, const char *str)
 }
 
 pic_sym
+pic_intern_str(pic_state *pic, pic_str *str)
+{
+  return pic_intern_cstr(pic, pic_str_cstr(str));
+}
+
+pic_sym
 pic_gensym(pic_state *pic, pic_sym base)
 {
   int uid = pic->uniq_sym_cnt++, len;
