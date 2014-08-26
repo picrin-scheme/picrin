@@ -132,7 +132,12 @@ import(pic_state *pic, pic_value spec)
   struct pic_dict *imports;
   xh_iter it;
 
-  imports = import_table(pic, spec);
+  pic_try {
+    imports = import_table(pic, spec);
+  }
+  pic_catch {
+    pic_errorf(pic, "syntax error around import statement: ~s", spec);
+  }
 
   xh_begin(&it, &imports->hash);
   while (xh_next(&it)) {
