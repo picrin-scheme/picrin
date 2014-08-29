@@ -30,9 +30,10 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
       pkg_check_modules(_LIBEDIT libedit)
     endif (PKG_CONFIG_FOUND)
   endif (${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 4)
-  find_path(Libedit_INCLUDE_DIR
+  find_path(Libedit_EDITLINE_INCLUDE_DIR
     NAMES
-      histedit.h
+      readline.h
+      history.h
     PATHS
       ${_Libedit_INCLUDEDIR}
       /usr/include
@@ -42,7 +43,28 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
     PATH_SUFFIXES
       editline
   )
-  
+  if (Libedit_EDITLINE_INCLUDE_DIR)
+    set(Libedit_INCLUDE_DIR_SUFFIX editline)
+    set(Libedit_INCLUDE_DIR ${Libedit_EDITLINE_INCLUDE_DIR})
+  else (Libedit_EDITLINE_INCLUDE_DIR)
+    find_path(Libedit_READLINE_INCLUDE_DIR
+      NAMES
+        readline.h
+        history.h
+      PATHS
+        /usr/include/edit
+        /usr/local/include/edit
+        /opt/local/include/edit
+        /sw/include/edit
+      PATH_SUFFIXES
+        readline
+        )
+    if (Libedit_READLINE_INCLUDE_DIR)
+      set(Libedit_INCLUDE_DIR_SUFFIX readline)
+      set(Libedit_INCLUDE_DIR ${Libedit_READLINE_INCLUDE_DIR})
+    endif (Libedit_READLINE_INCLUDE_DIR)
+  endif (Libedit_EDITLINE_INCLUDE_DIR)
+
   find_library(Libedit_LIBRARY
     NAMES
       edit
