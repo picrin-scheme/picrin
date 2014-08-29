@@ -1,4 +1,4 @@
-# Picrin [![Build Status](https://travis-ci.org/wasabiz/picrin.png)](https://travis-ci.org/wasabiz/picrin)
+# Picrin [![Build Status](https://travis-ci.org/picrin-scheme/picrin.png)](https://travis-ci.org/picrin-scheme/picrin)
 
 Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C99 and does not requires any special external libraries installed on the platform.
 
@@ -25,7 +25,7 @@ See http://picrin.readthedocs.org/
 
 Currently picrin is hosted on Github. You can freely send a bug report or pull-request, and fork the repository.
 
-https://github.com/wasabiz/picrin
+https://github.com/picrin-scheme/picrin
 
 ## IRC
 

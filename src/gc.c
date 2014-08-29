@@ -21,6 +21,7 @@
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
+#include "picrin/read.h"
 
 #if GC_DEBUG
 # include <string.h>
@@ -551,6 +552,21 @@ gc_mark(pic_state *pic, pic_value v)
 }
 
 static void
+gc_mark_trie(pic_state *pic, struct pic_trie *trie)
+{
+  size_t i;
+
+  for (i = 0; i < sizeof trie->table / sizeof(struct pic_trie *); ++i) {
+    if (trie->table[i] != NULL) {
+      gc_mark_trie(pic, trie->table[i]);
+    }
+  }
+  if (trie->proc != NULL) {
+    gc_mark_object(pic, (struct pic_object *)trie->proc);
+  }
+}
+
+static void
 gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
@@ -603,6 +619,9 @@ gc_mark_phase(pic_state *pic)
       gc_mark_object(pic, (struct pic_object *)pic->try_jmps[i].handler);
     }
   }
+
+  /* readers */
+  gc_mark_trie(pic, pic->reader->trie);
 
   /* library table */
   gc_mark(pic, pic->libs);

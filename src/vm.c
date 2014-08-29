@@ -777,7 +777,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       if (pic_proc_func_p(pic_proc_ptr(x))) {
 
         /* invoke! */
-	pic->sp[0] = proc->u.func.f(pic);
+        v = proc->u.func.f(pic);
+        pic->sp[0] = v;
         pic->sp += pic->ci->retc;
 
         pic_gc_arena_restore(pic, ai);
@@ -1028,7 +1029,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  static const pic_code iseq = { OP_TAILCALL, { .i = -1 } };
+  static const pic_code iseq[2] = {
+    { OP_NOP, {} },
+    { OP_TAILCALL, { .i = -1 } }
+  };
 
   pic_value v, *sp;
   pic_callinfo *ci;
@@ -1041,8 +1045,13 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   }
 
   ci = PUSHCI();
-  ci->ip = (pic_code *)&iseq - 1;
+  ci->ip = (pic_code *)iseq;
   ci->fp = pic->sp;
   ci->retc = pic_length(pic, args);
-  return pic_obj_value(proc);
+
+  if (ci->retc == 0) {
+    return pic_none_value();
+  } else {
+    return pic_car(pic, args);
+  }
 }
