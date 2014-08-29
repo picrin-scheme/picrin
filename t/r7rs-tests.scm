@@ -148,13 +148,13 @@
           (else #f)))
 
 (test #t (cond-expand
-          ((library '(scheme write)) #t)
+          ((library (scheme write)) #t)
           (else #f)))
 (test #t (cond-expand
           ((not r6rs) #t)
           (else #f)))
 (test #t (cond-expand
-          ((and r7rs (library '(picrin test))) #t)
+          ((and r7rs (library (picrin test))) #t)
           (else #f)))
 
 (test #t (cond-expand
