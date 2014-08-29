@@ -77,6 +77,7 @@ typedef struct {
   pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
   pic_sym sDEFINE_SYNTAX, sIMPORT, sEXPORT;
   pic_sym sDEFINE_LIBRARY, sIN_LIBRARY;
+  pic_sym sCOND_EXPAND;
   pic_sym sCONS, sCAR, sCDR, sNILP;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
@@ -84,6 +85,7 @@ typedef struct {
   pic_sym rDEFINE, rLAMBDA, rIF, rBEGIN, rQUOTE, rSETBANG;
   pic_sym rDEFINE_SYNTAX, rIMPORT, rEXPORT;
   pic_sym rDEFINE_LIBRARY, rIN_LIBRARY;
+  pic_sym rCOND_EXPAND;
 
   xhash syms;                   /* name to symbol */
   xhash sym_names;              /* symbol to name */
