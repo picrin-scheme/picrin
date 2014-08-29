@@ -227,7 +227,7 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 
 - **(dictionary-ref dict key)**
 
-  Look up dictionary dict for a value associated with symbol key. If no object is associated with key, it will raise an error.
+  Look up dictionary dict for a value associated with symbol key. It returns two values: first is the associated value if exists, and second is a boolean of lookup result.
 
 - **(dictionary-set! dict key obj)**
 
