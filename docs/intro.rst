@@ -21,7 +21,7 @@ Homepage
 
 Currently picrin is hosted on Github. You can freely send a bug report or pull-request, and fork the repository.
 
-https://github.com/wasabiz/picrin
+https://github.com/picrin-scheme/picrin
 
 Documentation
 -------------
