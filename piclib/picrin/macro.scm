@@ -27,12 +27,14 @@
     "memoize on symbols"
     (define cache (make-dictionary))
     (lambda (sym)
-      (if (dictionary-has? cache sym)
-          (dictionary-ref cache sym)
-          (begin
-            (define val (f sym))
-            (dictionary-set! cache sym val)
-            val))))
+      (call-with-values (lambda () (dictionary-ref cache sym))
+        (lambda (value exists)
+          (if exists
+              value
+              (begin
+                (define val (f sym))
+                (dictionary-set! cache sym val)
+                val))))))
 
   (define (identifier=? env1 sym1 env2 sym2)
 
@@ -117,9 +119,11 @@
                 (identifier=? mac-env x mac-env y))))
 
       (walk (lambda (sym)
-              (if (dictionary-has? icache* sym)
-                  (dictionary-ref icache* sym)
-                  (rename sym)))
+              (call-with-values (lambda () (dictionary-ref icache* sym))
+                (lambda (value exists)
+                  (if exists
+                      value
+                      (rename sym)))))
             (f (walk inject expr) inject compare))))
 
   (define (strip-syntax form)
