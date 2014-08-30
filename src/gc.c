@@ -21,7 +21,7 @@
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
-#include "picrin/transient.h"
+#include "picrin/text.h"
 #include "picrin/read.h"
 
 #if GC_DEBUG

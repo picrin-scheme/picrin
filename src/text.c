@@ -6,7 +6,7 @@
 
 #include "picrin.h"
 #include "picrin/string.h"
-#include "picrin/transient.h"
+#include "picrin/text.h"
 
 
 pic_trans *
