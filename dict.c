@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/dict.h"
+#include "picrin/cont.h"
 
 struct pic_dict *
 pic_dict_new(pic_state *pic)
@@ -92,7 +93,11 @@ pic_dict_dict_ref(pic_state *pic)
 
   pic_get_args(pic, "dm", &dict, &key);
 
-  return pic_dict_ref(pic, dict , key);
+  if (pic_dict_has(pic, dict, key)) {
+    return pic_values2(pic, pic_dict_ref(pic, dict, key), pic_true_value());
+  } else {
+    return pic_values2(pic, pic_none_value(), pic_false_value());
+  }
 }
 
 static pic_value
@@ -107,17 +112,6 @@ pic_dict_dict_set(pic_state *pic)
   pic_dict_set(pic, dict, key, val);
 
   return pic_none_value();
-}
-
-static pic_value
-pic_dict_dict_has_p(pic_state *pic)
-{
-  struct pic_dict *dict;
-  pic_sym key;
-
-  pic_get_args(pic, "dm", &dict, &key);
-
-  return pic_bool_value(pic_dict_has(pic, dict, key));
 }
 
 static pic_value
@@ -166,7 +160,6 @@ pic_init_dict(pic_state *pic)
   pic_deflibrary (pic, "(picrin dictionary)") {
     pic_defun(pic, "make-dictionary", pic_dict_dict);
     pic_defun(pic, "dictionary?", pic_dict_dict_p);
-    pic_defun(pic, "dictionary-has?", pic_dict_dict_has_p);
     pic_defun(pic, "dictionary-ref", pic_dict_dict_ref);
     pic_defun(pic, "dictionary-set!", pic_dict_dict_set);
     pic_defun(pic, "dictionary-delete", pic_dict_dict_del);
