@@ -6,6 +6,7 @@
           (picrin macro)
           (picrin library))
 
+  ;; FIXME picrin doesn't offer cond-expand for now, so we define a macro ourselves
   (define-syntax define-readline
     (er-macro-transformer
      (lambda (form rename compare)
@@ -35,6 +36,9 @@
                  (newline)
                  (exit))
                (lambda ()
+                 ;; FIXME
+                 ;; non-local exception jump from inside call-with-port
+                 ;; fails with segv, though i don't know why...
                  (let ((port (open-input-string line)))
                    (let loop ((expr (read port)))
                      (unless (eof-object? expr)
