@@ -24,7 +24,7 @@
                       (error "No setter found")))))
              (set-setter!
               (lambda (proc setter)
-                (dictionary-set! (attribute proc) 'setter setter))))
+                (dictionary-set! (attribute proc) '@@setter setter))))
       (set-setter! setter set-setter!)
       setter))
 
