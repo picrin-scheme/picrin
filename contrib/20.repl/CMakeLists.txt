@@ -1,0 +1,1 @@
+list(APPEND PICLIB_CONTRIB_LIBS ${PROJECT_SOURCE_DIR}/contrib/20.repl/repl.scm)

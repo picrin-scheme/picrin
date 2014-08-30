@@ -118,7 +118,8 @@ pic_init_core(pic_state *pic)
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
 
-    pic_load_piclib(pic); DONE;
     pic_init_contrib(pic); DONE;
+
+    pic_load_piclib(pic); DONE;
   }
 }
