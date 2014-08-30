@@ -528,7 +528,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_TRANSIENT: {
+  case PIC_TT_TEXT: {
     break;
   }
   case PIC_TT_NIL:
@@ -719,8 +719,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLK: {
     break;
   }
-  case PIC_TT_TRANSIENT: {
-    pic_free(pic, ((struct pic_transient *)obj)->data);
+  case PIC_TT_TEXT: {
+    pic_free(pic, ((struct pic_text *)obj)->data);
     break;
   }
   case PIC_TT_NIL:

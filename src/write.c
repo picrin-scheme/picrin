@@ -205,14 +205,14 @@ write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
 }
 
 static void
-write_trans(pic_state *pic, struct pic_transient *trans, xFILE *file)
+write_text(pic_state *pic, struct pic_text *text, xFILE *file)
 {
   size_t i;
-  const char *cstr = pic_trans_cstr(trans);
+  const char *cstr = pic_text_cstr(text);
 
   UNUSED(pic);
 
-  for (i = 0; i < pic_trans_len(trans); ++i) {
+  for (i = 0; i < pic_text_len(text); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       xfputc('\\', file);
     }
@@ -361,11 +361,11 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_RECORD:
     write_record(pic, pic_record_ptr(obj), file);
     break;
-  case PIC_TT_TRANSIENT: {
-    struct pic_transient *trans = pic_trans_ptr(obj);
-    xfprintf(file, "trans-str:\"");
-    write_trans(pic, trans, file);
-    xfprintf(file, "\" (capacity = %d)", pic_trans_capacity(trans));
+  case PIC_TT_TEXT: {
+    struct pic_text *text = pic_text_ptr(obj);
+    xfprintf(file, "text-str:\"");
+    write_text(pic, text, file);
+    xfprintf(file, "\" (capacity = %d)", pic_text_capacity(text));
     break;
   }
   default:

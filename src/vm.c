@@ -54,7 +54,7 @@ pic_get_proc(pic_state *pic)
  *  p   port object
  *  d   dictionary object
  *  e   error object
- *  t   transient string object
+ *  t   text string object
  *
  *  |  optional operator
  *  *  variable length operator
@@ -385,14 +385,14 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 't': {
-      struct pic_transient **trans;
+      struct pic_text **text;
       pic_value v;
 
-      trans = va_arg(ap, struct pic_transient **);
+      text = va_arg(ap, struct pic_text **);
       if (i < argc) {
         v = GET_OPERAND(pic,i);
-        if (pic_trans_p(v)) {
-          *trans = pic_trans_ptr(v);
+        if (pic_text_p(v)) {
+          *text = pic_text_ptr(v);
         }
         else {
           pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);

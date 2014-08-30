@@ -9,20 +9,20 @@
 extern "C" {
 #endif
 
-struct pic_transient {
+struct pic_text {
   PIC_OBJECT_HEADER
   char *data;
   size_t len;
   size_t cap; /* capacity */
 };
 
-#define pic_trans_p(v) (pic_type(v) == PIC_TT_TRANSIENT)
-#define pic_trans_ptr(o) ((struct pic_transient *)pic_ptr(o))
+#define pic_text_p(v) (pic_type(v) == PIC_TT_TEXT)
+#define pic_text_ptr(o) ((struct pic_text *)pic_ptr(o))
 
-struct pic_transient *pic_trans_new(pic_state *, size_t , const char * /* nullable */, size_t);
-const char *pic_trans_cstr(struct pic_transient *);
-size_t pic_trans_len(struct pic_transient *);
-size_t pic_trans_capacity(struct pic_transient *);
+struct pic_text *pic_text_new(pic_state *, size_t , const char * /* nullable */, size_t);
+const char *pic_text_cstr(struct pic_text *);
+size_t pic_text_len(struct pic_text *);
+size_t pic_text_capacity(struct pic_text *);
 
 
 #if defined(__cplusplus)

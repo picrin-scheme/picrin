@@ -118,7 +118,7 @@ enum pic_tt {
   PIC_TT_DICT,
   PIC_TT_RECORD,
   PIC_TT_BLK,
-  PIC_TT_TRANSIENT,
+  PIC_TT_TEXT,
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -275,8 +275,8 @@ pic_type_repr(enum pic_tt tt)
     return "record";
   case PIC_TT_BLK:
     return "block";
-  case PIC_TT_TRANSIENT:
-    return "transient";
+  case PIC_TT_TEXT:
+    return "text";
   }
   UNREACHABLE();
 }
