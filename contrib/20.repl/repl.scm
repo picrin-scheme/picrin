@@ -3,8 +3,23 @@
           (scheme read)
           (scheme write)
           (scheme eval)
-          (picrin readline)
-          (picrin readline history))
+          (picrin macro)
+          (picrin library))
+
+  (define-syntax define-readline
+    (er-macro-transformer
+     (lambda (form rename compare)
+       (if (member '(picrin readline) (libraries))
+           `(import (picrin readline)
+                    (picrin readline history))
+           `(begin
+              (define (readline str)
+                (display str)
+                (read-line))
+              (define (add-history str)
+                #f))))))
+
+  (define-readline)
 
   (define (repl)
     (let ((line (readline "> ")))
