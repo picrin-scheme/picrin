@@ -1,7 +1,7 @@
 (define-library (srfi 17)
 
   (import (except (scheme base) set!)
-          (rename (prefix (only (scheme base) set!) %))
+          (prefix (only (scheme base) set!) %)
           (picrin dictionary)
           (picrin attribute)
           (srfi 1)
@@ -18,7 +18,7 @@
     (letrec ((setter
               (lambda (proc)
                 (receive (setter exists) (dictionary-ref (attribute proc)
-                                                         'setter)
+                                                         '@@setter)
                   (if exists
                       setter
                       (error "No setter found")))))
