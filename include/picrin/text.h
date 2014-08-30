@@ -19,10 +19,10 @@ struct pic_transient {
 #define pic_trans_p(v) (pic_type(v) == PIC_TT_TRANSIENT)
 #define pic_trans_ptr(o) ((struct pic_transient *)pic_ptr(o))
 
-pic_trans *pic_trans_new(pic_state *, size_t , const char * /* nullable */, size_t);
-const char *pic_trans_cstr(pic_trans *);
-size_t pic_trans_len(pic_trans *);
-size_t pic_trans_capacity(pic_trans *);
+struct pic_transient *pic_trans_new(pic_state *, size_t , const char * /* nullable */, size_t);
+const char *pic_trans_cstr(struct pic_transient *);
+size_t pic_trans_len(struct pic_transient *);
+size_t pic_trans_capacity(struct pic_transient *);
 
 
 #if defined(__cplusplus)

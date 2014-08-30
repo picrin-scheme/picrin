@@ -385,10 +385,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 't': {
-      pic_trans **trans;
+      struct pic_transient **trans;
       pic_value v;
 
-      trans = va_arg(ap, pic_trans **);
+      trans = va_arg(ap, struct pic_transient **);
       if (i < argc) {
         v = GET_OPERAND(pic,i);
         if (pic_trans_p(v)) {

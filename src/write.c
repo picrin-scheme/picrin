@@ -362,7 +362,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_record(pic, pic_record_ptr(obj), file);
     break;
   case PIC_TT_TRANSIENT: {
-    pic_trans *trans = pic_trans_ptr(obj);
+    struct pic_transient *trans = pic_trans_ptr(obj);
     xfprintf(file, "trans-str:\"");
     write_trans(pic, trans, file);
     xfprintf(file, "\" (capacity = %d)", pic_trans_capacity(trans));

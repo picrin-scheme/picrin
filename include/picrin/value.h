@@ -142,7 +142,6 @@ typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
 typedef struct pic_blob pic_blob;
-typedef struct pic_transient pic_trans;
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)

@@ -9,12 +9,12 @@
 #include "picrin/text.h"
 
 
-pic_trans *
+struct pic_transient *
 pic_trans_new(pic_state *pic, size_t capacity, const char * imbed, size_t len)
 {
-  pic_trans *tr;
+  struct pic_transient *tr;
 
-  tr = (pic_trans *)pic_obj_alloc(pic, sizeof(pic_trans), PIC_TT_TRANSIENT);
+  tr = (struct pic_transient *)pic_obj_alloc(pic, sizeof(struct pic_transient), PIC_TT_TRANSIENT);
   tr->data = (char *)pic_alloc(pic, capacity * sizeof(char));
   memcpy((void *)tr->data, (const void *)imbed, len);
   tr->cap = capacity;
@@ -23,25 +23,25 @@ pic_trans_new(pic_state *pic, size_t capacity, const char * imbed, size_t len)
 }
 
 const char *
-pic_trans_cstr(pic_trans *tr)
+pic_trans_cstr(struct pic_transient *tr)
 {
   return tr->data;
 }
 
 size_t
-pic_trans_len(pic_trans *tr)
+pic_trans_len(struct pic_transient *tr)
 {
   return tr->len;
 }
 
 size_t
-pic_trans_capacity(pic_trans *tr)
+pic_trans_capacity(struct pic_transient *tr)
 {
   return tr->cap;
 }
 
 void
-pic_trans_set(pic_state *pic, pic_trans *tr, size_t pos, char ch)
+pic_trans_set(pic_state *pic, struct pic_transient *tr, size_t pos, char ch)
 {
   if (pos >= tr->len) {
     pic_errorf(pic, "transient: index out of range %d", pos); 
@@ -50,7 +50,7 @@ pic_trans_set(pic_state *pic, pic_trans *tr, size_t pos, char ch)
 }
 
 char
-pic_trans_ref(pic_state *pic, pic_trans *tr, size_t pos)
+pic_trans_ref(pic_state *pic, struct pic_transient *tr, size_t pos)
 {
   if (pos >= tr->len) {
     pic_errorf(pic, "transient: index out of range %d", pos); 
@@ -59,7 +59,7 @@ pic_trans_ref(pic_state *pic, pic_trans *tr, size_t pos)
 }
 
 void
-pic_trans_append(pic_state *pic, pic_trans *trans, const char *str, size_t len)
+pic_trans_append(pic_state *pic, struct pic_transient *trans, const char *str, size_t len)
 {
   size_t res_length = trans->len + len;
   if (res_length > trans->cap) {
@@ -87,7 +87,7 @@ pic_trans_string_transient(pic_state *pic)
   pic_str *str;
   const char *cstr;
   size_t len;
-  pic_trans *trans;
+  struct pic_transient *trans;
 
   pic_get_args(pic, "s", &str);
 
@@ -100,7 +100,7 @@ pic_trans_string_transient(pic_state *pic)
 static pic_value
 pic_trans_transient_string(pic_state *pic)
 {
-  pic_trans *trans;
+  struct pic_transient *trans;
   pic_str *str;
 
   pic_get_args(pic, "t", &trans);
@@ -111,7 +111,7 @@ pic_trans_transient_string(pic_state *pic)
 static pic_value
 pic_trans_transient_string_set_ip(pic_state *pic)
 {
-  pic_trans *tr;
+  struct pic_transient *tr;
   int k;
   char c;
 
@@ -124,7 +124,7 @@ pic_trans_transient_string_set_ip(pic_state *pic)
 static pic_value
 pic_trans_transient_string_ref(pic_state *pic)
 {
-  pic_trans *tr;
+  struct pic_transient *tr;
   int k;
   char c;
 
@@ -137,7 +137,7 @@ pic_trans_transient_string_ref(pic_state *pic)
 static pic_value
 pic_trans_transient_string_length(pic_state *pic)
 {
-  pic_trans *tr;
+  struct pic_transient *tr;
 
   pic_get_args(pic, "t", &tr);
 
@@ -147,7 +147,7 @@ pic_trans_transient_string_length(pic_state *pic)
 static pic_value
 pic_trans_transient_string_append(pic_state *pic)
 {
-  pic_trans *tr;
+  struct pic_transient *tr;
   pic_str *str;
   const char *cstr;
   size_t len;
