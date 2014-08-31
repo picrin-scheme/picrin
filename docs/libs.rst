@@ -28,6 +28,10 @@ SRFI libraries
 
   ``receive`` macro.
 
+- `(srfi 17)
+  <http://srfi.schemers.org/srfi-17/>`_
+  Generalized set!
+
 - `(srfi 26)
   <http://srfi.schemers.org/srfi-26/>`_
 
