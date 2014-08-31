@@ -83,7 +83,6 @@ If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the
 Picrin scheme depends on some external libraries to build the binary:
 
 - perl
-- getopt
 - libedit (optional)
 - regex.h of POSIX.1 (optional)
 
