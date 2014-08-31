@@ -112,8 +112,11 @@ native_stack_length(pic_state *pic, char **pos)
 static void
 save_cont(pic_state *pic, struct pic_cont **c)
 {
+  void pic_vm_tear_off(pic_state *);
   struct pic_cont *cont;
   char *pos;
+
+  pic_vm_tear_off(pic);         /* tear off */
 
   cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
@@ -162,12 +165,9 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
 noreturn static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
-  void pic_vm_tear_off(pic_state *);
   char v;
   struct pic_cont *tmp = cont;
   struct pic_block *blk;
-
-  pic_vm_tear_off(pic);         /* tear off */
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
