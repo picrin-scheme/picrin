@@ -668,10 +668,22 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       NEXT;
     }
     CASE(OP_LREF) {
+      pic_callinfo *ci = pic->ci;
+
+      if (ci->env != NULL && ci->env->regs == ci->env->storage) {
+        PUSH(ci->env->regs[c.u.i - (ci->regs - ci->fp)]);
+        NEXT;
+      }
       PUSH(pic->ci->fp[c.u.i]);
       NEXT;
     }
     CASE(OP_LSET) {
+      pic_callinfo *ci = pic->ci;
+
+      if (ci->env != NULL && ci->env->regs == ci->env->storage) {
+        ci->env->regs[c.u.i - (ci->regs - ci->fp)] = POP();
+        NEXT;
+      }
       pic->ci->fp[c.u.i] = POP();
       NEXT;
     }
