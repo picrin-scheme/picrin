@@ -30,6 +30,7 @@ SRFI libraries
 
 - `(srfi 17)
   <http://srfi.schemers.org/srfi-17/>`_
+
   Generalized set!
 
 - `(srfi 26)
@@ -51,6 +52,11 @@ SRFI libraries
   <http://srfi.schemers.org/srfi-95/>`_
 
   Sorting and Marging.
+
+- `(srfi 111)
+  <http://srfi.schemers.org/srfi-111/>`_
+
+  Boxes
 
 (picrin macro)
 --------------
