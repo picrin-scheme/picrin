@@ -23,30 +23,34 @@
   (define-readline)
 
   (define (repl)
-    (let ((line (readline "> ")))
-      (if (eof-object? line)
-          (newline)                     ; exit
-          (begin
-            (add-history line)
-            (call/cc
-             (lambda (exit)
-              (with-exception-handler
-               (lambda (condition)
-                 (display (error-object-message condition) (current-error-port))
-                 (newline)
-                 (exit))
-               (lambda ()
-                 ;; FIXME
-                 ;; non-local exception jump from inside call-with-port
-                 ;; fails with segv, though i don't know why...
-                 (let ((port (open-input-string line)))
-                   (let loop ((expr (read port)))
-                     (unless (eof-object? expr)
-                       (write (eval expr '(picrin user)))
-                       (newline)
-                       (loop (read port))))
-                   (close-port port))))))
-            (repl)))))
+    (let loop ((buf ""))
+      (let ((line (readline (if (equal? buf "") "> " "* "))))
+        (if (eof-object? line)
+            (newline)                   ; exit
+            (let ((str (string-append buf line "\n")))
+              (add-history line)
+              (call/cc
+               (lambda (exit)
+                 (with-exception-handler
+                  (lambda (condition)
+                    (unless (equal? (error-object-message condition) "unexpected EOF")
+                      (display (error-object-message condition) (current-error-port))
+                      (newline)
+                      (set! str ""))
+                    (exit))
+                  (lambda ()
+                    ;; FIXME
+                    ;; non-local exception jump from inside call-with-port
+                    ;; fails with segv, though i don't know why...
+                    (let ((port (open-input-string str)))
+                      (let next ((expr (read port)))
+                        (unless (eof-object? expr)
+                          (write (eval expr '(picrin user)))
+                          (newline)
+                          (set! str "")
+                          (next (read port))))
+                      (close-port port))))))
+              (loop str))))))
 
   (export repl))
 
