@@ -18,27 +18,33 @@ Scheme standard libraries
 SRFI libraries
 --------------
 
-- (srfi 1)
+- `(srfi 1)
+  <http://srfi.schemers.org/srfi-0/>`_
 
   List library.
 
-- (srfi 8)
+- `(srfi 8)
+  <http://srfi.schemers.org/srfi-8/>`_
 
   ``receive`` macro.
 
-- (srfi 26)
+- `(srfi 26)
+  <http://srfi.schemers.org/srfi-26/>`_
 
   Cut/cute macros.
 
-- (srfi 43)
+- `(srfi 43)
+  <http://srfi.schemers.org/srfi-43/>`_
 
   Vector library.
 
-- (srfi 60)
+- `(srfi 60)
+  <http://srfi.schemers.org/srfi-60/>`_
 
   Bitwise operations.
 
-- (srfi 95)
+- `(srfi 95)
+  <http://srfi.schemers.org/srfi-95/>`_
 
   Sorting and Marging.
 
