@@ -2,17 +2,11 @@
  * See Copyright Notice in picrin.h
  */
 
-/** contribution libraries */
-/* #define PIC_CONTRIB_INITS */
-
 /** switch normal VM and direct threaded VM */
 /* #define PIC_DIRECT_THREADED_VM 1 */
 
 /** switch internal value representation */
 /* #define PIC_NAN_BOXING 1 */
-
-/** enable readline module */
-/* #define PIC_ENABLE_READLINE 1 */
 
 /** treat false value as none */
 /* #define PIC_NONE_IS_FALSE 1 */
@@ -47,10 +41,6 @@
 # error please activate c99 features
 #endif
 
-#ifndef PIC_CONTRIB_INITS
-# define PIC_CONTRIB_INITS
-#endif
-
 #ifndef PIC_DIRECT_THREADED_VM
 # if defined(__GNUC__) || defined(__CLANG__)
 #  define PIC_DIRECT_THREADED_VM 1
@@ -60,14 +50,6 @@
 #ifndef PIC_NAN_BOXING
 # if __x86_64__ && __STDC_VERSION__ >= 201112L
 #  define PIC_NAN_BOXING 1
-# endif
-#endif
-
-#ifndef PIC_ENABLE_READLINE
-# if PIC_READLINE_FOUND
-#  define PIC_ENABLE_READLINE 1
-# else
-#  define PIC_ENABLE_READLINE 0
 # endif
 #endif
 
