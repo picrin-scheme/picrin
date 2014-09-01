@@ -31,7 +31,6 @@ extern "C" {
 #include <stddef.h>
 #include <stdbool.h>
 #include <setjmp.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <limits.h>
 #include <assert.h>
