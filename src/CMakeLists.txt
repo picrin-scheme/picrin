@@ -1,3 +1,5 @@
+### libpicrin ###
+
 find_package(Perl REQUIRED)
 
 # benz
@@ -31,3 +33,15 @@ target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS picrin DESTINATION lib)
 install(DIRECTORY extlib/benz/include/ DESTINATION include FILES_MATCHING PATTERN "*.h")
+
+### picrin ###
+
+list(APPEND REPL_LIBRARIES picrin)
+
+# build
+add_executable(repl src/main.c)
+set_target_properties(repl PROPERTIES OUTPUT_NAME picrin)
+target_link_libraries(repl ${REPL_LIBRARIES})
+
+# install
+install(TARGETS repl RUNTIME DESTINATION bin)
