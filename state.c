@@ -140,11 +140,15 @@ pic_open(int argc, char *argv[], char **envp)
   pic->blk->depth = 0;
   pic->blk->in = pic->blk->out = NULL;
 
-  pic_init_core(pic);
+  /* init readers */
+  pic_init_reader(pic);
 
-  /* set library */
-  pic_make_library(pic, pic_read_cstr(pic, "(picrin user)"));
-  pic_in_library(pic, pic_read_cstr(pic, "(picrin user)"));
+  /* standard libraries */
+  pic->PICRIN_BASE = pic_make_library(pic, pic_read_cstr(pic, "(picrin base)"));
+  pic->PICRIN_USER = pic_make_library(pic, pic_read_cstr(pic, "(picrin user)"));
+  pic->lib = pic->PICRIN_USER;
+
+  pic_init_core(pic);
 
   return pic;
 }

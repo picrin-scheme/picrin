@@ -4,7 +4,6 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
-#include "picrin/read.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"
@@ -35,8 +34,6 @@ void
 pic_init_core(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
-
-  pic_init_reader(pic);
 
   pic_deflibrary (pic, "(picrin base)") {
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);

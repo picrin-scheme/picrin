@@ -85,6 +85,9 @@ typedef struct {
   pic_sym rDEFINE_SYNTAX, rIMPORT, rEXPORT;
   pic_sym rDEFINE_LIBRARY, rIN_LIBRARY;
 
+  struct pic_lib *PICRIN_BASE;
+  struct pic_lib *PICRIN_USER;
+
   xhash syms;                   /* name to symbol */
   xhash sym_names;              /* symbol to name */
   int sym_cnt;
