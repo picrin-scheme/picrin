@@ -35,11 +35,19 @@ pic_libraries(pic_state *pic)
   return libs;
 }
 
+void pic_init_eval(pic_state *);
+void pic_init_file(pic_state *);
+void pic_init_load(pic_state *);
+void pic_init_macro2(pic_state *);
+void pic_init_system(pic_state *);
+void pic_init_time(pic_state *);
+
 void pic_init_contrib(pic_state *);
+
 void pic_load_piclib(pic_state *);
 
 void
-pic_init_misc(pic_state *pic)
+pic_init_picrin(pic_state *pic)
 {
   pic_deflibrary (pic, "(picrin library)") {
     pic_defun(pic, "libraries", pic_libraries);
@@ -47,7 +55,16 @@ pic_init_misc(pic_state *pic)
 
   pic_deflibrary (pic, "(scheme base)") {
     pic_defun(pic, "features", pic_features);
+
+    pic_init_eval(pic);
+    pic_init_file(pic);
+    pic_init_load(pic);
+    pic_init_macro2(pic);
+    pic_init_system(pic);
+    pic_init_time(pic);
+
     pic_init_contrib(pic);
+
     pic_load_piclib(pic);
   }
 }

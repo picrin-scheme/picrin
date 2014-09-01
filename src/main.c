@@ -13,6 +13,8 @@ main(int argc, char *argv[], char **envp)
 
   pic = pic_open(argc, argv, envp);
 
+  pic_init_picrin(pic);
+
   pic_try {
     pic_import(pic, pic_read_cstr(pic, "(picrin main)"));
     pic_funcall(pic, "main", pic_nil_value());

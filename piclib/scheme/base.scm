@@ -7,6 +7,20 @@
   (export define set! lambda quote
           if begin define-syntax)
 
+  ;; call/cc
+
+  (define real-callcc call-with-current-continuation)
+
+  (set! call-with-current-continuation
+        (lambda (f)
+          (real-callcc
+           (lambda (c)
+             (f (lambda args (apply continue c args)))))))
+
+  (define call/cc call-with-current-continuation)
+
+  (export call/cc)
+
   ;; core syntax
 
   (define-syntax syntax-error
@@ -840,6 +854,10 @@
 
   (export define-record-type)
 
+  (export (rename floor-remainder modulo)
+          (rename truncate-quotient quotient)
+          (rename truncate-remainder remainder))
+
   ;; 6.4 Pairs and lists
 
   (export pair?
@@ -920,7 +938,10 @@
   (define (string . objs)
     (list->string objs))
 
-  (export string string->list list->string)
+  (export string
+          string->list
+          list->string
+          (rename string-copy substring))
 
   ;; 6.8. Vector
 
