@@ -11,7 +11,7 @@
 #include "picrin/string.h"
 
 struct pic_lib *
-pic_make_library(pic_state *pic, pic_value name)
+pic_open_library(pic_state *pic, pic_value name)
 {
   struct pic_lib *lib;
   struct pic_senv *senv;
@@ -239,7 +239,7 @@ pic_lib_define_library(pic_state *pic)
 
   pic_get_args(pic, "o*", &spec, &argc, &argv);
 
-  pic_make_library(pic, spec);
+  pic_open_library(pic, spec);
 
   pic_try {
     pic_in_library(pic, spec);
