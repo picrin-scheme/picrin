@@ -1,7 +1,10 @@
 find_package(Perl REQUIRED)
 
-# xfile
-set(XFILE_SOURCES extlib/xfile/xfile.c)
+# benz
+file(GLOB BENZ_SOURCES extlib/benz/*.c)
+
+# srcs
+file(GLOB PICRIN_SOURCES src/*.c)
 
 # piclib
 set(PICLIB_SOURCE ${PROJECT_SOURCE_DIR}/src/load_piclib.c)
@@ -21,12 +24,10 @@ add_custom_command(
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 
-# build!
-file(GLOB PICRIN_SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
-add_library(picrin SHARED ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${XFILE_SOURCES} ${PICRIN_CONTRIB_SOURCES} ${CONTRIB_INIT})
+add_library(picrin SHARED ${BENZ_SOURCES} ${PICRIN_SOURCES} ${PICLIB_SOURCE} ${PICRIN_CONTRIB_SOURCES} ${CONTRIB_INIT})
 target_link_libraries(picrin m ${PICRIN_CONTRIB_LIBRARIES})
 
 # install
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS picrin DESTINATION lib)
-install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY extlib/benz/include/ DESTINATION include FILES_MATCHING PATTERN "*.h")

@@ -5,16 +5,6 @@
 #include "picrin.h"
 #include "picrin/macro.h"
 
-pic_value
-pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
-{
-  struct pic_proc *proc;
-
-  proc = pic_compile(pic, program, lib);
-
-  return pic_apply(pic, proc, pic_nil_value());
-}
-
 static pic_value
 pic_eval_eval(pic_state *pic)
 {
