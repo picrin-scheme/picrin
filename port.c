@@ -28,7 +28,7 @@ pic_stdin(pic_state *pic)
 {
   struct pic_proc *proc;
 
-  proc = pic_proc_ptr(pic_ref(pic, "current-input-port"));
+  proc = pic_proc_ptr(pic_ref(pic, pic->PICRIN_BASE, "current-input-port"));
 
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }
@@ -38,7 +38,7 @@ pic_stdout(pic_state *pic)
 {
   struct pic_proc *proc;
 
-  proc = pic_proc_ptr(pic_ref(pic, "current-output-port"));
+  proc = pic_proc_ptr(pic_ref(pic, pic->PICRIN_BASE, "current-output-port"));
 
   return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
 }

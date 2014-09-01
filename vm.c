@@ -426,14 +426,14 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 }
 
 pic_value
-pic_ref(pic_state *pic, const char *name)
+pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
   pic_sym sym, rename;
 
   sym = pic_intern_cstr(pic, name);
 
-  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
-    pic_errorf(pic, "symbol \"%s\" not defined", name);
+  if (! pic_find_rename(pic, lib->env, sym, &rename)) {
+    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
   return xh_val(xh_get_int(&pic->globals, rename), pic_value);
@@ -444,7 +444,7 @@ pic_funcall(pic_state *pic, const char *name, pic_list args)
 {
   pic_value proc;
 
-  proc = pic_ref(pic, name);
+  proc = pic_ref(pic, pic->lib, name);
 
   pic_assert_type(pic, proc, proc);
 

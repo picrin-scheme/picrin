@@ -137,8 +137,8 @@ pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
 
 void pic_define(pic_state *, const char *, pic_value); /* automatic export */
-pic_value pic_ref(pic_state *, const char *);
-void pic_set(pic_state *, const char *, pic_value);
+pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
+void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
 
 pic_value pic_funcall(pic_state *pic, const char *name, pic_list args);
 

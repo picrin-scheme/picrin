@@ -51,8 +51,8 @@ static void pop_scope(analyze_state *);
 #define register_renamed_symbol(pic, state, slot, lib, id) do {         \
     pic_sym sym, gsym;                                                  \
     sym = pic_intern_cstr(pic, id);                                     \
-    if (! pic_find_rename(pic, lib->env, sym, &gsym)) {                \
-      pic_error(pic, "internal error! native VM procedure not found");  \
+    if (! pic_find_rename(pic, lib->env, sym, &gsym)) {                 \
+      pic_errorf(pic, "internal error! native VM procedure not found: %s", id); \
     }                                                                   \
     state->slot = gsym;                                                 \
   } while (0)
@@ -62,32 +62,28 @@ new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
   xh_iter it;
-  struct pic_lib *stdlib, *listlib;
 
   state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
   state->scope = NULL;
 
-  stdlib = pic_find_library(pic, pic_read_cstr(pic, "(scheme base)"));
-  listlib = pic_find_library(pic, pic_read_cstr(pic, "(picrin base list)"));
-
   /* native VM procedures */
-  register_renamed_symbol(pic, state, rCONS, listlib, "cons");
-  register_renamed_symbol(pic, state, rCAR, listlib, "car");
-  register_renamed_symbol(pic, state, rCDR, listlib, "cdr");
-  register_renamed_symbol(pic, state, rNILP, listlib, "null?");
-  register_renamed_symbol(pic, state, rADD, stdlib, "+");
-  register_renamed_symbol(pic, state, rSUB, stdlib, "-");
-  register_renamed_symbol(pic, state, rMUL, stdlib, "*");
-  register_renamed_symbol(pic, state, rDIV, stdlib, "/");
-  register_renamed_symbol(pic, state, rEQ, stdlib, "=");
-  register_renamed_symbol(pic, state, rLT, stdlib, "<");
-  register_renamed_symbol(pic, state, rLE, stdlib, "<=");
-  register_renamed_symbol(pic, state, rGT, stdlib, ">");
-  register_renamed_symbol(pic, state, rGE, stdlib, ">=");
-  register_renamed_symbol(pic, state, rNOT, stdlib, "not");
-  register_renamed_symbol(pic, state, rVALUES, stdlib, "values");
-  register_renamed_symbol(pic, state, rCALL_WITH_VALUES, stdlib, "call-with-values");
+  register_renamed_symbol(pic, state, rCONS, pic->PICRIN_BASE, "cons");
+  register_renamed_symbol(pic, state, rCAR, pic->PICRIN_BASE, "car");
+  register_renamed_symbol(pic, state, rCDR, pic->PICRIN_BASE, "cdr");
+  register_renamed_symbol(pic, state, rNILP, pic->PICRIN_BASE, "null?");
+  register_renamed_symbol(pic, state, rADD, pic->PICRIN_BASE, "+");
+  register_renamed_symbol(pic, state, rSUB, pic->PICRIN_BASE, "-");
+  register_renamed_symbol(pic, state, rMUL, pic->PICRIN_BASE, "*");
+  register_renamed_symbol(pic, state, rDIV, pic->PICRIN_BASE, "/");
+  register_renamed_symbol(pic, state, rEQ, pic->PICRIN_BASE, "=");
+  register_renamed_symbol(pic, state, rLT, pic->PICRIN_BASE, "<");
+  register_renamed_symbol(pic, state, rLE, pic->PICRIN_BASE, "<=");
+  register_renamed_symbol(pic, state, rGT, pic->PICRIN_BASE, ">");
+  register_renamed_symbol(pic, state, rGE, pic->PICRIN_BASE, ">=");
+  register_renamed_symbol(pic, state, rNOT, pic->PICRIN_BASE, "not");
+  register_renamed_symbol(pic, state, rVALUES, pic->PICRIN_BASE, "values");
+  register_renamed_symbol(pic, state, rCALL_WITH_VALUES, pic->PICRIN_BASE, "call-with-values");
 
   register_symbol(pic, state, sCALL, "call");
   register_symbol(pic, state, sTAILCALL, "tail-call");
