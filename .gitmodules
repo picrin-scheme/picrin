@@ -10,3 +10,6 @@
 [submodule "extlib/xvect"]
 	path = extlib/xvect
 	url = git://github.com/wasabiz/xvect.git
+[submodule "extlib/benz"]
+	path = extlib/benz
+	url = git://github.com/picrin-scheme/benz.git
