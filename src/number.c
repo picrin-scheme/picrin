@@ -92,6 +92,16 @@ pic_number_real_p(pic_state *pic)
 }
 
 static pic_value
+pic_number_rational_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value((pic_float_p(v) && ! isinf(pic_float(v))) || pic_int_p(v));
+}
+
+static pic_value
 pic_number_integer_p(pic_state *pic)
 {
   pic_value v;
@@ -857,7 +867,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "number?", pic_number_real_p);
   pic_defun(pic, "complex?", pic_number_real_p);
   pic_defun(pic, "real?", pic_number_real_p);
-  pic_defun(pic, "rational?", pic_number_real_p);
+  pic_defun(pic, "rational?", pic_number_rational_p);
   pic_defun(pic, "integer?", pic_number_integer_p);
   pic_gc_arena_restore(pic, ai);
 
