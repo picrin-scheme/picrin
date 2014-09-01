@@ -732,36 +732,32 @@ pic_pair_assoc(pic_state *pic)
 void
 pic_init_pair(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin base list)") {
-    pic_defun(pic, "pair?", pic_pair_pair_p);
-    pic_defun(pic, "cons", pic_pair_cons);
-    pic_defun(pic, "car", pic_pair_car);
-    pic_defun(pic, "cdr", pic_pair_cdr);
-    pic_defun(pic, "set-car!", pic_pair_set_car);
-    pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
-    pic_defun(pic, "null?", pic_pair_null_p);
-  }
+  pic_defun(pic, "pair?", pic_pair_pair_p);
+  pic_defun(pic, "cons", pic_pair_cons);
+  pic_defun(pic, "car", pic_pair_car);
+  pic_defun(pic, "cdr", pic_pair_cdr);
+  pic_defun(pic, "set-car!", pic_pair_set_car);
+  pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
+  pic_defun(pic, "null?", pic_pair_null_p);
 
-  pic_deflibrary (pic, "(picrin list)") {
-    pic_defun(pic, "caar", pic_pair_caar);
-    pic_defun(pic, "cadr", pic_pair_cadr);
-    pic_defun(pic, "cdar", pic_pair_cdar);
-    pic_defun(pic, "cddr", pic_pair_cddr);
-    pic_defun(pic, "list?", pic_pair_list_p);
-    pic_defun(pic, "make-list", pic_pair_make_list);
-    pic_defun(pic, "list", pic_pair_list);
-    pic_defun(pic, "length", pic_pair_length);
-    pic_defun(pic, "append", pic_pair_append);
-    pic_defun(pic, "reverse", pic_pair_reverse);
-    pic_defun(pic, "list-tail", pic_pair_list_tail);
-    pic_defun(pic, "list-ref", pic_pair_list_ref);
-    pic_defun(pic, "list-set!", pic_pair_list_set);
-    pic_defun(pic, "list-copy", pic_pair_list_copy);
-    pic_defun(pic, "memq", pic_pair_memq);
-    pic_defun(pic, "memv", pic_pair_memv);
-    pic_defun(pic, "member", pic_pair_member);
-    pic_defun(pic, "assq", pic_pair_assq);
-    pic_defun(pic, "assv", pic_pair_assv);
-    pic_defun(pic, "assoc", pic_pair_assoc);
-  }
+  pic_defun(pic, "caar", pic_pair_caar);
+  pic_defun(pic, "cadr", pic_pair_cadr);
+  pic_defun(pic, "cdar", pic_pair_cdar);
+  pic_defun(pic, "cddr", pic_pair_cddr);
+  pic_defun(pic, "list?", pic_pair_list_p);
+  pic_defun(pic, "make-list", pic_pair_make_list);
+  pic_defun(pic, "list", pic_pair_list);
+  pic_defun(pic, "length", pic_pair_length);
+  pic_defun(pic, "append", pic_pair_append);
+  pic_defun(pic, "reverse", pic_pair_reverse);
+  pic_defun(pic, "list-tail", pic_pair_list_tail);
+  pic_defun(pic, "list-ref", pic_pair_list_ref);
+  pic_defun(pic, "list-set!", pic_pair_list_set);
+  pic_defun(pic, "list-copy", pic_pair_list_copy);
+  pic_defun(pic, "memq", pic_pair_memq);
+  pic_defun(pic, "memv", pic_pair_memv);
+  pic_defun(pic, "member", pic_pair_member);
+  pic_defun(pic, "assq", pic_pair_assq);
+  pic_defun(pic, "assv", pic_pair_assv);
+  pic_defun(pic, "assoc", pic_pair_assoc);
 }

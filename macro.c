@@ -430,8 +430,6 @@ pic_macro_make_identifier(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin base macro)") {
-    pic_defun(pic, "identifier?", pic_macro_identifier_p);
-    pic_defun(pic, "make-identifier", pic_macro_make_identifier);
-  }
+  pic_defun(pic, "identifier?", pic_macro_identifier_p);
+  pic_defun(pic, "make-identifier", pic_macro_make_identifier);
 }

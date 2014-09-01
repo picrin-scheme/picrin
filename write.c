@@ -497,10 +497,8 @@ pic_write_display(pic_state *pic)
 void
 pic_init_write(pic_state *pic)
 {
-  pic_deflibrary (pic, "(scheme write)") {
-    pic_defun(pic, "write", pic_write_write);
-    pic_defun(pic, "write-simple", pic_write_write_simple);
-    pic_defun(pic, "write-shared", pic_write_write_shared);
-    pic_defun(pic, "display", pic_write_display);
-  }
+  pic_defun(pic, "write", pic_write_write);
+  pic_defun(pic, "write-simple", pic_write_write_simple);
+  pic_defun(pic, "write-shared", pic_write_write_shared);
+  pic_defun(pic, "display", pic_write_display);
 }

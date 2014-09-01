@@ -696,11 +696,9 @@ pic_init_port(pic_state *pic)
   STDOUT = port_new_stdport(pic, xstdout, PIC_PORT_OUT);
   STDERR = port_new_stdport(pic, xstderr, PIC_PORT_OUT);
 
-  pic_deflibrary (pic, "(picrin port)") {
-    pic_define(pic, "standard-input-port", pic_obj_value(STDIN));
-    pic_define(pic, "standard-output-port", pic_obj_value(STDOUT));
-    pic_define(pic, "standard-error-port", pic_obj_value(STDERR));
-  }
+  pic_define(pic, "standard-input-port", pic_obj_value(STDIN));
+  pic_define(pic, "standard-output-port", pic_obj_value(STDOUT));
+  pic_define(pic, "standard-error-port", pic_obj_value(STDERR));
 
   pic_define(pic, "current-input-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDIN), NULL)));
   pic_define(pic, "current-output-port", pic_obj_value(pic_var_new(pic, pic_obj_value(STDOUT), NULL)));

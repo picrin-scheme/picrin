@@ -970,7 +970,5 @@ pic_read_read(pic_state *pic)
 void
 pic_init_read(pic_state *pic)
 {
-  pic_deflibrary (pic, "(scheme read)") {
-    pic_defun(pic, "read", pic_read_read);
-  }
+  pic_defun(pic, "read", pic_read_read);
 }

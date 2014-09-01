@@ -922,20 +922,20 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "string->number", pic_number_string_to_number);
   pic_gc_arena_restore(pic, ai);
 
-  pic_deflibrary (pic, "(scheme inexact)") {
-    pic_defun(pic, "finite?", pic_number_finite_p);
-    pic_defun(pic, "infinite?", pic_number_infinite_p);
-    pic_defun(pic, "nan?", pic_number_nan_p);
+  pic_defun(pic, "finite?", pic_number_finite_p);
+  pic_defun(pic, "infinite?", pic_number_infinite_p);
+  pic_defun(pic, "nan?", pic_number_nan_p);
+  pic_gc_arena_restore(pic, ai);
 
-    pic_defun(pic, "exp", pic_number_exp);
-    pic_defun(pic, "log", pic_number_log);
-    pic_defun(pic, "sin", pic_number_sin);
-    pic_defun(pic, "cos", pic_number_cos);
-    pic_defun(pic, "tan", pic_number_tan);
-    pic_defun(pic, "acos", pic_number_acos);
-    pic_defun(pic, "asin", pic_number_asin);
-    pic_defun(pic, "atan", pic_number_atan);
+  pic_defun(pic, "exp", pic_number_exp);
+  pic_defun(pic, "log", pic_number_log);
+  pic_defun(pic, "sin", pic_number_sin);
+  pic_defun(pic, "cos", pic_number_cos);
+  pic_defun(pic, "tan", pic_number_tan);
+  pic_defun(pic, "acos", pic_number_acos);
+  pic_defun(pic, "asin", pic_number_asin);
+  pic_defun(pic, "atan", pic_number_atan);
+  pic_gc_arena_restore(pic, ai);
 
-    pic_defun(pic, "sqrt", pic_number_sqrt);
-  }
+  pic_defun(pic, "sqrt", pic_number_sqrt);
 }
