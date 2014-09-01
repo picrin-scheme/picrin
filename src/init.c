@@ -9,6 +9,7 @@
 #include "picrin/read.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
+#include "picrin/proc.h"
 #include "picrin/error.h"
 
 static pic_value
@@ -38,6 +39,114 @@ pic_libraries(pic_state *pic)
 
   return libs;
 }
+
+bool pic_condexpand_clause(pic_state *, pic_value);
+
+bool
+pic_condexpand_feature(pic_state *pic, pic_value name)
+{
+  pic_value proc_features, features, feature;
+
+  proc_features = pic_ref(pic, "features");
+
+  features = pic_apply(pic, pic_proc_ptr(proc_features), pic_nil_value());
+  
+  pic_for_each(feature, features){
+    if(pic_eq_p(feature, name))
+      return true;
+  }
+  return false;
+}
+
+bool
+pic_condexpand_library(pic_state *pic, pic_value name)
+{
+  pic_debug(pic, name);
+
+  if(pic_find_library(pic, name))
+    return true;
+  else
+    return false;
+}
+
+bool
+pic_condexpand_and(pic_state *pic, pic_value clauses)
+{
+  pic_value clause;
+
+  pic_for_each(clause, clauses){
+    if(!pic_condexpand_clause(pic, clause))
+      return false;
+  }
+  return true;
+}
+
+bool
+pic_condexpand_or(pic_state *pic, pic_value clauses)
+{
+  pic_value clause;
+
+  pic_for_each(clause, clauses){
+    if(pic_condexpand_clause(pic, clause))
+      return true;
+  }
+  return false;
+}
+
+bool
+pic_condexpand_not(pic_state *pic, pic_value clause)
+{
+  return ! pic_condexpand_clause(pic, clause);
+}
+
+bool
+pic_condexpand_clause(pic_state *pic, pic_value clause)
+{
+  const pic_sym sELSE = pic_intern_cstr(pic, "else");
+  const pic_sym sLIBRARY = pic_intern_cstr(pic, "library");
+  const pic_sym sOR = pic_intern_cstr(pic, "or");
+  const pic_sym sAND = pic_intern_cstr(pic, "and");
+  const pic_sym sNOT = pic_intern_cstr(pic, "not");
+
+  if (pic_eq_p(clause, pic_sym_value(sELSE)))
+    return true;
+  else if (pic_sym_p(clause))
+    return pic_condexpand_feature(pic, clause);
+  else if (!pic_pair_p(clause))
+    pic_errorf(pic, "invalid 'cond-expand' clause ~s", clause);
+  else {
+    pic_value car = pic_car(pic, clause);
+    pic_value cdr = pic_cdr(pic, clause);
+    if(pic_eq_p(car, pic_sym_value(sLIBRARY)))
+      return pic_condexpand_library(pic, pic_car(pic, cdr));
+    else if(pic_eq_p(car, pic_sym_value(sAND)))
+      return pic_condexpand_and(pic, cdr);
+    else if(pic_eq_p(car, pic_sym_value(sOR)))
+      return pic_condexpand_or(pic, cdr);
+    else if(pic_eq_p(car, pic_sym_value(sNOT)))
+      return pic_condexpand_not(pic, pic_car(pic, cdr));
+    else
+      pic_errorf(pic, "unknown 'cond-expand' directive ~s", clause);
+    UNREACHABLE();
+    return false;
+  }
+}
+
+pic_value
+pic_macro_condexpand(pic_state *pic)
+{
+  pic_value *clauses;
+  size_t argc, i;
+  
+  pic_get_args(pic, "*", &argc, &clauses);
+
+  for (i = 0; i < argc; i++)
+    if(pic_condexpand_clause(pic, pic_car(pic, clauses[i])))
+      return pic_cons(pic, pic_sym_value(pic->rBEGIN), pic_cdr(pic, clauses[i]));
+
+  return pic_none_value();
+}
+
 
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
@@ -84,6 +193,8 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->rIF);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->rBEGIN);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
+
+    pic_defmacro(pic, pic->sCOND_EXPAND, pic->rCOND_EXPAND, pic_macro_condexpand);
   }
 
   pic_deflibrary (pic, "(picrin library)") {

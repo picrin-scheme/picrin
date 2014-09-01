@@ -5,7 +5,7 @@
           (picrin macro))
 
   (export define set! lambda quote
-          if begin define-syntax)
+          if begin define-syntax cond-expand)
 
   ;; core syntax
 
