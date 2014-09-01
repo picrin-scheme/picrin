@@ -108,6 +108,8 @@ typedef struct {
   struct pic_object **arena;
   size_t arena_size, arena_idx;
 
+  struct pic_port *xSTDIN, *xSTDOUT, *xSTDERR;
+
   char *native_stack_start;
 } pic_state;
 
@@ -133,7 +135,7 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-pic_state *pic_open(int argc, char *argv[], char **envp);
+pic_state *pic_open(int argc, char *argv[], char **envp, xFILE *stdio[3]);
 void pic_close(pic_state *);
 
 void pic_define(pic_state *, const char *, pic_value); /* automatic export */

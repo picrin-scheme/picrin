@@ -10,13 +10,15 @@
 #include "picrin/proc.h"
 #include "picrin/macro.h"
 #include "picrin/cont.h"
+#include "picrin/port.h"
 #include "picrin/error.h"
 
 void pic_init_core(pic_state *);
 
 pic_state *
-pic_open(int argc, char *argv[], char **envp)
+pic_open(int argc, char *argv[], char **envp, xFILE *stdio[3])
 {
+  struct pic_port *pic_port_make_stdport(pic_state *, xFILE *, short);
   char t;
 
   pic_state *pic;
@@ -71,6 +73,11 @@ pic_open(int argc, char *argv[], char **envp)
   pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
   pic->try_jmp_idx = 0;
   pic->try_jmp_size = PIC_RESCUE_SIZE;
+
+  /* standard ports */
+  pic->xSTDIN = NULL;
+  pic->xSTDOUT = NULL;
+  pic->xSTDERR = NULL;
 
   /* GC arena */
   pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
@@ -147,6 +154,11 @@ pic_open(int argc, char *argv[], char **envp)
   pic->PICRIN_BASE = pic_open_library(pic, pic_read_cstr(pic, "(picrin base)"));
   pic->PICRIN_USER = pic_open_library(pic, pic_read_cstr(pic, "(picrin user)"));
   pic->lib = pic->PICRIN_USER;
+
+  /* standard I/O */
+  pic->xSTDIN = pic_port_make_stdport(pic, stdio[0], PIC_PORT_IN);
+  pic->xSTDOUT = pic_port_make_stdport(pic, stdio[1], PIC_PORT_OUT);
+  pic->xSTDERR = pic_port_make_stdport(pic, stdio[2], PIC_PORT_OUT);
 
   pic_init_core(pic);
 
