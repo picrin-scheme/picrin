@@ -917,47 +917,6 @@ pic_read_cstr(pic_state *pic, const char *str)
 }
 
 static pic_value
-pic_parse(pic_state *pic, struct pic_port *port)
-{
-  pic_value val, acc;
-
-  pic_try {
-    acc = pic_nil_value();
-    while (! pic_eof_p(val = pic_read(pic, port))) {
-      pic_push(pic, val, acc);
-    }
-  }
-  pic_catch {
-    return pic_undef_value();
-  }
-
-  return pic_reverse(pic, acc);
-}
-
-pic_list
-pic_parse_file(pic_state *pic, FILE *file)
-{
-  struct pic_port *port;
-
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xfpopen(file);
-  port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
-  port->status = PIC_PORT_OPEN;
-
-  return pic_parse(pic, port);
-}
-
-pic_list
-pic_parse_cstr(pic_state *pic, const char *str)
-{
-  struct pic_port *port;
-
-  port = pic_open_input_string(pic, str);
-
-  return pic_parse(pic, port);
-}
-
-static pic_value
 pic_read_read(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
