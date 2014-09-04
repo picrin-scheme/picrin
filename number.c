@@ -10,24 +10,6 @@
 #include "picrin/string.h"
 #include "picrin/cont.h"
 
-static int
-gcd(int a, int b)
-{
-  if (a > b)
-    return gcd(b, a);
-  if (a < 0)
-    return gcd(-a, b);
-  if (a > 0)
-    return gcd(b % a, a);
-  return b;
-}
-
-static double
-lcm(int a, int b)
-{
-  return fabs((double)a * b) / gcd(a, b);
-}
-
 /**
  * Returns the length of string representing val.
  * radix is between 2 and 36 (inclusive).
@@ -212,112 +194,6 @@ DEFINE_ARITH_CMP(>, gt)
 DEFINE_ARITH_CMP(<=, le)
 DEFINE_ARITH_CMP(>=, ge)
 
-static pic_value
-pic_number_zero_p(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_bool_value(f == 0);
-}
-
-static pic_value
-pic_number_positive_p(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_bool_value(f > 0);
-}
-
-static pic_value
-pic_number_negative_p(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_bool_value(f < 0);
-}
-
-static pic_value
-pic_number_odd_p(pic_state *pic)
-{
-  int i;
-
-  pic_get_args(pic, "i", &i);
-
-  return pic_bool_value(i % 2 != 0);
-}
-
-static pic_value
-pic_number_even_p(pic_state *pic)
-{
-  int i;
-
-  pic_get_args(pic, "i", &i);
-
-  return pic_bool_value(i % 2 == 0);
-}
-
-static pic_value
-pic_number_max(pic_state *pic)
-{
-  size_t argc;
-  pic_value *argv;
-  size_t i;
-  double f;
-  bool e = true;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  f = -INFINITY;
-  for (i = 0; i < argc; ++i) {
-    if (pic_int_p(argv[i])) {
-      f = fmax(f, pic_int(argv[i]));
-    }
-    else if (pic_float_p(argv[i])) {
-      e = false;
-      f = fmax(f, pic_float(argv[i]));
-    }
-    else {
-      pic_error(pic, "max: number required");
-    }
-  }
-
-  return e ? pic_int_value(f) : pic_float_value(f);
-}
-
-static pic_value
-pic_number_min(pic_state *pic)
-{
-  size_t argc;
-  pic_value *argv;
-  size_t i;
-  double f;
-  bool e = true;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  f = INFINITY;
-  for (i = 0; i < argc; ++i) {
-    if (pic_int_p(argv[i])) {
-      f = fmin(f, pic_int(argv[i]));
-    }
-    else if (pic_float_p(argv[i])) {
-      e = false;
-      f = fmin(f, pic_float(argv[i]));
-    }
-    else {
-      pic_error(pic, "min: number required");
-    }
-  }
-
-  return e ? pic_int_value(f) : pic_float_value(f);
-}
-
 #define DEFINE_ARITH_OP(op, name, unit)                         \
   static pic_value                                              \
   pic_number_##name(pic_state *pic)                             \
@@ -403,39 +279,6 @@ pic_number_abs(pic_state *pic)
 }
 
 static pic_value
-pic_number_floor_quotient(pic_state *pic)
-{
-  int i,j;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  if (e1 && e2) {
-    return pic_int_value((int)floor((double)i/j));
-  }
-  else {
-    return pic_float_value(floor((double)i/j));
-  }
-}
-
-static pic_value
-pic_number_floor_remainder(pic_state *pic)
-{
-  int i,j,q;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  q = (int)floor((double)i/j);
-  if (e1 && e2) {
-    return pic_int_value(i - j * q);
-  }
-  else {
-    return pic_float_value(i - j * q);
-  }
-}
-
-static pic_value
 pic_number_floor2(pic_state *pic)
 {
   int i, j;
@@ -452,39 +295,6 @@ pic_number_floor2(pic_state *pic)
   }
   else {
     return pic_values2(pic, pic_float_value(q), pic_float_value(r));
-  }
-}
-
-static pic_value
-pic_number_trunc_quotient(pic_state *pic)
-{
-  int i,j;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  if (e1 && e2) {
-    return pic_int_value((int)trunc((double)i/j));
-  }
-  else {
-    return pic_float_value(trunc((double)i/j));
-  }
-}
-
-static pic_value
-pic_number_trunc_remainder(pic_state *pic)
-{
-  int i,j,q;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  q = (int)trunc((double)i/j);
-  if (e1 && e2) {
-    return pic_int_value(i - j * q);
-  }
-  else {
-    return pic_float_value(i - j * q);
   }
 }
 
@@ -506,58 +316,6 @@ pic_number_trunc2(pic_state *pic)
   else {
     return pic_values2(pic, pic_float_value(q), pic_float_value(r));
   }
-}
-
-static pic_value
-pic_number_gcd(pic_state *pic)
-{
-  size_t argc;
-  pic_value *args;
-  int r;
-  bool e = true;
-
-  pic_get_args(pic, "*", &argc, &args);
-
-  r = 0;
-  while (argc-- > 0) {
-    if (pic_int_p(args[argc])) {
-      r = gcd(r, pic_int(args[argc]));
-    }
-    else if (pic_float_p(args[argc])) {
-      e = false;
-      r = gcd(r, pic_float(args[argc]));
-    }
-    else {
-      pic_error(pic, "gcd: number required");
-    }
-  }
-  return e ? pic_int_value(r) : pic_float_value(r);
-}
-
-static pic_value
-pic_number_lcm(pic_state *pic)
-{
-  size_t argc;
-  pic_value *args;
-  double r;
-  bool e = true;
-
-  pic_get_args(pic, "*", &argc, &args);
-
-  r = 1;
-  while (argc-- > 0) {
-    if (pic_int_p(args[argc])) {
-      r = lcm(r, pic_int(args[argc]));
-    }
-    else if (pic_float_p(args[argc])) {
-      e = false;
-      r = lcm(r, pic_float(args[argc]));
-    }
-    else {
-      pic_error(pic, "lcm: number required");
-    }
-  }
-  return e && pic_valid_int(r) ? pic_int_value(r) : pic_float_value(r);
 }
 
 static pic_value
@@ -715,37 +473,6 @@ pic_number_atan(pic_state *pic)
 }
 
 static pic_value
-pic_number_exact_integer_sqrt(pic_state *pic)
-{
-  int k, n, m;
-
-  pic_get_args(pic, "i", &k);
-
-  n = sqrt(k);
-  m = k - n * n;
-
-  return pic_values2(pic, pic_int_value(n), pic_int_value(m));
-}
-
-static pic_value
-pic_number_square(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    long long i = (long long)f;
-
-    if (i * i <= INT_MAX) {
-      return pic_int_value(i * i);
-    }
-  }
-  return pic_float_value(f * f);
-}
-
-static pic_value
 pic_number_sqrt(pic_state *pic)
 {
   double f;
@@ -863,7 +590,6 @@ pic_init_number(pic_state *pic)
 
   pic_defun(pic, "exact?", pic_number_exact_p);
   pic_defun(pic, "inexact?", pic_number_inexact_p);
-  pic_defun(pic, "exact-integer?", pic_number_exact_p);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "=", pic_number_eq);
@@ -873,34 +599,14 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, ">=", pic_number_ge);
   pic_gc_arena_restore(pic, ai);
 
-  pic_defun(pic, "zero?", pic_number_zero_p);
-  pic_defun(pic, "positive?", pic_number_positive_p);
-  pic_defun(pic, "negative?", pic_number_negative_p);
-  pic_defun(pic, "odd?", pic_number_odd_p);
-  pic_defun(pic, "even?", pic_number_even_p);
-  pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "min", pic_number_min);
-  pic_defun(pic, "max", pic_number_max);
-  pic_gc_arena_restore(pic, ai);
-
   pic_defun(pic, "+", pic_number_add);
   pic_defun(pic, "-", pic_number_sub);
   pic_defun(pic, "*", pic_number_mul);
   pic_defun(pic, "/", pic_number_div);
   pic_gc_arena_restore(pic, ai);
 
-  pic_defun(pic, "abs", pic_number_abs);
-  pic_defun(pic, "floor-quotient", pic_number_floor_quotient);
-  pic_defun(pic, "floor-remainder", pic_number_floor_remainder);
   pic_defun(pic, "floor/", pic_number_floor2);
-  pic_defun(pic, "truncate-quotient", pic_number_trunc_quotient);
-  pic_defun(pic, "truncate-remainder", pic_number_trunc_remainder);
   pic_defun(pic, "truncate/", pic_number_trunc2);
-  pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "gcd", pic_number_gcd);
-  pic_defun(pic, "lcm", pic_number_lcm);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "floor", pic_number_floor);
@@ -909,17 +615,8 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "round", pic_number_round);
   pic_gc_arena_restore(pic, ai);
 
-  pic_defun(pic, "exact-integer-sqrt", pic_number_exact_integer_sqrt);
-  pic_defun(pic, "square", pic_number_square);
-  pic_defun(pic, "expt", pic_number_expt);
-  pic_gc_arena_restore(pic, ai);
-
   pic_defun(pic, "inexact", pic_number_inexact);
   pic_defun(pic, "exact", pic_number_exact);
-  pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "number->string", pic_number_number_to_string);
-  pic_defun(pic, "string->number", pic_number_string_to_number);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "finite?", pic_number_finite_p);
@@ -927,6 +624,9 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "nan?", pic_number_nan_p);
   pic_gc_arena_restore(pic, ai);
 
+  pic_defun(pic, "abs", pic_number_abs);
+  pic_defun(pic, "sqrt", pic_number_sqrt);
+  pic_defun(pic, "expt", pic_number_expt);
   pic_defun(pic, "exp", pic_number_exp);
   pic_defun(pic, "log", pic_number_log);
   pic_defun(pic, "sin", pic_number_sin);
@@ -937,5 +637,7 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "atan", pic_number_atan);
   pic_gc_arena_restore(pic, ai);
 
-  pic_defun(pic, "sqrt", pic_number_sqrt);
+  pic_defun(pic, "number->string", pic_number_number_to_string);
+  pic_defun(pic, "string->number", pic_number_string_to_number);
+  pic_gc_arena_restore(pic, ai);
 }
