@@ -8,10 +8,11 @@
 int
 main(int argc, char *argv[], char **envp)
 {
+  xFILE *stdio[3] = { xstdin, xstdout, xstderr };
   pic_state *pic;
   int status = 0;
 
-  pic = pic_open(argc, argv, envp);
+  pic = pic_open(argc, argv, envp, stdio);
 
   pic_init_picrin(pic);
 
