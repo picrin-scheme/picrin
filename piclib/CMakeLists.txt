@@ -11,6 +11,8 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/picrin/experimental/lambda.scm
 
   ${PROJECT_SOURCE_DIR}/piclib/scheme/cxr.scm
+  ${PROJECT_SOURCE_DIR}/piclib/scheme/read.scm
+  ${PROJECT_SOURCE_DIR}/piclib/scheme/write.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/file.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/case-lambda.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/lazy.scm
