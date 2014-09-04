@@ -404,6 +404,24 @@ pic_identifier_p(pic_state *pic, pic_value obj)
   return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym(obj));
 }
 
+bool
+pic_identifier_eq_p(pic_state *pic, struct pic_senv *env1, pic_sym sym1, struct pic_senv *env2, pic_sym sym2)
+{
+  pic_sym a, b;
+
+  a = make_identifier(pic, sym1, env1);
+  if (a != make_identifier(pic, sym1, env1)) {
+    a = sym1;
+  }
+
+  b = make_identifier(pic, sym2, env2);
+  if (b != make_identifier(pic, sym2, env2)) {
+    b = sym2;
+  }
+
+  return pic_eq_p(pic_sym_value(a), pic_sym_value(b));
+}
+
 static pic_value
 pic_macro_identifier_p(pic_state *pic)
 {
@@ -427,9 +445,24 @@ pic_macro_make_identifier(pic_state *pic)
   return pic_sym_value(make_identifier(pic, sym, pic_senv_ptr(obj)));
 }
 
+static pic_value
+pic_macro_identifier_eq_p(pic_state *pic)
+{
+  pic_sym sym1, sym2;
+  pic_value env1, env2;
+
+  pic_get_args(pic, "omom", &env1, &sym1, &env2, &sym2);
+
+  pic_assert_type(pic, env1, senv);
+  pic_assert_type(pic, env2, senv);
+
+  return pic_bool_value(pic_identifier_eq_p(pic, pic_senv_ptr(env1), sym1, pic_senv_ptr(env2), sym2));
+}
+
 void
 pic_init_macro(pic_state *pic)
 {
   pic_defun(pic, "identifier?", pic_macro_identifier_p);
+  pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
   pic_defun(pic, "make-identifier", pic_macro_make_identifier);
 }
