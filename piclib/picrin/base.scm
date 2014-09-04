@@ -1,19 +1,11 @@
 (define-library (picrin base)
   (export define
-          set!
-          quote
           lambda
           if
+          quote
+          set!
           begin
           define-syntax)
-
-  (export bytevector?
-          make-bytevector
-          bytevector-length
-          bytevector-u8-ref
-          bytevector-u8-set!
-          bytevector-copy!
-          bytevector-append)
 
   (export eq?
           eqv?
@@ -23,37 +15,14 @@
           boolean=?
           not)
 
+  (export symbol?
+          symbol->string
+          string->symbol
+          symbol=?)
+
   (export char?
           char->integer
           integer->char)
-
-  (export call-with-current-continuation
-          continue
-          dynamic-wind
-          values
-          call-with-values)
-
-  (export make-dictionary
-          dictionary?
-          dictionary-ref
-          dictionary-set!
-          dictionary-delete
-          dictionary-size
-          dictionary-for-each)
-
-  (export with-exception-handler
-          raise
-          raise-continuable
-          error
-          error-object?
-          error-object-message
-          error-object-irritants
-          read-error?
-          file-error?)
-
-  (export identifier?
-          identifier=?
-          make-identifier)
 
   (export number?
           complex?
@@ -139,6 +108,55 @@
           assv
           assoc)
 
+  (export bytevector?
+          make-bytevector
+          bytevector-length
+          bytevector-u8-ref
+          bytevector-u8-set!
+          bytevector-copy!
+          bytevector-append)
+
+  (export vector?
+          make-vector
+          vector-length
+          vector-ref
+          vector-set!
+          vector-copy!
+          vector-copy
+          vector-append
+          vector-fill!
+          list->vector
+          vector->list)
+
+  (export string?
+          make-string
+          string-length
+          string-ref
+          string-set!
+          string=?
+          string<?
+          string>?
+          string<=?
+          string>=?
+          string-copy
+          string-copy!
+          string-append
+          string-fill!)
+
+  (export make-dictionary
+          dictionary?
+          dictionary-ref
+          dictionary-set!
+          dictionary-delete
+          dictionary-size
+          dictionary-for-each)
+
+  (export make-record
+          record?
+          record-type
+          record-ref
+          record-set!)
+
   (export current-input-port
           current-output-port
           current-error-port
@@ -160,13 +178,15 @@
           open-output-bytevector
           get-output-bytevector
 
-          read-char
-          peek-char
-          read-line
           eof-object?
           eof-object
+
+          read-char
+          peek-char
           char-ready?
+          read-line
           read-string
+
           read-u8
           peek-u8
           u8-ready?
@@ -180,6 +200,32 @@
           write-bytevector
           flush-output-port)
 
+  (export make-parameter
+          parameter-ref
+          parameter-set!
+          parameter-push!
+          parameter-pop!)
+
+  (export identifier?
+          identifier=?
+          make-identifier)
+
+  (export call-with-current-continuation
+          continue
+          dynamic-wind
+          values
+          call-with-values)
+
+  (export with-exception-handler
+          raise
+          raise-continuable
+          error
+          error-object?
+          error-object-message
+          error-object-irritants
+          read-error?
+          file-error?)
+
   (export procedure?
           apply
           map
@@ -187,50 +233,6 @@
           attribute)
 
   (export read)
-
-  (export make-record
-          record?
-          record-type
-          record-ref
-          record-set!)
-
-  (export string?
-          make-string
-          string-length
-          string-ref
-          string-set!
-          string=?
-          string<?
-          string>?
-          string<=?
-          string>=?
-          string-copy
-          string-copy!
-          string-append
-          string-fill!)
-
-  (export symbol?
-          symbol->string
-          string->symbol
-          symbol=?)
-
-  (export make-parameter
-          parameter-ref
-          parameter-set!
-          parameter-push!
-          parameter-pop!)
-
-  (export vector?
-          make-vector
-          vector-length
-          vector-ref
-          vector-set!
-          vector-copy!
-          vector-copy
-          vector-append
-          vector-fill!
-          list->vector
-          vector->list)
 
   (export write
           write-simple
