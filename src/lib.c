@@ -221,8 +221,6 @@ pic_lib_export(pic_state *pic)
   return pic_none_value();
 }
 
-bool pic_condexpand_clause(pic_state *, pic_value);
-
 static pic_value
 pic_lib_define_library(pic_state *pic)
 {
