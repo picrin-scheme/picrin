@@ -21,6 +21,7 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
+#include "picrin/cont.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -751,6 +752,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
           POP();
           PUSH(pic_var_ref(pic, pic_var_ptr(x)));
           NEXT;
+        }
+        if (pic_cont_p(x)) {
+          if (c.u.i >= 1) {
+            pic_errorf(pic, "invalid call-sequence for cont object");
+          }
+          pic_continue(pic, pic_cont_ptr(x), c.u.i - 1, pic->sp - c.u.i + 1);
+          UNREACHABLE();
         }
 	pic_errorf(pic, "invalid application: ~s", x);
       }

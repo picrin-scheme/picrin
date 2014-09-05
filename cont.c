@@ -250,25 +250,6 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   return val;
 }
 
-noreturn static pic_value
-pic_cont_continue(pic_state *pic)
-{
-  struct pic_proc *proc;
-  size_t argc;
-  pic_value cont, *argv;
-
-  proc = pic_get_proc(pic);
-  pic_get_args(pic, "o*", &cont, &argc, &argv);
-
-  pic_assert_type(pic, cont, cont);
-
-  pic_cont_ptr(cont)->results = pic_list_by_array(pic, argc, argv);
-
-  /* execute guard handlers */
-  walk_to_block(pic, pic->blk, pic_cont_ptr(cont)->blk);
-
-  restore_cont(pic, pic_cont_ptr(cont));
-}
 
 pic_value
 pic_callcc(pic_state *pic, struct pic_proc *proc)
@@ -298,6 +279,16 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
   }
 }
 
+noreturn void
+pic_continue(pic_state *pic, struct pic_cont *cont, size_t argc, pic_value *argv)
+{
+  cont->results = pic_list_by_array(pic, argc, argv);
+
+  walk_to_block(pic, pic->blk, cont->blk);
+
+  restore_cont(pic, cont);
+}
+
 static pic_value
 pic_cont_callcc(pic_state *pic)
 {
@@ -306,6 +297,19 @@ pic_cont_callcc(pic_state *pic)
   pic_get_args(pic, "l", &cb);
 
   return pic_callcc_trampoline(pic, cb);
+}
+
+noreturn static pic_value
+pic_cont_continue(pic_state *pic)
+{
+  size_t argc;
+  pic_value cont, *argv;
+
+  pic_get_args(pic, "o*", &cont, &argc, &argv);
+
+  pic_assert_type(pic, cont, cont);
+
+  pic_continue(pic, pic_cont_ptr(cont), argc, argv);
 }
 
 static pic_value
