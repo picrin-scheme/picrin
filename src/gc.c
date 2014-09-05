@@ -561,9 +561,9 @@ gc_mark_trie(pic_state *pic, struct pic_trie *trie)
       gc_mark_trie(pic, trie->table[i]);
     }
   }
-  if (trie->proc != NULL) {
-    gc_mark_object(pic, (struct pic_object *)trie->proc);
-  }
+  /* if (trie->proc != NULL) { */
+  /*   gc_mark_object(pic, (struct pic_object *)trie->proc); */
+  /* } */
 }
 
 static void
