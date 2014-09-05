@@ -21,4 +21,5 @@
           lambda
           if
           begin
-          define-syntax))
+          define-syntax
+          cond-expand))

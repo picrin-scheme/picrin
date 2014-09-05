@@ -226,7 +226,8 @@ pic_lib_define_library(pic_state *pic)
 {
   struct pic_lib *prev = pic->lib;
   size_t argc, i;
-  pic_value spec, *argv;
+  pic_value spec, *argv, var, val;
+  const pic_sym sCOND_EXPAND = pic_intern_cstr(pic, "cond-expand");
 
   pic_get_args(pic, "o*", &spec, &argc, &argv);
 
@@ -236,7 +237,17 @@ pic_lib_define_library(pic_state *pic)
     pic_in_library(pic, spec);
 
     for (i = 0; i < argc; ++i) {
-      pic_void(pic_eval(pic, argv[i], pic->lib));
+      if (pic_pair_p(argv[i]) &&
+          pic_eq_p(pic_car(pic, argv[i]), pic_sym_value(sCOND_EXPAND)))
+        pic_for_each(var, pic_cdr(pic, argv[i])){
+          if(pic_condexpand_clause(pic, pic_car(pic, var))){
+            pic_for_each(val, pic_cdr(pic, var)){
+              pic_void(pic_eval(pic, val, pic->lib));              
+            }
+          }
+        }
+      else
+        pic_void(pic_eval(pic, argv[i], pic->lib));
     }
 
     pic_in_library(pic, prev->name);
