@@ -262,6 +262,8 @@ pic_cont_continue(pic_state *pic)
 
   pic_assert_type(pic, cont, cont);
 
+  pic_cont_ptr(cont)->results = pic_list_by_array(pic, argc, argv);
+
   /* execute guard handlers */
   walk_to_block(pic, pic->blk, pic_cont_ptr(cont)->blk);
 
