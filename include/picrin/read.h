@@ -14,11 +14,20 @@ enum pic_typecase {
   PIC_CASE_FOLD,
 };
 
+enum pic_reader_type {
+  PIC_READER_C,
+  PIC_READER_PROC,
+};
+
 typedef pic_value pic_reader_func_t(pic_state *, struct pic_port *, const char *);
 
 struct pic_trie {
   struct pic_trie *table[256];
-  pic_reader_func_t *proc;
+  enum pic_reader_type type;
+  union {
+    pic_reader_func_t *func;
+    struct pic_proc *proc;
+  } u;
 };
 
 struct pic_reader {
@@ -29,7 +38,8 @@ struct pic_reader {
 
 void pic_init_reader(pic_state *);
 
-void pic_define_reader(pic_state *, const char *, pic_reader_func_t);
+void pic_define_reader_c(pic_state *, const char *, pic_reader_func_t);
+void pic_define_reader(pic_state *, const char *, struct pic_proc *);
 
 struct pic_trie *pic_trie_new(pic_state *);
 void pic_trie_delete(pic_state *, struct pic_trie *);
