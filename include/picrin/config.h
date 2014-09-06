@@ -76,11 +76,11 @@
 #endif
 
 #ifndef PIC_ARENA_SIZE
-# define PIC_ARENA_SIZE 1000
+# define PIC_ARENA_SIZE 1028 * 8
 #endif
 
 #ifndef PIC_HEAP_PAGE_SIZE
-# define PIC_HEAP_PAGE_SIZE 10000
+# define PIC_HEAP_PAGE_SIZE 1024 * 1024 * 2
 #endif
 
 #ifndef PIC_STACK_SIZE
@@ -92,7 +92,7 @@
 #endif
 
 #ifndef PIC_SYM_POOL_SIZE
-# define PIC_SYM_POOL_SIZE 128
+# define PIC_SYM_POOL_SIZE 2048
 #endif
 
 #ifndef PIC_IREP_SIZE
