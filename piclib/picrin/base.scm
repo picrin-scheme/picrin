@@ -441,8 +441,7 @@
           dictionary-ref
           dictionary-set!
           dictionary-delete
-          dictionary-size
-          dictionary-for-each)
+          dictionary-size)
 
   (export make-record
           record?
