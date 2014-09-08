@@ -33,7 +33,5 @@ pic_eval_eval(pic_state *pic)
 void
 pic_init_eval(pic_state *pic)
 {
-  pic_deflibrary (pic, "(scheme eval)") {
-    pic_defun(pic, "eval", pic_eval_eval);
-  }
+  pic_defun(pic, "eval", pic_eval_eval);
 }
