@@ -247,7 +247,7 @@
 
   (define (lcm . args)
     (define (lcm i j)
-      (/ (* i j) (gcd i j)))
+      (/ (abs (* i j)) (gcd i j)))
     (let loop ((args args) (acc 1))
       (if (null? args)
           acc
