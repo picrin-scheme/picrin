@@ -507,7 +507,6 @@
 
   (export call-with-current-continuation
           call/cc
-          continue
           dynamic-wind
           values
           call-with-values)

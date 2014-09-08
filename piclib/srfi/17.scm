@@ -3,10 +3,10 @@
   (import (except (scheme base) set!)
           (prefix (only (scheme base) set!) %)
           (picrin dictionary)
-          (picrin base)
+          (except (picrin base) set!)
           (srfi 1)
           (srfi 8))
-  
+
   (define-syntax set!
     (syntax-rules ()
       ((_ (proc args ...) val)
