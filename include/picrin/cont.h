@@ -43,9 +43,6 @@ struct pic_cont {
   pic_value results;
 };
 
-#define pic_cont_p(o) (pic_type(o) == PIC_TT_CONT)
-#define pic_cont_ptr(o) ((struct pic_cont *)pic_ptr(o))
-
 pic_value pic_values0(pic_state *);
 pic_value pic_values1(pic_state *, pic_value);
 pic_value pic_values2(pic_state *, pic_value, pic_value);

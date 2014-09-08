@@ -7,6 +7,7 @@
 #include <stdarg.h>
 
 #include "picrin.h"
+#include "picrin/proc.h"
 #include "picrin/cont.h"
 #include "picrin/pair.h"
 #include "picrin/error.h"
@@ -251,21 +252,23 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
 }
 
 noreturn static pic_value
-pic_cont_continue(pic_state *pic)
+cont_call(pic_state *pic)
 {
   struct pic_proc *proc;
   size_t argc;
-  pic_value cont, *argv;
+  pic_value *argv;
+  struct pic_cont *cont;
 
   proc = pic_get_proc(pic);
-  pic_get_args(pic, "o*", &cont, &argc, &argv);
+  pic_get_args(pic, "*", &argc, &argv);
 
-  pic_assert_type(pic, cont, cont);
+  cont = (struct pic_cont *)pic_ptr(pic_attr_ref(pic, proc, "@@cont"));
+  cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
-  walk_to_block(pic, pic->blk, pic_cont_ptr(cont)->blk);
+  walk_to_block(pic, pic->blk, cont->blk);
 
-  restore_cont(pic, pic_cont_ptr(cont));
+  restore_cont(pic, cont);
 }
 
 pic_value
@@ -278,7 +281,14 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
     return pic_values_by_list(pic, cont->results);
   }
   else {
-    return pic_apply1(pic, proc, pic_obj_value(cont));
+    struct pic_proc *c;
+
+    c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
+
+    /* save the continuation object in proc */
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
+
+    return pic_apply1(pic, proc, pic_obj_value(c));
   }
 }
 
@@ -292,7 +302,14 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
     return pic_values_by_list(pic, cont->results);
   }
   else {
-    return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(cont)));
+    struct pic_proc *c;
+
+    c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
+
+    /* save the continuation object in proc */
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
+
+    return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
   }
 }
 
@@ -348,7 +365,6 @@ pic_init_cont(pic_state *pic)
 {
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
-  pic_defun(pic, "continue", pic_cont_continue);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
   pic_defun(pic, "values", pic_cont_values);
   pic_defun(pic, "call-with-values", pic_cont_call_with_values);
