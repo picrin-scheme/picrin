@@ -1,5 +1,3 @@
-;;; Hygienic Macros
-
 (define-library (picrin macro)
   (import (picrin base))
 
@@ -109,8 +107,8 @@
                       (rename sym)))))
             (f (walk inject expr) inject compare))))
 
-  (define (strip-syntax form)
-    (walk ungensym form))
+  ;; (define (strip-syntax form)
+  ;;   (walk ungensym form))
 
   (define-syntax define-macro
     (er-macro-transformer
@@ -136,5 +134,5 @@
           rsc-macro-transformer
           er-macro-transformer
           ir-macro-transformer
-          strip-syntax
+          ;; strip-syntax
           define-macro))

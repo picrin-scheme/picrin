@@ -1,6 +1,6 @@
 (define-library (picrin record)
   (import (picrin base)
-          (scheme base))
+          (picrin macro))
 
   ;; define-record-writer
 
@@ -8,14 +8,15 @@
     (record-set! record-type 'writer writer))
 
   (define-syntax define-record-writer
-    (syntax-rules ()
-      ((_ (type obj) body ...)
-       (set-record-writer! type
-         (lambda (obj)
-           body ...)))
-      ((_ type writer)
-       (set-record-writer! type
-         writer))))
+    (er-macro-transformer
+     (lambda (form r compare)
+       (let ((formal (cadr form)))
+         (if (pair? formal)
+             `(,(r 'set-record-writer!) ,(car formal)
+               (,(r 'lambda) (,(cadr formal))
+                ,@(cddr form)))
+             `(,(r 'set-record-writer!) ,formal
+               ,@(cddr form)))))))
 
   ;; define-record-type
 

@@ -1,6 +1,5 @@
 (define-library (picrin array)
-  (import (scheme base)
-          (picrin base)
+  (import (picrin base)
           (picrin record))
 
   (define-record-type <array>
@@ -10,6 +9,11 @@
     (size array-size set-array-size!)
     (head array-head set-array-head!)
     (tail array-tail set-array-tail!))
+
+  (define (floor-remainder i j)
+    (call-with-values (lambda () (floor/ i j))
+      (lambda (q r)
+        r)))
 
   (define (translate ary i)
     (floor-remainder i (array-size ary)))
@@ -39,7 +43,7 @@
     (if (null? rest)
         (make-array 0)
         (let ((capacity (car rest))
-              (ary (create-array (vector) 0 0 0)))
+              (ary (create-array (make-vector 0) 0 0 0)))
           (array-reserve! ary capacity)
           ary)))
 
@@ -90,16 +94,17 @@
     (for-each proc (array->list ary)))
 
   (define-record-writer (<array> array)
-    (call-with-port (open-output-string)
-     (lambda (port)
-       (display "#.(array" port)
-       (array-for-each
-        (lambda (obj)
-          (display " " port)
-          (write obj port))
-        array)
-       (display ")" port)
-       (get-output-string port))))
+    (let ((port (open-output-string)))
+      (display "#.(array" port)
+      (array-for-each
+       (lambda (obj)
+         (display " " port)
+         (write obj port))
+       array)
+      (display ")" port)
+      (let ((str (get-output-string port)))
+        (close-port port)
+        str)))
 
   (export make-array
           array

@@ -1,429 +1,56 @@
 (define-library (scheme base)
   (import (picrin base)
-          (picrin macro))
+          (picrin macro)
+          (picrin record)
+          (picrin syntax-rules))
 
-  (export define
-          set!
-          lambda
-          quote
-          if
-          begin
-          define-syntax)
+  (export else => _ ...)
 
-  ;; core syntax
+  ;; 4.1.2. Literal expressions
 
-  (import (scheme file))
+  (export quote)
 
-  (define-syntax include
-    (letrec ((read-file
-              (lambda (filename)
-                (let ((port (open-input-file filename)))
-                  (dynamic-wind
-                      (lambda () #f)
-                      (lambda ()
-                        (let loop ((expr (read port)) (exprs '()))
-                          (if (eof-object? expr)
-                              (reverse exprs)
-                              (loop (read port) (cons expr exprs)))))
-                      (lambda ()
-                        (close-port port)))))))
-      (er-macro-transformer
-       (lambda (form rename compare)
-         (let ((filenames (cdr form)))
-           (let ((exprs (apply append (map read-file filenames))))
-             `(,(rename 'begin) ,@exprs)))))))
+  ;; 4.1.4. Procedures
 
-  (export let let* letrec letrec*
-          quasiquote unquote unquote-splicing
-          and or
-          cond case else =>
-          do when unless
-          let-syntax letrec-syntax
-          include
-          _ ... syntax-error)
+  (export lambda)
 
+  ;; 4.1.5. Conditionals
 
-  ;; utility functions
+  (export if)
 
-  (define (walk proc expr)
-    (cond
-     ((null? expr)
-      '())
-     ((pair? expr)
-      (cons (walk proc (car expr))
-            (walk proc (cdr expr))))
-     ((vector? expr)
-      (list->vector (map proc (vector->list expr))))
-     (else
-      (proc expr))))
+  ;; 4.1.6. Assignments
 
-  (define (flatten expr)
-    (let ((list '()))
-      (walk
-       (lambda (x)
-         (set! list (cons x list)))
-       expr)
-      (reverse list)))
+  (export set!)
 
-  (define (reverse* l)
-    ;; (reverse* '(a b c d . e)) => (e d c b a)
-    (let loop ((a '())
-	       (d l))
-      (if (pair? d)
-	  (loop (cons (car d) a) (cdr d))
-	  (cons d a))))
+  ;; 4.1.7. Inclusion
 
-  (define (every? pred l)
-    (if (null? l)
-	#t
-	(and (pred (car l)) (every? pred (cdr l)))))
+  (export include)
 
+  ;; 4.2.1. Conditionals
 
-  ;; extra syntax
+  (export cond
+          case
+          and
+          or
+          when
+          unless)
 
-  (define-syntax let*-values
-    (er-macro-transformer
-     (lambda (form r c)
-       (let ((formals (cadr form)))
-         (if (null? formals)
-             `(,(r 'let) () ,@(cddr form))
-             `(,(r 'call-with-values) (,(r 'lambda) () ,@(cdar formals))
-               (,(r 'lambda) (,@(caar formals))
-                (,(r 'let*-values) (,@(cdr formals))
-                 ,@(cddr form)))))))))
+  ;; 4.2.2. Binding constructs
 
-  (define-syntax let-values
-    (er-macro-transformer
-     (lambda (form r c)
-       `(,(r 'let*-values) ,@(cdr form)))))
+  (export let
+          let*
+          letrec
+          letrec*
+          let-values
+          let*-values)
 
-  (define uniq
-    (let ((counter 0))
-      (lambda (x)
-        (let ((sym (string->symbol (string-append "var$" (number->string counter)))))
-          (set! counter (+ counter 1))
-          sym))))
+  ;; 4.2.3. Sequencing
 
-  (define-syntax define-values
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let* ((formal  (cadr form))
-              (formal* (walk uniq formal))
-              (exprs   (cddr form)))
-         `(begin
-            ,@(map
-               (lambda (var) `(define ,var #f))
-               (flatten formal))
-            (call-with-values (lambda () ,@exprs)
-              (lambda ,formal*
-                ,@(map
-                   (lambda (var val) `(set! ,var ,val))
-                   (flatten formal)
-                   (flatten formal*)))))))))
+  (export begin)
 
-  (export let-values
-          let*-values
-          define-values)
+  ;; 4.2.4. Iteration
 
-  (define-syntax syntax-rules
-    (er-macro-transformer
-     (lambda (form r compare)
-       (define _define (r 'define))
-       (define _let (r 'let))
-       (define _if (r 'if))
-       (define _begin (r 'begin))
-       (define _lambda (r 'lambda))
-       (define _set! (r 'set!))
-       (define _not (r 'not))
-       (define _and (r 'and))
-       (define _car (r 'car))
-       (define _cdr (r 'cdr))
-       (define _cons (r 'cons))
-       (define _pair? (r 'pair?))
-       (define _null? (r 'null?))
-       (define _symbol? (r 'symbol?))
-       (define _vector? (r 'vector?))
-       (define _eqv? (r 'eqv?))
-       (define _string=? (r 'string=?))
-       (define _map (r 'map))
-       (define _vector->list (r 'vector->list))
-       (define _list->vector (r 'list->vector))
-       (define _quote (r 'quote))
-       (define _quasiquote (r 'quasiquote))
-       (define _unquote (r 'unquote))
-       (define _unquote-splicing (r 'unquote-splicing))
-       (define _syntax-error (r 'syntax-error))
-       (define _call/cc (r 'call/cc))
-       (define _er-macro-transformer (r 'er-macro-transformer))
-
-       (define (var->sym v)
-         (let loop ((cnt 0)
-                    (v v))
-           (if (symbol? v)
-               (string->symbol
-                (string-append (symbol->string v) "/" (number->string cnt)))
-               (loop (+ 1 cnt) (car v)))))
-
-       (define push-var list)
-
-       (define (compile-match ellipsis literals pattern)
-	 (letrec ((compile-match-base
-		   (lambda (pattern)
-		     (cond ((member pattern literals compare)
-			    (values
-			     `(,_if (,_and (,_symbol? expr) (cmp expr (rename ',pattern)))
-				    #f
-				    (exit #f))
-			     '()))
-			   ((compare pattern (r '_)) (values #f '()))
-			   ((and ellipsis (compare pattern ellipsis))
-			    (values `(,_syntax-error "invalid pattern") '()))
-			   ((symbol? pattern)
-			    (values `(,_set! ,(var->sym pattern) expr) (list pattern)))
-			   ((pair? pattern)
-			    (compile-match-list pattern))
-			   ((vector? pattern)
-			    (compile-match-vector pattern))
-			   ((string? pattern)
-			    (values
-			     `(,_if (,_not (,_string=? ',pattern expr))
-				    (exit #f))
-			     '()))
-			   (else
-			    (values
-			     `(,_if (,_not (,_eqv? ',pattern expr))
-				    (exit #f))
-			     '())))))
-
-		  (compile-match-list
-		   (lambda (pattern)
-		     (let loop ((pattern pattern)
-				(matches '())
-				(vars '())
-				(accessor 'expr))
-		       (cond ;; (hoge)
-			((not (pair? (cdr pattern)))
-			 (let*-values (((match1 vars1) (compile-match-base (car pattern)))
-				       ((match2 vars2) (compile-match-base (cdr pattern))))
-			   (values
-			    `(,_begin ,@(reverse matches)
-				      (,_if (,_pair? ,accessor)
-					    (,_begin
-					     (,_let ((expr (,_car ,accessor)))
-						    ,match1)
-					     (,_let ((expr (,_cdr ,accessor)))
-						    ,match2))
-					    (exit #f)))
-			    (append vars (append vars1 vars2)))))
-			;; (hoge ... rest args)
-			((and ellipsis (compare (cadr pattern) ellipsis))
-			 (let-values (((match-r vars-r) (compile-match-list-reverse pattern)))
-			   (values
-			    `(,_begin ,@(reverse matches)
-				      (,_let ((expr (,_let loop ((a ())
-								 (d ,accessor))
-							   (,_if (,_pair? d)
-								 (loop (,_cons (,_car d) a) (,_cdr d))
-								 (,_cons d a)))))
-					     ,match-r))
-			    (append vars vars-r))))
-			(else
-			 (let-values (((match1 vars1) (compile-match-base (car pattern))))
-			   (loop (cdr pattern)
-				 (cons `(,_if (,_pair? ,accessor)
-					      (,_let ((expr (,_car ,accessor)))
-						     ,match1)
-					      (exit #f))
-				       matches)
-				 (append vars vars1)
-				 `(,_cdr ,accessor))))))))
-
-		  (compile-match-list-reverse
-		   (lambda (pattern)
-		     (let loop ((pattern (reverse* pattern))
-				(matches '())
-				(vars '())
-				(accessor 'expr))
-		       (cond ((and ellipsis (compare (car pattern) ellipsis))
-			      (let-values (((match1 vars1) (compile-match-ellipsis (cadr pattern))))
-				(values
-				 `(,_begin ,@(reverse matches)
-					   (,_let ((expr ,accessor))
-						  ,match1))
-				 (append vars vars1))))
-			     (else
-			      (let-values (((match1 vars1) (compile-match-base (car pattern))))
-				(loop (cdr pattern)
-				      (cons `(,_let ((expr (,_car ,accessor))) ,match1) matches)
-				      (append vars vars1)
-				      `(,_cdr ,accessor))))))))
-
-		  (compile-match-ellipsis
-		   (lambda (pattern)
-		     (let-values (((match vars) (compile-match-base pattern)))
-		       (values
-			`(,_let loop ((expr expr))
-				(,_if (,_not (,_null? expr))
-				      (,_let ,(map (lambda (var) `(,(var->sym var) '())) vars)
-					     (,_let ((expr (,_car expr)))
-						    ,match)
-					     ,@(map
-						(lambda (var)
-						  `(,_set! ,(var->sym (push-var var))
-							   (,_cons ,(var->sym var) ,(var->sym (push-var var)))))
-						vars)
-					     (loop (,_cdr expr)))))
-			(map push-var vars)))))
-
-		  (compile-match-vector
-		   (lambda (pattern)
-		     (let-values (((match vars) (compile-match-base (vector->list pattern))))
-		       (values
-			`(,_if (,_vector? expr)
-			       (,_let ((expr (,_vector->list expr)))
-				      ,match)
-			       (exit #f))
-			vars)))))
-
-	   (let-values (((match vars) (compile-match-base (cdr pattern))))
-	     (values `(,_let ((expr (,_cdr expr)))
-			     ,match
-			     #t)
-		     vars))))
-
-       ;;; compile expand
-       (define (compile-expand ellipsis reserved template)
-	 (letrec ((compile-expand-base
-		   (lambda (template ellipsis-valid)
-		     (cond ((member template reserved eq?)
-			    (values (var->sym template) (list template)))
-			   ((symbol? template)
-			    (values `(rename ',template) '()))
-			   ((pair? template)
-			    (compile-expand-list template ellipsis-valid))
-			   ((vector? template)
-			    (compile-expand-vector template ellipsis-valid))
-			   (else
-			    (values `',template '())))))
-
-		  (compile-expand-list
-		   (lambda (template ellipsis-valid)
-		     (let loop ((template template)
-				(expands '())
-				(vars '()))
-		       (cond ;; (... hoge)
-			((and ellipsis-valid
-			      (pair? template)
-			      (compare (car template) ellipsis))
-			 (if (and (pair? (cdr template)) (null? (cddr template)))
-			     (compile-expand-base (cadr template) #f)
-			     (values '(,_syntax-error "invalid template") '())))
-			;; hoge
-			((not (pair? template))
-			 (let-values (((expand1 vars1)
-				       (compile-expand-base template ellipsis-valid)))
-			   (values
-			    `(,_quasiquote (,@(reverse expands) . (,_unquote ,expand1)))
-			    (append vars vars1))))
-			;; (a ... rest syms)
-			((and ellipsis-valid
-			      (pair? (cdr template))
-			      (compare (cadr template) ellipsis))
-			 (let-values (((expand1 vars1)
-				       (compile-expand-base (car template) ellipsis-valid)))
-			   (loop (cddr template)
-				 (cons
-				  `(,_unquote-splicing
-				    (,_map (,_lambda ,(map var->sym vars1) ,expand1)
-					   ,@(map (lambda (v) (var->sym (push-var v))) vars1)))
-				  expands)
-				 (append vars (map push-var vars1)))))
-			(else
-			 (let-values (((expand1 vars1)
-				       (compile-expand-base (car template) ellipsis-valid)))
-			   (loop (cdr template)
-				 (cons
-				  `(,_unquote ,expand1)
-				  expands)
-				 (append vars vars1))))))))
-
-		  (compile-expand-vector
-		   (lambda (template ellipsis-valid)
-		     (let-values (((expand1 vars1)
-				   (compile-expand-base (vector->list template) ellipsis-valid)))
-		       (values
-			`(,_list->vector ,expand1)
-			vars1)))))
-
-	   (compile-expand-base template ellipsis)))
-
-       (define (check-vars vars-pattern vars-template)
-	 ;;fixme
-	 #t)
-
-       (define (compile-rule ellipsis literals rule)
-	 (let ((pattern (car rule))
-	       (template (cadr rule)))
-	   (let*-values (((match vars-match)
-			  (compile-match ellipsis literals pattern))
-			 ((expand vars-expand)
-			  (compile-expand ellipsis (flatten vars-match) template)))
-	     (if (check-vars vars-match vars-expand)
-		 (list vars-match match expand)
-		 'mismatch))))
-
-       (define (expand-clauses clauses rename)
-	 (cond ((null? clauses)
-		`(,_quote (syntax-error "no matching pattern")))
-	       ((compare (car clauses) 'mismatch)
-		`(,_syntax-error "invalid rule"))
-	       (else
-		(let ((vars (list-ref (car clauses) 0))
-		      (match (list-ref (car clauses) 1))
-		      (expand (list-ref (car clauses) 2)))
-		  `(,_let ,(map (lambda (v) (list (var->sym v) '())) vars)
-			  (,_let ((result (,_call/cc (,_lambda (exit) ,match))))
-				 (,_if result
-				       ,expand
-				       ,(expand-clauses (cdr clauses) rename))))))))
-
-       (define (normalize-form form)
-	 (if (and (list? form) (>= (length form) 2))
-	     (let ((ellipsis '...)
-		   (literals (cadr form))
-		   (rules (cddr form)))
-
-	       (when (symbol? literals)
-		     (set! ellipsis literals)
-		     (set! literals (car rules))
-		     (set! rules (cdr rules)))
-
-	       (if (and (symbol? ellipsis)
-			(list? literals)
-			(every? symbol? literals)
-			(list? rules)
-			(every? (lambda (l) (and (list? l) (= (length l) 2))) rules))
-		   (if (member ellipsis literals compare)
-		       `(syntax-rules #f ,literals ,@rules)
-		       `(syntax-rules ,ellipsis ,literals ,@rules))
-		   #f))
-	     #f))
-
-       (let ((form (normalize-form form)))
-	 (if form
-	     (let ((ellipsis (list-ref form 1))
-		   (literals (list-ref form 2))
-		   (rules (list-tail form 3)))
-	       (let ((clauses (map (lambda (rule) (compile-rule ellipsis literals rule))
-				   rules)))
-		 `(,_er-macro-transformer
-		   (,_lambda (expr rename cmp)
-			     ,(expand-clauses clauses r)))))
-
-	     `(,_syntax-error "malformed syntax-rules"))))))
-
-  (export syntax-rules)
-
+  (export do)
 
   ;; 4.2.6. Dynamic bindings
 
@@ -440,8 +67,8 @@
                 ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
                 result)))))))
 
-  (export parameterize make-parameter)
-
+  (export make-parameter
+          parameterize)
 
   ;; 4.2.7. Exception handling
 
@@ -505,35 +132,80 @@
 
   (export guard)
 
-  ;; 5.5 Recored-type definitions
+  ;; 4.2.8. Quasiquotation
 
-  (import (picrin record))
+  (export quasiquote
+          unquote
+          unquote-splicing)
+
+  ;; 4.3.1. Binding constructs for syntactic keywords
+
+  (export let-syntax
+          letrec-syntax)
+
+  ;; 4.3.2 Pattern language
+
+  (export syntax-rules)
+
+  ;; 4.3.3. Signaling errors in macro transformers
+
+  (export syntax-error)
+
+  ;; 5.3. Variable definitions
+
+  (export define)
+
+  ;; 5.3.3. Multiple-value definitions
+
+  (export define-values)
+
+  ;; 5.4. Syntax definitions
+
+  (export define-syntax)
+
+  ;; 5.5 Recored-type definitions
 
   (export define-record-type)
 
-  (export (rename floor-remainder modulo)
-          (rename truncate-quotient quotient)
-          (rename truncate-remainder remainder))
-
-  (export define
-          lambda
-          if
-          quote
-          set!
-          begin
-          define-syntax)
+  ;; 6.1. Equivalence predicates
 
   (export eq?
           eqv?
           equal?)
 
-  (export boolean?
-          boolean=?
-          not)
+  ;; 6.2. Numbers
 
-  (export char?
-          char->integer
-          integer->char)
+  (define (exact-integer? x)
+    (and (exact? x)
+         (integer? x)))
+
+  (define (zero? x)
+    (= x 0))
+
+  (define (positive? x)
+    (> x 0))
+
+  (define (negative? x)
+    (< x 0))
+
+  (define (min . args)
+    (let loop ((args args) (min +inf.0))
+      (if (null? args)
+          min
+          (loop (cdr args) (if (< (car args) min)
+                               (car args)
+                               min)))))
+
+  (define (max . args)
+    (let loop ((args args) (max -inf.0))
+      (if (null? args)
+          max
+          (loop (cdr args) (if (> (car args) max)
+                               (car args)
+                               max)))))
+
+  (define (square x)
+    (* x x))
 
   (export number?
           complex?
@@ -551,8 +223,8 @@
           zero?
           positive?
           negative?
-          odd?
-          even?
+          ;; odd?
+          ;; even?
           min
           max
           +
@@ -560,117 +232,29 @@
           *
           /
           abs
-          floor-quotient
-          floor-remainder
+          ;; floor-quotient
+          ;; floor-remainder
           floor/
-          truncate-quotient
-          truncate-remainder
+          ;; truncate-quotient
+          ;; truncate-remainder
           truncate/
-          gcd
-          lcm
+          ;; gcd
+          ;; lcm
           floor
           ceiling
           truncate
           round
-          exact-integer-sqrt
+          ;; exact-integer-sqrt
           square
           expt
           number->string
-          string->number
-          finite?
-          infinite?
-          nan?
-          exp
-          log
-          sin
-          cos
-          tan
-          acos
-          asin
-          atan
-          sqrt)
+          string->number)
 
-  (export vector?
-          make-vector
-          vector-length
-          vector-ref
-          vector-set!
-          vector-copy!
-          vector-copy
-          vector-append
-          vector-fill!
-          list->vector
-          vector->list)
+  ;; 6.3. Booleans
 
-  (export string?
-          make-string
-          string-length
-          string-ref
-          string-set!
-          string=?
-          string<?
-          string>?
-          string<=?
-          string>=?
-          string-copy
-          string-copy!
-          string-append
-          string-fill!)
-
-  (export current-input-port
-          current-output-port
-          current-error-port
-
-          port?
-          input-port?
-          output-port?
-          textual-port?
-          binary-port?
-          close-port
-
-          open-input-string
-          open-output-string
-          get-output-string
-          open-input-bytevector
-          open-output-bytevector
-          get-output-bytevector
-
-          eof-object?
-          eof-object
-
-          read-char
-          peek-char
-          char-ready?
-          read-line
-          read-string
-
-          read-u8
-          peek-u8
-          u8-ready?
-          read-bytevector
-          read-bytevector!
-
-          newline
-          write-char
-          write-string
-          write-u8
-          write-bytevector
-          flush-output-port)
-
-  (export with-exception-handler
-          raise
-          raise-continuable
-          error
-          error-object?
-          error-object-message
-          error-object-irritants
-          read-error?
-          file-error?)
-
-  (export procedure?
-          apply
-          map
-          for-each)
+  (export boolean?
+          boolean=?
+          not)
 
   ;; 6.4 Pairs and lists
 
@@ -702,14 +286,14 @@
           assv
           assoc)
 
-  ;; 6.5 Symbols
+  ;; 6.5. Symbols
 
   (export symbol?
           symbol=?
           symbol->string
           string->symbol)
 
-  ;; 6.6 Characters
+  ;; 6.6. Characters
 
   (define-macro (define-char-transitive-predicate name op)
     `(define (,name . cs)
@@ -721,56 +305,82 @@
   (define-char-transitive-predicate char<=? <=)
   (define-char-transitive-predicate char>=? >=)
 
-  (export char=?
+  (export char?
+          char->integer
+          integer->char
+          char=?
           char<?
           char>?
           char<=?
           char>=?)
 
-  ;; 6.7 String
+  ;; 6.7. Strings
 
-  (define (string->list string . opts)
-    (let ((start (if (pair? opts) (car opts) 0))
-          (end (if (>= (length opts) 2)
-                   (cadr opts)
-                   (string-length string))))
-      (do ((i start (+ i 1))
-           (res '()))
-          ((= i end)
-           (reverse res))
-        (set! res (cons (string-ref string i) res)))))
+  ;; (define (string->list string . opts)
+  ;;   (let ((start (if (pair? opts) (car opts) 0))
+  ;;         (end (if (>= (length opts) 2)
+  ;;                  (cadr opts)
+  ;;                  (string-length string))))
+  ;;     (do ((i start (+ i 1))
+  ;;          (res '()))
+  ;;         ((= i end)
+  ;;          (reverse res))
+  ;;       (set! res (cons (string-ref string i) res)))))
 
-  (define (list->string list)
-    (let ((len (length list)))
-      (let ((v (make-string len)))
-        (do ((i 0 (+ i 1))
-             (l list (cdr l)))
-            ((= i len)
-             v)
-          (string-set! v i (car l))))))
+  ;; (define (list->string list)
+  ;;   (let ((len (length list)))
+  ;;     (let ((v (make-string len)))
+  ;;       (do ((i 0 (+ i 1))
+  ;;            (l list (cdr l)))
+  ;;           ((= i len)
+  ;;            v)
+  ;;         (string-set! v i (car l))))))
 
-  (define (string . objs)
-    (list->string objs))
+  ;; (define (string . objs)
+  ;;   (list->string objs))
 
-  (export string
-          string->list
-          list->string
-          (rename string-copy substring))
+  ;; (export string
+  ;;         string->list
+  ;;         list->string
+  ;;         (rename string-copy substring))
 
-  ;; 6.8. Vector
+  (export string?
+          string-length
+          string-ref
+          string-copy
+          string-append
+          string=?
+          string<?
+          string>?
+          string<=?
+          string>=?)
+
+  ;; 6.8. Vectors
 
   (define (vector . objs)
     (list->vector objs))
 
-  (define (vector->string . args)
-    (list->string (apply vector->list args)))
+  ;; (define (vector->string . args)
+  ;;   (list->string (apply vector->list args)))
 
-  (define (string->vector . args)
-    (list->vector (apply string->list args)))
+  ;; (define (string->vector . args)
+  ;;   (list->vector (apply string->list args)))
 
-  (export vector vector->string string->vector)
+  ;; (export vector vector->string string->vector)
 
-  ;; 6.9 bytevector
+  (export vector?
+          make-vector
+          vector-length
+          vector-ref
+          vector-set!
+          vector-copy!
+          vector-copy
+          vector-append
+          vector-fill!
+          list->vector
+          vector->list)
+
+  ;; 6.9. bytevector
 
   (define (bytevector->list v start end)
     (do ((i start (+ i 1))
@@ -791,42 +401,72 @@
   (define (bytevector . objs)
     (list->bytevector objs))
 
-  (define (utf8->string v . opts)
-    (let ((start (if (pair? opts) (car opts) 0))
-          (end (if (>= (length opts) 2)
-                   (cadr opts)
-                   (bytevector-length v))))
-      (list->string (map integer->char (bytevector->list v start end)))))
+  ;; (define (utf8->string v . opts)
+  ;;   (let ((start (if (pair? opts) (car opts) 0))
+  ;;         (end (if (>= (length opts) 2)
+  ;;                  (cadr opts)
+  ;;                  (bytevector-length v))))
+  ;;     (list->string (map integer->char (bytevector->list v start end)))))
 
-  (define (string->utf8 s . opts)
-    (let ((start (if (pair? opts) (car opts) 0))
-          (end (if (>= (length opts) 2)
-                   (cadr opts)
-                   (string-length s))))
-      (list->bytevector (map char->integer (string->list s start end)))))
+  ;; (define (string->utf8 s . opts)
+  ;;   (let ((start (if (pair? opts) (car opts) 0))
+  ;;         (end (if (>= (length opts) 2)
+  ;;                  (cadr opts)
+  ;;                  (string-length s))))
+  ;;     (list->bytevector (map char->integer (string->list s start end)))))
 
-  (export bytevector
-          bytevector->list
-          list->bytevector
-          utf8->string
-          string->utf8)
+  ;; (export bytevector
+  ;;         bytevector->list
+  ;;         list->bytevector
+  ;;         utf8->string
+  ;;         string->utf8)
 
-  ;; 6.10 control features
+  (export bytevector?
+          make-bytevector
+          bytevector-length
+          bytevector-u8-ref
+          bytevector-u8-set!
+          bytevector-copy!
+          bytevector-append)
 
-  (define (string-map f . strings)
-    (list->string (apply map f (map string->list strings))))
+  ;; 6.10. Control features
 
-  (define (string-for-each f . strings)
-    (apply for-each f (map string->list strings)))
+  ;; (define (string-map f . strings)
+  ;;   (list->string (apply map f (map string->list strings))))
 
-  (define (vector-map f . vectors)
-    (list->vector (apply map f (map vector->list vectors))))
+  ;; (define (string-for-each f . strings)
+  ;;   (apply for-each f (map string->list strings)))
 
-  (define (vector-for-each f . vectors)
-    (apply for-each f (map vector->list vectors)))
+  ;; (define (vector-map f . vectors)
+  ;;   (list->vector (apply map f (map vector->list vectors))))
 
-  (export string-map string-for-each
-          vector-map vector-for-each)
+  ;; (define (vector-for-each f . vectors)
+  ;;   (apply for-each f (map vector->list vectors)))
+
+  ;; (export string-map string-for-each
+  ;;         vector-map vector-for-each)
+
+  (export procedure?
+          apply
+          map
+          for-each
+          call-with-current-continuation
+          call/cc
+          dynamic-wind
+          values
+          call-with-values)
+
+  ;; 6.11. Exceptions
+
+  (export with-exception-handler
+          raise
+          raise-continuable
+          error
+          error-object?
+          error-object-message
+          error-object-irritants
+          read-error?
+          file-error?)
 
   ;; 6.13. Input and output
 
@@ -836,4 +476,47 @@
         (lambda () (proc port))
         (lambda () (close-port port))))
 
-  (export call-with-port))
+  (export current-input-port
+          current-output-port
+          current-error-port
+
+          call-with-port
+
+          port?
+          input-port?
+          output-port?
+          textual-port?
+          binary-port?
+
+          close-port
+          (rename close-port close-input-port)
+          (rename close-port close-output-port)
+
+          open-input-string
+          open-output-string
+          get-output-string
+          open-input-bytevector
+          open-output-bytevector
+          get-output-bytevector
+
+          eof-object?
+          eof-object
+
+          read-char
+          peek-char
+          char-ready?
+          read-line
+          read-string
+
+          read-u8
+          peek-u8
+          u8-ready?
+          read-bytevector
+          read-bytevector!
+
+          newline
+          write-char
+          write-string
+          write-u8
+          write-bytevector
+          flush-output-port))

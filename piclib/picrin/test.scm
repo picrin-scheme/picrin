@@ -1,7 +1,6 @@
 (define-library (picrin test)
-  (import (scheme base)
-          (scheme process-context)
-          (picrin base))
+  (import (picrin base)
+          (picrin syntax-rules))
 
   (define test-counter 0)
   (define counter 0)
@@ -77,7 +76,7 @@
     (length fails))
 
   (define (test-exit)
-    (exit (zero? (test-failure-count))))
+    (exit (= (test-failure-count) 0)))
 
   (define-syntax test-syntax-error
     (syntax-rules ()
