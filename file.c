@@ -43,7 +43,7 @@ pic_file_open_input_file(pic_state *pic)
 }
 
 pic_value
-pic_file_open_input_binary_file(pic_state *pic)
+pic_file_open_binary_input_file(pic_state *pic)
 {
   static const short flags = PIC_PORT_IN | PIC_PORT_BINARY;
   char *fname;
@@ -65,7 +65,7 @@ pic_file_open_output_file(pic_state *pic)
 }
 
 pic_value
-pic_file_open_output_binary_file(pic_state *pic)
+pic_file_open_binary_output_file(pic_state *pic)
 {
   static const short flags = PIC_PORT_OUT | PIC_PORT_BINARY;
   char *fname;
@@ -109,9 +109,9 @@ void
 pic_init_file(pic_state *pic)
 {
   pic_defun(pic, "open-input-file", pic_file_open_input_file);
-  pic_defun(pic, "open-input-binary-file", pic_file_open_input_binary_file);
+  pic_defun(pic, "open-binary-input-file", pic_file_open_binary_input_file);
   pic_defun(pic, "open-output-file", pic_file_open_output_file);
-  pic_defun(pic, "open-output-binary-file", pic_file_open_output_binary_file);
+  pic_defun(pic, "open-binary-output-file", pic_file_open_binary_output_file);
   pic_defun(pic, "file-exists?", pic_file_exists_p);
   pic_defun(pic, "delete-file", pic_file_delete);
 }
