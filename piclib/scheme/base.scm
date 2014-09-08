@@ -1,11 +1,14 @@
 (define-library (scheme base)
   (import (picrin base)
-          (picrin list)
-          (picrin symbol)
           (picrin macro))
 
-  (export define set! lambda quote
-          if begin define-syntax)
+  (export define
+          set!
+          lambda
+          quote
+          if
+          begin
+          define-syntax)
 
   ;; call/cc
 
@@ -267,7 +270,7 @@
      (lambda (form r c)
        `(,(r 'letrec-syntax) ,@(cdr form)))))
 
-  (import (scheme read) (scheme file))
+  (import (scheme file))
 
   (define-syntax include
     (letrec ((read-file
@@ -682,8 +685,6 @@
 
   ;; 4.2.6. Dynamic bindings
 
-  (import (picrin parameter))
-
   (define-syntax parameterize
     (ir-macro-transformer
      (lambda (form inject compare)
@@ -763,9 +764,6 @@
   (export guard)
 
   ;; 5.5 Recored-type definitions
-
-  (import (picrin record)
-          (scheme write))
 
   (define ((default-record-writer ctor) obj)
     (let ((port (open-output-string)))
@@ -857,6 +855,163 @@
   (export (rename floor-remainder modulo)
           (rename truncate-quotient quotient)
           (rename truncate-remainder remainder))
+
+  (export define
+          lambda
+          if
+          quote
+          set!
+          begin
+          define-syntax)
+
+  (export eq?
+          eqv?
+          equal?)
+
+  (export boolean?
+          boolean=?
+          not)
+
+  (export char?
+          char->integer
+          integer->char)
+
+  (export number?
+          complex?
+          real?
+          rational?
+          integer?
+          exact?
+          inexact?
+          exact-integer?
+          =
+          <
+          >
+          <=
+          >=
+          zero?
+          positive?
+          negative?
+          odd?
+          even?
+          min
+          max
+          +
+          -
+          *
+          /
+          abs
+          floor-quotient
+          floor-remainder
+          floor/
+          truncate-quotient
+          truncate-remainder
+          truncate/
+          gcd
+          lcm
+          floor
+          ceiling
+          truncate
+          round
+          exact-integer-sqrt
+          square
+          expt
+          number->string
+          string->number
+          finite?
+          infinite?
+          nan?
+          exp
+          log
+          sin
+          cos
+          tan
+          acos
+          asin
+          atan
+          sqrt)
+
+  (export vector?
+          make-vector
+          vector-length
+          vector-ref
+          vector-set!
+          vector-copy!
+          vector-copy
+          vector-append
+          vector-fill!
+          list->vector
+          vector->list)
+
+  (export string?
+          make-string
+          string-length
+          string-ref
+          string-set!
+          string=?
+          string<?
+          string>?
+          string<=?
+          string>=?
+          string-copy
+          string-copy!
+          string-append
+          string-fill!)
+
+  (export current-input-port
+          current-output-port
+          current-error-port
+
+          port?
+          input-port?
+          output-port?
+          textual-port?
+          binary-port?
+          close-port
+
+          open-input-string
+          open-output-string
+          get-output-string
+          open-input-bytevector
+          open-output-bytevector
+          get-output-bytevector
+
+          eof-object?
+          eof-object
+
+          read-char
+          peek-char
+          char-ready?
+          read-line
+          read-string
+
+          read-u8
+          peek-u8
+          u8-ready?
+          read-bytevector
+          read-bytevector!
+
+          newline
+          write-char
+          write-string
+          write-u8
+          write-bytevector
+          flush-output-port)
+
+  (export with-exception-handler
+          raise
+          raise-continuable
+          error
+          error-object?
+          error-object-message
+          error-object-irritants
+          read-error?
+          file-error?)
+
+  (export procedure?
+          apply
+          map
+          for-each)
 
   ;; 6.4 Pairs and lists
 

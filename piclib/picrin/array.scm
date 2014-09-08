@@ -1,6 +1,6 @@
 (define-library (picrin array)
   (import (scheme base)
-          (scheme write)
+          (picrin base)
           (picrin record))
 
   (define-record-type <array>

@@ -1,8 +1,8 @@
 (define-library (picrin test)
   (import (scheme base)
-          (scheme write)
-          (scheme read)
-          (scheme process-context))
+          (scheme process-context)
+          (picrin base))
+
   (define test-counter 0)
   (define counter 0)
   (define failure-counter 0)

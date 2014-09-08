@@ -1,5 +1,6 @@
 (define-library (picrin record)
-  (import (scheme base))
+  (import (picrin base)
+          (scheme base))
 
   (define (set-record-writer! record-type writer)
     (record-set! record-type 'writer writer))

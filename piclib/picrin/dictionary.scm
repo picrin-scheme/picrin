@@ -1,5 +1,6 @@
 (define-library (picrin dictionary)
-  (import (scheme base))
+  (import (scheme base)
+          (picrin base))
 
   (define (dictionary-map proc dict)
     (let ((kvs '()))

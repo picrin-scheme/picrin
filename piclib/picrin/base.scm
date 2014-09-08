@@ -31,38 +31,22 @@
           integer?
           exact?
           inexact?
-          exact-integer?
           =
           <
           >
           <=
           >=
-          zero?
-          positive?
-          negative?
-          odd?
-          even?
-          min
-          max
           +
           -
           *
           /
           abs
-          floor-quotient
-          floor-remainder
           floor/
-          truncate-quotient
-          truncate-remainder
           truncate/
-          gcd
-          lcm
           floor
           ceiling
           truncate
           round
-          exact-integer-sqrt
-          square
           expt
           number->string
           string->number
@@ -129,19 +113,15 @@
           vector->list)
 
   (export string?
-          make-string
           string-length
           string-ref
-          string-set!
+          string-copy
+          string-append
           string=?
           string<?
           string>?
           string<=?
-          string>=?
-          string-copy
-          string-copy!
-          string-append
-          string-fill!)
+          string>=?)
 
   (export make-dictionary
           dictionary?
@@ -160,16 +140,13 @@
   (export current-input-port
           current-output-port
           current-error-port
+
+          port?
           input-port?
           output-port?
           textual-port?
           binary-port?
-          port?
-          input-port-open?
-          output-port-open?
           close-port
-          close-input-port
-          close-output-port
 
           open-input-string
           open-output-string
