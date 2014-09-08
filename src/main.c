@@ -6,6 +6,9 @@
 #include "picrin/pair.h"
 #include "picrin/error.h"
 
+void pic_init_contrib(pic_state *);
+void pic_load_piclib(pic_state *);
+
 static pic_value
 pic_features(pic_state *pic)
 {
@@ -34,9 +37,6 @@ pic_libraries(pic_state *pic)
   return libs;
 }
 
-void pic_init_contrib(pic_state *);
-void pic_load_piclib(pic_state *);
-
 void
 pic_init_picrin(pic_state *pic)
 {
@@ -55,11 +55,10 @@ pic_init_picrin(pic_state *pic)
 int
 main(int argc, char *argv[], char **envp)
 {
-  xFILE *stdio[3] = { xstdin, xstdout, xstderr };
   pic_state *pic;
   int status = 0;
 
-  pic = pic_open(argc, argv, envp, stdio);
+  pic = pic_open(argc, argv, envp);
 
   pic_init_picrin(pic);
 
