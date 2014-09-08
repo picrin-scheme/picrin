@@ -16,7 +16,7 @@
 void pic_init_core(pic_state *);
 
 pic_state *
-pic_open(int argc, char *argv[], char **envp, xFILE *stdio[3])
+pic_open(int argc, char *argv[], char **envp)
 {
   struct pic_port *pic_port_make_stdport(pic_state *, xFILE *, short);
   char t;
@@ -156,9 +156,9 @@ pic_open(int argc, char *argv[], char **envp, xFILE *stdio[3])
   pic->lib = pic->PICRIN_USER;
 
   /* standard I/O */
-  pic->xSTDIN = pic_port_make_stdport(pic, stdio[0], PIC_PORT_IN);
-  pic->xSTDOUT = pic_port_make_stdport(pic, stdio[1], PIC_PORT_OUT);
-  pic->xSTDERR = pic_port_make_stdport(pic, stdio[2], PIC_PORT_OUT);
+  pic->xSTDIN = pic_port_make_stdport(pic, xstdin, PIC_PORT_IN);
+  pic->xSTDOUT = pic_port_make_stdport(pic, xstdout, PIC_PORT_OUT);
+  pic->xSTDERR = pic_port_make_stdport(pic, xstderr, PIC_PORT_OUT);
 
   pic_init_core(pic);
 

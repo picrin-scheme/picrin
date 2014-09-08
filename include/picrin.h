@@ -134,7 +134,7 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-pic_state *pic_open(int argc, char *argv[], char **envp, xFILE *stdio[3]);
+pic_state *pic_open(int argc, char *argv[], char **envp);
 void pic_close(pic_state *);
 
 void pic_define(pic_state *, const char *, pic_value); /* automatic export */
