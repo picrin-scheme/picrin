@@ -191,7 +191,7 @@
     (< x 0))
 
   (define (even? x)
-    (= x (* (/ x 2) 2)))
+    (= x (* (exact (floor (/ x 2))) 2)))
 
   (define (odd? x)
     (not (even? x)))
