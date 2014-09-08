@@ -38,19 +38,14 @@ pic_str *
 pic_str_new_fill(pic_state *pic, size_t len, char fill)
 {
   size_t i;
-  char *cstr;
-  pic_str *str;
+  char buf[len + 1];
 
-  cstr = (char *)pic_alloc(pic, len + 1);
-  cstr[len] = '\0';
   for (i = 0; i < len; ++i) {
-    cstr[i] = fill;
+    buf[i] = fill;
   }
+  buf[i] = '\0';
 
-  str = pic_str_new(pic, cstr, len);
-
-  pic_free(pic, cstr);
-  return str;
+  return pic_str_new(pic, buf, len);
 }
 
 size_t
@@ -71,45 +66,24 @@ pic_str_ref(pic_state *pic, pic_str *str, size_t i)
   return (char)c;
 }
 
-static xrope *
-xr_put(xrope *rope, size_t i, char c)
-{
-  xrope *x, *y, *z;
-  char buf[2];
-
-  if (xr_len(rope) <= i) {
-    return NULL;
-  }
-
-  buf[0] = c;
-  buf[1] = '\0';
-
-  x = xr_sub(rope, 0, i);
-  y = xr_new_copy(buf, 1);
-  z = xr_cat(x, y);
-  XROPE_DECREF(x);
-  XROPE_DECREF(y);
-
-  x = z;
-  y = xr_sub(rope, i + 1, xr_len(rope));
-  z = xr_cat(z, y);
-  XROPE_DECREF(x);
-  XROPE_DECREF(y);
-
-  return z;
-}
-
 void
 pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
 {
-  xrope *x;
+  pic_str *x, *y, *z, *tmp;
 
-  x = xr_put(str->rope, i, c);
-  if (x == NULL) {
+  if (pic_strlen(str) <= i) {
     pic_errorf(pic, "index out of range %d", i);
   }
+
+  x = pic_substr(pic, str, 0, i);
+  y = pic_str_new_fill(pic, 1, c);
+  z = pic_substr(pic, str, i + 1, pic_strlen(str));
+
+  tmp = pic_strcat(pic, x, pic_strcat(pic, y, z));
+
+  XROPE_INCREF(tmp->rope);
   XROPE_DECREF(str->rope);
-  str->rope = x;
+  str->rope = tmp->rope;
 }
 
 pic_str *
@@ -443,15 +417,14 @@ pic_init_str(pic_state *pic)
   pic_defun(pic, "string-length", pic_str_string_length);
   pic_defun(pic, "string-ref", pic_str_string_ref);
   pic_defun(pic, "string-set!", pic_str_string_set);
+  pic_defun(pic, "string-copy", pic_str_string_copy);
+  pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
+  pic_defun(pic, "string-append", pic_str_string_append);
+  pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
 
   pic_defun(pic, "string=?", pic_str_string_eq);
   pic_defun(pic, "string<?", pic_str_string_lt);
   pic_defun(pic, "string>?", pic_str_string_gt);
   pic_defun(pic, "string<=?", pic_str_string_le);
   pic_defun(pic, "string>=?", pic_str_string_ge);
-
-  pic_defun(pic, "string-copy", pic_str_string_copy);
-  pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
-  pic_defun(pic, "string-append", pic_str_string_append);
-  pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
 }
