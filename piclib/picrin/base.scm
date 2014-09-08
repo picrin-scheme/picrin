@@ -8,13 +8,14 @@
           begin
           define-syntax)
 
+  (export syntax-error
+          let-syntax
+          letrec-syntax)
+
   (export let
           let*
           letrec
           letrec*
-          let-values
-          let*-values
-          define-values
           quasiquote
           unquote
           unquote-splicing
@@ -22,17 +23,16 @@
           or
           cond
           case
+          =>
+          else
           do
           when
           unless
-          let-syntax
-          letrec-syntax
-          include
-          =>
-          else
-          _
-          ...
-          syntax-error)
+          include)
+
+  (export let-values
+          let*-values
+          define-values)
 
   (export eq?
           eqv?

@@ -4,8 +4,6 @@
           (picrin record)
           (picrin syntax-rules))
 
-  (export else => _ ...)
-
   ;; 4.1.2. Literal expressions
 
   (export quote)
@@ -30,6 +28,8 @@
 
   (export cond
           case
+          else
+          =>
           and
           or
           when
@@ -145,7 +145,9 @@
 
   ;; 4.3.2 Pattern language
 
-  (export syntax-rules)
+  (export syntax-rules
+          _
+          ...)
 
   ;; 4.3.3. Signaling errors in macro transformers
 

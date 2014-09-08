@@ -2,6 +2,16 @@
   (import (picrin base)
           (picrin macro))
 
+  (define-syntax define-auxiliary-syntax
+    (er-macro-transformer
+     (lambda (expr r c)
+       (list (r 'define-syntax) (cadr expr)
+             (list (r 'lambda) '_
+                   (list (r 'error) "invalid use of auxiliary syntax"))))))
+
+  (define-auxiliary-syntax _)
+  (define-auxiliary-syntax ...)
+
   (define (walk proc expr)
     (cond
      ((null? expr)
@@ -332,4 +342,6 @@
 
 	     `(,_syntax-error "malformed syntax-rules"))))))
 
-  (export syntax-rules))
+  (export syntax-rules
+          _
+          ...))
