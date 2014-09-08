@@ -244,7 +244,7 @@ my $src = <<'EOL';
                     (if (symbol? formal)
                         `((,(r 'define) ,formal #f))
                         '())
-                    `((,(r 'define) ,(car formal) #f) . ,@(loop (cdr formal)))))
+                    `((,(r 'define) ,(car formal) #f) . ,(loop (cdr formal)))))
             (,(r 'call-with-values) (,(r 'lambda) () ,@exprs)
               (,(r 'lambda) ,(r 'args)
                 ,@(let loop ((formal formal) (args (r 'args)))
@@ -615,7 +615,7 @@ const char pic_boot[] =
 "                    (if (symbol? formal)\n"
 "                        `((,(r 'define) ,formal #f))\n"
 "                        '())\n"
-"                    `((,(r 'define) ,(car formal) #f) . ,@(loop (cdr formal)))))\n"
+"                    `((,(r 'define) ,(car formal) #f) . ,(loop (cdr formal)))))\n"
 "            (,(r 'call-with-values) (,(r 'lambda) () ,@exprs)\n"
 "              (,(r 'lambda) ,(r 'args)\n"
 "                ,@(let loop ((formal formal) (args (r 'args)))\n"
