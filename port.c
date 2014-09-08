@@ -207,6 +207,16 @@ pic_port_eof_object(pic_state *pic)
 }
 
 static pic_value
+pic_port_port_open_p(pic_state *pic)
+{
+  struct pic_port *port;
+
+  pic_get_args(pic, "p", &port);
+
+  return pic_bool_value(port->status == PIC_PORT_OPEN);
+}
+
+static pic_value
 pic_port_close_port(pic_state *pic)
 {
   struct pic_port *port;
@@ -665,6 +675,8 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "textual-port?", pic_port_textual_port_p);
   pic_defun(pic, "binary-port?", pic_port_binary_port_p);
   pic_defun(pic, "port?", pic_port_port_p);
+
+  pic_defun(pic, "port-open?", pic_port_port_open_p);
   pic_defun(pic, "close-port", pic_port_close_port);
 
   /* string I/O */
