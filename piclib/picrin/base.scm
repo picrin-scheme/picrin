@@ -124,6 +124,7 @@
           bytevector-length
           bytevector-u8-ref
           bytevector-u8-set!
+          bytevector-copy
           bytevector-copy!
           bytevector-append)
 
@@ -177,6 +178,7 @@
           textual-port?
           binary-port?
 
+          port-open?
           close-port
 
           open-input-file

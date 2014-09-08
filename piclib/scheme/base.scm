@@ -479,19 +479,19 @@
                    (string-length s))))
       (list->bytevector (map char->integer (string->list s start end)))))
 
-  (export bytevector
-          bytevector->list
-          list->bytevector
-          utf8->string
-          string->utf8)
-
   (export bytevector?
+          bytevector
           make-bytevector
           bytevector-length
           bytevector-u8-ref
           bytevector-u8-set!
+          bytevector-copy
           bytevector-copy!
-          bytevector-append)
+          bytevector-append
+          bytevector->list
+          list->bytevector
+          utf8->string
+          string->utf8)
 
   ;; 6.10. Control features
 
@@ -507,15 +507,14 @@
   (define (vector-for-each f . vectors)
     (apply for-each f (map vector->list vectors)))
 
-  (export string-map
-          string-for-each
-          vector-map
-          vector-for-each)
-
   (export procedure?
           apply
           map
           for-each
+          string-map
+          string-for-each
+          vector-map
+          vector-for-each
           call-with-current-continuation
           call/cc
           dynamic-wind
@@ -554,6 +553,8 @@
           textual-port?
           binary-port?
 
+          (rename port-open? input-port-open?)
+          (rename port-open? output-port-open?)
           close-port
           (rename close-port close-input-port)
           (rename close-port close-output-port)
