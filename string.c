@@ -34,6 +34,25 @@ pic_str_new_cstr(pic_state *pic, const char *cstr)
   return pic_str_new(pic, cstr, strlen(cstr));
 }
 
+pic_str *
+pic_str_new_fill(pic_state *pic, size_t len, char fill)
+{
+  size_t i;
+  char *cstr;
+  pic_str *str;
+
+  cstr = (char *)pic_alloc(pic, len + 1);
+  cstr[len] = '\0';
+  for (i = 0; i < len; ++i) {
+    cstr[i] = fill;
+  }
+
+  str = pic_str_new(pic, cstr, len);
+
+  pic_free(pic, cstr);
+  return str;
+}
+
 size_t
 pic_strlen(pic_str *str)
 {
@@ -258,6 +277,17 @@ pic_str_string_p(pic_state *pic)
 }
 
 static pic_value
+pic_str_make_string(pic_state *pic)
+{
+  int len;
+  char c = ' ';
+
+  pic_get_args(pic, "i|c", &len, &c);
+
+  return pic_obj_value(pic_str_new_fill(pic, len, c));
+}
+
+static pic_value
 pic_str_string_length(pic_state *pic)
 {
   pic_str *str;
@@ -276,6 +306,19 @@ pic_str_string_ref(pic_state *pic)
   pic_get_args(pic, "si", &str, &k);
 
   return pic_char_value(pic_str_ref(pic, str, k));
+}
+
+static pic_value
+pic_str_string_set(pic_state *pic)
+{
+  pic_str *str;
+  char c;
+  int k;
+
+  pic_get_args(pic, "sic", &str, &k, &c);
+
+  pic_str_set(pic, str, k, c);
+  return pic_none_value();
 }
 
 #define DEFINE_STRING_CMP(name, op)                                     \
@@ -328,6 +371,30 @@ pic_str_string_copy(pic_state *pic)
 }
 
 static pic_value
+pic_str_string_copy_ip(pic_state *pic)
+{
+  pic_str *to, *from;
+  int n, at, start, end;
+
+  n = pic_get_args(pic, "sis|ii", &to, &at, &from, &start, &end);
+
+  switch (n) {
+  case 3:
+    start = 0;
+  case 4:
+    end = pic_strlen(from);
+  }
+  if (to == from) {
+    from = pic_substr(pic, from, 0, end);
+  }
+
+  while (start < end) {
+    pic_str_set(pic, to, at++, pic_str_ref(pic, from, start++));
+  }
+  return pic_none_value();
+}
+
+static pic_value
 pic_str_string_append(pic_state *pic)
 {
   size_t argc, i;
@@ -346,18 +413,45 @@ pic_str_string_append(pic_state *pic)
   return pic_obj_value(str);
 }
 
+static pic_value
+pic_str_string_fill_ip(pic_state *pic)
+{
+  pic_str *str;
+  char c;
+  int n, start, end;
+
+  n = pic_get_args(pic, "sc|ii", &str, &c, &start, &end);
+
+  switch (n) {
+  case 2:
+    start = 0;
+  case 3:
+    end = pic_strlen(str);
+  }
+
+  while (start < end) {
+    pic_str_set(pic, str, start++, c);
+  }
+  return pic_none_value();
+}
+
 void
 pic_init_str(pic_state *pic)
 {
   pic_defun(pic, "string?", pic_str_string_p);
+  pic_defun(pic, "make-string", pic_str_make_string);
   pic_defun(pic, "string-length", pic_str_string_length);
   pic_defun(pic, "string-ref", pic_str_string_ref);
-  pic_defun(pic, "string-copy", pic_str_string_copy);
-  pic_defun(pic, "string-append", pic_str_string_append);
+  pic_defun(pic, "string-set!", pic_str_string_set);
 
   pic_defun(pic, "string=?", pic_str_string_eq);
   pic_defun(pic, "string<?", pic_str_string_lt);
   pic_defun(pic, "string>?", pic_str_string_gt);
   pic_defun(pic, "string<=?", pic_str_string_le);
   pic_defun(pic, "string>=?", pic_str_string_ge);
+
+  pic_defun(pic, "string-copy", pic_str_string_copy);
+  pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
+  pic_defun(pic, "string-append", pic_str_string_append);
+  pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
 }
