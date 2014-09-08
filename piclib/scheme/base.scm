@@ -232,15 +232,27 @@
       (lambda (q r)
         r)))
 
-  (define (gcd i j)
-    (if (> i j)
-        (gcd j i)
-        (if (zero? i)
-            j
-            (gcd (truncate-remainder j i) i))))
+  (define (gcd . args)
+    (define (gcd i j)
+      (cond
+       ((> i j) (gcd j i))
+       ((< i 0) (gcd (- i) j))
+       ((> i 0) (gcd (truncate-remainder j i) i))
+       (else j)))
+    (let loop ((args args) (acc 0))
+      (if (null? args)
+          acc
+          (loop (cdr args)
+                (gcd acc (car args))))))
 
-  (define (lcm i j)
-    (/ (* i j) (gcd i j)))
+  (define (lcm . args)
+    (define (lcm i j)
+      (/ (* i j) (gcd i j)))
+    (let loop ((args args) (acc 1))
+      (if (null? args)
+          acc
+          (loop (cdr args)
+                (lcm acc (car args))))))
 
   (define (square x)
     (* x x))
