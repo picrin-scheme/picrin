@@ -197,20 +197,20 @@
     (not (even? x)))
 
   (define (min . args)
-    (let loop ((args args) (min +inf.0))
+    (define (min a b)
+      (if (< a b) a b))
+    (let loop ((args args) (acc +inf.0))
       (if (null? args)
-          min
-          (loop (cdr args) (if (< (car args) min)
-                               (car args)
-                               min)))))
+          acc
+          (loop (cdr args) (min (car args) acc)))))
 
   (define (max . args)
-    (let loop ((args args) (max -inf.0))
+    (define (max a b)
+      (if (> a b) a b))
+    (let loop ((args args) (acc -inf.0))
       (if (null? args)
-          max
-          (loop (cdr args) (if (> (car args) max)
-                               (car args)
-                               max)))))
+          acc
+          (loop (cdr args) (max (car args) acc)))))
 
   (define (floor-quotient i j)
     (call-with-values (lambda () (floor/ i j))
