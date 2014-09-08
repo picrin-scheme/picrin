@@ -4,67 +4,57 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/port.h"
+#include "picrin/error.h"
 
-pic_value
-pic_load_cstr(pic_state *pic, const char *src)
+static void
+pic_load_port(pic_state *pic, struct pic_port *port)
 {
-  size_t ai;
-  pic_value v, exprs;
-  struct pic_proc *proc;
+  pic_value form;
 
-  exprs = pic_parse_cstr(pic, src);
-  if (pic_undef_p(exprs)) {
-    pic_errorf(pic, "load: read failure (%s)", pic_errmsg(pic));
-  }
+  pic_try {
+    size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_for_each (v, exprs) {
-    ai = pic_gc_arena_preserve(pic);
+    while (! pic_eof_p(form = pic_read(pic, port))) {
+      pic_eval(pic, form, pic->lib);
 
-    proc = pic_compile(pic, v, pic->lib);
-    if (proc == NULL) {
-      pic_error(pic, "load: compilation failure");
+      pic_gc_arena_restore(pic, ai);
     }
-
-    pic_apply(pic, proc, pic_nil_value());
-
-    pic_gc_arena_restore(pic, ai);
   }
-
-  return pic_none_value();
+  pic_catch {
+    pic_errorf(pic, "load error: %s", pic_errmsg(pic));
+  }
 }
 
-pic_value
-pic_load(pic_state *pic, const char *fn)
+void
+pic_load_cstr(pic_state *pic, const char *src)
 {
-  FILE *file;
-  size_t ai;
-  pic_value v, exprs;
-  struct pic_proc *proc;
+  struct pic_port *port = pic_open_input_string(pic, src);
 
-  file = fopen(fn, "r");
+  pic_load_port(pic, port);
+
+  pic_close_port(pic, port);
+}
+
+void
+pic_load(pic_state *pic, const char *filename)
+{
+  struct pic_port *port;
+  xFILE *file;
+
+  file = xfopen(filename, "r");
   if (file == NULL) {
-    pic_errorf(pic, "load: could not read file \"%s\"", fn);
+    pic_errorf(pic, "could not open file: %s", filename);
   }
 
-  exprs = pic_parse_file(pic, file);
-  if (pic_undef_p(exprs)) {
-    pic_errorf(pic, "load: read failure (%s)", pic_errmsg(pic));
-  }
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port->file = file;
+  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
+  port->status = PIC_PORT_OPEN;
 
-  pic_for_each (v, exprs) {
-    ai = pic_gc_arena_preserve(pic);
+  pic_load_port(pic, port);
 
-    proc = pic_compile(pic, v, pic->lib);
-    if (proc == NULL) {
-      pic_error(pic, "load: compilation failure");
-    }
-
-    pic_apply(pic, proc, pic_nil_value());
-
-    pic_gc_arena_restore(pic, ai);
-  }
-
-  return pic_none_value();
+  pic_close_port(pic, port);
 }
 
 static pic_value
@@ -75,7 +65,9 @@ pic_load_load(pic_state *pic)
 
   pic_get_args(pic, "z|o", &fn, &envid);
 
-  return pic_load(pic, fn);
+  pic_load(pic, fn);
+
+  return pic_none_value();
 }
 
 void
