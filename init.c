@@ -35,6 +35,8 @@ void pic_init_lib(pic_state *);
 
 #define DONE pic_gc_arena_restore(pic, ai);
 
+extern const char pic_boot[];
+
 void
 pic_init_core(pic_state *pic)
 {
@@ -73,5 +75,7 @@ pic_init_core(pic_state *pic)
     pic_init_record(pic); DONE;
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
+
+    pic_load_cstr(pic, pic_boot);
   }
 }
