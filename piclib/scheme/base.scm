@@ -374,47 +374,50 @@
            (reverse res))
         (set! res (cons (string-ref string i) res)))))
 
-  ;; (define (list->string list)
-  ;;   (let ((len (length list)))
-  ;;     (let ((v (make-string len)))
-  ;;       (do ((i 0 (+ i 1))
-  ;;            (l list (cdr l)))
-  ;;           ((= i len)
-  ;;            v)
-  ;;         (string-set! v i (car l))))))
+  (define (list->string list)
+    (let ((len (length list)))
+      (let ((v (make-string len)))
+        (do ((i 0 (+ i 1))
+             (l list (cdr l)))
+            ((= i len)
+             v)
+          (string-set! v i (car l))))))
 
-  ;; (define (string . objs)
-  ;;   (list->string objs))
-
-  (export ;string
-          string->list
-          ;list->string
-          (rename string-copy substring))
+  (define (string . objs)
+    (list->string objs))
 
   (export string?
+          string
+          make-string
           string-length
           string-ref
+          string-set!
           string-copy
+          string-copy!
           string-append
+          string-fill!
           string=?
           string<?
           string>?
           string<=?
-          string>=?)
+          string>=?
+          string->list
+          list->string
+          (rename string-copy substring))
 
   ;; 6.8. Vectors
 
   (define (vector . objs)
     (list->vector objs))
 
-  ;; (define (vector->string . args)
-  ;;   (list->string (apply vector->list args)))
+  (define (vector->string . args)
+    (list->string (apply vector->list args)))
 
   (define (string->vector . args)
     (list->vector (apply string->list args)))
 
   (export vector
-          ;vector->string
+          vector->string
           string->vector)
 
   (export vector?
@@ -450,12 +453,12 @@
   (define (bytevector . objs)
     (list->bytevector objs))
 
-  ;; (define (utf8->string v . opts)
-  ;;   (let ((start (if (pair? opts) (car opts) 0))
-  ;;         (end (if (>= (length opts) 2)
-  ;;                  (cadr opts)
-  ;;                  (bytevector-length v))))
-  ;;     (list->string (map integer->char (bytevector->list v start end)))))
+  (define (utf8->string v . opts)
+    (let ((start (if (pair? opts) (car opts) 0))
+          (end (if (>= (length opts) 2)
+                   (cadr opts)
+                   (bytevector-length v))))
+      (list->string (map integer->char (bytevector->list v start end)))))
 
   (define (string->utf8 s . opts)
     (let ((start (if (pair? opts) (car opts) 0))
@@ -467,7 +470,7 @@
   (export bytevector
           bytevector->list
           list->bytevector
-          ;; utf8->string
+          utf8->string
           string->utf8)
 
   (export bytevector?
@@ -480,8 +483,8 @@
 
   ;; 6.10. Control features
 
-  ;; (define (string-map f . strings)
-  ;;   (list->string (apply map f (map string->list strings))))
+  (define (string-map f . strings)
+    (list->string (apply map f (map string->list strings))))
 
   (define (string-for-each f . strings)
     (apply for-each f (map string->list strings)))
@@ -492,7 +495,7 @@
   (define (vector-for-each f . vectors)
     (apply for-each f (map vector->list vectors)))
 
-  (export ;string-map
+  (export string-map
           string-for-each
           vector-map
           vector-for-each)

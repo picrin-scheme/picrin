@@ -140,10 +140,14 @@
           vector->list)
 
   (export string?
+          make-string
           string-length
           string-ref
+          string-set!
           string-copy
+          string-copy!
           string-append
+          string-fill!
           string=?
           string<?
           string>?
