@@ -3,7 +3,7 @@
   (import (except (scheme base) set!)
           (prefix (only (scheme base) set!) %)
           (picrin dictionary)
-          (picrin attribute)
+          (picrin base)
           (srfi 1)
           (srfi 8))
   

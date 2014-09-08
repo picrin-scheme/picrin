@@ -9,6 +9,16 @@
           (scheme eval)
           (scheme load))
 
+  (define (null-environment n)
+    (if (not (= n 5))
+        (error "unsupported environment version" n)
+        '(scheme null)))
+
+  (define (scheme-report-environment n)
+    (if (not (= n 5))
+        (error "unsupported environment version" n)
+        '(scheme r5rs)))
+
   (export * + - / < <= = > >=
           abs acos and
           ;; angle

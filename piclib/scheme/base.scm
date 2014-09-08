@@ -188,6 +188,12 @@
   (define (negative? x)
     (< x 0))
 
+  (define (even? x)
+    (= x (* (/ x 2) 2)))
+
+  (define (odd? x)
+    (not (even? x)))
+
   (define (min . args)
     (let loop ((args args) (min +inf.0))
       (if (null? args)
@@ -204,8 +210,42 @@
                                (car args)
                                max)))))
 
+  (define (floor-quotient i j)
+    (call-with-values (lambda () (floor/ i j))
+      (lambda (q r)
+        q)))
+
+  (define (floor-remainder i j)
+    (call-with-values (lambda () (floor/ i j))
+      (lambda (q r)
+        r)))
+
+  (define (truncate-quotient i j)
+    (call-with-values (lambda () (truncate/ i j))
+      (lambda (q r)
+        q)))
+
+  (define (truncate-remainder i j)
+    (call-with-values (lambda () (truncate/ i j))
+      (lambda (q r)
+        r)))
+
+  (define (gcd i j)
+    (if (> i j)
+        (gcd j i)
+        (if (zero? i)
+            j
+            (gcd (truncate-remainder j i) i))))
+
+  (define (lcm i j)
+    (/ (* i j) (gcd i j)))
+
   (define (square x)
     (* x x))
+
+  (define (exact-integer-sqrt k)
+    (let ((s (exact (sqrt k))))
+      (values s (- k (square s)))))
 
   (export number?
           complex?
@@ -215,6 +255,8 @@
           exact?
           inexact?
           exact-integer?
+          exact
+          inexact
           =
           <
           >
@@ -223,8 +265,8 @@
           zero?
           positive?
           negative?
-          ;; odd?
-          ;; even?
+          odd?
+          even?
           min
           max
           +
@@ -232,19 +274,22 @@
           *
           /
           abs
-          ;; floor-quotient
-          ;; floor-remainder
+          floor-quotient
+          floor-remainder
           floor/
-          ;; truncate-quotient
-          ;; truncate-remainder
+          truncate-quotient
+          truncate-remainder
           truncate/
-          ;; gcd
-          ;; lcm
+          (rename truncate-quotient quotient)
+          (rename truncate-remainder remainder)
+          (rename floor-remainder modulo)
+          gcd
+          lcm
           floor
           ceiling
           truncate
           round
-          ;; exact-integer-sqrt
+          exact-integer-sqrt
           square
           expt
           number->string
@@ -316,16 +361,16 @@
 
   ;; 6.7. Strings
 
-  ;; (define (string->list string . opts)
-  ;;   (let ((start (if (pair? opts) (car opts) 0))
-  ;;         (end (if (>= (length opts) 2)
-  ;;                  (cadr opts)
-  ;;                  (string-length string))))
-  ;;     (do ((i start (+ i 1))
-  ;;          (res '()))
-  ;;         ((= i end)
-  ;;          (reverse res))
-  ;;       (set! res (cons (string-ref string i) res)))))
+  (define (string->list string . opts)
+    (let ((start (if (pair? opts) (car opts) 0))
+          (end (if (>= (length opts) 2)
+                   (cadr opts)
+                   (string-length string))))
+      (do ((i start (+ i 1))
+           (res '()))
+          ((= i end)
+           (reverse res))
+        (set! res (cons (string-ref string i) res)))))
 
   ;; (define (list->string list)
   ;;   (let ((len (length list)))
@@ -339,10 +384,10 @@
   ;; (define (string . objs)
   ;;   (list->string objs))
 
-  ;; (export string
-  ;;         string->list
-  ;;         list->string
-  ;;         (rename string-copy substring))
+  (export ;string
+          string->list
+          ;list->string
+          (rename string-copy substring))
 
   (export string?
           string-length
@@ -363,10 +408,12 @@
   ;; (define (vector->string . args)
   ;;   (list->string (apply vector->list args)))
 
-  ;; (define (string->vector . args)
-  ;;   (list->vector (apply string->list args)))
+  (define (string->vector . args)
+    (list->vector (apply string->list args)))
 
-  ;; (export vector vector->string string->vector)
+  (export vector
+          ;vector->string
+          string->vector)
 
   (export vector?
           make-vector
@@ -408,18 +455,18 @@
   ;;                  (bytevector-length v))))
   ;;     (list->string (map integer->char (bytevector->list v start end)))))
 
-  ;; (define (string->utf8 s . opts)
-  ;;   (let ((start (if (pair? opts) (car opts) 0))
-  ;;         (end (if (>= (length opts) 2)
-  ;;                  (cadr opts)
-  ;;                  (string-length s))))
-  ;;     (list->bytevector (map char->integer (string->list s start end)))))
+  (define (string->utf8 s . opts)
+    (let ((start (if (pair? opts) (car opts) 0))
+          (end (if (>= (length opts) 2)
+                   (cadr opts)
+                   (string-length s))))
+      (list->bytevector (map char->integer (string->list s start end)))))
 
-  ;; (export bytevector
-  ;;         bytevector->list
-  ;;         list->bytevector
-  ;;         utf8->string
-  ;;         string->utf8)
+  (export bytevector
+          bytevector->list
+          list->bytevector
+          ;; utf8->string
+          string->utf8)
 
   (export bytevector?
           make-bytevector
@@ -434,17 +481,19 @@
   ;; (define (string-map f . strings)
   ;;   (list->string (apply map f (map string->list strings))))
 
-  ;; (define (string-for-each f . strings)
-  ;;   (apply for-each f (map string->list strings)))
+  (define (string-for-each f . strings)
+    (apply for-each f (map string->list strings)))
 
-  ;; (define (vector-map f . vectors)
-  ;;   (list->vector (apply map f (map vector->list vectors))))
+  (define (vector-map f . vectors)
+    (list->vector (apply map f (map vector->list vectors))))
 
-  ;; (define (vector-for-each f . vectors)
-  ;;   (apply for-each f (map vector->list vectors)))
+  (define (vector-for-each f . vectors)
+    (apply for-each f (map vector->list vectors)))
 
-  ;; (export string-map string-for-each
-  ;;         vector-map vector-for-each)
+  (export ;string-map
+          string-for-each
+          vector-map
+          vector-for-each)
 
   (export procedure?
           apply
