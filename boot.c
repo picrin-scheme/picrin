@@ -63,8 +63,6 @@ my $src = <<'EOL';
 
   (define-auxiliary-syntax else)
   (define-auxiliary-syntax =>)
-  (define-auxiliary-syntax _)
-  (define-auxiliary-syntax ...)
   (define-auxiliary-syntax unquote)
   (define-auxiliary-syntax unquote-splicing)
 
@@ -358,7 +356,7 @@ my $src = <<'EOL';
           do when unless
           let-syntax letrec-syntax
           include
-          _ ... syntax-error))
+          syntax-error))
 
 EOL
 
@@ -436,8 +434,6 @@ const char pic_boot[] =
 "\n"
 "  (define-auxiliary-syntax else)\n"
 "  (define-auxiliary-syntax =>)\n"
-"  (define-auxiliary-syntax _)\n"
-"  (define-auxiliary-syntax ...)\n"
 "  (define-auxiliary-syntax unquote)\n"
 "  (define-auxiliary-syntax unquote-splicing)\n"
 "\n"
@@ -731,7 +727,7 @@ const char pic_boot[] =
 "          do when unless\n"
 "          let-syntax letrec-syntax\n"
 "          include\n"
-"          _ ... syntax-error))\n"
+"          syntax-error))\n"
 ;
 
 #if 0
