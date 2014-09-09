@@ -109,6 +109,7 @@ pic_open(int argc, char *argv[], char **envp)
   register_core_symbol(pic, sEXPORT, "export");
   register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
   register_core_symbol(pic, sIN_LIBRARY, "in-library");
+  register_core_symbol(pic, sCOND_EXPAND, "cond-expand");
   register_core_symbol(pic, sCONS, "cons");
   register_core_symbol(pic, sCAR, "car");
   register_core_symbol(pic, sCDR, "cdr");
@@ -142,6 +143,7 @@ pic_open(int argc, char *argv[], char **envp)
   register_renamed_symbol(pic, rEXPORT, "export");
   register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
   register_renamed_symbol(pic, rIN_LIBRARY, "in-library");
+  register_renamed_symbol(pic, rCOND_EXPAND, "cond-expand");
   pic_gc_arena_restore(pic, ai);
 
   /* root block */
