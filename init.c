@@ -8,6 +8,12 @@
 #include "picrin/macro.h"
 #include "picrin/error.h"
 
+void
+pic_add_feature(pic_state *pic, const char *feature)
+{
+  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, feature)), pic->features);
+}
+
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -41,6 +47,9 @@ void
 pic_init_core(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
+
+  pic_add_feature(pic, "picrin");
+  pic_add_feature(pic, "ieee-float");
 
   pic_deflibrary (pic, "(picrin base)") {
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);

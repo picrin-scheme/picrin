@@ -57,6 +57,9 @@ pic_open(int argc, char *argv[], char **envp)
   /* macros */
   xh_init_int(&pic->macros, sizeof(struct pic_macro *));
 
+  /* features */
+  pic->features = pic_nil_value();
+
   /* libraries */
   pic->libs = pic_nil_value();
   pic->lib = NULL;
@@ -184,6 +187,7 @@ pic_close(pic_state *pic)
   pic->arena_idx = 0;
   pic->err = NULL;
   xh_clear(&pic->macros);
+  pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 
   /* free all heap objects */

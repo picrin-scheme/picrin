@@ -618,6 +618,8 @@ gc_mark_phase(pic_state *pic)
     }
   }
 
+  gc_mark(pic, pic->features);
+
   /* readers */
   gc_mark_trie(pic, pic->reader->trie);
 
