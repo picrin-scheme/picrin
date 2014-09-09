@@ -1,12 +1,3 @@
-[submodule "extlib/xhash"]
-	path = extlib/xhash
-	url = git://github.com/wasabiz/xhash.git
-[submodule "extlib/xfile"]
-	path = extlib/xfile
-	url = git://github.com/wasabiz/xfile.git
-[submodule "extlib/xrope"]
-	path = extlib/xrope
-	url = git://github.com/wasabiz/xrope.git
-[submodule "extlib/xvect"]
-	path = extlib/xvect
-	url = git://github.com/wasabiz/xvect.git
+[submodule "extlib/benz"]
+	path = extlib/benz
+	url = git://github.com/picrin-scheme/benz.git

@@ -1,5 +1,6 @@
 (define-library (scheme file)
-  (import (scheme base))
+  (import (picrin base)
+          (scheme base))
 
   (define (call-with-input-file filename callback)
     (call-with-port (open-input-file filename) callback))
@@ -19,7 +20,13 @@
         (parameterize ((current-output-port port))
           (thunk)))))
 
-  (export call-with-input-file
+  (export open-input-file
+          open-binary-input-file
+          open-output-file
+          open-binary-output-file
+          delete-file
+          file-exists?
+          call-with-input-file
           call-with-output-file
           with-input-from-file
           with-output-to-file))

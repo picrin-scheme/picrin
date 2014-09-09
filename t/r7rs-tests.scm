@@ -37,6 +37,7 @@
         (scheme eval)
         (scheme process-context)
         (scheme case-lambda)
+        (scheme r5rs)
         (picrin test))
 
 ;; R7RS test suite.  Covers all procedures and syntax in the small
