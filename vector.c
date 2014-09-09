@@ -37,19 +37,6 @@ pic_vec_new_from_list(pic_state *pic, pic_value data)
   return vec;
 }
 
-void
-pic_vec_extend_ip(pic_state *pic, struct pic_vector *vec, size_t size)
-{
-  size_t len, i;
-
-  len = vec->len;
-  vec->len = size;
-  vec->data = (pic_value *)pic_realloc(pic, vec->data, sizeof(pic_value) * size);
-  for (i = len; i < size; ++i) {
-    vec->data[i] = pic_none_value();
-  }
-}
-
 static pic_value
 pic_vec_vector_p(pic_state *pic)
 {
