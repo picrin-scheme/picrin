@@ -2,6 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
+#include "config.h"
+
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/error.h"
