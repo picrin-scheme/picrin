@@ -48,6 +48,41 @@
 
 (test-begin "R7RS")
 
+(test-begin "cond-expand")
+
+(test #t (cond-expand
+          (r7rs #t)
+          (else #f)))
+(test #t (cond-expand
+          ((library (scheme write)) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((not r6rs) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((and r7rs (library (picrin test))) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((or r6rs r7rs) #t)
+          (else #f)))
+(cond-expand
+ (r7rs (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((library (scheme write)) (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((not r6rs) (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((and r7rs (library (picrin test))) (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((or r6rs r7rs) (test #t #t))
+ (else (test #t #f)))
+
+(test-end)
+
 (test-begin "4.1 Primitive expression types")
 
 (let ()

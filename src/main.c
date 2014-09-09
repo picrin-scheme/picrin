@@ -14,15 +14,9 @@ void pic_load_piclib(pic_state *);
 static pic_value
 pic_features(pic_state *pic)
 {
-  pic_value features = pic_nil_value();
-
   pic_get_args(pic, "");
 
-  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "r7rs")), features);
-  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "ieee-float")), features);
-  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, "picrin")), features);
-
-  return features;
+  return pic->features;
 }
 
 static pic_value
@@ -42,6 +36,8 @@ pic_libraries(pic_state *pic)
 void
 pic_init_picrin(pic_state *pic)
 {
+  pic_add_feature(pic, "r7rs");
+
   pic_deflibrary (pic, "(picrin library)") {
     pic_defun(pic, "libraries", pic_libraries);
   }
