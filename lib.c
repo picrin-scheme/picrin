@@ -201,92 +201,56 @@ pic_export(pic_state *pic, pic_sym sym)
   export(pic, pic_sym_value(sym));
 }
 
-bool pic_condexpand_clause(pic_state *, pic_value);
-
-bool
-pic_condexpand_feature(pic_state *pic, pic_value name)
-{
-  pic_value feature;
-
-  pic_for_each(feature, pic->features){
-    if(pic_eq_p(feature, name))
-      return true;
-  }
-  return false;
-}
-
-bool
-pic_condexpand_library(pic_state *pic, pic_value name)
-{
-  pic_debug(pic, name);
-
-  if(pic_find_library(pic, name))
-    return true;
-  else
-    return false;
-}
-
-bool
-pic_condexpand_and(pic_state *pic, pic_value clauses)
-{
-  pic_value clause;
-
-  pic_for_each(clause, clauses){
-    if(!pic_condexpand_clause(pic, clause))
-      return false;
-  }
-  return true;
-}
-
-bool
-pic_condexpand_or(pic_state *pic, pic_value clauses)
-{
-  pic_value clause;
-
-  pic_for_each(clause, clauses){
-    if(pic_condexpand_clause(pic, clause))
-      return true;
-  }
-  return false;
-}
-
-bool
-pic_condexpand_not(pic_state *pic, pic_value clause)
-{
-  return ! pic_condexpand_clause(pic, clause);
-}
-
-bool
-pic_condexpand_clause(pic_state *pic, pic_value clause)
+static bool
+condexpand(pic_state *pic, pic_value clause)
 {
   const pic_sym sELSE = pic_intern_cstr(pic, "else");
   const pic_sym sLIBRARY = pic_intern_cstr(pic, "library");
   const pic_sym sOR = pic_intern_cstr(pic, "or");
   const pic_sym sAND = pic_intern_cstr(pic, "and");
   const pic_sym sNOT = pic_intern_cstr(pic, "not");
+  pic_sym tag;
+  pic_value c, feature;
 
-  if (pic_eq_p(clause, pic_sym_value(sELSE)))
+  if (pic_eq_p(clause, pic_sym_value(sELSE))) {
     return true;
-  else if (pic_sym_p(clause))
-    return pic_condexpand_feature(pic, clause);
-  else if (!pic_pair_p(clause))
-    pic_errorf(pic, "invalid 'cond-expand' clause ~s", clause);
-  else {
-    pic_value car = pic_car(pic, clause);
-    pic_value cdr = pic_cdr(pic, clause);
-    if(pic_eq_p(car, pic_sym_value(sLIBRARY)))
-      return pic_condexpand_library(pic, pic_car(pic, cdr));
-    else if(pic_eq_p(car, pic_sym_value(sAND)))
-      return pic_condexpand_and(pic, cdr);
-    else if(pic_eq_p(car, pic_sym_value(sOR)))
-      return pic_condexpand_or(pic, cdr);
-    else if(pic_eq_p(car, pic_sym_value(sNOT)))
-      return pic_condexpand_not(pic, pic_car(pic, cdr));
-    else
-      pic_errorf(pic, "unknown 'cond-expand' directive ~s", clause);
-    UNREACHABLE();
+  }
+  if (pic_sym_p(clause)) {
+    pic_for_each (feature, pic->features) {
+      if(pic_eq_p(feature, clause))
+        return true;
+    }
     return false;
   }
+
+  if (! (pic_pair_p(clause) && pic_sym_p(pic_car(pic, clause)))) {
+    pic_errorf(pic, "invalid 'cond-expand' clause ~s", clause);
+  } else {
+    tag = pic_sym(pic_car(pic, clause));
+  }
+
+  if (tag == sLIBRARY) {
+    return pic_find_library(pic, pic_list_ref(pic, clause, 1)) != NULL;
+  }
+  if (tag == sNOT) {
+    return ! condexpand(pic, pic_list_ref(pic, clause, 1));
+  }
+  if (tag == sAND) {
+    pic_for_each (c, pic_cdr(pic, clause)) {
+      if (! condexpand(pic, c))
+        return false;
+    }
+    return true;
+  }
+  if (tag == sOR) {
+    pic_for_each (c, pic_cdr(pic, clause)) {
+      if (condexpand(pic, c))
+        return true;
+    }
+    return false;
+  }
+
+  pic_errorf(pic, "unknown 'cond-expand' directive ~s", clause);
 }
 
 static pic_value
@@ -297,9 +261,11 @@ pic_lib_condexpand(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &clauses);
 
-  for (i = 0; i < argc; i++)
-    if(pic_condexpand_clause(pic, pic_car(pic, clauses[i])))
+  for (i = 0; i < argc; i++) {
+    if (condexpand(pic, pic_car(pic, clauses[i]))) {
       return pic_cons(pic, pic_sym_value(pic->rBEGIN), pic_cdr(pic, clauses[i]));
+    }
+  }
 
   return pic_none_value();
 }
