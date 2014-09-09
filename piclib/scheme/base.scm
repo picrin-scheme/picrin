@@ -536,10 +536,9 @@
   ;; 6.13. Input and output
 
   (define (call-with-port port proc)
-    (dynamic-wind
-        (lambda () #f)
-        (lambda () (proc port))
-        (lambda () (close-port port))))
+    (let ((value (proc port)))
+      (close-port port)
+      value))
 
   (export current-input-port
           current-output-port
