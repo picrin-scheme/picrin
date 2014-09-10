@@ -358,8 +358,6 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
   struct pic_lib *prev;
   pic_value v;
 
-  assert(pic_eq_p(lib->env->defer, pic_nil_value()));
-
 #if DEBUG
   puts("before expand:");
   pic_debug(pic, expr);
@@ -369,6 +367,8 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
   /* change library for macro-expansion time processing */
   prev = pic->lib;
   pic->lib = lib;
+
+  lib->env->defer = pic_nil_value(); /* the last expansion could fail and leave defer field old */
 
   v = macroexpand(pic, expr, lib->env);
 
