@@ -2,19 +2,6 @@
 
 use strict;
 
-open IN, "./boot.c";
-my @data = <IN>;
-close IN;
-
-open STDOUT, ">", "./boot.c";
-
-foreach (@data) {
-  print;
-  last if $_ eq "#---END---\n";
-}
-
-print "\n#endif\n\n";
-
 my $src = <<'EOL';
 
 (define-library (picrin base)
@@ -360,6 +347,19 @@ my $src = <<'EOL';
 
 EOL
 
+open IN, "./boot.c";
+my @data = <IN>;
+close IN;
+
+open STDOUT, ">", "./boot.c";
+
+foreach (@data) {
+  print;
+  last if $_ eq "#---END---\n";
+}
+
+print "\n#endif\n\n";
+
 print <<EOL;
 const char pic_boot[] =
 EOL
@@ -376,6 +376,10 @@ print <<EOL;
 ;
 
 #if 0
+Local Variables:
+mode: scheme
+End:
+
 =cut
 #endif
 EOL
@@ -731,5 +735,9 @@ const char pic_boot[] =
 ;
 
 #if 0
+Local Variables:
+mode: scheme
+End:
+
 =cut
 #endif
