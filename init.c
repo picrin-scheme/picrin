@@ -39,17 +39,69 @@ void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 
-#define DONE pic_gc_arena_restore(pic, ai);
-
 extern const char pic_boot[];
+
+static void
+pic_init_features(pic_state *pic)
+{
+  pic_add_feature(pic, "picrin");
+  pic_add_feature(pic, "ieee-float");
+
+#if _POSIX_SOURCE
+  pic_add_feature(pic, "posix");
+#endif
+
+#if _WIN32
+  pic_add_feature(pic, "windows");
+#endif
+
+#if __unix__
+  pic_add_feature(pic, "unix");
+#elif __gnu_linux__
+  pic_add_feature(pic, "gnu-linux");
+#elif __FreeBSD__
+  pic_add_feature(pic, "freebsd");
+#endif
+
+#if __i386__
+  pic_add_feature(pic, "i386");
+#elif __x86_64__
+  pic_add_feature(pic, "x86-64");
+#elif __ppc__
+  pic_add_feature(pic, "ppc");
+#elif __sparc__
+  pic_add_feature(pic, "sparc");
+#endif
+
+#if __ILP32__
+  pic_add_feature(pic, "ilp32");
+#elif __LP64__
+  pic_add_feature(pic, "lp64");
+#endif
+
+#if defined(__BYTE_ORDER__)
+# if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+  pic_add_feature(pic, "little-endian");
+# elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  pic_add_feature(pic, "big-endian");
+# endif
+#else
+# if __LITTLE_ENDIAN__
+  pic_add_feature(pic, "little-endian");
+# elif __BIG_ENDIAN__
+  pic_add_feature(pic, "big-endian");
+# endif
+#endif
+}
+
+#define DONE pic_gc_arena_restore(pic, ai);
 
 void
 pic_init_core(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_add_feature(pic, "picrin");
-  pic_add_feature(pic, "ieee-float");
+  pic_init_features(pic);
 
   pic_deflibrary (pic, "(picrin base)") {
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);
