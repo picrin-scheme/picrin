@@ -409,6 +409,50 @@ pic_str_string_fill_ip(pic_state *pic)
   return pic_none_value();
 }
 
+static pic_value
+pic_str_list_to_string(pic_state *pic)
+{
+  pic_str *str;
+  pic_value list, e;
+  int i = 0;
+
+  pic_get_args(pic, "o", &list);
+
+  str = pic_str_new_fill(pic, pic_length(pic, list), ' ');
+
+  pic_for_each (e, list) {
+    pic_assert_type(pic, e, char);
+
+    pic_str_set(pic, str, i++, pic_char(e));
+  }
+
+  return pic_obj_value(str);
+}
+
+static pic_value
+pic_str_string_to_list(pic_state *pic)
+{
+  pic_str *str;
+  pic_value list;
+  int n, start, end, i;
+
+  n = pic_get_args(pic, "s|ii", &str, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = pic_strlen(str);
+  }
+
+  list = pic_nil_value();
+
+  for (i = start; i < end; ++i) {
+    pic_push(pic, pic_char_value(pic_str_ref(pic, str, i)), list);
+  }
+  return pic_reverse(pic, list);
+}
+
 void
 pic_init_str(pic_state *pic)
 {
@@ -421,6 +465,8 @@ pic_init_str(pic_state *pic)
   pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
   pic_defun(pic, "string-append", pic_str_string_append);
   pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
+  pic_defun(pic, "list->string", pic_str_list_to_string);
+  pic_defun(pic, "string->list", pic_str_string_to_list);
 
   pic_defun(pic, "string=?", pic_str_string_eq);
   pic_defun(pic, "string<?", pic_str_string_lt);
