@@ -354,16 +354,6 @@
 
   ;; 6.6. Characters
 
-  (define-macro (define-char-transitive-predicate name op)
-    `(define (,name . cs)
-       (apply ,op (map char->integer cs))))
-
-  (define-char-transitive-predicate char=? =)
-  (define-char-transitive-predicate char<? <)
-  (define-char-transitive-predicate char>? >)
-  (define-char-transitive-predicate char<=? <=)
-  (define-char-transitive-predicate char>=? >=)
-
   (export char?
           char->integer
           integer->char

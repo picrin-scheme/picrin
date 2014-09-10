@@ -49,7 +49,12 @@
 
   (export char?
           char->integer
-          integer->char)
+          integer->char
+          char=?
+          char<?
+          char>?
+          char<=?
+          char>=?)
 
   (export number?
           complex?
