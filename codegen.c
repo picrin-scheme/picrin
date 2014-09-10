@@ -23,6 +23,7 @@ typedef struct analyze_scope {
   int depth;
   bool varg;
   xvect args, locals, captures; /* rest args variable is counted as a local */
+  pic_value defer;
   struct analyze_scope *up;
 } analyze_scope;
 
@@ -159,6 +160,7 @@ push_scope(analyze_state *state, pic_value formals)
     scope->args = args;
     scope->locals = locals;
     scope->captures = captures;
+    scope->defer = pic_nil_value();
 
     state->scope = scope;
 
@@ -258,6 +260,7 @@ define_var(analyze_state *state, pic_sym sym)
 }
 
 static pic_value analyze_node(analyze_state *, pic_value, bool);
+static pic_value analyze_procedure(analyze_state *, pic_value, pic_value, pic_value);
 
 static pic_value
 analyze(analyze_state *state, pic_value obj, bool tailpos)
@@ -281,6 +284,7 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
 
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, res);
+  pic_gc_protect(pic, state->scope->defer);
   return res;
 }
 
@@ -328,6 +332,42 @@ analyze_var(analyze_state *state, pic_sym sym)
 }
 
 static pic_value
+analyze_defer(analyze_state *state, pic_value name, pic_value formal, pic_value body)
+{
+  pic_state *pic = state->pic;
+  const pic_sym sNOWHERE = pic_intern_cstr(pic, " nowhere ");
+  pic_value skel;
+
+  skel = pic_list2(pic, pic_sym_value(state->sGREF), pic_sym_value(sNOWHERE));
+
+  pic_push(pic, pic_list4(pic, name, formal, body, skel), state->scope->defer);
+
+  return skel;
+}
+
+static void
+analyze_deferred(analyze_state *state)
+{
+  pic_state *pic = state->pic;
+  pic_value defer, val, name, formal, body, dst;
+
+  pic_for_each (defer, pic_reverse(pic, state->scope->defer)) {
+    name = pic_list_ref(pic, defer, 0);
+    formal = pic_list_ref(pic, defer, 1);
+    body = pic_list_ref(pic, defer, 2);
+    dst = pic_list_ref(pic, defer, 3);
+
+    val = analyze_procedure(state, name, formal, body);
+
+    /* copy */
+    pic_pair_ptr(dst)->car = pic_car(pic, val);
+    pic_pair_ptr(dst)->cdr = pic_cdr(pic, val);
+  }
+
+  state->scope->defer = pic_nil_value();
+}
+
+static pic_value
 analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_value body_exprs)
 {
   pic_state *pic = state->pic;
@@ -352,6 +392,8 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
 
     /* To know what kind of local variables are defined, analyze body at first. */
     body = analyze(state, pic_cons(pic, pic_sym_value(pic->rBEGIN), body_exprs), true);
+
+    analyze_deferred(state);
 
     locals = pic_nil_value();
     for (i = scope->locals.size; i > 0; --i) {
@@ -387,7 +429,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
   formals = pic_list_ref(pic, obj, 1);
   body_exprs = pic_list_tail(pic, obj, 2);
 
-  return analyze_procedure(state, pic_false_value(), formals, body_exprs);
+  return analyze_defer(state, pic_false_value(), formals, body_exprs);
 }
 
 static pic_value
@@ -425,7 +467,7 @@ analyze_define(analyze_state *state, pic_value obj)
     formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
     body_exprs = pic_list_tail(pic, pic_list_ref(pic, obj, 2), 2);
 
-    val = analyze_procedure(state, pic_sym_value(sym), formals, body_exprs);
+    val = analyze_defer(state, pic_sym_value(sym), formals, body_exprs);
   } else {
     if (pic_length(pic, obj) != 3) {
       pic_error(pic, "syntax error");
@@ -805,6 +847,8 @@ pic_analyze(pic_state *pic, pic_value obj)
   state = new_analyze_state(pic);
 
   obj = analyze(state, obj, true);
+
+  analyze_deferred(state);
 
   destroy_analyze_state(state);
   return obj;
