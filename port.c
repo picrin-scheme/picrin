@@ -114,6 +114,22 @@ pic_close_port(pic_state *pic, struct pic_port *port)
 }
 
 static pic_value
+pic_port_call_with_port(pic_state *pic)
+{
+  struct pic_port *port;
+  struct pic_proc *proc;
+  pic_value value;
+
+  pic_get_args(pic, "pl", &port, &proc);
+
+  value = pic_apply1(pic, proc, pic_obj_value(port));
+
+  pic_close_port(pic, port);
+
+  return value;
+}
+
+static pic_value
 pic_port_input_port_p(pic_state *pic)
 {
   pic_value v;
@@ -669,6 +685,8 @@ pic_init_port(pic_state *pic)
   pic_define(pic, "current-input-port", pic_obj_value(pic_var_new(pic, pic_obj_value(pic->xSTDIN), NULL)));
   pic_define(pic, "current-output-port", pic_obj_value(pic_var_new(pic, pic_obj_value(pic->xSTDOUT), NULL)));
   pic_define(pic, "current-error-port", pic_obj_value(pic_var_new(pic, pic_obj_value(pic->xSTDERR), NULL)));
+
+  pic_defun(pic, "call-with-port", pic_port_call_with_port);
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);
