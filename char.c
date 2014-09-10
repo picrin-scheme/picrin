@@ -34,10 +34,49 @@ pic_char_integer_to_char(pic_state *pic)
   return pic_char_value(i);
 }
 
+#define DEFINE_CHAR_CMP(op, name)			\
+  static pic_value					\
+  pic_char_##name##_p(pic_state *pic)			\
+  {							\
+    size_t argc;					\
+    pic_value *argv;					\
+    size_t i;						\
+    char c, d;						\
+    							\
+    pic_get_args(pic, "cc*", &c, &d, &argc, &argv);	\
+    							\
+    if (! (c op d))					\
+      return pic_false_value();				\
+    							\
+    for (i = 0; i < argc; ++i) {			\
+      c = d;                                            \
+      if (pic_char_p(argv[i]))                          \
+        d = pic_char(argv[i]);                          \
+      else						\
+	pic_error(pic, #op ": char required");          \
+      							\
+      if (! (c op d))					\
+	return pic_false_value();			\
+    }							\
+    							\
+    return pic_true_value();				\
+  }
+
+DEFINE_CHAR_CMP(==, eq)
+DEFINE_CHAR_CMP(<, lt)
+DEFINE_CHAR_CMP(>, gt)
+DEFINE_CHAR_CMP(<=, le)
+DEFINE_CHAR_CMP(>=, ge)
+
 void
 pic_init_char(pic_state *pic)
 {
   pic_defun(pic, "char?", pic_char_char_p);
   pic_defun(pic, "char->integer", pic_char_char_to_integer);
   pic_defun(pic, "integer->char", pic_char_integer_to_char);
+  pic_defun(pic, "char=?", pic_char_eq_p);
+  pic_defun(pic, "char<?", pic_char_lt_p);
+  pic_defun(pic, "char>?", pic_char_gt_p);
+  pic_defun(pic, "char<=?", pic_char_le_p);
+  pic_defun(pic, "char>=?", pic_char_ge_p);
 }
