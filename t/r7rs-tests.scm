@@ -1650,6 +1650,21 @@
               (c 'talk2)
               (reverse path)))))
 
+(test #\a
+      (call/cc
+       (lambda(cc3)
+         (let ((p (open-input-string "aa")))
+           ((call/cc
+             (lambda(cc)
+               (call-with-port p
+                               (lambda(port)
+                                 (cc3
+                                  (read-char
+                                   (call/cc
+                                    (lambda(cc2)
+                                      (cc cc2)))))))))
+            p)))))
+
 (test-end)
 
 (test-begin "6.11 Exceptions")
