@@ -489,10 +489,10 @@
 (define first car)
 (test 1 (first '(1 2)))
 
-;; (test 45 (let ((x 5))
-;;   (define foo (lambda (y) (bar x y)))
-;;   (define bar (lambda (a b) (+ (* a b) a)))
-;;   (foo (+ x 3))))
+(test 45 (let ((x 5))
+  (define foo (lambda (y) (bar x y)))
+  (define bar (lambda (a b) (+ (* a b) a)))
+  (foo (+ x 3))))
 
 (test 'ok
     (let ()
