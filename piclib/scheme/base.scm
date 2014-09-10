@@ -365,26 +365,6 @@
 
   ;; 6.7. Strings
 
-  (define (string->list string . opts)
-    (let ((start (if (pair? opts) (car opts) 0))
-          (end (if (>= (length opts) 2)
-                   (cadr opts)
-                   (string-length string))))
-      (do ((i start (+ i 1))
-           (res '()))
-          ((= i end)
-           (reverse res))
-        (set! res (cons (string-ref string i) res)))))
-
-  (define (list->string list)
-    (let ((len (length list)))
-      (let ((v (make-string len)))
-        (do ((i 0 (+ i 1))
-             (l list (cdr l)))
-            ((= i len)
-             v)
-          (string-set! v i (car l))))))
-
   (define (string . objs)
     (list->string objs))
 

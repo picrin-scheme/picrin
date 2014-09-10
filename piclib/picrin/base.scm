@@ -154,6 +154,8 @@
           string-copy!
           string-append
           string-fill!
+          string->list
+          list->string
           string=?
           string<?
           string>?
