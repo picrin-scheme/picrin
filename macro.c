@@ -91,6 +91,7 @@ make_identifier(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 }
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
+static pic_value macroexpand_lambda(pic_state *, pic_value, struct pic_senv *);
 
 static pic_value
 macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv)
@@ -124,6 +125,35 @@ macroexpand_list(pic_state *pic, pic_value obj, struct pic_senv *senv)
 }
 
 static pic_value
+macroexpand_defer(pic_state *pic, pic_value expr, struct pic_senv *senv)
+{
+  pic_value skel = pic_list1(pic, pic_none_value()); /* (#<none>) */
+
+  pic_push(pic, pic_cons(pic, expr, skel), senv->defer);
+
+  return skel;
+}
+
+static void
+macroexpand_deferred(pic_state *pic, struct pic_senv *senv)
+{
+  pic_value defer, val, src, dst;
+
+  pic_for_each (defer, pic_reverse(pic, senv->defer)) {
+    src = pic_car(pic, defer);
+    dst = pic_cdr(pic, defer);
+
+    val = macroexpand_lambda(pic, src, senv);
+
+    /* copy */
+    pic_pair_ptr(dst)->car = pic_car(pic, val);
+    pic_pair_ptr(dst)->cdr = pic_cdr(pic, val);
+  }
+
+  senv->defer = pic_nil_value();
+}
+
+static pic_value
 macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   pic_value formal, body;
@@ -153,6 +183,8 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
   formal = macroexpand_list(pic, pic_cadr(pic, expr), in);
   body = macroexpand_list(pic, pic_cddr(pic, expr), in);
+
+  macroexpand_deferred(pic, in);
 
   return pic_cons(pic, pic_sym_value(pic->rLAMBDA), pic_cons(pic, formal, body));
 }
@@ -280,7 +312,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
         return macroexpand_defsyntax(pic, expr, senv);
       }
       else if (tag == pic->rLAMBDA) {
-        return macroexpand_lambda(pic, expr, senv);
+        return macroexpand_defer(pic, expr, senv);
       }
       else if (tag == pic->rDEFINE) {
         return macroexpand_define(pic, expr, senv);
@@ -326,6 +358,8 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
   struct pic_lib *prev;
   pic_value v;
 
+  assert(pic_eq_p(lib->env->defer, pic_nil_value()));
+
 #if DEBUG
   puts("before expand:");
   pic_debug(pic, expr);
@@ -337,6 +371,8 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
   pic->lib = lib;
 
   v = macroexpand(pic, expr, lib->env);
+
+  macroexpand_deferred(pic, lib->env);
 
   pic->lib = prev;
 
@@ -356,6 +392,7 @@ pic_senv_new(pic_state *pic, struct pic_senv *up)
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = up;
+  senv->defer = pic_nil_value();
   xh_init_int(&senv->map, sizeof(pic_sym));
 
   return senv;

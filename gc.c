@@ -453,6 +453,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (senv->up) {
       gc_mark_object(pic, (struct pic_object *)senv->up);
     }
+    gc_mark(pic, senv->defer);
     break;
   }
   case PIC_TT_LIB: {
