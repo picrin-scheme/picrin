@@ -525,11 +525,6 @@
 
   ;; 6.13. Input and output
 
-  (define (call-with-port port proc)
-    (let ((value (proc port)))
-      (close-port port)
-      value))
-
   (export current-input-port
           current-output-port
           current-error-port

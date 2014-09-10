@@ -177,6 +177,8 @@
           current-output-port
           current-error-port
 
+          call-with-port
+
           port?
           input-port?
           output-port?
