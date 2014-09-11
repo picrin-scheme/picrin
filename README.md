@@ -1,4 +1,6 @@
-# Picrin [![Build Status](https://travis-ci.org/picrin-scheme/picrin.png)](https://travis-ci.org/picrin-scheme/picrin)
+<img width="500" src="https://raw.githubusercontent.com/picrin-scheme/picrin/master/etc/picrin-logo-fin01-02.png"></img>
+
+[![Build Status](https://travis-ci.org/picrin-scheme/picrin.png)](https://travis-ci.org/picrin-scheme/picrin)
 
 Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C99 and does not require any special external libraries installed on the platform.
 
