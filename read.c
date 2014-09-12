@@ -751,7 +751,7 @@ read(pic_state *pic, struct pic_port *port, int c)
 }
 
 struct pic_trie *
-pic_trie_new(pic_state *pic)
+pic_make_trie(pic_state *pic)
 {
   struct pic_trie *trie;
 
@@ -784,7 +784,7 @@ pic_define_reader(pic_state *pic, const char *str, pic_func_t reader)
 
   while ((c = *str++)) {
     if (trie->table[c] == NULL) {
-      trie->table[c] = pic_trie_new(pic);
+      trie->table[c] = pic_make_trie(pic);
     }
     trie = trie->table[c];
   }

@@ -67,7 +67,7 @@ pic_open(int argc, char *argv[], char **envp)
   /* reader */
   pic->reader = malloc(sizeof(struct pic_reader));
   pic->reader->typecase = PIC_CASE_DEFAULT;
-  pic->reader->trie = pic_trie_new(pic);
+  pic->reader->trie = pic_make_trie(pic);
   xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
   /* error handling */
