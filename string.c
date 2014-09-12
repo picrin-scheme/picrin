@@ -251,6 +251,30 @@ pic_str_string_p(pic_state *pic)
 }
 
 static pic_value
+pic_str_string(pic_state *pic)
+{
+  size_t argc;
+  pic_value *argv;
+  pic_str *str;
+  char *buf;
+  size_t i;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  buf = pic_alloc(pic, argc);
+
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], char);
+    buf[i] = pic_char(argv[i]);
+  }
+
+  str = pic_make_str(pic, buf, argc);
+  pic_free(pic, buf);
+
+  return pic_obj_value(str);
+}
+
+static pic_value
 pic_str_make_string(pic_state *pic)
 {
   int len;
@@ -457,6 +481,7 @@ void
 pic_init_str(pic_state *pic)
 {
   pic_defun(pic, "string?", pic_str_string_p);
+  pic_defun(pic, "string", pic_str_string);
   pic_defun(pic, "make-string", pic_str_make_string);
   pic_defun(pic, "string-length", pic_str_string_length);
   pic_defun(pic, "string-ref", pic_str_string_ref);
