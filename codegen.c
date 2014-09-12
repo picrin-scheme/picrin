@@ -117,21 +117,24 @@ destroy_analyze_state(analyze_state *state)
 static bool
 analyze_args(pic_state *pic, pic_value formals, bool *varg, xvect *args, xvect *locals)
 {
-  pic_value v, sym;
+  pic_value v, t;
+  pic_sym sym;
 
   for (v = formals; pic_pair_p(v); v = pic_cdr(pic, v)) {
-    sym = pic_car(pic, v);
-    if (! pic_sym_p(sym)) {
+    t = pic_car(pic, v);
+    if (! pic_sym_p(t)) {
       return false;
     }
-    xv_push(args, &pic_sym(sym));
+    sym = pic_sym(t);
+    xv_push(args, &sym);
   }
   if (pic_nil_p(v)) {
     *varg = false;
   }
   else if (pic_sym_p(v)) {
     *varg = true;
-    xv_push(locals, &pic_sym(v));
+    sym = pic_sym(v);
+    xv_push(locals, &sym);
   }
   else {
     return false;
@@ -972,6 +975,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
   pic_state *pic = state->pic;
   codegen_context *cxt;
   pic_value var;
+  pic_sym sym;
 
   assert(pic_sym_p(name) || pic_false_p(name));
 
@@ -987,13 +991,16 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
   xv_init(&cxt->captures, sizeof(pic_sym));
 
   pic_for_each (var, args) {
-    xv_push(&cxt->args, &pic_sym(var));
+    sym = pic_sym(var);
+    xv_push(&cxt->args, &sym);
   }
   pic_for_each (var, locals) {
-    xv_push(&cxt->locals, &pic_sym(var));
+    sym = pic_sym(var);
+    xv_push(&cxt->locals, &sym);
   }
   pic_for_each (var, captures) {
-    xv_push(&cxt->captures, &pic_sym(var));
+    sym = pic_sym(var);
+    xv_push(&cxt->captures, &sym);
   }
 
   cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));

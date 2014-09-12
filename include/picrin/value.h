@@ -44,31 +44,28 @@ enum pic_vtype {
  *   char  : 1111111111111000 0000000000000000 CCCCCCCCCCCCCCCC ................
  */
 
-typedef struct {
-  union {
-    void *data;
-    double f;
-    struct {
-      union {
-	int i;
-	pic_sym sym;
-	char c;
-      };
-      uint32_t type_;
-    };
-  } u;
-} pic_value;
+typedef uint64_t pic_value;
 
-#define pic_ptr(v) ((void *)((uint64_t)0xffffffffffff & (uint64_t)(v).u.data))
-#define pic_init_value(v,vtype) (((v).u.type_ = (((uint32_t)0xfff00000)|((uint32_t)((vtype)<<16)))), (v).u.i = 0)
+#define pic_ptr(v) ((void *)(0xfffffffffffful & (v)))
+#define pic_init_value(v,vtype) (v = (0xfff0000000000000ul | ((uint64_t)(vtype) << 48)))
 
 static inline enum pic_vtype
 pic_vtype(pic_value v)
 {
-  return 0xfff00000 >= v.u.type_
-    ? PIC_VTYPE_FLOAT
-    : (v.u.type_ & 0xf0000)>>16;
+  return 0xfff0 >= (v >> 48) ? PIC_VTYPE_FLOAT : ((v >> 48) & 0xf);
 }
+
+static inline double
+pic_float(pic_value v)
+{
+  union { double f; uint64_t i; } u;
+  u.i = v;
+  return u.f;
+}
+
+#define pic_int(v) ((v) & 0xfffffffful)
+#define pic_sym(v) ((v) & 0xfffffffful)
+#define pic_char(v) ((v) & 0xfffffffful)
 
 #else
 
@@ -86,6 +83,11 @@ typedef struct {
 #define pic_ptr(v) ((v).u.data)
 #define pic_vtype(v) ((v).type)
 #define pic_init_value(v,vtype) ((v).type = (vtype), (v).u.data = NULL)
+
+#define pic_float(v) ((v).u.f)
+#define pic_int(v) ((v).u.i)
+#define pic_sym(v) ((v).u.sym)
+#define pic_char(v) ((v).u.c)
 
 #endif
 
@@ -141,11 +143,6 @@ typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
 typedef struct pic_blob pic_blob;
-
-#define pic_float(v) ((v).u.f)
-#define pic_int(v) ((v).u.i)
-#define pic_sym(v) ((v).u.sym)
-#define pic_char(v) ((v).u.c)
 
 #define pic_obj_p(v) (pic_vtype(v) == PIC_VTYPE_HEAP)
 #define pic_obj_ptr(v) ((struct pic_object *)pic_ptr(v))
@@ -328,21 +325,53 @@ pic_obj_value(void *ptr)
   pic_value v;
 
   pic_init_value(v, PIC_VTYPE_HEAP);
-  v.u.data = (void*)((long long)v.u.data | ((long long)ptr));
+  v |= 0xfffffffffffful & (uint64_t)ptr;
   return v;
 }
 
 static inline pic_value
 pic_float_value(double f)
 {
-  pic_value v;
+  union { double f; uint64_t i; } u;
 
   if (f != f) {
-    v.u.type_ = 0x7ff80000;
-    v.u.i = 0;
+    return 0x7ff8000000000000ul;
   } else {
-    v.u.f = f;
+    u.f = f;
+    return u.i;
   }
+}
+
+static inline pic_value
+pic_int_value(int i)
+{
+  union { int i; unsigned u; } u;
+  pic_value v;
+
+  u.i = i;
+
+  pic_init_value(v, PIC_VTYPE_INT);
+  v |= u.u;
+  return v;
+}
+
+static inline pic_value
+pic_symbol_value(pic_sym sym)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_SYMBOL);
+  v |= sym;
+  return v;
+}
+
+static inline pic_value
+pic_char_value(char c)
+{
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_CHAR);
+  v |= c;
   return v;
 }
 
@@ -367,8 +396,6 @@ pic_float_value(double f)
   v.u.f = f;
   return v;
 }
-
-#endif
 
 static inline pic_value
 pic_int_value(int i)
@@ -400,6 +427,8 @@ pic_char_value(char c)
   return v;
 }
 
+#endif
+
 static inline pic_value
 pic_undef_value()
 {
@@ -424,13 +453,13 @@ pic_none_value()
 static inline bool
 pic_eq_p(pic_value x, pic_value y)
 {
-  return x.u.data == y.u.data;
+  return x == y;
 }
 
 static inline bool
 pic_eqv_p(pic_value x, pic_value y)
 {
-  return x.u.data == y.u.data;
+  return x == y;
 }
 
 #else
