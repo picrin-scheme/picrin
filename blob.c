@@ -47,6 +47,33 @@ pic_blob_bytevector_p(pic_state *pic)
 }
 
 static pic_value
+pic_blob_bytevector(pic_state *pic)
+{
+  pic_value *argv;
+  size_t argc, i;
+  pic_blob *blob;
+  char *data;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  blob = pic_make_blob(pic, argc);
+
+  data = blob->data;
+
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], int);
+
+    if (pic_int(argv[i]) < 0 || pic_int(argv[i]) > 255) {
+      pic_error(pic, "byte out of range");
+    }
+
+    *data++ = pic_int(argv[i]);
+  }
+
+  return pic_obj_value(blob);
+}
+
+static pic_value
 pic_blob_make_bytevector(pic_state *pic)
 {
   pic_blob *blob;
@@ -235,6 +262,7 @@ void
 pic_init_blob(pic_state *pic)
 {
   pic_defun(pic, "bytevector?", pic_blob_bytevector_p);
+  pic_defun(pic, "bytevector", pic_blob_bytevector);
   pic_defun(pic, "make-bytevector", pic_blob_make_bytevector);
   pic_defun(pic, "bytevector-length", pic_blob_bytevector_length);
   pic_defun(pic, "bytevector-u8-ref", pic_blob_bytevector_u8_ref);
