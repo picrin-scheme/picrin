@@ -53,7 +53,7 @@ struct pic_dict *
 pic_attr(pic_state *pic, struct pic_proc *proc)
 {
   if (proc->attr == NULL) {
-    proc->attr = pic_dict_new(pic);
+    proc->attr = pic_make_dict(pic);
   }
   return proc->attr;
 }
