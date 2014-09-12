@@ -6,6 +6,7 @@
 
 #include "picrin.h"
 #include "picrin/blob.h"
+#include "picrin/pair.h"
 
 char *
 pic_strndup(pic_state *pic, const char *s, size_t n)
@@ -182,6 +183,54 @@ pic_blob_bytevector_append(pic_state *pic)
   return pic_obj_value(blob);
 }
 
+static pic_value
+pic_blob_list_to_bytevector(pic_state *pic)
+{
+  pic_blob *blob;
+  char *data;
+  pic_value list, e;
+
+  pic_get_args(pic, "o", &list);
+
+  blob = pic_make_blob(pic, pic_length(pic, list));
+
+  data = blob->data;
+
+  pic_for_each (e, list) {
+    pic_assert_type(pic, e, int);
+
+    if (pic_int(e) < 0 || pic_int(e) > 255)
+      pic_error(pic, "byte out of range");
+
+    *data++ = pic_int(e);
+  }
+  return pic_obj_value(blob);
+}
+
+static pic_value
+pic_blob_bytevector_to_list(pic_state *pic)
+{
+  pic_blob *blob;
+  pic_value list;
+  int n, start, end, i;
+
+  n = pic_get_args(pic, "b|ii", &blob, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = blob->len;
+  }
+
+  list = pic_nil_value();
+
+  for (i = start; i < end; ++i) {
+    pic_push(pic, pic_int_value(blob->data[i]), list);
+  }
+  return pic_reverse(pic, list);
+}
+
 void
 pic_init_blob(pic_state *pic)
 {
@@ -193,4 +242,6 @@ pic_init_blob(pic_state *pic)
   pic_defun(pic, "bytevector-copy!", pic_blob_bytevector_copy_i);
   pic_defun(pic, "bytevector-copy", pic_blob_bytevector_copy);
   pic_defun(pic, "bytevector-append", pic_blob_bytevector_append);
+  pic_defun(pic, "bytevector->list", pic_blob_bytevector_to_list);
+  pic_defun(pic, "list->bytevector", pic_blob_list_to_bytevector);
 }
