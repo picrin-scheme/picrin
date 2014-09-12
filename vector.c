@@ -49,6 +49,25 @@ pic_vec_vector_p(pic_state *pic)
 }
 
 static pic_value
+pic_vec_vector(pic_state *pic)
+{
+  size_t argc;
+  pic_value *argv;
+  pic_vec *vec;
+  size_t i;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  vec = pic_make_vec(pic, argc);
+
+  for (i = 0; i < argc; ++i) {
+    vec->data[i] = argv[i];
+  }
+
+  return pic_obj_value(vec);
+}
+
+static pic_value
 pic_vec_make_vector(pic_state *pic)
 {
   pic_value v;
@@ -313,6 +332,7 @@ void
 pic_init_vector(pic_state *pic)
 {
   pic_defun(pic, "vector?", pic_vec_vector_p);
+  pic_defun(pic, "vector", pic_vec_vector);
   pic_defun(pic, "make-vector", pic_vec_make_vector);
   pic_defun(pic, "vector-length", pic_vec_vector_length);
   pic_defun(pic, "vector-ref", pic_vec_vector_ref);
