@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/vector.h"
+#include "picrin/string.h"
 #include "picrin/pair.h"
 
 struct pic_vector *
@@ -253,6 +254,61 @@ pic_vec_vector_to_list(pic_state *pic)
   return pic_reverse(pic, list);
 }
 
+static pic_value
+pic_vec_vector_to_string(pic_state *pic)
+{
+  pic_vec *vec;
+  char *buf;
+  int n, start, end, i;
+  pic_str *str;
+
+  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = vec->len;
+  }
+
+  buf = pic_alloc(pic, end - start);
+
+  for (i = start; i < end; ++i) {
+    pic_assert_type(pic, vec->data[i], char);
+
+    buf[i - start] = pic_char(vec->data[i]);
+  }
+
+  str = pic_make_str(pic, buf, end - start);
+  pic_free(pic, buf);
+
+  return pic_obj_value(str);
+}
+
+static pic_value
+pic_vec_string_to_vector(pic_state *pic)
+{
+  pic_str *str;
+  int n, start, end, i;
+  pic_vec *vec;
+
+  n = pic_get_args(pic, "s|ii", &str, &start, &end);
+
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = pic_strlen(str);
+  }
+
+  vec = pic_make_vec(pic, end - start);
+
+  for (i = start; i < end; ++i) {
+    vec->data[i - start] = pic_char_value(pic_str_ref(pic, str, i));
+  }
+  return pic_obj_value(vec);
+}
+
 void
 pic_init_vector(pic_state *pic)
 {
@@ -267,4 +323,6 @@ pic_init_vector(pic_state *pic)
   pic_defun(pic, "vector-fill!", pic_vec_vector_fill_i);
   pic_defun(pic, "list->vector", pic_vec_list_to_vector);
   pic_defun(pic, "vector->list", pic_vec_vector_to_list);
+  pic_defun(pic, "string->vector", pic_vec_string_to_vector);
+  pic_defun(pic, "vector->string", pic_vec_vector_to_string);
 }
