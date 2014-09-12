@@ -534,7 +534,7 @@ read_blob(pic_state *pic, struct pic_port *port, const char *str)
     c = next(port);
   }
 
-  blob = pic_blob_new(pic, len);
+  blob = pic_make_blob(pic, len);
   for (i = 0; i < len; ++i) {
     blob->data[i] = dat[i];
   }

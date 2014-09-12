@@ -18,7 +18,7 @@ struct pic_blob {
 #define pic_blob_p(v) (pic_type(v) == PIC_TT_BLOB)
 #define pic_blob_ptr(v) ((struct pic_blob *)pic_ptr(v))
 
-struct pic_blob *pic_blob_new(pic_state *, size_t);
+struct pic_blob *pic_make_blob(pic_state *, size_t);
 
 #if defined(__cplusplus)
 }

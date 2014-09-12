@@ -25,7 +25,7 @@ pic_strdup(pic_state *pic, const char *s)
 }
 
 struct pic_blob *
-pic_blob_new(pic_state *pic, size_t len)
+pic_make_blob(pic_state *pic, size_t len)
 {
   struct pic_blob *bv;
 
@@ -56,7 +56,7 @@ pic_blob_make_bytevector(pic_state *pic)
   if (b < 0 || b > 255)
     pic_error(pic, "byte out of range");
 
-  blob = pic_blob_new(pic, k);
+  blob = pic_make_blob(pic, k);
   for (i = 0; i < k; ++i) {
     blob->data[i] = b;
   }
@@ -146,7 +146,7 @@ pic_blob_bytevector_copy(pic_state *pic)
     end = from->len;
   }
 
-  to = pic_blob_new(pic, end - start);
+  to = pic_make_blob(pic, end - start);
   while (start < end) {
     to->data[i++] = from->data[start++];
   }
@@ -169,7 +169,7 @@ pic_blob_bytevector_append(pic_state *pic)
     len += pic_blob_ptr(argv[i])->len;
   }
 
-  blob = pic_blob_new(pic, len);
+  blob = pic_make_blob(pic, len);
 
   len = 0;
   for (i = 0; i < argc; ++i) {

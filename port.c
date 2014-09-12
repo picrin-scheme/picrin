@@ -360,7 +360,7 @@ pic_port_get_output_bytevector(pic_state *pic)
   xrewind(port->file);
 
   /* copy to buf */
-  blob = pic_blob_new(pic, endpos);
+  blob = pic_make_blob(pic, endpos);
   xfread(blob->data, 1, endpos, port->file);
 
   return pic_obj_value(blob);
@@ -528,7 +528,7 @@ pic_port_read_blob(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector");
 
-  blob = pic_blob_new(pic, k);
+  blob = pic_make_blob(pic, k);
 
   i = xfread(blob->data, sizeof(char), k, port->file);
   if ( i == 0 ) {
