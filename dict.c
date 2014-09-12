@@ -7,7 +7,7 @@
 #include "picrin/cont.h"
 
 struct pic_dict *
-pic_dict_new(pic_state *pic)
+pic_make_dict(pic_state *pic)
 {
   struct pic_dict *dict;
 
@@ -70,7 +70,7 @@ pic_dict_dict(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  dict = pic_dict_new(pic);
+  dict = pic_make_dict(pic);
 
   return pic_obj_value(dict);
 }

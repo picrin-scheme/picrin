@@ -14,18 +14,18 @@ pic_get_backtrace(pic_state *pic)
   pic_callinfo *ci;
   pic_str *trace;
 
-  trace = pic_str_new(pic, NULL, 0);
+  trace = pic_make_str(pic, NULL, 0);
 
   for (ci = pic->ci; ci != pic->cibase; --ci) {
     struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
 
-    trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, "  at "));
-    trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, pic_symbol_name(pic, pic_proc_name(proc))));
+    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "  at "));
+    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, pic_symbol_name(pic, pic_proc_name(proc))));
 
     if (pic_proc_func_p(proc)) {
-      trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, " (native function)\n"));
+      trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));
     } else if (pic_proc_irep_p(proc)) {
-      trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, " (unknown location)\n")); /* TODO */
+      trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, " (unknown location)\n")); /* TODO */
     }
   }
 
@@ -43,20 +43,20 @@ pic_print_backtrace(pic_state *pic, struct pic_error *e)
 
   assert(pic->err != NULL);
 
-  trace = pic_str_new(pic, NULL, 0);
+  trace = pic_make_str(pic, NULL, 0);
 
   switch (e->type) {
   case PIC_ERROR_OTHER:
-    trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, "error: "));
+    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "error: "));
     break;
   case PIC_ERROR_FILE:
-    trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, "file error: "));
+    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "file error: "));
     break;
   case PIC_ERROR_READ:
-    trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, "read error: "));
+    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "read error: "));
     break;
   case PIC_ERROR_RAISED:
-    trace = pic_strcat(pic, trace, pic_str_new_cstr(pic, "raised: "));
+    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "raised: "));
     break;
   }
 
@@ -64,7 +64,7 @@ pic_print_backtrace(pic_state *pic, struct pic_error *e)
 
   /* TODO: print error irritants */
 
-  trace = pic_strcat(pic, trace, pic_str_new(pic, "\n", 1));
+  trace = pic_strcat(pic, trace, pic_make_str(pic, "\n", 1));
   trace = pic_strcat(pic, trace, e->stack);
 
   /* print! */

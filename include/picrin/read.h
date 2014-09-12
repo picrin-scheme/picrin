@@ -29,7 +29,7 @@ void pic_init_reader(pic_state *);
 
 void pic_define_reader(pic_state *, const char *, pic_func_t);
 
-struct pic_trie *pic_trie_new(pic_state *);
+struct pic_trie *pic_make_trie(pic_state *);
 void pic_trie_delete(pic_state *, struct pic_trie *);
 
 #if defined(__cplusplus)

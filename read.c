@@ -443,7 +443,7 @@ read_string(pic_state *pic, struct pic_port *port, const char *name)
   }
   buf[cnt] = '\0';
 
-  str = pic_str_new(pic, buf, cnt);
+  str = pic_make_str(pic, buf, cnt);
   pic_free(pic, buf);
   return pic_obj_value(str);
 }
@@ -534,7 +534,7 @@ read_blob(pic_state *pic, struct pic_port *port, const char *str)
     c = next(port);
   }
 
-  blob = pic_blob_new(pic, len);
+  blob = pic_make_blob(pic, len);
   for (i = 0; i < len; ++i) {
     blob->data[i] = dat[i];
   }
@@ -588,7 +588,7 @@ read_vector(pic_state *pic, struct pic_port *port, const char *str)
 
   list = read(pic, port, str[1]);
 
-  return pic_obj_value(pic_vec_new_from_list(pic, list));
+  return pic_obj_value(pic_make_vec_from_list(pic, list));
 }
 
 static pic_value
@@ -625,7 +625,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
       if (vect) {
         pic_vec *tmp;
 
-        val = pic_obj_value(pic_vec_new(pic, 0));
+        val = pic_obj_value(pic_make_vec(pic, 0));
 
         xh_put_int(&pic->reader->labels, i, &val);
 
@@ -730,7 +730,7 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
   if (trie->proc == NULL) {
     read_error(pic, "no reader registered for current string");
   }
-  str = pic_str_new(pic, buf, i);
+  str = pic_make_str(pic, buf, i);
   return pic_apply2(pic, trie->proc, pic_obj_value(port), pic_obj_value(str));
 }
 
@@ -751,7 +751,7 @@ read(pic_state *pic, struct pic_port *port, int c)
 }
 
 struct pic_trie *
-pic_trie_new(pic_state *pic)
+pic_make_trie(pic_state *pic)
 {
   struct pic_trie *trie;
 
@@ -784,11 +784,11 @@ pic_define_reader(pic_state *pic, const char *str, pic_func_t reader)
 
   while ((c = *str++)) {
     if (trie->table[c] == NULL) {
-      trie->table[c] = pic_trie_new(pic);
+      trie->table[c] = pic_make_trie(pic);
     }
     trie = trie->table[c];
   }
-  trie->proc = pic_proc_new(pic, reader, "reader");
+  trie->proc = pic_make_proc(pic, reader, "reader");
 }
 
 #define DEFINE_READER(name)                     \

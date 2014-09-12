@@ -10,7 +10,7 @@
 #include "picrin/port.h"
 
 static pic_str *
-str_new_rope(pic_state *pic, xrope *rope)
+make_str_rope(pic_state *pic, xrope *rope)
 {
   pic_str *str;
 
@@ -20,22 +20,22 @@ str_new_rope(pic_state *pic, xrope *rope)
 }
 
 pic_str *
-pic_str_new(pic_state *pic, const char *imbed, size_t len)
+pic_make_str(pic_state *pic, const char *imbed, size_t len)
 {
   if (imbed == NULL && len > 0) {
     pic_errorf(pic, "zero length specified against NULL ptr");
   }
-  return str_new_rope(pic, xr_new_copy(imbed, len));
+  return make_str_rope(pic, xr_new_copy(imbed, len));
 }
 
 pic_str *
-pic_str_new_cstr(pic_state *pic, const char *cstr)
+pic_make_str_cstr(pic_state *pic, const char *cstr)
 {
-  return pic_str_new(pic, cstr, strlen(cstr));
+  return pic_make_str(pic, cstr, strlen(cstr));
 }
 
 pic_str *
-pic_str_new_fill(pic_state *pic, size_t len, char fill)
+pic_make_str_fill(pic_state *pic, size_t len, char fill)
 {
   size_t i;
   char buf[len + 1];
@@ -45,7 +45,7 @@ pic_str_new_fill(pic_state *pic, size_t len, char fill)
   }
   buf[i] = '\0';
 
-  return pic_str_new(pic, buf, len);
+  return pic_make_str(pic, buf, len);
 }
 
 size_t
@@ -76,7 +76,7 @@ pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
   }
 
   x = pic_substr(pic, str, 0, i);
-  y = pic_str_new_fill(pic, 1, c);
+  y = pic_make_str_fill(pic, 1, c);
   z = pic_substr(pic, str, i + 1, pic_strlen(str));
 
   tmp = pic_strcat(pic, x, pic_strcat(pic, y, z));
@@ -89,13 +89,13 @@ pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
 pic_str *
 pic_strcat(pic_state *pic, pic_str *a, pic_str *b)
 {
-  return str_new_rope(pic, xr_cat(a->rope, b->rope));
+  return make_str_rope(pic, xr_cat(a->rope, b->rope));
 }
 
 pic_str *
 pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
 {
-  return str_new_rope(pic, xr_sub(str->rope, s, e));
+  return make_str_rope(pic, xr_sub(str->rope, s, e));
 }
 
 int
@@ -258,7 +258,7 @@ pic_str_make_string(pic_state *pic)
 
   pic_get_args(pic, "i|c", &len, &c);
 
-  return pic_obj_value(pic_str_new_fill(pic, len, c));
+  return pic_obj_value(pic_make_str_fill(pic, len, c));
 }
 
 static pic_value
@@ -377,7 +377,7 @@ pic_str_string_append(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  str = pic_str_new(pic, NULL, 0);
+  str = pic_make_str(pic, NULL, 0);
   for (i = 0; i < argc; ++i) {
     if (! pic_str_p(argv[i])) {
       pic_error(pic, "type error");
@@ -418,7 +418,7 @@ pic_str_list_to_string(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  str = pic_str_new_fill(pic, pic_length(pic, list), ' ');
+  str = pic_make_str_fill(pic, pic_length(pic, list), ' ');
 
   pic_for_each (e, list) {
     pic_assert_type(pic, e, char);

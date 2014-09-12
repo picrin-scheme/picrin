@@ -283,7 +283,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   else {
     struct pic_proc *c;
 
-    c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
+    c = pic_make_proc(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
     pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
@@ -304,7 +304,7 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
   else {
     struct pic_proc *c;
 
-    c = pic_proc_new(pic, cont_call, "<continuation-procedure>");
+    c = pic_make_proc(pic, cont_call, "<continuation-procedure>");
 
     /* save the continuation object in proc */
     pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));

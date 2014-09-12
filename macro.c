@@ -164,7 +164,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_error(pic, "syntax error");
   }
 
-  in = pic_senv_new(pic, senv);
+  in = pic_make_senv(pic, senv);
 
   for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
     pic_value v = pic_car(pic, a);
@@ -386,7 +386,7 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
 }
 
 struct pic_senv *
-pic_senv_new(pic_state *pic, struct pic_senv *up)
+pic_make_senv(pic_state *pic, struct pic_senv *up)
 {
   struct pic_senv *senv;
 
@@ -403,7 +403,7 @@ pic_null_syntactic_environment(pic_state *pic)
 {
   struct pic_senv *senv;
 
-  senv = pic_senv_new(pic, NULL);
+  senv = pic_make_senv(pic, NULL);
 
   pic_define_syntactic_keyword(pic, senv, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
   pic_define_syntactic_keyword(pic, senv, pic->sIMPORT, pic->rIMPORT);
@@ -430,7 +430,7 @@ pic_defmacro(pic_state *pic, pic_sym name, pic_sym id, pic_func_t func)
   pic_put_rename(pic, pic->lib->env, name, id);
 
   /* symbol registration */
-  define_macro(pic, id, pic_proc_new(pic, func, pic_symbol_name(pic, name)), NULL);
+  define_macro(pic, id, pic_make_proc(pic, func, pic_symbol_name(pic, name)), NULL);
 
   /* auto export! */
   pic_export(pic, name);

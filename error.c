@@ -72,7 +72,7 @@ pic_pop_try(pic_state *pic)
 }
 
 static struct pic_error *
-error_new(pic_state *pic, short type, pic_str *msg, pic_value irrs)
+make_error(pic_state *pic, short type, pic_str *msg, pic_value irrs)
 {
   struct pic_error *e;
   pic_str *stack;
@@ -109,7 +109,7 @@ pic_throw(pic_state *pic, short type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = error_new(pic, type, pic_str_new_cstr(pic, msg), irrs);
+  e = make_error(pic, type, pic_make_str_cstr(pic, msg), irrs);
 
   pic_throw_error(pic, e);
 }

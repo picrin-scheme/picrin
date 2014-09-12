@@ -7,7 +7,7 @@
 #include "picrin/pair.h"
 
 struct pic_var *
-pic_var_new(pic_state *pic, pic_value init, struct pic_proc *conv)
+pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
 {
   struct pic_var *var;
 
@@ -58,7 +58,7 @@ pic_var_make_parameter(pic_state *pic)
 
   pic_get_args(pic, "o|l", &init, &conv);
 
-  return pic_obj_value(pic_var_new(pic, init, conv));
+  return pic_obj_value(pic_make_var(pic, init, conv));
 }
 
 static pic_value

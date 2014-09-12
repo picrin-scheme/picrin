@@ -101,7 +101,7 @@ pic_get_output_string(pic_state *pic, struct pic_port *port)
   buf[size] = 0;
   xfread(buf, size, 1, port->file);
 
-  return pic_str_new(pic, buf, size);
+  return pic_make_str(pic, buf, size);
 }
 
 void
@@ -360,7 +360,7 @@ pic_port_get_output_bytevector(pic_state *pic)
   xrewind(port->file);
 
   /* copy to buf */
-  blob = pic_blob_new(pic, endpos);
+  blob = pic_make_blob(pic, endpos);
   xfread(blob->data, 1, endpos, port->file);
 
   return pic_obj_value(blob);
@@ -528,7 +528,7 @@ pic_port_read_blob(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector");
 
-  blob = pic_blob_new(pic, k);
+  blob = pic_make_blob(pic, k);
 
   i = xfread(blob->data, sizeof(char), k, port->file);
   if ( i == 0 ) {
@@ -682,9 +682,9 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_define(pic, "current-input-port", pic_obj_value(pic_var_new(pic, pic_obj_value(pic->xSTDIN), NULL)));
-  pic_define(pic, "current-output-port", pic_obj_value(pic_var_new(pic, pic_obj_value(pic->xSTDOUT), NULL)));
-  pic_define(pic, "current-error-port", pic_obj_value(pic_var_new(pic, pic_obj_value(pic->xSTDERR), NULL)));
+  pic_define(pic, "current-input-port", pic_obj_value(pic_make_var(pic, pic_obj_value(pic->xSTDIN), NULL)));
+  pic_define(pic, "current-output-port", pic_obj_value(pic_make_var(pic, pic_obj_value(pic->xSTDOUT), NULL)));
+  pic_define(pic, "current-error-port", pic_obj_value(pic_make_var(pic, pic_obj_value(pic->xSTDERR), NULL)));
 
   pic_defun(pic, "call-with-port", pic_port_call_with_port);
 

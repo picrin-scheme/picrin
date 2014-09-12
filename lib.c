@@ -78,7 +78,7 @@ import_table(pic_state *pic, pic_value spec)
   pic_sym sym;
   xh_iter it;
 
-  imports = pic_dict_new(pic);
+  imports = pic_make_dict(pic);
 
   if (pic_list_p(spec)) {
     if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sONLY))) {

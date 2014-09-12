@@ -7,7 +7,7 @@
 #include "picrin/pair.h"
 
 struct pic_vector *
-pic_vec_new(pic_state *pic, size_t len)
+pic_make_vec(pic_state *pic, size_t len)
 {
   struct pic_vector *vec;
   size_t i;
@@ -22,14 +22,14 @@ pic_vec_new(pic_state *pic, size_t len)
 }
 
 struct pic_vector *
-pic_vec_new_from_list(pic_state *pic, pic_value data)
+pic_make_vec_from_list(pic_state *pic, pic_value data)
 {
   struct pic_vector *vec;
   size_t i, len;
 
   len = pic_length(pic, data);
 
-  vec = pic_vec_new(pic, len);
+  vec = pic_make_vec(pic, len);
   for (i = 0; i < len; ++i) {
     vec->data[i] = pic_car(pic, data);
     data = pic_cdr(pic, data);
@@ -57,7 +57,7 @@ pic_vec_make_vector(pic_state *pic)
 
   n = pic_get_args(pic, "i|o", &k, &v);
 
-  vec = pic_vec_new(pic, k);
+  vec = pic_make_vec(pic, k);
   if (n == 2) {
     for (i = 0; i < (size_t)k; ++i) {
       vec->data[i] = v;
@@ -152,7 +152,7 @@ pic_vec_vector_copy(pic_state *pic)
     end = vec->len;
   }
 
-  to = pic_vec_new(pic, end - start);
+  to = pic_make_vec(pic, end - start);
   while (start < end) {
     to->data[i++] = vec->data[start++];
   }
@@ -175,7 +175,7 @@ pic_vec_vector_append(pic_state *pic)
     len += pic_vec_ptr(argv[i])->len;
   }
 
-  vec = pic_vec_new(pic, len);
+  vec = pic_make_vec(pic, len);
 
   len = 0;
   for (i = 0; i < argc; ++i) {
@@ -219,7 +219,7 @@ pic_vec_list_to_vector(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  vec = pic_vec_new(pic, pic_length(pic, list));
+  vec = pic_make_vec(pic, pic_length(pic, list));
 
   data = vec->data;
 
