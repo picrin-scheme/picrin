@@ -124,15 +124,19 @@
           assoc)
 
   (export bytevector?
+          bytevector
           make-bytevector
           bytevector-length
           bytevector-u8-ref
           bytevector-u8-set!
           bytevector-copy
           bytevector-copy!
-          bytevector-append)
+          bytevector-append
+          bytevector->list
+          list->bytevector)
 
   (export vector?
+          vector
           make-vector
           vector-length
           vector-ref
@@ -142,9 +146,12 @@
           vector-append
           vector-fill!
           list->vector
-          vector->list)
+          vector->list
+          string->vector
+          vector->string)
 
   (export string?
+          string
           make-string
           string-length
           string-ref

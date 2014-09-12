@@ -380,9 +380,6 @@
 
   ;; 6.7. Strings
 
-  (define (string . objs)
-    (list->string objs))
-
   (export string?
           string
           make-string
@@ -392,32 +389,20 @@
           string-copy
           string-copy!
           string-append
+          (rename string-copy substring)
           string-fill!
+          string->list
+          list->string
           string=?
           string<?
           string>?
           string<=?
-          string>=?
-          string->list
-          list->string
-          (rename string-copy substring))
+          string>=?)
 
   ;; 6.8. Vectors
 
-  (define (vector . objs)
-    (list->vector objs))
-
-  (define (vector->string . args)
-    (list->string (apply vector->list args)))
-
-  (define (string->vector . args)
-    (list->vector (apply string->list args)))
-
-  (export vector
-          vector->string
-          string->vector)
-
   (export vector?
+          vector
           make-vector
           vector-length
           vector-ref
@@ -427,28 +412,11 @@
           vector-append
           vector-fill!
           list->vector
-          vector->list)
+          vector->list
+          string->vector
+          vector->string)
 
-  ;; 6.9. bytevector
-
-  (define (bytevector->list v start end)
-    (do ((i start (+ i 1))
-         (res '()))
-        ((= i end)
-         (reverse res))
-      (set! res (cons (bytevector-u8-ref v i) res))))
-
-  (define (list->bytevector list)
-    (let ((len (length list)))
-      (let ((v (make-bytevector len)))
-        (do ((i 0 (+ i 1))
-             (l list (cdr l)))
-            ((= i len)
-             v)
-          (bytevector-u8-set! v i (car l))))))
-
-  (define (bytevector . objs)
-    (list->bytevector objs))
+  ;; 6.9. Bytevectors
 
   (define (utf8->string v . opts)
     (let ((start (if (pair? opts) (car opts) 0))
