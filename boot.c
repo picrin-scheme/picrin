@@ -316,25 +316,6 @@ my $src = <<'EOL';
      (lambda (form r c)
        `(,(r 'letrec-syntax) ,@(cdr form)))))
 
-  (define-syntax include
-    (letrec ((read-file
-              (lambda (filename)
-                (let ((port (open-input-file filename)))
-                  (dynamic-wind
-                      (lambda () #f)
-                      (lambda ()
-                        (let loop ((expr (read port)) (exprs '()))
-                          (if (eof-object? expr)
-                              (reverse exprs)
-                              (loop (read port) (cons expr exprs)))))
-                      (lambda ()
-                        (close-port port)))))))
-      (er-macro-transformer
-       (lambda (form rename compare)
-         (let ((filenames (cdr form)))
-           (let ((exprs (apply append (map read-file filenames))))
-             `(,(rename 'begin) ,@exprs)))))))
-
   (export let let* letrec letrec*
           let-values let*-values define-values
           quasiquote unquote unquote-splicing
@@ -342,7 +323,6 @@ my $src = <<'EOL';
           cond case else =>
           do when unless
           let-syntax letrec-syntax
-          include
           syntax-error))
 
 EOL
@@ -704,25 +684,6 @@ const char pic_boot[] =
 "     (lambda (form r c)\n"
 "       `(,(r 'letrec-syntax) ,@(cdr form)))))\n"
 "\n"
-"  (define-syntax include\n"
-"    (letrec ((read-file\n"
-"              (lambda (filename)\n"
-"                (let ((port (open-input-file filename)))\n"
-"                  (dynamic-wind\n"
-"                      (lambda () #f)\n"
-"                      (lambda ()\n"
-"                        (let loop ((expr (read port)) (exprs '()))\n"
-"                          (if (eof-object? expr)\n"
-"                              (reverse exprs)\n"
-"                              (loop (read port) (cons expr exprs)))))\n"
-"                      (lambda ()\n"
-"                        (close-port port)))))))\n"
-"      (er-macro-transformer\n"
-"       (lambda (form rename compare)\n"
-"         (let ((filenames (cdr form)))\n"
-"           (let ((exprs (apply append (map read-file filenames))))\n"
-"             `(,(rename 'begin) ,@exprs)))))))\n"
-"\n"
 "  (export let let* letrec letrec*\n"
 "          let-values let*-values define-values\n"
 "          quasiquote unquote unquote-splicing\n"
@@ -730,7 +691,6 @@ const char pic_boot[] =
 "          cond case else =>\n"
 "          do when unless\n"
 "          let-syntax letrec-syntax\n"
-"          include\n"
 "          syntax-error))\n"
 ;
 
