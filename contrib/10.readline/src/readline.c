@@ -28,7 +28,7 @@ pic_rl_readline(pic_state *pic)
   result = readline(prompt);
 
   if(result)
-    return pic_obj_value(pic_str_new_cstr(pic, result));
+    return pic_obj_value(pic_make_str_cstr(pic, result));
   else
     return pic_eof_object();
 }
@@ -96,7 +96,7 @@ pic_rl_current_history(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_obj_value(pic_str_new_cstr(pic, current_history()->line));
+  return pic_obj_value(pic_make_str_cstr(pic, current_history()->line));
 }
 
 static pic_value
@@ -109,7 +109,7 @@ pic_rl_history_get(pic_state *pic)
   
   e = history_get(i);
 
-  return e ? pic_obj_value(pic_str_new_cstr(pic, e->line))
+  return e ? pic_obj_value(pic_make_str_cstr(pic, e->line))
     : pic_false_value();
 }
 
@@ -123,7 +123,7 @@ pic_rl_remove_history(pic_state *pic)
   
   e = remove_history(i);
 
-  return e ? pic_obj_value(pic_str_new_cstr(pic, e->line))
+  return e ? pic_obj_value(pic_make_str_cstr(pic, e->line))
     : pic_false_value();
 }
 
@@ -157,7 +157,7 @@ pic_rl_previous_history(pic_state *pic)
 
   e = previous_history();
 
-  return e ? pic_obj_value(pic_str_new_cstr(pic, e->line))
+  return e ? pic_obj_value(pic_make_str_cstr(pic, e->line))
     : pic_false_value();
 }
 
@@ -170,7 +170,7 @@ pic_rl_next_history(pic_state *pic)
 
   e = next_history();
 
-  return e ? pic_obj_value(pic_str_new_cstr(pic, e->line))
+  return e ? pic_obj_value(pic_make_str_cstr(pic, e->line))
     : pic_false_value();
 }
 
@@ -249,7 +249,7 @@ pic_rl_history_expand(pic_state *pic)
   if(status == -1 || status == 2)
     pic_errorf(pic, "%s\n", result);
 
-  return pic_obj_value(pic_str_new_cstr(pic, result));
+  return pic_obj_value(pic_make_str_cstr(pic, result));
 }
 
 void

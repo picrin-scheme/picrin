@@ -101,7 +101,7 @@ pic_regexp_regexp_match(pic_state *pic)
 
     offset = 0;
     while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, match, 0) != REG_NOMATCH) {
-      pic_push(pic, pic_obj_value(pic_str_new(pic, input, match[0].rm_eo - match[0].rm_so)), matches);
+      pic_push(pic, pic_obj_value(pic_make_str(pic, input, match[0].rm_eo - match[0].rm_so)), matches);
       pic_push(pic, pic_int_value(offset), positions);
 
       offset += match[0].rm_eo;
@@ -115,7 +115,7 @@ pic_regexp_regexp_match(pic_state *pic)
         if (match[i].rm_so == -1) {
           break;
         }
-        str = pic_str_new(pic, input + match[i].rm_so, match[i].rm_eo - match[i].rm_so);
+        str = pic_make_str(pic, input + match[i].rm_so, match[i].rm_eo - match[i].rm_so);
         pic_push(pic, pic_obj_value(str), matches);
         pic_push(pic, pic_int_value(match[i].rm_so), positions);
       }
@@ -145,12 +145,12 @@ pic_regexp_regexp_split(pic_state *pic)
   pic_assert_type(pic, reg, regexp);
 
   while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
-    pic_push(pic, pic_obj_value(pic_str_new(pic, input, match.rm_so)), output);
+    pic_push(pic, pic_obj_value(pic_make_str(pic, input, match.rm_so)), output);
 
     input += match.rm_eo;
   }
 
-  pic_push(pic, pic_obj_value(pic_str_new_cstr(pic, input)), output);
+  pic_push(pic, pic_obj_value(pic_make_str_cstr(pic, input)), output);
 
   return pic_reverse(pic, output);
 }
@@ -161,20 +161,20 @@ pic_regexp_regexp_replace(pic_state *pic)
   pic_value reg;
   const char *input;
   regmatch_t match;
-  pic_str *txt, *output = pic_str_new(pic, NULL, 0);
+  pic_str *txt, *output = pic_make_str(pic, NULL, 0);
 
   pic_get_args(pic, "ozs", &reg, &input, &txt);
 
   pic_assert_type(pic, reg, regexp);
 
   while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
-    output = pic_strcat(pic, output, pic_str_new(pic, input, match.rm_so));
+    output = pic_strcat(pic, output, pic_make_str(pic, input, match.rm_so));
     output = pic_strcat(pic, output, txt);
 
     input += match.rm_eo;
   }
 
-  output = pic_strcat(pic, output, pic_str_new(pic, input, strlen(input)));
+  output = pic_strcat(pic, output, pic_make_str(pic, input, strlen(input)));
 
   return pic_obj_value(output);
 }
