@@ -109,7 +109,7 @@ pic_throw(pic_state *pic, short type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = make_error(pic, type, pic_str_new_cstr(pic, msg), irrs);
+  e = make_error(pic, type, pic_make_str_cstr(pic, msg), irrs);
 
   pic_throw_error(pic, e);
 }

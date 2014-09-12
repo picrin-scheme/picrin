@@ -443,7 +443,7 @@ read_string(pic_state *pic, struct pic_port *port, const char *name)
   }
   buf[cnt] = '\0';
 
-  str = pic_str_new(pic, buf, cnt);
+  str = pic_make_str(pic, buf, cnt);
   pic_free(pic, buf);
   return pic_obj_value(str);
 }
@@ -730,7 +730,7 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
   if (trie->proc == NULL) {
     read_error(pic, "no reader registered for current string");
   }
-  str = pic_str_new(pic, buf, i);
+  str = pic_make_str(pic, buf, i);
   return pic_apply2(pic, trie->proc, pic_obj_value(port), pic_obj_value(str));
 }
 

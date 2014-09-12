@@ -20,7 +20,7 @@ pic_system_cmdline(pic_state *pic)
   for (i = 0; i < pic->argc; ++i) {
     size_t ai = pic_gc_arena_preserve(pic);
 
-    v = pic_cons(pic, pic_obj_value(pic_str_new_cstr(pic, pic->argv[i])), v);
+    v = pic_cons(pic, pic_obj_value(pic_make_str_cstr(pic, pic->argv[i])), v);
     pic_gc_arena_restore(pic, ai);
   }
 
@@ -87,7 +87,7 @@ pic_system_getenv(pic_state *pic)
   if (val == NULL)
     return pic_nil_value();
   else
-    return pic_obj_value(pic_str_new_cstr(pic, val));
+    return pic_obj_value(pic_make_str_cstr(pic, val));
 }
 
 static pic_value
@@ -110,8 +110,8 @@ pic_system_getenvs(pic_state *pic)
     for (i = 0; (*envp)[i] != '='; ++i)
       ;
 
-    key = pic_str_new(pic, *envp, i);
-    val = pic_str_new_cstr(pic, getenv(pic_str_cstr(key)));
+    key = pic_make_str(pic, *envp, i);
+    val = pic_make_str_cstr(pic, getenv(pic_str_cstr(key)));
 
     /* push */
     data = pic_acons(pic, pic_obj_value(key), pic_obj_value(val), data);

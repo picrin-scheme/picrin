@@ -539,14 +539,14 @@ pic_number_number_to_string(pic_state *pic)
 
     number_string(ival, radix, ilen, buf);
 
-    return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+    return pic_obj_value(pic_make_str(pic, buf, sizeof buf - 1));
   }
   else {
     char buf[snprintf(NULL, 0, "%a", f) + 1];
 
     snprintf(buf, sizeof buf, "%a", f);
 
-    return pic_obj_value(pic_str_new(pic, buf, sizeof buf - 1));
+    return pic_obj_value(pic_make_str(pic, buf, sizeof buf - 1));
   }
 }
 

@@ -101,7 +101,7 @@ pic_get_output_string(pic_state *pic, struct pic_port *port)
   buf[size] = 0;
   xfread(buf, size, 1, port->file);
 
-  return pic_str_new(pic, buf, size);
+  return pic_make_str(pic, buf, size);
 }
 
 void

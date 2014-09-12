@@ -135,7 +135,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
     pic_error(pic, "symbol->string: expected symbol");
   }
 
-  return pic_obj_value(pic_str_new_cstr(pic, pic_symbol_name(pic, pic_sym(v))));
+  return pic_obj_value(pic_make_str_cstr(pic, pic_symbol_name(pic, pic_sym(v))));
 }
 
 static pic_value
