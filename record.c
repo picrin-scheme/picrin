@@ -6,7 +6,7 @@
 #include "picrin/record.h"
 
 struct pic_record *
-pic_record_new(pic_state *pic, pic_value rectype)
+pic_make_record(pic_state *pic, pic_value rectype)
 {
   struct pic_record *rec;
 
@@ -52,7 +52,7 @@ pic_record_make_record(pic_state *pic)
 
   pic_get_args(pic, "o", &rectype);
 
-  rec = pic_record_new(pic, rectype);
+  rec = pic_make_record(pic, rectype);
 
   return pic_obj_value(rec);
 }
