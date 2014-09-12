@@ -22,6 +22,21 @@
 
   ;; 4.1.7. Inclusion
 
+  (define-syntax include
+    (letrec ((read-file
+              (lambda (filename)
+                (call-with-port (open-input-file filename)
+                  (lambda (port)
+                    (let loop ((expr (read port)) (exprs '()))
+                      (if (eof-object? expr)
+                          (reverse exprs)
+                          (loop (read port) (cons expr exprs)))))))))
+      (er-macro-transformer
+       (lambda (form rename compare)
+         (let ((filenames (cdr form)))
+           (let ((exprs (apply append (map read-file filenames))))
+             `(,(rename 'begin) ,@exprs)))))))
+
   (export include)
 
   ;; 4.2.1. Conditionals
