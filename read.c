@@ -588,7 +588,7 @@ read_vector(pic_state *pic, struct pic_port *port, const char *str)
 
   list = read(pic, port, str[1]);
 
-  return pic_obj_value(pic_vec_new_from_list(pic, list));
+  return pic_obj_value(pic_make_vec_from_list(pic, list));
 }
 
 static pic_value
@@ -625,7 +625,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
       if (vect) {
         pic_vec *tmp;
 
-        val = pic_obj_value(pic_vec_new(pic, 0));
+        val = pic_obj_value(pic_make_vec(pic, 0));
 
         xh_put_int(&pic->reader->labels, i, &val);
 
