@@ -9,7 +9,7 @@
 #include "picrin/dict.h"
 
 struct pic_proc *
-pic_proc_new(pic_state *pic, pic_func_t func, const char *name)
+pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
 {
   struct pic_proc *proc;
 
@@ -25,7 +25,7 @@ pic_proc_new(pic_state *pic, pic_func_t func, const char *name)
 }
 
 struct pic_proc *
-pic_proc_new_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
+pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
 {
   struct pic_proc *proc;
 

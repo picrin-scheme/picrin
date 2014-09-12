@@ -456,7 +456,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
   struct pic_proc *proc;
 
-  proc = pic_proc_new(pic, cfunc, name);
+  proc = pic_make_proc(pic, cfunc, name);
   pic_define(pic, name, pic_obj_value(proc));
 }
 
@@ -906,7 +906,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
         vm_push_env(pic);
       }
 
-      proc = pic_proc_new_irep(pic, irep->irep[c.u.i], pic->ci->env);
+      proc = pic_make_proc_irep(pic, irep->irep[c.u.i], pic->ci->env);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;

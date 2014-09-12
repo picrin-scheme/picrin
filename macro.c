@@ -430,7 +430,7 @@ pic_defmacro(pic_state *pic, pic_sym name, pic_sym id, pic_func_t func)
   pic_put_rename(pic, pic->lib->env, name, id);
 
   /* symbol registration */
-  define_macro(pic, id, pic_proc_new(pic, func, pic_symbol_name(pic, name)), NULL);
+  define_macro(pic, id, pic_make_proc(pic, func, pic_symbol_name(pic, name)), NULL);
 
   /* auto export! */
   pic_export(pic, name);

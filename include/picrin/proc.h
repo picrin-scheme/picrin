@@ -46,8 +46,8 @@ struct pic_proc {
 #define pic_env_p(o) (pic_type(o) == PIC_TT_ENV)
 #define pic_env_ptr(o) ((struct pic_env *)pic_ptr(o))
 
-struct pic_proc *pic_proc_new(pic_state *, pic_func_t, const char *);
-struct pic_proc *pic_proc_new_irep(pic_state *, struct pic_irep *, struct pic_env *);
+struct pic_proc *pic_make_proc(pic_state *, pic_func_t, const char *);
+struct pic_proc *pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_env *);
 
 pic_sym pic_proc_name(struct pic_proc *);
 

@@ -788,7 +788,7 @@ pic_define_reader(pic_state *pic, const char *str, pic_func_t reader)
     }
     trie = trie->table[c];
   }
-  trie->proc = pic_proc_new(pic, reader, "reader");
+  trie->proc = pic_make_proc(pic, reader, "reader");
 }
 
 #define DEFINE_READER(name)                     \

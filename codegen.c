@@ -1501,5 +1501,5 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_lib *lib)
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, pic_obj_value(irep));
 
-  return pic_proc_new_irep(pic, irep, NULL);
+  return pic_make_proc_irep(pic, irep, NULL);
 }
