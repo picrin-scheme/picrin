@@ -57,9 +57,11 @@ pic_init_features(pic_state *pic)
 
 #if __unix__
   pic_add_feature(pic, "unix");
-#elif __gnu_linux__
+#endif
+#if __gnu_linux__
   pic_add_feature(pic, "gnu-linux");
-#elif __FreeBSD__
+#endif
+#if __FreeBSD__
   pic_add_feature(pic, "freebsd");
 #endif
 
