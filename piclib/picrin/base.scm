@@ -121,7 +121,9 @@
           member
           assq
           assv
-          assoc)
+          assoc
+          map
+          for-each)
 
   (export bytevector?
           bytevector
@@ -264,8 +266,6 @@
 
   (export procedure?
           apply
-          map
-          for-each
           attribute)
 
   (export read)
