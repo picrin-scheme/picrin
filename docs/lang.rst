@@ -42,7 +42,7 @@ section                                          status     comments
 4.1.5 Conditionals                               yes        In picrin ``(if #f #f)`` returns ``#f``
 4.1.6 Assignments                                yes
 4.1.7 Inclusion                                  incomplete ``include-ci``
-4.2.1 Conditionals                               incomplete TODO: ``cond-expand``
+4.2.1 Conditionals                               yes
 4.2.2 Binding constructs                         yes
 4.2.3 Sequencing                                 yes
 4.2.4 Iteration                                  yes
@@ -57,7 +57,7 @@ section                                          status     comments
 5.1 Programs                                     yes
 5.2 Import declarations                          yes
 5.3.1 Top level definitions                      yes
-5.3.2 Internal definitions                       yes        TODO: interreferential definitions
+5.3.2 Internal definitions                       yes
 5.3.3 Multiple-value definitions                 yes
 5.4 Syntax definitions                           yes
 5.5 Recored-type definitions                     yes
