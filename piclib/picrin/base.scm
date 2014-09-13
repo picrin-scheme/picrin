@@ -170,10 +170,17 @@
 
   (export make-dictionary
           dictionary?
+          dictionary
           dictionary-ref
           dictionary-set!
           dictionary-delete
-          dictionary-size)
+          dictionary-size
+          dictionary-map
+          dictionary-for-each
+          dictionary->plist
+          plist->dictionary
+          dictionary->alist
+          alist->dictionary)
 
   (export make-record
           record?
