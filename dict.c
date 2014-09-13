@@ -279,7 +279,7 @@ pic_init_dict(pic_state *pic)
   pic_defun(pic, "dictionary", pic_dict_dictionary);
   pic_defun(pic, "dictionary-ref", pic_dict_dictionary_ref);
   pic_defun(pic, "dictionary-set!", pic_dict_dictionary_set);
-  pic_defun(pic, "dictionary-delete", pic_dict_dictionary_del);
+  pic_defun(pic, "dictionary-delete!", pic_dict_dictionary_del);
   pic_defun(pic, "dictionary-size", pic_dict_dictionary_size);
   pic_defun(pic, "dictionary-map", pic_dict_dictionary_map);
   pic_defun(pic, "dictionary-for-each", pic_dict_dictionary_for_each);
