@@ -63,7 +63,14 @@ pic_float(pic_value v)
   return u.f;
 }
 
-#define pic_int(v) ((v) & 0xfffffffful)
+static inline int
+pic_int(pic_value v)
+{
+  union { int i; unsigned u; } u;
+  u.u = v & 0xfffffffful;
+  return u.i;
+}
+
 #define pic_sym(v) ((v) & 0xfffffffful)
 #define pic_char(v) ((v) & 0xfffffffful)
 
