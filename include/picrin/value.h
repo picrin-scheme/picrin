@@ -13,7 +13,7 @@ extern "C" {
  * pic_sym is just an alias to unsigned int.
  */
 
-typedef int pic_sym;
+typedef unsigned int pic_sym;
 
 /**
  * `undef` values never seen from user-end: that is,
