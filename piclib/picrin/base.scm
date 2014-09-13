@@ -173,7 +173,7 @@
           dictionary
           dictionary-ref
           dictionary-set!
-          dictionary-delete
+          dictionary-delete!
           dictionary-size
           dictionary-map
           dictionary-for-each

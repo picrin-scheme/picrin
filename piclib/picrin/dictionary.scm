@@ -6,7 +6,7 @@
           make-dictionary
           dictionary-ref
           dictionary-set!
-          dictionary-delete
+          dictionary-delete!
           dictionary-size
           dictionary->plist
           plist->dictionary
