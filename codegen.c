@@ -198,13 +198,13 @@ lookup_scope(analyze_scope *scope, pic_sym sym)
   size_t i;
 
   /* args */
-  for (i = 0; i < scope->args.size; ++i) {
+  for (i = 0; i < xv_size(&scope->args); ++i) {
     arg = xv_get(&scope->args, i);
     if (*arg == sym)
       return true;
   }
   /* locals */
-  for (i = 0; i < scope->locals.size; ++i) {
+  for (i = 0; i < xv_size(&scope->locals); ++i) {
     local = xv_get(&scope->locals, i);
     if (*local == sym)
       return true;
@@ -218,13 +218,13 @@ capture_var(analyze_scope *scope, pic_sym sym)
   pic_sym *var;
   size_t i;
 
-  for (i = 0; i < scope->captures.size; ++i) {
+  for (i = 0; i < xv_size(&scope->captures); ++i) {
     var = xv_get(&scope->captures, i);
     if (*var == sym) {
       break;
     }
   }
-  if (i == scope->captures.size) {
+  if (i == xv_size(&scope->captures)) {
     xv_push(&scope->captures, &sym);
   }
 }
@@ -384,7 +384,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     size_t i;
 
     args = pic_nil_value();
-    for (i = scope->args.size; i > 0; --i) {
+    for (i = xv_size(&scope->args); i > 0; --i) {
       var = xv_get(&scope->args, i - 1);
       pic_push(pic, pic_sym_value(*var), args);
     }
@@ -399,13 +399,13 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     analyze_deferred(state);
 
     locals = pic_nil_value();
-    for (i = scope->locals.size; i > 0; --i) {
+    for (i = xv_size(&scope->locals); i > 0; --i) {
       var = xv_get(&scope->locals, i - 1);
       pic_push(pic, pic_sym_value(*var), locals);
     }
 
     captures = pic_nil_value();
-    for (i = scope->captures.size; i > 0; --i) {
+    for (i = xv_size(&scope->captures); i > 0; --i) {
       var = xv_get(&scope->captures, i - 1);
       pic_push(pic, pic_sym_value(*var), captures);
     }
@@ -940,21 +940,21 @@ create_activation(codegen_context *cxt)
   xh_init_int(&regs, sizeof(size_t));
 
   offset = 1;
-  for (i = 0; i < cxt->args.size; ++i) {
+  for (i = 0; i < xv_size(&cxt->args); ++i) {
     var = xv_get(&cxt->args, i);
     n = i + offset;
     xh_put_int(&regs, *var, &n);
   }
   offset += i;
-  for (i = 0; i < cxt->locals.size; ++i) {
+  for (i = 0; i < xv_size(&cxt->locals); ++i) {
     var = xv_get(&cxt->locals, i);
     n = i + offset;
     xh_put_int(&regs, *var, &n);
   }
 
-  for (i = 0; i < cxt->captures.size; ++i) {
+  for (i = 0; i < xv_size(&cxt->captures); ++i) {
     var = xv_get(&cxt->captures, i);
-    if ((n = xh_val(xh_get_int(&regs, *var), size_t)) <= cxt->args.size || (cxt->varg && n == cxt->args.size + 1)) {
+    if ((n = xh_val(xh_get_int(&regs, *var), size_t)) <= xv_size(&cxt->args) || (cxt->varg && n == xv_size(&cxt->args) + 1)) {
       /* copy arguments to capture variable area */
       cxt->code[cxt->clen].insn = OP_LREF;
       cxt->code[cxt->clen].u.i = n;
@@ -1031,9 +1031,9 @@ pop_codegen_context(codegen_state *state)
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
   irep->name = state->cxt->name;
   irep->varg = state->cxt->varg;
-  irep->argc = state->cxt->args.size + 1;
-  irep->localc = state->cxt->locals.size;
-  irep->capturec = state->cxt->captures.size;
+  irep->argc = xv_size(&state->cxt->args) + 1;
+  irep->localc = xv_size(&state->cxt->locals);
+  irep->capturec = xv_size(&state->cxt->captures);
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);
@@ -1065,7 +1065,7 @@ index_capture(codegen_state *state, pic_sym sym, int depth)
     cxt = cxt->up;
   }
 
-  for (i = 0; i < cxt->captures.size; ++i) {
+  for (i = 0; i < xv_size(&cxt->captures); ++i) {
     var = xv_get(&cxt->captures, i);
     if (*var == sym)
       return i;
@@ -1081,13 +1081,13 @@ index_local(codegen_state *state, pic_sym sym)
   pic_sym *var;
 
   offset = 1;
-  for (i = 0; i < cxt->args.size; ++i) {
+  for (i = 0; i < xv_size(&cxt->args); ++i) {
     var = xv_get(&cxt->args, i);
     if (*var == sym)
       return i + offset;
   }
   offset += i;
-  for (i = 0; i < cxt->locals.size; ++i) {
+  for (i = 0; i < xv_size(&cxt->locals); ++i) {
     var = xv_get(&cxt->locals, i);
     if (*var == sym)
       return i + offset;
@@ -1128,7 +1128,7 @@ codegen(codegen_state *state, pic_value obj)
     name = pic_sym(pic_list_ref(pic, obj, 1));
     if ((i = index_capture(state, name, 0)) != -1) {
       cxt->code[cxt->clen].insn = OP_LREF;
-      cxt->code[cxt->clen].u.i = i + cxt->args.size + cxt->locals.size + 1;
+      cxt->code[cxt->clen].u.i = i + xv_size(&cxt->args) + xv_size(&cxt->locals) + 1;
       cxt->clen++;
       return;
     }
@@ -1174,7 +1174,7 @@ codegen(codegen_state *state, pic_value obj)
       name = pic_sym(pic_list_ref(pic, var, 1));
       if ((i = index_capture(state, name, 0)) != -1) {
         cxt->code[cxt->clen].insn = OP_LSET;
-        cxt->code[cxt->clen].u.i = i + cxt->args.size + cxt->locals.size + 1;
+        cxt->code[cxt->clen].u.i = i + xv_size(&cxt->args) + xv_size(&cxt->locals) + 1;
         cxt->clen++;
         cxt->code[cxt->clen].insn = OP_PUSHNONE;
         cxt->clen++;
