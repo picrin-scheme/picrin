@@ -139,6 +139,25 @@ pic_dict_dict_size(pic_state *pic)
 }
 
 static pic_value
+pic_dict_dict_map(pic_state *pic)
+{
+  struct pic_proc *proc;
+  struct pic_dict *dict;
+  pic_value item, list = pic_nil_value();
+  xh_iter it;
+
+  pic_get_args(pic, "ld", &proc, &dict);
+
+  xh_begin(&it, &dict->hash);
+  while (xh_next(&it)) {
+    item = pic_cons(pic, pic_sym_value(xh_key(it.e, pic_sym)), xh_val(it.e, pic_value));
+    pic_push(pic, pic_apply1(pic, proc, item), list);
+  }
+
+  return pic_reverse(pic, list);
+}
+
+static pic_value
 pic_dict_dict_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
@@ -170,5 +189,6 @@ pic_init_dict(pic_state *pic)
   pic_defun(pic, "dictionary-set!", pic_dict_dict_set);
   pic_defun(pic, "dictionary-delete", pic_dict_dict_del);
   pic_defun(pic, "dictionary-size", pic_dict_dict_size);
+  pic_defun(pic, "dictionary-map", pic_dict_dict_map);
   pic_defun(pic, "dictionary-for-each", pic_dict_dict_for_each);
 }
