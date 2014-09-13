@@ -668,6 +668,63 @@ pic_pair_list_copy(pic_state *pic)
 }
 
 static pic_value
+pic_pair_map(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc;
+  pic_value *args;
+  int i;
+  pic_value cars, ret;
+
+  pic_get_args(pic, "l*", &proc, &argc, &args);
+
+  ret = pic_nil_value();
+  do {
+    cars = pic_nil_value();
+    for (i = argc - 1; i >= 0; --i) {
+      if (! pic_pair_p(args[i])) {
+        break;
+      }
+      cars = pic_cons(pic, pic_car(pic, args[i]), cars);
+      args[i] = pic_cdr(pic, args[i]);
+    }
+    if (i >= 0)
+      break;
+    ret = pic_cons(pic, pic_apply(pic, proc, cars), ret);
+  } while (1);
+
+  return pic_reverse(pic, ret);
+}
+
+static pic_value
+pic_pair_for_each(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc;
+  pic_value *args;
+  int i;
+  pic_value cars;
+
+  pic_get_args(pic, "l*", &proc, &argc, &args);
+
+  do {
+    cars = pic_nil_value();
+    for (i = argc - 1; i >= 0; --i) {
+      if (! pic_pair_p(args[i])) {
+        break;
+      }
+      cars = pic_cons(pic, pic_car(pic, args[i]), cars);
+      args[i] = pic_cdr(pic, args[i]);
+    }
+    if (i >= 0)
+      break;
+    pic_apply(pic, proc, cars);
+  } while (1);
+
+  return pic_none_value();
+}
+
+static pic_value
 pic_pair_memq(pic_state *pic)
 {
   pic_value key, list;
@@ -754,6 +811,8 @@ pic_init_pair(pic_state *pic)
   pic_defun(pic, "list-ref", pic_pair_list_ref);
   pic_defun(pic, "list-set!", pic_pair_list_set);
   pic_defun(pic, "list-copy", pic_pair_list_copy);
+  pic_defun(pic, "map", pic_pair_map);
+  pic_defun(pic, "for-each", pic_pair_for_each);
   pic_defun(pic, "memq", pic_pair_memq);
   pic_defun(pic, "memv", pic_pair_memv);
   pic_defun(pic, "member", pic_pair_member);
