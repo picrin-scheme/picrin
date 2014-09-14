@@ -564,6 +564,68 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 #define PUSHCI() (++pic->ci)
 #define POPCI() (pic->ci--)
 
+#if VM_DEBUG
+# define VM_BOOT_PRINT                          \
+  do {                                          \
+    puts("### booting VM... ###");              \
+    stbase = pic->sp;                           \
+    cibase = pic->ci;                           \
+  } while (0)
+#else
+# define VM_BOOT_PRINT
+#endif
+
+#if VM_DEBUG
+# define VM_END_PRINT                                                   \
+  do {                                                                  \
+    puts("**VM END STATE**");                                           \
+    printf("stbase\t= %p\nsp\t= %p\n", (void *)stbase, (void *)pic->sp); \
+    printf("cibase\t= %p\nci\t= %p\n", (void *)cibase, (void *)pic->ci); \
+    if (stbase < pic->sp - 1) {                                         \
+      pic_value *sp;                                                    \
+      printf("* stack trace:");                                         \
+      for (sp = stbase; pic->sp != sp; ++sp) {                          \
+        pic_debug(pic, *sp);                                            \
+        puts("");                                                       \
+      }                                                                 \
+    }                                                                   \
+    if (stbase > pic->sp - 1) {                                         \
+      puts("*** stack underflow!");                                     \
+    }                                                                   \
+  } while (0)
+#else
+# define VM_END_PRINT
+#endif
+
+#if VM_DEBUG
+# define VM_CALL_PRINT                                                  \
+  do {                                                                  \
+    puts("\n== calling proc...");                                       \
+    printf("  proc = ");                                                \
+    pic_debug(pic, pic_obj_value(proc));                                \
+    puts("");                                                           \
+    printf("  argv = (");                                               \
+    for (short i = 1; i < c.u.i; ++i) {                                 \
+      if (i > 1)                                                        \
+        printf(" ");                                                    \
+      pic_debug(pic, pic->sp[-c.u.i + i]);                              \
+    }                                                                   \
+    puts(")");                                                          \
+    if (! pic_proc_func_p(proc)) {                                      \
+      printf("  irep = %p\n", proc->u.irep);                            \
+      printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc))); \
+      pic_dump_irep(proc->u.irep);                                      \
+    }                                                                   \
+    else {                                                              \
+      printf("  cfunc = %p\n", (void *)proc->u.func.f);                 \
+      printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc))); \
+    }                                                                   \
+    puts("== end\n");                                                   \
+  } while (0)
+#else
+# define VM_CALL_PRINT
+#endif
+
 pic_value
 pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 {
@@ -584,17 +646,18 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   };
 #endif
 
+#if VM_DEBUG
+  pic_value *stbase;
+  pic_callinfo *cibase;
+#endif
+
   if (! pic_list_p(argv)) {
     pic_error(pic, "argv must be a proper list");
   }
 
   argc = pic_length(pic, argv) + 1;
 
-#if VM_DEBUG
-  puts("### booting VM... ###");
-  pic_value *stbase = pic->sp;
-  pic_callinfo *cibase = pic->ci;
-#endif
+  VM_BOOT_PRINT;
 
   PUSH(pic_obj_value(proc));
   for (i = 1; i < argc; ++i) {
@@ -655,7 +718,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       xh_entry *e;
 
       if ((e = xh_get_int(&pic->globals, c.u.i)) == NULL) {
-        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: ~s", pic_symbol_name(pic, c.u.i));
+        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, c.u.i));
       }
       PUSH(xh_val(e, pic_value));
       NEXT;
@@ -756,29 +819,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       }
       proc = pic_proc_ptr(x);
 
-#if VM_DEBUG
-      puts("\n== calling proc...");
-      printf("  proc = ");
-      pic_debug(pic, pic_obj_value(proc));
-      puts("");
-      printf("  argv = (");
-      for (short i = 1; i < c.u.i; ++i) {
-        if (i > 1)
-          printf(" ");
-        pic_debug(pic, pic->sp[-c.u.i + i]);
-      }
-      puts(")");
-      if (! pic_proc_func_p(proc)) {
-	printf("  irep = %p\n", proc->u.irep);
-	printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc)));
-	pic_dump_irep(proc->u.irep);
-      }
-      else {
-	printf("  cfunc = %p\n", (void *)proc->u.func.f);
-	printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc)));
-      }
-      puts("== end\n");
-#endif
+      VM_CALL_PRINT;
 
       ci = PUSHCI();
       ci->argc = c.u.i;
@@ -1016,22 +1057,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
     CASE(OP_STOP) {
 
-#if VM_DEBUG
-      puts("**VM END STATE**");
-      printf("stbase\t= %p\nsp\t= %p\n", (void *)stbase, (void *)pic->sp);
-      printf("cibase\t= %p\nci\t= %p\n", (void *)cibase, (void *)pic->ci);
-      if (stbase < pic->sp - 1) {
-	pic_value *sp;
-	printf("* stack trace:");
-	for (sp = stbase; pic->sp != sp; ++sp) {
-	  pic_debug(pic, *sp);
-	  puts("");
-	}
-      }
-      if (stbase > pic->sp - 1) {
-	puts("*** stack underflow!");
-      }
-#endif
+      VM_END_PRINT;
 
       return pic_gc_protect(pic, POP());
     }
