@@ -10,10 +10,10 @@ extern "C" {
 #endif
 
 /**
- * pic_sym is just an alias to unsigned int.
+ * pic_sym is just an alias of uint32_t.
  */
 
-typedef unsigned int pic_sym;
+typedef uint32_t pic_sym;
 
 /**
  * `undef` values never seen from user-end: that is,
