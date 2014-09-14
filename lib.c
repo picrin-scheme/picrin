@@ -191,6 +191,12 @@ pic_import(pic_state *pic, pic_value spec)
 }
 
 void
+pic_import_library(pic_state *pic, struct pic_lib *lib)
+{
+  import(pic, lib->name);
+}
+
+void
 pic_export(pic_state *pic, pic_sym sym)
 {
   export(pic, pic_sym_value(sym));

@@ -195,6 +195,7 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
       for ((prev_lib = pic->lib), pic_open_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)
 
 void pic_import(pic_state *, pic_value);
+void pic_import_library(pic_state *, struct pic_lib *);
 void pic_export(pic_state *, pic_sym);
 
 noreturn void pic_abort(pic_state *, const char *);
