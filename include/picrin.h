@@ -216,6 +216,10 @@ static inline void pic_warn(pic_state *pic, const char *msg)
 
 const char *pic_errmsg(pic_state *);
 
+struct pic_port *pic_stdin(pic_state *);
+struct pic_port *pic_stdout(pic_state *);
+struct pic_port *pic_stderr(pic_state *);
+
 pic_value pic_write(pic_state *, pic_value); /* returns given obj */
 pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
 void pic_printf(pic_state *, const char *, ...);
