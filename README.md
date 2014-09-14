@@ -1,6 +1,49 @@
 # Benz
 
-Benz is core module of the Picrin Scheme interpreter. It includes all components necessary to run in a stand-alone environment.
+Benz is a super tiny scheme interpreter intended to be embedded in other applications such as game engine and network server. It provides a subset language of R7RS with several useful extensions. By default, Benz just contains some C files and headers and this README file. In embedding, you only need to copy the files into the project and add `include` dir to the include path.
+
+Originally, Benz used to be the core component of [Picrin Scheme](https://github.com/picrin-scheme/picrin). They are currently maintained at separate repositories.
+
+## Example
+
+```c
+#include <stdio.h>
+
+#include "picrin.h"
+
+/* Simple REPL program */
+
+int
+main(int argc, char *argv[])
+{
+  pic_state *pic;
+  pic_value expr;
+
+  pic = pic_open(argc, argv, NULL);
+
+  pic_import_library(pic, pic->PICRIN_BASE);
+
+  while (1) {
+    printf("> ");
+
+    expr = pic_read(pic, pic_stdin(pic));
+
+    if (pic_eof_p(expr)) {
+      break;
+    }
+
+    pic_printf(pic, "~s\n", pic_eval(pic, expr, pic->lib));
+  }
+
+  pic_close(pic);
+
+  return 0;
+}
+```
+
+## Language
+
+All procedures and syntaces are exported from a single library named `(picrin base)`. The complete list is found at https://gist.github.com/wasabiz/344d802a2340d1f734b7 .
 
 ## Authors
 
