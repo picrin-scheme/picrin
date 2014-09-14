@@ -2,8 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
-#ifndef PICRIN_PROC_H__
-#define PICRIN_PROC_H__
+#ifndef PICRIN_PROC_H
+#define PICRIN_PROC_H
 
 #if defined(__cplusplus)
 extern "C" {

@@ -2,8 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
-#ifndef PICRIN_UTIL_H__
-#define PICRIN_UTIL_H__
+#ifndef PICRIN_UTIL_H
+#define PICRIN_UTIL_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -20,12 +20,12 @@ extern "C" {
 #define FALLTHROUGH ((void)0)
 #define UNUSED(v) ((void)(v))
 
-#define GENSYM2__(x,y) G##x##_##y##__
-#define GENSYM1__(x,y) GENSYM2__(x,y)
+#define GENSYM2_(x,y) G##x##_##y##__
+#define GENSYM1_(x,y) GENSYM2_(x,y)
 #if defined(__COUNTER__)
-# define GENSYM(x) GENSYM1__(__COUNTER__,x)
+# define GENSYM(x) GENSYM1_(__COUNTER__,x)
 #else
-# define GENSYM(x) GENSYM1__(__LINE__,x)
+# define GENSYM(x) GENSYM1_(__LINE__,x)
 #endif
 
 #if GCC_VERSION >= 40500 || __clang__
@@ -36,8 +36,8 @@ extern "C" {
 #endif
 
 #define SWAP(type,a,b)                          \
-  SWAP_HELPER__(type,GENSYM(tmp),a,b)
-#define SWAP_HELPER__(type,tmp,a,b)             \
+  SWAP_HELPER_(type,GENSYM(tmp),a,b)
+#define SWAP_HELPER_(type,tmp,a,b)             \
   do {                                          \
     type tmp = (a);                             \
     (a) = (b);                                  \

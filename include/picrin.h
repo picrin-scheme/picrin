@@ -21,8 +21,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PICRIN_H__
-#define PICRIN_H__
+#ifndef PICRIN_H
+#define PICRIN_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -188,8 +188,8 @@ struct pic_lib *pic_open_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define pic_deflibrary(pic, spec)                                       \
-  pic_deflibrary_helper__(pic, GENSYM(i), GENSYM(prev_lib), spec)
-#define pic_deflibrary_helper__(pic, i, prev_lib, spec)                 \
+  pic_deflibrary_helper_(pic, GENSYM(i), GENSYM(prev_lib), spec)
+#define pic_deflibrary_helper_(pic, i, prev_lib, spec)                  \
   for (int i = 0; ! i; )                                                \
     for (struct pic_lib *prev_lib; ! i; )                               \
       for ((prev_lib = pic->lib), pic_open_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)
