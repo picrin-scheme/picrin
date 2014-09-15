@@ -9,6 +9,19 @@
           (scheme eval)
           (scheme load))
 
+  (define-library (scheme null)
+    (import (scheme base))
+    (export define
+            lambda
+            if
+            quote
+            quasiquote
+            unquote
+            unquote-splicing
+            begin
+            set!
+            define-syntax))
+
   (define (null-environment n)
     (if (not (= n 5))
         (error "unsupported environment version" n)

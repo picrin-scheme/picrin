@@ -9,7 +9,6 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/picrin/test.scm
 
   ${PROJECT_SOURCE_DIR}/piclib/scheme/base.scm
-
   ${PROJECT_SOURCE_DIR}/piclib/scheme/cxr.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/read.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/write.scm
@@ -22,7 +21,6 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/scheme/process-context.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/time.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/r5rs.scm
-  ${PROJECT_SOURCE_DIR}/piclib/scheme/null.scm
 
   ${PROJECT_SOURCE_DIR}/piclib/srfi/1.scm
   ${PROJECT_SOURCE_DIR}/piclib/srfi/8.scm
