@@ -239,10 +239,7 @@
           flush-output-port)
 
   (export make-parameter
-          parameter-ref
-          parameter-set!
-          parameter-push!
-          parameter-pop!)
+          parameterize)
 
   (export identifier?
           identifier=?

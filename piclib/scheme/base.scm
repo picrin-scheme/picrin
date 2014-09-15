@@ -69,19 +69,6 @@
 
   ;; 4.2.6. Dynamic bindings
 
-  (define-syntax parameterize
-    (ir-macro-transformer
-     (lambda (form inject compare)
-       (let ((formal (car (cdr form)))
-             (body   (cdr (cdr form))))
-         (let ((vars (map car formal))
-               (vals (map cadr formal)))
-           `(begin
-              ,@(map (lambda (var val) `(parameter-push! ,var ,val)) vars vals)
-              (let ((result (begin ,@body)))
-                ,@(map (lambda (var) `(parameter-pop! ,var)) vars)
-                result)))))))
-
   (export make-parameter
           parameterize)
 

@@ -229,7 +229,7 @@ Technically, picrin's array is implemented as a ring-buffer, effective double-en
 (picrin dictionary)
 -------------------
 
-Symbol to Object table. Internally it is implemented on hash-table.
+Object-to-object table. Internally it is implemented on hash-table. Equivalence is tested with equal? procedure.
 
 Note that dictionary is not a weak map; if you are going to make a highly memory-consuming program with dictionaries, you should know that dictionaries keep their bound objects and never let them free until you explicitly deletes bindings.
 
@@ -243,7 +243,7 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 
 - **(dictionary-ref dict key)**
 
-  Look up dictionary dict for a value associated with symbol key. It returns two values: first is the associated value if exists, and second is a boolean of lookup result.
+  Look up dictionary dict for a value associated with key. It returns two values: first is the associated value if exists, and second is a boolean of lookup result.
 
 - **(dictionary-set! dict key obj)**
 
