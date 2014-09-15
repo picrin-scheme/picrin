@@ -7,7 +7,6 @@
 #include "picrin/pair.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"
-#include "picrin/dict.h"
 #include "picrin/string.h"
 #include "picrin/proc.h"
 
@@ -65,55 +64,54 @@ pic_find_library(pic_state *pic, pic_value spec)
   return pic_lib_ptr(pic_cdr(pic, v));
 }
 
-static struct pic_dict *
-import_table(pic_state *pic, pic_value spec)
+static void
+import_table(pic_state *pic, pic_value spec, xhash *imports)
 {
   const pic_sym sONLY = pic_intern_cstr(pic, "only");
   const pic_sym sRENAME = pic_intern_cstr(pic, "rename");
   const pic_sym sPREFIX = pic_intern_cstr(pic, "prefix");
   const pic_sym sEXCEPT = pic_intern_cstr(pic, "except");
   struct pic_lib *lib;
-  struct pic_dict *imports, *dict;
-  pic_value val, id;
-  pic_sym sym;
+  xhash table;
+  pic_value val;
+  pic_sym sym, id;
   xh_iter it;
 
-  imports = pic_make_dict(pic);
+  xh_init_int(&table, sizeof(pic_sym));
 
   if (pic_list_p(spec)) {
     if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sONLY))) {
-      dict = import_table(pic, pic_cadr(pic, spec));
+      import_table(pic, pic_cadr(pic, spec), &table);
       pic_for_each (val, pic_cddr(pic, spec)) {
-        pic_dict_set(pic, imports, pic_sym(val), pic_dict_ref(pic, dict, pic_sym(val)));
+        xh_put_int(imports, pic_sym(val), &xh_val(xh_get_int(&table, pic_sym(val)), pic_sym));
       }
-      return imports;
+      goto exit;
     }
     if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME))) {
-      imports = import_table(pic, pic_cadr(pic, spec));
+      import_table(pic, pic_cadr(pic, spec), imports);
       pic_for_each (val, pic_cddr(pic, spec)) {
-        id = pic_dict_ref(pic, imports, pic_sym(pic_car(pic, val)));
-        pic_dict_del(pic, imports, pic_sym(pic_car(pic, val)));
-        pic_dict_set(pic, imports, pic_sym(pic_cadr(pic, val)), id);
+        id = xh_val(xh_get_int(imports, pic_sym(pic_car(pic, val))), pic_sym);
+        xh_del_int(imports, pic_sym(pic_car(pic, val)));
+        xh_put_int(imports, pic_sym(pic_cadr(pic, val)), &id);
       }
-      return imports;
+      goto exit;
     }
     if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sPREFIX))) {
-      dict = import_table(pic, pic_cadr(pic, spec));
-      xh_begin(&it, &dict->hash);
+      import_table(pic, pic_cadr(pic, spec), &table);
+      xh_begin(&it, &table);
       while (xh_next(&it)) {
-        id = pic_sym_value(xh_key(it.e, pic_sym));
         val = pic_list_ref(pic, spec, 2);
-        sym = pic_intern_str(pic, pic_format(pic, "~s~s", val, id));
-        pic_dict_set(pic, imports, sym, xh_val(it.e, pic_value));
+        sym = pic_intern_str(pic, pic_format(pic, "~s~s", val, pic_sym_value(xh_key(it.e, pic_sym))));
+        xh_put_int(imports, sym, &xh_val(it.e, pic_sym));
       }
-      return imports;
+      goto exit;
     }
     if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sEXCEPT))) {
-      imports = import_table(pic, pic_cadr(pic, spec));
+      import_table(pic, pic_cadr(pic, spec), imports);
       pic_for_each (val, pic_cddr(pic, spec)) {
-        pic_dict_del(pic, imports, pic_sym(val));
+        xh_del_int(imports, pic_sym(val));
       }
-      return imports;
+      goto exit;
     }
   }
   lib = pic_find_library(pic, spec);
@@ -122,28 +120,34 @@ import_table(pic_state *pic, pic_value spec)
   }
   xh_begin(&it, &lib->exports);
   while (xh_next(&it)) {
-    pic_dict_set(pic, imports, xh_key(it.e, pic_sym), pic_sym_value(xh_val(it.e, pic_sym)));
+    xh_put_int(imports, xh_key(it.e, pic_sym), &xh_val(it.e, pic_sym));
   }
-  return imports;
+
+ exit:
+  xh_destroy(&table);
 }
 
 static void
 import(pic_state *pic, pic_value spec)
 {
-  struct pic_dict *imports;
+  xhash imports;
   xh_iter it;
 
-  imports = import_table(pic, spec);
+  xh_init_int(&imports, sizeof(pic_sym)); /* pic_sym to pic_sym */
 
-  xh_begin(&it, &imports->hash);
+  import_table(pic, spec, &imports);
+
+  xh_begin(&it, &imports);
   while (xh_next(&it)) {
 
 #if DEBUG
-    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, pic_sym(xh_val(it.e, pic_value))));
+    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, xh_val(it.e, pic_sym)));
 #endif
 
-    pic_put_rename(pic, pic->lib->env, xh_key(it.e, pic_sym), pic_sym(xh_val(it.e, pic_value)));
+    pic_put_rename(pic, pic->lib->env, xh_key(it.e, pic_sym), xh_val(it.e, pic_sym));
   }
+
+  xh_destroy(&imports);
 }
 
 static void

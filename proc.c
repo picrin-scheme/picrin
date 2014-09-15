@@ -61,13 +61,13 @@ pic_attr(pic_state *pic, struct pic_proc *proc)
 pic_value
 pic_attr_ref(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  return pic_dict_ref(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key));
+  return pic_dict_ref(pic, pic_attr(pic, proc), pic_sym_value(pic_intern_cstr(pic, key)));
 }
 
 void
 pic_attr_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value v)
 {
-  pic_dict_set(pic, pic_attr(pic, proc), pic_intern_cstr(pic, key), v);
+  pic_dict_set(pic, pic_attr(pic, proc), pic_sym_value(pic_intern_cstr(pic, key)), v);
 }
 
 static pic_value

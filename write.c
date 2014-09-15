@@ -336,7 +336,9 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, "#.(dictionary");
     xh_begin(&it, &pic_dict_ptr(obj)->hash);
     while (xh_next(&it)) {
-      xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it.e, pic_sym)));
+      xfprintf(file, " '");
+      write_core(p, xh_key(it.e, pic_value));
+      xfprintf(file, " '");
       write_core(p, xh_val(it.e, pic_value));
     }
     xfprintf(file, ")");
