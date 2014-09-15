@@ -498,6 +498,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
     xh_begin(&it, &dict->hash);
     while (xh_next(&it)) {
+      gc_mark(pic, xh_key(it.e, pic_value));
       gc_mark(pic, xh_val(it.e, pic_value));
     }
     break;
