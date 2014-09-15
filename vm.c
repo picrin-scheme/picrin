@@ -445,6 +445,20 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
   return xh_val(xh_get_int(&pic->globals, rename), pic_value);
 }
 
+void
+pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
+{
+  pic_sym sym, rename;
+
+  sym = pic_intern_cstr(pic, name);
+
+  if (! pic_find_rename(pic, lib->env, sym, &rename)) {
+    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
+  }
+
+  xh_put_int(&pic->globals, rename, &val);
+}
+
 pic_value
 pic_funcall(pic_state *pic, const char *name, pic_list args)
 {
