@@ -424,12 +424,6 @@ pic_define(pic_state *pic, const char *name, pic_value val)
   pic_export(pic, sym);
 }
 
-bool
-pic_defined_p(pic_state *pic, struct pic_lib *lib, const char *name)
-{
-  return pic_find_rename(pic, lib->env, pic_intern_cstr(pic, name), NULL);
-}
-
 pic_value
 pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {

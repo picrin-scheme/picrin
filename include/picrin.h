@@ -143,7 +143,6 @@ void pic_close(pic_state *);
 
 void pic_add_feature(pic_state *, const char *);
 
-bool pic_defined_p(pic_state *, struct pic_lib *, const char *);
 void pic_define(pic_state *, const char *, pic_value); /* automatic export */
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
