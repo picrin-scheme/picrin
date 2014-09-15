@@ -338,7 +338,7 @@ write_core(struct writer_control *p, pic_value obj)
     while (xh_next(&it)) {
       xfprintf(file, " '");
       write_core(p, xh_key(it.e, pic_value));
-      xfprintf(file, " ");
+      xfprintf(file, " '");
       write_core(p, xh_val(it.e, pic_value));
     }
     xfprintf(file, ")");
