@@ -22,8 +22,6 @@ struct pic_var *pic_make_var(pic_state *, pic_value, struct pic_proc * /* = NULL
 
 pic_value pic_var_ref(pic_state *, struct pic_var *);
 void pic_var_set(pic_state *, struct pic_var *, pic_value);
-void pic_var_push(pic_state *, struct pic_var *, pic_value);
-void pic_var_pop(pic_state *, struct pic_var *);
 
 #if defined(__cplusplus)
 }
