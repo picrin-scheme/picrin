@@ -144,6 +144,7 @@ void pic_close(pic_state *);
 void pic_add_feature(pic_state *, const char *);
 
 void pic_define(pic_state *, const char *, pic_value); /* automatic export */
+bool pic_defined_p(pic_state *, struct pic_lib *, const char *);
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
 pic_value pic_funcall(pic_state *pic, const char *name, pic_list args);
