@@ -25,21 +25,21 @@ pic_eof_object()
 struct pic_port *
 pic_stdin(pic_state *pic)
 {
-  struct pic_proc *proc;
+  pic_value obj;
 
-  proc = pic_proc_ptr(pic_ref(pic, pic->PICRIN_BASE, "current-input-port"));
+  obj = pic_funcall(pic, pic->PICRIN_BASE, "current-input-port", pic_nil_value());
 
-  return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
+  return pic_port_ptr(obj);
 }
 
 struct pic_port *
 pic_stdout(pic_state *pic)
 {
-  struct pic_proc *proc;
+  pic_value obj;
 
-  proc = pic_proc_ptr(pic_ref(pic, pic->PICRIN_BASE, "current-output-port"));
+  obj = pic_funcall(pic, pic->PICRIN_BASE, "current-output-port", pic_nil_value());
 
-  return pic_port_ptr(pic_apply(pic, proc, pic_nil_value()));
+  return pic_port_ptr(obj);
 }
 
 struct pic_port *

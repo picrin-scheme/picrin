@@ -170,7 +170,7 @@ pic_value pic_read_cstr(pic_state *, const char *);
 void pic_load(pic_state *, const char *);
 void pic_load_cstr(pic_state *, const char *);
 
-pic_value pic_funcall(pic_state *pic, const char *, pic_list);
+pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
 
