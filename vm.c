@@ -405,7 +405,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 }
 
 void
-pic_define(pic_state *pic, const char *name, pic_value val)
+pic_define_noexport(pic_state *pic, const char *name, pic_value val)
 {
   pic_sym sym, rename;
 
@@ -417,11 +417,15 @@ pic_define(pic_state *pic, const char *name, pic_value val)
     pic_warn(pic, "redefining global");
   }
 
-  /* push to the global arena */
   xh_put_int(&pic->globals, rename, &val);
+}
 
-  /* export! */
-  pic_export(pic, sym);
+void
+pic_define(pic_state *pic, const char *name, pic_value val)
+{
+  pic_define_noexport(pic, name, val);
+
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 pic_value
