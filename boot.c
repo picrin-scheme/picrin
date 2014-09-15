@@ -300,6 +300,34 @@ my $src = <<'EOL';
                             `(,(r 'begin) ,@(cdr clause)))
                        ,(loop (cdr clauses)))))))))))
 
+  (define (dynamic-bind parameters values body)
+    (let* ((old-bindings
+            (current-dynamic-environment))
+           (binding
+            (let ((dict (dictionary)))
+              (for-each
+               (lambda (parameter value)
+                 (dictionary-set! dict parameter (list (parameter value #f))))
+               parameters
+               values)
+              dict))
+           (new-bindings
+            (cons binding old-bindings)))
+      (dynamic-wind
+          (lambda () (current-dynamic-environment new-bindings))
+          body
+          (lambda () (current-dynamic-environment old-bindings)))))
+
+  (define-syntax parameterize
+    (er-macro-transformer
+     (lambda (form r compare)
+       (let ((formal (cadr form))
+             (body (cddr form)))
+         `(,(r 'dynamic-bind)
+           (list ,@(map car formal))
+           (list ,@(map cadr formal))
+           (,(r 'lambda) () ,@body))))))
+
   (define-syntax letrec-syntax
     (er-macro-transformer
      (lambda (form r c)
@@ -322,6 +350,7 @@ my $src = <<'EOL';
           and or
           cond case else =>
           do when unless
+          parameterize
           let-syntax letrec-syntax
           syntax-error))
 
@@ -668,6 +697,34 @@ const char pic_boot[] =
 "                            `(,(r 'begin) ,@(cdr clause)))\n"
 "                       ,(loop (cdr clauses)))))))))))\n"
 "\n"
+"  (define (dynamic-bind parameters values body)\n"
+"    (let* ((old-bindings\n"
+"            (current-dynamic-environment))\n"
+"           (binding\n"
+"            (let ((dict (dictionary)))\n"
+"              (for-each\n"
+"               (lambda (parameter value)\n"
+"                 (dictionary-set! dict parameter (list (parameter value #f))))\n"
+"               parameters\n"
+"               values)\n"
+"              dict))\n"
+"           (new-bindings\n"
+"            (cons binding old-bindings)))\n"
+"      (dynamic-wind\n"
+"          (lambda () (current-dynamic-environment new-bindings))\n"
+"          body\n"
+"          (lambda () (current-dynamic-environment old-bindings)))))\n"
+"\n"
+"  (define-syntax parameterize\n"
+"    (er-macro-transformer\n"
+"     (lambda (form r compare)\n"
+"       (let ((formal (cadr form))\n"
+"             (body (cddr form)))\n"
+"         `(,(r 'dynamic-bind)\n"
+"           (list ,@(map car formal))\n"
+"           (list ,@(map cadr formal))\n"
+"           (,(r 'lambda) () ,@body))))))\n"
+"\n"
 "  (define-syntax letrec-syntax\n"
 "    (er-macro-transformer\n"
 "     (lambda (form r c)\n"
@@ -690,6 +747,7 @@ const char pic_boot[] =
 "          and or\n"
 "          cond case else =>\n"
 "          do when unless\n"
+"          parameterize\n"
 "          let-syntax letrec-syntax\n"
 "          syntax-error))\n"
 ;

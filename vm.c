@@ -15,7 +15,6 @@
 #include "picrin/port.h"
 #include "picrin/irep.h"
 #include "picrin/blob.h"
-#include "picrin/var.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"
@@ -425,6 +424,12 @@ pic_define(pic_state *pic, const char *name, pic_value val)
   pic_export(pic, sym);
 }
 
+bool
+pic_defined_p(pic_state *pic, struct pic_lib *lib, const char *name)
+{
+  return pic_find_rename(pic, lib->env, pic_intern_cstr(pic, name), NULL);
+}
+
 pic_value
 pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
@@ -437,6 +442,20 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
   }
 
   return xh_val(xh_get_int(&pic->globals, rename), pic_value);
+}
+
+void
+pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
+{
+  pic_sym sym, rename;
+
+  sym = pic_intern_cstr(pic, name);
+
+  if (! pic_find_rename(pic, lib->env, sym, &rename)) {
+    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
+  }
+
+  xh_put_int(&pic->globals, rename, &val);
 }
 
 pic_value
@@ -806,15 +825,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     L_CALL:
       x = pic->sp[-c.u.i];
       if (! pic_proc_p(x)) {
-
-        if (pic_var_p(x)) {
-          if (c.u.i != 1) {
-            pic_errorf(pic, "invalid call-sequence for var object");
-          }
-          POP();
-          PUSH(pic_var_ref(pic, pic_var_ptr(x)));
-          NEXT;
-        }
 	pic_errorf(pic, "invalid application: ~s", x);
       }
       proc = pic_proc_ptr(x);

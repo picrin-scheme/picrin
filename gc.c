@@ -15,7 +15,6 @@
 #include "picrin/error.h"
 #include "picrin/macro.h"
 #include "picrin/lib.h"
-#include "picrin/var.h"
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
@@ -462,14 +461,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark_object(pic, (struct pic_object *)lib->env);
     break;
   }
-  case PIC_TT_VAR: {
-    struct pic_var *var = (struct pic_var *)obj;
-    gc_mark(pic, var->stack);
-    if (var->conv) {
-      gc_mark_object(pic, (struct pic_object *)var->conv);
-    }
-    break;
-  }
   case PIC_TT_IREP: {
     struct pic_irep *irep = (struct pic_irep *)obj;
     size_t i;
@@ -697,9 +688,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_LIB: {
     struct pic_lib *lib = (struct pic_lib *)obj;
     xh_destroy(&lib->exports);
-    break;
-  }
-  case PIC_TT_VAR: {
     break;
   }
   case PIC_TT_IREP: {
