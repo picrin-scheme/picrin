@@ -217,6 +217,8 @@ static inline void pic_warn(pic_state *pic, const char *msg)
 
 const char *pic_errmsg(pic_state *);
 
+struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
+
 struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
 struct pic_port *pic_stderr(pic_state *);

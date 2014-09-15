@@ -11,7 +11,6 @@
 #include "picrin/port.h"
 #include "picrin/string.h"
 #include "picrin/blob.h"
-#include "picrin/var.h"
 
 pic_value
 pic_eof_object()

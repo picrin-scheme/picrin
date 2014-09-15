@@ -15,7 +15,6 @@
 #include "picrin/port.h"
 #include "picrin/irep.h"
 #include "picrin/blob.h"
-#include "picrin/var.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/error.h"
@@ -826,15 +825,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     L_CALL:
       x = pic->sp[-c.u.i];
       if (! pic_proc_p(x)) {
-
-        if (pic_var_p(x)) {
-          if (c.u.i != 1) {
-            pic_errorf(pic, "invalid call-sequence for var object");
-          }
-          POP();
-          PUSH(pic_var_ref(pic, pic_var_ptr(x)));
-          NEXT;
-        }
 	pic_errorf(pic, "invalid application: ~s", x);
       }
       proc = pic_proc_ptr(x);
