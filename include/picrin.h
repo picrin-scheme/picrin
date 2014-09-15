@@ -143,15 +143,13 @@ void pic_close(pic_state *);
 
 void pic_add_feature(pic_state *, const char *);
 
-void pic_define(pic_state *, const char *, pic_value); /* automatic export */
 bool pic_defined_p(pic_state *, struct pic_lib *, const char *);
-pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
-void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
-pic_value pic_funcall(pic_state *pic, const char *name, pic_list args);
+void pic_define(pic_state *, const char *, pic_value); /* automatic export */
+void pic_defun(pic_state *, const char *, pic_func_t);
+void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
 
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
-void pic_defun(pic_state *, const char *, pic_func_t);
 
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
@@ -171,6 +169,10 @@ pic_value pic_read_cstr(pic_state *, const char *);
 
 void pic_load(pic_state *, const char *);
 void pic_load_cstr(pic_state *, const char *);
+
+pic_value pic_funcall(pic_state *pic, const char *, pic_list);
+pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
+void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
 
 pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply0(pic_state *, struct pic_proc *);

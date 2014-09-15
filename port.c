@@ -681,9 +681,9 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_define(pic, "current-input-port", pic_obj_value(pic_make_var(pic, pic_obj_value(pic->xSTDIN), NULL)));
-  pic_define(pic, "current-output-port", pic_obj_value(pic_make_var(pic, pic_obj_value(pic->xSTDOUT), NULL)));
-  pic_define(pic, "current-error-port", pic_obj_value(pic_make_var(pic, pic_obj_value(pic->xSTDERR), NULL)));
+  pic_defvar(pic, "current-input-port", pic_obj_value(pic->xSTDIN), NULL);
+  pic_defvar(pic, "current-output-port", pic_obj_value(pic->xSTDOUT), NULL);
+  pic_defvar(pic, "current-error-port", pic_obj_value(pic->xSTDERR), NULL);
 
   pic_defun(pic, "call-with-port", pic_port_call_with_port);
 
