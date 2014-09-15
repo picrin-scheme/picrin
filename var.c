@@ -18,7 +18,7 @@ var_lookup(pic_state *pic, pic_value var)
     return pic_false_value();
   }
 
-  env = pic_funcall(pic, "current-dynamic-environment", pic_nil_value());
+  env = pic_apply0(pic, pic_proc_ptr(val));
   while (! pic_nil_p(env)) {
     pic_assert_type(pic, pic_car(pic, env), dict);
 
