@@ -304,8 +304,8 @@ pic_dict_dictionary_to_plist(pic_state *pic)
 
   xh_begin(&it, &dict->hash);
   while (xh_next(&it)) {
-    pic_push(pic, xh_val(it.e, pic_value), plist);
     pic_push(pic, xh_key(it.e, pic_value), plist);
+    pic_push(pic, xh_val(it.e, pic_value), plist);
   }
 
   return pic_reverse(pic, plist);
@@ -322,7 +322,7 @@ pic_dict_plist_to_dictionary(pic_state *pic)
   dict = pic_make_dict(pic);
 
   for (e = pic_reverse(pic, plist); ! pic_nil_p(e); e = pic_cddr(pic, e)) {
-    pic_dict_set(pic, dict, pic_car(pic, e), pic_cadr(pic, e));
+    pic_dict_set(pic, dict, pic_cadr(pic, e), pic_car(pic, e));
   }
 
   return pic_obj_value(dict);
