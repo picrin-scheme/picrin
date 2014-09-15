@@ -102,7 +102,7 @@ pic_var_make_parameter(pic_state *pic)
 void
 pic_init_var(pic_state *pic)
 {
-  pic_define(pic, "current-dynamic-environment", pic_false_value());
+  pic_define_noexport(pic, "current-dynamic-environment", pic_false_value());
 
   pic_defun(pic, "make-parameter", pic_var_make_parameter);
 
