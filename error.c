@@ -266,37 +266,13 @@ pic_error_error_object_irritants(pic_state *pic)
 }
 
 static pic_value
-pic_error_read_error_p(pic_state *pic)
+pic_error_error_object_type(pic_state *pic)
 {
-  pic_value v;
   struct pic_error *e;
 
-  pic_get_args(pic, "o", &v);
+  pic_get_args(pic, "e", &e);
 
-  if (! pic_error_p(v)) {
-    return pic_false_value();
-  }
-
-  e = pic_error_ptr(v);
-
-  return pic_bool_value(e->type == pic->sREAD);
-}
-
-static pic_value
-pic_error_file_error_p(pic_state *pic)
-{
-  pic_value v;
-  struct pic_error *e;
-
-  pic_get_args(pic, "o", &v);
-
-  if (! pic_error_p(v)) {
-    return pic_false_value();
-  }
-
-  e = pic_error_ptr(v);
-
-  return pic_bool_value(e->type == pic->sFILE);
+  return pic_sym_value(e->type);
 }
 
 void
@@ -310,6 +286,5 @@ pic_init_error(pic_state *pic)
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);
   pic_defun(pic, "error-object-irritants", pic_error_error_object_irritants);
-  pic_defun(pic, "read-error?", pic_error_read_error_p);
-  pic_defun(pic, "file-error?", pic_error_file_error_p);
+  pic_defun(pic, "error-object-type", pic_error_error_object_type);
 }
