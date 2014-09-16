@@ -318,7 +318,7 @@ pic_lib_define_library(pic_state *pic)
   }
   pic_catch {
     pic_in_library(pic, prev->name); /* restores pic->lib even if an error occurs */
-    pic_throw_error(pic, pic->err);
+    pic_raise(pic, pic->err);
   }
 
   return pic_none_value();
