@@ -21,8 +21,6 @@ main(int argc, char *argv[])
 
   pic = pic_open(argc, argv, NULL);
 
-  pic_import_library(pic, pic->PICRIN_BASE);
-
   while (1) {
     printf("> ");
 

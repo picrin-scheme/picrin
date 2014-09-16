@@ -141,4 +141,6 @@ pic_init_core(pic_state *pic)
 
     pic_load_cstr(pic, pic_boot);
   }
+
+  pic_import_library(pic, pic->PICRIN_BASE);
 }
