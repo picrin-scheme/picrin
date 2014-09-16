@@ -255,11 +255,11 @@
           raise
           raise-continuable
           error
+          make-error-object
           error-object?
           error-object-message
           error-object-irritants
-          read-error?
-          file-error?)
+          error-object-type)
 
   (export procedure?
           apply

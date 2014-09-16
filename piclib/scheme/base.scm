@@ -463,6 +463,14 @@
 
   ;; 6.11. Exceptions
 
+  (define (read-error? obj)
+    (and (error-object? obj)
+         (eq? (error-object-type obj) 'read)))
+
+  (define (file-error? obj)
+    (and (error-object? obj)
+         (eq? (error-object-type obj) 'file)))
+
   (export with-exception-handler
           raise
           raise-continuable
