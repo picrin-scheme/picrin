@@ -56,15 +56,17 @@ int
 main(int argc, char *argv[], char **envp)
 {
   pic_state *pic;
+  struct pic_lib *PICRIN_MAIN;
   int status = 0;
 
   pic = pic_open(argc, argv, envp);
 
   pic_init_picrin(pic);
 
+  PICRIN_MAIN = pic_find_library(pic, pic_read_cstr(pic, "(picrin main)"));
+
   pic_try {
-    pic_import(pic, pic_read_cstr(pic, "(picrin main)"));
-    pic_funcall(pic, "main", pic_nil_value());
+    pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
   }
   pic_catch {
     pic_print_backtrace(pic, pic->err);
