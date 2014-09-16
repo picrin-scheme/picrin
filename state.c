@@ -90,60 +90,64 @@ pic_open(int argc, char *argv[], char **envp)
   /* native stack marker */
   pic->native_stack_start = &t;
 
-#define register_core_symbol(pic,slot,name) do {	\
-    pic->slot = pic_intern_cstr(pic, name);		\
-  } while (0)
+#define S(slot,name) pic->slot = pic_intern_cstr(pic, name);
 
   ai = pic_gc_arena_preserve(pic);
-  register_core_symbol(pic, sDEFINE, "define");
-  register_core_symbol(pic, sLAMBDA, "lambda");
-  register_core_symbol(pic, sIF, "if");
-  register_core_symbol(pic, sBEGIN, "begin");
-  register_core_symbol(pic, sSETBANG, "set!");
-  register_core_symbol(pic, sQUOTE, "quote");
-  register_core_symbol(pic, sQUASIQUOTE, "quasiquote");
-  register_core_symbol(pic, sUNQUOTE, "unquote");
-  register_core_symbol(pic, sUNQUOTE_SPLICING, "unquote-splicing");
-  register_core_symbol(pic, sDEFINE_SYNTAX, "define-syntax");
-  register_core_symbol(pic, sIMPORT, "import");
-  register_core_symbol(pic, sEXPORT, "export");
-  register_core_symbol(pic, sDEFINE_LIBRARY, "define-library");
-  register_core_symbol(pic, sIN_LIBRARY, "in-library");
-  register_core_symbol(pic, sCOND_EXPAND, "cond-expand");
-  register_core_symbol(pic, sCONS, "cons");
-  register_core_symbol(pic, sCAR, "car");
-  register_core_symbol(pic, sCDR, "cdr");
-  register_core_symbol(pic, sNILP, "null?");
-  register_core_symbol(pic, sADD, "+");
-  register_core_symbol(pic, sSUB, "-");
-  register_core_symbol(pic, sMUL, "*");
-  register_core_symbol(pic, sDIV, "/");
-  register_core_symbol(pic, sMINUS, "minus");
-  register_core_symbol(pic, sEQ, "=");
-  register_core_symbol(pic, sLT, "<");
-  register_core_symbol(pic, sLE, "<=");
-  register_core_symbol(pic, sGT, ">");
-  register_core_symbol(pic, sGE, ">=");
-  register_core_symbol(pic, sNOT, "not");
+  S(sDEFINE, "define");
+  S(sLAMBDA, "lambda");
+  S(sIF, "if");
+  S(sBEGIN, "begin");
+  S(sSETBANG, "set!");
+  S(sQUOTE, "quote");
+  S(sQUASIQUOTE, "quasiquote");
+  S(sUNQUOTE, "unquote");
+  S(sUNQUOTE_SPLICING, "unquote-splicing");
+  S(sDEFINE_SYNTAX, "define-syntax");
+  S(sIMPORT, "import");
+  S(sEXPORT, "export");
+  S(sDEFINE_LIBRARY, "define-library");
+  S(sIN_LIBRARY, "in-library");
+  S(sCOND_EXPAND, "cond-expand");
+  S(sAND, "and");
+  S(sOR, "or");
+  S(sELSE, "else");
+  S(sLIBRARY, "library");
+  S(sONLY, "only");
+  S(sRENAME, "rename");
+  S(sPREFIX, "prefix");
+  S(sEXCEPT, "except");
+  S(sCONS, "cons");
+  S(sCAR, "car");
+  S(sCDR, "cdr");
+  S(sNILP, "null?");
+  S(sADD, "+");
+  S(sSUB, "-");
+  S(sMUL, "*");
+  S(sDIV, "/");
+  S(sMINUS, "minus");
+  S(sEQ, "=");
+  S(sLT, "<");
+  S(sLE, "<=");
+  S(sGT, ">");
+  S(sGE, ">=");
+  S(sNOT, "not");
   pic_gc_arena_restore(pic, ai);
 
-#define register_renamed_symbol(pic,slot,name) do {              \
-    pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));     \
-  } while (0)
+#define R(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));
 
   ai = pic_gc_arena_preserve(pic);
-  register_renamed_symbol(pic, rDEFINE, "define");
-  register_renamed_symbol(pic, rLAMBDA, "lambda");
-  register_renamed_symbol(pic, rIF, "if");
-  register_renamed_symbol(pic, rBEGIN, "begin");
-  register_renamed_symbol(pic, rSETBANG, "set!");
-  register_renamed_symbol(pic, rQUOTE, "quote");
-  register_renamed_symbol(pic, rDEFINE_SYNTAX, "define-syntax");
-  register_renamed_symbol(pic, rIMPORT, "import");
-  register_renamed_symbol(pic, rEXPORT, "export");
-  register_renamed_symbol(pic, rDEFINE_LIBRARY, "define-library");
-  register_renamed_symbol(pic, rIN_LIBRARY, "in-library");
-  register_renamed_symbol(pic, rCOND_EXPAND, "cond-expand");
+  R(rDEFINE, "define");
+  R(rLAMBDA, "lambda");
+  R(rIF, "if");
+  R(rBEGIN, "begin");
+  R(rSETBANG, "set!");
+  R(rQUOTE, "quote");
+  R(rDEFINE_SYNTAX, "define-syntax");
+  R(rIMPORT, "import");
+  R(rEXPORT, "export");
+  R(rDEFINE_LIBRARY, "define-library");
+  R(rIN_LIBRARY, "in-library");
+  R(rCOND_EXPAND, "cond-expand");
   pic_gc_arena_restore(pic, ai);
 
   /* root block */

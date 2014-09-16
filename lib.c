@@ -67,27 +67,26 @@ pic_find_library(pic_state *pic, pic_value spec)
 static void
 import_table(pic_state *pic, pic_value spec, xhash *imports)
 {
-  const pic_sym sONLY = pic_intern_cstr(pic, "only");
-  const pic_sym sRENAME = pic_intern_cstr(pic, "rename");
-  const pic_sym sPREFIX = pic_intern_cstr(pic, "prefix");
-  const pic_sym sEXCEPT = pic_intern_cstr(pic, "except");
   struct pic_lib *lib;
   xhash table;
   pic_value val;
-  pic_sym sym, id;
+  pic_sym sym, id, tag;
   xh_iter it;
 
   xh_init_int(&table, sizeof(pic_sym));
 
-  if (pic_list_p(spec)) {
-    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sONLY))) {
+  if (pic_pair_p(spec) && pic_sym_p(pic_car(pic, spec))) {
+
+    tag = pic_sym(pic_car(pic, spec));
+
+    if (tag == pic->sONLY) {
       import_table(pic, pic_cadr(pic, spec), &table);
       pic_for_each (val, pic_cddr(pic, spec)) {
         xh_put_int(imports, pic_sym(val), &xh_val(xh_get_int(&table, pic_sym(val)), pic_sym));
       }
       goto exit;
     }
-    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME))) {
+    if (tag == pic->sRENAME) {
       import_table(pic, pic_cadr(pic, spec), imports);
       pic_for_each (val, pic_cddr(pic, spec)) {
         id = xh_val(xh_get_int(imports, pic_sym(pic_car(pic, val))), pic_sym);
@@ -96,7 +95,7 @@ import_table(pic_state *pic, pic_value spec, xhash *imports)
       }
       goto exit;
     }
-    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sPREFIX))) {
+    if (tag == pic->sPREFIX) {
       import_table(pic, pic_cadr(pic, spec), &table);
       xh_begin(&it, &table);
       while (xh_next(&it)) {
@@ -106,7 +105,7 @@ import_table(pic_state *pic, pic_value spec, xhash *imports)
       }
       goto exit;
     }
-    if (pic_eq_p(pic_car(pic, spec), pic_sym_value(sEXCEPT))) {
+    if (tag == pic->sEXCEPT) {
       import_table(pic, pic_cadr(pic, spec), imports);
       pic_for_each (val, pic_cddr(pic, spec)) {
         xh_del_int(imports, pic_sym(val));
@@ -209,15 +208,10 @@ pic_export(pic_state *pic, pic_sym sym)
 static bool
 condexpand(pic_state *pic, pic_value clause)
 {
-  const pic_sym sELSE = pic_intern_cstr(pic, "else");
-  const pic_sym sLIBRARY = pic_intern_cstr(pic, "library");
-  const pic_sym sOR = pic_intern_cstr(pic, "or");
-  const pic_sym sAND = pic_intern_cstr(pic, "and");
-  const pic_sym sNOT = pic_intern_cstr(pic, "not");
   pic_sym tag;
   pic_value c, feature;
 
-  if (pic_eq_p(clause, pic_sym_value(sELSE))) {
+  if (pic_eq_p(clause, pic_sym_value(pic->sELSE))) {
     return true;
   }
   if (pic_sym_p(clause)) {
@@ -234,20 +228,20 @@ condexpand(pic_state *pic, pic_value clause)
     tag = pic_sym(pic_car(pic, clause));
   }
 
-  if (tag == sLIBRARY) {
+  if (tag == pic->sLIBRARY) {
     return pic_find_library(pic, pic_list_ref(pic, clause, 1)) != NULL;
   }
-  if (tag == sNOT) {
+  if (tag == pic->sNOT) {
     return ! condexpand(pic, pic_list_ref(pic, clause, 1));
   }
-  if (tag == sAND) {
+  if (tag == pic->sAND) {
     pic_for_each (c, pic_cdr(pic, clause)) {
       if (! condexpand(pic, c))
         return false;
     }
     return true;
   }
-  if (tag == sOR) {
+  if (tag == pic->sOR) {
     pic_for_each (c, pic_cdr(pic, clause)) {
       if (condexpand(pic, c))
         return true;
