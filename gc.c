@@ -475,32 +475,29 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_DATA: {
     struct pic_data *data = (struct pic_data *)obj;
-    xh_iter it;
+    xh_entry *it;
 
-    xh_begin(&it, &data->storage);
-    while (xh_next(&it)) {
-      gc_mark(pic, xh_val(it.e, pic_value));
+    for (it = xh_begin(&data->storage); it != NULL; it = xh_next(it)) {
+      gc_mark(pic, xh_val(it, pic_value));
     }
     break;
   }
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
-    xh_iter it;
+    xh_entry *it;
 
-    xh_begin(&it, &dict->hash);
-    while (xh_next(&it)) {
-      gc_mark(pic, xh_key(it.e, pic_value));
-      gc_mark(pic, xh_val(it.e, pic_value));
+    for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
+      gc_mark(pic, xh_key(it, pic_value));
+      gc_mark(pic, xh_val(it, pic_value));
     }
     break;
   }
   case PIC_TT_RECORD: {
     struct pic_record *rec = (struct pic_record *)obj;
-    xh_iter it;
+    xh_entry *it;
 
-    xh_begin(&it, &rec->hash);
-    while (xh_next(&it)) {
-      gc_mark(pic, xh_val(it.e, pic_value));
+    for (it = xh_begin(&rec->hash); it != NULL; it = xh_next(it)) {
+      gc_mark(pic, xh_val(it, pic_value));
     }
     break;
   }
@@ -563,7 +560,7 @@ gc_mark_phase(pic_state *pic)
   pic_value *stack;
   pic_callinfo *ci;
   size_t i, j;
-  xh_iter it;
+  xh_entry *it;
 
   /* block */
   if (pic->blk) {
@@ -593,15 +590,13 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* global variables */
-  xh_begin(&it, &pic->globals);
-  while (xh_next(&it)) {
-    gc_mark(pic, xh_val(it.e, pic_value));
+  for (it = xh_begin(&pic->globals); it != NULL; it = xh_next(it)) {
+    gc_mark(pic, xh_val(it, pic_value));
   }
 
   /* macro objects */
-  xh_begin(&it, &pic->macros);
-  while (xh_next(&it)) {
-    gc_mark_object(pic, xh_val(it.e, struct pic_object *));
+ for (it = xh_begin(&pic->macros); it != NULL; it = xh_next(it)) {
+    gc_mark_object(pic, xh_val(it, struct pic_object *));
   }
 
   /* error handlers */

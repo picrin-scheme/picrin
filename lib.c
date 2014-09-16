@@ -71,7 +71,7 @@ import_table(pic_state *pic, pic_value spec, xhash *imports)
   xhash table;
   pic_value val;
   pic_sym sym, id, tag;
-  xh_iter it;
+  xh_entry *it;
 
   xh_init_int(&table, sizeof(pic_sym));
 
@@ -97,11 +97,10 @@ import_table(pic_state *pic, pic_value spec, xhash *imports)
     }
     if (tag == pic->sPREFIX) {
       import_table(pic, pic_cadr(pic, spec), &table);
-      xh_begin(&it, &table);
-      while (xh_next(&it)) {
+      for (it = xh_begin(&table); it != NULL; it = xh_next(it)) {
         val = pic_list_ref(pic, spec, 2);
-        sym = pic_intern_str(pic, pic_format(pic, "~s~s", val, pic_sym_value(xh_key(it.e, pic_sym))));
-        xh_put_int(imports, sym, &xh_val(it.e, pic_sym));
+        sym = pic_intern_str(pic, pic_format(pic, "~s~s", val, pic_sym_value(xh_key(it, pic_sym))));
+        xh_put_int(imports, sym, &xh_val(it, pic_sym));
       }
       goto exit;
     }
@@ -117,9 +116,8 @@ import_table(pic_state *pic, pic_value spec, xhash *imports)
   if (! lib) {
     pic_errorf(pic, "library not found: ~a", spec);
   }
-  xh_begin(&it, &lib->exports);
-  while (xh_next(&it)) {
-    xh_put_int(imports, xh_key(it.e, pic_sym), &xh_val(it.e, pic_sym));
+  for (it = xh_begin(&lib->exports); it != NULL; it = xh_next(it)) {
+    xh_put_int(imports, xh_key(it, pic_sym), &xh_val(it, pic_sym));
   }
 
  exit:
@@ -130,20 +128,19 @@ static void
 import(pic_state *pic, pic_value spec)
 {
   xhash imports;
-  xh_iter it;
+  xh_entry *it;
 
   xh_init_int(&imports, sizeof(pic_sym)); /* pic_sym to pic_sym */
 
   import_table(pic, spec, &imports);
 
-  xh_begin(&it, &imports);
-  while (xh_next(&it)) {
+  for (it = xh_begin(&imports); it != NULL; it = xh_next(it)) {
 
 #if DEBUG
-    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it.e, pic_sym)), pic_symbol_name(pic, xh_val(it.e, pic_sym)));
+    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it, pic_sym)), pic_symbol_name(pic, xh_val(it, pic_sym)));
 #endif
 
-    pic_put_rename(pic, pic->lib->env, xh_key(it.e, pic_sym), xh_val(it.e, pic_sym));
+    pic_put_rename(pic, pic->lib->env, xh_key(it, pic_sym), xh_val(it, pic_sym));
   }
 
   xh_destroy(&imports);

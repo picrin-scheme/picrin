@@ -62,7 +62,7 @@ static analyze_state *
 new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
-  xh_iter it;
+  xh_entry *it;
 
   state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
@@ -98,9 +98,8 @@ new_analyze_state(pic_state *pic)
   /* push initial scope */
   push_scope(state, pic_nil_value());
 
-  xh_begin(&it, &pic->globals);
-  while (xh_next(&it)) {
-    pic_sym sym = xh_key(it.e, pic_sym);
+  for (it = xh_begin(&pic->globals); it != NULL; it = xh_next(it)) {
+    pic_sym sym = xh_key(it, pic_sym);
     xv_push(&state->scope->locals, &sym);
   }
 

@@ -222,13 +222,12 @@ pic_dict_dictionary_map(pic_state *pic)
   struct pic_proc *proc;
   struct pic_dict *dict;
   pic_value item, list = pic_nil_value();
-  xh_iter it;
+  xh_entry *it;
 
   pic_get_args(pic, "ld", &proc, &dict);
 
-  xh_begin(&it, &dict->hash);
-  while (xh_next(&it)) {
-    item = pic_cons(pic, xh_key(it.e, pic_value), xh_val(it.e, pic_value));
+  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
+    item = pic_cons(pic, xh_key(it, pic_value), xh_val(it, pic_value));
     pic_push(pic, pic_apply1(pic, proc, item), list);
   }
 
@@ -241,15 +240,14 @@ pic_dict_dictionary_for_each(pic_state *pic)
   struct pic_proc *proc;
   struct pic_dict *dict;
   pic_value item;
-  xh_iter it;
+  xh_entry *it;
 
   pic_get_args(pic, "ld", &proc, &dict);
 
-  xh_begin(&it, &dict->hash);
-  while (xh_next(&it)) {
+  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
     int ai = pic_gc_arena_preserve(pic);
 
-    item = pic_cons(pic, xh_key(it.e, pic_value), xh_val(it.e, pic_value));
+    item = pic_cons(pic, xh_key(it, pic_value), xh_val(it, pic_value));
     pic_apply1(pic, proc, item);
 
     pic_gc_arena_restore(pic, ai);
@@ -263,13 +261,12 @@ pic_dict_dictionary_to_alist(pic_state *pic)
 {
   struct pic_dict *dict;
   pic_value item, alist = pic_nil_value();
-  xh_iter it;
+  xh_entry *it;
 
   pic_get_args(pic, "d", &dict);
 
-  xh_begin(&it, &dict->hash);
-  while (xh_next(&it)) {
-    item = pic_cons(pic, xh_key(it.e, pic_value), xh_val(it.e, pic_value));
+  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
+    item = pic_cons(pic, xh_key(it, pic_value), xh_val(it, pic_value));
     pic_push(pic, item, alist);
   }
 
@@ -298,14 +295,13 @@ pic_dict_dictionary_to_plist(pic_state *pic)
 {
   struct pic_dict *dict;
   pic_value plist = pic_nil_value();
-  xh_iter it;
+  xh_entry *it;
 
   pic_get_args(pic, "d", &dict);
 
-  xh_begin(&it, &dict->hash);
-  while (xh_next(&it)) {
-    pic_push(pic, xh_key(it.e, pic_value), plist);
-    pic_push(pic, xh_val(it.e, pic_value), plist);
+  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
+    pic_push(pic, xh_key(it, pic_value), plist);
+    pic_push(pic, xh_val(it, pic_value), plist);
   }
 
   return pic_reverse(pic, plist);

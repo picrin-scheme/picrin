@@ -177,7 +177,7 @@ pic_open(int argc, char *argv[], char **envp)
 void
 pic_close(pic_state *pic)
 {
-  xh_iter it;
+  xh_entry *it;
 
   /* invoke exit handlers */
   while (pic->blk) {
@@ -221,9 +221,8 @@ pic_close(pic_state *pic)
   free(pic->arena);
 
   /* free symbol names */
-  xh_begin(&it, &pic->sym_names);
-  while (xh_next(&it)) {
-    free(xh_val(it.e, char *));
+  for (it = xh_begin(&pic->sym_names); it != NULL; it = xh_next(it)) {
+    free(xh_val(it, char *));
   }
   xh_destroy(&pic->sym_names);
 

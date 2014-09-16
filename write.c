@@ -209,8 +209,7 @@ write_core(struct writer_control *p, pic_value obj)
   pic_state *pic = p->pic;
   xFILE *file = p->file;
   size_t i;
-  xh_entry *e;
-  xh_iter it;
+  xh_entry *e, *it;
   int c;
   float f;
 
@@ -334,12 +333,11 @@ write_core(struct writer_control *p, pic_value obj)
     break;
   case PIC_TT_DICT:
     xfprintf(file, "#.(dictionary");
-    xh_begin(&it, &pic_dict_ptr(obj)->hash);
-    while (xh_next(&it)) {
+    for (it = xh_begin(&pic_dict_ptr(obj)->hash); it != NULL; it = xh_next(it)) {
       xfprintf(file, " '");
-      write_core(p, xh_key(it.e, pic_value));
+      write_core(p, xh_key(it, pic_value));
       xfprintf(file, " '");
-      write_core(p, xh_val(it.e, pic_value));
+      write_core(p, xh_val(it, pic_value));
     }
     xfprintf(file, ")");
     break;

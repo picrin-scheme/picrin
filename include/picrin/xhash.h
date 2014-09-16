@@ -1,5 +1,5 @@
-#ifndef XHASH_H__
-#define XHASH_H__
+#ifndef XHASH_H
+#define XHASH_H
 
 /*
  * Copyright (c) 2013-2014 by Yuichi Nishiwaki <yuichi.nishiwaki@gmail.com>
@@ -27,6 +27,7 @@ extern "C" {
 typedef struct xh_entry {
   struct xh_entry *next;
   int hash;
+  struct xh_entry *fw, *bw;
   const char *key;              /* == val + XHASH_ALIGN(vwidth) */
   char val[];
 } xh_entry;
@@ -42,15 +43,16 @@ typedef struct xhash {
   size_t size, count, kwidth, vwidth;
   xh_hashf hashf;
   xh_equalf equalf;
+  xh_entry *chain;
   void *data;
 } xhash;
 
-static inline void xh_init_(xhash *x, size_t, size_t, xh_hashf, xh_equalf, void *);
-static inline xh_entry *xh_get_(xhash *x, const void *key);
-static inline xh_entry *xh_put_(xhash *x, const void *key, void *val);
-static inline void xh_del_(xhash *x, const void *key);
-static inline void xh_clear(xhash *x);
-static inline void xh_destroy(xhash *x);
+/** Protected Methods:
+ * static inline void xh_init_(xhash *x, size_t, size_t, xh_hashf, xh_equalf, void *);
+ * static inline xh_entry *xh_get_(xhash *x, const void *key);
+ * static inline xh_entry *xh_put_(xhash *x, const void *key, void *val);
+ * static inline void xh_del_(xhash *x, const void *key);
+ */
 
 /* string map */
 static inline void xh_init_str(xhash *x, size_t width);
@@ -70,14 +72,12 @@ static inline xh_entry *xh_get_int(xhash *x, int key);
 static inline xh_entry *xh_put_int(xhash *x, int key, void *);
 static inline void xh_del_int(xhash *x, int key);
 
-typedef struct xh_iter {
-  xhash *x;
-  xh_entry *e, *next;
-  size_t bidx;
-} xh_iter;
+static inline size_t xh_size(xhash *x);
+static inline void xh_clear(xhash *x);
+static inline void xh_destroy(xhash *x);
 
-static inline void xh_begin(xh_iter *it, xhash *x);
-static inline int xh_next(xh_iter *it);
+static inline xh_entry *xh_begin(xhash *x);
+static inline xh_entry *xh_next(xh_entry *e);
 
 
 static inline void
@@ -98,6 +98,7 @@ xh_init_(xhash *x, size_t kwidth, size_t vwidth, xh_hashf hashf, xh_equalf equal
   x->vwidth = vwidth;
   x->hashf = hashf;
   x->equalf = equalf;
+  x->chain = NULL;
   x->data = data;
 
   xh_bucket_realloc(x, XHASH_INIT_SIZE);
@@ -123,20 +124,21 @@ static inline void
 xh_resize_(xhash *x, size_t newsize)
 {
   xhash y;
-  xh_iter it;
+  xh_entry *it;
   size_t idx;
 
   xh_init_(&y, x->kwidth, x->vwidth, x->hashf, x->equalf, x->data);
   xh_bucket_realloc(&y, newsize);
 
-  xh_begin(&it, x);
-  while (xh_next(&it)) {
-    idx = ((unsigned)it.e->hash) % y.size;
+  for (it = xh_begin(x); it != NULL; it = xh_next(it)) {
+    idx = ((unsigned)it->hash) % y.size;
     /* reuse entry object */
-    it.e->next = y.buckets[idx];
-    y.buckets[idx] = it.e;
+    it->next = y.buckets[idx];
+    y.buckets[idx] = it;
     y.count++;
   }
+
+  y.chain = x->chain;
 
   free(x->buckets);
 
@@ -169,6 +171,16 @@ xh_put_(xhash *x, const void *key, void *val)
   memcpy((void *)e->key, key, x->kwidth);
   memcpy(e->val, val, x->vwidth);
 
+  if (x->chain == NULL) {
+    x->chain = e;
+    e->fw = e->bw = NULL;
+  } else {
+    x->chain->fw = e;
+    e->bw = x->chain;
+    e->fw = NULL;
+    x->chain = e;
+  }
+
   x->count++;
 
   return x->buckets[idx] = e;
@@ -179,26 +191,52 @@ xh_del_(xhash *x, const void *key)
 {
   int hash;
   size_t idx;
-  xh_entry *e, *d;
+  xh_entry *p, *q, *r;
 
   hash = x->hashf(key, x->data);
   idx = ((unsigned)hash) % x->size;
   if (x->buckets[idx]->hash == hash && x->equalf(key, x->buckets[idx]->key, x->data)) {
-    e = x->buckets[idx]->next;
-    free(x->buckets[idx]);
-    x->buckets[idx] = e;
+    q = x->buckets[idx];
+    if (q->fw) {
+      q->fw->bw = q->bw;
+    }
+    if (q->bw) {
+      q->bw->fw = q->fw;
+    }
+    if (x->chain == q) {
+      x->chain = q->bw;
+    }
+    r = q->next;
+    free(q);
+    x->buckets[idx] = r;
   }
   else {
-    for (e = x->buckets[idx]; ; e = e->next) {
-      if (e->next->hash == hash && x->equalf(key, e->next->key, x->data))
+    for (p = x->buckets[idx]; ; p = p->next) {
+      if (p->next->hash == hash && x->equalf(key, p->next->key, x->data))
         break;
     }
-    d = e->next->next;
-    free(e->next);
-    e->next = d;
+    q = p->next;
+    if (q->fw) {
+      q->fw->bw = q->bw;
+    }
+    if (q->bw) {
+      q->bw->fw = q->fw;
+    }
+    if (x->chain == q) {
+      x->chain = q->bw;
+    }
+    r = q->next;
+    free(q);
+    p->next = r;
   }
 
   x->count--;
+}
+
+static inline size_t
+xh_size(xhash *x)
+{
+  return x->count;
 }
 
 static inline void
@@ -217,6 +255,7 @@ xh_clear(xhash *x)
     x->buckets[i] = NULL;
   }
 
+  x->chain = NULL;
   x->count = 0;
 }
 
@@ -361,43 +400,16 @@ xh_del_int(xhash *x, int key)
 
 /** iteration */
 
-static inline void
-xh_begin(xh_iter *it, xhash *x)
+static inline xh_entry *
+xh_begin(xhash *x)
 {
-  size_t bidx;
-
-  it->x = x;
-
-  for (bidx = 0; bidx < x->size; ++bidx) {
-    if (x->buckets[bidx])
-      break;
-  }
-  it->e = NULL;
-  it->next = x->buckets[bidx];
-  it->bidx = bidx;
+  return x->chain;
 }
 
-static inline int
-xh_next(xh_iter *it)
+static inline xh_entry *
+xh_next(xh_entry *e)
 {
-  size_t bidx;
-
-  if (! it->next) {
-    return 0;
-  }
-
-  it->e = it->next;
-  if (it->next->next) {
-    it->next = it->next->next;
-    return 1;
-  }
-  for (bidx = it->bidx + 1; bidx < it->x->size; ++bidx) {
-    if (it->x->buckets[bidx])
-      break;
-  }
-  it->next = it->x->buckets[bidx];
-  it->bidx = bidx;
-  return 1;
+  return e->bw;
 }
 
 #if defined(__cplusplus)
