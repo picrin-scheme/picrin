@@ -71,8 +71,8 @@ pic_pop_try(pic_state *pic)
   pic->jmp = try_jmp->prev_jmp;
 }
 
-static struct pic_error *
-make_error(pic_state *pic, pic_sym type, pic_str *msg, pic_value irrs)
+struct pic_error *
+pic_make_error(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
   pic_str *stack;
@@ -81,7 +81,7 @@ make_error(pic_state *pic, pic_sym type, pic_str *msg, pic_value irrs)
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = type;
-  e->msg = msg;
+  e->msg = pic_make_str_cstr(pic, msg);
   e->irrs = irrs;
   e->stack = stack;
 
@@ -109,7 +109,7 @@ pic_throw(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = make_error(pic, type, pic_make_str_cstr(pic, msg), irrs);
+  e = pic_make_error(pic, type, msg, irrs);
 
   pic_raise(pic, pic_obj_value(e));
 }
