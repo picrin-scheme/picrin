@@ -39,6 +39,40 @@ main(int argc, char *argv[])
 }
 ```
 
+## More Example
+
+Function binding is also easy. `pic_defun` defines a scheme procedure converting from a C function. In the native function, callee arguments can be taken with `pic_get_args`. `pic_get_args` gets arguments according to the format string. If actual arguments does not match a number or incompatible types, it will raise an exception.
+
+```c
+#include "picrin.h"
+
+int fact(int i) {
+  return i == 1 ? 1 : i * fact(i - 1);
+}
+
+pic_value factorial(pic_state *pic) {
+  int i;
+
+  pic_get_args(pic, "i", &i);
+
+  return pic_int_value(fact(i));
+}
+
+int
+main(int argc, char *argv[])
+{
+  pic_state *pic = pic_open(argc, argv, NULL);
+
+  pic_defun(pic, "fact", factorial); /* define fact procedure */
+
+  pic_load_cstr(pic, "(display (fact 10))");
+
+  pic_close(pic);
+
+  return 0;
+}
+```
+
 ## Language
 
 All procedures and syntaces are exported from a single library named `(picrin base)`. The complete list is found at https://gist.github.com/wasabiz/344d802a2340d1f734b7 .
