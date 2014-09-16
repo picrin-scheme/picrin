@@ -19,32 +19,6 @@ pic_cons(pic_state *pic, pic_value car, pic_value cdr)
   return pic_obj_value(pair);
 }
 
-pic_value
-pic_car(pic_state *pic, pic_value obj)
-{
-  struct pic_pair *pair;
-
-  if (! pic_pair_p(obj)) {
-    pic_errorf(pic, "pair required, but got ~s", obj);
-  }
-  pair = pic_pair_ptr(obj);
-
-  return pair->car;
-}
-
-pic_value
-pic_cdr(pic_state *pic, pic_value obj)
-{
-  struct pic_pair *pair;
-
-  if (! pic_pair_p(obj)) {
-    pic_errorf(pic, "pair required, but got ~s", obj);
-  }
-  pair = pic_pair_ptr(obj);
-
-  return pair->cdr;
-}
-
 void
 pic_set_car(pic_state *pic, pic_value obj, pic_value val)
 {
@@ -519,10 +493,8 @@ pic_pair_set_car(pic_state *pic)
 
   pic_get_args(pic, "oo", &v, &w);
 
-  if (! pic_pair_p(v))
-    pic_errorf(pic, "pair expected");
+  pic_set_car(pic, v, w);
 
-  pic_pair_ptr(v)->car = w;
   return pic_none_value();
 }
 
@@ -533,10 +505,8 @@ pic_pair_set_cdr(pic_state *pic)
 
   pic_get_args(pic, "oo", &v, &w);
 
-  if (! pic_pair_p(v))
-    pic_errorf(pic, "pair expected");
+  pic_set_cdr(pic, v, w);
 
-  pic_pair_ptr(v)->cdr = w;
   return pic_none_value();
 }
 

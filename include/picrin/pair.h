@@ -18,9 +18,33 @@ struct pic_pair {
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
 
+static inline pic_value
+pic_car(pic_state *pic, pic_value obj)
+{
+  struct pic_pair *pair;
+
+  if (! pic_pair_p(obj)) {
+    pic_errorf(pic, "pair required, but got ~s", obj);
+  }
+  pair = pic_pair_ptr(obj);
+
+  return pair->car;
+}
+
+static inline pic_value
+pic_cdr(pic_state *pic, pic_value obj)
+{
+  struct pic_pair *pair;
+
+  if (! pic_pair_p(obj)) {
+    pic_errorf(pic, "pair required, but got ~s", obj);
+  }
+  pair = pic_pair_ptr(obj);
+
+  return pair->cdr;
+}
+
 pic_value pic_cons(pic_state *, pic_value, pic_value);
-pic_value pic_car(pic_state *, pic_value);
-pic_value pic_cdr(pic_state *, pic_value);
 void pic_set_car(pic_state *, pic_value, pic_value);
 void pic_set_cdr(pic_state *, pic_value, pic_value);
 
