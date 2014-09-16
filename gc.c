@@ -138,7 +138,7 @@ pic_alloc(pic_state *pic, size_t size)
 
   ptr = alloc(NULL, size);
   if (ptr == NULL && size > 0) {
-    pic_abort(pic, "memory exhausted");
+    pic_panic(pic, "memory exhausted");
   }
   return ptr;
 }
@@ -148,7 +148,7 @@ pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
   ptr = alloc(ptr, size);
   if (ptr == NULL && size > 0) {
-    pic_abort(pic, "memory exhausted");
+    pic_panic(pic, "memory exhausted");
   }
   return ptr;
 }
@@ -161,7 +161,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
   size *= count;
   ptr = alloc(NULL, size);
   if (ptr == NULL && size > 0) {
-    pic_abort(pic, "memory exhausted");
+    pic_panic(pic, "memory exhausted");
   }
   memset(ptr, 0, size);
   return ptr;
@@ -523,7 +523,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
-    pic_abort(pic, "logic flaw");
+    pic_panic(pic, "logic flaw");
   }
 }
 
@@ -717,7 +717,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
-    pic_abort(pic, "logic flaw");
+    pic_panic(pic, "logic flaw");
   }
 }
 
@@ -846,7 +846,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
       add_heap_page(pic);
       obj = (struct pic_object *)gc_alloc(pic, size);
       if (obj == NULL)
-	pic_abort(pic, "GC memory exhausted");
+	pic_panic(pic, "GC memory exhausted");
     }
   }
   obj->tt = tt;

@@ -78,7 +78,7 @@ pic_ungensym(pic_state *pic, pic_sym base)
 
   name = pic_symbol_name(pic, base);
   if ((occr = strrchr(name, '@')) == NULL) {
-    pic_abort(pic, "logic flaw");
+    pic_panic(pic, "logic flaw");
   }
   return pic_intern(pic, name, occr - name);
 }

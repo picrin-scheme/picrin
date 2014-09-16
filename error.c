@@ -12,7 +12,7 @@
 #include "picrin/error.h"
 
 void
-pic_abort(pic_state *pic, const char *msg)
+pic_panic(pic_state *pic, const char *msg)
 {
   UNUSED(pic);
 
@@ -98,7 +98,7 @@ pic_raise(pic_state *pic, pic_value err)
   pic->err = err;
   if (! pic->jmp) {
     puts(pic_errmsg(pic));
-    pic_abort(pic, "no handler found on stack");
+    pic_panic(pic, "no handler found on stack");
   }
 
   longjmp(*pic->jmp, 1);

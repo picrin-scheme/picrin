@@ -203,7 +203,7 @@ void pic_import(pic_state *, pic_value);
 void pic_import_library(pic_state *, struct pic_lib *);
 void pic_export(pic_state *, pic_sym);
 
-noreturn void pic_abort(pic_state *, const char *);
+noreturn void pic_panic(pic_state *, const char *);
 noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 pic_str *pic_get_backtrace(pic_state *);
