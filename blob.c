@@ -64,7 +64,7 @@ pic_blob_bytevector(pic_state *pic)
     pic_assert_type(pic, argv[i], int);
 
     if (pic_int(argv[i]) < 0 || pic_int(argv[i]) > 255) {
-      pic_error(pic, "byte out of range");
+      pic_errorf(pic, "byte out of range");
     }
 
     *data++ = pic_int(argv[i]);
@@ -82,7 +82,7 @@ pic_blob_make_bytevector(pic_state *pic)
   pic_get_args(pic, "i|i", &k, &b);
 
   if (b < 0 || b > 255)
-    pic_error(pic, "byte out of range");
+    pic_errorf(pic, "byte out of range");
 
   blob = pic_make_blob(pic, k);
   for (i = 0; i < k; ++i) {
@@ -122,7 +122,7 @@ pic_blob_bytevector_u8_set(pic_state *pic)
   pic_get_args(pic, "bii", &bv, &k, &v);
 
   if (v < 0 || v > 255)
-    pic_error(pic, "byte out of range");
+    pic_errorf(pic, "byte out of range");
 
   bv->data[k] = v;
   return pic_none_value();
@@ -227,7 +227,7 @@ pic_blob_list_to_bytevector(pic_state *pic)
     pic_assert_type(pic, e, int);
 
     if (pic_int(e) < 0 || pic_int(e) > 255)
-      pic_error(pic, "byte out of range");
+      pic_errorf(pic, "byte out of range");
 
     *data++ = pic_int(e);
   }

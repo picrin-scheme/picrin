@@ -29,7 +29,7 @@ pic_get_proc(pic_state *pic)
   pic_value v = GET_OPERAND(pic,0);
 
   if (! pic_proc_p(v)) {
-    pic_error(pic, "fatal error");
+    pic_errorf(pic, "fatal error");
   }
   return pic_proc_ptr(v);
 }
@@ -70,7 +70,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
     switch (c) {
     default:
       if (argc <= i && ! opt) {
-	pic_error(pic, "wrong number of arguments");
+	pic_errorf(pic, "wrong number of arguments");
       }
       break;
     case '|':
@@ -375,7 +375,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *e = pic_error_ptr(v);
         }
         else {
-          pic_error(pic, "pic_get_args, expected error");
+          pic_errorf(pic, "pic_get_args, expected error");
         }
         i++;
       }
@@ -398,7 +398,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
     }
   }
   else if (argc > i) {
-    pic_error(pic, "wrong number of arguments");
+    pic_errorf(pic, "wrong number of arguments");
   }
   va_end(ap);
   return i - 1;
@@ -675,7 +675,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 #endif
 
   if (! pic_list_p(argv)) {
-    pic_error(pic, "argv must be a proper list");
+    pic_errorf(pic, "argv must be a proper list");
   }
 
   argc = pic_length(pic, argv) + 1;
@@ -728,11 +728,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       self = pic->ci->fp[0];
       if (! pic_proc_p(self)) {
-        pic_error(pic, "logic flaw");
+        pic_errorf(pic, "logic flaw");
       }
       irep = pic_proc_ptr(self)->u.irep;
       if (! pic_proc_irep_p(pic_proc_ptr(self))) {
-        pic_error(pic, "logic flaw");
+        pic_errorf(pic, "logic flaw");
       }
       PUSH(irep->pool[c.u.i]);
       NEXT;
@@ -950,11 +950,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 
       self = pic->ci->fp[0];
       if (! pic_proc_p(self)) {
-        pic_error(pic, "logic flaw");
+        pic_errorf(pic, "logic flaw");
       }
       irep = pic_proc_ptr(self)->u.irep;
       if (! pic_proc_irep_p(pic_proc_ptr(self))) {
-        pic_error(pic, "logic flaw");
+        pic_errorf(pic, "logic flaw");
       }
 
       if (pic->ci->env == NULL) {
@@ -1017,7 +1017,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	PUSH(pic_float_value(pic_float(a) op pic_int(b)));	\
       }								\
       else {							\
-	pic_error(pic, #op " got non-number operands");		\
+	pic_errorf(pic, #op " got non-number operands");        \
       }								\
       NEXT;							\
     }
@@ -1037,7 +1037,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	PUSH(pic_float_value(-pic_float(n)));
       }
       else {
-	pic_error(pic, "unary - got a non-number operand");
+	pic_errorf(pic, "unary - got a non-number operand");
       }
       NEXT;
     }
@@ -1060,7 +1060,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
 	PUSH(pic_bool_value(pic_float(a) op pic_int(b)));	\
       }								\
       else {							\
-	pic_error(pic, #op " got non-number operands");		\
+	pic_errorf(pic, #op " got non-number operands");        \
       }								\
       NEXT;							\
     }

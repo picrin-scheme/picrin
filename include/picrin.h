@@ -209,10 +209,6 @@ pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, struct pic_error *);
 
 /* obsoleted */
-noreturn static inline void pic_error(pic_state *pic, const char *msg)
-{
-  pic_errorf(pic, msg);
-}
 static inline void pic_warn(pic_state *pic, const char *msg)
 {
   pic_warnf(pic, msg);

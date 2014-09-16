@@ -107,7 +107,7 @@ void
 pic_close_port(pic_state *pic, struct pic_port *port)
 {
   if (xfclose(port->file) == EOF) {
-    pic_error(pic, "close-port: failure");
+    pic_errorf(pic, "close-port: failure");
   }
   port->status = PIC_PORT_CLOSE;
 }
@@ -247,25 +247,25 @@ pic_port_close_port(pic_state *pic)
     if ((port->flags & (flgs)) != (flgs)) {                             \
       switch (flgs) {                                                   \
       case PIC_PORT_IN:                                                 \
-        pic_error(pic, caller ": expected output port");                \
+        pic_errorf(pic, caller ": expected output port");               \
       case PIC_PORT_OUT:                                                \
-        pic_error(pic, caller ": expected input port");                 \
+        pic_errorf(pic, caller ": expected input port");                \
       case PIC_PORT_IN | PIC_PORT_TEXT:                                 \
-        pic_error(pic, caller ": expected input/textual port");         \
+        pic_errorf(pic, caller ": expected input/textual port");        \
       case PIC_PORT_IN | PIC_PORT_BINARY:                               \
-        pic_error(pic, caller ": expected input/binary port");          \
+        pic_errorf(pic, caller ": expected input/binary port");         \
       case PIC_PORT_OUT | PIC_PORT_TEXT:                                \
-        pic_error(pic, caller ": expected output/textual port");        \
+        pic_errorf(pic, caller ": expected output/textual port");       \
       case PIC_PORT_OUT | PIC_PORT_BINARY:                              \
-        pic_error(pic, caller ": expected output/binary port");         \
+        pic_errorf(pic, caller ": expected output/binary port");        \
       }                                                                 \
     }                                                                   \
     if (port->status != stat) {                                         \
       switch (stat) {                                                   \
       case PIC_PORT_OPEN:                                               \
-        pic_error(pic, caller ": expected open port");                  \
+        pic_errorf(pic, caller ": expected open port");                 \
       case PIC_PORT_CLOSE:                                              \
-        pic_error(pic, caller ": expected close port");                 \
+        pic_errorf(pic, caller ": expected close port");                \
       }                                                                 \
     }                                                                   \
   } while (0)

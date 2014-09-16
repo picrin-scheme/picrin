@@ -425,7 +425,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
   pic_value formals, body_exprs;
 
   if (pic_length(pic, obj) < 2) {
-    pic_error(pic, "syntax error");
+    pic_errorf(pic, "syntax error");
   }
 
   formals = pic_list_ref(pic, obj, 1);
@@ -450,12 +450,12 @@ analyze_define(analyze_state *state, pic_value obj)
   pic_sym sym;
 
   if (pic_length(pic, obj) != 3) {
-    pic_error(pic, "syntax error");
+    pic_errorf(pic, "syntax error");
   }
 
   var = pic_list_ref(pic, obj, 1);
   if (! pic_sym_p(var)) {
-    pic_error(pic, "syntax error");
+    pic_errorf(pic, "syntax error");
   } else {
     sym = pic_sym(var);
   }
@@ -472,7 +472,7 @@ analyze_define(analyze_state *state, pic_value obj)
     val = analyze_defer(state, pic_sym_value(sym), formals, body_exprs);
   } else {
     if (pic_length(pic, obj) != 3) {
-      pic_error(pic, "syntax error");
+      pic_errorf(pic, "syntax error");
     }
     val = analyze(state, pic_list_ref(pic, obj, 2), false);
   }
@@ -489,7 +489,7 @@ analyze_if(analyze_state *state, pic_value obj, bool tailpos)
   if_false = pic_none_value();
   switch (pic_length(pic, obj)) {
   default:
-    pic_error(pic, "syntax error");
+    pic_errorf(pic, "syntax error");
     break;
   case 4:
     if_false = pic_list_ref(pic, obj, 3);
@@ -539,12 +539,12 @@ analyze_set(analyze_state *state, pic_value obj)
   pic_value var, val;
 
   if (pic_length(pic, obj) != 3) {
-    pic_error(pic, "syntax error");
+    pic_errorf(pic, "syntax error");
   }
 
   var = pic_list_ref(pic, obj, 1);
   if (! pic_sym_p(var)) {
-    pic_error(pic, "syntax error");
+    pic_errorf(pic, "syntax error");
   }
 
   val = pic_list_ref(pic, obj, 2);
@@ -561,14 +561,14 @@ analyze_quote(analyze_state *state, pic_value obj)
   pic_state *pic = state->pic;
 
   if (pic_length(pic, obj) != 2) {
-    pic_error(pic, "syntax error");
+    pic_errorf(pic, "syntax error");
   }
   return pic_list2(pic, pic_sym_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
 #define ARGC_ASSERT_GE(n) do {				\
 	if (pic_length(pic, obj) < (n) + 1) {		\
-	  pic_error(pic, "wrong number of arguments");	\
+	  pic_errorf(pic, "wrong number of arguments");	\
 	}						\
       } while (0)
 
@@ -699,7 +699,7 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
   pic_sym call;
 
   if (pic_length(pic, obj) != 3) {
-    pic_error(pic, "wrong number of arguments");
+    pic_errorf(pic, "wrong number of arguments");
   }
 
   if (! tailpos) {
@@ -714,7 +714,7 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
 
 #define ARGC_ASSERT(n) do {				\
 	if (pic_length(pic, obj) != (n) + 1) {		\
-	  pic_error(pic, "wrong number of arguments");	\
+	  pic_errorf(pic, "wrong number of arguments");	\
 	}						\
       } while (0)
 
@@ -1413,7 +1413,7 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   }
-  pic_error(pic, "codegen: unknown AST type");
+  pic_errorf(pic, "codegen: unknown AST type");
 }
 
 static struct pic_irep *

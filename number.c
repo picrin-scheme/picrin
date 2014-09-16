@@ -179,7 +179,7 @@ pic_number_nan_p(pic_state *pic)
       else if (pic_int_p(argv[i]))			\
 	g = pic_int(argv[i]);				\
       else						\
-	pic_error(pic, #op ": number required");	\
+	pic_errorf(pic, #op ": number required");	\
       							\
       if (! (f op g))					\
 	return pic_false_value();			\
@@ -216,7 +216,7 @@ DEFINE_ARITH_CMP(>=, ge)
         f op##= pic_float(argv[i]);                             \
       }                                                         \
       else {                                                    \
-        pic_error(pic, #op ": number required");                \
+        pic_errorf(pic, #op ": number required");               \
       }                                                         \
     }                                                           \
                                                                 \
@@ -252,7 +252,7 @@ DEFINE_ARITH_OP(*, mul, 1)
        f op##= pic_float(argv[i]);                                      \
      }                                                                  \
      else {                                                             \
-       pic_error(pic, #op ": number required");                         \
+       pic_errorf(pic, #op ": number required");                        \
      }                                                                  \
    }                                                                    \
                                                                         \
