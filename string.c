@@ -404,7 +404,7 @@ pic_str_string_append(pic_state *pic)
   str = pic_make_str(pic, NULL, 0);
   for (i = 0; i < argc; ++i) {
     if (! pic_str_p(argv[i])) {
-      pic_error(pic, "type error");
+      pic_errorf(pic, "type error");
     }
     str = pic_strcat(pic, str, pic_str_ptr(argv[i]));
   }

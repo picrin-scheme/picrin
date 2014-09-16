@@ -9,7 +9,7 @@
 static noreturn void
 file_error(pic_state *pic, const char *msg)
 {
-  pic_throw(pic, PIC_ERROR_FILE, msg, pic_nil_value());
+  pic_throw(pic, pic->sFILE, msg, pic_nil_value());
 }
 
 static pic_value

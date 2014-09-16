@@ -34,24 +34,22 @@ struct pic_jmpbuf {
 void pic_push_try(pic_state *, struct pic_proc *);
 void pic_pop_try(pic_state *);
 
-noreturn void pic_throw(pic_state *, short, const char *, pic_value);
-noreturn void pic_throw_error(pic_state *, struct pic_error *);
+noreturn void pic_raise(pic_state *, pic_value);
+noreturn void pic_throw(pic_state *, pic_sym, const char *, pic_list);
+noreturn void pic_error(pic_state *, const char *, pic_list);
 
 struct pic_error {
   PIC_OBJECT_HEADER
-  enum pic_error_kind {
-    PIC_ERROR_OTHER,
-    PIC_ERROR_FILE,
-    PIC_ERROR_READ,
-    PIC_ERROR_RAISED
-  } type;
-  struct pic_string *msg;
+  pic_sym type;
+  pic_str *msg;
   pic_value irrs;
   pic_str *stack;
 };
 
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)
 #define pic_error_ptr(v) ((struct pic_error *)pic_ptr(v))
+
+struct pic_error *pic_make_error(pic_state *, pic_sym, const char *, pic_list);
 
 #if defined(__cplusplus)
 }

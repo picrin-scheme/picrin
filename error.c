@@ -71,8 +71,8 @@ pic_pop_try(pic_state *pic)
   pic->jmp = try_jmp->prev_jmp;
 }
 
-static struct pic_error *
-make_error(pic_state *pic, short type, pic_str *msg, pic_value irrs)
+struct pic_error *
+pic_make_error(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
   pic_str *stack;
@@ -81,7 +81,7 @@ make_error(pic_state *pic, short type, pic_str *msg, pic_value irrs)
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = type;
-  e->msg = msg;
+  e->msg = pic_make_str_cstr(pic, msg);
   e->irrs = irrs;
   e->stack = stack;
 
@@ -89,37 +89,51 @@ make_error(pic_state *pic, short type, pic_str *msg, pic_value irrs)
 }
 
 noreturn void
-pic_throw_error(pic_state *pic, struct pic_error *e)
+pic_raise(pic_state *pic, pic_value err)
 {
   void pic_vm_tear_off(pic_state *);
 
   pic_vm_tear_off(pic);         /* tear off */
 
-  pic->err = e;
+  pic->err = err;
   if (! pic->jmp) {
     puts(pic_errmsg(pic));
-    abort();
+    pic_abort(pic, "no handler found on stack");
   }
 
   longjmp(*pic->jmp, 1);
 }
 
 noreturn void
-pic_throw(pic_state *pic, short type, const char *msg, pic_value irrs)
+pic_throw(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = make_error(pic, type, pic_make_str_cstr(pic, msg), irrs);
+  e = pic_make_error(pic, type, msg, irrs);
 
-  pic_throw_error(pic, e);
+  pic_raise(pic, pic_obj_value(e));
+}
+
+noreturn void
+pic_error(pic_state *pic, const char *msg, pic_value irrs)
+{
+  pic_throw(pic, pic_intern_cstr(pic, ""), msg, irrs);
 }
 
 const char *
 pic_errmsg(pic_state *pic)
 {
-  assert(pic->err != NULL);
+  pic_str *str;
 
-  return pic_str_cstr(pic->err->msg);
+  assert(! pic_undef_p(pic->err));
+
+  if (! pic_error_p(pic->err)) {
+    str = pic_format(pic, "~s", pic->err);
+  } else {
+    str = pic_error_ptr(pic->err)->msg;
+  }
+
+  return pic_str_cstr(str);
 }
 
 void
@@ -136,34 +150,30 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   msg = pic_str_cstr(pic_str_ptr(pic_car(pic, err_line)));
   irrs = pic_cdr(pic, err_line);
 
-  pic_throw(pic, PIC_ERROR_OTHER, msg, irrs);
+  pic_error(pic, msg, irrs);
 }
 
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
   struct pic_proc *handler, *thunk;
-  pic_value v;
+  pic_value val;
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
   pic_try_with_handler(handler) {
-    v = pic_apply0(pic, thunk);
+    val = pic_apply0(pic, thunk);
   }
   pic_catch {
-    struct pic_error *e = pic->err;
+    pic_value e = pic->err;
 
-    pic->err = NULL;
+    pic->err = pic_undef_value();
 
-    if (e->type == PIC_ERROR_RAISED) {
-      v = pic_list_ref(pic, e->irrs, 0);
-    } else {
-      v = pic_obj_value(e);
-    }
-    v = pic_apply1(pic, handler, v);
-    pic_errorf(pic, "error handler returned ~s, by error ~s", v, pic_obj_value(e));
+    val = pic_apply1(pic, handler, e);
+
+    pic_errorf(pic, "error handler returned with ~s on error ~s", val, e);
   }
-  return v;
+  return val;
 }
 
 noreturn static pic_value
@@ -173,7 +183,7 @@ pic_error_raise(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  pic_throw(pic, PIC_ERROR_RAISED, "object is raised", pic_list1(pic, v));
+  pic_raise(pic, v);
 }
 
 static pic_value
@@ -206,7 +216,23 @@ pic_error_error(pic_state *pic)
 
   pic_get_args(pic, "z*", &str, &argc, &argv);
 
-  pic_throw(pic, PIC_ERROR_OTHER, str, pic_list_by_array(pic, argc, argv));
+  pic_error(pic, str, pic_list_by_array(pic, argc, argv));
+}
+
+static pic_value
+pic_error_make_error_object(pic_state *pic)
+{
+  struct pic_error *e;
+  pic_sym type;
+  pic_str *msg;
+  size_t argc;
+  pic_value *argv;
+
+  pic_get_args(pic, "ms*", &type, &msg, &argc, &argv);
+
+  e = pic_make_error(pic, type, pic_str_cstr(msg), pic_list_by_array(pic, argc, argv));
+
+  return pic_obj_value(e);
 }
 
 static pic_value
@@ -240,35 +266,13 @@ pic_error_error_object_irritants(pic_state *pic)
 }
 
 static pic_value
-pic_error_read_error_p(pic_state *pic)
+pic_error_error_object_type(pic_state *pic)
 {
-  pic_value v;
   struct pic_error *e;
 
-  pic_get_args(pic, "o", &v);
+  pic_get_args(pic, "e", &e);
 
-  if (! pic_error_p(v)) {
-    return pic_false_value();
-  }
-
-  e = pic_error_ptr(v);
-  return pic_bool_value(e->type == PIC_ERROR_READ);
-}
-
-static pic_value
-pic_error_file_error_p(pic_state *pic)
-{
-  pic_value v;
-  struct pic_error *e;
-
-  pic_get_args(pic, "o", &v);
-
-  if (! pic_error_p(v)) {
-    return pic_false_value();
-  }
-
-  e = pic_error_ptr(v);
-  return pic_bool_value(e->type == PIC_ERROR_FILE);
+  return pic_sym_value(e->type);
 }
 
 void
@@ -278,9 +282,9 @@ pic_init_error(pic_state *pic)
   pic_defun(pic, "raise", pic_error_raise);
   pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
   pic_defun(pic, "error", pic_error_error);
+  pic_defun(pic, "make-error-object", pic_error_make_error_object);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);
   pic_defun(pic, "error-object-irritants", pic_error_error_object_irritants);
-  pic_defun(pic, "read-error?", pic_error_read_error_p);
-  pic_defun(pic, "file-error?", pic_error_file_error_p);
+  pic_defun(pic, "error-object-type", pic_error_error_object_type);
 }

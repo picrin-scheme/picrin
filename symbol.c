@@ -132,7 +132,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
   pic_get_args(pic, "o", &v);
 
   if (! pic_sym_p(v)) {
-    pic_error(pic, "symbol->string: expected symbol");
+    pic_errorf(pic, "symbol->string: expected symbol");
   }
 
   return pic_obj_value(pic_make_str_cstr(pic, pic_symbol_name(pic, pic_sym(v))));
@@ -146,7 +146,7 @@ pic_symbol_string_to_symbol(pic_state *pic)
   pic_get_args(pic, "o", &v);
 
   if (! pic_str_p(v)) {
-    pic_error(pic, "string->symbol: expected string");
+    pic_errorf(pic, "string->symbol: expected string");
   }
 
   return pic_symbol_value(pic_intern_cstr(pic, pic_str_cstr(pic_str_ptr(v))));

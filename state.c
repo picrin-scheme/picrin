@@ -72,7 +72,7 @@ pic_open(int argc, char *argv[], char **envp)
 
   /* error handling */
   pic->jmp = NULL;
-  pic->err = NULL;
+  pic->err = pic_undef_value();
   pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
   pic->try_jmp_idx = 0;
   pic->try_jmp_size = PIC_RESCUE_SIZE;
@@ -131,6 +131,8 @@ pic_open(int argc, char *argv[], char **envp)
   S(sGT, ">");
   S(sGE, ">=");
   S(sNOT, "not");
+  S(sREAD, "read");
+  S(sFILE, "file");
   pic_gc_arena_restore(pic, ai);
 
 #define R(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));
@@ -191,7 +193,7 @@ pic_close(pic_state *pic)
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
   pic->arena_idx = 0;
-  pic->err = NULL;
+  pic->err = pic_undef_value();
   xh_clear(&pic->macros);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();

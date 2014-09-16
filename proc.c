@@ -91,7 +91,7 @@ pic_proc_apply(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   if (argc == 0) {
-    pic_error(pic, "apply: wrong number of arguments");
+    pic_errorf(pic, "apply: wrong number of arguments");
   }
 
   arg_list = args[--argc];

@@ -580,9 +580,7 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* error object */
-  if (pic->err) {
-    gc_mark_object(pic, (struct pic_object *)pic->err);
-  }
+  gc_mark(pic, pic->err);
 
   /* arena */
   for (j = 0; j < pic->arena_idx; ++j) {

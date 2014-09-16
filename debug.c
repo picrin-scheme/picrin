@@ -36,36 +36,31 @@ pic_get_backtrace(pic_state *pic)
 }
 
 void
-pic_print_backtrace(pic_state *pic, struct pic_error *e)
+pic_print_backtrace(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_str *trace;
 
-  assert(pic->err != NULL);
+  assert(! pic_undef_p(pic->err));
 
-  trace = pic_make_str(pic, NULL, 0);
+  if (! pic_error_p(pic->err)) {
+    trace = pic_format(pic, "raised: ~s", pic->err);
+  } else {
+    struct pic_error *e;
 
-  switch (e->type) {
-  case PIC_ERROR_OTHER:
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "error: "));
-    break;
-  case PIC_ERROR_FILE:
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "file error: "));
-    break;
-  case PIC_ERROR_READ:
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "read error: "));
-    break;
-  case PIC_ERROR_RAISED:
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "raised: "));
-    break;
+    e = pic_error_ptr(pic->err);
+    if (e->type != pic_intern_cstr(pic, "")) {
+      trace = pic_format(pic, "~s ", pic_sym_value(e->type));
+    } else {
+      trace = pic_make_str(pic, NULL, 0);
+    }
+    trace = pic_strcat(pic, trace, pic_format(pic, "error: ~s", pic_obj_value(e->msg)));
+
+    /* TODO: print error irritants */
+
+    trace = pic_strcat(pic, trace, pic_make_str(pic, "\n", 1));
+    trace = pic_strcat(pic, trace, e->stack);
   }
-
-  trace = pic_strcat(pic, trace, e->msg);
-
-  /* TODO: print error irritants */
-
-  trace = pic_strcat(pic, trace, pic_make_str(pic, "\n", 1));
-  trace = pic_strcat(pic, trace, e->stack);
 
   /* print! */
   printf("%s", pic_str_cstr(trace));

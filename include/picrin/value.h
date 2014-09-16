@@ -142,6 +142,7 @@ struct pic_blob;
 
 struct pic_proc;
 struct pic_port;
+struct pic_error;
 
 /* set aliases to basic types */
 typedef pic_value pic_list;

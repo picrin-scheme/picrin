@@ -81,6 +81,7 @@ typedef struct {
   pic_sym sCONS, sCAR, sCDR, sNILP;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
+  pic_sym sREAD, sFILE;
 
   pic_sym rDEFINE, rLAMBDA, rIF, rBEGIN, rQUOTE, rSETBANG;
   pic_sym rDEFINE_SYNTAX, rIMPORT, rEXPORT;
@@ -104,7 +105,7 @@ typedef struct {
   struct pic_reader *reader;
 
   jmp_buf *jmp;
-  struct pic_error *err;
+  pic_value err;
   struct pic_jmpbuf *try_jmps;
   size_t try_jmp_size, try_jmp_idx;
 
@@ -206,13 +207,9 @@ noreturn void pic_abort(pic_state *, const char *);
 noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 pic_str *pic_get_backtrace(pic_state *);
-void pic_print_backtrace(pic_state *, struct pic_error *);
+void pic_print_backtrace(pic_state *);
 
 /* obsoleted */
-noreturn static inline void pic_error(pic_state *pic, const char *msg)
-{
-  pic_errorf(pic, msg);
-}
 static inline void pic_warn(pic_state *pic, const char *msg)
 {
   pic_warnf(pic, msg);

@@ -53,7 +53,7 @@ pic_char_integer_to_char(pic_state *pic)
       if (pic_char_p(argv[i]))                          \
         d = pic_char(argv[i]);                          \
       else						\
-	pic_error(pic, #op ": char required");          \
+	pic_errorf(pic, #op ": char required");         \
       							\
       if (! (c op d))					\
 	return pic_false_value();			\
