@@ -72,7 +72,7 @@ pic_pop_try(pic_state *pic)
 }
 
 static struct pic_error *
-make_error(pic_state *pic, short type, pic_str *msg, pic_value irrs)
+make_error(pic_state *pic, pic_sym type, pic_str *msg, pic_value irrs)
 {
   struct pic_error *e;
   pic_str *stack;
