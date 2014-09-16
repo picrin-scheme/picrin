@@ -43,7 +43,7 @@ pic_stdout(pic_state *pic)
 }
 
 struct pic_port *
-pic_port_make_stdport(pic_state *pic, xFILE *file, short dir)
+pic_make_standard_port(pic_state *pic, xFILE *file, short dir)
 {
   struct pic_port *port;
 
