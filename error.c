@@ -143,6 +143,21 @@ pic_raise_continuable(pic_state *pic, pic_value err)
 noreturn void
 pic_raise(pic_state *pic, pic_value err)
 {
+  if (pic->try_jmps[pic->try_jmp_idx - 1].handler != NULL) {
+    struct pic_proc *handler;
+    pic_value val;
+
+    handler = pic->try_jmps[pic->try_jmp_idx - 1].handler;
+
+    pic_pop_try(pic);
+
+    pic_gc_protect(pic, pic_obj_value(handler));
+
+    val = pic_apply1(pic, handler, err);
+
+    pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
+  }
+
   void pic_vm_tear_off(pic_state *);
 
   pic_vm_tear_off(pic);         /* tear off */
@@ -181,23 +196,11 @@ pic_error_with_exception_handler(pic_state *pic)
   pic_get_args(pic, "ll", &handler, &thunk);
 
   pic_push_try(pic, handler);
-  if (setjmp(*pic->jmp) == 0) {
 
-    val = pic_apply0(pic, thunk);
+  val = pic_apply0(pic, thunk);
 
-    pic_pop_try(pic);
-  }
-  else {
-    pic_pop_try(pic);
+  pic_pop_try(pic);
 
-    pic_value e = pic->err;
-
-    pic->err = pic_undef_value();
-
-    val = pic_apply1(pic, handler, e);
-
-    pic_errorf(pic, "error handler returned with ~s on error ~s", val, e);
-  }
   return val;
 }
 
