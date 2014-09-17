@@ -21,7 +21,7 @@ regexp_dtor(pic_state *pic, void *data)
   pic_free(pic, data);
 }
 
-static const pic_data_type regexp_type = { "regexp", regexp_dtor };
+static const pic_data_type regexp_type = { "regexp", regexp_dtor, NULL };
 
 #define pic_regexp_p(o) (pic_data_type_p((o), &regexp_type))
 #define pic_regexp_data_ptr(o) ((struct pic_regexp_t *)pic_data_ptr(o)->data)
