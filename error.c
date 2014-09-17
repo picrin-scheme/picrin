@@ -180,10 +180,16 @@ pic_error_with_exception_handler(pic_state *pic)
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  pic_try_with_handler(handler) {
+  pic_push_try(pic, handler);
+  if (setjmp(*pic->jmp) == 0) {
+
     val = pic_apply0(pic, thunk);
+
+    pic_pop_try(pic);
   }
-  pic_catch {
+  else {
+    pic_pop_try(pic);
+
     pic_value e = pic->err;
 
     pic->err = pic_undef_value();
