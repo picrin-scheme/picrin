@@ -129,46 +129,46 @@ pic_raise_continuable(pic_state *pic, pic_value err)
   if (pic->try_jmp_idx == 0) {
     pic_errorf(pic, "no exception handler registered");
   }
+
   if (pic->try_jmps[pic->try_jmp_idx - 1].handler == NULL) {
-    pic_errorf(pic, "uncontinuable exception handler is on top");
+    void pic_vm_tear_off(pic_state *);
+
+    pic_vm_tear_off(pic);         /* tear off */
+
+    pic->err = err;
+    if (! pic->jmp) {
+      puts(pic_errmsg(pic));
+      pic_panic(pic, "no handler found on stack");
+    }
+
+    longjmp(*pic->jmp, 1);
   }
-  else {
-    pic->try_jmp_idx--;
-    v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, err);
-    ++pic->try_jmp_idx;
-  }
+
+  struct pic_proc *handler;
+
+  handler = pic->try_jmps[pic->try_jmp_idx - 1].handler;
+
+  pic_gc_protect(pic, pic_obj_value(handler));
+
+  pic->try_jmp_idx--;
+
+  v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, err);
+
+  pic->try_jmp_idx++;
+
   return v;
 }
 
 noreturn void
 pic_raise(pic_state *pic, pic_value err)
 {
-  if (pic->try_jmps[pic->try_jmp_idx - 1].handler != NULL) {
-    struct pic_proc *handler;
-    pic_value val;
+  pic_value val;
 
-    handler = pic->try_jmps[pic->try_jmp_idx - 1].handler;
+  val = pic_raise_continuable(pic, err);
 
-    pic_pop_try(pic);
+  pic_pop_try(pic);
 
-    pic_gc_protect(pic, pic_obj_value(handler));
-
-    val = pic_apply1(pic, handler, err);
-
-    pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
-  }
-
-  void pic_vm_tear_off(pic_state *);
-
-  pic_vm_tear_off(pic);         /* tear off */
-
-  pic->err = err;
-  if (! pic->jmp) {
-    puts(pic_errmsg(pic));
-    pic_panic(pic, "no handler found on stack");
-  }
-
-  longjmp(*pic->jmp, 1);
+  pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
 }
 
 noreturn void
