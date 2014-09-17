@@ -5,21 +5,6 @@
 
 Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C99 and does not require any special external libraries installed on the platform.
 
-## Features
-
-- R7RS compatibility
-- reentrant design (all VM states are stored in single global state object)
-- bytecode interpreter (based on stack VM)
-- direct threaded VM
-- internal representation by nan-boxing
-- conservative call/cc implementation (users can freely interleave native stack with VM stack)
-- exact GC (simple mark and sweep, partially reference count is used as well)
-- string representation by rope data structure
-- support full set hygienic macro transformers, including implicit renaming macros
-- extended library syntax
-- advanced REPL support (multi-line input, etc)
-- tiny & portable library (all functions will be in `libpicrin.so`)
-
 ## Documentation
 
 See http://picrin.readthedocs.org/
