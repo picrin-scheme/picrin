@@ -34,6 +34,39 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
 }
 
 void
+pic_errorf(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  pic_value err_line, irrs;
+  const char *msg;
+
+  va_start(ap, fmt);
+  err_line = pic_xvformat(pic, fmt, ap);
+  va_end(ap);
+
+  msg = pic_str_cstr(pic_str_ptr(pic_car(pic, err_line)));
+  irrs = pic_cdr(pic, err_line);
+
+  pic_error(pic, msg, irrs);
+}
+
+const char *
+pic_errmsg(pic_state *pic)
+{
+  pic_str *str;
+
+  assert(! pic_undef_p(pic->err));
+
+  if (! pic_error_p(pic->err)) {
+    str = pic_format(pic, "~s", pic->err);
+  } else {
+    str = pic_error_ptr(pic->err)->msg;
+  }
+
+  return pic_str_cstr(str);
+}
+
+void
 pic_push_try(pic_state *pic, struct pic_proc *handler)
 {
   struct pic_jmpbuf *try_jmp;
@@ -88,6 +121,25 @@ pic_make_error(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
   return e;
 }
 
+pic_value
+pic_raise_continuable(pic_state *pic, pic_value err)
+{
+  pic_value v;
+
+  if (pic->try_jmp_idx == 0) {
+    pic_errorf(pic, "no exception handler registered");
+  }
+  if (pic->try_jmps[pic->try_jmp_idx - 1].handler == NULL) {
+    pic_errorf(pic, "uncontinuable exception handler is on top");
+  }
+  else {
+    pic->try_jmp_idx--;
+    v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, err);
+    ++pic->try_jmp_idx;
+  }
+  return v;
+}
+
 noreturn void
 pic_raise(pic_state *pic, pic_value err)
 {
@@ -118,39 +170,6 @@ noreturn void
 pic_error(pic_state *pic, const char *msg, pic_value irrs)
 {
   pic_throw(pic, pic_intern_cstr(pic, ""), msg, irrs);
-}
-
-const char *
-pic_errmsg(pic_state *pic)
-{
-  pic_str *str;
-
-  assert(! pic_undef_p(pic->err));
-
-  if (! pic_error_p(pic->err)) {
-    str = pic_format(pic, "~s", pic->err);
-  } else {
-    str = pic_error_ptr(pic->err)->msg;
-  }
-
-  return pic_str_cstr(str);
-}
-
-void
-pic_errorf(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-  pic_value err_line, irrs;
-  const char *msg;
-
-  va_start(ap, fmt);
-  err_line = pic_xvformat(pic, fmt, ap);
-  va_end(ap);
-
-  msg = pic_str_cstr(pic_str_ptr(pic_car(pic, err_line)));
-  irrs = pic_cdr(pic, err_line);
-
-  pic_error(pic, msg, irrs);
 }
 
 static pic_value
@@ -193,18 +212,7 @@ pic_error_raise_continuable(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic->try_jmp_idx == 0) {
-    pic_errorf(pic, "no exception handler registered");
-  }
-  if (pic->try_jmps[pic->try_jmp_idx - 1].handler == NULL) {
-    pic_errorf(pic, "uncontinuable exception handler is on top");
-  }
-  else {
-    pic->try_jmp_idx--;
-    v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, v);
-    ++pic->try_jmp_idx;
-  }
-  return v;
+  return pic_raise_continuable(pic, v);
 }
 
 noreturn static pic_value

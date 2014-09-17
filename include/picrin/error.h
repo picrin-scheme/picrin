@@ -34,6 +34,7 @@ struct pic_jmpbuf {
 void pic_push_try(pic_state *, struct pic_proc *);
 void pic_pop_try(pic_state *);
 
+pic_value pic_raise_continuable(pic_state *, pic_value);
 noreturn void pic_raise(pic_state *, pic_value);
 noreturn void pic_throw(pic_state *, pic_sym, const char *, pic_list);
 noreturn void pic_error(pic_state *, const char *, pic_list);
