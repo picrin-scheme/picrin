@@ -12,6 +12,7 @@ extern "C" {
 typedef struct {
   const char *type_name;
   void (*dtor)(pic_state *, void *);
+  void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
 } pic_data_type;
 
 struct pic_data {

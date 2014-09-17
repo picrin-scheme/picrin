@@ -480,6 +480,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     for (it = xh_begin(&data->storage); it != NULL; it = xh_next(it)) {
       gc_mark(pic, xh_val(it, pic_value));
     }
+    if (data->type->mark) {
+      data->type->mark(pic, data->data, gc_mark);
+    }
     break;
   }
   case PIC_TT_DICT: {
