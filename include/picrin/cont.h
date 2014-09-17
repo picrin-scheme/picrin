@@ -9,18 +9,11 @@
 extern "C" {
 #endif
 
-struct pic_block {
-  PIC_OBJECT_HEADER
-  struct pic_block *prev;
-  int depth;
-  struct pic_proc *in, *out;
-};
-
 struct pic_cont {
   PIC_OBJECT_HEADER
   jmp_buf jmp;
 
-  struct pic_block *blk;
+  struct pic_winder *wind;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;

@@ -334,6 +334,20 @@ gc_unmark(union header *p)
 }
 
 static void
+gc_mark_winder(pic_state *pic, struct pic_winder *wind)
+{
+  if (wind->prev) {
+    gc_mark_object(pic, (struct pic_object *)wind->prev);
+  }
+  if (wind->in) {
+    gc_mark_object(pic, (struct pic_object *)wind->in);
+  }
+  if (wind->out) {
+    gc_mark_object(pic, (struct pic_object *)wind->out);
+  }
+}
+
+static void
 gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
   union header *p;
@@ -404,8 +418,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     pic_callinfo *ci;
     size_t i;
 
-    /* block */
-    gc_mark_object(pic, (struct pic_object *)cont->blk);
+    /* winder */
+    gc_mark_winder(pic, cont->wind);
 
     /* stack */
     for (stack = cont->st_ptr; stack != cont->st_ptr + cont->sp_offset; ++stack) {
@@ -504,20 +518,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_BLK: {
-    struct pic_block *blk = (struct pic_block *)obj;
-
-    if (blk->prev) {
-      gc_mark_object(pic, (struct pic_object *)blk->prev);
-    }
-    if (blk->in) {
-      gc_mark_object(pic, (struct pic_object *)blk->in);
-    }
-    if (blk->out) {
-      gc_mark_object(pic, (struct pic_object *)blk->out);
-    }
-    break;
-  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -565,9 +565,9 @@ gc_mark_phase(pic_state *pic)
   size_t i, j;
   xh_entry *it;
 
-  /* block */
-  if (pic->blk) {
-    gc_mark_object(pic, (struct pic_object *)pic->blk);
+  /* winder */
+  if (pic->wind) {
+    gc_mark_winder(pic, pic->wind);
   }
 
   /* stack */
@@ -707,9 +707,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_RECORD: {
     struct pic_record *rec = (struct pic_record *)obj;
     xh_destroy(&rec->hash);
-    break;
-  }
-  case PIC_TT_BLK: {
     break;
   }
   case PIC_TT_NIL:

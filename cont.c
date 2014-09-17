@@ -121,7 +121,7 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
-  cont->blk = pic->blk;
+  cont->wind = pic->wind;
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
@@ -168,7 +168,6 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 {
   char v;
   struct pic_cont *tmp = cont;
-  struct pic_block *blk;
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
@@ -177,8 +176,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
-  blk = pic->blk;
-  pic->blk = cont->blk;
+  pic->wind = cont->wind;
 
   pic->stbase = (pic_value *)pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
@@ -208,7 +206,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 }
 
 static void
-walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
+walk_to_block(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
 {
   if (here == there)
     return;
@@ -226,23 +224,23 @@ walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
 static pic_value
 pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
 {
-  struct pic_block *here;
+  struct pic_winder *here;
   pic_value val;
 
   if (in != NULL) {
     pic_apply0(pic, in);        /* enter */
   }
 
-  here = pic->blk;
-  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
-  pic->blk->prev = here;
-  pic->blk->depth = here->depth + 1;
-  pic->blk->in = in;
-  pic->blk->out = out;
+  here = pic->wind;
+  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
+  pic->wind->prev = here;
+  pic->wind->depth = here->depth + 1;
+  pic->wind->in = in;
+  pic->wind->out = out;
 
   val = pic_apply0(pic, thunk);
 
-  pic->blk = here;
+  pic->wind = here;
 
   if (out != NULL) {
     pic_apply0(pic, out);       /* exit */
@@ -266,7 +264,7 @@ cont_call(pic_state *pic)
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
-  walk_to_block(pic, pic->blk, cont->blk);
+  walk_to_block(pic, pic->wind, cont->wind);
 
   restore_cont(pic, cont);
 }

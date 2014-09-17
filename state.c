@@ -27,7 +27,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic = malloc(sizeof(pic_state));
 
   /* root block */
-  pic->blk = NULL;
+  pic->wind = NULL;
 
   /* command line */
   pic->argc = argc;
@@ -153,10 +153,10 @@ pic_open(int argc, char *argv[], char **envp)
   pic_gc_arena_restore(pic, ai);
 
   /* root block */
-  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
-  pic->blk->prev = NULL;
-  pic->blk->depth = 0;
-  pic->blk->in = pic->blk->out = NULL;
+  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
+  pic->wind->prev = NULL;
+  pic->wind->depth = 0;
+  pic->wind->in = pic->wind->out = NULL;
 
   /* init readers */
   pic_init_reader(pic);
@@ -182,11 +182,11 @@ pic_close(pic_state *pic)
   xh_entry *it;
 
   /* invoke exit handlers */
-  while (pic->blk) {
-    if (pic->blk->out) {
-      pic_apply0(pic, pic->blk->out);
+  while (pic->wind) {
+    if (pic->wind->out) {
+      pic_apply0(pic, pic->wind->out);
     }
-    pic->blk = pic->blk->prev;
+    pic->wind = pic->wind->prev;
   }
 
   /* clear out root objects */
