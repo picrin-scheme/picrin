@@ -47,6 +47,7 @@ pic_value pic_values_by_list(pic_state *, pic_value);
 size_t pic_receive(pic_state *, size_t, pic_value *);
 
 pic_value pic_callcc(pic_state *, struct pic_proc *);
+void pic_wind(pic_state *, struct pic_winder *, struct pic_winder *);
 
 #if defined(__cplusplus)
 }
