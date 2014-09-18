@@ -24,14 +24,14 @@ struct pic_cont {
   pic_callinfo *ci_ptr;
   size_t ci_offset, ci_len;
 
+  struct pic_proc **xp_ptr;
+  size_t xp_offset, xp_len;
+
   pic_code *ip;
 
   struct pic_object **arena;
   size_t arena_size;
   int arena_idx;
-
-  struct pic_jmpbuf *try_jmps;
-  size_t try_jmp_idx, try_jmp_size;
 
   pic_value results;
 };

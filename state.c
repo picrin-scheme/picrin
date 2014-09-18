@@ -42,6 +42,10 @@ pic_open(int argc, char *argv[], char **envp)
   pic->cibase = pic->ci = calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
+  /* exception handler */
+  pic->xpbase = pic->xp = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_proc *));
+  pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
+
   /* memory heap */
   pic->heap = pic_heap_open();
 
@@ -70,11 +74,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic->reader->trie = pic_make_trie(pic);
   xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
-  /* error handling */
+  /* raised error object */
   pic->err = pic_undef_value();
-  pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
-  pic->try_jmp_idx = 0;
-  pic->try_jmp_size = PIC_RESCUE_SIZE;
 
   /* standard ports */
   pic->xSTDIN = NULL;
@@ -191,6 +192,7 @@ pic_close(pic_state *pic)
   /* clear out root objects */
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
+  pic->xp = pic->xpbase;
   pic->arena_idx = 0;
   pic->err = pic_undef_value();
   xh_clear(&pic->macros);
@@ -206,6 +208,7 @@ pic_close(pic_state *pic)
   /* free runtime context */
   free(pic->stbase);
   free(pic->cibase);
+  free(pic->xpbase);
 
   /* free reader struct */
   xh_destroy(&pic->reader->labels);
@@ -213,7 +216,6 @@ pic_close(pic_state *pic)
   free(pic->reader);
 
   /* free global stacks */
-  free(pic->try_jmps);
   xh_destroy(&pic->syms);
   xh_destroy(&pic->globals);
   xh_destroy(&pic->macros);

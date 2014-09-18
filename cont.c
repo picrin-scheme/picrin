@@ -131,13 +131,18 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont->sp_offset = pic->sp - pic->stbase;
   cont->st_len = pic->stend - pic->stbase;
-  cont->st_ptr = (pic_value *)pic_alloc(pic, sizeof(pic_value) * cont->st_len);
+  cont->st_ptr = pic_alloc(pic, sizeof(pic_value) * cont->st_len);
   memcpy(cont->st_ptr, pic->stbase, sizeof(pic_value) * cont->st_len);
 
   cont->ci_offset = pic->ci - pic->cibase;
   cont->ci_len = pic->ciend - pic->cibase;
-  cont->ci_ptr = (pic_callinfo *)pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
+  cont->ci_ptr = pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
+
+  cont->xp_offset = pic->xp - pic->xpbase;
+  cont->xp_len = pic->xpend - pic->xpbase;
+  cont->xp_ptr = pic_alloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
+  memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
 
   cont->ip = pic->ip;
 
@@ -145,11 +150,6 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->arena_size = pic->arena_size;
   cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
-
-  cont->try_jmp_idx = pic->try_jmp_idx;
-  cont->try_jmp_size = pic->try_jmp_size;
-  cont->try_jmps = pic_alloc(pic, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
-  memcpy(cont->try_jmps, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
 
   cont->results = pic_undef_value();
 }
@@ -178,15 +178,20 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 
   pic->wind = cont->wind;
 
-  pic->stbase = (pic_value *)pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
+  pic->stbase = pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
   pic->sp = pic->stbase + cont->sp_offset;
   pic->stend = pic->stbase + cont->st_len;
 
-  pic->cibase = (pic_callinfo *)pic_realloc(pic, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
+  pic->cibase = pic_realloc(pic, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(pic->cibase, cont->ci_ptr, sizeof(pic_callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
+
+  pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
+  memcpy(pic->xpbase, cont->xp_ptr, sizeof(struct pic_proc *) * cont->xp_len);
+  pic->xp = pic->xpbase + cont->xp_offset;
+  pic->xpend = pic->xpbase + cont->xp_len;
 
   pic->ip = cont->ip;
 
@@ -194,11 +199,6 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
-
-  pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
-  memcpy(pic->try_jmps, cont->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
-  pic->try_jmp_size = cont->try_jmp_size;
-  pic->try_jmp_idx = cont->try_jmp_idx;
 
   memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);
 

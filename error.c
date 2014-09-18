@@ -89,7 +89,7 @@ static pic_value
 native_push_try(pic_state *pic)
 {
   struct pic_proc *cont, *handler;
-  struct pic_jmpbuf *try_jmp;
+  size_t xp_len, xp_offset;
 
   pic_get_args(pic, "l", &cont);
 
@@ -97,13 +97,15 @@ native_push_try(pic_state *pic)
 
   pic_attr_set(pic, handler, "@@escape", pic_obj_value(cont));
 
-  if (pic->try_jmp_idx >= pic->try_jmp_size) {
-    pic->try_jmp_size *= 2;
-    pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  if (pic->xp >= pic->xpend) {
+    xp_len = (pic->xpend - pic->xpbase) * 2;
+    xp_offset = pic->xp - pic->xpbase;
+    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
+    pic->xp = pic->xpbase + xp_offset;
+    pic->xpend = pic->xpbase + xp_len;
   }
 
-  try_jmp = pic->try_jmps + pic->try_jmp_idx++;
-  try_jmp->handler = handler;
+  *pic->xp++ = handler;
 
   return pic_true_value();
 }
@@ -121,7 +123,7 @@ pic_push_try(pic_state *pic)
 void
 pic_pop_try(pic_state *pic)
 {
-  --pic->try_jmp_idx;
+  --pic->xp;
 }
 
 struct pic_error *
@@ -147,19 +149,17 @@ pic_raise_continuable(pic_state *pic, pic_value err)
   struct pic_proc *handler;
   pic_value v;
 
-  if (pic->try_jmp_idx == 0) {
+  if (pic->xp == pic->xpbase) {
     pic_panic(pic, "no exception handler registered");
   }
 
-  handler = pic->try_jmps[pic->try_jmp_idx - 1].handler;
+  handler = *--pic->xp;
 
   pic_gc_protect(pic, pic_obj_value(handler));
 
-  pic->try_jmp_idx--;
+  v = pic_apply1(pic, handler, err);
 
-  v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, err);
-
-  pic->try_jmps[pic->try_jmp_idx++].handler = handler;
+  *pic->xp++ = handler;
 
   return v;
 }
@@ -197,19 +197,23 @@ pic_error_with_exception_handler(pic_state *pic)
 {
   struct pic_proc *handler, *thunk;
   pic_value val;
+  size_t xp_len, xp_offset;
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  if (pic->try_jmp_idx >= pic->try_jmp_size) {
-    pic->try_jmp_size *= 2;
-    pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  if (pic->xp >= pic->xpend) {
+    xp_len = (pic->xpend - pic->xpbase) * 2;
+    xp_offset = pic->xp - pic->xpbase;
+    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
+    pic->xp = pic->xpbase + xp_offset;
+    pic->xpend = pic->xpbase + xp_len;
   }
 
-  pic->try_jmps[pic->try_jmp_idx++].handler = handler;
+  *pic->xp++ = handler;
 
   val = pic_apply0(pic, thunk);
 
-  pic->try_jmp_idx--;
+  --pic->xp;
 
   return val;
 }

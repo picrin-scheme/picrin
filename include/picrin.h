@@ -75,6 +75,9 @@ typedef struct {
   pic_callinfo *ci;
   pic_callinfo *cibase, *ciend;
 
+  struct pic_proc **xp;
+  struct pic_proc **xpbase, **xpend;
+
   pic_code *ip;
 
   struct pic_lib *lib;
@@ -111,15 +114,13 @@ typedef struct {
 
   struct pic_reader *reader;
 
-  pic_value err;
-  struct pic_jmpbuf *try_jmps;
-  size_t try_jmp_size, try_jmp_idx;
-
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
 
   struct pic_port *xSTDIN, *xSTDOUT, *xSTDERR;
+
+  pic_value err;
 
   char *native_stack_start;
 } pic_state;

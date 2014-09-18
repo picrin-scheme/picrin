@@ -9,15 +9,6 @@
 extern "C" {
 #endif
 
-struct pic_jmpbuf {
-  jmp_buf here;
-  struct pic_proc *handler;
-  ptrdiff_t ci_offset;
-  ptrdiff_t sp_offset;
-  pic_code *ip;
-  jmp_buf *prev_jmp;
-};
-
 /* do not return from try block! */
 
 #define pic_try                                 \
