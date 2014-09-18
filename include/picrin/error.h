@@ -21,17 +21,14 @@ struct pic_jmpbuf {
 /* do not return from try block! */
 
 #define pic_try                                 \
-  pic_try_with_handler(NULL)
-#define pic_try_with_handler(handler)           \
-  pic_push_try(pic, handler);                   \
-  if (setjmp(*pic->jmp) == 0)                   \
+  if (pic_push_try(pic))                        \
     do
 #define pic_catch                               \
     while (pic_pop_try(pic), 0);                \
   else                                          \
     if (pic_pop_try(pic), 1)
 
-void pic_push_try(pic_state *, struct pic_proc *);
+bool pic_push_try(pic_state *);
 void pic_pop_try(pic_state *);
 
 pic_value pic_raise_continuable(pic_state *, pic_value);

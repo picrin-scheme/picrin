@@ -111,7 +111,6 @@ typedef struct {
 
   struct pic_reader *reader;
 
-  jmp_buf *jmp;
   pic_value err;
   struct pic_jmpbuf *try_jmps;
   size_t try_jmp_size, try_jmp_idx;

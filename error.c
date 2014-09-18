@@ -8,6 +8,8 @@
 
 #include "picrin.h"
 #include "picrin/pair.h"
+#include "picrin/proc.h"
+#include "picrin/cont.h"
 #include "picrin/string.h"
 #include "picrin/error.h"
 
@@ -66,10 +68,34 @@ pic_errmsg(pic_state *pic)
   return pic_str_cstr(str);
 }
 
-void
-pic_push_try(pic_state *pic, struct pic_proc *handler)
+static pic_value
+native_exception_handler(pic_state *pic)
 {
+  pic_value err;
+  struct pic_proc *cont;
+
+  pic_get_args(pic, "o", &err);
+
+  pic->err = err;
+
+  cont = pic_proc_ptr(pic_attr_ref(pic, pic_get_proc(pic), "@@escape"));
+
+  pic_apply1(pic, cont, pic_false_value());
+
+  UNREACHABLE();
+}
+
+static pic_value
+native_push_try(pic_state *pic)
+{
+  struct pic_proc *cont, *handler;
   struct pic_jmpbuf *try_jmp;
+
+  pic_get_args(pic, "l", &cont);
+
+  handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
+
+  pic_attr_set(pic, handler, "@@escape", pic_obj_value(cont));
 
   if (pic->try_jmp_idx >= pic->try_jmp_size) {
     pic->try_jmp_size *= 2;
@@ -77,31 +103,25 @@ pic_push_try(pic_state *pic, struct pic_proc *handler)
   }
 
   try_jmp = pic->try_jmps + pic->try_jmp_idx++;
-
   try_jmp->handler = handler;
 
-  try_jmp->ci_offset = pic->ci - pic->cibase;
-  try_jmp->sp_offset = pic->sp - pic->stbase;
-  try_jmp->ip = pic->ip;
+  return pic_true_value();
+}
 
-  try_jmp->prev_jmp = pic->jmp;
-  pic->jmp = &try_jmp->here;
+bool
+pic_push_try(pic_state *pic)
+{
+  pic_value val;
+
+  val = pic_callcc(pic, pic_make_proc(pic, native_push_try, "(native-push-try)"));
+
+  return pic_test(val);
 }
 
 void
 pic_pop_try(pic_state *pic)
 {
-  struct pic_jmpbuf *try_jmp;
-
-  try_jmp = pic->try_jmps + --pic->try_jmp_idx;
-
-  /* assert(pic->jmp == &try_jmp->here); */
-
-  pic->ci = try_jmp->ci_offset + pic->cibase;
-  pic->sp = try_jmp->sp_offset + pic->stbase;
-  pic->ip = try_jmp->ip;
-
-  pic->jmp = try_jmp->prev_jmp;
+  --pic->try_jmp_idx;
 }
 
 struct pic_error *
@@ -124,27 +144,12 @@ pic_make_error(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
 pic_value
 pic_raise_continuable(pic_state *pic, pic_value err)
 {
+  struct pic_proc *handler;
   pic_value v;
 
   if (pic->try_jmp_idx == 0) {
-    pic_errorf(pic, "no exception handler registered");
+    pic_panic(pic, "no exception handler registered");
   }
-
-  if (pic->try_jmps[pic->try_jmp_idx - 1].handler == NULL) {
-    void pic_vm_tear_off(pic_state *);
-
-    pic_vm_tear_off(pic);         /* tear off */
-
-    pic->err = err;
-    if (! pic->jmp) {
-      puts(pic_errmsg(pic));
-      pic_panic(pic, "no handler found on stack");
-    }
-
-    longjmp(*pic->jmp, 1);
-  }
-
-  struct pic_proc *handler;
 
   handler = pic->try_jmps[pic->try_jmp_idx - 1].handler;
 
@@ -154,7 +159,7 @@ pic_raise_continuable(pic_state *pic, pic_value err)
 
   v = pic_apply1(pic, pic->try_jmps[pic->try_jmp_idx].handler, err);
 
-  pic->try_jmp_idx++;
+  pic->try_jmps[pic->try_jmp_idx++].handler = handler;
 
   return v;
 }
@@ -195,11 +200,16 @@ pic_error_with_exception_handler(pic_state *pic)
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  pic_push_try(pic, handler);
+  if (pic->try_jmp_idx >= pic->try_jmp_size) {
+    pic->try_jmp_size *= 2;
+    pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
+  }
+
+  pic->try_jmps[pic->try_jmp_idx++].handler = handler;
 
   val = pic_apply0(pic, thunk);
 
-  pic_pop_try(pic);
+  pic->try_jmp_idx--;
 
   return val;
 }

@@ -71,7 +71,6 @@ pic_open(int argc, char *argv[], char **envp)
   xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
   /* error handling */
-  pic->jmp = NULL;
   pic->err = pic_undef_value();
   pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
   pic->try_jmp_idx = 0;
