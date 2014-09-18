@@ -9,6 +9,9 @@
 extern "C" {
 #endif
 
+void pic_wind(pic_state *, struct pic_winder *, struct pic_winder *);
+pic_value pic_dynamic_wind(pic_state *, struct pic_proc *, struct pic_proc *, struct pic_proc *);
+
 pic_value pic_values0(pic_state *);
 pic_value pic_values1(pic_state *, pic_value);
 pic_value pic_values2(pic_state *, pic_value, pic_value);

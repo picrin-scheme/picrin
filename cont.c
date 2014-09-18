@@ -13,6 +13,50 @@
 #include "picrin/data.h"
 #include "picrin/error.h"
 
+void
+pic_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
+{
+  if (here == there)
+    return;
+
+  if (here->depth < there->depth) {
+    pic_wind(pic, here, there->prev);
+    pic_apply0(pic, there->in);
+  }
+  else {
+    pic_apply0(pic, there->out);
+    pic_wind(pic, here->prev, there);
+  }
+}
+
+pic_value
+pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
+{
+  struct pic_winder *here;
+  pic_value val;
+
+  if (in != NULL) {
+    pic_apply0(pic, in);        /* enter */
+  }
+
+  here = pic->wind;
+  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
+  pic->wind->prev = here;
+  pic->wind->depth = here->depth + 1;
+  pic->wind->in = in;
+  pic->wind->out = out;
+
+  val = pic_apply0(pic, thunk);
+
+  pic->wind = here;
+
+  if (out != NULL) {
+    pic_apply0(pic, out);       /* exit */
+  }
+
+  return val;
+}
+
 pic_value
 pic_values0(pic_state *pic)
 {
@@ -293,50 +337,6 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   longjmp(tmp->jmp, 1);
 }
 
-static void
-do_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
-{
-  if (here == there)
-    return;
-
-  if (here->depth < there->depth) {
-    do_wind(pic, here, there->prev);
-    pic_apply0(pic, there->in);
-  }
-  else {
-    pic_apply0(pic, there->out);
-    do_wind(pic, here->prev, there);
-  }
-}
-
-static pic_value
-pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
-{
-  struct pic_winder *here;
-  pic_value val;
-
-  if (in != NULL) {
-    pic_apply0(pic, in);        /* enter */
-  }
-
-  here = pic->wind;
-  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
-  pic->wind->prev = here;
-  pic->wind->depth = here->depth + 1;
-  pic->wind->in = in;
-  pic->wind->out = out;
-
-  val = pic_apply0(pic, thunk);
-
-  pic->wind = here;
-
-  if (out != NULL) {
-    pic_apply0(pic, out);       /* exit */
-  }
-
-  return val;
-}
-
 noreturn static pic_value
 cont_call(pic_state *pic)
 {
@@ -352,7 +352,7 @@ cont_call(pic_state *pic)
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
-  do_wind(pic, pic->wind, cont->wind);
+  pic_wind(pic, pic->wind, cont->wind);
 
   restore_cont(pic, cont);
 }
