@@ -201,18 +201,18 @@
   (define (min . args)
     (define (min a b)
       (if (< a b) a b))
-    (let loop ((args args) (acc +inf.0))
+    (let loop ((args args) (acc +inf.0) (exactp #t))
       (if (null? args)
-          acc
-          (loop (cdr args) (min (car args) acc)))))
+          (if exactp acc (inexact acc))
+          (loop (cdr args) (min (car args) acc) (and (exact? (car args)) exactp)))))
 
   (define (max . args)
     (define (max a b)
       (if (> a b) a b))
-    (let loop ((args args) (acc -inf.0))
+    (let loop ((args args) (acc -inf.0) (exactp #t))
       (if (null? args)
-          acc
-          (loop (cdr args) (max (car args) acc)))))
+          (if exactp acc (inexact acc))
+          (loop (cdr args) (max (car args) acc) (and (exact? (car args)) exactp)))))
 
   (define (floor-quotient i j)
     (call-with-values (lambda () (floor/ i j))
