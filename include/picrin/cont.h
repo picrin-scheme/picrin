@@ -9,18 +9,11 @@
 extern "C" {
 #endif
 
-struct pic_block {
-  PIC_OBJECT_HEADER
-  struct pic_block *prev;
-  int depth;
-  struct pic_proc *in, *out;
-};
-
 struct pic_cont {
   PIC_OBJECT_HEADER
   jmp_buf jmp;
 
-  struct pic_block *blk;
+  struct pic_winder *wind;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;
@@ -31,14 +24,14 @@ struct pic_cont {
   pic_callinfo *ci_ptr;
   size_t ci_offset, ci_len;
 
+  struct pic_proc **xp_ptr;
+  size_t xp_offset, xp_len;
+
   pic_code *ip;
 
   struct pic_object **arena;
   size_t arena_size;
   int arena_idx;
-
-  struct pic_jmpbuf *try_jmps;
-  size_t try_jmp_idx, try_jmp_size;
 
   pic_value results;
 };
@@ -54,6 +47,7 @@ pic_value pic_values_by_list(pic_state *, pic_value);
 size_t pic_receive(pic_state *, size_t, pic_value *);
 
 pic_value pic_callcc(pic_state *, struct pic_proc *);
+void pic_wind(pic_state *, struct pic_winder *, struct pic_winder *);
 
 #if defined(__cplusplus)
 }

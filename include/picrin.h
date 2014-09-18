@@ -46,6 +46,13 @@ extern "C" {
 
 typedef struct pic_code pic_code;
 
+struct pic_winder {
+  struct pic_proc *in;
+  struct pic_proc *out;
+  int depth;
+  struct pic_winder *prev;
+};
+
 typedef struct {
   int argc, retc;
   pic_code *ip;
@@ -60,13 +67,16 @@ typedef struct {
   int argc;
   char **argv, **envp;
 
-  struct pic_block *blk;
+  struct pic_winder *wind;
 
   pic_value *sp;
   pic_value *stbase, *stend;
 
   pic_callinfo *ci;
   pic_callinfo *cibase, *ciend;
+
+  struct pic_proc **xp;
+  struct pic_proc **xpbase, **xpend;
 
   pic_code *ip;
 
@@ -104,16 +114,13 @@ typedef struct {
 
   struct pic_reader *reader;
 
-  jmp_buf *jmp;
-  pic_value err;
-  struct pic_jmpbuf *try_jmps;
-  size_t try_jmp_size, try_jmp_idx;
-
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
 
   struct pic_port *xSTDIN, *xSTDOUT, *xSTDERR;
+
+  pic_value err;
 
   char *native_stack_start;
 } pic_state;

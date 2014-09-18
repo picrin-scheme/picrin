@@ -334,6 +334,20 @@ gc_unmark(union header *p)
 }
 
 static void
+gc_mark_winder(pic_state *pic, struct pic_winder *wind)
+{
+  if (wind->prev) {
+    gc_mark_object(pic, (struct pic_object *)wind->prev);
+  }
+  if (wind->in) {
+    gc_mark_object(pic, (struct pic_object *)wind->in);
+  }
+  if (wind->out) {
+    gc_mark_object(pic, (struct pic_object *)wind->out);
+  }
+}
+
+static void
 gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
   union header *p;
@@ -402,10 +416,11 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_cont *cont = (struct pic_cont *)obj;
     pic_value *stack;
     pic_callinfo *ci;
+    struct pic_proc **xhandler;
     size_t i;
 
-    /* block */
-    gc_mark_object(pic, (struct pic_object *)cont->blk);
+    /* winder */
+    gc_mark_winder(pic, cont->wind);
 
     /* stack */
     for (stack = cont->st_ptr; stack != cont->st_ptr + cont->sp_offset; ++stack) {
@@ -419,16 +434,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       }
     }
 
+    /* exception handlers */
+    for (xhandler = cont->xp_ptr; xhandler != cont->xp_ptr + cont->xp_offset; ++xhandler) {
+      gc_mark_object(pic, (struct pic_object *)*xhandler);
+    }
+
     /* arena */
     for (i = 0; i < (size_t)cont->arena_idx; ++i) {
       gc_mark_object(pic, cont->arena[i]);
-    }
-
-    /* error handlers */
-    for (i = 0; i < cont->try_jmp_idx; ++i) {
-      if (cont->try_jmps[i].handler) {
-        gc_mark_object(pic, (struct pic_object *)cont->try_jmps[i].handler);
-      }
     }
 
     /* result values */
@@ -504,20 +517,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_BLK: {
-    struct pic_block *blk = (struct pic_block *)obj;
-
-    if (blk->prev) {
-      gc_mark_object(pic, (struct pic_object *)blk->prev);
-    }
-    if (blk->in) {
-      gc_mark_object(pic, (struct pic_object *)blk->in);
-    }
-    if (blk->out) {
-      gc_mark_object(pic, (struct pic_object *)blk->out);
-    }
-    break;
-  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
@@ -562,12 +561,13 @@ gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
   pic_callinfo *ci;
-  size_t i, j;
+  struct pic_proc **xhandler;
+  size_t j;
   xh_entry *it;
 
-  /* block */
-  if (pic->blk) {
-    gc_mark_object(pic, (struct pic_object *)pic->blk);
+  /* winder */
+  if (pic->wind) {
+    gc_mark_winder(pic, pic->wind);
   }
 
   /* stack */
@@ -582,8 +582,10 @@ gc_mark_phase(pic_state *pic)
     }
   }
 
-  /* error object */
-  gc_mark(pic, pic->err);
+  /* exception handlers */
+  for (xhandler = pic->xpbase; xhandler != pic->xp; ++xhandler) {
+    gc_mark_object(pic, (struct pic_object *)*xhandler);
+  }
 
   /* arena */
   for (j = 0; j < pic->arena_idx; ++j) {
@@ -600,13 +602,10 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, xh_val(it, struct pic_object *));
   }
 
-  /* error handlers */
-  for (i = 0; i < pic->try_jmp_idx; ++i) {
-    if (pic->try_jmps[i].handler) {
-      gc_mark_object(pic, (struct pic_object *)pic->try_jmps[i].handler);
-    }
-  }
+  /* error object */
+  gc_mark(pic, pic->err);
 
+  /* features */
   gc_mark(pic, pic->features);
 
   /* readers */
@@ -669,8 +668,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, cont->stk_ptr);
     pic_free(pic, cont->st_ptr);
     pic_free(pic, cont->ci_ptr);
+    pic_free(pic, cont->xp_ptr);
     pic_free(pic, cont->arena);
-    pic_free(pic, cont->try_jmps);
     break;
   }
   case PIC_TT_SENV: {
@@ -707,9 +706,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_RECORD: {
     struct pic_record *rec = (struct pic_record *)obj;
     xh_destroy(&rec->hash);
-    break;
-  }
-  case PIC_TT_BLK: {
     break;
   }
   case PIC_TT_NIL:

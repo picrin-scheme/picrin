@@ -27,7 +27,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic = malloc(sizeof(pic_state));
 
   /* root block */
-  pic->blk = NULL;
+  pic->wind = NULL;
 
   /* command line */
   pic->argc = argc;
@@ -41,6 +41,10 @@ pic_open(int argc, char *argv[], char **envp)
   /* callinfo */
   pic->cibase = pic->ci = calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
+
+  /* exception handler */
+  pic->xpbase = pic->xp = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_proc *));
+  pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   /* memory heap */
   pic->heap = pic_heap_open();
@@ -70,12 +74,8 @@ pic_open(int argc, char *argv[], char **envp)
   pic->reader->trie = pic_make_trie(pic);
   xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
-  /* error handling */
-  pic->jmp = NULL;
+  /* raised error object */
   pic->err = pic_undef_value();
-  pic->try_jmps = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_jmpbuf));
-  pic->try_jmp_idx = 0;
-  pic->try_jmp_size = PIC_RESCUE_SIZE;
 
   /* standard ports */
   pic->xSTDIN = NULL;
@@ -153,10 +153,10 @@ pic_open(int argc, char *argv[], char **envp)
   pic_gc_arena_restore(pic, ai);
 
   /* root block */
-  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
-  pic->blk->prev = NULL;
-  pic->blk->depth = 0;
-  pic->blk->in = pic->blk->out = NULL;
+  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
+  pic->wind->prev = NULL;
+  pic->wind->depth = 0;
+  pic->wind->in = pic->wind->out = NULL;
 
   /* init readers */
   pic_init_reader(pic);
@@ -182,16 +182,17 @@ pic_close(pic_state *pic)
   xh_entry *it;
 
   /* invoke exit handlers */
-  while (pic->blk) {
-    if (pic->blk->out) {
-      pic_apply0(pic, pic->blk->out);
+  while (pic->wind) {
+    if (pic->wind->out) {
+      pic_apply0(pic, pic->wind->out);
     }
-    pic->blk = pic->blk->prev;
+    pic->wind = pic->wind->prev;
   }
 
   /* clear out root objects */
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
+  pic->xp = pic->xpbase;
   pic->arena_idx = 0;
   pic->err = pic_undef_value();
   xh_clear(&pic->macros);
@@ -207,6 +208,7 @@ pic_close(pic_state *pic)
   /* free runtime context */
   free(pic->stbase);
   free(pic->cibase);
+  free(pic->xpbase);
 
   /* free reader struct */
   xh_destroy(&pic->reader->labels);
@@ -214,7 +216,6 @@ pic_close(pic_state *pic)
   free(pic->reader);
 
   /* free global stacks */
-  free(pic->try_jmps);
   xh_destroy(&pic->syms);
   xh_destroy(&pic->globals);
   xh_destroy(&pic->macros);

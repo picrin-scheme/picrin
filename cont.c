@@ -121,7 +121,7 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
 
-  cont->blk = pic->blk;
+  cont->wind = pic->wind;
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
@@ -131,13 +131,18 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont->sp_offset = pic->sp - pic->stbase;
   cont->st_len = pic->stend - pic->stbase;
-  cont->st_ptr = (pic_value *)pic_alloc(pic, sizeof(pic_value) * cont->st_len);
+  cont->st_ptr = pic_alloc(pic, sizeof(pic_value) * cont->st_len);
   memcpy(cont->st_ptr, pic->stbase, sizeof(pic_value) * cont->st_len);
 
   cont->ci_offset = pic->ci - pic->cibase;
   cont->ci_len = pic->ciend - pic->cibase;
-  cont->ci_ptr = (pic_callinfo *)pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
+  cont->ci_ptr = pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
+
+  cont->xp_offset = pic->xp - pic->xpbase;
+  cont->xp_len = pic->xpend - pic->xpbase;
+  cont->xp_ptr = pic_alloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
+  memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
 
   cont->ip = pic->ip;
 
@@ -145,11 +150,6 @@ save_cont(pic_state *pic, struct pic_cont **c)
   cont->arena_size = pic->arena_size;
   cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
-
-  cont->try_jmp_idx = pic->try_jmp_idx;
-  cont->try_jmp_size = pic->try_jmp_size;
-  cont->try_jmps = pic_alloc(pic, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
-  memcpy(cont->try_jmps, pic->try_jmps, sizeof(struct pic_jmpbuf) * pic->try_jmp_size);
 
   cont->results = pic_undef_value();
 }
@@ -168,7 +168,6 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 {
   char v;
   struct pic_cont *tmp = cont;
-  struct pic_block *blk;
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
@@ -177,18 +176,22 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
-  blk = pic->blk;
-  pic->blk = cont->blk;
+  pic->wind = cont->wind;
 
-  pic->stbase = (pic_value *)pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
+  pic->stbase = pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
   pic->sp = pic->stbase + cont->sp_offset;
   pic->stend = pic->stbase + cont->st_len;
 
-  pic->cibase = (pic_callinfo *)pic_realloc(pic, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
+  pic->cibase = pic_realloc(pic, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(pic->cibase, cont->ci_ptr, sizeof(pic_callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
+
+  pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
+  memcpy(pic->xpbase, cont->xp_ptr, sizeof(struct pic_proc *) * cont->xp_len);
+  pic->xp = pic->xpbase + cont->xp_offset;
+  pic->xpend = pic->xpbase + cont->xp_len;
 
   pic->ip = cont->ip;
 
@@ -197,52 +200,47 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
 
-  pic->try_jmps = pic_realloc(pic, pic->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
-  memcpy(pic->try_jmps, cont->try_jmps, sizeof(struct pic_jmpbuf) * cont->try_jmp_size);
-  pic->try_jmp_size = cont->try_jmp_size;
-  pic->try_jmp_idx = cont->try_jmp_idx;
-
   memcpy(cont->stk_pos, cont->stk_ptr, cont->stk_len);
 
   longjmp(tmp->jmp, 1);
 }
 
-static void
-walk_to_block(pic_state *pic, struct pic_block *here, struct pic_block *there)
+void
+pic_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
 {
   if (here == there)
     return;
 
   if (here->depth < there->depth) {
-    walk_to_block(pic, here, there->prev);
+    pic_wind(pic, here, there->prev);
     pic_apply0(pic, there->in);
   }
   else {
     pic_apply0(pic, there->out);
-    walk_to_block(pic, here->prev, there);
+    pic_wind(pic, here->prev, there);
   }
 }
 
 static pic_value
 pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
 {
-  struct pic_block *here;
+  struct pic_winder *here;
   pic_value val;
 
   if (in != NULL) {
     pic_apply0(pic, in);        /* enter */
   }
 
-  here = pic->blk;
-  pic->blk = (struct pic_block *)pic_obj_alloc(pic, sizeof(struct pic_block), PIC_TT_BLK);
-  pic->blk->prev = here;
-  pic->blk->depth = here->depth + 1;
-  pic->blk->in = in;
-  pic->blk->out = out;
+  here = pic->wind;
+  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
+  pic->wind->prev = here;
+  pic->wind->depth = here->depth + 1;
+  pic->wind->in = in;
+  pic->wind->out = out;
 
   val = pic_apply0(pic, thunk);
 
-  pic->blk = here;
+  pic->wind = here;
 
   if (out != NULL) {
     pic_apply0(pic, out);       /* exit */
@@ -266,7 +264,7 @@ cont_call(pic_state *pic)
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
-  walk_to_block(pic, pic->blk, cont->blk);
+  pic_wind(pic, pic->wind, cont->wind);
 
   restore_cont(pic, cont);
 }
