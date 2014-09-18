@@ -205,19 +205,19 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   longjmp(tmp->jmp, 1);
 }
 
-void
-pic_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
+static void
+do_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
 {
   if (here == there)
     return;
 
   if (here->depth < there->depth) {
-    pic_wind(pic, here, there->prev);
+    do_wind(pic, here, there->prev);
     pic_apply0(pic, there->in);
   }
   else {
     pic_apply0(pic, there->out);
-    pic_wind(pic, here->prev, there);
+    do_wind(pic, here->prev, there);
   }
 }
 
@@ -264,7 +264,7 @@ cont_call(pic_state *pic)
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
-  pic_wind(pic, pic->wind, cont->wind);
+  do_wind(pic, pic->wind, cont->wind);
 
   restore_cont(pic, cont);
 }
