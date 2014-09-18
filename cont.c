@@ -10,6 +10,7 @@
 #include "picrin/proc.h"
 #include "picrin/cont.h"
 #include "picrin/pair.h"
+#include "picrin/data.h"
 #include "picrin/error.h"
 
 pic_value
@@ -93,6 +94,93 @@ pic_receive(pic_state *pic, size_t n, pic_value *argv)
   return retc;
 }
 
+struct pic_cont {
+  jmp_buf jmp;
+
+  struct pic_winder *wind;
+
+  char *stk_pos, *stk_ptr;
+  ptrdiff_t stk_len;
+
+  pic_value *st_ptr;
+  size_t sp_offset, st_len;
+
+  pic_callinfo *ci_ptr;
+  size_t ci_offset, ci_len;
+
+  struct pic_proc **xp_ptr;
+  size_t xp_offset, xp_len;
+
+  pic_code *ip;
+
+  struct pic_object **arena;
+  size_t arena_size;
+  int arena_idx;
+
+  pic_value results;
+};
+
+static void
+cont_dtor(pic_state *pic, void *data)
+{
+  struct pic_cont *cont = data;
+
+  pic_free(pic, cont->stk_ptr);
+  pic_free(pic, cont->st_ptr);
+  pic_free(pic, cont->ci_ptr);
+  pic_free(pic, cont->xp_ptr);
+  pic_free(pic, cont->arena);
+  pic_free(pic, cont);
+}
+
+static void
+cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
+{
+  struct pic_cont *cont = data;
+  struct pic_winder *wind;
+  pic_value *stack;
+  pic_callinfo *ci;
+  struct pic_proc **xp;
+  size_t i;
+
+  /* winder */
+  for (wind = cont->wind; wind != NULL; wind = wind->prev) {
+    if (wind->in) {
+      mark(pic, pic_obj_value(wind->in));
+    }
+    if (wind->out) {
+      mark(pic, pic_obj_value(wind->out));
+    }
+  }
+
+  /* stack */
+  for (stack = cont->st_ptr; stack != cont->st_ptr + cont->sp_offset; ++stack) {
+    mark(pic, *stack);
+  }
+
+  /* callinfo */
+  for (ci = cont->ci_ptr + cont->ci_offset; ci != cont->ci_ptr; --ci) {
+    if (ci->env) {
+      mark(pic, pic_obj_value(ci->env));
+    }
+  }
+
+  /* exception handlers */
+  for (xp = cont->xp_ptr; xp != cont->xp_ptr + cont->xp_offset; ++xp) {
+    mark(pic, pic_obj_value(*xp));
+  }
+
+  /* arena */
+  for (i = 0; i < (size_t)cont->arena_idx; ++i) {
+    mark(pic, pic_obj_value(cont->arena[i]));
+  }
+
+  /* result values */
+  mark(pic, cont->results);
+}
+
+static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
+
 static void save_cont(pic_state *, struct pic_cont **);
 static void restore_cont(pic_state *, struct pic_cont *);
 
@@ -119,7 +207,7 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   pic_vm_tear_off(pic);         /* tear off */
 
-  cont = *c = (struct pic_cont *)pic_obj_alloc(pic, sizeof(struct pic_cont), PIC_TT_CONT);
+  cont = *c = pic_alloc(pic, sizeof(struct pic_cont));
 
   cont->wind = pic->wind;
 
@@ -148,7 +236,7 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont->arena_idx = pic->arena_idx;
   cont->arena_size = pic->arena_size;
-  cont->arena = (struct pic_object **)pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
+  cont->arena = pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
   cont->results = pic_undef_value();
@@ -195,7 +283,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 
   pic->ip = cont->ip;
 
-  pic->arena = (struct pic_object **)pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * cont->arena_size);
+  pic->arena = pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * cont->arena_size);
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
@@ -260,7 +348,7 @@ cont_call(pic_state *pic)
   proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
 
-  cont = (struct pic_cont *)pic_ptr(pic_attr_ref(pic, proc, "@@cont"));
+  cont = pic_data_ptr(pic_attr_ref(pic, proc, "@@cont"))->data;
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
@@ -280,11 +368,14 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   }
   else {
     struct pic_proc *c;
+    struct pic_data *dat;
 
     c = pic_make_proc(pic, cont_call, "<continuation-procedure>");
 
+    dat = pic_data_alloc(pic, &cont_type, cont);
+
     /* save the continuation object in proc */
-    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(dat));
 
     return pic_apply1(pic, proc, pic_obj_value(c));
   }
@@ -301,11 +392,14 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
   }
   else {
     struct pic_proc *c;
+    struct pic_data *dat;
 
     c = pic_make_proc(pic, cont_call, "<continuation-procedure>");
 
+    dat = pic_data_alloc(pic, &cont_type, cont);
+
     /* save the continuation object in proc */
-    pic_attr_set(pic, c, "@@cont", pic_obj_value(cont));
+    pic_attr_set(pic, c, "@@cont", pic_obj_value(dat));
 
     return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
   }

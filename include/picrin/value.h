@@ -117,7 +117,6 @@ enum pic_tt {
   PIC_TT_PORT,
   PIC_TT_ERROR,
   PIC_TT_ENV,
-  PIC_TT_CONT,
   PIC_TT_SENV,
   PIC_TT_MACRO,
   PIC_TT_LIB,
@@ -255,8 +254,6 @@ pic_type_repr(enum pic_tt tt)
     return "error";
   case PIC_TT_ENV:
     return "env";
-  case PIC_TT_CONT:
-    return "cont";
   case PIC_TT_PROC:
     return "proc";
   case PIC_TT_SENV:

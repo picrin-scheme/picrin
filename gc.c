@@ -412,42 +412,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLOB: {
     break;
   }
-  case PIC_TT_CONT: {
-    struct pic_cont *cont = (struct pic_cont *)obj;
-    pic_value *stack;
-    pic_callinfo *ci;
-    struct pic_proc **xhandler;
-    size_t i;
-
-    /* winder */
-    gc_mark_winder(pic, cont->wind);
-
-    /* stack */
-    for (stack = cont->st_ptr; stack != cont->st_ptr + cont->sp_offset; ++stack) {
-      gc_mark(pic, *stack);
-    }
-
-    /* callinfo */
-    for (ci = cont->ci_ptr + cont->ci_offset; ci != cont->ci_ptr; --ci) {
-      if (ci->env) {
-	gc_mark_object(pic, (struct pic_object *)ci->env);
-      }
-    }
-
-    /* exception handlers */
-    for (xhandler = cont->xp_ptr; xhandler != cont->xp_ptr + cont->xp_offset; ++xhandler) {
-      gc_mark_object(pic, (struct pic_object *)*xhandler);
-    }
-
-    /* arena */
-    for (i = 0; i < (size_t)cont->arena_idx; ++i) {
-      gc_mark_object(pic, cont->arena[i]);
-    }
-
-    /* result values */
-    gc_mark(pic, cont->results);
-    break;
-  }
   case PIC_TT_MACRO: {
     struct pic_macro *mac = (struct pic_macro *)obj;
 
@@ -661,15 +625,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_ERROR: {
-    break;
-  }
-  case PIC_TT_CONT: {
-    struct pic_cont *cont = (struct pic_cont *)obj;
-    pic_free(pic, cont->stk_ptr);
-    pic_free(pic, cont->st_ptr);
-    pic_free(pic, cont->ci_ptr);
-    pic_free(pic, cont->xp_ptr);
-    pic_free(pic, cont->arena);
     break;
   }
   case PIC_TT_SENV: {

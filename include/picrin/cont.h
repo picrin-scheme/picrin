@@ -9,33 +9,6 @@
 extern "C" {
 #endif
 
-struct pic_cont {
-  PIC_OBJECT_HEADER
-  jmp_buf jmp;
-
-  struct pic_winder *wind;
-
-  char *stk_pos, *stk_ptr;
-  ptrdiff_t stk_len;
-
-  pic_value *st_ptr;
-  size_t sp_offset, st_len;
-
-  pic_callinfo *ci_ptr;
-  size_t ci_offset, ci_len;
-
-  struct pic_proc **xp_ptr;
-  size_t xp_offset, xp_len;
-
-  pic_code *ip;
-
-  struct pic_object **arena;
-  size_t arena_size;
-  int arena_idx;
-
-  pic_value results;
-};
-
 pic_value pic_values0(pic_state *);
 pic_value pic_values1(pic_state *, pic_value);
 pic_value pic_values2(pic_state *, pic_value, pic_value);
