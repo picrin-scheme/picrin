@@ -63,7 +63,7 @@ pic_print_backtrace(pic_state *pic)
   }
 
   /* print! */
-  printf("%s", pic_str_cstr(trace));
+  xfprintf(xstderr, "%s", pic_str_cstr(trace));
 
   pic_gc_arena_restore(pic, ai);
 }
