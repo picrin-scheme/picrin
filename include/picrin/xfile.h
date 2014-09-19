@@ -1,5 +1,5 @@
-#ifndef XFILE_H__
-#define XFILE_H__
+#ifndef XFILE_H
+#define XFILE_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -56,11 +56,11 @@ static inline int xfgetc(xFILE *);
 static inline char *xfgets(char *, int, xFILE *);
 static inline int xfputc(int, xFILE *);
 static inline int xfputs(const char *, xFILE *);
-static inline char xgetc(xFILE *);
+static inline int xgetc(xFILE *);
 static inline int xgetchar(void);
 static inline int xputc(int, xFILE *);
 static inline int xputchar(int);
-static inline int xputs(char *);
+static inline int xputs(const char *);
 static inline int xungetc(int, xFILE *);
 
 /* formatted I/O */
@@ -69,9 +69,9 @@ static inline int xfprintf(xFILE *, const char *, ...);
 static inline int xvfprintf(xFILE *, const char *, va_list);
 
 /* standard I/O */
-#define xstdin (xstdin__())
-#define xstdout (xstdout__())
-#define xstderr (xstderr__())
+#define xstdin (xstdin_())
+#define xstdout (xstdout_())
+#define xstderr (xstderr_())
 
 
 /* private */
@@ -105,21 +105,10 @@ xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, co
  * Derieved xFILE Classes
  */
 
-static inline FILE *
-xf_unpack(void *cookie)
-{
-  switch ((long)cookie) {
-  default: return cookie;
-  case 0:  return stdin;
-  case 1:  return stdout;
-  case -1: return stderr;
-  }
-}
-
 static inline int
 xf_file_read(void *cookie, char *ptr, int size)
 {
-  FILE *file = xf_unpack(cookie);
+  FILE *file = cookie;
   int r;
 
   r = fread(ptr, 1, size, file);
@@ -135,7 +124,7 @@ xf_file_read(void *cookie, char *ptr, int size)
 static inline int
 xf_file_write(void *cookie, const char *ptr, int size)
 {
-  FILE *file = xf_unpack(cookie);
+  FILE *file = cookie;
   int r;
 
   r = fwrite(ptr, 1, size, file);
@@ -148,19 +137,19 @@ xf_file_write(void *cookie, const char *ptr, int size)
 static inline long
 xf_file_seek(void *cookie, long pos, int whence)
 {
-  return fseek(xf_unpack(cookie), pos, whence);
+  return fseek(cookie, pos, whence);
 }
 
 static inline int
 xf_file_flush(void *cookie)
 {
-  return fflush(xf_unpack(cookie));
+  return fflush(cookie);
 }
 
 static inline int
 xf_file_close(void *cookie)
 {
-  return fclose(xf_unpack(cookie));
+  return fclose(cookie);
 }
 
 static inline xFILE *
@@ -179,27 +168,36 @@ xfpopen(FILE *fp)
 #define XF_FILE_VTABLE xf_file_read, xf_file_write, xf_file_seek, xf_file_flush, xf_file_close
 
 static inline xFILE *
-xstdin__()
+xstdin_()
 {
-  static xFILE xfile_stdin = { -1, 0, { (void *)0, XF_FILE_VTABLE } };
+  static xFILE x = { -1, 0, { NULL, XF_FILE_VTABLE } };
 
-  return &xfile_stdin;
+  if (! x.vtable.cookie) {
+    x.vtable.cookie = stdin;
+  }
+  return &x;
 }
 
 static inline xFILE *
-xstdout__()
+xstdout_()
 {
-  static xFILE xfile_stdout = { -1, 0, { (void *)1, XF_FILE_VTABLE } };
+  static xFILE x = { -1, 0, { NULL, XF_FILE_VTABLE } };
 
-  return &xfile_stdout;
+  if (! x.vtable.cookie) {
+    x.vtable.cookie = stdout;
+  }
+  return &x;
 }
 
 static inline xFILE *
-xstderr__()
+xstderr_()
 {
-  static xFILE xfile_stderr = { -1, 0, { (void *)-1, XF_FILE_VTABLE } };
+  static xFILE x = { -1, 0, { NULL, XF_FILE_VTABLE } };
 
-  return &xfile_stderr;
+  if (! x.vtable.cookie) {
+    x.vtable.cookie = stderr;
+  }
+  return &x;
 }
 
 struct xf_membuf {
@@ -438,11 +436,39 @@ xfgetc(xFILE *file)
 
   xfread(buf, 1, 1, file);
 
-  if (xfeof(file)) {
+  if (xfeof(file) || xferror(file)) {
     return EOF;
   }
 
   return buf[0];
+}
+
+static inline int
+xgetc(xFILE *file)
+{
+  return xfgetc(file);
+}
+
+static inline char *
+xfgets(char *str, int size, xFILE *file)
+{
+  int c = EOF, i;
+
+  for (i = 0; i < size - 1 && c != '\n'; ++i) {
+    if ((c = xfgetc(file)) == EOF) {
+      break;
+    }
+    str[i] = c;
+  }
+  if (i == 0 && c == EOF) {
+    return NULL;
+  }
+  if (xferror(file)) {
+    return NULL;
+  }
+  str[i] = '\0';
+
+  return str;
 }
 
 static inline int
@@ -469,7 +495,16 @@ xfputc(int c, xFILE *file)
   buf[0] = c;
   xfwrite(buf, 1, 1, file);
 
+  if (xferror(file)) {
+    return EOF;
+  }
   return buf[0];
+}
+
+static inline int
+xputc(int c, xFILE *file)
+{
+  return xfputc(c, file);
 }
 
 static inline int
@@ -486,7 +521,16 @@ xfputs(const char *str, xFILE *file)
   len = strlen(str);
   xfwrite(str, len, 1, file);
 
+  if (xferror(file)) {
+    return EOF;
+  }
   return 0;
+}
+
+static inline int
+xputs(const char *s)
+{
+  return xfputs(s, xstdout);
 }
 
 static inline int
