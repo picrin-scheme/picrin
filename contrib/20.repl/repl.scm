@@ -2,25 +2,19 @@
   (import (scheme base)
           (scheme read)
           (scheme write)
-          (scheme eval)
-          (picrin macro)
-          (picrin library))
+          (scheme eval))
 
-  ;; FIXME picrin doesn't offer cond-expand for now, so we define a macro ourselves
-  (define-syntax define-readline
-    (er-macro-transformer
-     (lambda (form rename compare)
-       (if (member '(picrin readline) (libraries))
-           `(import (picrin readline)
-                    (picrin readline history))
-           `(begin
-              (define (readline str)
-                (display str)
-                (read-line))
-              (define (add-history str)
-                #f))))))
-
-  (define-readline)
+  (cond-expand
+   ((library (picrin readline))
+    (import (picrin readline)
+            (picrin readline history)))
+   (else
+    (begin
+      (define (readline str)
+        (display str)
+        (read-line))
+      (define (add-history str)
+        #f))))
 
   (define (repl)
     (let loop ((buf ""))
@@ -33,23 +27,27 @@
                (lambda (exit)
                  (with-exception-handler
                   (lambda (condition)
-                    (unless (equal? (error-object-message condition) "unexpected EOF")
-                      (display (error-object-message condition) (current-error-port))
-                      (newline)
-                      (set! str ""))
+                    (if (error-object? condition)
+                        (unless (equal? (error-object-message condition) "unexpected EOF")
+                          (display "error: ")
+                          (display (error-object-message condition))
+                          (newline)
+                          (set! str ""))
+                        (begin
+                          (display "raised: ")
+                          (write condition)
+                          (newline)
+                          (set! str "")))
                     (exit))
                   (lambda ()
-                    ;; FIXME
-                    ;; non-local exception jump from inside call-with-port
-                    ;; fails with segv, though i don't know why...
-                    (let ((port (open-input-string str)))
-                      (let next ((expr (read port)))
-                        (unless (eof-object? expr)
-                          (write (eval expr '(picrin user)))
-                          (newline)
-                          (set! str "")
-                          (next (read port))))
-                      (close-port port))))))
+                    (call-with-port (open-input-string str)
+                      (lambda (port)
+                        (let next ((expr (read port)))
+                          (unless (eof-object? expr)
+                            (write (eval expr '(picrin user)))
+                            (newline)
+                            (set! str "")
+                            (next (read port))))))))))
               (loop str))))))
 
   (export repl))
