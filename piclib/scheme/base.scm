@@ -435,18 +435,6 @@
 
   ;; 6.10. Control features
 
-  (define (string-map f . strings)
-    (list->string (apply map f (map string->list strings))))
-
-  (define (string-for-each f . strings)
-    (apply for-each f (map string->list strings)))
-
-  (define (vector-map f . vectors)
-    (list->vector (apply map f (map vector->list vectors))))
-
-  (define (vector-for-each f . vectors)
-    (apply for-each f (map vector->list vectors)))
-
   (export procedure?
           apply
           map

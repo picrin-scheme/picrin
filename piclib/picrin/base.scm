@@ -116,14 +116,14 @@
           list-ref
           list-set!
           list-copy
+          map
+          for-each
           memq
           memv
           member
           assq
           assv
-          assoc
-          map
-          for-each)
+          assoc)
 
   (export bytevector?
           bytevector
@@ -147,6 +147,8 @@
           vector-copy
           vector-append
           vector-fill!
+          vector-map
+          vector-for-each
           list->vector
           vector->list
           string->vector
@@ -162,6 +164,8 @@
           string-copy!
           string-append
           string-fill!
+          string-map
+          string-for-each
           string->list
           list->string
           string=?
