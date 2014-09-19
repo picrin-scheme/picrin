@@ -434,6 +434,76 @@ pic_str_string_fill_ip(pic_state *pic)
 }
 
 static pic_value
+pic_str_string_map(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc, i, len, j;
+  pic_value *argv, vals, val;
+
+  pic_get_args(pic, "l*", &proc, &argc, &argv);
+
+  len = SIZE_MAX;
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], str);
+
+    len = len < pic_strlen(pic_str_ptr(argv[i]))
+      ? len
+      : pic_strlen(pic_str_ptr(argv[i]));
+  }
+  if (len == SIZE_MAX) {
+    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
+  }
+  else {
+    char buf[len];
+
+    for (i = 0; i < len; ++i) {
+      vals = pic_nil_value();
+      for (j = 0; j < argc; ++j) {
+        pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
+      }
+      val = pic_apply(pic, proc, vals);
+
+      pic_assert_type(pic, val, char);
+      buf[i] = pic_char(val);
+    }
+
+    return pic_obj_value(pic_make_str(pic, buf, len));
+  }
+}
+
+static pic_value
+pic_str_string_for_each(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc, i, len, j;
+  pic_value *argv, vals, val;
+
+  pic_get_args(pic, "l*", &proc, &argc, &argv);
+
+  len = SIZE_MAX;
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], str);
+
+    len = len < pic_strlen(pic_str_ptr(argv[i]))
+      ? len
+      : pic_strlen(pic_str_ptr(argv[i]));
+  }
+  if (len == SIZE_MAX) {
+    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
+  }
+
+  for (i = 0; i < len; ++i) {
+    vals = pic_nil_value();
+    for (j = 0; j < argc; ++j) {
+      pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
+    }
+    val = pic_apply(pic, proc, vals);
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
 pic_str_list_to_string(pic_state *pic)
 {
   pic_str *str;
@@ -490,6 +560,8 @@ pic_init_str(pic_state *pic)
   pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
   pic_defun(pic, "string-append", pic_str_string_append);
   pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
+  pic_defun(pic, "string-map", pic_str_string_map);
+  pic_defun(pic, "string-for-each", pic_str_string_for_each);
   pic_defun(pic, "list->string", pic_str_list_to_string);
   pic_defun(pic, "string->list", pic_str_string_to_list);
 

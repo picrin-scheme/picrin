@@ -232,6 +232,67 @@ pic_vec_vector_fill_i(pic_state *pic)
 }
 
 static pic_value
+pic_vec_vector_map(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc, i, len, j;
+  pic_value *argv, vals;
+  pic_vec *vec;
+
+  pic_get_args(pic, "l*", &proc, &argc, &argv);
+
+  len = SIZE_MAX;
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], vec);
+
+    len = len < pic_vec_ptr(argv[i])->len
+      ? len
+      : pic_vec_ptr(argv[i])->len;
+  }
+
+  vec = pic_make_vec(pic, len);
+
+  for (i = 0; i < len; ++i) {
+    vals = pic_nil_value();
+    for (j = 0; j < argc; ++j) {
+      pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
+    }
+    vec->data[i] = pic_apply(pic, proc, vals);
+  }
+
+  return pic_obj_value(vec);
+}
+
+static pic_value
+pic_vec_vector_for_each(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc, i, len, j;
+  pic_value *argv, vals;
+
+  pic_get_args(pic, "l*", &proc, &argc, &argv);
+
+  len = SIZE_MAX;
+  for (i = 0; i < argc; ++i) {
+    pic_assert_type(pic, argv[i], vec);
+
+    len = len < pic_vec_ptr(argv[i])->len
+      ? len
+      : pic_vec_ptr(argv[i])->len;
+  }
+
+  for (i = 0; i < len; ++i) {
+    vals = pic_nil_value();
+    for (j = 0; j < argc; ++j) {
+      pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
+    }
+    pic_apply(pic, proc, vals);
+  }
+
+  return pic_none_value();
+}
+
+static pic_value
 pic_vec_list_to_vector(pic_state *pic)
 {
   struct pic_vector *vec;
@@ -341,6 +402,8 @@ pic_init_vector(pic_state *pic)
   pic_defun(pic, "vector-copy", pic_vec_vector_copy);
   pic_defun(pic, "vector-append", pic_vec_vector_append);
   pic_defun(pic, "vector-fill!", pic_vec_vector_fill_i);
+  pic_defun(pic, "vector-map", pic_vec_vector_map);
+  pic_defun(pic, "vector-for-each", pic_vec_vector_for_each);
   pic_defun(pic, "list->vector", pic_vec_list_to_vector);
   pic_defun(pic, "vector->list", pic_vec_vector_to_list);
   pic_defun(pic, "string->vector", pic_vec_string_to_vector);
