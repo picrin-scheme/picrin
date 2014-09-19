@@ -115,7 +115,7 @@ pic_push_try(pic_state *pic)
 {
   pic_value val;
 
-  val = pic_callcc(pic, pic_make_proc(pic, native_push_try, "(native-push-try)"));
+  val = pic_escape(pic, pic_make_proc(pic, native_push_try, "(native-push-try)"));
 
   return pic_test(val);
 }
