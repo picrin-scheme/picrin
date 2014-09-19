@@ -158,7 +158,7 @@ export(pic_state *pic, pic_value spec)
   } else {                      /* (export (rename a b)) */
     if (! pic_list_p(spec))
       goto fail;
-    if (! pic_length(pic, spec) == 3)
+    if (! (pic_length(pic, spec) == 3))
       goto fail;
     if (! pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME)))
       goto fail;
