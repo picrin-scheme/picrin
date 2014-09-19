@@ -42,7 +42,7 @@
 #endif
 
 #ifndef PIC_DIRECT_THREADED_VM
-# if defined(__GNUC__) || defined(__CLANG__)
+# if defined(__GNUC__) || defined(__clang__)
 #  define PIC_DIRECT_THREADED_VM 1
 # endif
 #endif
