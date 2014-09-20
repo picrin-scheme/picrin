@@ -22,14 +22,5 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/scheme/time.scm
   ${PROJECT_SOURCE_DIR}/piclib/scheme/r5rs.scm
 
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/1.scm
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/8.scm
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/17.scm
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/26.scm
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/43.scm
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/60.scm
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/95.scm
-  ${PROJECT_SOURCE_DIR}/piclib/srfi/111.scm
-
   ${PROJECT_SOURCE_DIR}/piclib/picrin/user.scm
   )
