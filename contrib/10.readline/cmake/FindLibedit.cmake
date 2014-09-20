@@ -32,16 +32,14 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
   endif (${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 4)
   find_path(Libedit_EDITLINE_INCLUDE_DIR
     NAMES
-      readline.h
-      history.h
+      editline/readline.h
+      editline/history.h
     PATHS
       ${_Libedit_INCLUDEDIR}
       /usr/include
       /usr/local/include
       /opt/local/include
       /sw/include
-    PATH_SUFFIXES
-      editline
   )
   if (Libedit_EDITLINE_INCLUDE_DIR)
     set(Libedit_INCLUDE_DIR_SUFFIX editline)
@@ -49,15 +47,13 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
   else (Libedit_EDITLINE_INCLUDE_DIR)
     find_path(Libedit_READLINE_INCLUDE_DIR
       NAMES
-        readline.h
-        history.h
+        readline/readline.h
+        readline/history.h
       PATHS
         /usr/include/edit
         /usr/local/include/edit
         /opt/local/include/edit
         /sw/include/edit
-      PATH_SUFFIXES
-        readline
         )
     if (Libedit_READLINE_INCLUDE_DIR)
       set(Libedit_INCLUDE_DIR_SUFFIX readline)
@@ -97,7 +93,7 @@ else (Libedit_LIBRARIES AND Libedit_INCLUDE_DIRS)
 
   if (Libedit_FOUND)
     if (NOT Libedit_FIND_QUIETLY)
-      message(STATUS "Found libedit: ${Libedit_LIBRARY}")
+      message(STATUS "Found libedit: ${Libedit_LIBRARY}, ${Libedit_INCLUDE_DIR}")
     endif (NOT Libedit_FIND_QUIETLY)
   else (Libedit_FOUND)
     if (Libedit_FIND_REQUIRED)
