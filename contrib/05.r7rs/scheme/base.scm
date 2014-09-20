@@ -260,7 +260,7 @@
     (* x x))
 
   (define (exact-integer-sqrt k)
-    (let ((s (exact (sqrt k))))
+    (let ((s (exact (floor (sqrt k)))))
       (values s (- k (square s)))))
 
   (export number?
