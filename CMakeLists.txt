@@ -26,13 +26,12 @@ else()
   add_definitions(-std=c99)     # at least c99 is required
 endif()
 
-include_directories(include extlib)
+include_directories(extlib/benz/include)
 
 # build picrin
 include(piclib/CMakeLists.txt)
 include(contrib/CMakeLists.txt)
 include(src/CMakeLists.txt)
-include(tools/CMakeLists.txt)
 include(docs/CMakeLists.txt)
 
 # ----

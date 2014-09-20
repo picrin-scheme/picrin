@@ -1,12 +1,5 @@
-;;; Hygienic Macros
-
 (define-library (picrin macro)
-  (import (picrin base macro)
-          (picrin base)
-          (picrin list)
-          (picrin symbol)
-          (scheme base)
-          (picrin dictionary))
+  (import (picrin base))
 
   ;; assumes no derived expressions are provided yet
 
@@ -35,18 +28,6 @@
                 (define val (f sym))
                 (dictionary-set! cache sym val)
                 val))))))
-
-  (define (identifier=? env1 sym1 env2 sym2)
-
-    (define (resolve sym env)
-      (define x (make-identifier sym env))
-      (define y (make-identifier sym env))
-      (if (eq? x y)
-          x
-          sym))          ; resolved to no variable
-
-    (eq? (resolve sym1 env1)
-         (resolve sym2 env2)))
 
   (define (make-syntactic-closure env free form)
 
@@ -126,8 +107,8 @@
                       (rename sym)))))
             (f (walk inject expr) inject compare))))
 
-  (define (strip-syntax form)
-    (walk ungensym form))
+  ;; (define (strip-syntax form)
+  ;;   (walk ungensym form))
 
   (define-syntax define-macro
     (er-macro-transformer
@@ -153,5 +134,5 @@
           rsc-macro-transformer
           er-macro-transformer
           ir-macro-transformer
-          strip-syntax
+          ;; strip-syntax
           define-macro))

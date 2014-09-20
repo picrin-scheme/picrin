@@ -37,6 +37,7 @@
         (scheme eval)
         (scheme process-context)
         (scheme case-lambda)
+        (scheme r5rs)
         (picrin test))
 
 ;; R7RS test suite.  Covers all procedures and syntax in the small
@@ -46,6 +47,41 @@
 
 
 (test-begin "R7RS")
+
+(test-begin "cond-expand")
+
+(test #t (cond-expand
+          (r7rs #t)
+          (else #f)))
+(test #t (cond-expand
+          ((library (scheme write)) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((not r6rs) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((and r7rs (library (picrin test))) #t)
+          (else #f)))
+(test #t (cond-expand
+          ((or r6rs r7rs) #t)
+          (else #f)))
+(cond-expand
+ (r7rs (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((library (scheme write)) (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((not r6rs) (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((and r7rs (library (picrin test))) (test #t #t))
+ (else (test #t #f)))
+(cond-expand
+ ((or r6rs r7rs) (test #t #t))
+ (else (test #t #f)))
+
+(test-end)
 
 (test-begin "4.1 Primitive expression types")
 
@@ -453,10 +489,10 @@
 (define first car)
 (test 1 (first '(1 2)))
 
-;; (test 45 (let ((x 5))
-;;   (define foo (lambda (y) (bar x y)))
-;;   (define bar (lambda (a b) (+ (* a b) a)))
-;;   (foo (+ x 3))))
+(test 45 (let ((x 5))
+  (define foo (lambda (y) (bar x y)))
+  (define bar (lambda (a b) (+ (* a b) a)))
+  (foo (+ x 3))))
 
 (test 'ok
     (let ()
@@ -1613,6 +1649,21 @@
           (if (< (length path) 4)
               (c 'talk2)
               (reverse path)))))
+
+(test #\a
+      (call/cc
+       (lambda(cc3)
+         (let ((p (open-input-string "aa")))
+           ((call/cc
+             (lambda(cc)
+               (call-with-port p
+                               (lambda(port)
+                                 (cc3
+                                  (read-char
+                                   (call/cc
+                                    (lambda(cc2)
+                                      (cc cc2)))))))))
+            p)))))
 
 (test-end)
 

@@ -1,5 +1,6 @@
 (define-library (picrin experimental lambda)
   (import (scheme base)
+          (picrin base)
           (picrin macro))
 
   (define-syntax destructuring-bind

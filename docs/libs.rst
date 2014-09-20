@@ -18,29 +18,45 @@ Scheme standard libraries
 SRFI libraries
 --------------
 
-- (srfi 1)
+- `(srfi 1)
+  <http://srfi.schemers.org/srfi-0/>`_
 
   List library.
 
-- (srfi 8)
+- `(srfi 8)
+  <http://srfi.schemers.org/srfi-8/>`_
 
   ``receive`` macro.
 
-- (srfi 26)
+- `(srfi 17)
+  <http://srfi.schemers.org/srfi-17/>`_
+
+  Generalized set!
+
+- `(srfi 26)
+  <http://srfi.schemers.org/srfi-26/>`_
 
   Cut/cute macros.
 
-- (srfi 43)
+- `(srfi 43)
+  <http://srfi.schemers.org/srfi-43/>`_
 
   Vector library.
 
-- (srfi 60)
+- `(srfi 60)
+  <http://srfi.schemers.org/srfi-60/>`_
 
   Bitwise operations.
 
-- (srfi 95)
+- `(srfi 95)
+  <http://srfi.schemers.org/srfi-95/>`_
 
   Sorting and Marging.
+
+- `(srfi 111)
+  <http://srfi.schemers.org/srfi-111/>`_
+
+  Boxes
 
 (picrin macro)
 --------------
@@ -140,7 +156,7 @@ Technically, picrin's array is implemented as a ring-buffer, effective double-en
 (picrin dictionary)
 -------------------
 
-Symbol to Object table. Internally it is implemented on hash-table.
+Object-to-object table. Internally it is implemented on hash-table. Equivalence is tested with equal? procedure.
 
 Note that dictionary is not a weak map; if you are going to make a highly memory-consuming program with dictionaries, you should know that dictionaries keep their bound objects and never let them free until you explicitly deletes bindings.
 
@@ -154,7 +170,7 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 
 - **(dictionary-ref dict key)**
 
-  Look up dictionary dict for a value associated with symbol key. It returns two values: first is the associated value if exists, and second is a boolean of lookup result.
+  Look up dictionary dict for a value associated with key. It returns two values: first is the associated value if exists, and second is a boolean of lookup result.
 
 - **(dictionary-set! dict key obj)**
 

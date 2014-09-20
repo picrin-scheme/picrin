@@ -14,6 +14,7 @@
     (display "\n")
     (display "Options:\n")
     (display "  -e [program]		run one liner script\n")
+    (display "  -l [file]		load the file then enter repl\n")
     (display "  -h or --help		show this help\n"))
 
   (define (getopt)
@@ -26,6 +27,8 @@
              (exit 1))
             ((-e)
              (values 'line (cadr args)))
+            ((-l)
+             (values 'load (cadr args)))
             (else
              (values 'file (car args)))))))
 
@@ -45,6 +48,7 @@
       (lambda (type dat)
         (case type
           ((repl) (repl))
+          ((load) (load dat) (repl))
           ((line) (exec-line dat))
           ((file) (exec-file dat))))))
 

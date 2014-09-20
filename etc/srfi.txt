@@ -12,7 +12,7 @@ y  SRFI 1: List Library
    SRFI 13: String Library
    SRFI 14: Character-Set Library
 7  SRFI 16: Syntax for procedures of variable arity
-   SRFI 17: Generalized set!
+y  SRFI 17: Generalized set!
    SRFI 18: Multithreading support
    SRFI 19: Time Data Types and Procedures
    SRFI 21: Real-time multithreading support
@@ -78,4 +78,4 @@ y  SRFI 1: List Library
    SRFI 108: Named quasi-literal constructors
    SRFI 109: Extended string quasi-literals
    SRFI 110: Sweet-expressions (t-expressions)
-   SRFI 111: Boxes
+y  SRFI 111: Boxes
