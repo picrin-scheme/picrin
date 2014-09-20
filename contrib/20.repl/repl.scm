@@ -16,6 +16,23 @@
       (define (add-history str)
         #f))))
 
+  (eval
+   '(import (scheme base)
+            (scheme load)
+            (scheme process-context)
+            (scheme read)
+            (scheme write)
+            (scheme file)
+            (scheme inexact)
+            (scheme cxr)
+            (scheme lazy)
+            (scheme time)
+            (picrin macro)
+            (picrin dictionary)
+            (picrin array)
+            (picrin library))
+   '(picrin user))
+
   (define (repl)
     (let loop ((buf ""))
       (let ((line (readline (if (equal? buf "") "> " "* "))))
