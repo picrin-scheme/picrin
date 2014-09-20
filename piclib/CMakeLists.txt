@@ -7,6 +7,4 @@ list(APPEND PICLIB_SCHEME_LIBS
   ${PROJECT_SOURCE_DIR}/piclib/picrin/experimental/lambda.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/syntax-rules.scm
   ${PROJECT_SOURCE_DIR}/piclib/picrin/test.scm
-
-  ${PROJECT_SOURCE_DIR}/piclib/picrin/user.scm
   )
