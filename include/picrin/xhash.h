@@ -43,7 +43,7 @@ typedef struct xhash {
   size_t size, count, kwidth, vwidth;
   xh_hashf hashf;
   xh_equalf equalf;
-  xh_entry *chain;
+  xh_entry *head, *tail;
   void *data;
 } xhash;
 
@@ -98,7 +98,8 @@ xh_init_(xhash *x, size_t kwidth, size_t vwidth, xh_hashf hashf, xh_equalf equal
   x->vwidth = vwidth;
   x->hashf = hashf;
   x->equalf = equalf;
-  x->chain = NULL;
+  x->head = NULL;
+  x->tail = NULL;
   x->data = data;
 
   xh_bucket_realloc(x, XHASH_INIT_SIZE);
@@ -138,7 +139,8 @@ xh_resize_(xhash *x, size_t newsize)
     y.count++;
   }
 
-  y.chain = x->chain;
+  y.head = x->head;
+  y.tail = x->tail;
 
   free(x->buckets);
 
@@ -171,14 +173,14 @@ xh_put_(xhash *x, const void *key, void *val)
   memcpy((void *)e->key, key, x->kwidth);
   memcpy(e->val, val, x->vwidth);
 
-  if (x->chain == NULL) {
-    x->chain = e;
+  if (x->head == NULL) {
+    x->head = x->tail = e;
     e->fw = e->bw = NULL;
   } else {
-    x->chain->fw = e;
-    e->bw = x->chain;
-    e->fw = NULL;
-    x->chain = e;
+    x->tail->bw = e;
+    e->fw = x->tail;
+    e->bw = NULL;
+    x->tail = e;
   }
 
   x->count++;
@@ -197,14 +199,15 @@ xh_del_(xhash *x, const void *key)
   idx = ((unsigned)hash) % x->size;
   if (x->buckets[idx]->hash == hash && x->equalf(key, x->buckets[idx]->key, x->data)) {
     q = x->buckets[idx];
-    if (q->fw) {
+    if (q->fw == NULL) {
+      x->head = q->bw;
+    } else {
       q->fw->bw = q->bw;
     }
-    if (q->bw) {
+    if (q->bw == NULL) {
+      x->tail = q->fw;
+    } else {
       q->bw->fw = q->fw;
-    }
-    if (x->chain == q) {
-      x->chain = q->bw;
     }
     r = q->next;
     free(q);
@@ -216,14 +219,15 @@ xh_del_(xhash *x, const void *key)
         break;
     }
     q = p->next;
-    if (q->fw) {
+    if (q->fw == NULL) {
+      x->head = q->bw;
+    } else {
       q->fw->bw = q->bw;
     }
-    if (q->bw) {
+    if (q->bw == NULL) {
+      x->tail = q->fw;
+    } else {
       q->bw->fw = q->fw;
-    }
-    if (x->chain == q) {
-      x->chain = q->bw;
     }
     r = q->next;
     free(q);
@@ -255,7 +259,7 @@ xh_clear(xhash *x)
     x->buckets[i] = NULL;
   }
 
-  x->chain = NULL;
+  x->head = x->tail = NULL;
   x->count = 0;
 }
 
@@ -403,7 +407,7 @@ xh_del_int(xhash *x, int key)
 static inline xh_entry *
 xh_begin(xhash *x)
 {
-  return x->chain;
+  return x->head;
 }
 
 static inline xh_entry *
