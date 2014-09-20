@@ -2,7 +2,7 @@ SRFI libraries
 --------------
 
 - `(srfi 1)
-  <http://srfi.schemers.org/srfi-0/>`_
+  <http://srfi.schemers.org/srfi-1/>`_
 
   List library.
 
