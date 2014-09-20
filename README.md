@@ -77,6 +77,10 @@ main(int argc, char *argv[])
 
 All procedures and syntaces are exported from a single library named `(picrin base)`. The complete list is found at https://gist.github.com/wasabiz/344d802a2340d1f734b7 .
 
+### call/cc
+
+Full continuation has many problems in embbeding into applications. By default, Benz's call/cc operator does not support continuation that can handle re-entering (it only supports escape continuations). To remove this restriction, please use an add-on provided from [Picrin Scheme's repository](https://github.com/picrin-scheme/picrin/tree/master/contrib/03.callcc).
+
 ## Authors
 
 See https://github.com/picrin-scheme/benz and https://github.com/picrin-scheme/picrin for details.
