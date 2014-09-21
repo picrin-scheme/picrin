@@ -217,46 +217,6 @@ pic_dict_dictionary_size(pic_state *pic)
 }
 
 static pic_value
-pic_dict_dictionary_map(pic_state *pic)
-{
-  struct pic_proc *proc;
-  struct pic_dict *dict;
-  pic_value item, list = pic_nil_value();
-  xh_entry *it;
-
-  pic_get_args(pic, "ld", &proc, &dict);
-
-  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    item = pic_cons(pic, xh_key(it, pic_value), xh_val(it, pic_value));
-    pic_push(pic, pic_apply1(pic, proc, item), list);
-  }
-
-  return pic_reverse(pic, list);
-}
-
-static pic_value
-pic_dict_dictionary_for_each(pic_state *pic)
-{
-  struct pic_proc *proc;
-  struct pic_dict *dict;
-  pic_value item;
-  xh_entry *it;
-
-  pic_get_args(pic, "ld", &proc, &dict);
-
-  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    int ai = pic_gc_arena_preserve(pic);
-
-    item = pic_cons(pic, xh_key(it, pic_value), xh_val(it, pic_value));
-    pic_apply1(pic, proc, item);
-
-    pic_gc_arena_restore(pic, ai);
-  }
-
-  return pic_none_value();
-}
-
-static pic_value
 pic_dict_dictionary_to_alist(pic_state *pic)
 {
   struct pic_dict *dict;
@@ -334,8 +294,6 @@ pic_init_dict(pic_state *pic)
   pic_defun(pic, "dictionary-set!", pic_dict_dictionary_set);
   pic_defun(pic, "dictionary-delete!", pic_dict_dictionary_del);
   pic_defun(pic, "dictionary-size", pic_dict_dictionary_size);
-  pic_defun(pic, "dictionary-map", pic_dict_dictionary_map);
-  pic_defun(pic, "dictionary-for-each", pic_dict_dictionary_for_each);
   pic_defun(pic, "dictionary->alist", pic_dict_dictionary_to_alist);
   pic_defun(pic, "alist->dictionary", pic_dict_alist_to_dictionary);
   pic_defun(pic, "dictionary->plist", pic_dict_dictionary_to_plist);
