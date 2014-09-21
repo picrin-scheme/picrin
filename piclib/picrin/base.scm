@@ -159,11 +159,8 @@
           make-string
           string-length
           string-ref
-          string-set!
           string-copy
-          string-copy!
           string-append
-          string-fill!
           string-map
           string-for-each
           string->list

@@ -2,7 +2,8 @@
   (import (picrin base)
           (picrin macro)
           (picrin record)
-          (picrin syntax-rules))
+          (picrin syntax-rules)
+          (picrin string))
 
   ;; 4.1.2. Literal expressions
 
