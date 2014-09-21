@@ -23,7 +23,6 @@ pic_str *pic_make_str_fill(pic_state *, size_t, char);
 
 size_t pic_strlen(pic_str *);
 char pic_str_ref(pic_state *, pic_str *, size_t);
-void pic_str_set(pic_state *, pic_str *, size_t, char);
 
 pic_str *pic_strcat(pic_state *, pic_str *, pic_str *);
 pic_str *pic_substr(pic_state *, pic_str *, size_t, size_t);
