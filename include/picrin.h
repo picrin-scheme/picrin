@@ -155,6 +155,8 @@ void pic_add_feature(pic_state *, const char *);
 void pic_define(pic_state *, const char *, pic_value);
 void pic_define_noexport(pic_state *, const char *, pic_value);
 void pic_defun(pic_state *, const char *, pic_func_t);
+
+struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
 
 struct pic_proc *pic_get_proc(pic_state *);
@@ -210,6 +212,7 @@ void pic_export(pic_state *, pic_sym);
 noreturn void pic_panic(pic_state *, const char *);
 noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
+const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *);
 
@@ -218,10 +221,6 @@ static inline void pic_warn(pic_state *pic, const char *msg)
 {
   pic_warnf(pic, msg);
 }
-
-const char *pic_errmsg(pic_state *);
-
-struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
 struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
