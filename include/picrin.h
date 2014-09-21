@@ -170,9 +170,6 @@ pic_sym pic_gensym(pic_state *, pic_sym);
 pic_sym pic_ungensym(pic_state *, pic_sym);
 bool pic_interned_p(pic_state *, pic_sym);
 
-char *pic_strdup(pic_state *, const char *);
-char *pic_strndup(pic_state *, const char *, size_t);
-
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
 

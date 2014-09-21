@@ -8,23 +8,6 @@
 #include "picrin/blob.h"
 #include "picrin/pair.h"
 
-char *
-pic_strndup(pic_state *pic, const char *s, size_t n)
-{
-  char *r;
-
-  r = pic_alloc(pic, n + 1);
-  memcpy(r, s, n);
-  r[n] = '\0';
-  return r;
-}
-
-char *
-pic_strdup(pic_state *pic, const char *s)
-{
-  return pic_strndup(pic, s, strlen(s));
-}
-
 struct pic_blob *
 pic_make_blob(pic_state *pic, size_t len)
 {
