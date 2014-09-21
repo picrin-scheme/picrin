@@ -162,6 +162,8 @@ void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 
+bool pic_eq_p(pic_value, pic_value);
+bool pic_eqv_p(pic_value, pic_value);
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
 pic_sym pic_intern(pic_state *, const char *, size_t);
