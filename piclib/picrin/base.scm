@@ -178,8 +178,6 @@
           dictionary-set!
           dictionary-delete!
           dictionary-size
-          dictionary-map
-          dictionary-for-each
           dictionary->plist
           plist->dictionary
           dictionary->alist
