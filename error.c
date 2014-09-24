@@ -122,13 +122,21 @@ pic_push_try(pic_state *pic)
 void
 pic_pop_try(pic_state *pic)
 {
-  struct pic_data *e;
+  pic_value cont, escape;
 
   assert(pic->xp > pic->xpbase);
 
-  e = pic_data_ptr(pic_attr_ref(pic, pic_proc_ptr(pic_attr_ref(pic, *--pic->xp, "@@escape")), "@@escape"));
+  cont = pic_attr_ref(pic, *--pic->xp, "@@escape");
 
-  ((struct pic_escape *)e->data)->valid = false;
+  assert(pic_proc_p(cont));
+
+  escape = pic_attr_ref(pic, pic_proc_ptr(cont), "@@escape");
+
+  assert(pic_data_p(escape));
+
+  ((struct pic_escape *)pic_data_ptr(escape)->data)->valid = false;
+
+  puts("pop_try done;");
 }
 
 struct pic_error *
