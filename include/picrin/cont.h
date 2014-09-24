@@ -26,6 +26,11 @@ struct pic_escape {
   pic_value results;
 };
 
+int pic_save_point(pic_state *, struct pic_escape *);
+noreturn void pic_load_point(pic_state *, struct pic_escape *);
+
+struct pic_proc *pic_make_cont(pic_state *, struct pic_escape *);
+
 void pic_wind(pic_state *, struct pic_winder *, struct pic_winder *);
 pic_value pic_dynamic_wind(pic_state *, struct pic_proc *, struct pic_proc *, struct pic_proc *);
 

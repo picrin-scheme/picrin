@@ -57,8 +57,8 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   return val;
 }
 
-static int
-save_point(pic_state *pic, struct pic_escape *escape)
+int
+pic_save_point(pic_state *pic, struct pic_escape *escape)
 {
   escape->valid = true;
 
@@ -75,8 +75,8 @@ save_point(pic_state *pic, struct pic_escape *escape)
   return setjmp(escape->jmp);
 }
 
-noreturn static void
-load_point(pic_state *pic, struct pic_escape *escape)
+noreturn void
+pic_load_point(pic_state *pic, struct pic_escape *escape)
 {
   if (! escape->valid) {
     pic_errorf(pic, "calling dead escape continuation");
@@ -108,11 +108,11 @@ escape_call(pic_state *pic)
 
   e = pic_data_ptr(pic_attr_ref(pic, pic_get_proc(pic), "@@escape"));
 
-  load_point(pic, e->data);
+  pic_load_point(pic, e->data);
 }
 
-static struct pic_proc *
-make_escape(pic_state *pic, struct pic_escape *escape)
+struct pic_proc *
+pic_make_cont(pic_state *pic, struct pic_escape *escape)
 {
   static const pic_data_type escape_type = { "escape", pic_free, NULL };
   struct pic_proc *cont;
@@ -135,13 +135,13 @@ pic_escape(pic_state *pic, struct pic_proc *proc)
 
   escape = pic_alloc(pic, sizeof(struct pic_escape));
 
-  if (save_point(pic, escape)) {
+  if (pic_save_point(pic, escape)) {
     return pic_values_by_list(pic, escape->results);
   }
   else {
     pic_value val;
 
-    val = pic_apply1(pic, proc, pic_obj_value(make_escape(pic, escape)));
+    val = pic_apply1(pic, proc, pic_obj_value(pic_make_cont(pic, escape)));
 
     escape->valid = false;
 
