@@ -85,39 +85,37 @@ native_exception_handler(pic_state *pic)
   UNREACHABLE();
 }
 
-static pic_value
-native_push_try(pic_state *pic)
-{
-  struct pic_proc *cont, *handler;
-  size_t xp_len, xp_offset;
-
-  pic_get_args(pic, "l", &cont);
-
-  handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
-
-  pic_attr_set(pic, handler, "@@escape", pic_obj_value(cont));
-
-  if (pic->xp >= pic->xpend) {
-    xp_len = (pic->xpend - pic->xpbase) * 2;
-    xp_offset = pic->xp - pic->xpbase;
-    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
-    pic->xp = pic->xpbase + xp_offset;
-    pic->xpend = pic->xpbase + xp_len;
-  }
-
-  *pic->xp++ = handler;
-
-  return pic_true_value();
-}
-
 bool
 pic_push_try(pic_state *pic)
 {
-  pic_value val;
+  struct pic_escape *escape;
 
-  val = pic_escape(pic, pic_make_proc(pic, native_push_try, "(native-push-try)"));
+  escape = pic_alloc(pic, sizeof(struct pic_escape));
 
-  return pic_test(val);
+  if (pic_save_point(pic, escape)) {
+    return false;
+  } else {
+    struct pic_proc *cont, *handler;
+    size_t xp_len, xp_offset;
+
+    cont = pic_make_cont(pic, escape);
+
+    handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
+
+    pic_attr_set(pic, handler, "@@escape", pic_obj_value(cont));
+
+    if (pic->xp >= pic->xpend) {
+      xp_len = (pic->xpend - pic->xpbase) * 2;
+      xp_offset = pic->xp - pic->xpbase;
+      pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
+      pic->xp = pic->xpbase + xp_offset;
+      pic->xpend = pic->xpbase + xp_len;
+    }
+
+    *pic->xp++ = handler;
+
+    return true;
+  }
 }
 
 void
