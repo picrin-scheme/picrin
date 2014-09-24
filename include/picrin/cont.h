@@ -9,6 +9,23 @@
 extern "C" {
 #endif
 
+struct pic_escape {
+  jmp_buf jmp;
+
+  bool valid;
+
+  struct pic_winder *wind;
+
+  ptrdiff_t sp_offset;
+  ptrdiff_t ci_offset;
+  ptrdiff_t xp_offset;
+  int arena_idx;
+
+  pic_code *ip;
+
+  pic_value results;
+};
+
 void pic_wind(pic_state *, struct pic_winder *, struct pic_winder *);
 pic_value pic_dynamic_wind(pic_state *, struct pic_proc *, struct pic_proc *, struct pic_proc *);
 
