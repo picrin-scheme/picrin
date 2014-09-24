@@ -26,7 +26,7 @@ struct pic_escape {
   pic_value results;
 };
 
-int pic_save_point(pic_state *, struct pic_escape *);
+void pic_save_point(pic_state *, struct pic_escape *);
 noreturn void pic_load_point(pic_state *, struct pic_escape *);
 
 struct pic_proc *pic_make_econt(pic_state *, struct pic_escape *);

@@ -57,7 +57,7 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   return val;
 }
 
-int
+void
 pic_save_point(pic_state *pic, struct pic_escape *escape)
 {
   escape->valid = true;
@@ -71,8 +71,6 @@ pic_save_point(pic_state *pic, struct pic_escape *escape)
   escape->ip = pic->ip;
 
   escape->results = pic_undef_value();
-
-  return setjmp(escape->jmp);
 }
 
 noreturn void
@@ -131,11 +129,11 @@ pic_make_econt(pic_state *pic, struct pic_escape *escape)
 pic_value
 pic_escape(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_escape *escape;
+  struct pic_escape *escape = pic_alloc(pic, sizeof(struct pic_escape));
 
-  escape = pic_alloc(pic, sizeof(struct pic_escape));
+  pic_save_point(pic, escape);
 
-  if (pic_save_point(pic, escape)) {
+  if (setjmp(escape->jmp)) {
     return pic_values_by_list(pic, escape->results);
   }
   else {

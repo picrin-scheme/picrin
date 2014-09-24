@@ -89,11 +89,13 @@ native_exception_handler(pic_state *pic)
 bool
 pic_push_try(pic_state *pic)
 {
-  struct pic_escape *escape;
+  struct pic_escape *escape = pic_alloc(pic, sizeof(struct pic_escape));
 
-  escape = pic_alloc(pic, sizeof(struct pic_escape));
+  pic_save_point(pic, escape);
 
-  if (pic_save_point(pic, escape)) {
+  if (setjmp(escape->jmp)) {
+    puts("escaping");
+
     return false;
   } else {
     struct pic_proc *cont, *handler;
