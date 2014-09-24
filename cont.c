@@ -57,25 +57,8 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   return val;
 }
 
-struct pic_escape {
-  jmp_buf jmp;
-
-  bool valid;
-
-  struct pic_winder *wind;
-
-  ptrdiff_t sp_offset;
-  ptrdiff_t ci_offset;
-  ptrdiff_t xp_offset;
-  int arena_idx;
-
-  pic_code *ip;
-
-  pic_value results;
-};
-
-static int
-save_point(pic_state *pic, struct pic_escape *escape)
+void
+pic_save_point(pic_state *pic, struct pic_escape *escape)
 {
   escape->valid = true;
 
@@ -88,12 +71,10 @@ save_point(pic_state *pic, struct pic_escape *escape)
   escape->ip = pic->ip;
 
   escape->results = pic_undef_value();
-
-  return setjmp(escape->jmp);
 }
 
-noreturn static void
-load_point(pic_state *pic, struct pic_escape *escape)
+void
+pic_load_point(pic_state *pic, struct pic_escape *escape)
 {
   if (! escape->valid) {
     pic_errorf(pic, "calling dead escape continuation");
@@ -109,7 +90,7 @@ load_point(pic_state *pic, struct pic_escape *escape)
   pic->arena_idx = escape->arena_idx;
   pic->ip = escape->ip;
 
-  longjmp(escape->jmp, 1);
+  escape->valid = false;
 }
 
 noreturn static pic_value
@@ -123,33 +104,42 @@ escape_call(pic_state *pic)
 
   e = pic_data_ptr(pic_attr_ref(pic, pic_get_proc(pic), "@@escape"));
 
-  load_point(pic, e->data);
+  pic_load_point(pic, e->data);
+
+  longjmp(((struct pic_escape *)e->data)->jmp, 1);
+}
+
+struct pic_proc *
+pic_make_econt(pic_state *pic, struct pic_escape *escape)
+{
+  static const pic_data_type escape_type = { "escape", pic_free, NULL };
+  struct pic_proc *cont;
+  struct pic_data *e;
+
+  cont = pic_make_proc(pic, escape_call, "<escape-procedure>");
+
+  e = pic_data_alloc(pic, &escape_type, escape);
+
+  /* save the escape continuation in proc */
+  pic_attr_set(pic, cont, "@@escape", pic_obj_value(e));
+
+  return cont;
 }
 
 pic_value
 pic_escape(pic_state *pic, struct pic_proc *proc)
 {
-  static const pic_data_type escape_type = { "escape", pic_free, NULL };
-  struct pic_escape *escape;
+  struct pic_escape *escape = pic_alloc(pic, sizeof(struct pic_escape));
 
-  escape = pic_alloc(pic, sizeof(struct pic_escape));
+  pic_save_point(pic, escape);
 
-  if (save_point(pic, escape)) {
+  if (setjmp(escape->jmp)) {
     return pic_values_by_list(pic, escape->results);
   }
   else {
-    struct pic_proc *c;
     pic_value val;
-    struct pic_data *e;
 
-    c = pic_make_proc(pic, escape_call, "<escape-procedure>");
-
-    e = pic_data_alloc(pic, &escape_type, escape);
-
-    /* save the escape continuation in proc */
-    pic_attr_set(pic, c, "@@escape", pic_obj_value(e));
-
-    val = pic_apply1(pic, proc, pic_obj_value(c));
+    val = pic_apply1(pic, proc, pic_obj_value(pic_make_econt(pic, escape)));
 
     escape->valid = false;
 

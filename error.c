@@ -10,6 +10,7 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/cont.h"
+#include "picrin/data.h"
 #include "picrin/string.h"
 #include "picrin/error.h"
 
@@ -68,7 +69,7 @@ pic_errmsg(pic_state *pic)
   return pic_str_cstr(str);
 }
 
-static pic_value
+noreturn static pic_value
 native_exception_handler(pic_state *pic)
 {
   pic_value err;
@@ -85,13 +86,13 @@ native_exception_handler(pic_state *pic)
   UNREACHABLE();
 }
 
-static pic_value
-native_push_try(pic_state *pic)
+void
+pic_push_try(pic_state *pic, struct pic_escape *escape)
 {
   struct pic_proc *cont, *handler;
   size_t xp_len, xp_offset;
 
-  pic_get_args(pic, "l", &cont);
+  cont = pic_make_econt(pic, escape);
 
   handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
 
@@ -106,24 +107,24 @@ native_push_try(pic_state *pic)
   }
 
   *pic->xp++ = handler;
-
-  return pic_true_value();
-}
-
-bool
-pic_push_try(pic_state *pic)
-{
-  pic_value val;
-
-  val = pic_escape(pic, pic_make_proc(pic, native_push_try, "(native-push-try)"));
-
-  return pic_test(val);
 }
 
 void
 pic_pop_try(pic_state *pic)
 {
-  --pic->xp;
+  pic_value cont, escape;
+
+  assert(pic->xp > pic->xpbase);
+
+  cont = pic_attr_ref(pic, *--pic->xp, "@@escape");
+
+  assert(pic_proc_p(cont));
+
+  escape = pic_attr_ref(pic, pic_proc_ptr(cont), "@@escape");
+
+  assert(pic_data_p(escape));
+
+  ((struct pic_escape *)pic_data_ptr(escape)->data)->valid = false;
 }
 
 struct pic_error *
