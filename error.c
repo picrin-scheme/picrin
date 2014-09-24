@@ -69,7 +69,7 @@ pic_errmsg(pic_state *pic)
   return pic_str_cstr(str);
 }
 
-static pic_value
+noreturn static pic_value
 native_exception_handler(pic_state *pic)
 {
   pic_value err;
