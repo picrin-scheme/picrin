@@ -109,10 +109,26 @@ escape_call(pic_state *pic)
   load_point(pic, e->data);
 }
 
+static struct pic_proc *
+make_escape(pic_state *pic, struct pic_escape *escape)
+{
+  static const pic_data_type escape_type = { "escape", pic_free, NULL };
+  struct pic_proc *cont;
+  struct pic_data *e;
+
+  cont = pic_make_proc(pic, escape_call, "<escape-procedure>");
+
+  e = pic_data_alloc(pic, &escape_type, escape);
+
+  /* save the escape continuation in proc */
+  pic_attr_set(pic, cont, "@@escape", pic_obj_value(e));
+
+  return cont;
+}
+
 pic_value
 pic_escape(pic_state *pic, struct pic_proc *proc)
 {
-  static const pic_data_type escape_type = { "escape", pic_free, NULL };
   struct pic_escape *escape;
 
   escape = pic_alloc(pic, sizeof(struct pic_escape));
@@ -121,18 +137,9 @@ pic_escape(pic_state *pic, struct pic_proc *proc)
     return pic_values_by_list(pic, escape->results);
   }
   else {
-    struct pic_proc *c;
     pic_value val;
-    struct pic_data *e;
 
-    c = pic_make_proc(pic, escape_call, "<escape-procedure>");
-
-    e = pic_data_alloc(pic, &escape_type, escape);
-
-    /* save the escape continuation in proc */
-    pic_attr_set(pic, c, "@@escape", pic_obj_value(e));
-
-    val = pic_apply1(pic, proc, pic_obj_value(c));
+    val = pic_apply1(pic, proc, pic_obj_value(make_escape(pic, escape)));
 
     escape->valid = false;
 
