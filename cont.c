@@ -73,7 +73,7 @@ pic_save_point(pic_state *pic, struct pic_escape *escape)
   escape->results = pic_undef_value();
 }
 
-noreturn void
+void
 pic_load_point(pic_state *pic, struct pic_escape *escape)
 {
   if (! escape->valid) {
@@ -91,8 +91,6 @@ pic_load_point(pic_state *pic, struct pic_escape *escape)
   pic->ip = escape->ip;
 
   escape->valid = false;
-
-  longjmp(escape->jmp, 1);
 }
 
 noreturn static pic_value
@@ -107,6 +105,8 @@ escape_call(pic_state *pic)
   e = pic_data_ptr(pic_attr_ref(pic, pic_get_proc(pic), "@@escape"));
 
   pic_load_point(pic, e->data);
+
+  longjmp(((struct pic_escape *)e->data)->jmp, 1);
 }
 
 struct pic_proc *
