@@ -92,6 +92,8 @@ load_point(pic_state *pic, struct pic_escape *escape)
   pic->arena_idx = escape->arena_idx;
   pic->ip = escape->ip;
 
+  escape->valid = false;
+
   longjmp(escape->jmp, 1);
 }
 
