@@ -112,7 +112,7 @@ escape_call(pic_state *pic)
 }
 
 struct pic_proc *
-pic_make_cont(pic_state *pic, struct pic_escape *escape)
+pic_make_econt(pic_state *pic, struct pic_escape *escape)
 {
   static const pic_data_type escape_type = { "escape", pic_free, NULL };
   struct pic_proc *cont;
@@ -141,7 +141,7 @@ pic_escape(pic_state *pic, struct pic_proc *proc)
   else {
     pic_value val;
 
-    val = pic_apply1(pic, proc, pic_obj_value(pic_make_cont(pic, escape)));
+    val = pic_apply1(pic, proc, pic_obj_value(pic_make_econt(pic, escape)));
 
     escape->valid = false;
 

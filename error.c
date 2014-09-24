@@ -99,7 +99,7 @@ pic_push_try(pic_state *pic)
     struct pic_proc *cont, *handler;
     size_t xp_len, xp_offset;
 
-    cont = pic_make_cont(pic, escape);
+    cont = pic_make_econt(pic, escape);
 
     handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
 
