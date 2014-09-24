@@ -29,8 +29,7 @@ struct pic_error *pic_make_error(pic_state *, pic_sym, const char *, pic_list);
     do
 #define pic_catch                               \
     while (pic_pop_try(pic), 0);                \
-  else                                          \
-    if (pic_pop_try(pic), 1)
+  else
 
 bool pic_push_try(pic_state *);
 void pic_pop_try(pic_state *);
