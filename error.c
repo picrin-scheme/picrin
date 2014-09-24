@@ -10,6 +10,7 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/cont.h"
+#include "picrin/data.h"
 #include "picrin/string.h"
 #include "picrin/error.h"
 
@@ -121,7 +122,13 @@ pic_push_try(pic_state *pic)
 void
 pic_pop_try(pic_state *pic)
 {
-  --pic->xp;
+  struct pic_data *e;
+
+  assert(pic->xp > pic->xpbase);
+
+  e = pic_data_ptr(pic_attr_ref(pic, pic_proc_ptr(pic_attr_ref(pic, *--pic->xp, "@@escape")), "@@escape"));
+
+  ((struct pic_escape *)e->data)->valid = false;
 }
 
 struct pic_error *
