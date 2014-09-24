@@ -86,39 +86,27 @@ native_exception_handler(pic_state *pic)
   UNREACHABLE();
 }
 
-bool
-pic_push_try(pic_state *pic)
+void
+pic_push_try(pic_state *pic, struct pic_escape *escape)
 {
-  struct pic_escape *escape = pic_alloc(pic, sizeof(struct pic_escape));
+  struct pic_proc *cont, *handler;
+  size_t xp_len, xp_offset;
 
-  pic_save_point(pic, escape);
+  cont = pic_make_econt(pic, escape);
 
-  if (setjmp(escape->jmp)) {
-    puts("escaping");
+  handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
 
-    return false;
-  } else {
-    struct pic_proc *cont, *handler;
-    size_t xp_len, xp_offset;
+  pic_attr_set(pic, handler, "@@escape", pic_obj_value(cont));
 
-    cont = pic_make_econt(pic, escape);
-
-    handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
-
-    pic_attr_set(pic, handler, "@@escape", pic_obj_value(cont));
-
-    if (pic->xp >= pic->xpend) {
-      xp_len = (pic->xpend - pic->xpbase) * 2;
-      xp_offset = pic->xp - pic->xpbase;
-      pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
-      pic->xp = pic->xpbase + xp_offset;
-      pic->xpend = pic->xpbase + xp_len;
-    }
-
-    *pic->xp++ = handler;
-
-    return true;
+  if (pic->xp >= pic->xpend) {
+    xp_len = (pic->xpend - pic->xpbase) * 2;
+    xp_offset = pic->xp - pic->xpbase;
+    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
+    pic->xp = pic->xpbase + xp_offset;
+    pic->xpend = pic->xpbase + xp_len;
   }
+
+  *pic->xp++ = handler;
 }
 
 void
@@ -137,8 +125,6 @@ pic_pop_try(pic_state *pic)
   assert(pic_data_p(escape));
 
   ((struct pic_escape *)pic_data_ptr(escape)->data)->valid = false;
-
-  puts("pop_try done;");
 }
 
 struct pic_error *

@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+#include "picrin/cont.h"
+
 struct pic_error {
   PIC_OBJECT_HEADER
   pic_sym type;
@@ -25,13 +27,19 @@ struct pic_error *pic_make_error(pic_state *, pic_sym, const char *, pic_list);
 /* do not return from try block! */
 
 #define pic_try                                 \
-  if (pic_push_try(pic))                        \
+  pic_try_(GENSYM(escape))
+#define pic_try_(escape)                                                \
+  struct pic_escape *escape = pic_alloc(pic, sizeof(struct pic_escape)); \
+  pic_save_point(pic, escape);                                          \
+  if (setjmp(escape->jmp) == 0) {                                       \
+    pic_push_try(pic, escape);                                          \
     do
-#define pic_catch                               \
-    while (pic_pop_try(pic), 0);                \
-  else
+#define pic_catch                                         \
+    while (0);                                            \
+    pic_pop_try(pic);                                     \
+  } else
 
-bool pic_push_try(pic_state *);
+void pic_push_try(pic_state *, struct pic_escape *);
 void pic_pop_try(pic_state *);
 
 pic_value pic_raise_continuable(pic_state *, pic_value);
