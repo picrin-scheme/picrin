@@ -327,6 +327,16 @@ gc_is_marked(union header *p)
   return p->s.mark == PIC_GC_MARK;
 }
 
+static bool
+gc_obj_is_marked(struct pic_object *obj)
+{
+  union header *p;
+
+  p = ((union header *)obj) - 1;
+
+  return gc_is_marked(p);
+}
+
 static void
 gc_unmark(union header *p)
 {
@@ -525,6 +535,7 @@ gc_mark_phase(pic_state *pic)
   struct pic_proc **xhandler;
   size_t j;
   xh_entry *it;
+  struct pic_object *obj;
 
   /* winder */
   if (pic->wind) {
@@ -587,10 +598,19 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* attributes */
-  for (it = xh_begin(&pic->attrs); it != NULL; it = xh_next(it)) {
-    gc_mark_object(pic, xh_key(it, struct pic_object *));
-    gc_mark_object(pic, (struct pic_object *)xh_val(it, struct pic_dict *));
-  }
+  do {
+    j = 0;
+
+    for (it = xh_begin(&pic->attrs); it != NULL; it = xh_next(it)) {
+      if (gc_obj_is_marked(xh_key(it, struct pic_object *))) {
+        obj = (struct pic_object *)xh_val(it, struct pic_dict *);
+        if (! gc_obj_is_marked(obj)) {
+          gc_mark_object(pic, obj);
+          ++j;
+        }
+      }
+    }
+  } while (j > 0);
 }
 
 static void
@@ -733,6 +753,16 @@ static void
 gc_sweep_phase(pic_state *pic)
 {
   struct heap_page *page = pic->heap->pages;
+  xh_entry *it, *next;
+
+  do {
+    for (it = xh_begin(&pic->attrs); it != NULL; it = next) {
+      next = xh_next(it);
+      if (! gc_obj_is_marked(xh_key(it, struct pic_object *))) {
+        xh_del_ptr(&pic->attrs, xh_key(it, struct pic_object *));
+      }
+    }
+  } while (it != NULL);
 
   while (page) {
     gc_sweep_page(pic, page);
