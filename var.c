@@ -43,7 +43,7 @@ var_call(pic_state *pic)
 
   box = var_lookup(pic, pic_obj_value(self));
   if (! pic_test(box)) {
-    box = pic_attr_ref(pic, self, "@@box");
+    box = pic_attr_ref(pic, pic_obj_value(self), "@@box");
   }
 
   switch (n) {
@@ -51,7 +51,7 @@ var_call(pic_state *pic)
     return pic_car(pic, box);
 
   case 1:
-    conv = pic_attr_ref(pic, self, "@@converter");
+    conv = pic_attr_ref(pic, pic_obj_value(self), "@@converter");
     if (pic_test(conv)) {
       pic_assert_type(pic, conv, proc);
 
@@ -64,7 +64,7 @@ var_call(pic_state *pic)
   case 2:
     assert(pic_false_p(tmp));
 
-    conv = pic_attr_ref(pic, self, "@@converter");
+    conv = pic_attr_ref(pic, pic_obj_value(self), "@@converter");
     if (pic_test(conv)) {
       pic_assert_type(pic, conv, proc);
 
@@ -82,8 +82,8 @@ pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
   struct pic_proc *var;
 
   var = pic_make_proc(pic, var_call, "<var-call>");
-  pic_attr_set(pic, var, "@@box", pic_list1(pic, init));
-  pic_attr_set(pic, var, "@@converter", conv ? pic_obj_value(conv) : pic_false_value());
+  pic_attr_set(pic, pic_obj_value(var), "@@box", pic_list1(pic, init));
+  pic_attr_set(pic, pic_obj_value(var), "@@converter", conv ? pic_obj_value(conv) : pic_false_value());
 
   return var;
 }

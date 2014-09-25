@@ -381,9 +381,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (proc->env) {
       gc_mark_object(pic, (struct pic_object *)proc->env);
     }
-    if (proc->attr) {
-      gc_mark_object(pic, (struct pic_object *)proc->attr);
-    }
     if (pic_proc_irep_p(proc)) {
       gc_mark_object(pic, (struct pic_object *)proc->u.irep);
     }
@@ -562,7 +559,7 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* macro objects */
- for (it = xh_begin(&pic->macros); it != NULL; it = xh_next(it)) {
+  for (it = xh_begin(&pic->macros); it != NULL; it = xh_next(it)) {
     gc_mark_object(pic, xh_val(it, struct pic_object *));
   }
 
@@ -587,6 +584,12 @@ gc_mark_phase(pic_state *pic)
   }
   if (pic->xSTDERR) {
     gc_mark_object(pic, (struct pic_object *)pic->xSTDERR);
+  }
+
+  /* attributes */
+  for (it = xh_begin(&pic->attrs); it != NULL; it = xh_next(it)) {
+    gc_mark_object(pic, xh_key(it, struct pic_object *));
+    gc_mark_object(pic, (struct pic_object *)xh_val(it, struct pic_dict *));
   }
 }
 

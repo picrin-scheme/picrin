@@ -6,7 +6,6 @@
 #include "picrin/pair.h"
 #include "picrin/proc.h"
 #include "picrin/irep.h"
-#include "picrin/dict.h"
 
 struct pic_proc *
 pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
@@ -20,7 +19,6 @@ pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
   proc->u.func.f = func;
   proc->u.func.name = pic_intern_cstr(pic, name);
   proc->env = NULL;
-  proc->attr = NULL;
   return proc;
 }
 
@@ -33,7 +31,6 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
   proc->kind = PIC_PROC_KIND_IREP;
   proc->u.irep = irep;
   proc->env = env;
-  proc->attr = NULL;
   return proc;
 }
 
@@ -47,27 +44,6 @@ pic_proc_name(struct pic_proc *proc)
     return proc->u.irep->name;
   }
   UNREACHABLE();
-}
-
-struct pic_dict *
-pic_attr(pic_state *pic, struct pic_proc *proc)
-{
-  if (proc->attr == NULL) {
-    proc->attr = pic_make_dict(pic);
-  }
-  return proc->attr;
-}
-
-pic_value
-pic_attr_ref(pic_state *pic, struct pic_proc *proc, const char *key)
-{
-  return pic_dict_ref(pic, pic_attr(pic, proc), pic_sym_value(pic_intern_cstr(pic, key)));
-}
-
-void
-pic_attr_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value v)
-{
-  pic_dict_set(pic, pic_attr(pic, proc), pic_sym_value(pic_intern_cstr(pic, key)), v);
 }
 
 static pic_value
@@ -102,21 +78,9 @@ pic_proc_apply(pic_state *pic)
   return pic_apply_trampoline(pic, proc, arg_list);
 }
 
-static pic_value
-pic_proc_attribute(pic_state *pic)
-{
-  struct pic_proc *proc;
-
-  pic_get_args(pic, "l", &proc);
-
-  return pic_obj_value(pic_attr(pic, proc));
-}
-
 void
 pic_init_proc(pic_state *pic)
 {
   pic_defun(pic, "procedure?", pic_proc_proc_p);
   pic_defun(pic, "apply", pic_proc_apply);
-
-  pic_defun(pic, "attribute", pic_proc_attribute);
 }
