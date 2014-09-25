@@ -85,6 +85,14 @@ Full continuation has many problems in embbeding into applications. By default, 
 
 Benz utilize rope data structure to implement string type. Thanks to the implementation, string-append is guaranteed to be done in a constant time (so do string-copy, when ascii-only mode is enabled). In return for that, strings in benz are immutable by default. It does not provide mutation API (string-set!, string-copy! and string-fill! in R7RS). This restriction can be also removed with an add-on in [Picrin Scheme's repository](https://github.com/picrin-scheme/picrin/tree/master/contrib/03.mutable-string).
 
+### Dictionaries
+
+Dictionary is a hash table object. Its equivalence is tested with equal? procedure.
+
+### Attribute
+
+Benz has an facility to get or set metadata to any heap object.
+
 ## Authors
 
 See https://github.com/picrin-scheme/benz and https://github.com/picrin-scheme/picrin for details.
