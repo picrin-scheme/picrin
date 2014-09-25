@@ -1,0 +1,7 @@
+file(GLOB DOCUMENTATION_FILES ${PROJECT_SOURCE_DIR}/contrib/20.documentation/piclib/*/*/*.scm)
+list(APPEND DOCUMENTATION_FILES ${PROJECT_SOURCE_DIR}/contrib/20.documentation/piclib/documentation.scm)
+list(SORT DOCUMENTATION_FILES)
+#list(REVERSE DOCUMENTATION_FILES)
+list(APPEND PICLIB_CONTRIB_LIBS ${DOCUMENTATION_FILES})
+add_custom_target(test-documentation for test in ${PROJECT_SOURCE_DIR}/contrib/20.documentation/t/*.scm \; do bin/picrin "$$test" \; done DEPENDS repl)
+set(CONTRIB_TESTS ${CONTRIB_TESTS} test-documentation)
