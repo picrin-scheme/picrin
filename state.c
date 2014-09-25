@@ -61,6 +61,9 @@ pic_open(int argc, char *argv[], char **envp)
   /* macros */
   xh_init_int(&pic->macros, sizeof(struct pic_macro *));
 
+  /* attributes */
+  xh_init_ptr(&pic->attrs, sizeof(struct pic_dict *));
+
   /* features */
   pic->features = pic_nil_value();
 
@@ -195,7 +198,9 @@ pic_close(pic_state *pic)
   pic->xp = pic->xpbase;
   pic->arena_idx = 0;
   pic->err = pic_undef_value();
+  xh_clear(&pic->globals);
   xh_clear(&pic->macros);
+  xh_clear(&pic->attrs);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 
@@ -219,6 +224,7 @@ pic_close(pic_state *pic)
   xh_destroy(&pic->syms);
   xh_destroy(&pic->globals);
   xh_destroy(&pic->macros);
+  xh_destroy(&pic->attrs);
 
   /* free GC arena */
   free(pic->arena);

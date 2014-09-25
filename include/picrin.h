@@ -111,6 +111,7 @@ typedef struct {
   xhash globals;
   xhash macros;
   pic_value libs;
+  xhash attrs;
 
   struct pic_reader *reader;
 
@@ -223,6 +224,10 @@ static inline void pic_warn(pic_state *pic, const char *msg)
 {
   pic_warnf(pic, msg);
 }
+
+struct pic_dict *pic_attr(pic_state *, pic_value);
+pic_value pic_attr_ref(pic_state *, pic_value, const char *);
+void pic_attr_set(pic_state *, pic_value, const char *, pic_value);
 
 struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);

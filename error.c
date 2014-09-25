@@ -79,7 +79,7 @@ native_exception_handler(pic_state *pic)
 
   pic->err = err;
 
-  cont = pic_proc_ptr(pic_attr_ref(pic, pic_get_proc(pic), "@@escape"));
+  cont = pic_proc_ptr(pic_attr_ref(pic, pic_obj_value(pic_get_proc(pic)), "@@escape"));
 
   pic_apply1(pic, cont, pic_false_value());
 
@@ -96,7 +96,7 @@ pic_push_try(pic_state *pic, struct pic_escape *escape)
 
   handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
 
-  pic_attr_set(pic, handler, "@@escape", pic_obj_value(cont));
+  pic_attr_set(pic, pic_obj_value(handler), "@@escape", pic_obj_value(cont));
 
   if (pic->xp >= pic->xpend) {
     xp_len = (pic->xpend - pic->xpbase) * 2;
@@ -116,11 +116,11 @@ pic_pop_try(pic_state *pic)
 
   assert(pic->xp > pic->xpbase);
 
-  cont = pic_attr_ref(pic, *--pic->xp, "@@escape");
+  cont = pic_attr_ref(pic, pic_obj_value(*--pic->xp), "@@escape");
 
   assert(pic_proc_p(cont));
 
-  escape = pic_attr_ref(pic, pic_proc_ptr(cont), "@@escape");
+  escape = pic_attr_ref(pic, cont, "@@escape");
 
   assert(pic_data_p(escape));
 
