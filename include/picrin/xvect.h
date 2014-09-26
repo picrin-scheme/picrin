@@ -45,7 +45,7 @@ xv_init(xvect *x, size_t width)
   x->data = NULL;
   x->width = width;
   x->size = 0;
-  x->mask = -1;
+  x->mask = (size_t)-1;
   x->head = 0;
   x->tail = 0;
 }
