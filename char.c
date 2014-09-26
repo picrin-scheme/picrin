@@ -31,7 +31,11 @@ pic_char_integer_to_char(pic_state *pic)
 
   pic_get_args(pic, "i", &i);
 
-  return pic_char_value(i);
+  if (i < 0 || i > 127) {
+    pic_errorf(pic, "integer->char: integer out of char range: %d", i);
+  }
+
+  return pic_char_value((char)i);
 }
 
 #define DEFINE_CHAR_CMP(op, name)			\
