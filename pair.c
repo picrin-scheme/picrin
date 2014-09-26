@@ -160,7 +160,7 @@ pic_list7(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_va
 }
 
 pic_value
-pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
+pic_list_by_array(pic_state *pic, int c, pic_value *vs)
 {
   pic_value v;
 
