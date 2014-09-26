@@ -463,7 +463,7 @@ pic_str_string_to_list(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_strlen(str);
+    end = (int)pic_strlen(str);
   }
 
   list = pic_nil_value();

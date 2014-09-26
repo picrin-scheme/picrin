@@ -1075,17 +1075,17 @@ static int
 index_local(codegen_state *state, pic_sym sym)
 {
   codegen_context *cxt = state->cxt;
-  size_t i, offset;
+  int i, offset;
   pic_sym *var;
 
   offset = 1;
-  for (i = 0; i < xv_size(&cxt->args); ++i) {
+  for (i = 0; i < (int)xv_size(&cxt->args); ++i) {
     var = xv_get(&cxt->args, i);
     if (*var == sym)
       return i + offset;
   }
   offset += i;
-  for (i = 0; i < xv_size(&cxt->locals); ++i) {
+  for (i = 0; i < (int)xv_size(&cxt->locals); ++i) {
     var = xv_get(&cxt->locals, i);
     if (*var == sym)
       return i + offset;
