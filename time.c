@@ -27,7 +27,7 @@ pic_current_jiffy(pic_state *pic)
   pic_get_args(pic, "");
 
   c = clock();
-  return pic_int_value(c);
+  return pic_int_value((int)c);
 }
 
 static pic_value
