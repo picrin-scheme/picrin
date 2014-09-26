@@ -280,14 +280,14 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 'c': {
-      char *c;
+      char *k;
       pic_value v;
 
-      c = va_arg(ap, char *);
+      k = va_arg(ap, char *);
       if (i < argc) {
         v = GET_OPERAND(pic,i);
         if (pic_char_p(v)) {
-          *c = pic_char(v);
+          *k = pic_char(v);
         }
         else {
           pic_errorf(pic, "pic_get_args: expected char, but got ~s", v);
@@ -488,7 +488,7 @@ vm_push_env(pic_state *pic)
 {
   pic_callinfo *ci = pic->ci;
 
-  ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * ci->regc, PIC_TT_ENV);
+  ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_ENV);
   ci->env->up = ci->up;
   ci->env->regc = ci->regc;
   ci->env->regs = ci->regs;
