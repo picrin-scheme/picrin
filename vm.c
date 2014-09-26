@@ -581,7 +581,7 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 # define VM_LOOP_END } }
 #endif
 
-#define PUSH(v) ((pic->sp >= pic->stend) ? abort() : (*pic->sp++ = (v)))
+#define PUSH(v) (*pic->sp++ = (v))
 #define POP() (*--pic->sp)
 
 #define PUSHCI() (++pic->ci)
@@ -842,6 +842,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       proc = pic_proc_ptr(x);
 
       VM_CALL_PRINT;
+
+      if (pic->sp >= pic->stend) {
+        pic_panic(pic, "VM stack overflow");
+      }
 
       ci = PUSHCI();
       ci->argc = c.u.i;
