@@ -57,7 +57,7 @@ pic_vec_vector(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  vec = pic_make_vec(pic, argc);
+  vec = pic_make_vec(pic, (size_t)argc);
 
   for (i = 0; i < argc; ++i) {
     vec->data[i] = argv[i];
@@ -243,14 +243,13 @@ static pic_value
 pic_vec_vector_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  int argc, i;
+  int argc, i, len, j;
   pic_value *argv, vals;
-  size_t len, j;
   pic_vec *vec;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
-  len = SIZE_MAX;
+  len = INT_MAX;
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], vec);
 
@@ -276,13 +275,12 @@ static pic_value
 pic_vec_vector_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  int argc, i;
+  int argc, i, len, j;
   pic_value *argv, vals;
-  size_t len, j;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
-  len = SIZE_MAX;
+  len = INT_MAX;
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], vec);
 

@@ -39,7 +39,7 @@ pic_blob_bytevector(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  blob = pic_make_blob(pic, argc);
+  blob = pic_make_blob(pic, (size_t)argc);
 
   data = blob->data;
 
