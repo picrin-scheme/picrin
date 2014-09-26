@@ -35,7 +35,7 @@ pic_blob_bytevector(pic_state *pic)
   pic_value *argv;
   size_t argc, i;
   pic_blob *blob;
-  char *data;
+  unsigned char *data;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -50,7 +50,7 @@ pic_blob_bytevector(pic_state *pic)
       pic_errorf(pic, "byte out of range");
     }
 
-    *data++ = pic_int(argv[i]);
+    *data++ = (unsigned char)pic_int(argv[i]);
   }
 
   return pic_obj_value(blob);
@@ -69,7 +69,7 @@ pic_blob_make_bytevector(pic_state *pic)
 
   blob = pic_make_blob(pic, k);
   for (i = 0; i < k; ++i) {
-    blob->data[i] = b;
+    blob->data[i] = (unsigned char)b;
   }
 
   return pic_obj_value(blob);
@@ -107,7 +107,7 @@ pic_blob_bytevector_u8_set(pic_state *pic)
   if (v < 0 || v > 255)
     pic_errorf(pic, "byte out of range");
 
-  bv->data[k] = v;
+  bv->data[k] = (unsigned char)v;
   return pic_none_value();
 }
 
@@ -197,7 +197,7 @@ static pic_value
 pic_blob_list_to_bytevector(pic_state *pic)
 {
   pic_blob *blob;
-  char *data;
+  unsigned char *data;
   pic_value list, e;
 
   pic_get_args(pic, "o", &list);
@@ -212,7 +212,7 @@ pic_blob_list_to_bytevector(pic_state *pic)
     if (pic_int(e) < 0 || pic_int(e) > 255)
       pic_errorf(pic, "byte out of range");
 
-    *data++ = pic_int(e);
+    *data++ = (unsigned char)pic_int(e);
   }
   return pic_obj_value(blob);
 }

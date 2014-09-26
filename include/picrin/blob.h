@@ -11,7 +11,7 @@ extern "C" {
 
 struct pic_blob {
   PIC_OBJECT_HEADER
-  char *data;
+  unsigned char *data;
   size_t len;
 };
 
