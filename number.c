@@ -162,9 +162,8 @@ pic_number_nan_p(pic_state *pic)
   static pic_value					\
   pic_number_##name(pic_state *pic)			\
   {							\
-    size_t argc;					\
+    int argc, i;                                        \
     pic_value *argv;					\
-    size_t i;						\
     double f,g;						\
     							\
     pic_get_args(pic, "ff*", &f, &g, &argc, &argv);	\
@@ -198,9 +197,8 @@ DEFINE_ARITH_CMP(>=, ge)
   static pic_value                                              \
   pic_number_##name(pic_state *pic)                             \
   {                                                             \
-    size_t argc;                                                \
+    int argc, i;                                                \
     pic_value *argv;                                            \
-    size_t i;                                                   \
     double f;                                                   \
     bool e = true;                                              \
                                                                 \
@@ -230,9 +228,8 @@ DEFINE_ARITH_OP(*, mul, 1)
   static pic_value                                                      \
   pic_number_##name(pic_state *pic)                                     \
   {                                                                     \
-   size_t argc;                                                         \
+    int argc, i;                                                        \
    pic_value *argv;                                                     \
-   size_t i;                                                            \
    double f;                                                            \
    bool e;                                                              \
                                                                         \

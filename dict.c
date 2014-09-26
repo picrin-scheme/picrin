@@ -142,7 +142,7 @@ pic_dict_dictionary(pic_state *pic)
 {
   struct pic_dict *dict;
   pic_value *argv;
-  size_t argc, i;
+  int argc, i;
 
   pic_get_args(pic, "*", &argc, &argv);
 

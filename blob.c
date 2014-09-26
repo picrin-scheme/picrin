@@ -33,7 +33,7 @@ static pic_value
 pic_blob_bytevector(pic_state *pic)
 {
   pic_value *argv;
-  size_t argc, i;
+  int argc, i;
   pic_blob *blob;
   unsigned char *data;
 
@@ -176,7 +176,8 @@ pic_blob_bytevector_copy(pic_state *pic)
 static pic_value
 pic_blob_bytevector_append(pic_state *pic)
 {
-  size_t argc, i, j, len;
+  size_t j, len;
+  int argc, i;
   pic_value *argv;
   pic_blob *blob;
 

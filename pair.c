@@ -544,7 +544,7 @@ pic_pair_make_list(pic_state *pic)
 static pic_value
 pic_pair_list(pic_state *pic)
 {
-  size_t argc;
+  int argc;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -565,7 +565,7 @@ pic_pair_length(pic_state *pic)
 static pic_value
 pic_pair_append(pic_state *pic)
 {
-  size_t argc;
+  int argc;
   pic_value *args, list;
 
   pic_get_args(pic, "*", &argc, &args);
@@ -641,9 +641,8 @@ static pic_value
 pic_pair_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc;
+  int argc, i;
   pic_value *args;
-  int i;
   pic_value cars, ret;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
@@ -670,9 +669,8 @@ static pic_value
 pic_pair_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc;
+  int argc, i;
   pic_value *args;
-  int i;
   pic_value cars;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);

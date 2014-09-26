@@ -51,10 +51,9 @@ pic_vec_vector_p(pic_state *pic)
 static pic_value
 pic_vec_vector(pic_state *pic)
 {
-  size_t argc;
+  int argc, i;
   pic_value *argv;
   pic_vec *vec;
-  size_t i;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -191,8 +190,9 @@ pic_vec_vector_copy(pic_state *pic)
 static pic_value
 pic_vec_vector_append(pic_state *pic)
 {
-  size_t argc, i, j, len;
+  int argc, i;
   pic_value *argv;
+  size_t j, len;
   pic_vec *vec;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -243,8 +243,9 @@ static pic_value
 pic_vec_vector_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i, len, j;
+  int argc, i;
   pic_value *argv, vals;
+  size_t len, j;
   pic_vec *vec;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
@@ -275,8 +276,9 @@ static pic_value
 pic_vec_vector_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i, len, j;
+  int argc, i;
   pic_value *argv, vals;
+  size_t len, j;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 

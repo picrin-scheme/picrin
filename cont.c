@@ -96,7 +96,7 @@ pic_load_point(pic_state *pic, struct pic_escape *escape)
 noreturn static pic_value
 escape_call(pic_state *pic)
 {
-  size_t argc;
+  int argc;
   pic_value *argv;
   struct pic_data *e;
 
@@ -251,7 +251,7 @@ pic_cont_dynamic_wind(pic_state *pic)
 static pic_value
 pic_cont_values(pic_state *pic)
 {
-  size_t argc;
+  int argc;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);

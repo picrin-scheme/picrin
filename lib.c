@@ -253,7 +253,7 @@ static pic_value
 pic_lib_condexpand(pic_state *pic)
 {
   pic_value *clauses;
-  size_t argc, i;
+  int argc, i;
 
   pic_get_args(pic, "*", &argc, &clauses);
 
@@ -269,7 +269,7 @@ pic_lib_condexpand(pic_state *pic)
 static pic_value
 pic_lib_import(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -284,7 +284,7 @@ pic_lib_import(pic_state *pic)
 static pic_value
 pic_lib_export(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -300,7 +300,7 @@ static pic_value
 pic_lib_define_library(pic_state *pic)
 {
   struct pic_lib *prev = pic->lib;
-  size_t argc, i;
+  int argc, i;
   pic_value spec, *argv;
 
   pic_get_args(pic, "o*", &spec, &argc, &argv);

@@ -233,11 +233,10 @@ pic_str_string_p(pic_state *pic)
 static pic_value
 pic_str_string(pic_state *pic)
 {
-  size_t argc;
+  int argc, i;
   pic_value *argv;
   pic_str *str;
   char *buf;
-  size_t i;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -290,9 +289,8 @@ pic_str_string_ref(pic_state *pic)
   static pic_value                                                      \
   pic_str_string_##name(pic_state *pic)                                 \
   {                                                                     \
-    size_t argc;                                                        \
+    int argc, i;                                                        \
     pic_value *argv;                                                    \
-    size_t i;                                                           \
                                                                         \
     pic_get_args(pic, "*", &argc, &argv);                               \
                                                                         \
@@ -338,7 +336,7 @@ pic_str_string_copy(pic_state *pic)
 static pic_value
 pic_str_string_append(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
   pic_str *str;
 
@@ -358,8 +356,9 @@ static pic_value
 pic_str_string_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i, len, j;
+  int argc, i;
   pic_value *argv, vals, val;
+  size_t len, j;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
@@ -396,7 +395,8 @@ static pic_value
 pic_str_string_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i, len, j;
+  int argc, i;
+  size_t len, j;
   pic_value *argv, vals, val;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
