@@ -37,7 +37,7 @@ var_call(pic_state *pic)
 {
   struct pic_proc *self = pic_get_proc(pic);
   pic_value val, tmp, box, conv;
-  size_t n;
+  int n;
 
   n = pic_get_args(pic, "|oo", &val, &tmp);
 
