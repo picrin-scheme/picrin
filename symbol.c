@@ -57,7 +57,7 @@ pic_gensym(pic_state *pic, pic_sym base)
   }
 
   len = snprintf(NULL, 0, "%s%c%d", pic_symbol_name(pic, base), mark, uid);
-  str = pic_alloc(pic, len + 1);
+  str = pic_alloc(pic, (size_t)len + 1);
   sprintf(str, "%s%c%d", pic_symbol_name(pic, base), mark, uid);
 
   /* don't put the symbol to pic->syms to keep it uninterned */
