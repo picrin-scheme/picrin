@@ -1094,7 +1094,7 @@ pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   static const pic_code iseq[2] = {
-    { OP_NOP, {} },
+    { OP_NOP, { .i = 0 } },
     { OP_TAILCALL, { .i = -1 } }
   };
 
