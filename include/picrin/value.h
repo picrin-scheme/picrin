@@ -10,10 +10,10 @@ extern "C" {
 #endif
 
 /**
- * pic_sym is just an alias of uint32_t.
+ * pic_sym is just an alias of int.
  */
 
-typedef uint32_t pic_sym;
+typedef int pic_sym;
 
 /**
  * `undef` values never seen from user-end: that is,
@@ -71,7 +71,14 @@ pic_int(pic_value v)
   return u.i;
 }
 
-#define pic_sym(v) ((v) & 0xfffffffful)
+static inline int
+pic_sym(pic_value v)
+{
+  union { int i; unsigned u; } u;
+  u.u = v & 0xfffffffful;
+  return u.i;
+}
+
 #define pic_char(v) ((v) & 0xfffffffful)
 
 #else
@@ -357,10 +364,13 @@ pic_int_value(int i)
 static inline pic_value
 pic_symbol_value(pic_sym sym)
 {
+  union { int i; unsigned u; } u;
   pic_value v;
 
+  u.i = sym;
+
   pic_init_value(v, PIC_VTYPE_SYMBOL);
-  v |= sym;
+  v |= u.u;
   return v;
 }
 
