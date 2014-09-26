@@ -490,7 +490,6 @@ analyze_if(analyze_state *state, pic_value obj, bool tailpos)
   switch (pic_length(pic, obj)) {
   default:
     pic_errorf(pic, "syntax error");
-    break;
   case 4:
     if_false = pic_list_ref(pic, obj, 3);
     FALLTHROUGH;
@@ -956,7 +955,7 @@ create_activation(codegen_context *cxt)
     if ((n = xh_val(xh_get_int(&regs, *var), size_t)) <= xv_size(&cxt->args) || (cxt->varg && n == xv_size(&cxt->args) + 1)) {
       /* copy arguments to capture variable area */
       cxt->code[cxt->clen].insn = OP_LREF;
-      cxt->code[cxt->clen].u.i = n;
+      cxt->code[cxt->clen].u.i = (int)n;
       cxt->clen++;
     } else {
       /* otherwise, just extend the stack */
@@ -1030,9 +1029,9 @@ pop_codegen_context(codegen_state *state)
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
   irep->name = state->cxt->name;
   irep->varg = state->cxt->varg;
-  irep->argc = xv_size(&state->cxt->args) + 1;
-  irep->localc = xv_size(&state->cxt->locals);
-  irep->capturec = xv_size(&state->cxt->captures);
+  irep->argc = (int)xv_size(&state->cxt->args) + 1;
+  irep->localc = (int)xv_size(&state->cxt->locals);
+  irep->capturec = (int)xv_size(&state->cxt->captures);
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);
@@ -1067,7 +1066,7 @@ index_capture(codegen_state *state, pic_sym sym, int depth)
   for (i = 0; i < xv_size(&cxt->captures); ++i) {
     var = xv_get(&cxt->captures, i);
     if (*var == sym)
-      return i;
+      return (int)i;
   }
   return -1;
 }
