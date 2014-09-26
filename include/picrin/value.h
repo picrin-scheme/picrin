@@ -215,9 +215,9 @@ pic_type(pic_value v)
     return PIC_TT_EOF;
   case PIC_VTYPE_HEAP:
     return ((struct pic_object *)pic_ptr(v))->tt;
-  default:
-    return -1;                  /* logic flaw */
   }
+
+  UNREACHABLE();
 }
 
 static inline const char *
