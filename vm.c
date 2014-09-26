@@ -650,11 +650,10 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 #endif
 
 pic_value
-pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
+pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   pic_code c;
   size_t ai = pic_gc_arena_preserve(pic);
-  size_t argc, i;
   pic_code boot[2];
 
 #if PIC_DIRECT_THREADED_VM
@@ -674,25 +673,28 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   pic_callinfo *cibase;
 #endif
 
-  if (! pic_list_p(argv)) {
+  if (! pic_list_p(args)) {
     pic_errorf(pic, "argv must be a proper list");
   }
+  else {
+    int argc, i;
 
-  argc = pic_length(pic, argv) + 1;
+    argc = pic_length(pic, args) + 1;
 
-  VM_BOOT_PRINT;
+    VM_BOOT_PRINT;
 
-  PUSH(pic_obj_value(proc));
-  for (i = 1; i < argc; ++i) {
-    PUSH(pic_car(pic, argv));
-    argv = pic_cdr(pic, argv);
+    PUSH(pic_obj_value(proc));
+    for (i = 1; i < argc; ++i) {
+      PUSH(pic_car(pic, args));
+      args = pic_cdr(pic, args);
+    }
+
+    /* boot! */
+    boot[0].insn = OP_CALL;
+    boot[0].u.i = argc;
+    boot[1].insn = OP_STOP;
+    pic->ip = boot;
   }
-
-  /* boot! */
-  boot[0].insn = OP_CALL;
-  boot[0].u.i = argc;
-  boot[1].insn = OP_STOP;
-  pic->ip = boot;
 
   VM_LOOP {
     CASE(OP_NOP) {
@@ -827,7 +829,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_CALL) {
       pic_value x, v;
       pic_callinfo *ci;
-      struct pic_proc *proc;
 
       if (c.u.i == -1) {
         pic->sp += pic->ci[1].retc - 1;
@@ -958,7 +959,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_LAMBDA) {
       pic_value self;
       struct pic_irep *irep;
-      struct pic_proc *proc;
 
       self = pic->ci->fp[0];
       if (! pic_proc_p(self)) {
