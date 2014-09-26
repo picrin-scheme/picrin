@@ -111,7 +111,7 @@ xf_file_read(void *cookie, char *ptr, int size)
   FILE *file = cookie;
   int r;
 
-  r = fread(ptr, 1, size, file);
+  r = (int)fread(ptr, 1, (size_t)size, file);
   if (r < size && ferror(file)) {
     return -1;
   }
@@ -127,7 +127,7 @@ xf_file_write(void *cookie, const char *ptr, int size)
   FILE *file = cookie;
   int r;
 
-  r = fwrite(ptr, 1, size, file);
+  r = (int)fwrite(ptr, 1, (size_t)size, file);
   if (r < size) {
     return -1;
   }
@@ -212,8 +212,8 @@ xf_mem_read(void *cookie, char *ptr, int size)
 
   mem = (struct xf_membuf *)cookie;
 
-  if (size > mem->end - mem->pos)
-    size = mem->end - mem->pos;
+  if (size > (int)(mem->end - mem->pos))
+    size = (int)(mem->end - mem->pos);
   memcpy(ptr, mem->buf + mem->pos, size);
   mem->pos += size;
   return size;
@@ -228,7 +228,7 @@ xf_mem_write(void *cookie, const char *ptr, int size)
 
   if (mem->pos + size >= mem->capa) {
     mem->capa = (mem->pos + size) * 2;
-    mem->buf = realloc(mem->buf, mem->capa);
+    mem->buf = realloc(mem->buf, (size_t)mem->capa);
   }
   memcpy(mem->buf + mem->pos, ptr, size);
   mem->pos += size;
@@ -344,12 +344,12 @@ xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
   for (i = 0; i < nitems; ++i) {
     offset = 0;
     if (file->ungot != -1 && block > 0) {
-      buf[0] = file->ungot;
+      buf[0] = (char)file->ungot;
       offset += 1;
       file->ungot = -1;
     }
     while (offset < block) {
-      n = file->vtable.read(file->vtable.cookie, buf + offset, block - offset);
+      n = file->vtable.read(file->vtable.cookie, buf + offset, (int)(block - offset));
       if (n < 0) {
         file->flags |= XF_ERR;
         goto exit;
@@ -358,7 +358,7 @@ xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
         file->flags |= XF_EOF;
         goto exit;
       }
-      offset += n;
+      offset += (unsigned)n;
     }
     memcpy(dst, buf, block);
     dst += block;
@@ -378,12 +378,12 @@ xfwrite(const void *ptr, size_t block, size_t nitems, xFILE *file)
   for (i = 0; i < nitems; ++i) {
     offset = 0;
     while (offset < block) {
-      n = file->vtable.write(file->vtable.cookie, dst + offset, block - offset);
+      n = file->vtable.write(file->vtable.cookie, dst + offset, (int)(block - offset));
       if (n < 0) {
         file->flags |= XF_ERR;
         goto exit;
       }
-      offset += n;
+      offset += (unsigned)n;
     }
     dst += block;
   }
@@ -458,7 +458,7 @@ xfgets(char *str, int size, xFILE *file)
     if ((c = xfgetc(file)) == EOF) {
       break;
     }
-    str[i] = c;
+    str[i] = (char)c;
   }
   if (i == 0 && c == EOF) {
     return NULL;
@@ -492,7 +492,7 @@ xfputc(int c, xFILE *file)
 {
   char buf[1];
 
-  buf[0] = c;
+  buf[0] = (char)c;
   xfwrite(buf, 1, 1, file);
 
   if (xferror(file)) {
@@ -516,7 +516,7 @@ xputchar(int c)
 static inline int
 xfputs(const char *str, xFILE *file)
 {
-  int len;
+  size_t len;
 
   len = strlen(str);
   xfwrite(str, len, 1, file);
@@ -573,7 +573,7 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
     }
 
     va_end(ap2);
-    return sizeof buf;
+    return (int)(sizeof buf);
   }
 }
 
