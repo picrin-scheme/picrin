@@ -87,12 +87,12 @@ pic_open_output_string(pic_state *pic)
 struct pic_string *
 pic_get_output_string(pic_state *pic, struct pic_port *port)
 {
-  long size;
+  size_t size;
   char *buf;
 
   /* get endpos */
   xfflush(port->file);
-  size = xftell(port->file);
+  size = (size_t)xftell(port->file);
   xrewind(port->file);
 
   /* copy to buf */
@@ -347,7 +347,7 @@ pic_port_get_output_bytevector(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
   pic_blob *blob;
-  long endpos;
+  size_t size;
 
   pic_get_args(pic, "|p", &port);
 
@@ -355,12 +355,12 @@ pic_port_get_output_bytevector(pic_state *pic)
 
   /* get endpos */
   xfflush(port->file);
-  endpos = xftell(port->file);
+  size = (size_t)xftell(port->file);
   xrewind(port->file);
 
   /* copy to buf */
-  blob = pic_make_blob(pic, endpos);
-  xfread(blob->data, 1, endpos, port->file);
+  blob = pic_make_blob(pic, size);
+  xfread(blob->data, 1, size, port->file);
 
   return pic_obj_value(blob);
 }
@@ -521,16 +521,21 @@ pic_port_read_blob(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
   pic_blob *blob;
-  int k, i;
+  int k;
+  size_t i;
 
-  pic_get_args(pic, "i|p", &k,  &port);
+  pic_get_args(pic, "i|p", &k, &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector");
 
-  blob = pic_make_blob(pic, k);
+  if (k < 0) {
+    pic_errorf(pic, "read-bytevector: index must be non-negative %d", k);
+  }
 
-  i = xfread(blob->data, sizeof(char), k, port->file);
-  if ( i == 0 ) {
+  blob = pic_make_blob(pic, (size_t)k);
+
+  i = xfread(blob->data, sizeof(char), (size_t)k, port->file);
+  if (i == 0) {
     return pic_eof_object();
   }
   else {
@@ -545,8 +550,9 @@ pic_port_read_blob_ip(pic_state *pic)
 {
   struct pic_port *port;
   struct pic_blob *bv;
-  int i, n, start, end, len;
+  int n, start, end;
   char *buf;
+  size_t i, len;
 
   n = pic_get_args(pic, "b|pii", &bv, &port, &start, &end);
   switch (n) {
@@ -555,22 +561,27 @@ pic_port_read_blob_ip(pic_state *pic)
   case 2:
     start = 0;
   case 3:
-    end = bv->len;
+    end = (int)bv->len;
   }
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector!");
-  len = end - start;
+
+  if (end - start < 0) {
+    pic_errorf(pic, "read-bytevector!: end index must be greater than or equal to start index");
+  }
+
+  len = (size_t)(end - start);
 
   buf = pic_calloc(pic, len, sizeof(char));
   i = xfread(buf, sizeof(char), len, port->file);
   memcpy(bv->data + start, buf, i);
   pic_free(pic, buf);
 
-  if ( i == 0) {
+  if (i == 0) {
     return pic_eof_object();
   }
   else {
-    return pic_int_value(i);
+    return pic_int_value((int)i);
   }
 }
 
@@ -654,7 +665,7 @@ pic_port_write_blob(pic_state *pic)
   case 2:
     start = 0;
   case 3:
-    end = blob->len;
+    end = (int)blob->len;
   }
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, PIC_PORT_OPEN, "write-bytevector");
