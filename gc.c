@@ -706,7 +706,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
 #else
   static union header *NIL = NULL;
 #endif
-  union header *bp, *p, *s = NIL, *t;
+  union header *bp, *p, *s = NIL, *t = NIL;
 
 #if GC_DEBUG
   int c = 0;
