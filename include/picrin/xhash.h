@@ -21,7 +21,7 @@ extern "C" {
 #define XHASH_RESIZE_RATIO 0.75
 
 #define XHASH_ALIGNMENT 3       /* quad word alignment */
-#define XHASH_MASK (~((1 << XHASH_ALIGNMENT) - 1))
+#define XHASH_MASK (~(size_t)((1 << XHASH_ALIGNMENT) - 1))
 #define XHASH_ALIGN(i) ((((i) - 1) & XHASH_MASK) + (1 << XHASH_ALIGNMENT))
 
 typedef struct xh_entry {
@@ -325,7 +325,7 @@ xh_ptr_hash(const void *key, void *data)
 {
   (void)data;
 
-  return (size_t)*(const void **)key;
+  return (int)(size_t)*(const void **)key;
 }
 
 static inline int

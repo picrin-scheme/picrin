@@ -19,7 +19,7 @@ struct pic_escape {
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
   ptrdiff_t xp_offset;
-  int arena_idx;
+  size_t arena_idx;
 
   pic_code *ip;
 

@@ -35,7 +35,7 @@ xh_value_hash(const void *key, void *data)
     break;
   }
 
-  return hash + pic_vtype(val);
+  return hash + (int)pic_vtype(val);
 }
 
 static int
@@ -213,7 +213,7 @@ pic_dict_dictionary_size(pic_state *pic)
 
   pic_get_args(pic, "d", &dict);
 
-  return pic_int_value(pic_dict_size(pic, dict));
+  return pic_int_value((int)pic_dict_size(pic, dict));
 }
 
 static pic_value
