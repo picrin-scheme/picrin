@@ -211,7 +211,7 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e, *it;
   int c;
-  float f;
+  double f;
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
