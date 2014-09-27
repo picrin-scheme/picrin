@@ -533,10 +533,10 @@ pic_pair_list_p(pic_state *pic)
 static pic_value
 pic_pair_make_list(pic_state *pic)
 {
-  int i;
+  size_t i;
   pic_value fill = pic_none_value();
 
-  pic_get_args(pic, "i|o", &i, &fill);
+  pic_get_args(pic, "k|o", &i, &fill);
 
   return pic_make_list(pic, i, fill);
 }
@@ -596,9 +596,9 @@ static pic_value
 pic_pair_list_tail(pic_state *pic)
 {
   pic_value list;
-  int i;
+  size_t i;
 
-  pic_get_args(pic, "oi", &list, &i);
+  pic_get_args(pic, "ok", &list, &i);
 
   return pic_list_tail(pic, list, i);
 }
@@ -607,9 +607,9 @@ static pic_value
 pic_pair_list_ref(pic_state *pic)
 {
   pic_value list;
-  int i;
+  size_t i;
 
-  pic_get_args(pic, "oi", &list, &i);
+  pic_get_args(pic, "ok", &list, &i);
 
   return pic_list_ref(pic, list, i);
 }
@@ -618,9 +618,9 @@ static pic_value
 pic_pair_list_set(pic_state *pic)
 {
   pic_value list, obj;
-  int i;
+  size_t i;
 
-  pic_get_args(pic, "oio", &list, &i, &obj);
+  pic_get_args(pic, "oko", &list, &i, &obj);
 
   pic_list_set(pic, list, i, obj);
 
