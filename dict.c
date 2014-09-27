@@ -12,11 +12,13 @@ xh_value_hash(const void *key, void *data)
 {
   union { double f; int i; } u;
   pic_value val = *(pic_value *)key;
-  int hash;
+  int hash, vtype;
 
   UNUSED(data);
 
-  switch (pic_vtype(val)) {
+  vtype = pic_vtype(val);
+
+  switch (vtype) {
   default:
     hash = 0;
     break;
@@ -31,11 +33,11 @@ xh_value_hash(const void *key, void *data)
     hash = pic_int(val);
     break;
   case PIC_VTYPE_HEAP:
-    hash = (int)pic_ptr(val);
+    hash = (int)(intptr_t)pic_ptr(val);
     break;
   }
 
-  return hash + (int)pic_vtype(val);
+  return hash + vtype;
 }
 
 static int

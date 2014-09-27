@@ -105,12 +105,12 @@ pic_system_getenvs(pic_state *pic)
 
   for (envp = pic->envp; *envp; ++envp) {
     pic_str *key, *val;
-    int i;
+    size_t i;
 
     for (i = 0; (*envp)[i] != '='; ++i)
       ;
 
-    key = pic_make_str(pic, *envp, (size_t)i);
+    key = pic_make_str(pic, *envp, i);
     val = pic_make_str_cstr(pic, getenv(pic_str_cstr(key)));
 
     /* push */
