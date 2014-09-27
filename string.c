@@ -240,14 +240,14 @@ pic_str_string(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  buf = pic_alloc(pic, argc);
+  buf = pic_alloc(pic, (size_t)argc);
 
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], char);
     buf[i] = pic_char(argv[i]);
   }
 
-  str = pic_make_str(pic, buf, argc);
+  str = pic_make_str(pic, buf, (size_t)argc);
   pic_free(pic, buf);
 
   return pic_obj_value(str);

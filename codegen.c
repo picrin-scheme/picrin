@@ -1075,20 +1075,20 @@ static int
 index_local(codegen_state *state, pic_sym sym)
 {
   codegen_context *cxt = state->cxt;
-  int i, offset;
+  size_t i, offset;
   pic_sym *var;
 
   offset = 1;
-  for (i = 0; i < (int)xv_size(&cxt->args); ++i) {
+  for (i = 0; i < xv_size(&cxt->args); ++i) {
     var = xv_get(&cxt->args, i);
     if (*var == sym)
-      return i + offset;
+      return (int)(i + offset);
   }
   offset += i;
-  for (i = 0; i < (int)xv_size(&cxt->locals); ++i) {
+  for (i = 0; i < xv_size(&cxt->locals); ++i) {
     var = xv_get(&cxt->locals, i);
     if (*var == sym)
-      return i + offset;
+      return (int)(i + offset);
   }
   return -1;
 }
@@ -1126,7 +1126,7 @@ codegen(codegen_state *state, pic_value obj)
     name = pic_sym(pic_list_ref(pic, obj, 1));
     if ((i = index_capture(state, name, 0)) != -1) {
       cxt->code[cxt->clen].insn = OP_LREF;
-      cxt->code[cxt->clen].u.i = i + xv_size(&cxt->args) + xv_size(&cxt->locals) + 1;
+      cxt->code[cxt->clen].u.i = i + (int)xv_size(&cxt->args) + (int)xv_size(&cxt->locals) + 1;
       cxt->clen++;
       return;
     }
@@ -1172,7 +1172,7 @@ codegen(codegen_state *state, pic_value obj)
       name = pic_sym(pic_list_ref(pic, var, 1));
       if ((i = index_capture(state, name, 0)) != -1) {
         cxt->code[cxt->clen].insn = OP_LSET;
-        cxt->code[cxt->clen].u.i = i + xv_size(&cxt->args) + xv_size(&cxt->locals) + 1;
+        cxt->code[cxt->clen].u.i = i + (int)xv_size(&cxt->args) + (int)xv_size(&cxt->locals) + 1;
         cxt->clen++;
         cxt->code[cxt->clen].insn = OP_PUSHNONE;
         cxt->clen++;
@@ -1193,7 +1193,7 @@ codegen(codegen_state *state, pic_value obj)
       cxt->icapa *= 2;
       cxt->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->icapa);
     }
-    k = cxt->ilen++;
+    k = (int)cxt->ilen++;
     cxt->code[cxt->clen].insn = OP_LAMBDA;
     cxt->code[cxt->clen].u.i = k;
     cxt->clen++;
@@ -1207,18 +1207,18 @@ codegen(codegen_state *state, pic_value obj)
     codegen(state, pic_list_ref(pic, obj, 1));
 
     cxt->code[cxt->clen].insn = OP_JMPIF;
-    s = cxt->clen++;
+    s = (int)cxt->clen++;
 
     /* if false branch */
     codegen(state, pic_list_ref(pic, obj, 3));
     cxt->code[cxt->clen].insn = OP_JMP;
-    t = cxt->clen++;
+    t = (int)cxt->clen++;
 
-    cxt->code[s].u.i = cxt->clen - s;
+    cxt->code[s].u.i = (int)cxt->clen - s;
 
     /* if true branch */
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[t].u.i = cxt->clen - t;
+    cxt->code[t].u.i = (int)cxt->clen - t;
     return;
   }
   else if (sym == pic->sBEGIN) {
@@ -1266,7 +1266,7 @@ codegen(codegen_state *state, pic_value obj)
         cxt->pcapa *= 2;
         cxt->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->pcapa);
       }
-      pidx = cxt->plen++;
+      pidx = (int)cxt->plen++;
       cxt->pool[pidx] = obj;
       cxt->code[cxt->clen].insn = OP_PUSHCONST;
       cxt->code[cxt->clen].u.i = pidx;
