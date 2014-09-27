@@ -396,7 +396,7 @@ pic_str_string_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
   size_t argc, len, i, j;
-  pic_value *argv, vals, val;
+  pic_value *argv, vals;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
@@ -417,7 +417,7 @@ pic_str_string_for_each(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
     }
-    val = pic_apply(pic, proc, vals);
+    pic_apply(pic, proc, vals);
   }
 
   return pic_none_value();
