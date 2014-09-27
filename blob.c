@@ -60,17 +60,15 @@ static pic_value
 pic_blob_make_bytevector(pic_state *pic)
 {
   pic_blob *blob;
-  int k, b = 0, i;
+  size_t k, i;
+  int b = 0;
 
-  pic_get_args(pic, "i|i", &k, &b);
+  pic_get_args(pic, "k|i", &k, &b);
 
   if (b < 0 || b > 255)
     pic_errorf(pic, "byte out of range");
 
-  if (k < 0)
-    pic_errorf(pic, "make-bytevector: cannot create a bytevector of length %d", k);
-
-  blob = pic_make_blob(pic, (size_t)k);
+  blob = pic_make_blob(pic, k);
   for (i = 0; i < k; ++i) {
     blob->data[i] = (unsigned char)b;
   }
@@ -118,15 +116,16 @@ static pic_value
 pic_blob_bytevector_copy_i(pic_state *pic)
 {
   pic_blob *to, *from;
-  int n, at, start, end;
+  int n;
+  size_t at, start, end;
 
-  n = pic_get_args(pic, "bib|ii", &to, &at, &from, &start, &end);
+  n = pic_get_args(pic, "bkb|kk", &to, &at, &from, &start, &end);
 
   switch (n) {
   case 3:
     start = 0;
   case 4:
-    end = (int)from->len;
+    end = from->len;
   }
 
   if (to == from && (start <= at && at < end)) {
@@ -149,23 +148,23 @@ static pic_value
 pic_blob_bytevector_copy(pic_state *pic)
 {
   pic_blob *from, *to;
-  int n, start, end, k, i = 0;
+  int n;
+  size_t start, end, i = 0;
 
-  n = pic_get_args(pic, "b|ii", &from, &start, &end);
+  n = pic_get_args(pic, "b|kk", &from, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = (int)from->len;
+    end = from->len;
   }
 
-  k = end - start;
+  if (end < start) {
+    pic_errorf(pic, "make-bytevector: end index must not be less than start index");
+  }
 
-  if (k < 0)
-    pic_errorf(pic, "make-bytevector: cannot create a bytevector of length %d", k);
-
-  to = pic_make_blob(pic, (size_t)k);
+  to = pic_make_blob(pic, end - start);
   while (start < end) {
     to->data[i++] = from->data[start++];
   }
@@ -211,7 +210,7 @@ pic_blob_list_to_bytevector(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  blob = pic_make_blob(pic, (size_t)pic_length(pic, list));
+  blob = pic_make_blob(pic, pic_length(pic, list));
 
   data = blob->data;
 
@@ -231,15 +230,16 @@ pic_blob_bytevector_to_list(pic_state *pic)
 {
   pic_blob *blob;
   pic_value list;
-  int n, start, end, i;
+  int n;
+  size_t start, end, i;
 
-  n = pic_get_args(pic, "b|ii", &blob, &start, &end);
+  n = pic_get_args(pic, "b|kk", &blob, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = (int)blob->len;
+    end = blob->len;
   }
 
   list = pic_nil_value();
