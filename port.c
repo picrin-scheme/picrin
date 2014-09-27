@@ -521,20 +521,15 @@ pic_port_read_blob(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
   pic_blob *blob;
-  int k;
-  size_t i;
+  size_t k, i;
 
-  pic_get_args(pic, "i|p", &k, &port);
+  pic_get_args(pic, "k|p", &k, &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector");
 
-  if (k < 0) {
-    pic_errorf(pic, "read-bytevector: index must be non-negative %d", k);
-  }
+  blob = pic_make_blob(pic, k);
 
-  blob = pic_make_blob(pic, (size_t)k);
-
-  i = xfread(blob->data, sizeof(char), (size_t)k, port->file);
+  i = xfread(blob->data, sizeof(char), k, port->file);
   if (i == 0) {
     return pic_eof_object();
   }
@@ -550,27 +545,27 @@ pic_port_read_blob_ip(pic_state *pic)
 {
   struct pic_port *port;
   struct pic_blob *bv;
-  int n, start, end;
+  int n;
   char *buf;
-  size_t i, len;
+  size_t start, end, i, len;
 
-  n = pic_get_args(pic, "b|pii", &bv, &port, &start, &end);
+  n = pic_get_args(pic, "b|pkk", &bv, &port, &start, &end);
   switch (n) {
   case 1:
     port = pic_stdin(pic);
   case 2:
     start = 0;
   case 3:
-    end = (int)bv->len;
+    end = bv->len;
   }
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, PIC_PORT_OPEN, "read-bytevector!");
 
-  if (end - start < 0) {
+  if (end < start) {
     pic_errorf(pic, "read-bytevector!: end index must be greater than or equal to start index");
   }
 
-  len = (size_t)(end - start);
+  len = end - start;
 
   buf = pic_calloc(pic, len, sizeof(char));
   i = xfread(buf, sizeof(char), len, port->file);
@@ -581,7 +576,7 @@ pic_port_read_blob_ip(pic_state *pic)
     return pic_eof_object();
   }
   else {
-    return pic_int_value((int)i);
+    return pic_size_value(i);
   }
 }
 
@@ -656,16 +651,17 @@ pic_port_write_blob(pic_state *pic)
 {
   struct pic_blob *blob;
   struct pic_port *port;
-  int start, end, n, i;
+  int n;
+  size_t start, end, i;
 
-  n = pic_get_args(pic, "b|pii", &blob, &port, &start, &end);
+  n = pic_get_args(pic, "b|pkk", &blob, &port, &start, &end);
   switch (n) {
   case 1:
     port = pic_stdout(pic);
   case 2:
     start = 0;
   case 3:
-    end = (int)blob->len;
+    end = blob->len;
   }
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, PIC_PORT_OPEN, "write-bytevector");
