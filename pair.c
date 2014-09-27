@@ -643,23 +643,24 @@ pic_pair_map(pic_state *pic)
   struct pic_proc *proc;
   int argc, i;
   pic_value *args;
-  pic_value cars, ret;
+  pic_value arg, ret;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   ret = pic_nil_value();
   do {
-    cars = pic_nil_value();
-    for (i = argc - 1; i >= 0; --i) {
+    arg = pic_nil_value();
+    for (i = 0; i < argc; ++i) {
       if (! pic_pair_p(args[i])) {
         break;
       }
-      cars = pic_cons(pic, pic_car(pic, args[i]), cars);
+      pic_push(pic, pic_car(pic, args[i]), arg);
       args[i] = pic_cdr(pic, args[i]);
     }
-    if (i >= 0)
+    if (i != argc) {
       break;
-    ret = pic_cons(pic, pic_apply(pic, proc, cars), ret);
+    }
+    pic_push(pic, pic_apply(pic, proc, pic_reverse(pic, arg)), ret);
   } while (1);
 
   return pic_reverse(pic, ret);
@@ -671,22 +672,23 @@ pic_pair_for_each(pic_state *pic)
   struct pic_proc *proc;
   int argc, i;
   pic_value *args;
-  pic_value cars;
+  pic_value arg;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   do {
-    cars = pic_nil_value();
-    for (i = argc - 1; i >= 0; --i) {
+    arg = pic_nil_value();
+    for (i = 0; i < argc; ++i) {
       if (! pic_pair_p(args[i])) {
         break;
       }
-      cars = pic_cons(pic, pic_car(pic, args[i]), cars);
+      pic_push(pic, pic_car(pic, args[i]), arg);
       args[i] = pic_cdr(pic, args[i]);
     }
-    if (i >= 0)
+    if (i != argc) {
       break;
-    pic_apply(pic, proc, cars);
+    }
+    pic_apply(pic, proc, pic_reverse(pic, arg));
   } while (1);
 
   return pic_none_value();
