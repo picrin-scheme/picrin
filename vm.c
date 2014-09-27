@@ -731,7 +731,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_POP) {
-      POP();
+      (void)(POP());
       NEXT;
     }
     CASE(OP_PUSHNIL) {
