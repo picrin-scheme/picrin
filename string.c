@@ -256,10 +256,10 @@ pic_str_string(pic_state *pic)
 static pic_value
 pic_str_make_string(pic_state *pic)
 {
-  int len;
+  size_t len;
   char c = ' ';
 
-  pic_get_args(pic, "i|c", &len, &c);
+  pic_get_args(pic, "k|c", &len, &c);
 
   return pic_obj_value(pic_make_str_fill(pic, len, c));
 }
@@ -278,9 +278,9 @@ static pic_value
 pic_str_string_ref(pic_state *pic)
 {
   pic_str *str;
-  int k;
+  size_t k;
 
-  pic_get_args(pic, "si", &str, &k);
+  pic_get_args(pic, "sk", &str, &k);
 
   return pic_char_value(pic_str_ref(pic, str, k));
 }
@@ -319,9 +319,10 @@ static pic_value
 pic_str_string_copy(pic_state *pic)
 {
   pic_str *str;
-  int n, start, end;
+  int n;
+  size_t start, end;
 
-  n = pic_get_args(pic, "s|ii", &str, &start, &end);
+  n = pic_get_args(pic, "s|kk", &str, &start, &end);
 
   switch (n) {
   case 1:
@@ -356,14 +357,14 @@ static pic_value
 pic_str_string_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  int argc, i;
+  int argc;
   pic_value *argv, vals, val;
-  size_t len, j;
+  size_t i, len, j;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   len = SIZE_MAX;
-  for (i = 0; i < argc; ++i) {
+  for (i = 0; i < (size_t)argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
     len = len < pic_strlen(pic_str_ptr(argv[i]))
@@ -378,7 +379,7 @@ pic_str_string_map(pic_state *pic)
 
     for (i = 0; i < len; ++i) {
       vals = pic_nil_value();
-      for (j = 0; j < argc; ++j) {
+      for (j = 0; j < (size_t)argc; ++j) {
         pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
       }
       val = pic_apply(pic, proc, vals);
@@ -395,14 +396,14 @@ static pic_value
 pic_str_string_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  int argc, i;
-  size_t len, j;
+  int argc;
+  size_t len, i, j;
   pic_value *argv, vals, val;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   len = SIZE_MAX;
-  for (i = 0; i < argc; ++i) {
+  for (i = 0; i < (size_t)argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
     len = len < pic_strlen(pic_str_ptr(argv[i]))
@@ -415,7 +416,7 @@ pic_str_string_for_each(pic_state *pic)
 
   for (i = 0; i < len; ++i) {
     vals = pic_nil_value();
-    for (j = 0; j < argc; ++j) {
+    for (j = 0; j < (size_t)argc; ++j) {
       pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
     }
     val = pic_apply(pic, proc, vals);
@@ -429,7 +430,7 @@ pic_str_list_to_string(pic_state *pic)
 {
   pic_str *str;
   pic_value list, e;
-  int i = 0;
+  size_t i = 0;
 
   pic_get_args(pic, "o", &list);
 
@@ -455,15 +456,16 @@ pic_str_string_to_list(pic_state *pic)
 {
   pic_str *str;
   pic_value list;
-  int n, start, end, i;
+  int n;
+  size_t start, end, i;
 
-  n = pic_get_args(pic, "s|ii", &str, &start, &end);
+  n = pic_get_args(pic, "s|kk", &str, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = (int)pic_strlen(str);
+    end = pic_strlen(str);
   }
 
   list = pic_nil_value();
