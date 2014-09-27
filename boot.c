@@ -1,5 +1,9 @@
 #if 0
 
+=pod
+/*
+=cut
+
 use strict;
 
 my $src = <<'EOL';
@@ -380,6 +384,10 @@ foreach (@lines) {
   s/"/\\"/g;
   print "\"$_\\n\"\n";
 }
+
+=pod
+*/
+=cut
 
 print <<EOL;
 ;
