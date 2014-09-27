@@ -172,10 +172,10 @@ pic_list_by_array(pic_state *pic, int c, pic_value *vs)
 }
 
 pic_value
-pic_make_list(pic_state *pic, int k, pic_value fill)
+pic_make_list(pic_state *pic, size_t k, pic_value fill)
 {
   pic_value list;
-  int i;
+  size_t i;
 
   list = pic_nil_value();
   for (i = 0; i < k; ++i) {
@@ -185,10 +185,10 @@ pic_make_list(pic_state *pic, int k, pic_value fill)
   return list;
 }
 
-int
+size_t
 pic_length(pic_state *pic, pic_value obj)
 {
-  int c = 0;
+  size_t c = 0;
 
   if (! pic_list_p(obj)) {
     pic_errorf(pic, "length: expected list, but got ~s", obj);
@@ -375,7 +375,7 @@ pic_cddr(pic_state *pic, pic_value v)
 }
 
 pic_value
-pic_list_tail(pic_state *pic, pic_value list, int i)
+pic_list_tail(pic_state *pic, pic_value list, size_t i)
 {
   while (i-- > 0) {
     list = pic_cdr(pic, list);
@@ -384,13 +384,13 @@ pic_list_tail(pic_state *pic, pic_value list, int i)
 }
 
 pic_value
-pic_list_ref(pic_state *pic, pic_value list, int i)
+pic_list_ref(pic_state *pic, pic_value list, size_t i)
 {
   return pic_car(pic, pic_list_tail(pic, list, i));
 }
 
 void
-pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
+pic_list_set(pic_state *pic, pic_value list, size_t i, pic_value obj)
 {
   pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
 }
