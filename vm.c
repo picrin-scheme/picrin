@@ -212,8 +212,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
           if (x < 0) {
             pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
           }
-          if (sizeof(unsigned) > sizeof(size_t) && (unsigned)x > (unsigned)SIZE_MAX) {
-            pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
+          if (sizeof(unsigned) > sizeof(size_t)) {
+            if ((unsigned)x > (unsigned)SIZE_MAX) {
+              pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
+            }
           }
           *k = (size_t)x;
           break;
@@ -707,7 +709,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
   else {
     int argc, i;
 
-    argc = pic_length(pic, args) + 1;
+    argc = (int)pic_length(pic, args) + 1;
 
     VM_BOOT_PRINT;
 
@@ -1139,7 +1141,7 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   ci = PUSHCI();
   ci->ip = (pic_code *)iseq;
   ci->fp = pic->sp;
-  ci->retc = pic_length(pic, args);
+  ci->retc = (int)pic_length(pic, args);
 
   if (ci->retc == 0) {
     return pic_none_value();

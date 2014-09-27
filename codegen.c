@@ -1375,7 +1375,7 @@ codegen(codegen_state *state, pic_value obj)
     return;
   }
   else if (sym == state->sCALL || sym == state->sTAILCALL) {
-    int len = pic_length(pic, obj);
+    int len = (int)pic_length(pic, obj);
     pic_value elt;
 
     pic_for_each (elt, pic_cdr(pic, obj)) {
@@ -1401,7 +1401,7 @@ codegen(codegen_state *state, pic_value obj)
     return;
   }
   else if (sym == state->sRETURN) {
-    int len = pic_length(pic, obj);
+    int len = (int)pic_length(pic, obj);
     pic_value elt;
 
     pic_for_each (elt, pic_cdr(pic, obj)) {
