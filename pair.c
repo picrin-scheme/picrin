@@ -559,7 +559,7 @@ pic_pair_length(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  return pic_int_value(pic_length(pic, list));
+  return pic_size_value(pic_length(pic, list));
 }
 
 static pic_value

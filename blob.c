@@ -83,7 +83,7 @@ pic_blob_bytevector_length(pic_state *pic)
 
   pic_get_args(pic, "b", &bv);
 
-  return pic_int_value((int)bv->len);
+  return pic_size_value(bv->len);
 }
 
 static pic_value

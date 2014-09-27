@@ -213,7 +213,7 @@ pic_dict_dictionary_size(pic_state *pic)
 
   pic_get_args(pic, "d", &dict);
 
-  return pic_int_value((int)pic_dict_size(pic, dict));
+  return pic_size_value(pic_dict_size(pic, dict));
 }
 
 static pic_value

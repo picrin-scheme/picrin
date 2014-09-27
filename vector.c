@@ -92,7 +92,7 @@ pic_vec_vector_length(pic_state *pic)
 
   pic_get_args(pic, "v", &v);
 
-  return pic_int_value((int)v->len);
+  return pic_size_value(v->len);
 }
 
 static pic_value

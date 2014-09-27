@@ -271,7 +271,7 @@ pic_str_string_length(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_int_value(pic_strlen(str));
+  return pic_size_value(pic_strlen(str));
 }
 
 static pic_value
