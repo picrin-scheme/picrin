@@ -184,14 +184,14 @@ pic_values5(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_
 }
 
 pic_value
-pic_values_by_array(pic_state *pic, int argc, pic_value *argv)
+pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < argc; ++i) {
     pic->sp[i] = argv[i];
   }
-  pic->ci->retc = argc;
+  pic->ci->retc = (int)argc;
 
   return argc == 0 ? pic_none_value() : pic->sp[0];
 }
@@ -211,15 +211,15 @@ pic_values_by_list(pic_state *pic, pic_value list)
   return pic_nil_p(list) ? pic_none_value() : pic->sp[0];
 }
 
-int
-pic_receive(pic_state *pic, int n, pic_value *argv)
+size_t
+pic_receive(pic_state *pic, size_t n, pic_value *argv)
 {
   pic_callinfo *ci;
-  int i, retc;
+  size_t i, retc;
 
   /* take info from discarded frame */
   ci = pic->ci + 1;
-  retc = ci->retc;
+  retc = (size_t)ci->retc;
 
   for (i = 0; i < retc && i < n; ++i) {
     argv[i] = ci->fp[i];
@@ -263,7 +263,7 @@ static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
   struct pic_proc *producer, *consumer;
-  int argc;
+  size_t argc;
   pic_value args[256];
 
   pic_get_args(pic, "ll", &producer, &consumer);
