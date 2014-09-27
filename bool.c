@@ -172,7 +172,7 @@ pic_bool_boolean_p(pic_state *pic)
 static pic_value
 pic_bool_boolean_eq_p(pic_state *pic)
 {
-  int argc, i;
+  size_t argc, i;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);

@@ -51,7 +51,7 @@ pic_vec_vector_p(pic_state *pic)
 static pic_value
 pic_vec_vector(pic_state *pic)
 {
-  int argc, i;
+  size_t argc, i;
   pic_value *argv;
   pic_vec *vec;
 
@@ -188,9 +188,8 @@ pic_vec_vector_copy(pic_state *pic)
 static pic_value
 pic_vec_vector_append(pic_state *pic)
 {
-  int argc, i;
   pic_value *argv;
-  size_t j, len;
+  size_t argc, i, j, len;
   pic_vec *vec;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -242,15 +241,14 @@ static pic_value
 pic_vec_vector_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  int argc;
-  size_t i, len, j;
+  size_t argc, i, len, j;
   pic_value *argv, vals;
   pic_vec *vec;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   len = INT_MAX;
-  for (i = 0; i < (size_t)argc; ++i) {
+  for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], vec);
 
     len = len < pic_vec_ptr(argv[i])->len
@@ -262,7 +260,7 @@ pic_vec_vector_map(pic_state *pic)
 
   for (i = 0; i < len; ++i) {
     vals = pic_nil_value();
-    for (j = 0; j < (size_t)argc; ++j) {
+    for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
     vec->data[i] = pic_apply(pic, proc, vals);
@@ -275,14 +273,13 @@ static pic_value
 pic_vec_vector_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  int argc;
-  size_t i, len, j;
+  size_t argc, i, len, j;
   pic_value *argv, vals;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   len = INT_MAX;
-  for (i = 0; i < (size_t)argc; ++i) {
+  for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], vec);
 
     len = len < pic_vec_ptr(argv[i])->len
@@ -292,7 +289,7 @@ pic_vec_vector_for_each(pic_state *pic)
 
   for (i = 0; i < len; ++i) {
     vals = pic_nil_value();
-    for (j = 0; j < (size_t)argc; ++j) {
+    for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
     pic_apply(pic, proc, vals);
