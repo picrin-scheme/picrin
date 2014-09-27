@@ -35,27 +35,27 @@ pic_get_proc(pic_state *pic)
 }
 
 /**
- * char type                 desc.
- * ---- ----                 ----
- *  o   pic_value *          object
- *  i   int *                int
- *  I   int *, bool *        int with exactness
- *  k   size_t *             size_t implicitly converted from int
- *  f   double *             float
- *  F   double *, bool *     float with exactness
- *  s   pic_str **           string object
- *  z   char **              c string
- *  m   pic_sym *            symbol
- *  v   pic_vec **           vector object
- *  b   pic_blob **          bytevector object
- *  c   char *               char
- *  l   struct pic_proc **   lambda object
- *  p   struct pic_port **   port object
- *  d   struct pic_dict **   dictionary object
- *  e   struct pic_error **  error object
+ * char type                    desc.
+ * ---- ----                    ----
+ *  o   pic_value *             object
+ *  i   int *                   int
+ *  I   int *, bool *           int with exactness
+ *  k   size_t *                size_t implicitly converted from int
+ *  f   double *                float
+ *  F   double *, bool *        float with exactness
+ *  s   pic_str **              string object
+ *  z   char **                 c string
+ *  m   pic_sym *               symbol
+ *  v   pic_vec **              vector object
+ *  b   pic_blob **             bytevector object
+ *  c   char *                  char
+ *  l   struct pic_proc **      lambda object
+ *  p   struct pic_port **      port object
+ *  d   struct pic_dict **      dictionary object
+ *  e   struct pic_error **     error object
  *
- *  |                        optional operator
- *  *   int *, pic_value **  variable length operator
+ *  |                           optional operator
+ *  *   size_t *, pic_value **  variable length operator
  */
 
 int
