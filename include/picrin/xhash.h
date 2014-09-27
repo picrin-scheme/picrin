@@ -28,8 +28,8 @@ typedef struct xh_entry {
   struct xh_entry *next;
   int hash;
   struct xh_entry *fw, *bw;
-  const char *key;              /* == val + XHASH_ALIGN(vwidth) */
-  char val[];
+  const void *key;
+  void *val;
 } xh_entry;
 
 #define xh_key(e,type) (*(type *)((e)->key))
@@ -41,6 +41,7 @@ typedef int (*xh_equalf)(const void *, const void *, void *);
 typedef struct xhash {
   xh_entry **buckets;
   size_t size, count, kwidth, vwidth;
+  size_t koffset, voffset;
   xh_hashf hashf;
   xh_equalf equalf;
   xh_entry *head, *tail;
@@ -96,6 +97,8 @@ xh_init_(xhash *x, size_t kwidth, size_t vwidth, xh_hashf hashf, xh_equalf equal
   x->count = 0;
   x->kwidth = kwidth;
   x->vwidth = vwidth;
+  x->koffset = XHASH_ALIGN(sizeof(xh_entry));
+  x->voffset = XHASH_ALIGN(sizeof(xh_entry)) + XHASH_ALIGN(kwidth);
   x->hashf = hashf;
   x->equalf = equalf;
   x->head = NULL;
@@ -166,10 +169,11 @@ xh_put_(xhash *x, const void *key, void *val)
 
   hash = x->hashf(key, x->data);
   idx = ((unsigned)hash) % x->size;
-  e = (xh_entry *)malloc(offsetof(xh_entry, val) + XHASH_ALIGN(x->vwidth) + x->kwidth);
+  e = malloc(x->voffset + x->vwidth);
   e->next = x->buckets[idx];
   e->hash = hash;
-  e->key = e->val + XHASH_ALIGN(x->vwidth);
+  e->key = ((char *)e) + x->koffset;
+  e->val = ((char *)e) + x->voffset;
   memcpy((void *)e->key, key, x->kwidth);
   memcpy(e->val, val, x->vwidth);
 
