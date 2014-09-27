@@ -40,6 +40,7 @@ pic_get_proc(pic_state *pic)
  *  o   pic_value *          object
  *  i   int *                int
  *  I   int *, bool *        int with exactness
+ *  k   size_t *             size_t implicitly converted from int
  *  f   double *             float
  *  F   double *, bool *     float with exactness
  *  s   pic_str **           string object
@@ -188,6 +189,33 @@ pic_get_args(pic_state *pic, const char *format, ...)
           break;
         case PIC_TT_INT:
           *k = pic_int(v);
+          break;
+        default:
+          pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
+        }
+        i++;
+      }
+      break;
+    }
+    case 'k': {
+      size_t *k;
+
+      k = va_arg(ap, size_t *);
+      if (i < argc) {
+        pic_value v;
+        int x;
+
+        v = GET_OPERAND(pic, i);
+        switch (pic_type(v)) {
+        case PIC_TT_INT:
+          x = pic_int(v);
+          if (x < 0) {
+            pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
+          }
+          if (sizeof(unsigned) > sizeof(size_t) && (unsigned)x > (unsigned)SIZE_MAX) {
+            pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
+          }
+          *k = (size_t)x;
           break;
         default:
           pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
