@@ -42,9 +42,8 @@ pic_char_integer_to_char(pic_state *pic)
   static pic_value					\
   pic_char_##name##_p(pic_state *pic)			\
   {							\
-    size_t argc;					\
+    size_t argc, i;                                     \
     pic_value *argv;					\
-    size_t i;						\
     char c, d;						\
     							\
     pic_get_args(pic, "cc*", &c, &d, &argc, &argv);	\

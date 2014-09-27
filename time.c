@@ -27,7 +27,7 @@ pic_current_jiffy(pic_state *pic)
   pic_get_args(pic, "");
 
   c = clock();
-  return pic_int_value((int)c);
+  return pic_int_value((int)c); /* The year 2038 problem :-| */
 }
 
 static pic_value

@@ -209,7 +209,7 @@ read_symbol(pic_state *pic, struct pic_port *port, const char *str)
 
   for (i = 0; i < len; ++i) {
     if (pic->reader->typecase == PIC_CASE_FOLD) {
-      buf[i] = tolower(str[i]);
+      buf[i] = (char)tolower(str[i]);
     } else {
       buf[i] = str[i];
     }
@@ -222,7 +222,7 @@ read_symbol(pic_state *pic, struct pic_port *port, const char *str)
     }
     len += 1;
     buf = pic_realloc(pic, buf, len + 1);
-    buf[len - 1] = c;
+    buf[len - 1] = (char)c;
   }
 
   sym = pic_intern(pic, buf, len);
@@ -240,9 +240,9 @@ read_uinteger(pic_state *pic, struct pic_port *port, int c, char buf[])
     read_error(pic, "expected one or more digits");
   }
 
-  buf[i++] = c;
+  buf[i++] = (char)c;
   while (isdigit(c = peek(port))) {
-    buf[i++] = next(port);
+    buf[i++] = (char)next(port);
   }
 
   buf[i] = '\0';
@@ -262,12 +262,12 @@ read_suffix(pic_state *pic, struct pic_port *port, char buf[])
     return i;
   }
 
-  buf[i++] = next(port);
+  buf[i++] = (char)next(port);
 
   switch ((c = next(port))) {
   case '-':
   case '+':
-    buf[i++] = c;
+    buf[i++] = (char)c;
     c = next(port);
   default:
     return i + read_uinteger(pic, port, c, buf + i);
@@ -284,14 +284,14 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
 
   switch (peek(port)) {
   case '.':
-    buf[i++] = next(port);
+    buf[i++] = (char)next(port);
     i += read_uinteger(pic, port, next(port), buf + i);
     read_suffix(pic, port, buf + i);
     return pic_float_value(atof(buf));
 
   default:
     read_suffix(pic, port, buf + i);
-    return pic_int_value((int)atof(buf));
+    return pic_int_value((int)(atof(buf)));
   }
 }
 
@@ -404,7 +404,7 @@ read_char(pic_state *pic, struct pic_port *port, const char *str)
     }
   }
 
-  return pic_char_value(c);
+  return pic_char_value((char)c);
 
  fail:
   read_error(pic, "unexpected character while reading character literal");
@@ -436,7 +436,7 @@ read_string(pic_state *pic, struct pic_port *port, const char *name)
       case 'r': c = '\r'; break;
       }
     }
-    buf[cnt++] = c;
+    buf[cnt++] = (char)c;
     if (cnt >= size) {
       buf = pic_realloc(pic, buf, size *= 2);
     }
@@ -474,15 +474,15 @@ read_pipe(pic_state *pic, struct pic_port *port, const char *str)
       case 'r': c = '\r'; break;
       case 'x':
         i = 0;
-        while ((HEX_BUF[i++] = next(port)) != ';') {
+        while ((HEX_BUF[i++] = (char)next(port)) != ';') {
           if (i >= sizeof HEX_BUF)
             read_error(pic, "expected ';'");
         }
-        c = strtol(HEX_BUF, NULL, 16);
+        c = (char)strtol(HEX_BUF, NULL, 16);
         break;
       }
     }
-    buf[cnt++] = c;
+    buf[cnt++] = (char)c;
     if (cnt >= size) {
       buf = pic_realloc(pic, buf, size *= 2);
     }
@@ -500,7 +500,8 @@ read_blob(pic_state *pic, struct pic_port *port, const char *str)
 {
   int nbits, n, c;
   size_t len, i;
-  char *dat, buf[256];
+  char buf[256];
+  unsigned char *dat;
   pic_blob *blob;
 
   UNUSED(str);
@@ -530,7 +531,7 @@ read_blob(pic_state *pic, struct pic_port *port, const char *str)
     }
     len += 1;
     dat = pic_realloc(pic, dat, len);
-    dat[len - 1] = n;
+    dat[len - 1] = (unsigned char)n;
     c = next(port);
   }
 
@@ -710,7 +711,7 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "invalid character at the seeker head");
   }
 
-  buf[i++] = c;
+  buf[i++] = (char)c;
 
   while (i < sizeof buf) {
     trie = trie->table[c];
@@ -721,7 +722,7 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
     if (trie->table[c] == NULL) {
       break;
     }
-    buf[i++] = next(port);
+    buf[i++] = (char)next(port);
   }
   if (i == sizeof buf) {
     read_error(pic, "too long dispatch string");

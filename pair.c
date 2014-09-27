@@ -172,10 +172,10 @@ pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
 }
 
 pic_value
-pic_make_list(pic_state *pic, int k, pic_value fill)
+pic_make_list(pic_state *pic, size_t k, pic_value fill)
 {
   pic_value list;
-  int i;
+  size_t i;
 
   list = pic_nil_value();
   for (i = 0; i < k; ++i) {
@@ -185,10 +185,10 @@ pic_make_list(pic_state *pic, int k, pic_value fill)
   return list;
 }
 
-int
+size_t
 pic_length(pic_state *pic, pic_value obj)
 {
-  int c = 0;
+  size_t c = 0;
 
   if (! pic_list_p(obj)) {
     pic_errorf(pic, "length: expected list, but got ~s", obj);
@@ -375,7 +375,7 @@ pic_cddr(pic_state *pic, pic_value v)
 }
 
 pic_value
-pic_list_tail(pic_state *pic, pic_value list, int i)
+pic_list_tail(pic_state *pic, pic_value list, size_t i)
 {
   while (i-- > 0) {
     list = pic_cdr(pic, list);
@@ -384,13 +384,13 @@ pic_list_tail(pic_state *pic, pic_value list, int i)
 }
 
 pic_value
-pic_list_ref(pic_state *pic, pic_value list, int i)
+pic_list_ref(pic_state *pic, pic_value list, size_t i)
 {
   return pic_car(pic, pic_list_tail(pic, list, i));
 }
 
 void
-pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
+pic_list_set(pic_state *pic, pic_value list, size_t i, pic_value obj)
 {
   pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
 }
@@ -533,10 +533,10 @@ pic_pair_list_p(pic_state *pic)
 static pic_value
 pic_pair_make_list(pic_state *pic)
 {
-  int i;
+  size_t i;
   pic_value fill = pic_none_value();
 
-  pic_get_args(pic, "i|o", &i, &fill);
+  pic_get_args(pic, "k|o", &i, &fill);
 
   return pic_make_list(pic, i, fill);
 }
@@ -559,7 +559,7 @@ pic_pair_length(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  return pic_int_value(pic_length(pic, list));
+  return pic_size_value(pic_length(pic, list));
 }
 
 static pic_value
@@ -596,9 +596,9 @@ static pic_value
 pic_pair_list_tail(pic_state *pic)
 {
   pic_value list;
-  int i;
+  size_t i;
 
-  pic_get_args(pic, "oi", &list, &i);
+  pic_get_args(pic, "ok", &list, &i);
 
   return pic_list_tail(pic, list, i);
 }
@@ -607,9 +607,9 @@ static pic_value
 pic_pair_list_ref(pic_state *pic)
 {
   pic_value list;
-  int i;
+  size_t i;
 
-  pic_get_args(pic, "oi", &list, &i);
+  pic_get_args(pic, "ok", &list, &i);
 
   return pic_list_ref(pic, list, i);
 }
@@ -618,9 +618,9 @@ static pic_value
 pic_pair_list_set(pic_state *pic)
 {
   pic_value list, obj;
-  int i;
+  size_t i;
 
-  pic_get_args(pic, "oio", &list, &i, &obj);
+  pic_get_args(pic, "oko", &list, &i, &obj);
 
   pic_list_set(pic, list, i, obj);
 
@@ -641,26 +641,26 @@ static pic_value
 pic_pair_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc;
+  size_t argc, i;
   pic_value *args;
-  int i;
-  pic_value cars, ret;
+  pic_value arg, ret;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   ret = pic_nil_value();
   do {
-    cars = pic_nil_value();
-    for (i = argc - 1; i >= 0; --i) {
+    arg = pic_nil_value();
+    for (i = 0; i < argc; ++i) {
       if (! pic_pair_p(args[i])) {
         break;
       }
-      cars = pic_cons(pic, pic_car(pic, args[i]), cars);
+      pic_push(pic, pic_car(pic, args[i]), arg);
       args[i] = pic_cdr(pic, args[i]);
     }
-    if (i >= 0)
+    if (i != argc) {
       break;
-    ret = pic_cons(pic, pic_apply(pic, proc, cars), ret);
+    }
+    pic_push(pic, pic_apply(pic, proc, pic_reverse(pic, arg)), ret);
   } while (1);
 
   return pic_reverse(pic, ret);
@@ -670,25 +670,25 @@ static pic_value
 pic_pair_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc;
+  size_t argc, i;
   pic_value *args;
-  int i;
-  pic_value cars;
+  pic_value arg;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   do {
-    cars = pic_nil_value();
-    for (i = argc - 1; i >= 0; --i) {
+    arg = pic_nil_value();
+    for (i = 0; i < argc; ++i) {
       if (! pic_pair_p(args[i])) {
         break;
       }
-      cars = pic_cons(pic, pic_car(pic, args[i]), cars);
+      pic_push(pic, pic_car(pic, args[i]), arg);
       args[i] = pic_cdr(pic, args[i]);
     }
-    if (i >= 0)
+    if (i != argc) {
       break;
-    pic_apply(pic, proc, cars);
+    }
+    pic_apply(pic, proc, pic_reverse(pic, arg));
   } while (1);
 
   return pic_none_value();

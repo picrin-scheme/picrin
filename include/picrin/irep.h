@@ -52,8 +52,8 @@ struct pic_code {
     int i;
     char c;
     struct {
-      short depth;
-      short idx;
+      int depth;
+      int idx;
     } r;
   } u;
 };

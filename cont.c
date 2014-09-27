@@ -191,7 +191,7 @@ pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
   for (i = 0; i < argc; ++i) {
     pic->sp[i] = argv[i];
   }
-  pic->ci->retc = argc;
+  pic->ci->retc = (int)argc;
 
   return argc == 0 ? pic_none_value() : pic->sp[0];
 }
@@ -200,7 +200,7 @@ pic_value
 pic_values_by_list(pic_state *pic, pic_value list)
 {
   pic_value v;
-  size_t i;
+  int i;
 
   i = 0;
   pic_for_each (v, list) {
@@ -219,7 +219,7 @@ pic_receive(pic_state *pic, size_t n, pic_value *argv)
 
   /* take info from discarded frame */
   ci = pic->ci + 1;
-  retc = ci->retc;
+  retc = (size_t)ci->retc;
 
   for (i = 0; i < retc && i < n; ++i) {
     argv[i] = ci->fp[i];

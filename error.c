@@ -90,7 +90,8 @@ void
 pic_push_try(pic_state *pic, struct pic_escape *escape)
 {
   struct pic_proc *cont, *handler;
-  size_t xp_len, xp_offset;
+  size_t xp_len;
+  ptrdiff_t xp_offset;
 
   cont = pic_make_econt(pic, escape);
 
@@ -99,7 +100,7 @@ pic_push_try(pic_state *pic, struct pic_escape *escape)
   pic_attr_set(pic, pic_obj_value(handler), "@@escape", pic_obj_value(cont));
 
   if (pic->xp >= pic->xpend) {
-    xp_len = (pic->xpend - pic->xpbase) * 2;
+    xp_len = (size_t)(pic->xpend - pic->xpbase) * 2;
     xp_offset = pic->xp - pic->xpbase;
     pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
     pic->xp = pic->xpbase + xp_offset;
@@ -198,12 +199,13 @@ pic_error_with_exception_handler(pic_state *pic)
 {
   struct pic_proc *handler, *thunk;
   pic_value val;
-  size_t xp_len, xp_offset;
+  size_t xp_len;
+  ptrdiff_t xp_offset;
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
   if (pic->xp >= pic->xpend) {
-    xp_len = (pic->xpend - pic->xpbase) * 2;
+    xp_len = (size_t)(pic->xpend - pic->xpbase) * 2;
     xp_offset = pic->xp - pic->xpbase;
     pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
     pic->xp = pic->xpbase + xp_offset;

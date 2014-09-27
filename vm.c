@@ -35,26 +35,27 @@ pic_get_proc(pic_state *pic)
 }
 
 /**
- * char type
- * ---- ----
- *  o   object
- *  i   int
- *  I   int with exactness
- *  f   float
- *  F   float with exactness
- *  s   string object
- *  z   c string
- *  m   symbol
- *  v   vector object
- *  b   bytevector object
- *  c   char
- *  l   lambda object
- *  p   port object
- *  d   dictionary object
- *  e   error object
+ * char type                 desc.
+ * ---- ----                 ----
+ *  o   pic_value *          object
+ *  i   int *                int
+ *  I   int *, bool *        int with exactness
+ *  k   size_t *             size_t implicitly converted from int
+ *  f   double *             float
+ *  F   double *, bool *     float with exactness
+ *  s   pic_str **           string object
+ *  z   char **              c string
+ *  m   pic_sym *            symbol
+ *  v   pic_vec **           vector object
+ *  b   pic_blob **          bytevector object
+ *  c   char *               char
+ *  l   struct pic_proc **   lambda object
+ *  p   struct pic_port **   port object
+ *  d   struct pic_dict **   dictionary object
+ *  e   struct pic_error **  error object
  *
- *  |  optional operator
- *  *  variable length operator
+ *  |                        optional operator
+ *  *   int *, pic_value **  variable length operator
  */
 
 int
@@ -196,6 +197,35 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+    case 'k': {
+      size_t *k;
+
+      k = va_arg(ap, size_t *);
+      if (i < argc) {
+        pic_value v;
+        int x;
+
+        v = GET_OPERAND(pic, i);
+        switch (pic_type(v)) {
+        case PIC_TT_INT:
+          x = pic_int(v);
+          if (x < 0) {
+            pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
+          }
+          if (sizeof(unsigned) > sizeof(size_t)) {
+            if ((unsigned)x > (unsigned)SIZE_MAX) {
+              pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
+            }
+          }
+          *k = (size_t)x;
+          break;
+        default:
+          pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
+        }
+        i++;
+      }
+      break;
+    }
     case 's': {
       pic_str **str;
       pic_value v;
@@ -280,14 +310,14 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 'c': {
-      char *c;
+      char *k;
       pic_value v;
 
-      c = va_arg(ap, char *);
+      k = va_arg(ap, char *);
       if (i < argc) {
         v = GET_OPERAND(pic,i);
         if (pic_char_p(v)) {
-          *c = pic_char(v);
+          *k = pic_char(v);
         }
         else {
           pic_errorf(pic, "pic_get_args: expected char, but got ~s", v);
@@ -392,7 +422,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
     n = va_arg(ap, size_t *);
     argv = va_arg(ap, pic_value **);
     if (i <= argc) {
-      *n = argc - i;
+      *n = (size_t)(argc - i);
       *argv = &GET_OPERAND(pic, i);
       i = argc;
     }
@@ -488,7 +518,7 @@ vm_push_env(pic_state *pic)
 {
   pic_callinfo *ci = pic->ci;
 
-  ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * ci->regc, PIC_TT_ENV);
+  ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_ENV);
   ci->env->up = ci->up;
   ci->env->regc = ci->regc;
   ci->env->regs = ci->regs;
@@ -581,7 +611,7 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 # define VM_LOOP_END } }
 #endif
 
-#define PUSH(v) ((pic->sp >= pic->stend) ? abort() : (*pic->sp++ = (v)))
+#define PUSH(v) (*pic->sp++ = (v))
 #define POP() (*--pic->sp)
 
 #define PUSHCI() (++pic->ci)
@@ -650,11 +680,10 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 #endif
 
 pic_value
-pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
+pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   pic_code c;
   size_t ai = pic_gc_arena_preserve(pic);
-  size_t argc, i;
   pic_code boot[2];
 
 #if PIC_DIRECT_THREADED_VM
@@ -674,25 +703,28 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
   pic_callinfo *cibase;
 #endif
 
-  if (! pic_list_p(argv)) {
+  if (! pic_list_p(args)) {
     pic_errorf(pic, "argv must be a proper list");
   }
+  else {
+    int argc, i;
 
-  argc = pic_length(pic, argv) + 1;
+    argc = (int)pic_length(pic, args) + 1;
 
-  VM_BOOT_PRINT;
+    VM_BOOT_PRINT;
 
-  PUSH(pic_obj_value(proc));
-  for (i = 1; i < argc; ++i) {
-    PUSH(pic_car(pic, argv));
-    argv = pic_cdr(pic, argv);
+    PUSH(pic_obj_value(proc));
+    for (i = 1; i < argc; ++i) {
+      PUSH(pic_car(pic, args));
+      args = pic_cdr(pic, args);
+    }
+
+    /* boot! */
+    boot[0].insn = OP_CALL;
+    boot[0].u.i = argc;
+    boot[1].insn = OP_STOP;
+    pic->ip = boot;
   }
-
-  /* boot! */
-  boot[0].insn = OP_CALL;
-  boot[0].u.i = argc;
-  boot[1].insn = OP_STOP;
-  pic->ip = boot;
 
   VM_LOOP {
     CASE(OP_NOP) {
@@ -827,7 +859,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_CALL) {
       pic_value x, v;
       pic_callinfo *ci;
-      struct pic_proc *proc;
 
       if (c.u.i == -1) {
         pic->sp += pic->ci[1].retc - 1;
@@ -842,6 +873,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
       proc = pic_proc_ptr(x);
 
       VM_CALL_PRINT;
+
+      if (pic->sp >= pic->stend) {
+        pic_panic(pic, "VM stack overflow");
+      }
 
       ci = PUSHCI();
       ci->argc = c.u.i;
@@ -954,7 +989,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value argv)
     CASE(OP_LAMBDA) {
       pic_value self;
       struct pic_irep *irep;
-      struct pic_proc *proc;
 
       self = pic->ci->fp[0];
       if (! pic_proc_p(self)) {
@@ -1090,7 +1124,7 @@ pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   static const pic_code iseq[2] = {
-    { OP_NOP, {} },
+    { OP_NOP, { .i = 0 } },
     { OP_TAILCALL, { .i = -1 } }
   };
 
@@ -1107,7 +1141,7 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   ci = PUSHCI();
   ci->ip = (pic_code *)iseq;
   ci->fp = pic->sp;
-  ci->retc = pic_length(pic, args);
+  ci->retc = (int)pic_length(pic, args);
 
   if (ci->retc == 0) {
     return pic_none_value();
