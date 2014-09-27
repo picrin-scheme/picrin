@@ -26,11 +26,11 @@ struct pic_vector *
 pic_make_vec_from_list(pic_state *pic, pic_value data)
 {
   struct pic_vector *vec;
-  int len, i;
+  size_t len, i;
 
   len = pic_length(pic, data);
 
-  vec = pic_make_vec(pic, (size_t)len);
+  vec = pic_make_vec(pic, len);
   for (i = 0; i < len; ++i) {
     vec->data[i] = pic_car(pic, data);
     data = pic_cdr(pic, data);
@@ -70,19 +70,15 @@ static pic_value
 pic_vec_make_vector(pic_state *pic)
 {
   pic_value v;
-  int n, k;
-  size_t i;
+  int n;
+  size_t k, i;
   struct pic_vector *vec;
 
-  n = pic_get_args(pic, "i|o", &k, &v);
+  n = pic_get_args(pic, "k|o", &k, &v);
 
-  if (k < 0) {
-    pic_errorf(pic, "make-vector: vector length must be non-negative");
-  }
-
-  vec = pic_make_vec(pic, (size_t)k);
+  vec = pic_make_vec(pic, k);
   if (n == 2) {
-    for (i = 0; i < (size_t)k; ++i) {
+    for (i = 0; i < k; ++i) {
       vec->data[i] = v;
     }
   }
@@ -103,11 +99,11 @@ static pic_value
 pic_vec_vector_ref(pic_state *pic)
 {
   struct pic_vector *v;
-  int k;
+  size_t k;
 
-  pic_get_args(pic, "vi", &v, &k);
+  pic_get_args(pic, "vk", &v, &k);
 
-  if (k < 0 || v->len <= (size_t)k) {
+  if (v->len <= k) {
     pic_errorf(pic, "vector-ref: index out of range");
   }
   return v->data[k];
@@ -117,12 +113,12 @@ static pic_value
 pic_vec_vector_set(pic_state *pic)
 {
   struct pic_vector *v;
-  int k;
+  size_t k;
   pic_value o;
 
-  pic_get_args(pic, "vio", &v, &k, &o);
+  pic_get_args(pic, "vko", &v, &k, &o);
 
-  if (k < 0 || v->len <= (size_t)k) {
+  if (v->len <= k) {
     pic_errorf(pic, "vector-set!: index out of range");
   }
   v->data[k] = o;
@@ -133,15 +129,16 @@ static pic_value
 pic_vec_vector_copy_i(pic_state *pic)
 {
   pic_vec *to, *from;
-  int n, at, start, end;
+  int n;
+  size_t at, start, end;
 
-  n = pic_get_args(pic, "viv|ii", &to, &at, &from, &start, &end);
+  n = pic_get_args(pic, "vkv|kk", &to, &at, &from, &start, &end);
 
   switch (n) {
   case 3:
     start = 0;
   case 4:
-    end = (int)from->len;
+    end = from->len;
   }
 
   if (to == from && (start <= at && at < end)) {
@@ -164,22 +161,23 @@ static pic_value
 pic_vec_vector_copy(pic_state *pic)
 {
   pic_vec *vec, *to;
-  int n, start, end, i = 0;
+  int n;
+  size_t start, end, i = 0;
 
-  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+  n = pic_get_args(pic, "v|kk", &vec, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = (int)vec->len;
+    end = vec->len;
   }
 
-  if (end - start < 0) {
+  if (end < start) {
     pic_errorf(pic, "vector-copy: end index must not be less than start index");
   }
 
-  to = pic_make_vec(pic, (size_t)(end - start));
+  to = pic_make_vec(pic, end - start);
   while (start < end) {
     to->data[i++] = vec->data[start++];
   }
@@ -221,15 +219,16 @@ pic_vec_vector_fill_i(pic_state *pic)
 {
   pic_vec *vec;
   pic_value obj;
-  int n, start, end;
+  int n;
+  size_t start, end;
 
-  n = pic_get_args(pic, "vo|ii", &vec, &obj, &start, &end);
+  n = pic_get_args(pic, "vo|kk", &vec, &obj, &start, &end);
 
   switch (n) {
   case 2:
     start = 0;
   case 3:
-    end = (int)vec->len;
+    end = vec->len;
   }
 
   while (start < end) {
@@ -310,7 +309,7 @@ pic_vec_list_to_vector(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  vec = pic_make_vec(pic, (size_t)pic_length(pic, list));
+  vec = pic_make_vec(pic, pic_length(pic, list));
 
   data = vec->data;
 
@@ -325,15 +324,16 @@ pic_vec_vector_to_list(pic_state *pic)
 {
   struct pic_vector *vec;
   pic_value list;
-  int n, start, end, i;
+  int n;
+  size_t start, end, i;
 
-  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+  n = pic_get_args(pic, "v|kk", &vec, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = (int)vec->len;
+    end = vec->len;
   }
 
   list = pic_nil_value();
@@ -349,23 +349,24 @@ pic_vec_vector_to_string(pic_state *pic)
 {
   pic_vec *vec;
   char *buf;
-  int n, start, end, i;
+  int n;
+  size_t start, end, i;
   pic_str *str;
 
-  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+  n = pic_get_args(pic, "v|kk", &vec, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = (int)vec->len;
+    end = vec->len;
   }
 
-  if (end - start < 0) {
+  if (end < start) {
     pic_errorf(pic, "vector->string: end index must not be less than start index");
   }
 
-  buf = pic_alloc(pic, (size_t)(end - start));
+  buf = pic_alloc(pic, end - start);
 
   for (i = start; i < end; ++i) {
     pic_assert_type(pic, vec->data[i], char);
@@ -373,7 +374,7 @@ pic_vec_vector_to_string(pic_state *pic)
     buf[i - start] = pic_char(vec->data[i]);
   }
 
-  str = pic_make_str(pic, buf, (size_t)(end - start));
+  str = pic_make_str(pic, buf, end - start);
   pic_free(pic, buf);
 
   return pic_obj_value(str);
@@ -383,30 +384,28 @@ static pic_value
 pic_vec_string_to_vector(pic_state *pic)
 {
   pic_str *str;
-  int n, start, end;
+  int n;
+  size_t start, end;
   size_t i;
   pic_vec *vec;
 
-  n = pic_get_args(pic, "s|ii", &str, &start, &end);
+  n = pic_get_args(pic, "s|kk", &str, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = (int)pic_strlen(str);
+    end = pic_strlen(str);
   }
 
-  if (start < 0) {
-    pic_errorf(pic, "string->vector: index must non-negative");
-  }
-  if (end - start < 0) {
+  if (end < start) {
     pic_errorf(pic, "string->vector: end index must not be less than start index");
   }
 
-  vec = pic_make_vec(pic, (size_t)(end - start));
+  vec = pic_make_vec(pic, end - start);
 
-  for (i = 0; i < (size_t)(end - start); ++i) {
-    vec->data[i] = pic_char_value(pic_str_ref(pic, str, i + (size_t)start));
+  for (i = 0; i < end - start; ++i) {
+    vec->data[i] = pic_char_value(pic_str_ref(pic, str, i + start));
   }
   return pic_obj_value(vec);
 }
