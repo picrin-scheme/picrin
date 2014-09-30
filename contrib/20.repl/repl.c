@@ -1,8 +1,4 @@
 #include "picrin.h"
-#include "picrin/data.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/cont.h"
 
 #include <unistd.h>
 
