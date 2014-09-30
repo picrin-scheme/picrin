@@ -11,7 +11,7 @@
    (else
     (begin
       (define (readline str)
-        (display str)
+        (if (tty?) (display str))
         (read-line))
       (define (add-history str)
         #f))))
