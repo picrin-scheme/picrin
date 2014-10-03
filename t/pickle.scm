@@ -1,0 +1,46 @@
+(import (picrin base)
+        (picrin test))
+
+(define (id obj) (unpickle (pickle obj)))
+
+(test #f (id #f))
+(test #t (id #t))
+(test 1 (id 1))
+(test -1 (id -1))
+(test 128 (id 128))
+(test -128 (id -128))
+(test 256 (id 256))
+(test -256 (id -256))
+(test 65536 (id 65536))
+(test -65536 (id -65536))
+(test 4294967296 (id 4294967296 ))
+(test -4294967296 (id -4294967296 ))
+
+(test 1.0 (id 1.0))
+(test -1.0 (id -1.0))
+(test (/ 3) (id (/ 3)))
+(test (/ -3) (id (/ -3)))
+
+(test #\a (id #\a))
+
+(test "" (id ""))
+(test (make-string 1 #\a) (id (make-string 1 #\a)))
+(test (make-string 32 #\a) (id (make-string 32 #\a)))
+(test (make-string 256 #\a) (id (make-string 256 #\a)))
+(test (make-string 65536 #\a) (id (make-string 65536 #\a)))
+
+(test () (id ()))
+(test (make-list 1 1) (id (make-list 1 1)))
+(test (make-list 16 1) (id (make-list 16 1)))
+#;(test (make-list 65536 1) (id (make-list 65536 1)))
+
+(test #() (id #()))
+(test (make-vector 1 1) (id (make-vector 1 1)))
+(test (make-vector 16 1) (id (make-vector 16 1)))
+(test (make-vector 65536 1) (id (make-vector 65536 1)))
+
+(test #u8() (id #u8()))
+(test (make-bytevector 1 1) (id (make-bytevector 1 1)))
+(test (make-bytevector 16 1) (id (make-bytevector 16 1)))
+(test (make-bytevector 256 1) (id (make-bytevector 256 1)))
+(test (make-bytevector 65536 1) (id (make-bytevector 65536 1)))
