@@ -35,6 +35,7 @@ static inline void
 ob_enlarge(struct octet_buffer *ob)
 {
   ob->data = (uint8_t *)realloc(ob->data, ob->size + OB_CHUNK_SIZE);
+  ob->size += OB_CHUNK_SIZE;
 }
 
 static inline void
@@ -48,16 +49,16 @@ ob_pushn(struct octet_buffer *ob, const uint8_t *octets, size_t n)
   ob->pointer += n;
 }
 
-#define DEFINE_OB_PUSHER(type)                          \
-  static inline void                                    \
-  ob_push_##type(struct octet_buffer *ob, type octets)  \
-  {                                                     \
-  while (ob->pointer + sizeof(type) > ob->size) {       \
-    ob_enlarge(ob);                                     \
-  }                                                     \
-                                                        \
-  memcpy(ob->data + ob->pointer, &octets, sizeof(2));   \
-  ob->pointer += sizeof(2);                             \
+#define DEFINE_OB_PUSHER(type)                                  \
+  static inline void                                            \
+  ob_push_##type(struct octet_buffer *ob, type octets)          \
+  {                                                             \
+    while (ob->pointer + sizeof(type) > ob->size) {             \
+      ob_enlarge(ob);                                           \
+    }                                                           \
+                                                                \
+    memcpy(ob->data + ob->pointer, &octets, sizeof(type));      \
+    ob->pointer += sizeof(type);                                \
 }
 
 DEFINE_OB_PUSHER(uint8_t)
@@ -77,6 +78,7 @@ ob_as_reader(struct octet_buffer *ob)
 static inline uint8_t
 *ob_readn(struct octet_buffer *ob, size_t len)
 {
+  assert(ob->size >= ob->pointer + len);
   uint8_t *res;
 
   res = ob->data + ob->pointer;
@@ -89,7 +91,7 @@ static inline uint8_t
   static inline type                                    \
   ob_read_##type(struct octet_buffer *ob)               \
   {                                                     \
-    assert(ob->size > ob->pointer + sizeof(type));      \
+    assert(ob->size >= ob->pointer + sizeof(type));     \
                                                         \
     type i;                                             \
                                                         \
@@ -110,21 +112,21 @@ DEFINE_OB_READER(double)
 #define ob_read ob_read_uint8_t
 
 #define ob_push_16len(ob, len, base)            \
-  if (len < 1<<16) {                            \
-    ob_push(ob,  base + 1);                     \
+  if (len < ((uint64_t) 1) << 16) {             \
+    ob_push(ob,  base);                         \
     ob_push_uint16_t(ob, (uint16_t) len);       \
   }                                             \
-  else if (len < (uint64_t) 1 << 32) {          \
-    ob_push(ob,  base + 2);                     \
+  else if (len < ((uint64_t) 1) << 32) {        \
+    ob_push(ob,  base + 1);                     \
     ob_push_uint32_t(ob, (uint32_t) len);       \
   }
 
 #define ob_push_len(ob, len, base)              \
-  if (len < 1<<8) {                             \
+  if (len < ((uint64_t) 1) << 8) {              \
     ob_push(ob, base);                          \
     ob_push(ob, (uint8_t) len);                 \
   }                                             \
-  else ob_push_16len(ob, len, base)
+  else ob_push_16len(ob, len, base + 1)
   
 
 #define ob_push_len64(ob, len, base)                   \
@@ -147,16 +149,27 @@ pickle_int(pic_state *pic, struct octet_buffer *ob, int i)
   }
   else if (0xff <= i && i <= 0xe0) {
     /* negative fixint 	111xxxxx 	0xe0 - 0xff */
-    ob_push(ob, (uint8_t) 0111000 | i);
+    ob_push(ob, (uint8_t) 0xe0 | i);
+  }
+  else if ( 1 << 7 <= i && i <= 1 << 6) {
+    /* int 8 	11010000 	0xd0 */
+    ob_push(ob, 0xd0);
+    ob_push_uint8_t(ob, (uint8_t) i);
+  }
+  else if ( 1 << 15 <= i && i <= 1 << 14) {
+    /* int 16 	11010001 	0xd1 */
+    ob_push(ob, 0xd1);
+    ob_push_uint16_t(ob, (uint16_t ) i);
+  }
+  else if (1 << 31 <= i && i <= 1 << 30) {
+    /* int 32 	11010010 	0xd2 */
+    ob_push(ob, 0xd2);
+    ob_push_uint32_t(ob, (uint32_t ) i);
   }
   else {
-    /* int 8 	11010000 	0xd0 */
-    /* int 16 	11010001 	0xd1 */
-    /* int 32 	11010010 	0xd2 */
     /* int 64 	11010011 	0xd3 */
-    /* :FIXME: Currently, all ints are packed to int 64 */
     ob_push(ob, 0xd3);
-    ob_push_uint64_t(ob, *(uint64_t *) &i);
+    ob_push_uint64_t(ob, (uint64_t ) i);
   }
   
 }
@@ -188,7 +201,7 @@ pickle_string(pic_state *pic, struct octet_buffer *ob, pic_str *str)
 
   if (len < 1<<5)
     /* fixstr 	101xxxxx 	0xa0 - 0xbf */
-    ob_push(ob, 0xa0);
+    ob_push(ob, 0xa0 | len);
   else
     /* str 8 	11011001 	0xd9 */
     /* str 16 	11011010 	0xda */      
@@ -207,7 +220,7 @@ pickle_symbol(pic_state *pic, struct octet_buffer *ob, pic_sym sym)
   /* symbol 16 	11001101 	0xcd */
   /* symbol 32 	11001110 	0xce */
   /* symbol 64 	11001111 	0xcf */
-  ob_push_len64(ob, sym, 0xcc);  
+  ob_push_len64(ob, sym, (uint8_t) 0xcc);
 }
 
 void
@@ -217,17 +230,13 @@ pickle_list(pic_state *pic, struct octet_buffer *ob, pic_value list)
   size_t len;
 
   len = pic_length(pic, list);
-  if ( len == 0) {
-    /* nil 	11000000 	0xc0 */
-    ob_push(ob, 0xc0);
-    return;
-  }
-  if (len < 1 << 5)
+  if (len < 1 << 4)
     /* fixlist 	1000xxxx 	0x80 - 0x8f */
-    ob_push(ob, 0x80);
-  /* list 16 	11011110 	0xde */
-  /* list 32 	11011111 	0xdf */
-  ob_push_16len(ob, len, 0xde);
+    ob_push(ob, 0x80 | len);
+  else
+    /* list 16 	11011110 	0xde */
+    /* list 32 	11011111 	0xdf */
+    ob_push_16len(ob, len, 0xde);
     
   pic_for_each(v, list){
     pickle(pic, ob, v);
@@ -236,13 +245,20 @@ pickle_list(pic_state *pic, struct octet_buffer *ob, pic_value list)
 }
 
 void
-pickle_bool(pic_state *pic, struct octet_buffer *ob, bool b)
+pickle_nil(pic_state *pic, struct octet_buffer *ob)
+{
+  UNUSED(pic);
+  ob_push(ob, 0xc0);
+}
+
+void
+pickle_bool(pic_state *pic, struct octet_buffer *ob, pic_value b)
 {
   UNUSED(pic);
 
   /* true 	11000011 	0xc3 */
   /* false 	11000010 	0xc2 */
-  ob_push(ob, (uint8_t) 0xc2 + (uint8_t) b);
+  ob_push(ob, (uint8_t) 0xc2 + (uint8_t) pic_true_p(b));
 }
 
 void
@@ -268,17 +284,28 @@ pickle_vector(pic_state *pic, struct octet_buffer *ob, struct pic_vector *vec)
 
   len = vec->len;
 
-  if (len < 1 << 5 )
+  if (len < 1 << 4 )
     /* fixvector 	1001xxxx 	0x90 - 0x9f */
     ob_push(ob, (uint8_t) 0x90 | len);
   else
     /* vector 16 	11011100 	0xdc */
     /* vector 32 	11011101 	0xdd */
-    ob_push_16len(ob, len, (uint16_t)0xdc);
+    ob_push_16len(ob, len, (uint16_t) 0xdc);
 
   for (i = 0; i < len; i++) {
     pickle(pic, ob, *(vec->data + i));
   }
+}
+
+void
+pickle_char(pic_state *pic, struct octet_buffer *ob, pic_value obj)
+{
+  UNUSED(pic);
+
+  /* char 	11000001 	0xc1 */
+  /* current picrin supports only ascii chars */
+  ob_push(ob, (uint8_t) 0xc1);
+  ob_push(ob, (uint8_t) pic_char(obj));
 }
 
 void
@@ -302,7 +329,7 @@ pickle(pic_state *pic, struct octet_buffer *ob, pic_value obj)
     pickle_list(pic, ob, obj);
     break;
   case PIC_TT_BOOL:
-    pickle_bool(pic, ob, pic_true_p(obj));
+    pickle_bool(pic, ob, obj);
     break;
   case PIC_TT_BLOB:
     pickle_blob(pic, ob, pic_blob_ptr(obj));
@@ -310,6 +337,12 @@ pickle(pic_state *pic, struct octet_buffer *ob, pic_value obj)
   case PIC_TT_VECTOR:
     pickle_vector(pic, ob, pic_vec_ptr(obj));
     break;    
+  case PIC_TT_NIL:
+    pickle_nil(pic, ob);
+    break;
+  case PIC_TT_CHAR:
+    pickle_char(pic, ob, obj);
+    break;
   default:
     /* (never used) 	11000001 	0xc1 */
     /* ext 8 	11000111 	0xc7 */
@@ -347,7 +380,7 @@ unpickle_vector(pic_state *pic, struct octet_buffer *ob, size_t len)
 
   vec = pic_make_vec(pic, len);
 
-  for (size_t i; i < len; i++) {
+  for (size_t i = 0; i < len; i++) {
     vec->data[i] = unpickle(pic, ob);
   }
 
@@ -367,15 +400,17 @@ unpickle_blob(pic_state *pic, struct octet_buffer *ob, size_t len)
 static pic_value
 unpickle_string(pic_state *pic, struct octet_buffer *ob, size_t len)
 {
-  return pic_make_str(pic, ob_readn(ob, len), len);
+  return pic_obj_value(pic_make_str(pic, (const char *)ob_readn(ob, len), len));
 }
 
 static pic_value
 unpickle_float(pic_state *pic, struct octet_buffer *ob, size_t len)
 {
 
+  UNUSED(pic);
+
   float f;
-  double;
+  double d;
 
   if (len == 32) {
     memcpy(&f, ob_readn(ob, sizeof(float)), sizeof(float));
@@ -390,12 +425,28 @@ unpickle_float(pic_state *pic, struct octet_buffer *ob, size_t len)
 static pic_value
 unpickle_symbol(pic_state *pic, struct octet_buffer *ob, size_t sym)
 {
-  
+  UNUSED(pic);
+  UNUSED(ob);
+  UNUSED(sym);
+
+  return pic_none_value();
 }
 
 static pic_value
-unpickle_ext(pic_state *pic, struct octet_buffer *ob; size_t len)
+unpickle_char(pic_state *pic, struct octet_buffer *ob)
 {
+  UNUSED(pic);
+
+  /* current picrin supports only ascii chars */
+  return pic_char_value(ob_read(ob));
+}
+
+static pic_value
+unpickle_ext(pic_state *pic, struct octet_buffer *ob, size_t len)
+{
+  UNUSED(pic);
+  UNUSED(ob);
+  UNUSED(len);
   UNUSED(ob_readn(ob, len));
 
   return pic_none_value();
@@ -408,9 +459,9 @@ unpickle(pic_state *pic, struct octet_buffer *ob)
 
   octet = ob_read(ob);
   
-  if (octet >= 0xe0 )
+  if (octet >= 0xe0)
     /* negative fixint 	111xxxxx 	0xe0 - 0xff */
-    return pic_int_value((int) octet)
+    return pic_int_value((int) octet);
   else if (octet <= 0x7f)
     /* positive fixint 	0xxxxxxx 	0x00 - 0x7f */
     return pic_int_value((int) octet);
@@ -428,8 +479,8 @@ unpickle(pic_state *pic, struct octet_buffer *ob)
       /* nil 	11000000 	0xc0 */
     return pic_nil_value();
     case 0xc1:
-      /* (never used) 	11000001 	0xc1 */
-      pic_errorf(pic, "invalid octet 0xc1");
+      /* char 	11000001 	0xc1 */
+      return unpickle_char(pic, ob);
     case 0xc2:
       /* false 	11000010 	0xc2 */
       return pic_false_value();
@@ -501,25 +552,25 @@ unpickle(pic_state *pic, struct octet_buffer *ob)
       return unpickle_ext(pic, ob, 16);
     case 0xd9:
       /* str 8 	11011001 	0xd9 */
-      return unpickle_string(pic, ob, 8);
+      return unpickle_string(pic, ob, ob_read_uint8_t(ob));
     case 0xda:
       /* str 16 	11011010 	0xda */
-      return unpickle_string(pic, ob, 16);
+      return unpickle_string(pic, ob, ob_read_uint16_t(ob));
     case 0xdb:
       /* str 32 	11011011 	0xdb */
-      return unpickle_string(pic, ob, 32);
+      return unpickle_string(pic, ob, ob_read_uint32_t(ob));
     case 0xdc:
       /* vector 16 	11011100 	0xdc */
-      return unpickle_string(pic, ob, 16);
+      return unpickle_vector(pic, ob, ob_read_uint16_t(ob));
     case 0xdd:
       /* vector 32 	11011101 	0xdd */
-      return unpickle_string(pic, ob, 32);
+      return unpickle_vector(pic, ob, ob_read_uint32_t(ob));
     case 0xde:
       /* list 16 	11011110 	0xde */
-      return unpickle_string(pic, ob, 16);
+      return unpickle_list(pic, ob, ob_read_uint16_t(ob));
     case 0xdf:
-      return unpickle_string(pic, ob, 32);
       /* list 32 	11011111 	0xdf */
+      return unpickle_list(pic, ob, ob_read_uint32_t(ob));
     default:
       pic_errorf(pic, "logic flow");
     }  
@@ -545,8 +596,27 @@ pic_pickle(pic_state *pic)
   return pic_obj_value(bv);
 }
 
+static pic_value
+pic_unpickle(pic_state *pic)
+{
+  struct octet_buffer ob;
+  struct pic_blob *blob;
+
+  ob_init(&ob);
+
+  pic_get_args(pic, "b", &blob);
+
+  ob.data = (uint8_t *)blob->data;
+  ob.size = blob->len;
+
+  ob_as_reader(&ob);
+
+  return unpickle(pic, &ob);
+}
+
 void
 pic_init_pickle(pic_state *pic)
 {
   pic_defun(pic, "pickle", pic_pickle);
+  pic_defun(pic, "unpickle", pic_unpickle);
 }
