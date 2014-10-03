@@ -49,6 +49,7 @@ ob_pushn(struct octet_buffer *ob, const uint8_t *octets, size_t n)
   ob->pointer += n;
 }
 
+#if __BIG_ENDIAN__
 #define DEFINE_OB_PUSHER(type)                                  \
   static inline void                                            \
   ob_push_##type(struct octet_buffer *ob, type octets)          \
@@ -60,12 +61,28 @@ ob_pushn(struct octet_buffer *ob, const uint8_t *octets, size_t n)
     memcpy(ob->data + ob->pointer, &octets, sizeof(type));      \
     ob->pointer += sizeof(type);                                \
 }
+#else
+#define DEFINE_OB_PUSHER(type)                                  \
+  void                                                          \
+  ob_push_##type(struct octet_buffer *ob, type octets)          \
+  {                                                             \
+    while (ob->pointer + sizeof(type) > ob->size) {             \
+      ob_enlarge(ob);                                           \
+    }                                                           \
+                                                                \
+    ob->pointer += sizeof(type);                                \
+    for(size_t i = 0; i < sizeof(type); i++){                   \
+      ob->data[--ob->pointer] = (uint8_t) octets & 0xff;        \
+      octets >>= 8;                                             \
+    }                                                           \
+    ob->pointer += sizeof(type);                                \
+}
+#endif
 
 DEFINE_OB_PUSHER(uint8_t)
 DEFINE_OB_PUSHER(uint16_t)
 DEFINE_OB_PUSHER(uint32_t)
 DEFINE_OB_PUSHER(uint64_t)
-DEFINE_OB_PUSHER(double)
 #define ob_push ob_push_uint8_t
 
 static inline void
@@ -87,6 +104,7 @@ static inline uint8_t
   return res;
 }
 
+#if __BIG_ENDIAN__
 #define DEFINE_OB_READER(type)                          \
   static inline type                                    \
   ob_read_##type(struct octet_buffer *ob)               \
@@ -100,6 +118,23 @@ static inline uint8_t
                                                         \
     return i;                                           \
   }
+#else
+#define DEFINE_OB_READER(type)                          \
+  static inline type                                    \
+  ob_read_##type(struct octet_buffer *ob)               \
+  {                                                     \
+    assert(ob->size >= ob->pointer + sizeof(type));     \
+                                                        \
+    type res = 0;                                       \
+                                                        \
+    for(size_t i = 0; i < sizeof(type); i++){           \
+      res <<= 8;                                        \
+      res += *(ob->data + ob->pointer++);               \
+    }                                                   \
+                                                        \
+    return res;                                         \
+  }
+#endif
 
 DEFINE_OB_READER(uint8_t)
 DEFINE_OB_READER(uint16_t)
@@ -108,7 +143,6 @@ DEFINE_OB_READER(uint64_t)
 DEFINE_OB_READER(int8_t)
 DEFINE_OB_READER(int32_t)
 DEFINE_OB_READER(int64_t)
-DEFINE_OB_READER(double)
 #define ob_read ob_read_uint8_t
 
 #define ob_push_16len(ob, len, base)            \
@@ -185,7 +219,7 @@ pickle_double(pic_state *pic, struct octet_buffer *ob, double d)
   
 
   ob_push(ob, 0xcb);
-  ob_push_double(ob, d);  
+  ob_push_uint64_t(ob, *(uint64_t *)&d);  
 }
 
 void
@@ -409,15 +443,16 @@ unpickle_float(pic_state *pic, struct octet_buffer *ob, size_t len)
 
   UNUSED(pic);
 
-  float f;
-  double d;
-
   if (len == 32) {
-    memcpy(&f, ob_readn(ob, sizeof(float)), sizeof(float));
+    uint32_t i = ob_read_uint32_t(ob);
+    float f;
+    memcpy(&f, &i , sizeof(float));
     return pic_float_value((double) f);
   }
   else{
-    memcpy(&d, ob_readn(ob, sizeof(double)), sizeof(double));
+    uint64_t i = ob_read_uint64_t(ob);
+    double d;
+    memcpy(&d, &i, sizeof(double));
     return pic_float_value(d);
   }
 }
