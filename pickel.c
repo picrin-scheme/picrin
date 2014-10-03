@@ -141,6 +141,7 @@ DEFINE_OB_READER(uint16_t)
 DEFINE_OB_READER(uint32_t)
 DEFINE_OB_READER(uint64_t)
 DEFINE_OB_READER(int8_t)
+DEFINE_OB_READER(int16_t)
 DEFINE_OB_READER(int32_t)
 DEFINE_OB_READER(int64_t)
 #define ob_read ob_read_uint8_t
@@ -185,17 +186,17 @@ pickle_int(pic_state *pic, struct octet_buffer *ob, int i)
     /* negative fixint 	111xxxxx 	0xe0 - 0xff */
     ob_push(ob, (uint8_t) 0xe0 | i);
   }
-  else if ( 1 << 7 <= i && i <= 1 << 6) {
+  else if ( -1 << 7 <= i && i <= 1 << 7 - 1) {
     /* int 8 	11010000 	0xd0 */
     ob_push(ob, 0xd0);
     ob_push_uint8_t(ob, (uint8_t) i);
   }
-  else if ( 1 << 15 <= i && i <= 1 << 14) {
+  else if ( -1 << 15 <= i && i <= 1 << 15 - 1) {
     /* int 16 	11010001 	0xd1 */
     ob_push(ob, 0xd1);
     ob_push_uint16_t(ob, (uint16_t ) i);
   }
-  else if (1 << 31 <= i && i <= 1 << 30) {
+  else if ( -1 << 31 <= i && i <= 1 << 31 - 1) {
     /* int 32 	11010010 	0xd2 */
     ob_push(ob, 0xd2);
     ob_push_uint32_t(ob, (uint32_t ) i);
@@ -496,10 +497,10 @@ unpickle(pic_state *pic, struct octet_buffer *ob)
   
   if (octet >= 0xe0)
     /* negative fixint 	111xxxxx 	0xe0 - 0xff */
-    return pic_int_value((int) octet);
+    return pic_int_value((int) (char) octet);
   else if (octet <= 0x7f)
     /* positive fixint 	0xxxxxxx 	0x00 - 0x7f */
-    return pic_int_value((int) octet);
+    return pic_int_value((int) (char) octet);
   else if (octet <= 0x8f)
     /* fixlist 	1000xxxx 	0x80 - 0x8f */
     return unpickle_list(pic, ob, (size_t) octet & 0x0f);
@@ -560,16 +561,16 @@ unpickle(pic_state *pic, struct octet_buffer *ob)
       return unpickle_symbol(pic, ob, ob_read_uint64_t(ob));
     case 0xd0:
       /* int 8 	11010000 	0xd0 */
-      return pic_int_value((int) ob_read_uint8_t(ob));
+      return pic_int_value((int) ob_read_int8_t(ob));
     case 0xd1:
       /* int 16 	11010001 	0xd1 */
-      return pic_int_value((int) ob_read_uint16_t(ob));
+      return pic_int_value((int) ob_read_int16_t(ob));
     case 0xd2:
       /* int 32 	11010010 	0xd2 */
-      return pic_int_value((int) ob_read_uint32_t(ob));
+      return pic_int_value((int) ob_read_int32_t(ob));
     case 0xd3:
       /* int 64 	11010011 	0xd3 */
-      return pic_int_value((int) ob_read_uint64_t(ob));
+      return pic_int_value((int) ob_read_int64_t(ob));
     case 0xd4:
       /* fixext 1 	11010100 	0xd4 */
       return unpickle_ext(pic, ob, 1);
