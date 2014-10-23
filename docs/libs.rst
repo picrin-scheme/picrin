@@ -233,9 +233,13 @@ Object-to-object table. Internally it is implemented on hash-table. Equivalence 
 
 Note that dictionary is not a weak map; if you are going to make a highly memory-consuming program with dictionaries, you should know that dictionaries keep their bound objects and never let them free until you explicitly deletes bindings.
 
+- **(make-dictionary)**
+
+  Returns a newly allocated empty dictionary.
+
 - **(dictionary . plist)**
 
-  Returns a newly allocated empty dictionary. The dictionary is initialized with the content of plist.
+  Returns a dictionary initialized with the content of plist.
 
 - **(dictionary? obj)**
 
