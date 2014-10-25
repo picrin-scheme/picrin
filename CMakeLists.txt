@@ -36,6 +36,7 @@ include_directories(extlib/benz/include)
 include(piclib/CMakeLists.txt)
 include(contrib/CMakeLists.txt)
 include(src/CMakeLists.txt)
+include(docs/CMakeLists.txt)
 
 # ----
 

@@ -15,6 +15,7 @@ Contents:
    deploy.rst
    lang.rst
    libs.rst
+   contrib.rst
    capi.rst
 
 Indices and tables
