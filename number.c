@@ -546,9 +546,9 @@ pic_number_number_to_string(pic_state *pic)
     return pic_obj_value(pic_make_str(pic, buf, sizeof buf - 1));
   }
   else {
-    char buf[snprintf(NULL, 0, "%a", f) + 1];
+    char buf[snprintf(NULL, 0, "%f", f) + 1];
 
-    snprintf(buf, sizeof buf, "%a", f);
+    snprintf(buf, sizeof buf, "%f", f);
 
     return pic_obj_value(pic_make_str(pic, buf, sizeof buf - 1));
   }
