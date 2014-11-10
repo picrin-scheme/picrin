@@ -12,7 +12,7 @@ If you want to create a contribution library with C, the only thing you need to 
 
 .. sourcecode:: cmake
 
-  list(APPEND PICRIN_CONTRIB_INITS "void pic_init_add(pic_state *)\; pic_init_add(pic)\;")
+  list(APPEND PICRIN_CONTRIB_INITS add)
   list(APPEND PICRIN_CONTRIB_SOURCES ${PROJECT_SOURCE_DIR}/contrib/add/add.c)
 
 * contrib/add/add.c
@@ -34,7 +34,7 @@ If you want to create a contribution library with C, the only thing you need to 
   void
   pic_init_add(pic_state *pic)
   {
-    pic_deflibrary ("(picrin add)") {
+    pic_deflibrary (pic, "(picrin add)") {
       pic_defun(pic, "add", pic_add);
     }
   }
