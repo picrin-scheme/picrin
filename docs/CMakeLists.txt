@@ -9,7 +9,7 @@ set(PICRIN_DOC_OUTPUT_DIRECTORY doc)
 add_custom_command(
   OUTPUT ${PICRIN_CONTRIBS_DOC}
   COMMAND echo "Contrib Libraries \\\(a.k.a nitros\\\)" > ${PICRIN_CONTRIBS_DOC}
-  COMMAND echo "===============================" >> ${PICRIN_CONTRIBS_DOC}
+  COMMAND echo "================================" >> ${PICRIN_CONTRIBS_DOC}
   COMMAND echo "" >> ${PICRIN_CONTRIBS_DOC}
   COMMAND cat ${PICRIN_CONTRIB_DOCS} >> ${PICRIN_CONTRIBS_DOC}
   DEPENDS ${PICRIN_CONTRIB_DOCS}
