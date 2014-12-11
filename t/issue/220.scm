@@ -1,0 +1,11 @@
+(import (scheme base)
+        (picrin test))
+
+(test-begin)
+(define-library (foo)
+  (import (scheme base))
+  (export bar)
+  (define bar #t))
+(import (foo))
+(test #t bar)
+(test-end)
