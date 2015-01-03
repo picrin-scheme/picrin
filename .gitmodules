@@ -1,3 +1,0 @@
-[submodule "extlib/benz"]
-	path = extlib/benz
-	url = git://github.com/picrin-scheme/benz.git
