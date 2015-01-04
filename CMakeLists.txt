@@ -9,15 +9,6 @@ PROJECT(picrin)
 # load extra cmake modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
-# ----
-
-# git submodule update --init
-find_package(Git REQUIRED)
-execute_process(
-  COMMAND ${GIT_EXECUTABLE} submodule update --init
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-  )
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 set(CMAKE_C_FLAGS "-O2 -Wall -Wextra")

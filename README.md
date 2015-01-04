@@ -24,9 +24,7 @@ There is a chat room on chat.freenode.org, channel #picrin. IRC logs here: https
 To build picrin, you need some build tools installed on your platform.
 
 - cmake (>= 2.6)
-- git
 
-Because of submodule dependencies, it is necessary to get picrin's source code via git clone command. Basically our git dependencies are only due to submodules, so in fact, If you have no git on your machine, it is possible to build it by downloading a tarball from github page as well. But in such case, you are assumed to modify CMakeLists.txt by yourself to get it work completely. We just strongly recommend you to use git-clone.
 
 ### Generate Makefile
 
