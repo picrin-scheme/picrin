@@ -28,12 +28,12 @@ To build picrin, you need some build tools installed on your platform.
 
 ### Generate Makefile
 
-Change directory to `build` then run `ccmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin.
+Change directory to `build` then run `cmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin.
 
 	$ cd build
-	$ ccmake ..
+	$ cmake ..
 
-Actually you don't necessarily need to move to `build` directory before running `ccmake` (in that case `$ ccmake .`), but I strongly recommend to follow above instruction.
+Actually you don't necessarily need to move to `build` directory before running `cmake` (in that case `$ cmake .`), but I strongly recommend to follow above instruction.
     
 Before generating Makefile, you can change some compilation switches to enable or disable optional features. Take *NAN_BOXING* for example, when you turn on "Use C11 feature" flag and the platform supports addresses of 48bit length, it is enabled.
 
@@ -47,7 +47,7 @@ If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is 
 
 ### Install
 
-Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via ccmake.
+Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via cmake.
 
 	$ make install
 
