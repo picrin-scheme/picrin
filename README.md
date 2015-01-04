@@ -24,18 +24,16 @@ There is a chat room on chat.freenode.org, channel #picrin. IRC logs here: https
 To build picrin, you need some build tools installed on your platform.
 
 - cmake (>= 2.6)
-- git
 
-Because of submodule dependencies, it is necessary to get picrin's source code via git clone command. Basically our git dependencies are only due to submodules, so in fact, If you have no git on your machine, it is possible to build it by downloading a tarball from github page as well. But in such case, you are assumed to modify CMakeLists.txt by yourself to get it work completely. We just strongly recommend you to use git-clone.
 
 ### Generate Makefile
 
-Change directory to `build` then run `ccmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin.
+Change directory to `build` then run `cmake` to create Makefile. Once `Makefile` is generated you can run `make` command to build picrin.
 
 	$ cd build
-	$ ccmake ..
+	$ cmake ..
 
-Actually you don't necessarily need to move to `build` directory before running `ccmake` (in that case `$ ccmake .`), but I strongly recommend to follow above instruction.
+Actually you don't necessarily need to move to `build` directory before running `cmake` (in that case `$ cmake .`), but I strongly recommend to follow above instruction.
     
 Before generating Makefile, you can change some compilation switches to enable or disable optional features. Take *NAN_BOXING* for example, when you turn on "Use C11 feature" flag and the platform supports addresses of 48bit length, it is enabled.
 
@@ -49,7 +47,7 @@ If you are building picrin on other systems than x86_64, PIC_NAN_BOXING flag is 
 
 ### Install
 
-Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via ccmake.
+Just running `make install`, picrin library, headers, and runtime binary are install on your system, by default into `/usr/local` directory. You can change this value via cmake.
 
 	$ make install
 
@@ -59,13 +57,21 @@ Before installing picrin, you can try picrin without breaking any of your system
 
 	$ make run
 
+### Run Test
+To run all the test including contribs, execute this.
+
+    $ make test
+
+To test only R7RS features,
+
+    $ make test-r7rs
+
 ### Debug run
 
 If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
 
 	$ cmake -DCMAKE_BUILD_TYPE=Debug ..
 	
-
 ## Requirement
 
 Picrin scheme depends on some external libraries to build the binary:

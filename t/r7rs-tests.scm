@@ -919,6 +919,16 @@
 (test 1 (exact 1.0))
 (test #t (exact? (exact 1.0)))
 
+(test "10" (number->string 10))
+(test "10" (number->string 10 10))
+(test "10" (number->string 2 2))
+(test "10" (number->string 8 8))
+(test "10" (number->string 16 16))
+
+(test "2.3" (number->string 2.3))
+(test "2.3" (number->string 2.30))
+(test "2.301" (number->string 2.301))
+
 (test 100 (string->number "100"))
 (test 256 (string->number "100" 16))
 (test 100.0 (string->number "1e2"))
