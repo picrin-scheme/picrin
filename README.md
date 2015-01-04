@@ -57,13 +57,21 @@ Before installing picrin, you can try picrin without breaking any of your system
 
 	$ make run
 
+### Run Test
+To run all the test including contribs, execute this.
+
+    $ make test
+
+To test only R7RS features,
+
+    $ make test-r7rs
+
 ### Debug run
 
 If you execute `cmake` with debug flag `-DCMAKE_BUILD_TYPE=Debug`, it builds the binary with all debug flags enabled (PIC_GC_STRESS, VM_DEBUG, DEBUG).
 
 	$ cmake -DCMAKE_BUILD_TYPE=Debug ..
 	
-
 ## Requirement
 
 Picrin scheme depends on some external libraries to build the binary:
