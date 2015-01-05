@@ -39,6 +39,7 @@ void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_attr(pic_state *);
+void pic_init_pickle(pic_state *);
 
 extern const char pic_boot[];
 
@@ -140,6 +141,7 @@ pic_init_core(pic_state *pic)
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
     pic_init_attr(pic); DONE;
+    pic_init_pickle(pic); DONE;
 
     pic_load_cstr(pic, pic_boot);
   }
