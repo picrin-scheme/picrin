@@ -25,7 +25,7 @@ pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 void
 pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rename)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   xh_put_int(&senv->map, sym, &rename);
 }
@@ -35,7 +35,7 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 {
   xh_entry *e;
 
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   if ((e = xh_get_int(&senv->map, sym)) == NULL) {
     return false;

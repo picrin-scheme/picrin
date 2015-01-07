@@ -93,7 +93,7 @@ pic_load_point(pic_state *pic, struct pic_escape *escape)
   escape->valid = false;
 }
 
-noreturn static pic_value
+static pic_value
 escape_call(pic_state *pic)
 {
   size_t argc;

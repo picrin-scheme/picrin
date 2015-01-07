@@ -170,7 +170,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
 void
 pic_free(pic_state *pic, void *ptr)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   free(ptr);
 }
