@@ -18,7 +18,7 @@
 static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
 
-static noreturn void
+pic_noreturn static void
 read_error(pic_state *pic, const char *msg)
 {
   pic_throw(pic, pic->sREAD, msg, pic_nil_value());
@@ -86,8 +86,8 @@ read_comment(pic_state *pic, struct pic_port *port, const char *str)
 {
   int c;
 
-  UNUSED(pic);
-  UNUSED(str);
+  PIC_UNUSED(pic);
+  PIC_UNUSED(str);
 
   do {
     c = next(port);
@@ -102,8 +102,8 @@ read_block_comment(pic_state *pic, struct pic_port *port, const char *str)
   int x, y;
   int i = 1;
 
-  UNUSED(pic);
-  UNUSED(str);
+  PIC_UNUSED(pic);
+  PIC_UNUSED(str);
 
   y = next(port);
 
@@ -124,7 +124,7 @@ read_block_comment(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_datum_comment(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   read(pic, port, next(port));
 
@@ -157,7 +157,7 @@ read_eval(pic_state *pic, struct pic_port *port, const char *str)
 {
   pic_value form;
 
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   form = read(pic, port, next(port));
 
@@ -167,7 +167,7 @@ read_eval(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_quote(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   return pic_list2(pic, pic_sym_value(pic->sQUOTE), read(pic, port, next(port)));
 }
@@ -175,7 +175,7 @@ read_quote(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_quasiquote(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   return pic_list2(pic, pic_sym_value(pic->sQUASIQUOTE), read(pic, port, next(port)));
 }
@@ -183,7 +183,7 @@ read_quasiquote(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_unquote(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, next(port)));
 }
@@ -191,7 +191,7 @@ read_unquote(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_unquote_splicing(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   return pic_list2(pic, pic_sym_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
 }
@@ -354,9 +354,9 @@ read_plus(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_true(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(pic);
-  UNUSED(port);
-  UNUSED(str);
+  PIC_UNUSED(pic);
+  PIC_UNUSED(port);
+  PIC_UNUSED(str);
 
   return pic_true_value();
 }
@@ -364,9 +364,9 @@ read_true(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_false(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(pic);
-  UNUSED(port);
-  UNUSED(str);
+  PIC_UNUSED(pic);
+  PIC_UNUSED(port);
+  PIC_UNUSED(str);
 
   return pic_false_value();
 }
@@ -376,7 +376,7 @@ read_char(pic_state *pic, struct pic_port *port, const char *str)
 {
   int c;
 
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   c = next(port);
 
@@ -418,7 +418,7 @@ read_string(pic_state *pic, struct pic_port *port, const char *name)
   size_t size, cnt;
   pic_str *str;
 
-  UNUSED(name);
+  PIC_UNUSED(name);
 
   size = 256;
   buf = pic_alloc(pic, size);
@@ -459,7 +459,7 @@ read_pipe(pic_state *pic, struct pic_port *port, const char *str)
   size_t i = 0;
   int c;
 
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   size = 256;
   buf = pic_alloc(pic, size);
@@ -504,7 +504,7 @@ read_blob(pic_state *pic, struct pic_port *port, const char *str)
   unsigned char *dat;
   pic_blob *blob;
 
-  UNUSED(str);
+  PIC_UNUSED(str);
 
   nbits = 0;
 
@@ -631,13 +631,13 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
         xh_put_int(&pic->reader->labels, i, &val);
 
         tmp = pic_vec_ptr(read(pic, port, c));
-        SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
-        SWAP(size_t, tmp->len, pic_vec_ptr(val)->len);
+        PIC_SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
+        PIC_SWAP(size_t, tmp->len, pic_vec_ptr(val)->len);
 
         return val;
       }
 
-      FALLTHROUGH;
+      PIC_FALLTHROUGH;
     }
   default:
     {
@@ -655,7 +655,7 @@ read_label_ref(pic_state *pic, struct pic_port *port, int i)
 {
   xh_entry *e;
 
-  UNUSED(port);
+  PIC_UNUSED(port);
 
   e = xh_get_int(&pic->reader->labels, i);
   if (! e) {
@@ -687,8 +687,8 @@ read_label(pic_state *pic, struct pic_port *port, const char *str)
 static pic_value
 read_unmatch(pic_state *pic, struct pic_port *port, const char *str)
 {
-  UNUSED(port);
-  UNUSED(str);
+  PIC_UNUSED(port);
+  PIC_UNUSED(str);
 
   read_error(pic, "unmatched parenthesis");
 }

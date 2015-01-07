@@ -161,7 +161,7 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
   restore_cont(pic, cont);
 }
 
-noreturn static void
+pic_noreturn static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
   char v;
@@ -203,7 +203,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   longjmp(tmp->jmp, 1);
 }
 
-noreturn static pic_value
+pic_noreturn static pic_value
 cont_call(pic_state *pic)
 {
   struct pic_proc *proc;

@@ -14,7 +14,7 @@ xh_value_hash(const void *key, void *data)
   pic_value val = *(pic_value *)key;
   int hash, vtype;
 
-  UNUSED(data);
+  PIC_UNUSED(data);
 
   vtype = pic_vtype(val);
 
@@ -96,7 +96,7 @@ pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_value key)
 void
 pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_value key, pic_value val)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   xh_put_value(&dict->hash, key, &val);
 }
@@ -104,7 +104,7 @@ pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_value key, pic_value val
 size_t
 pic_dict_size(pic_state *pic, struct pic_dict *dict)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   return dict->hash.count;
 }
@@ -112,7 +112,7 @@ pic_dict_size(pic_state *pic, struct pic_dict *dict)
 bool
 pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_value key)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   return xh_get_value(&dict->hash, key) != NULL;
 }
