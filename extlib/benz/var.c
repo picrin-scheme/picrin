@@ -73,7 +73,7 @@ var_call(pic_state *pic)
       return val;
     }
   }
-  UNREACHABLE();
+  PIC_UNREACHABLE();
 }
 
 struct pic_proc *

@@ -35,7 +35,7 @@
 
   (define (repl)
     (let loop ((buf ""))
-      (let ((line (readline (if (equal? buf "") "> " "* "))))
+      (let ((line (readline (if (equal? buf "") "> " ""))))
         (if (eof-object? line)
             (newline)                   ; exit
             (let ((str (string-append buf line "\n")))

@@ -6,7 +6,7 @@
 #include "picrin/port.h"
 #include "picrin/error.h"
 
-static noreturn void
+pic_noreturn static void
 file_error(pic_state *pic, const char *msg)
 {
   pic_throw(pic, pic->sFILE, msg, pic_nil_value());

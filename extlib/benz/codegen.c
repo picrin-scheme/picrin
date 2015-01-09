@@ -492,7 +492,7 @@ analyze_if(analyze_state *state, pic_value obj, bool tailpos)
     pic_errorf(pic, "syntax error");
   case 4:
     if_false = pic_list_ref(pic, obj, 3);
-    FALLTHROUGH;
+    PIC_FALLTHROUGH;
   case 3:
     if_true = pic_list_ref(pic, obj, 2);
   }

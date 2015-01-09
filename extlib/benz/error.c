@@ -17,7 +17,7 @@
 void
 pic_panic(pic_state *pic, const char *msg)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   fprintf(stderr, "abort: %s\n", msg);
   abort();
@@ -69,7 +69,7 @@ pic_errmsg(pic_state *pic)
   return pic_str_cstr(str);
 }
 
-noreturn static pic_value
+static pic_value
 native_exception_handler(pic_state *pic)
 {
   pic_value err;
@@ -83,7 +83,7 @@ native_exception_handler(pic_state *pic)
 
   pic_apply1(pic, cont, pic_false_value());
 
-  UNREACHABLE();
+  PIC_UNREACHABLE();
 }
 
 void
@@ -166,7 +166,7 @@ pic_raise_continuable(pic_state *pic, pic_value err)
   return v;
 }
 
-noreturn void
+void
 pic_raise(pic_state *pic, pic_value err)
 {
   pic_value val;
@@ -178,7 +178,7 @@ pic_raise(pic_state *pic, pic_value err)
   pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
 }
 
-noreturn void
+void
 pic_throw(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
@@ -188,7 +188,7 @@ pic_throw(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
   pic_raise(pic, pic_obj_value(e));
 }
 
-noreturn void
+void
 pic_error(pic_state *pic, const char *msg, pic_value irrs)
 {
   pic_throw(pic, pic_intern_cstr(pic, ""), msg, irrs);
@@ -221,7 +221,7 @@ pic_error_with_exception_handler(pic_state *pic)
   return val;
 }
 
-noreturn static pic_value
+static pic_value
 pic_error_raise(pic_state *pic)
 {
   pic_value v;
@@ -241,7 +241,7 @@ pic_error_raise_continuable(pic_state *pic)
   return pic_raise_continuable(pic, v);
 }
 
-noreturn static pic_value
+static pic_value
 pic_error_error(pic_state *pic)
 {
   const char *str;

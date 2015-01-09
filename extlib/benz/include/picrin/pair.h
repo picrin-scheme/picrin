@@ -59,9 +59,9 @@ pic_value pic_list7(pic_state *, pic_value, pic_value, pic_value, pic_value, pic
 pic_value pic_list_by_array(pic_state *, size_t, pic_value *);
 pic_value pic_make_list(pic_state *, size_t, pic_value);
 
-#define pic_for_each(var, list)                                 \
-  pic_for_each_helper_(var, GENSYM(tmp), list)
-#define pic_for_each_helper_(var, tmp, list)                           \
+#define pic_for_each(var, list)                         \
+  pic_for_each_helper_(var, PIC_GENSYM(tmp), list)
+#define pic_for_each_helper_(var, tmp, list)                            \
   for (pic_value tmp = (list);                                          \
        pic_nil_p(tmp) ? false : ((var = pic_car(pic, tmp)), true);      \
        tmp = pic_cdr(pic, tmp))

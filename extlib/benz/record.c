@@ -39,7 +39,7 @@ pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym slot)
 void
 pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym slot, pic_value val)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   xh_put_int(&rec->hash, slot, &val);
 }
