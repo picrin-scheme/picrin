@@ -230,7 +230,7 @@ static void pickle(pic_state *, struct octet_buffer *, pic_value);
 static void
 pickle_int(pic_state *pic, struct octet_buffer *ob, int i)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   if ( 0x00 <= i && i <= 0x7f) {
     /* positive fixint 	0xxxxxxx 	0x00 - 0x7f */
@@ -266,7 +266,7 @@ pickle_int(pic_state *pic, struct octet_buffer *ob, int i)
 static void
 pickle_double(pic_state *pic, struct octet_buffer *ob, double d)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   union { uint64_t u; double d;} t;
 
@@ -282,7 +282,7 @@ pickle_double(pic_state *pic, struct octet_buffer *ob, double d)
 static void
 pickle_string(pic_state *pic, struct octet_buffer *ob, pic_str *str)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   const char *cstr;
   size_t len;
@@ -305,7 +305,7 @@ pickle_string(pic_state *pic, struct octet_buffer *ob, pic_str *str)
 static void
 pickle_symbol(pic_state *pic, struct octet_buffer *ob, pic_sym sym)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   /* symbol 8 	11001100 	0xcc */
   /* symbol 16 	11001101 	0xcd */
@@ -338,14 +338,14 @@ pickle_list(pic_state *pic, struct octet_buffer *ob, pic_value list)
 static void
 pickle_nil(pic_state *pic, struct octet_buffer *ob)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
   ob_push(ob, (uint8_t) PIC_PT_NIL);
 }
 
 static void
 pickle_bool(pic_state *pic, struct octet_buffer *ob, pic_value b)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   /* true 	11000011 	0xc3 */
   /* false 	11000010 	0xc2 */
@@ -355,7 +355,7 @@ pickle_bool(pic_state *pic, struct octet_buffer *ob, pic_value b)
 static void
 pickle_blob(pic_state *pic, struct octet_buffer *ob, pic_blob *blob)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   size_t len;
 
@@ -391,7 +391,7 @@ pickle_vector(pic_state *pic, struct octet_buffer *ob, struct pic_vector *vec)
 static void
 pickle_char(pic_state *pic, struct octet_buffer *ob, pic_value obj)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   /* char 	11000001 	0xc1 */
   /* current picrin supports only ascii chars */
@@ -498,7 +498,7 @@ static pic_value
 unpickle_float(pic_state *pic, struct octet_buffer *ob, size_t len)
 {
 
-  UNUSED(pic);
+  PIC_UNUSED(pic);
   union { uint32_t u; float f;} t32;
   union { uint64_t u; double d;} t64;
 
@@ -515,9 +515,9 @@ unpickle_float(pic_state *pic, struct octet_buffer *ob, size_t len)
 static pic_value
 unpickle_symbol(pic_state *pic, struct octet_buffer *ob, size_t sym)
 {
-  UNUSED(pic);
-  UNUSED(ob);
-  UNUSED(sym);
+  PIC_UNUSED(pic);
+  PIC_UNUSED(ob);
+  PIC_UNUSED(sym);
   /* :FIXME: */
 
   return pic_none_value();
@@ -526,7 +526,7 @@ unpickle_symbol(pic_state *pic, struct octet_buffer *ob, size_t sym)
 static pic_value
 unpickle_char(pic_state *pic, struct octet_buffer *ob)
 {
-  UNUSED(pic);
+  PIC_UNUSED(pic);
 
   /* :TODO: current picrin supports only ascii chars */
   return pic_char_value(ob_read(ob));
@@ -535,10 +535,10 @@ unpickle_char(pic_state *pic, struct octet_buffer *ob)
 static pic_value
 unpickle_ext(pic_state *pic, struct octet_buffer *ob, size_t len)
 {
-  UNUSED(pic);
-  UNUSED(ob);
-  UNUSED(len);
-  UNUSED(ob_readn(ob, len));
+  PIC_UNUSED(pic);
+  PIC_UNUSED(ob);
+  PIC_UNUSED(len);
+  PIC_UNUSED(ob_readn(ob, len));
   /* :FIXME:  */
 
   pic_errorf(pic, "cannot unpickle ext");
