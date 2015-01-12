@@ -1,0 +1,2 @@
+file(GLOB PROTOCOL_FILES ${PROJECT_SOURCE_DIR}/contrib/50.protocol/piclib/picrin/*.scm)
+list(APPEND PICLIB_CONTRIB_LIBS ${PROTOCOL_FILES})
