@@ -32,7 +32,7 @@ blob_equal_p(struct pic_blob *blob1, struct pic_blob *blob2)
 }
 
 static bool
-internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *ht)
+internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *xh, bool xh_initted_p)
 {
   pic_value local = pic_nil_value();
   size_t c;
@@ -42,10 +42,15 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
       pic_errorf(pic, "Stack overflow in equal\n");
     }
     if (pic_pair_p(x) || pic_vec_p(x)) {
-      if (xh_get_ptr(ht, pic_obj_ptr(x)) != NULL) {
+      if (! xh_initted_p) {
+        xh_init_ptr(xh, 0);
+        xh_initted_p = true;
+      }
+
+      if (xh_get_ptr(xh, pic_obj_ptr(x)) != NULL) {
         return true;            /* `x' was seen already.  */
       } else {
-        xh_put_ptr(ht, pic_obj_ptr(x), NULL);
+        xh_put_ptr(xh, pic_obj_ptr(x), NULL);
       }
     }
   }
@@ -71,7 +76,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
     if (pic_nil_p(local)) {
       local = x;
     }
-    if (internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, ht)) {
+    if (internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, xh, xh_initted_p)) {
       x = pic_cdr(pic, x);
       y = pic_cdr(pic, y);
 
@@ -100,7 +105,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
       return false;
     }
     for (i = 0; i < u->len; ++i) {
-      if (! internal_equal_p(pic, u->data[i], v->data[i], depth + 1, ht))
+      if (! internal_equal_p(pic, u->data[i], v->data[i], depth + 1, xh, xh_initted_p))
         return false;
     }
     return true;
@@ -111,12 +116,11 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
 }
 
 bool
-pic_equal_p(pic_state *pic, pic_value x, pic_value y){
+pic_equal_p(pic_state *pic, pic_value x, pic_value y)
+{
   xhash ht;
 
-  xh_init_ptr(&ht, 0);
-
-  return internal_equal_p(pic, x, y, 0, &ht);
+  return internal_equal_p(pic, x, y, 0, &ht, false);
 }
 
 static pic_value
