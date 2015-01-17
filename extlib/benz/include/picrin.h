@@ -186,7 +186,7 @@ bool pic_interned_p(pic_state *, pic_sym);
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
 
-void pic_load(pic_state *, const char *);
+void pic_load_port(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
 
 pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);

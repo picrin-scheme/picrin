@@ -178,6 +178,8 @@
           dictionary-set!
           dictionary-delete!
           dictionary-size
+          dictionary-map
+          dictionary-for-each
           dictionary->plist
           plist->dictionary
           dictionary->alist
@@ -204,10 +206,6 @@
           port-open?
           close-port
 
-          open-input-file
-          open-output-file
-          open-binary-input-file
-          open-binary-output-file
           open-input-string
           open-output-string
           get-output-string
@@ -271,18 +269,4 @@
           write-shared
           display)
 
-  (export command-line
-          exit
-          emergency-exit
-          file-exists?
-          delete-file
-          get-environment-variable
-          get-environment-variables)
-
-  (export current-second
-          current-jiffy
-          jiffies-per-second)
-
-  (export eval)
-
-  (export load))
+  (export eval))
