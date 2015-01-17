@@ -135,7 +135,7 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 
 - **(dicitonary-map proc dict)**
 
-  Perform mapping action onto dictionary object. ``proc`` is called by a sequence ``(proc key val)``.
+  Perform mapping action onto dictionary object. ``proc`` is called by a sequence ``(proc key1 key2 ...)``.
 
 - **(dictionary-for-each proc dict)**
 
