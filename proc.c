@@ -43,7 +43,7 @@ pic_proc_name(struct pic_proc *proc)
   case PIC_PROC_KIND_IREP:
     return proc->u.irep->name;
   }
-  UNREACHABLE();
+  PIC_UNREACHABLE();
 }
 
 static pic_value

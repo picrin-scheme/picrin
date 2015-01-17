@@ -89,6 +89,7 @@ typedef struct {
   pic_sym sCOND_EXPAND, sAND, sOR, sELSE, sLIBRARY;
   pic_sym sONLY, sRENAME, sPREFIX, sEXCEPT;
   pic_sym sCONS, sCAR, sCDR, sNILP;
+  pic_sym sSYMBOL_P, sPAIR_P;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
   pic_sym sREAD, sFILE;
@@ -141,7 +142,7 @@ pic_value pic_gc_protect(pic_state *, pic_value);
 size_t pic_gc_arena_preserve(pic_state *);
 void pic_gc_arena_restore(pic_state *, size_t);
 #define pic_void(exec)                          \
-  pic_void_(GENSYM(ai), exec)
+  pic_void_(PIC_GENSYM(ai), exec)
 #define pic_void_(ai,exec) do {                 \
     size_t ai = pic_gc_arena_preserve(pic);     \
     exec;                                       \
@@ -202,7 +203,7 @@ struct pic_lib *pic_open_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define pic_deflibrary(pic, spec)                                       \
-  pic_deflibrary_helper_(pic, GENSYM(i), GENSYM(prev_lib), spec)
+  pic_deflibrary_helper_(pic, PIC_GENSYM(i), PIC_GENSYM(prev_lib), spec)
 #define pic_deflibrary_helper_(pic, i, prev_lib, spec)                  \
   for (int i = 0; ! i; )                                                \
     for (struct pic_lib *prev_lib; ! i; )                               \
@@ -212,8 +213,8 @@ void pic_import(pic_state *, pic_value);
 void pic_import_library(pic_state *, struct pic_lib *);
 void pic_export(pic_state *, pic_sym);
 
-noreturn void pic_panic(pic_state *, const char *);
-noreturn void pic_errorf(pic_state *, const char *, ...);
+pic_noreturn void pic_panic(pic_state *, const char *);
+pic_noreturn void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);

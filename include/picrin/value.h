@@ -225,7 +225,7 @@ pic_type(pic_value v)
     return ((struct pic_object *)pic_ptr(v))->tt;
   }
 
-  UNREACHABLE();
+  PIC_UNREACHABLE();
 }
 
 static inline const char *
@@ -279,7 +279,7 @@ pic_type_repr(enum pic_tt tt)
   case PIC_TT_RECORD:
     return "record";
   }
-  UNREACHABLE();
+  PIC_UNREACHABLE();
 }
 
 static inline bool

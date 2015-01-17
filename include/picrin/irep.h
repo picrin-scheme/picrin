@@ -35,6 +35,8 @@ enum pic_opcode {
   OP_CAR,
   OP_CDR,
   OP_NILP,
+  OP_SYMBOL_P,
+  OP_PAIR_P,
   OP_ADD,
   OP_SUB,
   OP_MUL,
@@ -148,6 +150,12 @@ pic_dump_code(pic_code c)
     break;
   case OP_NILP:
     puts("OP_NILP");
+    break;
+  case OP_SYMBOL_P:
+    puts("OP_SYMBOL_P");
+    break;
+  case OP_PAIR_P:
+    puts("OP_PAIR_P");
     break;
   case OP_CDR:
     puts("OP_CDR");
