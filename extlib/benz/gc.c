@@ -474,7 +474,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     xh_entry *it;
 
     for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-      gc_mark(pic, xh_key(it, pic_value));
       gc_mark(pic, xh_val(it, pic_value));
     }
     break;

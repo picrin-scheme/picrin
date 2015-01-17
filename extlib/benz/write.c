@@ -334,9 +334,7 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_DICT:
     xfprintf(file, "#.(dictionary");
     for (it = xh_begin(&pic_dict_ptr(obj)->hash); it != NULL; it = xh_next(it)) {
-      xfprintf(file, " '");
-      write_core(p, xh_key(it, pic_value));
-      xfprintf(file, " '");
+      xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it, pic_sym)));
       write_core(p, xh_val(it, pic_value));
     }
     xfprintf(file, ")");
