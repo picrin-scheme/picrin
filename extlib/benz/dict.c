@@ -6,6 +6,7 @@
 #include "picrin/dict.h"
 #include "picrin/cont.h"
 #include "picrin/pair.h"
+#include "picrin/error.h"
 
 struct pic_dict *
 pic_make_dict(pic_state *pic)
@@ -158,6 +159,99 @@ pic_dict_dictionary_size(pic_state *pic)
 }
 
 static pic_value
+pic_dict_dictionary_map(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc, i;
+  pic_value *args;
+  pic_value arg, ret;
+  xh_entry **it;
+
+  pic_get_args(pic, "l*", &proc, &argc, &args);
+
+  it = pic_alloc(pic, argc * sizeof(xh_entry));
+  for (i = 0; i < argc; ++i) {
+    if (! pic_dict_p(args[i])) {
+      pic_free(pic, it);
+      pic_errorf(pic, "expected dict, but got %s", pic_type_repr(pic_type(args[i])));
+    }
+    it[i] = xh_begin(&pic_dict_ptr(args[i])->hash);
+  }
+
+  pic_try {
+    ret = pic_nil_value();
+    do {
+      arg = pic_nil_value();
+      for (i = 0; i < argc; ++i) {
+        if (it[i] == NULL) {
+          break;
+        }
+        pic_push(pic, pic_sym_value(xh_key(it[i], pic_sym)), arg);
+        it[i] = xh_next(it[i]);
+      }
+      if (i != argc) {
+        break;
+      }
+      pic_push(pic, pic_apply(pic, proc, pic_reverse(pic, arg)), ret);
+    } while (1);
+  }
+  pic_catch {
+    pic_free(pic, it);
+    pic_raise(pic, pic->err);
+  }
+
+  pic_free(pic, it);
+
+  return pic_reverse(pic, ret);
+}
+
+static pic_value
+pic_dict_dictionary_for_each(pic_state *pic)
+{
+  struct pic_proc *proc;
+  size_t argc, i;
+  pic_value *args;
+  pic_value arg;
+  xh_entry **it;
+
+  pic_get_args(pic, "l*", &proc, &argc, &args);
+
+  it = pic_alloc(pic, argc * sizeof(xh_entry));
+  for (i = 0; i < argc; ++i) {
+    if (! pic_dict_p(args[i])) {
+      pic_free(pic, it);
+      pic_errorf(pic, "expected dict, but got %s", pic_type_repr(pic_type(args[i])));
+    }
+    it[i] = xh_begin(&pic_dict_ptr(args[i])->hash);
+  }
+
+  pic_try {
+    do {
+      arg = pic_nil_value();
+      for (i = 0; i < argc; ++i) {
+        if (it[i] == NULL) {
+          break;
+        }
+        pic_push(pic, pic_sym_value(xh_key(it[i], pic_sym)), arg);
+        it[i] = xh_next(it[i]);
+      }
+      if (i != argc) {
+        break;
+      }
+      pic_void(pic_apply(pic, proc, pic_reverse(pic, arg)));
+    } while (1);
+  }
+  pic_catch {
+    pic_free(pic, it);
+    pic_raise(pic, pic->err);
+  }
+
+  pic_free(pic, it);
+
+  return pic_none_value();
+}
+
+static pic_value
 pic_dict_dictionary_to_alist(pic_state *pic)
 {
   struct pic_dict *dict;
@@ -237,6 +331,8 @@ pic_init_dict(pic_state *pic)
   pic_defun(pic, "dictionary-set!", pic_dict_dictionary_set);
   pic_defun(pic, "dictionary-delete!", pic_dict_dictionary_del);
   pic_defun(pic, "dictionary-size", pic_dict_dictionary_size);
+  pic_defun(pic, "dictionary-map", pic_dict_dictionary_map);
+  pic_defun(pic, "dictionary-for-each", pic_dict_dictionary_for_each);
   pic_defun(pic, "dictionary->alist", pic_dict_dictionary_to_alist);
   pic_defun(pic, "alist->dictionary", pic_dict_alist_to_dictionary);
   pic_defun(pic, "dictionary->plist", pic_dict_dictionary_to_plist);
