@@ -20,10 +20,6 @@
 #include "picrin/record.h"
 #include "picrin/read.h"
 
-#if GC_DEBUG
-# include <string.h>
-#endif
-
 union header {
   struct {
     union header *ptr;

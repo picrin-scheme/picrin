@@ -2,8 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdlib.h>
-
 #include "picrin.h"
 #include "picrin/gc.h"
 #include "picrin/read.h"

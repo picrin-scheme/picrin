@@ -2,8 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <math.h>
-
 #include "picrin.h"
 #include "picrin/port.h"
 #include "picrin/pair.h"

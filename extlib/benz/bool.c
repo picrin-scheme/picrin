@@ -2,8 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <string.h>
-
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/vector.h"

@@ -2,10 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <math.h>
-#include <limits.h>
-#include <stdlib.h>
-
 #include "picrin.h"
 #include "picrin/string.h"
 #include "picrin/cont.h"

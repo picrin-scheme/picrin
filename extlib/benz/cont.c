@@ -2,10 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <setjmp.h>
-#include <string.h>
-#include <stdarg.h>
-
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/cont.h"

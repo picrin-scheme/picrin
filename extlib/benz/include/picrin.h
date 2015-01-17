@@ -30,10 +30,17 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdbool.h>
-#include <setjmp.h>
 #include <stdint.h>
 #include <limits.h>
+#include <stdarg.h>
+
+#include <stdio.h>
+#include <setjmp.h>
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+#include <ctype.h>
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"

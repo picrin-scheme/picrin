@@ -9,11 +9,6 @@
 extern "C" {
 #endif
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-
 typedef struct xvect {
   char *data;
   size_t size, mask, head, tail, width;

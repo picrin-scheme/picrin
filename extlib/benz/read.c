@@ -2,9 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <ctype.h>
-#include <math.h>
-#include <stdlib.h>
 #include "picrin.h"
 #include "picrin/read.h"
 #include "picrin/error.h"

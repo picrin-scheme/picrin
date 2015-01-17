@@ -2,11 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdlib.h>
-#include <stdarg.h>
-#include <limits.h>
-#include <math.h>
-
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/string.h"

@@ -32,7 +32,6 @@ extern "C" {
 #if GCC_VERSION >= 40500 || __clang__
 # define PIC_UNREACHABLE() (__builtin_unreachable())
 #else
-# include <assert.h>
 # define PIC_UNREACHABLE() (assert(false))
 #endif
 
