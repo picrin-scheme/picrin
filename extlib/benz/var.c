@@ -5,13 +5,11 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/proc.h"
-#include "picrin/dict.h"
 
 static pic_value
 var_lookup(pic_state *pic, pic_value var)
 {
-  pic_value val, env;
-  struct pic_dict *binding;
+  pic_value val, env, binding;
 
   val = pic_ref(pic, pic->PICRIN_BASE, "current-dynamic-environment");
   if (pic_eq_p(val, var)) {
@@ -20,11 +18,13 @@ var_lookup(pic_state *pic, pic_value var)
 
   env = pic_apply0(pic, pic_proc_ptr(val));
   while (! pic_nil_p(env)) {
-    pic_assert_type(pic, pic_car(pic, env), dict);
+    binding = pic_car(pic, env);
 
-    binding = pic_dict_ptr(pic_car(pic, env));
-    if (pic_dict_has(pic, binding, var)) {
-      return pic_dict_ref(pic, binding, var);
+    while (! pic_nil_p(binding)) {
+      if (pic_eq_p(pic_caar(pic, binding), var)) {
+        return pic_car(pic, binding);
+      }
+      binding = pic_cdr(pic, binding);
     }
     env = pic_cdr(pic, env);
   }
@@ -48,7 +48,7 @@ var_call(pic_state *pic)
 
   switch (n) {
   case 0:
-    return pic_car(pic, box);
+    return pic_cdr(pic, box);
 
   case 1:
     conv = pic_attr_ref(pic, pic_obj_value(self), "@@converter");
@@ -57,7 +57,7 @@ var_call(pic_state *pic)
 
       val = pic_apply1(pic, pic_proc_ptr(conv), val);
     }
-    pic_set_car(pic, box, val);
+    pic_set_cdr(pic, box, val);
 
     return pic_none_value();
 
@@ -82,7 +82,7 @@ pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
   struct pic_proc *var;
 
   var = pic_make_proc(pic, var_call, "<var-call>");
-  pic_attr_set(pic, pic_obj_value(var), "@@box", pic_list1(pic, init));
+  pic_attr_set(pic, pic_obj_value(var), "@@box", pic_cons(pic, pic_false_value(), init));
   pic_attr_set(pic, pic_obj_value(var), "@@converter", conv ? pic_obj_value(conv) : pic_false_value());
 
   return var;

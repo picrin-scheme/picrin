@@ -308,13 +308,10 @@ my $src = <<'EOL';
     (let* ((old-bindings
             (current-dynamic-environment))
            (binding
-            (let ((dict (dictionary)))
-              (for-each
-               (lambda (parameter value)
-                 (dictionary-set! dict parameter (list (parameter value #f))))
-               parameters
-               values)
-              dict))
+            (map (lambda (parameter value)
+                   (cons parameter (parameter value #f)))
+                 parameters
+                 values))
            (new-bindings
             (cons binding old-bindings)))
       (dynamic-wind
@@ -709,13 +706,10 @@ const char pic_boot[] =
 "    (let* ((old-bindings\n"
 "            (current-dynamic-environment))\n"
 "           (binding\n"
-"            (let ((dict (dictionary)))\n"
-"              (for-each\n"
-"               (lambda (parameter value)\n"
-"                 (dictionary-set! dict parameter (list (parameter value #f))))\n"
-"               parameters\n"
-"               values)\n"
-"              dict))\n"
+"            (map (lambda (parameter value)\n"
+"                   (cons parameter (parameter value #f)))\n"
+"                 parameters\n"
+"                 values))\n"
 "           (new-bindings\n"
 "            (cons binding old-bindings)))\n"
 "      (dynamic-wind\n"
