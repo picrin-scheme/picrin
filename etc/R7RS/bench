@@ -96,6 +96,7 @@ setup ()
   FOMENT=${FOMENT:-"foment"}
   HUSK=${HUSK:-"huski"}
   CHIBI=${CHIBI:-"chibi-scheme"}
+  PICRIN=${PICRIN:-"picrin"}
 }
 
 setup
@@ -112,6 +113,7 @@ Usage: bench [-r runs] <system> <benchmark>
 
   sagittarius      for Sagittarius Scheme
   gauche           for Gauche Scheme
+  picrin           for picrin Scheme
   all              for all of the above
 
 <benchmark> is the name of the benchmark(s) to run:
@@ -234,6 +236,20 @@ chibi_exec ()
 
 # -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# Definitions specific to picrin Scheme
+
+picrin_comp ()
+{
+  :
+}
+
+picrin_exec ()
+{
+  time "${PICRIN}" "$1" < "$2"
+}
+
+
 ## Arg processing...
 if [ "$#" -lt 2 ]; then
   error '>>> At least two command line arguments are needed'
@@ -319,6 +335,16 @@ sagittarius)NAME='Sagittarius'
        husk)NAME='Husk'
             COMP=husk_comp
             EXEC=husk_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+       picrin)NAME='picrin'
+            COMP=picrin_comp
+            EXEC=picrin_exec
             COMPOPTS=""
             EXTENSION="sch"
             EXTENSIONCOMP="sch"
