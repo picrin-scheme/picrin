@@ -9,12 +9,14 @@
 #include "picrin/error.h"
 #include "picrin/string.h"
 #include "picrin/proc.h"
+#include "picrin/dict.h"
 
 struct pic_lib *
 pic_open_library(pic_state *pic, pic_value name)
 {
   struct pic_lib *lib;
   struct pic_senv *senv;
+  struct pic_dict *exports;
 
   if ((lib = pic_find_library(pic, name)) != NULL) {
 
@@ -28,11 +30,12 @@ pic_open_library(pic_state *pic, pic_value name)
   }
 
   senv = pic_null_syntactic_environment(pic);
+  exports = pic_make_dict(pic);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
-  lib->env = senv;
   lib->name = name;
-  xh_init_int(&lib->exports, sizeof(pic_sym));
+  lib->env = senv;
+  lib->exports = exports;
 
   /* register! */
   pic->libs = pic_acons(pic, name, pic_obj_value(lib), pic->libs);
@@ -116,8 +119,9 @@ import_table(pic_state *pic, pic_value spec, xhash *imports)
   if (! lib) {
     pic_errorf(pic, "library not found: ~a", spec);
   }
-  for (it = xh_begin(&lib->exports); it != NULL; it = xh_next(it)) {
-    xh_put_int(imports, xh_key(it, pic_sym), &xh_val(it, pic_sym));
+  pic_dict_for_each (sym, lib->exports) {
+    id = pic_sym(pic_dict_ref(pic, lib->exports, sym));
+    xh_put_int(imports, sym, &id);
   }
 
  exit:
@@ -176,7 +180,7 @@ export(pic_state *pic, pic_value spec)
   printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym(b)), pic_symbol_name(pic, rename));
 #endif
 
-  xh_put_int(&pic->lib->exports, pic_sym(b), &rename);
+  pic_dict_set(pic, pic->lib->exports, pic_sym(b), pic_sym_value(rename));
 
   return;
 
