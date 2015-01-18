@@ -6,20 +6,19 @@
 #include "picrin/string.h"
 
 pic_sym
-pic_intern(pic_state *pic, const char *str, size_t len)
+pic_intern(pic_state *pic, pic_str *str)
 {
   char *cstr;
   xh_entry *e;
   pic_sym id;
 
-  cstr = (char *)pic_malloc(pic, len + 1);
-  cstr[len] = '\0';
-  memcpy(cstr, str, len);
-
-  e = xh_get_str(&pic->syms, cstr);
+  e = xh_get_str(&pic->syms, pic_str_cstr(str));
   if (e) {
     return xh_val(e, pic_sym);
   }
+
+  cstr = (char *)pic_malloc(pic, pic_strlen(str) + 1);
+  strcpy(cstr, pic_str_cstr(str));
 
   id = pic->sym_cnt++;
   xh_put_str(&pic->syms, cstr, &id);
@@ -30,13 +29,7 @@ pic_intern(pic_state *pic, const char *str, size_t len)
 pic_sym
 pic_intern_cstr(pic_state *pic, const char *str)
 {
-  return pic_intern(pic, str, strlen(str));
-}
-
-pic_sym
-pic_intern_str(pic_state *pic, pic_str *str)
-{
-  return pic_intern_cstr(pic, pic_str_cstr(str));
+  return pic_intern(pic, pic_make_str(pic, str, strlen(str)));
 }
 
 pic_sym

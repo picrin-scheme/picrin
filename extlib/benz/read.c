@@ -222,7 +222,8 @@ read_symbol(pic_state *pic, struct pic_port *port, const char *str)
     buf[len - 1] = (char)c;
   }
 
-  sym = pic_intern(pic, buf, len);
+  buf[len] = 0;
+  sym = pic_intern_cstr(pic, buf);
   pic_free(pic, buf);
 
   return pic_sym_value(sym);

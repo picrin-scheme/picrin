@@ -104,7 +104,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
 
       prefix = pic_list_ref(pic, spec, 2);
       pic_dict_for_each (sym, table) {
-        id = pic_intern_str(pic, pic_format(pic, "~s~s", prefix, pic_sym_value(sym)));
+        id = pic_intern(pic, pic_format(pic, "~s~s", prefix, pic_sym_value(sym)));
         pic_dict_set(pic, imports, id, pic_dict_ref(pic, table, sym));
       }
       return;
