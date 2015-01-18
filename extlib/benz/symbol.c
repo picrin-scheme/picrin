@@ -63,22 +63,6 @@ pic_gensym(pic_state *pic, pic_sym base)
   return uniq;
 }
 
-pic_sym
-pic_ungensym(pic_state *pic, pic_sym base)
-{
-  const char *name, *occr;
-
-  if (pic_interned_p(pic, base)) {
-    return base;
-  }
-
-  name = pic_symbol_name(pic, base);
-  if ((occr = strrchr(name, '@')) == NULL) {
-    pic_panic(pic, "logic flaw");
-  }
-  return pic_intern(pic, name, (size_t)(occr - name));
-}
-
 bool
 pic_interned_p(pic_state *pic, pic_sym sym)
 {
