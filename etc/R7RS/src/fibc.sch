@@ -1,7 +1,8 @@
 ;;; FIBC -- FIB using first-class continuations, written by Kent Dybvig
 
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (succ n) (+ n 1))
 (define (pred n) (- n 1))
@@ -31,8 +32,10 @@
          (s2 (number->string count))
          (s1 (number->string input))
          (name "fibc"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (fibc (hide count input) (hide count (lambda (n) n))))
      (lambda (result) (= result output)))))
+
+(include "src/common.sch")

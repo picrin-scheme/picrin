@@ -13,9 +13,9 @@
 ; 000820 / wdc Added the MpermNKL benchmark; revised for new run-benchmark.
 ; 071127 / wdc Simplified and ported for R6RS.
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 ; This benchmark is in three parts.  Each tests a different aspect of
 ; the memory system.
@@ -193,7 +193,7 @@
              (newline))))
 
 (define (run-benchmark . args)
-  (apply run-r6rs-benchmark args))
+  (apply run-r7rs-benchmark args))
 
 (define (main)
   (let* ((input1 (read))
@@ -210,3 +210,5 @@
                         (hide input1 input2)
                         (hide input1 input3)
                         (hide input1 input4))))
+
+(include "src/common.sch")

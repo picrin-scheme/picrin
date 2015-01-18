@@ -123,9 +123,9 @@
 ;   Enders of V     = (5 19 20)
 ;   Predictors of V = (15 17)
 
-(import (rnrs base)
-        (rnrs lists)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (make-parser grammar lexer)
 
@@ -655,8 +655,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "earley"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
      (lambda () (test (hide count (vector->list (make-vector input1 'a)))))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

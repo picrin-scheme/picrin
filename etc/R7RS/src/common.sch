@@ -24,7 +24,7 @@
 ;;; provide timings for the benchmark proper (without startup
 ;;; and compile time).
 
-(define (run-r6rs-benchmark name count thunk ok?)
+(define (run-r7rs-benchmark name count thunk ok?)
   (display "Running ")
   (display name)
   (newline)

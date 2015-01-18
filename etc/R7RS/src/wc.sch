@@ -1,9 +1,11 @@
 ;;; WC -- One of the Kernighan and Van Wyk benchmarks.
 ;;; Rewritten by Will Clinger into more idiomatic (and correct!) Scheme.
   
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme file)
+        (scheme char))
 
 (define (wcport port)
   (define (loop nl nw nc inword?)
@@ -28,8 +30,10 @@
          (s2 (number->string count))
          (s1 input)
          (name "wc"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (go (hide count input)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

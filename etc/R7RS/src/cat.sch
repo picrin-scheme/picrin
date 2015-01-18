@@ -1,9 +1,10 @@
 ;;; CAT -- One of the Kernighan and Van Wyk benchmarks.
 ;;; Rewritten by Will Clinger into more idiomatic Scheme.
 
-(import (rnrs base)
-        (rnrs io simple)
-        (rnrs files))
+(import (scheme base)
+        (scheme read)
+        (scheme file)
+        (scheme write))
 
 (define (catport in out)
   (let ((x (read-char in)))
@@ -32,8 +33,10 @@
          (s2 input2)
          (s1 input1)
          (name "cat"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s3)
      count
      (lambda () (go (hide count input1) (hide count input2)))
      (lambda (result) #t))))
+
+(include "src/common.sch")

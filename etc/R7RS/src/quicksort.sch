@@ -1,10 +1,9 @@
 ; This is probably from Lars Hansen's MS thesis.
 ; The quick-1 benchmark.  (Figure 35, page 132.)
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple)
-        (rnrs arithmetic flonums))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (quick-1 v less?)
   
@@ -92,32 +91,32 @@
   (set! random-flonum
         (lambda ()
           (let ((seed seed))  ; make it local
-            (let ((p1 (fl- (fl* a12 (vector-ref seed 1))
-                           (fl* a13n (vector-ref seed 0))))
-                  (p2 (fl- (fl* a21 (vector-ref seed 5))
-                           (fl* a23n (vector-ref seed 3)))))
-              (let ((k1 (truncate (fl/ p1 m1)))
-                    (k2 (truncate (fl/ p2 m2)))
+            (let ((p1 (- (* a12 (vector-ref seed 1))
+                         (* a13n (vector-ref seed 0))))
+                  (p2 (- (* a21 (vector-ref seed 5))
+                         (* a23n (vector-ref seed 3)))))
+              (let ((k1 (truncate (/ p1 m1)))
+                    (k2 (truncate (/ p2 m2)))
                     (ignore1 (vector-set! seed 0 (vector-ref seed 1)))
                     (ignore3 (vector-set! seed 3 (vector-ref seed 4))))
-                (let ((p1 (fl- p1 (fl* k1 m1)))
-                      (p2 (fl- p2 (fl* k2 m2)))
+                (let ((p1 (- p1 (* k1 m1)))
+                      (p2 (- p2 (* k2 m2)))
                       (ignore2 (vector-set! seed 1 (vector-ref seed 2)))
                       (ignore4 (vector-set! seed 4 (vector-ref seed 5))))
-                  (let ((p1 (if (fl<? p1 0.0) (fl+ p1 m1) p1))
-                        (p2 (if (fl<? p2 0.0) (fl+ p2 m2) p2)))
+                  (let ((p1 (if (< p1 0.0) (+ p1 m1) p1))
+                        (p2 (if (< p2 0.0) (+ p2 m2) p2)))
                     (vector-set! seed 2 p1)
                     (vector-set! seed 5 p2)
-                    (if (fl<=? p1 p2)
-                        (fl* norm (fl+ (fl- p1 p2) m1))
-                        (fl* norm (fl- p1 p2))))))))))
+                    (if (<= p1 p2)
+                        (* norm (+ (- p1 p2) m1))
+                        (* norm (- p1 p2))))))))))
     
   (set! seed-ref (lambda () (vector->list seed)))
   
   (set! seed-set! (lambda l (set! seed (list->vector l)))))
 
 (define (random n)
-  (exact (fltruncate (fl* (inexact n) (random-flonum)))))
+  (exact (truncate (* (inexact n) (random-flonum)))))
 
 ;;; Even with the improved random number generator,
 ;;; this benchmark still spends almost all of its time
@@ -141,7 +140,7 @@
     (do ((i 0 (+ i 1)))
         ((= i n))
       (vector-set! v i (random r)))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s3)
      count
      (lambda () (quick-1 (vector-map values v) less?))
@@ -154,3 +153,5 @@
             (if (not (<= (vector-ref v (- i 1))
                          (vector-ref v i)))
                 (return #f)))))))))
+
+(include "src/common.sch")

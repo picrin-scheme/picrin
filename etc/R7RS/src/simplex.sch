@@ -1,9 +1,9 @@
 ;;; SIMPLEX -- Simplex algorithm.
   
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple)
-        (rnrs arithmetic flonums))
+(import (scheme base)
+        (scheme write)
+        (scheme read)
+        (scheme inexact))
 
 (define (matrix-rows a) (vector-length a))
 (define (matrix-columns a) (vector-length (vector-ref a 0)))
@@ -39,11 +39,11 @@
       (set! kp (vector-ref l1 0))
       (set! bmax (matrix-ref a mm kp))
       (do ((k 1 (+ k 1))) ((>= k nl1))
-        (if (flpositive?
+        (if (positive?
             (if abs?
-                (fl- (flabs (matrix-ref a mm (vector-ref l1 k)))
-                     (flabs bmax))
-                (fl- (matrix-ref a mm (vector-ref l1 k)) bmax)))
+                (- (abs (matrix-ref a mm (vector-ref l1 k)))
+                     (abs bmax))
+                (- (matrix-ref a mm (vector-ref l1 k)) bmax)))
             (begin
              (set! kp (vector-ref l1 k))
              (set! bmax (matrix-ref a mm (vector-ref l1 k)))))))
@@ -53,59 +53,59 @@
             (flag? #f))
         (do ((i 0 (+ i 1))) ((= i m))
           (if flag?
-              (if (fl<? (matrix-ref a (vector-ref l2 i) kp) (fl- *epsilon*))
+              (if (< (matrix-ref a (vector-ref l2 i) kp) (- *epsilon*))
                   (begin
-                   (let ((q (fl/ (fl- (matrix-ref a (vector-ref l2 i) 0))
+                   (let ((q (/ (- (matrix-ref a (vector-ref l2 i) 0))
                                       (matrix-ref a (vector-ref l2 i) kp))))
                      (cond
-                      ((fl<? q q1)
+                      ((< q q1)
                        (set! ip (vector-ref l2 i))
                        (set! q1 q))
-                      ((fl=? q q1)
+                      ((= q q1)
                        (let ((qp 0.0)
                              (q0 0.0))
                          (let loop ((k 1))
                            (if (<= k n)
                                (begin
                                 (set! qp
-                                      (fl/ (fl- (matrix-ref a ip k))
+                                      (/ (- (matrix-ref a ip k))
                                                 (matrix-ref a ip kp)))
                                 (set! q0
-                                      (fl/
-                                       (fl-
+                                      (/
+                                       (-
                                         (matrix-ref a (vector-ref l2 i) k))
                                         (matrix-ref a (vector-ref l2 i) kp)))
-                                (if (fl=? q0 qp)
+                                (if (= q0 qp)
                                     (loop (+ k 1))))))
-                         (if (fl<? q0 qp)
+                         (if (< q0 qp)
                              (set! ip (vector-ref l2 i)))))))))
-              (if (fl<? (matrix-ref a (vector-ref l2 i) kp) (fl- *epsilon*))
+              (if (< (matrix-ref a (vector-ref l2 i) kp) (- *epsilon*))
                   (begin
-                   (set! q1 (fl/ (fl- (matrix-ref a (vector-ref l2 i) 0))
+                   (set! q1 (/ (- (matrix-ref a (vector-ref l2 i) 0))
                                       (matrix-ref a (vector-ref l2 i) kp)))
                    (set! ip (vector-ref l2 i))
                    (set! flag? #t)))))))
     (define (simp3 one?)
-      (let ((piv (fl/ (matrix-ref a ip kp))))
+      (let ((piv (/ (matrix-ref a ip kp))))
         (do ((ii 0 (+ ii 1))) ((= ii (+ m (if one? 2 1))))
           (if (not (= ii ip))
               (begin
-               (matrix-set! a ii kp (fl* piv (matrix-ref a ii kp)))
+               (matrix-set! a ii kp (* piv (matrix-ref a ii kp)))
                (do ((kk 0 (+ kk 1))) ((= kk (+ n 1)))
                  (if (not (= kk kp))
                      (matrix-set!
-                      a ii kk (fl- (matrix-ref a ii kk)
-                                   (fl* (matrix-ref a ip kk)
+                      a ii kk (- (matrix-ref a ii kk)
+                                   (* (matrix-ref a ip kk)
                                         (matrix-ref a ii kp)))))))))
         (do ((kk 0 (+ kk 1))) ((= kk (+ n 1)))
           (if (not (= kk kp))
-              (matrix-set! a ip kk (fl* (fl- piv) (matrix-ref a ip kk)))))
+              (matrix-set! a ip kk (* (- piv) (matrix-ref a ip kk)))))
         (matrix-set! a ip kp piv)))
     (do ((k 0 (+ k 1))) ((= k n))
       (vector-set! l1 k (+ k 1))
       (vector-set! izrov k k))
     (do ((i 0 (+ i 1))) ((= i m))
-      (if (flnegative? (matrix-ref a (+ i 1) 0))
+      (if (negative? (matrix-ref a (+ i 1) 0))
           (complain))
       (vector-set! l2 i (+ i 1))
       (vector-set! iposv i (+ n i)))
@@ -113,20 +113,20 @@
     (if (positive? (+ m2 m3))
         (begin
          (do ((k 0 (+ k 1))) ((= k (+ n 1)))
-           (do ((i (+ m1 1) (+ i 1)) (sum 0.0 (fl+ sum (matrix-ref a i k))))
-               ((> i m) (matrix-set! a (+ m 1) k (fl- sum)))))
+           (do ((i (+ m1 1) (+ i 1)) (sum 0.0 (+ sum (matrix-ref a i k))))
+               ((> i m) (matrix-set! a (+ m 1) k (- sum)))))
          (let loop ()
            (simp1 (+ m 1) #f)
            (cond
-            ((fl<=? bmax *epsilon*)
-             (cond ((fl<? (matrix-ref a (+ m 1) 0) (fl- *epsilon*))
+            ((<= bmax *epsilon*)
+             (cond ((< (matrix-ref a (+ m 1) 0) (- *epsilon*))
                     (set! pass2? #f))
-                   ((fl<=? (matrix-ref a (+ m 1) 0) *epsilon*)
+                   ((<= (matrix-ref a (+ m 1) 0) *epsilon*)
                     (let loop ((ip1 m12))
                       (if (<= ip1 m)
                           (cond ((= (vector-ref iposv (- ip1 1)) (+ ip n -1))
                                  (simp1 ip1 #t)
-                                 (cond ((flpositive? bmax)
+                                 (cond ((positive? bmax)
                                         (set! ip ip1)
                                         (set! one? #t))
                                        (else
@@ -137,7 +137,7 @@
                             (if (vector-ref l3 (- i (+ m1 1)))
                                 (do ((k 0 (+ k 1))) ((= k (+ n 1)))
                                   (matrix-set!
-                                   a i k (fl- (matrix-ref a i k)))))))))
+                                   a i k (- (matrix-ref a i k)))))))))
                    (else
                     (simp2)
                     (if (zero? ip) (set! pass2? #f) (set! one? #t)))))
@@ -157,17 +157,17 @@
                       (do ((is k (+ is 1))) ((>= is nl1))
                         (vector-set! l1 is (vector-ref l1 (+ is 1))))
                        (matrix-set!
-                        a (+ m 1) kp (fl+ (matrix-ref a (+ m 1) kp) 1.0))
+                        a (+ m 1) kp (+ (matrix-ref a (+ m 1) kp) 1.0))
                        (do ((i 0 (+ i 1))) ((= i (+ m 2)))
-                         (matrix-set! a i kp (fl- (matrix-ref a i kp))))))))
+                         (matrix-set! a i kp (- (matrix-ref a i kp))))))))
                  ((and (>= (vector-ref iposv (- ip 1)) (+ n m1))
                        (vector-ref l3
                                    (- (vector-ref iposv (- ip 1)) (+ m1 n))))
                   (vector-set! l3 (- (vector-ref iposv (- ip 1)) (+ m1 n)) #f)
                   (matrix-set!
-                   a (+ m 1) kp (fl+ (matrix-ref a (+ m 1) kp) 1.0))
+                   a (+ m 1) kp (+ (matrix-ref a (+ m 1) kp) 1.0))
                   (do ((i 0 (+ i 1))) ((= i (+ m 2)))
-                    (matrix-set! a i kp (fl- (matrix-ref a i kp))))))
+                    (matrix-set! a i kp (- (matrix-ref a i kp))))))
                 (let ((t (vector-ref izrov (- kp 1))))
                   (vector-set! izrov (- kp 1) (vector-ref iposv (- ip 1)))
                   (vector-set! iposv (- ip 1) t))
@@ -176,7 +176,7 @@
          (let loop ()
            (simp1 0 #f)
            (cond
-            ((flpositive? bmax)
+            ((positive? bmax)
              (simp2)
              (cond ((zero? ip) #t)
                     (else (simp3 #f)
@@ -203,8 +203,10 @@
          (s2 (number->string count))
          (s1 "")
          (name "simplex"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
      (lambda () (test (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

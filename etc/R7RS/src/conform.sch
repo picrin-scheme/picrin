@@ -1,10 +1,8 @@
 ;;; CONFORM -- Type checker, written by Jim Miller.
 
-(import (rnrs base)
-        (rnrs unicode)
-        (rnrs lists)
-        (rnrs io simple)
-        (rnrs mutable-pairs))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 ;;; Functional and unstable
 
@@ -462,8 +460,10 @@
          (output (read))
          (s (number->string count))
          (name "conform"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s)
      count
      (lambda () (apply test input1))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

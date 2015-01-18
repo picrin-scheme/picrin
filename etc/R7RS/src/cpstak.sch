@@ -1,8 +1,9 @@
 ;;; CPSTAK -- A continuation-passing version of the TAK benchmark.
 ;;; A good test of first class procedures and tail recursion.
  
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (cpstak x y z)
 
@@ -36,9 +37,11 @@
          (s2 (number->string input2))
          (s1 (number->string input1))
          (name "cpstak"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2 ":" s3 ":" s4)
      count
      (lambda ()
        (cpstak (hide count input1) (hide count input2) (hide count input3)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

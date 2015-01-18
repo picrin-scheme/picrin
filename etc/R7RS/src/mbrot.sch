@@ -1,28 +1,28 @@
 ;;; MBROT -- Generation of Mandelbrot set fractal.
   
-(import (rnrs base)
-        (rnrs io simple)
-        (rnrs arithmetic flonums))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (count r i step x y)
 
   (let ((max-count 64)
         (radius^2  16.0))
 
-    (let ((cr (fl+ r (fl* (inexact x) step)))
-          (ci (fl+ i (fl* (inexact y) step))))
+    (let ((cr (+ r (* (inexact x) step)))
+          (ci (+ i (* (inexact y) step))))
       
       (let loop ((zr cr)
                  (zi ci)
                  (c 0))
         (if (= c max-count)
           c
-          (let ((zr^2 (fl* zr zr))
-                (zi^2 (fl* zi zi)))
-            (if (fl>? (fl+ zr^2 zi^2) radius^2)
+          (let ((zr^2 (* zr zr))
+                (zi^2 (* zi zi)))
+            (if (> (+ zr^2 zi^2) radius^2)
               c
-              (let ((new-zr (fl+ (fl- zr^2 zi^2) cr))
-                    (new-zi (fl+ (fl* 2.0 (fl* zr zi)) ci)))
+              (let ((new-zr (+ (- zr^2 zi^2) cr))
+                    (new-zi (+ (* 2.0 (* zr zi)) ci)))
                 (loop new-zr new-zi (+ c 1))))))))))
 
 (define (mbrot matrix r i step n)
@@ -52,8 +52,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "mbrot"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (test (hide count input1)))
      (lambda (result) (= result output)))))
+
+(include "src/common.sch")

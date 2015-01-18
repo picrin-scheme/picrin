@@ -1,24 +1,24 @@
 ;;; PNPOLY - Test if a point is contained in a 2D polygon.
   
-(import (rnrs base)
-        (rnrs io simple)
-        (rnrs arithmetic flonums))
+(import (scheme base)
+        (scheme write)
+        (scheme read))
 
 (define (pt-in-poly2 xp yp x y)
   (let loop ((c #f) (i (- (vector-length xp) 1)) (j 0))
     (if (< i 0)
       c
-      (if (or (and (or (fl>? (vector-ref yp i) y)
-                       (fl>=? y (vector-ref yp j)))
-                   (or (fl>? (vector-ref yp j) y)
-                       (fl>=? y (vector-ref yp i))))
-              (fl>=? x
-                       (fl+ (vector-ref xp i)
-                               (fl/ (fl*
-                                        (fl- (vector-ref xp j)
+      (if (or (and (or (> (vector-ref yp i) y)
+                       (>= y (vector-ref yp j)))
+                   (or (> (vector-ref yp j) y)
+                       (>= y (vector-ref yp i))))
+              (>= x
+                       (+ (vector-ref xp i)
+                               (/ (*
+                                        (- (vector-ref xp j)
                                                 (vector-ref xp i))
-                                        (fl- y (vector-ref yp i)))
-                                       (fl- (vector-ref yp j)
+                                        (- y (vector-ref yp i)))
+                                       (- (vector-ref yp j)
                                                (vector-ref yp i))))))
         (loop c (- i 1) i)
         (loop (not c) (- i 1) i)))))
@@ -49,8 +49,10 @@
          (s2 (number->string count))
          (s1 "")
          (name "pnpoly"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
      (lambda () (run (hide count input1) (hide count input2)))
      (lambda (result) (and (number? result) (= result output))))))
+
+(include "src/common.sch")

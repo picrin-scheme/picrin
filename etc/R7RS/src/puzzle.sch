@@ -1,8 +1,8 @@
 ;;; PUZZLE -- Forest Baskett's Puzzle benchmark, originally written in Pascal.
   
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme write)
+        (scheme read))
 
 (define (my-iota n)
   (do ((n n (- n 1))
@@ -144,7 +144,7 @@
          (s2 (number->string count))
          (s1 input1)
          (name "puzzle"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
      (lambda () (start (hide count input1)))
@@ -152,3 +152,5 @@
 
 (for-each (lambda (i) (vector-set! *p* i (make-vector (+ size 1))))
           (my-iota (+ typemax 1)))
+
+(include "src/common.sch")

@@ -30,12 +30,11 @@
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-(import (rnrs base)
-        (rnrs unicode)
-        (rnrs lists)
-        (rnrs control)
-        (rnrs io simple)
-        (rnrs mutable-strings))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme file)
+        (scheme char))
 
 (define (parsing-benchmark . rest)
   (let* ((n (if (null? rest) 1000 (car rest)))
@@ -935,8 +934,10 @@
          (s2 (number->string count))
          (s1 input1)
          (name "parsing"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      1
      (lambda () (parsing-benchmark (hide count count) (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

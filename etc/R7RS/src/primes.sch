@@ -1,7 +1,11 @@
 ;;; PRIMES -- Compute primes less than 100, written by Eric Mohr.
 
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
+
+(define div quotient)
+(define mod modulo)
 
 (define  (interval-list m n)
   (if (> m n)
@@ -32,8 +36,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "primes"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (primes<= (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

@@ -1,7 +1,8 @@
 ;;; ACK -- One of the Kernighan and Van Wyk benchmarks.
 
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (ack m n)
   (cond ((= m 0) (+ n 1))
@@ -16,8 +17,10 @@
          (s2 (number->string input2))
          (s1 (number->string input1))
          (name "ack"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (ack (hide count input1) (hide count input2)))
      (lambda (result) (= result output)))))
+
+(include "src/common.sch")

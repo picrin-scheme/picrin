@@ -55,10 +55,10 @@
 ; The second phase creates the test problem, and tests to see
 ; whether it is implied by the lemmas.
 
-(import (rnrs base)
-        (rnrs lists)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme cxr))
 
 (define (main)
   (let* ((count (read))
@@ -67,7 +67,7 @@
          (s2 (number->string count))
          (s1 (number->string input))
          (name "sboyer"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda ()
@@ -786,3 +786,5 @@
             (if answer
                 rewrite-count
                 #f)))))
+
+(include "src/common.sch")

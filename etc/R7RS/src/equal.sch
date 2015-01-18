@@ -18,10 +18,9 @@
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple)
-        (rnrs mutable-pairs))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 ; Returns a list with n elements, all equal to x.
 
@@ -148,7 +147,7 @@
          (s1 (number->string input1))
          (s0 (number->string input0))
          (name "equal"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s0 ":" s1 ":" s2 ":" s3 ":" s4 ":" s5)
      1
      (lambda ()
@@ -159,3 +158,5 @@
                             (hide input0 input4)
                             (hide input0 input5)))
      (lambda (result) (eq? result #t)))))
+
+(include "src/common.sch")

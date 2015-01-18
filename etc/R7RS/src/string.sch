@@ -1,8 +1,10 @@
 ;;; STRING -- One of the Kernighan and Van Wyk benchmarks.
   
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
+
+(define div quotient)
 
 (define s "abcdef")
 
@@ -31,8 +33,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "string"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (my-try (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

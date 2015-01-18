@@ -32,11 +32,11 @@
 ; of free memory.  There is no portable way to do this in Scheme; each
 ; implementation needs its own version.
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs records procedural)
-        (rnrs io simple)
-        (rnrs arithmetic flonums))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
+
+(define div quotient)
 
 (define (run-benchmark2 name thunk)
   (display name)
@@ -47,6 +47,13 @@
   (display " Total memory available= ???????? bytes")
   (display "  Free memory= ???????? bytes")
   (newline))
+
+(define-record-type classNode
+  (make-node-raw left right i j) node?
+  (left node.left node.left-set!)
+  (right node.right node.right-set!)
+  (i node.i)
+  (j node.j))
 
 (define (gcbench kStretchTreeDepth)
   
@@ -75,21 +82,10 @@
     
     ; Elements 3 and 4 of the allocated vectors are useless.
     
-    (let* ((classNode
-            (make-record-type-descriptor
-             'classNode #f #f #f #f
-             '#((mutable left) (mutable right) (mutable i) (mutable j))))
-           (classNode-cd
-            (make-record-constructor-descriptor classNode #f #f))
-           (make-node-raw (record-constructor classNode-cd))
-           (make-empty-node (lambda () (make-node-raw 0 0 0 0)))
+    (let* ((make-empty-node (lambda () (make-node-raw 0 0 0 0)))
            (make-node
             (lambda (l r)
-              (make-node-raw l r 0 0)))
-           (node.left (record-accessor classNode 0))
-           (node.right (record-accessor classNode 1))
-           (node.left-set! (record-mutator classNode 0))
-           (node.right-set! (record-mutator classNode 1)))
+              (make-node-raw l r 0 0))))
       
       ;  Build tree top down, assigning to older objects.
       (define (Populate iDepth thisNode)
@@ -195,8 +191,10 @@
     (newline)
     (display "The use of more or less memory will skew the results.")
     (newline)
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (gcbench (hide count input1)))
      (lambda (result) #t))))
+
+(include "src/common.sch")

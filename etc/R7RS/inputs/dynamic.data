@@ -45,7 +45,7 @@
 (define (binding-show binding)
   ; returns a printable representation of a type binding
   (cons (key-show (binding-key binding))
-        (cons ': (value-show (binding-value binding)))))
+        (cons '|:| (value-show (binding-value binding)))))
 
 
 ; environments
@@ -2281,7 +2281,7 @@
   ; displays the top level environment
   (map (lambda (binding)
          (cons (key-show (binding-key binding))
-               (cons ': (tvar-show (binding-value binding)))))
+               (cons '|:| (tvar-show (binding-value binding)))))
        (env->list dynamic-top-level-env)))
 ; ----------------------------------------------------------------------------
 ; Dynamic type inference for Scheme

@@ -1,8 +1,8 @@
 ;;; ARRAY1 -- One of the Kernighan and Van Wyk benchmarks.
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme write)
+        (scheme read))
 
 (define (create-x n)
   (define result (make-vector n))
@@ -34,8 +34,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "array1"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      1
      (lambda () (go (hide count count) (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

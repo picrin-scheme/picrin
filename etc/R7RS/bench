@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
 # For running R6RS benchmarks.
 #
@@ -34,23 +34,23 @@ HOME="`( pwd )`"
 SRC="${HOME}/src"
 INPUTS="${HOME}/inputs"
 
-TEMP="/tmp/larcenous"
+# TEMP="/tmp/larcenous"
 
 ################################################################
 
-GABRIEL_BENCHMARKS="browse deriv dderiv destruc diviter divrec puzzle triangl tak takl ntakl cpstak ctak"
+GABRIEL_BENCHMARKS="browse deriv destruc diviter divrec puzzle triangl tak takl ntakl cpstak ctak"
 
-NUM_BENCHMARKS="fib fibc fibfp sum sumfp fft mbrot mbrotZ nucleic pnpoly"
+NUM_BENCHMARKS="fib fibc sum sumfp fft mbrot mbrotZ nucleic pnpoly"
 
-KVW_BENCHMARKS="ack array1 string sum1 cat cat2 cat3 tail wc"
+KVW_BENCHMARKS="ack array1 string sum1 cat tail wc"
 
-IO_BENCHMARKS="read0 read1 read2 read3"
+IO_BENCHMARKS="read1"
 
-OTHER_BENCHMARKS="bibfreq bibfreq2 compiler conform dynamic earley graphs lattice matrix maze mazefun nqueens paraffins parsing peval pi primes quicksort ray scheme simplex slatex"
+OTHER_BENCHMARKS="compiler conform dynamic earley graphs lattice matrix mazefun nqueens paraffins parsing peval pi primes quicksort ray scheme simplex slatex"
 
 GC_BENCHMARKS="nboyer sboyer gcbench mperm"
 
-SYNTH_BENCHMARKS="equal normalization bv2string listsort vecsort hashtable0"
+SYNTH_BENCHMARKS="equal"
 
 ALL_BENCHMARKS="$GABRIEL_BENCHMARKS $NUM_BENCHMARKS $KVW_BENCHMARKS $IO_BENCHMARKS $OTHER_BENCHMARKS $GC_BENCHMARKS $SYNTH_BENCHMARKS"
 
@@ -91,13 +91,11 @@ setup ()
 
   # For both Solaris and Linux machines.
 
-  LARCENY=${LARCENY:-"../../../larceny"}
-  PETIT=${PETIT:-"../../../petit-larceny"}
-  PLTR6RS=${PLTR6RS:-"plt-r6rs"}
-  YPSILON=${YPSILON:-"ypsilon"}
-  MOSH=${MOSH:-"mosh"}
-  PETITE=${PETITE:-"petite"}
- 
+  SAGITTARIUS=${SAGITTARIUS:-"sash"}
+  GAUCHE=${GAUCHE:-"gosh"}
+  FOMENT=${FOMENT:-"foment"}
+  HUSK=${HUSK:-"huski"}
+  CHIBI=${CHIBI:-"chibi-scheme"}
 }
 
 setup
@@ -112,13 +110,8 @@ Usage: bench [-r runs] <system> <benchmark>
 
 <system> is the abbreviated name of the implementation to benchmark:
 
-  ikarus           for Ikarus
-  larceny          for Larceny
-  mosh             for Mosh
-  petit            for Petit Larceny
-  petite           for Petite Chez
-  plt              for PLT Scheme
-  ypsilon          for Ypsilon
+  sagittarius      for Sagittarius Scheme
+  gauche           for Gauche Scheme
   all              for all of the above
 
 <benchmark> is the name of the benchmark(s) to run:
@@ -161,128 +154,82 @@ evaluate ()
   {
     echo
     echo Testing $1 under ${NAME}
-    make_src_code $1
     echo Compiling...
-    $COMP "${TEMP}/$1.${EXTENSION}"
+#    $COMP "${TEMP}/$1.${EXTENSION}"
     i=0
     while [ "$i" -lt "$NB_RUNS" ]
     do
       echo Running...
-      $EXEC "${TEMP}/$1.${EXTENSIONCOMP}" "${INPUTS}/$1.input"
+      $EXEC "${SRC}/$1.sch" "${INPUTS}/$1.input"
       i=`expr $i + 1`
     done
   } 2>&1 | tee -a results.${NAME}
 
 }
 
-make_src_code ()
-{
-  cat "${SRC}/$1.sch" "${SRC}/common.sch" > "${TEMP}/$1.${EXTENSION}"
-}
-
 # -----------------------------------------------------------------------------
-# Definitions specific to Larceny and Petit Larceny
-#
-# The --nocontract command-line option reduces variability
-# of timing, and probably corresponds to the default for
-# most other systems.
+# Definitions specific to Sagittarius Scheme
 
-larceny_comp ()
-{
-  echo "(import (larceny compiler)) (compile-file \"$1\")" \
-| time "${LARCENY}" -err5rs -- -e "(repl-prompt values)"
-}
-
-larceny_exec ()
-{
-  time "${LARCENY}" --nocontract --r6rs --program "$1" < "$2"
-}
-
-petit_comp ()
-{
-  echo "(import (larceny compiler)) (compile-file \"$1\")" \
-  | time "${PETIT}" -err5rs -- -e "(repl-prompt values)"
-}
-
-petit_exec ()
-{
-  time "${PETIT}" --nocontract --r6rs --program "$1" < "$2"
-}
-
-henchman_comp ()
-{
-  echo "(import (larceny compiler)) (compile-file \"$1\")" \
-  | time "${HENCHMAN}" -err5rs -- -e "(repl-prompt values)"
-}
-
-henchman_exec ()
-{
-  time "${HENCHMAN}" --nocontract --r6rs --program "$1" < "$2"
-}
-
-# -----------------------------------------------------------------------------
-# Definitions specific to Ikarus
-
-ikarus_comp ()
+sagittarius_comp ()
 {
   :
 }
 
-ikarus_exec ()
+sagittarius_exec ()
 {
-  time "${IKARUS}" --r6rs-script "$1" < "$2"
+  time "${SAGITTARIUS}" -t -n "$1" < "$2"
 }
 
 # -----------------------------------------------------------------------------
-# Definitions specific to PLT Scheme
+# Definitions specific to Gauche Scheme
 
-plt_comp ()
-{
-  echo | time "${PLTR6RS}" --compile "$1"
-}
-
-plt_exec ()
-{
-  time "${PLTR6RS}" "$1" < "$2"
-}
-
-# -----------------------------------------------------------------------------
-# Definitions specific to Ypsilon
-
-ypsilon_comp ()
+gauche_comp ()
 {
   :
 }
 
-ypsilon_exec ()
+gauche_exec ()
 {
-  time "${YPSILON}" "$1" < "$2"
+  time "${GAUCHE}" -I. -r7 "$1" < "$2"
 }
 
 # -----------------------------------------------------------------------------
-# Definitions specific to Mosh
+# Definitions specific to Foment
 
-mosh_comp ()
+foment_comp ()
 {
   :
 }
 
-mosh_exec ()
+foment_exec ()
 {
-  time "${MOSH}" "$1" < "$2"
+  time "${FOMENT}" "$1" < "$2"
 }
 
 # -----------------------------------------------------------------------------
-# Definitions specific to Petite Chez
+# Definitions specific to Husk Scheme
 
-petite_comp ()
+husk_comp ()
 {
   :
 }
 
-petite_exec ()
+husk_exec ()
 {
-  time "${PETITE}" --optimize-level 2 --program "$1" < "$2"
+  time "${HUSK}" "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Chibi Scheme
+
+chibi_comp ()
+{
+  :
+}
+
+chibi_exec ()
+{
+  time "${CHIBI}" "$1" < "$2"
 }
 
 # -----------------------------------------------------------------------------
@@ -329,39 +276,9 @@ for system in $systems ; do
 
    case "$system" in
 
-   larceny) NAME='Larceny'
-            COMP=larceny_comp
-            EXEC=larceny_exec
-            COMPOPTS=""
-            EXTENSION="sch"
-            EXTENSIONCOMP="slfasl"
-	    COMPCOMMANDS=""
-	    EXECCOMMANDS=""
-            ;;
-
-     petit) NAME='PetitLarceny'
-            COMP=petit_comp
-            EXEC=petit_exec
-            COMPOPTS=""
-            EXTENSION="sch"
-            EXTENSIONCOMP="slfasl"
-	    COMPCOMMANDS=""
-	    EXECCOMMANDS=""
-            ;;
-
-  henchman) NAME='Henchman'
-            COMP=henchman_comp
-            EXEC=henchman_exec
-            COMPOPTS=""
-            EXTENSION="sch"
-            EXTENSIONCOMP="slfasl"
-	    COMPCOMMANDS=""
-	    EXECCOMMANDS=""
-            ;;
-
-    ikarus) NAME='Ikarus'
-            COMP=ikarus_comp
-            EXEC=ikarus_exec
+sagittarius)NAME='Sagittarius'
+            COMP=sagittarius_comp
+            EXEC=sagittarius_exec
             COMPOPTS=""
             EXTENSION="sch"
             EXTENSIONCOMP="sch"
@@ -369,9 +286,9 @@ for system in $systems ; do
 	    EXECCOMMANDS=""
             ;;
 
-       plt) NAME='PLT'
-            COMP=plt_comp
-            EXEC=plt_exec
+     gauche)NAME='Gauche'
+            COMP=gauche_comp
+            EXEC=gauche_exec
             COMPOPTS=""
             EXTENSION="sch"
             EXTENSIONCOMP="sch"
@@ -379,9 +296,9 @@ for system in $systems ; do
 	    EXECCOMMANDS=""
             ;;
 
-   ypsilon) NAME='Ypsilon' # copied from Ikarus' settings...
-            COMP=ypsilon_comp
-            EXEC=ypsilon_exec
+      chibi)NAME='Chibi'
+            COMP=chibi_comp
+            EXEC=chibi_exec
             COMPOPTS=""
             EXTENSION="sch"
             EXTENSIONCOMP="sch"
@@ -389,9 +306,9 @@ for system in $systems ; do
 	    EXECCOMMANDS=""
             ;;
 
-      mosh) NAME='Mosh'
-            COMP=mosh_comp
-            EXEC=mosh_exec
+     foment)NAME='Foment'
+            COMP=foment_comp
+            EXEC=foment_exec
             COMPOPTS=""
             EXTENSION="sch"
             EXTENSIONCOMP="sch"
@@ -399,9 +316,9 @@ for system in $systems ; do
 	    EXECCOMMANDS=""
             ;;
 
-    petite) NAME='Petite'
-            COMP=petite_comp
-            EXEC=petite_exec
+       husk)NAME='Husk'
+            COMP=husk_comp
+            EXEC=husk_exec
             COMPOPTS=""
             EXTENSION="sch"
             EXTENSIONCOMP="sch"
@@ -417,7 +334,7 @@ for system in $systems ; do
       echo Benchmarking ${NAME} on `date` under `uname -a`
    } >> results.${NAME}
 
-   mkdir "${TEMP}"
+#   mkdir "${TEMP}"
 
    for program in $benchmarks ; do
       evaluate $program

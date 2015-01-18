@@ -2,12 +2,13 @@
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(import (rnrs base)
-        (rnrs unicode)
-        (rnrs lists)
-        (rnrs io simple)
-        (rnrs mutable-pairs)
-        (rnrs mutable-strings))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme cxr)
+        (scheme inexact)
+        (scheme char)
+        (scheme file))
 
 (define (scheme-eval expr)
   (let ((code (scheme-comp expr scheme-global-environment)))
@@ -1049,10 +1050,10 @@
          (s2 (number->string count))
          (s1 "")
          (name "scheme"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
      (lambda () (scheme-eval (hide count input1)))
      (lambda (result) (equal? result output)))))
 
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+(include "src/common.sch")

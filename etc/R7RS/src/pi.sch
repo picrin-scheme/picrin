@@ -2,8 +2,11 @@
 
 ; See http://mathworld.wolfram.com/Pi.html for the various algorithms.
 
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme write)
+        (scheme read))
+
+(define div quotient)
 
 ; Utilities.
 
@@ -125,7 +128,7 @@
          (s2 (number->string input2))
          (s1 (number->string input1))
          (name "pi"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2 ":" s3 ":" s4)
      count
      (lambda ()
@@ -133,3 +136,5 @@
              (hide count input2)
              (hide count input3)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

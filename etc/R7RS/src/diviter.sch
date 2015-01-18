@@ -1,8 +1,8 @@
 ;;; DIVITER -- Benchmark which divides by 2 using lists of n ()'s.
  
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (create-n n)
   (do ((n n (- n 1))
@@ -22,9 +22,11 @@
          (s1 (number->string input1))
          (ll (create-n (hide count input1)))
          (name "diviter"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda ()
        (iterative-div2 ll))
      (lambda (result) (equal? (length result) output)))))
+
+(include "src/common.sch")

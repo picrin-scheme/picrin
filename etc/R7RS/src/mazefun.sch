@@ -1,9 +1,11 @@
 ;;; MAZEFUN -- Constructs a maze in a purely functional way,
 ;;; written by Marc Feeley.
   
-(import (rnrs base)
-        (rnrs lists)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
+
+(define mod modulo)
 
 (define foldr
   (lambda (f base lst)
@@ -195,8 +197,10 @@
          (s2 (number->string input2))
          (s1 (number->string input1))
          (name "mazefun"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2 ":" s3)
      count
      (lambda () (make-maze (hide count input1) (hide count input2)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

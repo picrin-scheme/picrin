@@ -1,8 +1,19 @@
 ;(define integer->char ascii->char)
 ;(define char->integer char->ascii)
 
-(import (rnrs) (rnrs mutable-pairs) (rnrs mutable-strings))
+(import (scheme base)
+        (scheme cxr)
+        (scheme read)
+        (scheme file)
+        (scheme char)
+        (scheme write))
 
+(cond-expand
+ ((library (srfi 60)) (import (srfi 60)))
+ (else (syntax-error "Not support this implementation.")))
+
+(define mod modulo)
+(define div quotient)
 (define open-input-file* open-input-file)
 (define (pp-expression expr port) (write expr port) (newline port))
 (define (write-returning-len obj port) (write obj port) 1)
@@ -841,7 +852,7 @@
                   (loop (cdr l))))
             (declaration-value name element default (env-parent-ref decls))))))
 (define namespace-sym 
-  (let ([s (string->canonical-symbol "NAMESPACE")])
+  (let ((s (string->canonical-symbol "NAMESPACE")))
     (define-namable-string-decl s)
     s))
 (define (node-parent x) (vector-ref x 1))
@@ -11144,10 +11155,12 @@
          (output (read))
          (s (number->string count))
          (name "compiler"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s)
      count
      (lambda ()
        (ce (hide count input1) (hide count input2) (hide count input3))
        (asm-output-get))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

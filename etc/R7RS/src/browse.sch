@@ -1,11 +1,11 @@
 ;;; BROWSE -- Benchmark to create and browse through
 ;;; an AI-like data base of units.
 
-(import (rnrs base)
-        (rnrs lists)
-        (rnrs control)
-        (rnrs io simple)
-        (rnrs mutable-pairs))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
+
+(define mod modulo)
 
 (define (lookup key table)
   (let loop ((x table))
@@ -200,8 +200,10 @@
          (s2 (number->string count))
          (s1 "")
          (name "browse"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
      (lambda () (browse (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

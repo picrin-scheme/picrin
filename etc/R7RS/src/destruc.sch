@@ -1,9 +1,10 @@
 ;;; DESTRUC -- Destructive operation benchmark.
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple)
-        (rnrs mutable-pairs))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
+
+(define div quotient)
 
 (define (append-to-tail! x y)
   (if (null? x)
@@ -55,9 +56,11 @@
          (s2 (number->string input2))
          (s1 (number->string input1))
          (name "destruc"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2 ":" s3)
      count
      (lambda ()
        (destructive (hide count input1) (hide count input2)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

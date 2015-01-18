@@ -1,7 +1,9 @@
 ;;; DERIV -- Symbolic derivation.
 
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme cxr))
 
 ;;; Returns the wrong answer for quotients.
 ;;; Fortunately these aren't used in the benchmark.
@@ -40,8 +42,10 @@
          (output (read))
          (s (number->string count))
          (name "deriv"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s)
      count
      (lambda () (deriv (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

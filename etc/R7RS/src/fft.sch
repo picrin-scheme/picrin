@@ -1,10 +1,11 @@
 ;;; FFT - Fast Fourier Transform, translated from "Numerical Recipes in C"
   
-(import (rnrs base)
-        (rnrs io simple)
-        (rnrs arithmetic flonums))
+(import (scheme base)
+        (scheme inexact)
+        (scheme write)
+        (scheme read))
 
-;(define flsin sin)
+(define div quotient)
 
 (define (four1 data)
   (let ((n (vector-length data))
@@ -33,12 +34,12 @@
     (let loop3 ((mmax 2))
       (if (< mmax n)
         (let* ((theta
-                (fl/ pi*2 (inexact mmax)))
+                (/ pi*2 (inexact mmax)))
                (wpr
-                (let ((x (flsin (fl* 0.5 theta))))
-                  (fl* -2.0 (fl* x x))))
+                (let ((x (sin (* 0.5 theta))))
+                  (* -2.0 (* x x))))
                (wpi
-                (flsin theta)))
+                (sin theta)))
           (let loop4 ((wr 1.0) (wi 0.0) (m 0))
             (if (< m mmax)
               (begin
@@ -47,24 +48,24 @@
                     (let* ((j
                             (+ i mmax))
                            (tempr
-                            (fl-
-                              (fl* wr (vector-ref data j))
-                              (fl* wi (vector-ref data (+ j 1)))))
+                            (-
+                              (* wr (vector-ref data j))
+                              (* wi (vector-ref data (+ j 1)))))
                            (tempi
-                            (fl+
-                              (fl* wr (vector-ref data (+ j 1)))
-                              (fl* wi (vector-ref data j)))))
+                            (+
+                              (* wr (vector-ref data (+ j 1)))
+                              (* wi (vector-ref data j)))))
                       (vector-set! data j
-                        (fl- (vector-ref data i) tempr))
+                        (- (vector-ref data i) tempr))
                       (vector-set! data (+ j 1)
-                        (fl- (vector-ref data (+ i 1)) tempi))
+                        (- (vector-ref data (+ i 1)) tempi))
                       (vector-set! data i
-                        (fl+ (vector-ref data i) tempr))
+                        (+ (vector-ref data i) tempr))
                       (vector-set! data (+ i 1)
-                        (fl+ (vector-ref data (+ i 1)) tempi))
+                        (+ (vector-ref data (+ i 1)) tempi))
                       (loop5 (+ j mmax)));***))
-                (loop4 (fl+ (fl- (fl* wr wpr) (fl* wi wpi)) wr)
-                       (fl+ (fl+ (fl* wi wpr) (fl* wr wpi)) wi)
+                (loop4 (+ (- (* wr wpr) (* wi wpi)) wr)
+                       (+ (+ (* wi wpr) (* wr wpi)) wi)
                        (+ m 2)))))
 ));******
           (loop3 (* mmax 2)))))))
@@ -84,9 +85,11 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "fft"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda ()
        (run (hide count (make-vector input1 input2))))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

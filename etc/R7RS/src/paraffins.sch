@@ -1,7 +1,10 @@
 ;;; PARAFFINS -- Compute how many paraffins exist with N carbon atoms.
   
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
+
+(define div quotient)
 
 (define (gen n)
   (let* ((n/2 (div n 2))
@@ -177,8 +180,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "paraffins"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (nb (hide count input1)))
      (lambda (result) (= result output)))))
+
+(include "src/common.sch")

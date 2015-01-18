@@ -4,14 +4,11 @@
 ;This file is compatible for the dialect other
 ;(c) Dorai Sitaram, Rice U., 1991, 1994
   
-(import 
-  (rnrs base)
-  (rnrs unicode)
-  (rnrs lists)
-  (rnrs io simple)
-  (rnrs files)
-  (rnrs mutable-pairs)
-  (rnrs mutable-strings))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme char)
+        (scheme file))
 
 (define *op-sys* 'unix)
 
@@ -2353,8 +2350,11 @@
          (s2 input2)
          (s1 input1)
          (name "slatex"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s3)
      count
      (lambda () (slatex.process-main-tex-file (hide count input1)))
      (lambda (result) #t))))
+
+(include "src/common.sch")
+

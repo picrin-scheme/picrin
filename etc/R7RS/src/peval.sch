@@ -1,9 +1,9 @@
 ;;; PEVAL -- A simple partial evaluator for Scheme, written by Marc Feeley.
   
-(import (rnrs base)
-        (rnrs lists)
-        (rnrs io simple)
-        (rnrs mutable-pairs))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme cxr))
 
 ;------------------------------------------------------------------------------
 
@@ -636,7 +636,7 @@
          (s2 (number->string count))
          (s1 "")
          (name "peval"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
      (lambda () (test (hide count input1) (hide count input2)))
@@ -644,3 +644,5 @@
        (and (list? result)
             (= (length result) 10)
             (equal? (list-ref result 9) output))))))
+
+(include "src/common.sch")

@@ -1,7 +1,8 @@
 ;;; NQUEENS -- Compute number of solutions to 8-queens problem.
 
-(import (rnrs base)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define trace? #f)
 
@@ -37,8 +38,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "nqueens"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (nqueens (hide count input1)))
      (lambda (result) (= result output)))))
+
+(include "src/common.sch")

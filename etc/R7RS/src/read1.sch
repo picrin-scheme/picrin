@@ -4,10 +4,10 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io ports)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
@@ -30,9 +30,9 @@
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (read-from-file-benchmark input t)
+(define (read-from-file-benchmark input)
   (call-with-port
-   (open-file-input-port input (file-options) 'block t)
+   (open-input-file input)
    (lambda (in)
      (do ((x (read in) (read in))
           (y #f x)
@@ -44,11 +44,11 @@
          (input1 (read))
          (output (read))
          (s2 (number->string count))
-         (s1 input1)
-         (name "read1:latin-1")
-         (t (make-transcoder (latin-1-codec))))
-    (run-r6rs-benchmark
+         (name "read1:latin-1"))
+    (run-r7rs-benchmark
      (string-append name ":" s2)
      count
-     (lambda () (read-from-file-benchmark (hide count input1) t))
+     (lambda () (read-from-file-benchmark (hide count input1)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

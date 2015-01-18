@@ -1,8 +1,8 @@
 ;;; TRIANGL -- Board game benchmark.
    
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define *board*
   (list->vector '(1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1)))
@@ -63,8 +63,10 @@
          (s2 (number->string input2))
          (s1 (number->string input1))
          (name "triangl"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2 ":" s3)
      count
      (lambda () (test (hide count input1) (hide count input2)))
      (lambda (result) (equal? result output)))))
+
+(include "src/common.sch")

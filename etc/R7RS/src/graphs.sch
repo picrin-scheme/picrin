@@ -1,8 +1,8 @@
 ;;; GRAPHS -- Obtained from Andrew Wright.
 
-(import (rnrs base)
-        (rnrs control)
-        (rnrs io simple))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
  ;;; ==== util.ss ====
 
@@ -606,8 +606,10 @@
          (s2 (number->string count))
          (s1 (number->string input1))
          (name "graphs"))
-    (run-r6rs-benchmark
+    (run-r7rs-benchmark
      (string-append name ":" s1 ":" s2)
      count
      (lambda () (length (run (hide count input1))))
      (lambda (result) (= result output)))))
+
+(include "src/common.sch")
