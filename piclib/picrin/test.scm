@@ -109,7 +109,12 @@
           (test no-name expected expr))))))
 
 
-
+  (define-syntax test-eq
+    (define-test-macro eq?))
+  (define-syntax test-eqv
+    (define-test-macro eqv?))
+    (define-syntax test-equal
+    (define-test-macro equal?))
   (define-syntax test
     (define-test-macro equal?))
 
@@ -120,8 +125,24 @@
              (call-with-values (lambda () expect) (lambda results results))
              (call-with-values (lambda () expr) (lambda results results))))
       ((_ expect expr)
-       (test (call-with-values (lambda () expect) (lambda results results))
-             (call-with-values (lambda () expr) (lambda results results))))))
+       (test-values no-name expect expr))))
+
+  (define-syntax test-assert
+    (syntax-rules ()
+      ((_ test-name expr)
+       (test-eq test-name #t expr))
+      ((_ expr)
+       (test-assert no-name))))
+
+  (define-syntax test-approximate
+    ;; :TODO: write for better failure message
+    (syntax-rules ()
+      ((_ test-name expected expr error)
+       (test-assert test-name
+                    (and (>= expr (- expected error))
+                         (<= expr (+ expected error)))))
+      ((_ expected expr error)
+       (test-approximate no-name expected expr error))))
 
 
   (define (test-failure-count)
