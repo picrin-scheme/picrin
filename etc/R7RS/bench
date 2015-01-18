@@ -1,0 +1,425 @@
+#! /usr/bin/env bash
+
+# For running R6RS benchmarks.
+#
+# Please report any errors or extensions to the author:
+#
+#   William D Clinger (will@ccs.neu.edu)
+#
+# This script was loosely modelled after Marc Feeley's
+# script for benchmarking R5RS systems, with additional
+# contributions by Harvey Stein.
+#
+# Usage:
+#
+#     % cd test/Benchmarking/R6RS
+#     % ./bench <system> <benchmark>
+#
+# For the current list of systems and benchmarks, run this
+# script with no arguments.
+#
+# The benchmarks must be contained within a src subdirectory
+# of the directory in which this script is run.
+#
+# The inputs to the benchmarks must be contained within an
+# inputs subdirectory of the directory in which this script
+# is run.
+
+OSNAME="`( uname )`"
+
+# The following definitions are not in use, but using them
+# might improve the script.
+
+HOME="`( pwd )`"
+SRC="${HOME}/src"
+INPUTS="${HOME}/inputs"
+
+TEMP="/tmp/larcenous"
+
+################################################################
+
+GABRIEL_BENCHMARKS="browse deriv dderiv destruc diviter divrec puzzle triangl tak takl ntakl cpstak ctak"
+
+NUM_BENCHMARKS="fib fibc fibfp sum sumfp fft mbrot mbrotZ nucleic pnpoly"
+
+KVW_BENCHMARKS="ack array1 string sum1 cat cat2 cat3 tail wc"
+
+IO_BENCHMARKS="read0 read1 read2 read3"
+
+OTHER_BENCHMARKS="bibfreq bibfreq2 compiler conform dynamic earley graphs lattice matrix maze mazefun nqueens paraffins parsing peval pi primes quicksort ray scheme simplex slatex"
+
+GC_BENCHMARKS="nboyer sboyer gcbench mperm"
+
+SYNTH_BENCHMARKS="equal normalization bv2string listsort vecsort hashtable0"
+
+ALL_BENCHMARKS="$GABRIEL_BENCHMARKS $NUM_BENCHMARKS $KVW_BENCHMARKS $IO_BENCHMARKS $OTHER_BENCHMARKS $GC_BENCHMARKS $SYNTH_BENCHMARKS"
+
+################################################################
+
+NB_RUNS=1
+clean=true
+options=""
+
+# On our Solaris machines, we can't install systems in
+# /usr/local, and some are in random places for historical
+# reasons.
+
+setup ()
+{
+  case ${OSNAME} in
+
+    "SunOS")
+
+        APPS="/proj/will/Apps"
+
+        ;;
+
+    "Linux")
+
+        APPS="/usr/local"
+
+        IKARUS="${APPS}/bin/ikarus"
+        HENCHMAN="/home/henchman/bin/larceny"
+        ;;
+
+    "Darwin")
+
+        IKARUS=${IKARUS:-"ikarus"}
+        ;;
+
+  esac
+
+  # For both Solaris and Linux machines.
+
+  LARCENY=${LARCENY:-"../../../larceny"}
+  PETIT=${PETIT:-"../../../petit-larceny"}
+  PLTR6RS=${PLTR6RS:-"plt-r6rs"}
+  YPSILON=${YPSILON:-"ypsilon"}
+  MOSH=${MOSH:-"mosh"}
+  PETITE=${PETITE:-"petite"}
+ 
+}
+
+setup
+
+# -----------------------------------------------------------------------------
+
+error ()
+{
+  echo $1
+  echo '
+Usage: bench [-r runs] <system> <benchmark>
+
+<system> is the abbreviated name of the implementation to benchmark:
+
+  ikarus           for Ikarus
+  larceny          for Larceny
+  mosh             for Mosh
+  petit            for Petit Larceny
+  petite           for Petite Chez
+  plt              for PLT Scheme
+  ypsilon          for Ypsilon
+  all              for all of the above
+
+<benchmark> is the name of the benchmark(s) to run:
+
+  all         for all of the usual benchmarks
+  fib         for the fib benchmark
+  "fib ack"   for the fib and ack benchmarks
+
+runs is the number of times to run each benchmark (default is 1).'
+
+  exit
+}
+
+# -----------------------------------------------------------------------------
+
+# FIXME: DANGER! DANGER! DANGER!
+# DON'T USE THIS UNTIL IT'S BEEN FIXED!
+
+cleanup ()
+{
+  if [ "$clean" = "true" ] ; then
+     # It's true that technically speaking, we should be in the build
+     # directory when this fcn is called.  Thus, we should be able to
+     # just do rm *.  However, that's kind of dangerous, so instead,
+     # we delete files newer than the mark file that evaluate () makes.
+
+     for x in * ; do
+        if [ $x -nt clean_newer_than_me ] ; then
+          rm $x
+        fi
+     done
+  fi
+  rm clean_newer_than_me
+}
+
+evaluate ()
+{
+# echo > clean_newer_than_me
+  sleep 1
+  {
+    echo
+    echo Testing $1 under ${NAME}
+    make_src_code $1
+    echo Compiling...
+    $COMP "${TEMP}/$1.${EXTENSION}"
+    i=0
+    while [ "$i" -lt "$NB_RUNS" ]
+    do
+      echo Running...
+      $EXEC "${TEMP}/$1.${EXTENSIONCOMP}" "${INPUTS}/$1.input"
+      i=`expr $i + 1`
+    done
+  } 2>&1 | tee -a results.${NAME}
+
+}
+
+make_src_code ()
+{
+  cat "${SRC}/$1.sch" "${SRC}/common.sch" > "${TEMP}/$1.${EXTENSION}"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Larceny and Petit Larceny
+#
+# The --nocontract command-line option reduces variability
+# of timing, and probably corresponds to the default for
+# most other systems.
+
+larceny_comp ()
+{
+  echo "(import (larceny compiler)) (compile-file \"$1\")" \
+| time "${LARCENY}" -err5rs -- -e "(repl-prompt values)"
+}
+
+larceny_exec ()
+{
+  time "${LARCENY}" --nocontract --r6rs --program "$1" < "$2"
+}
+
+petit_comp ()
+{
+  echo "(import (larceny compiler)) (compile-file \"$1\")" \
+  | time "${PETIT}" -err5rs -- -e "(repl-prompt values)"
+}
+
+petit_exec ()
+{
+  time "${PETIT}" --nocontract --r6rs --program "$1" < "$2"
+}
+
+henchman_comp ()
+{
+  echo "(import (larceny compiler)) (compile-file \"$1\")" \
+  | time "${HENCHMAN}" -err5rs -- -e "(repl-prompt values)"
+}
+
+henchman_exec ()
+{
+  time "${HENCHMAN}" --nocontract --r6rs --program "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Ikarus
+
+ikarus_comp ()
+{
+  :
+}
+
+ikarus_exec ()
+{
+  time "${IKARUS}" --r6rs-script "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to PLT Scheme
+
+plt_comp ()
+{
+  echo | time "${PLTR6RS}" --compile "$1"
+}
+
+plt_exec ()
+{
+  time "${PLTR6RS}" "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Ypsilon
+
+ypsilon_comp ()
+{
+  :
+}
+
+ypsilon_exec ()
+{
+  time "${YPSILON}" "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Mosh
+
+mosh_comp ()
+{
+  :
+}
+
+mosh_exec ()
+{
+  time "${MOSH}" "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Petite Chez
+
+petite_comp ()
+{
+  :
+}
+
+petite_exec ()
+{
+  time "${PETITE}" --optimize-level 2 --program "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+
+## Arg processing...
+if [ "$#" -lt 2 ]; then
+  error '>>> At least two command line arguments are needed'
+fi
+
+
+while [ $# -gt 2 ] ; do
+   arg="$1"
+   shift
+   case $arg in
+      -r) NB_RUNS=$1    ; shift ;;
+      -c) clean=$1      ; shift ;;
+      -o) options=$1    ; shift ;;
+       *) error ">>> Unknown argument of $arg given." ;;
+   esac
+done
+
+if [ "$#" -ne 2 ]; then
+  error '>>> Last two arguments must be <system> and <benchmark>'
+fi
+
+case "$1" in
+               all) systems="$ALL_SYSTEMS" ;;
+                 *) systems="$1" ;;
+esac
+
+case "$2" in
+      all) benchmarks="$ALL_BENCHMARKS" ;;
+  gabriel) benchmarks="$GABRIEL_BENCHMARKS" ;;
+      kvw) benchmarks="$KVW_BENCHMARKS" ;;
+    other) benchmarks="$OTHER_BENCHMARKS" ;;
+      awk) benchmarks="$AWK_BENCHMARKS" ;;
+        c) benchmarks="$C_BENCHMARKS" ;;
+     java) benchmarks="$JAVA_BENCHMARKS" ;;
+        *) benchmarks="$2" ;;
+esac
+
+## Run each benchmark under each system...
+for system in $systems ; do
+
+   case "$system" in
+
+   larceny) NAME='Larceny'
+            COMP=larceny_comp
+            EXEC=larceny_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="slfasl"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+     petit) NAME='PetitLarceny'
+            COMP=petit_comp
+            EXEC=petit_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="slfasl"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+  henchman) NAME='Henchman'
+            COMP=henchman_comp
+            EXEC=henchman_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="slfasl"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+    ikarus) NAME='Ikarus'
+            COMP=ikarus_comp
+            EXEC=ikarus_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+       plt) NAME='PLT'
+            COMP=plt_comp
+            EXEC=plt_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+   ypsilon) NAME='Ypsilon' # copied from Ikarus' settings...
+            COMP=ypsilon_comp
+            EXEC=ypsilon_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+      mosh) NAME='Mosh'
+            COMP=mosh_comp
+            EXEC=mosh_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+    petite) NAME='Petite'
+            COMP=petite_comp
+            EXEC=petite_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+   esac
+
+   {
+      echo
+      echo '****************************'
+      echo Benchmarking ${NAME} on `date` under `uname -a`
+   } >> results.${NAME}
+
+   mkdir "${TEMP}"
+
+   for program in $benchmarks ; do
+      evaluate $program
+   done
+done

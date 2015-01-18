@@ -1,0 +1,9 @@
+5
+
+; Get NormalizationTest.txt from http://www.unicode.org/
+
+"inputs/NormalizationTest.txt"
+
+; Number of normalization tests for Unicode 5.0.0
+
+351980
