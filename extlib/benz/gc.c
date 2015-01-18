@@ -422,6 +422,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       gc_mark_object(pic, (struct pic_object *)senv->up);
     }
     gc_mark(pic, senv->defer);
+    gc_mark_object(pic, (struct pic_object *)senv->map);
     break;
   }
   case PIC_TT_LIB: {
@@ -633,8 +634,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SENV: {
-    struct pic_senv *senv = (struct pic_senv *)obj;
-    xh_destroy(&senv->map);
     break;
   }
   case PIC_TT_LIB: {

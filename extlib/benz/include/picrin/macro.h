@@ -11,7 +11,7 @@ extern "C" {
 
 struct pic_senv {
   PIC_OBJECT_HEADER
-  xhash map;
+  struct pic_dict *map;
   pic_value defer;
   struct pic_senv *up;
 };

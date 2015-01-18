@@ -25,23 +25,17 @@ pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 void
 pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rename)
 {
-  PIC_UNUSED(pic);
-
-  xh_put_int(&senv->map, sym, &rename);
+  pic_dict_set(pic, senv->map, sym, pic_sym_value(rename));
 }
 
 bool
 pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *rename)
 {
-  xh_entry *e;
-
-  PIC_UNUSED(pic);
-
-  if ((e = xh_get_int(&senv->map, sym)) == NULL) {
+  if (! pic_dict_has(pic, senv->map, sym)) {
     return false;
   }
   if (rename != NULL) {
-    *rename = xh_val(e, pic_sym);
+    *rename = pic_sym(pic_dict_ref(pic, senv->map, sym));
   }
   return true;
 }
@@ -383,11 +377,14 @@ struct pic_senv *
 pic_make_senv(pic_state *pic, struct pic_senv *up)
 {
   struct pic_senv *senv;
+  struct pic_dict *map;
+
+  map = pic_make_dict(pic);
 
   senv = (struct pic_senv *)pic_obj_alloc(pic, sizeof(struct pic_senv), PIC_TT_SENV);
   senv->up = up;
   senv->defer = pic_nil_value();
-  xh_init_int(&senv->map, sizeof(pic_sym));
+  senv->map = map;
 
   return senv;
 }
