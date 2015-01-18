@@ -2,8 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdlib.h>
-
 #include "picrin.h"
 #include "picrin/gc.h"
 #include "picrin/read.h"
@@ -123,6 +121,8 @@ pic_open(int argc, char *argv[], char **envp)
   S(sCAR, "car");
   S(sCDR, "cdr");
   S(sNILP, "null?");
+  S(sSYMBOL_P, "symbol?");
+  S(sPAIR_P, "pair?");
   S(sADD, "+");
   S(sSUB, "-");
   S(sMUL, "*");

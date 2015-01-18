@@ -30,10 +30,17 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdbool.h>
-#include <setjmp.h>
 #include <stdint.h>
 #include <limits.h>
+#include <stdarg.h>
+
+#include <stdio.h>
+#include <setjmp.h>
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+#include <ctype.h>
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
@@ -89,6 +96,7 @@ typedef struct {
   pic_sym sCOND_EXPAND, sAND, sOR, sELSE, sLIBRARY;
   pic_sym sONLY, sRENAME, sPREFIX, sEXCEPT;
   pic_sym sCONS, sCAR, sCDR, sNILP;
+  pic_sym sSYMBOL_P, sPAIR_P;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
   pic_sym sREAD, sFILE;
@@ -178,7 +186,7 @@ bool pic_interned_p(pic_state *, pic_sym);
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
 
-void pic_load(pic_state *, const char *);
+void pic_load_port(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
 
 pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);

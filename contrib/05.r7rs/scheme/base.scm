@@ -3,7 +3,8 @@
           (picrin macro)
           (picrin record)
           (picrin syntax-rules)
-          (picrin string))
+          (picrin string)
+          (scheme file))
 
   ;; 4.1.2. Literal expressions
 

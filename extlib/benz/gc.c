@@ -20,17 +20,13 @@
 #include "picrin/record.h"
 #include "picrin/read.h"
 
-#if GC_DEBUG
-# include <string.h>
-#endif
-
 union header {
   struct {
     union header *ptr;
     size_t size;
     unsigned int mark : 1;
   } s;
-  long alignment[4];
+  long alignment[2];
 };
 
 struct heap_page {
@@ -419,17 +415,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLOB: {
     break;
   }
-  case PIC_TT_MACRO: {
-    struct pic_macro *mac = (struct pic_macro *)obj;
-
-    if (mac->proc) {
-      gc_mark_object(pic, (struct pic_object *)mac->proc);
-    }
-    if (mac->senv) {
-      gc_mark_object(pic, (struct pic_object *)mac->senv);
-    }
-    break;
-  }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
 
@@ -474,7 +459,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     xh_entry *it;
 
     for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-      gc_mark(pic, xh_key(it, pic_value));
       gc_mark(pic, xh_val(it, pic_value));
     }
     break;
@@ -653,9 +637,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
     xh_destroy(&senv->map);
-    break;
-  }
-  case PIC_TT_MACRO: {
     break;
   }
   case PIC_TT_LIB: {

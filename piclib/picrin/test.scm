@@ -75,11 +75,8 @@
   (define (test-failure-count)
     (length fails))
 
-  (define (test-exit)
-    (exit (= (test-failure-count) 0)))
-
   (define-syntax test-syntax-error
     (syntax-rules ()
       ((_) (syntax-error "invalid use of test-syntax-error"))))
 
-  (export test test-begin test-end test-values test-exit test-syntax-error))
+  (export test test-begin test-end test-values test-syntax-error))
