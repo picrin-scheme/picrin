@@ -80,16 +80,16 @@
 	     `(define (,accessor record)
 		(if (,pred record)
 		    (record-ref record ',field-name)
-		    (error "wrong record type")))
+		    (error (string-append (symbol->string  ',accessor) ": wrong record type") record)))
 	     `(begin
 		(define (,accessor record)
 		  (if (,pred record)
 		      (record-ref record ',field-name)
-		      (error "wrong record type")))
+		      (error (string-append (symbol->string  ',accessor) ": wrong record type") record)))
 		(define (,(car modifier?) record val)
 		  (if (,pred record)
 		      (record-set! record ',field-name val)
-		      (error "wrong record type")))))))))
+		      (error (string-append (symbol->string ',(car modifier?)) ": wrong record type")  record)))))))))
 
   (define-syntax define-record-type
     (ir-macro-transformer
