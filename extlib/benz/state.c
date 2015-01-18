@@ -10,6 +10,7 @@
 #include "picrin/cont.h"
 #include "picrin/port.h"
 #include "picrin/error.h"
+#include "picrin/dict.h"
 
 void pic_init_core(pic_state *);
 
@@ -54,10 +55,10 @@ pic_open(int argc, char *argv[], char **envp)
   pic->uniq_sym_cnt = 0;
 
   /* global variables */
-  xh_init_int(&pic->globals, sizeof(pic_value));
+  pic->globals = NULL;
 
   /* macros */
-  xh_init_int(&pic->macros, sizeof(struct pic_macro *));
+  pic->macros = NULL;
 
   /* attributes */
   xh_init_ptr(&pic->attrs, sizeof(struct pic_dict *));
@@ -155,6 +156,10 @@ pic_open(int argc, char *argv[], char **envp)
   R(rCOND_EXPAND, "cond-expand");
   pic_gc_arena_restore(pic, ai);
 
+  /* root tables */
+  pic->globals = pic_make_dict(pic);
+  pic->macros = pic_make_dict(pic);
+
   /* root block */
   pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
   pic->wind->prev = NULL;
@@ -198,8 +203,8 @@ pic_close(pic_state *pic)
   pic->xp = pic->xpbase;
   pic->arena_idx = 0;
   pic->err = pic_undef_value();
-  xh_clear(&pic->globals);
-  xh_clear(&pic->macros);
+  pic->globals = NULL;
+  pic->macros = NULL;
   xh_clear(&pic->attrs);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
@@ -222,8 +227,6 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   xh_destroy(&pic->syms);
-  xh_destroy(&pic->globals);
-  xh_destroy(&pic->macros);
   xh_destroy(&pic->attrs);
 
   /* free GC arena */

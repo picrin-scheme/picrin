@@ -8,6 +8,7 @@
 #include "picrin/proc.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
+#include "picrin/dict.h"
 
 #if PIC_NONE_IS_FALSE
 # define OP_PUSHNONE OP_PUSHFALSE
@@ -63,7 +64,7 @@ static analyze_state *
 new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
-  xh_entry *it;
+  pic_sym sym;
 
   state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
@@ -101,8 +102,7 @@ new_analyze_state(pic_state *pic)
   /* push initial scope */
   push_scope(state, pic_nil_value());
 
-  for (it = xh_begin(&pic->globals); it != NULL; it = xh_next(it)) {
-    pic_sym sym = xh_key(it, pic_sym);
+  pic_dict_for_each (sym, pic->globals) {
     xv_push(&state->scope->locals, &sym);
   }
 

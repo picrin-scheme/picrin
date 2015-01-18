@@ -116,8 +116,8 @@ typedef struct {
   int sym_cnt;
   int uniq_sym_cnt;
 
-  xhash globals;
-  xhash macros;
+  struct pic_dict *globals;
+  struct pic_dict *macros;
   pic_value libs;
   xhash attrs;
 

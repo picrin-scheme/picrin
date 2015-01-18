@@ -49,18 +49,16 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 static void
 define_macro(pic_state *pic, pic_sym rename, struct pic_proc *mac)
 {
-  xh_put_int(&pic->macros, rename, &mac);
+  pic_dict_set(pic, pic->macros, rename, pic_obj_value(mac));
 }
 
 static struct pic_proc *
 find_macro(pic_state *pic, pic_sym rename)
 {
-  xh_entry *e;
-
-  if ((e = xh_get_int(&pic->macros, rename)) == NULL) {
+  if (! pic_dict_has(pic, pic->macros, rename)) {
     return NULL;
   }
-  return xh_val(e, struct pic_proc *);
+  return pic_proc_ptr(pic_dict_ref(pic, pic->macros, rename));
 }
 
 static pic_sym

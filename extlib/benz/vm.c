@@ -442,7 +442,7 @@ pic_define_noexport(pic_state *pic, const char *name, pic_value val)
     pic_warn(pic, "redefining global");
   }
 
-  xh_put_int(&pic->globals, rename, &val);
+  pic_dict_set(pic, pic->globals, rename, val);
 }
 
 void
@@ -464,7 +464,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  return xh_val(xh_get_int(&pic->globals, rename), pic_value);
+  return pic_dict_ref(pic, pic->globals, rename);
 }
 
 void
@@ -478,7 +478,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  xh_put_int(&pic->globals, rename, &val);
+  pic_dict_set(pic, pic->globals, rename, val);
 }
 
 pic_value
@@ -766,19 +766,17 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_GREF) {
-      xh_entry *e;
-
-      if ((e = xh_get_int(&pic->globals, c.u.i)) == NULL) {
+      if (! pic_dict_has(pic, pic->globals, c.u.i)) {
         pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, c.u.i));
       }
-      PUSH(xh_val(e, pic_value));
+      PUSH(pic_dict_ref(pic, pic->globals, c.u.i));
       NEXT;
     }
     CASE(OP_GSET) {
       pic_value val;
 
       val = POP();
-      xh_put_int(&pic->globals, c.u.i, &val);
+      pic_dict_set(pic, pic->globals, c.u.i, val);
       NEXT;
     }
     CASE(OP_LREF) {

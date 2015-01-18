@@ -549,13 +549,13 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* global variables */
-  for (it = xh_begin(&pic->globals); it != NULL; it = xh_next(it)) {
-    gc_mark(pic, xh_val(it, pic_value));
+  if (pic->globals) {
+    gc_mark_object(pic, (struct pic_object *)pic->globals);
   }
 
   /* macro objects */
-  for (it = xh_begin(&pic->macros); it != NULL; it = xh_next(it)) {
-    gc_mark_object(pic, xh_val(it, struct pic_object *));
+  if (pic->macros) {
+    gc_mark_object(pic, (struct pic_object *)pic->macros);
   }
 
   /* error object */
