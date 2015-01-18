@@ -16,15 +16,6 @@ struct pic_senv {
   struct pic_senv *up;
 };
 
-struct pic_macro {
-  PIC_OBJECT_HEADER
-  struct pic_proc *proc;
-  struct pic_senv *senv;
-};
-
-#define pic_macro_p(v) (pic_type(v) == PIC_TT_MACRO)
-#define pic_macro_ptr(v) ((struct pic_macro *)pic_ptr(v))
-
 #define pic_senv_p(v) (pic_type(v) == PIC_TT_SENV)
 #define pic_senv_ptr(v) ((struct pic_senv *)pic_ptr(v))
 

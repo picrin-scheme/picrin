@@ -47,18 +47,12 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 }
 
 static void
-define_macro(pic_state *pic, pic_sym rename, struct pic_proc *proc, struct pic_senv *senv)
+define_macro(pic_state *pic, pic_sym rename, struct pic_proc *mac)
 {
-  struct pic_macro *mac;
-
-  mac = (struct pic_macro *)pic_obj_alloc(pic, sizeof(struct pic_macro), PIC_TT_MACRO);
-  mac->senv = senv;
-  mac->proc = proc;
-
   xh_put_int(&pic->macros, rename, &mac);
 }
 
-static struct pic_macro *
+static struct pic_proc *
 find_macro(pic_state *pic, pic_sym rename)
 {
   xh_entry *e;
@@ -66,7 +60,7 @@ find_macro(pic_state *pic, pic_sym rename)
   if ((e = xh_get_int(&pic->macros, rename)) == NULL) {
     return NULL;
   }
-  return xh_val(e, struct pic_macro *);
+  return xh_val(e, struct pic_proc *);
 }
 
 static pic_sym
@@ -252,13 +246,19 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
   }
 
-  define_macro(pic, rename, pic_proc_ptr(val), senv);
+  val = pic_apply1(pic, pic_proc_ptr(val), pic_obj_value(senv));
+
+  if (! pic_proc_p(val)) {
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+  }
+
+  define_macro(pic, rename, pic_proc_ptr(val));
 
   return pic_none_value();
 }
 
 static pic_value
-macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct pic_senv *senv)
+macroexpand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct pic_senv *senv)
 {
   pic_value v, args;
 
@@ -268,14 +268,10 @@ macroexpand_macro(pic_state *pic, struct pic_macro *mac, pic_value expr, struct 
   puts("");
 #endif
 
-  if (mac->senv == NULL) { /* legacy macro */
-    args = pic_cdr(pic, expr);
-  } else {
-    args = pic_list3(pic, expr, pic_obj_value(senv), pic_obj_value(mac->senv));
-  }
+  args = pic_list2(pic, expr, pic_obj_value(senv));
 
   pic_try {
-    v = pic_apply(pic, mac->proc, args);
+    v = pic_apply(pic, mac, args);
   } pic_catch {
     pic_errorf(pic, "macroexpand error while application: %s", pic_errmsg(pic));
   }
@@ -298,7 +294,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
   }
   case PIC_TT_PAIR: {
     pic_value car;
-    struct pic_macro *mac;
+    struct pic_proc *mac;
 
     if (! pic_list_p(expr)) {
       pic_errorf(pic, "cannot macroexpand improper list: ~s", expr);
@@ -424,13 +420,33 @@ pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym,
   }
 }
 
+static pic_value
+defmacro_call(pic_state *pic)
+{
+  struct pic_proc *self = pic_get_proc(pic);
+  pic_value args, tmp, proc;
+
+  pic_get_args(pic, "oo", &args, &tmp);
+
+  proc = pic_attr_ref(pic, pic_obj_value(self), "@@transformer");
+
+  return pic_apply_trampoline(pic, pic_proc_ptr(proc), pic_cdr(pic, args));
+}
+
 void
 pic_defmacro(pic_state *pic, pic_sym name, pic_sym id, pic_func_t func)
 {
+  struct pic_proc *proc, *trans;
+
+  trans = pic_make_proc(pic, func, pic_symbol_name(pic, name));
+
   pic_put_rename(pic, pic->lib->env, name, id);
 
+  proc = pic_make_proc(pic, defmacro_call, "defmacro_call");
+  pic_attr_set(pic, pic_obj_value(proc), "@@transformer", pic_obj_value(trans));
+
   /* symbol registration */
-  define_macro(pic, id, pic_make_proc(pic, func, pic_symbol_name(pic, name)), NULL);
+  define_macro(pic, id, proc);
 
   /* auto export! */
   pic_export(pic, name);
