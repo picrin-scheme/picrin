@@ -884,6 +884,9 @@ typedef struct codegen_context {
   /* constant object pool */
   pic_value *pool;
   size_t plen, pcapa;
+  /* symbol pool */
+  pic_sym *syms;
+  size_t slen, scapa;
 
   struct codegen_context *up;
 } codegen_context;
@@ -1024,6 +1027,10 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
+  cxt->syms = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
+  cxt->slen = 0;
+  cxt->scapa = PIC_POOL_SIZE;
+
   state->cxt = cxt;
 
   create_activation(cxt);
@@ -1049,6 +1056,8 @@ pop_codegen_context(codegen_state *state)
   irep->ilen = state->cxt->ilen;
   irep->pool = pic_realloc(pic, state->cxt->pool, sizeof(pic_value) * state->cxt->plen);
   irep->plen = state->cxt->plen;
+  irep->syms = pic_realloc(pic, state->cxt->syms, sizeof(pic_sym) * state->cxt->slen);
+  irep->slen = state->cxt->slen;
 
   /* finalize */
   xv_destroy(&cxt->args);
@@ -1104,6 +1113,26 @@ index_local(codegen_state *state, pic_sym sym)
   return -1;
 }
 
+static int
+index_symbol(codegen_state *state, pic_sym sym)
+{
+  pic_state *pic = state->pic;
+  codegen_context *cxt = state->cxt;
+  size_t i;
+
+  for (i = 0; i < cxt->slen; ++i) {
+    if (cxt->syms[i] == sym) {
+      return i;
+    }
+  }
+  if (cxt->slen >= cxt->scapa) {
+    cxt->scapa *= 2;
+    cxt->syms = pic_realloc(pic, cxt->syms, sizeof(pic_sym) * cxt->scapa);
+  }
+  cxt->syms[cxt->slen++] = sym;
+  return i;
+}
+
 static struct pic_irep *codegen_lambda(codegen_state *, pic_value);
 
 static void
@@ -1116,7 +1145,7 @@ codegen(codegen_state *state, pic_value obj)
   sym = pic_sym(pic_car(pic, obj));
   if (sym == state->sGREF) {
     cxt->code[cxt->clen].insn = OP_GREF;
-    cxt->code[cxt->clen].u.i = pic_sym(pic_list_ref(pic, obj, 1));
+    cxt->code[cxt->clen].u.i = index_symbol(state, pic_sym(pic_list_ref(pic, obj, 1)));
     cxt->clen++;
     return;
   } else if (sym == state->sCREF) {
@@ -1156,7 +1185,7 @@ codegen(codegen_state *state, pic_value obj)
     type = pic_sym(pic_list_ref(pic, var, 0));
     if (type == state->sGREF) {
       cxt->code[cxt->clen].insn = OP_GSET;
-      cxt->code[cxt->clen].u.i = pic_int(pic_list_ref(pic, var, 1));
+      cxt->code[cxt->clen].u.i = index_symbol(state, pic_sym(pic_list_ref(pic, var, 1)));
       cxt->clen++;
       cxt->code[cxt->clen].insn = OP_PUSHNONE;
       cxt->clen++;

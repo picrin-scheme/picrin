@@ -68,7 +68,8 @@ struct pic_irep {
   bool varg;
   struct pic_irep **irep;
   pic_value *pool;
-  size_t clen, ilen, plen;
+  pic_sym *syms;
+  size_t clen, ilen, plen, slen;
 };
 
 pic_value pic_analyze(pic_state *, pic_value);

@@ -550,6 +550,23 @@ pic_vm_tear_off(pic_state *pic)
   }
 }
 
+static struct pic_irep *
+vm_get_irep(pic_state *pic)
+{
+  pic_value self;
+  struct pic_irep *irep;
+
+  self = pic->ci->fp[0];
+  if (! pic_proc_p(self)) {
+    pic_errorf(pic, "logic flaw");
+  }
+  irep = pic_proc_ptr(self)->u.irep;
+  if (! pic_proc_irep_p(pic_proc_ptr(self))) {
+    pic_errorf(pic, "logic flaw");
+  }
+  return irep;
+}
+
 pic_value
 pic_apply0(pic_state *pic, struct pic_proc *proc)
 {
@@ -688,7 +705,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
-    &&L_OP_SYMBOL_P, &&L_OP_PAIR_P, 
+    &&L_OP_SYMBOL_P, &&L_OP_PAIR_P,
     &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_MINUS,
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
@@ -751,32 +768,31 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      pic_value self;
-      struct pic_irep *irep;
+      struct pic_irep *irep = vm_get_irep(pic);
 
-      self = pic->ci->fp[0];
-      if (! pic_proc_p(self)) {
-        pic_errorf(pic, "logic flaw");
-      }
-      irep = pic_proc_ptr(self)->u.irep;
-      if (! pic_proc_irep_p(pic_proc_ptr(self))) {
-        pic_errorf(pic, "logic flaw");
-      }
       PUSH(irep->pool[c.u.i]);
       NEXT;
     }
     CASE(OP_GREF) {
-      if (! pic_dict_has(pic, pic->globals, c.u.i)) {
-        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, c.u.i));
+      struct pic_irep *irep = vm_get_irep(pic);
+      pic_sym sym;
+
+      sym = irep->syms[c.u.i];
+      if (! pic_dict_has(pic, pic->globals, sym)) {
+        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, sym));
       }
-      PUSH(pic_dict_ref(pic, pic->globals, c.u.i));
+      PUSH(pic_dict_ref(pic, pic->globals, sym));
       NEXT;
     }
     CASE(OP_GSET) {
+      struct pic_irep *irep = vm_get_irep(pic);
+      pic_sym sym;
       pic_value val;
 
+      sym = irep->syms[c.u.i];
+
       val = POP();
-      pic_dict_set(pic, pic->globals, c.u.i, val);
+      pic_dict_set(pic, pic->globals, sym, val);
       NEXT;
     }
     CASE(OP_LREF) {

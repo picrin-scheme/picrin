@@ -644,6 +644,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, irep->code);
     pic_free(pic, irep->irep);
     pic_free(pic, irep->pool);
+    pic_free(pic, irep->syms);
     break;
   }
   case PIC_TT_DATA: {
