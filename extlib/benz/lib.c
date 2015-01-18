@@ -68,51 +68,53 @@ pic_find_library(pic_state *pic, pic_value spec)
 }
 
 static void
-import_table(pic_state *pic, pic_value spec, xhash *imports)
+import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
 {
   struct pic_lib *lib;
-  xhash table;
-  pic_value val;
+  struct pic_dict *table;
+  pic_value val, tmp, prefix;
   pic_sym sym, id, tag;
-  xh_entry *it;
 
-  xh_init_int(&table, sizeof(pic_sym));
+  table = pic_make_dict(pic);
 
   if (pic_pair_p(spec) && pic_sym_p(pic_car(pic, spec))) {
 
     tag = pic_sym(pic_car(pic, spec));
 
     if (tag == pic->sONLY) {
-      import_table(pic, pic_cadr(pic, spec), &table);
+      import_table(pic, pic_cadr(pic, spec), table);
+
       pic_for_each (val, pic_cddr(pic, spec)) {
-        xh_put_int(imports, pic_sym(val), &xh_val(xh_get_int(&table, pic_sym(val)), pic_sym));
+        pic_dict_set(pic, imports, pic_sym(val), pic_dict_ref(pic, table, pic_sym(val)));
       }
-      goto exit;
+      return;
     }
     if (tag == pic->sRENAME) {
       import_table(pic, pic_cadr(pic, spec), imports);
+
       pic_for_each (val, pic_cddr(pic, spec)) {
-        id = xh_val(xh_get_int(imports, pic_sym(pic_car(pic, val))), pic_sym);
-        xh_del_int(imports, pic_sym(pic_car(pic, val)));
-        xh_put_int(imports, pic_sym(pic_cadr(pic, val)), &id);
+        tmp = pic_dict_ref(pic, imports, pic_sym(pic_car(pic, val)));
+        pic_dict_del(pic, imports, pic_sym(pic_car(pic, val)));
+        pic_dict_set(pic, imports, pic_sym(pic_cadr(pic, val)), tmp);
       }
-      goto exit;
+      return;
     }
     if (tag == pic->sPREFIX) {
-      import_table(pic, pic_cadr(pic, spec), &table);
-      for (it = xh_begin(&table); it != NULL; it = xh_next(it)) {
-        val = pic_list_ref(pic, spec, 2);
-        sym = pic_intern_str(pic, pic_format(pic, "~s~s", val, pic_sym_value(xh_key(it, pic_sym))));
-        xh_put_int(imports, sym, &xh_val(it, pic_sym));
+      import_table(pic, pic_cadr(pic, spec), table);
+
+      prefix = pic_list_ref(pic, spec, 2);
+      pic_dict_for_each (sym, table) {
+        id = pic_intern_str(pic, pic_format(pic, "~s~s", prefix, pic_sym_value(sym)));
+        pic_dict_set(pic, imports, id, pic_dict_ref(pic, table, sym));
       }
-      goto exit;
+      return;
     }
     if (tag == pic->sEXCEPT) {
       import_table(pic, pic_cadr(pic, spec), imports);
       pic_for_each (val, pic_cddr(pic, spec)) {
-        xh_del_int(imports, pic_sym(val));
+        pic_dict_del(pic, imports, pic_sym(val));
       }
-      goto exit;
+      return;
     }
   }
   lib = pic_find_library(pic, spec);
@@ -120,34 +122,23 @@ import_table(pic_state *pic, pic_value spec, xhash *imports)
     pic_errorf(pic, "library not found: ~a", spec);
   }
   pic_dict_for_each (sym, lib->exports) {
-    id = pic_sym(pic_dict_ref(pic, lib->exports, sym));
-    xh_put_int(imports, sym, &id);
+    pic_dict_set(pic, imports, sym, pic_dict_ref(pic, lib->exports, sym));
   }
-
- exit:
-  xh_destroy(&table);
 }
 
 static void
 import(pic_state *pic, pic_value spec)
 {
-  xhash imports;
-  xh_entry *it;
+  struct pic_dict *imports;
+  pic_sym sym;
 
-  xh_init_int(&imports, sizeof(pic_sym)); /* pic_sym to pic_sym */
+  imports = pic_make_dict(pic);
 
-  import_table(pic, spec, &imports);
+  import_table(pic, spec, imports);
 
-  for (it = xh_begin(&imports); it != NULL; it = xh_next(it)) {
-
-#if DEBUG
-    printf("* importing %s as %s\n", pic_symbol_name(pic, xh_key(it, pic_sym)), pic_symbol_name(pic, xh_val(it, pic_sym)));
-#endif
-
-    pic_put_rename(pic, pic->lib->env, xh_key(it, pic_sym), xh_val(it, pic_sym));
+  pic_dict_for_each (sym, imports) {
+    pic_put_rename(pic, pic->lib->env, sym, pic_sym(pic_dict_ref(pic, imports, sym)));
   }
-
-  xh_destroy(&imports);
 }
 
 static void
