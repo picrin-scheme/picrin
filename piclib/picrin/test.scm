@@ -1,40 +1,67 @@
 (define-library (picrin test)
   (import (picrin base)
-          (picrin syntax-rules))
+          (picrin syntax-rules)
+          (picrin record))
 
-  (define test-counter 0)
-  (define counter 0)
-  (define failure-counter 0)
+  (define-record-type <test-runner>
+    (make-test-runner)
+    test-runner?
+    (test-count test-count set-test-count!)
+    (failure-count failure-count set-failure-count!)
+    (failures failures set-failures!)
+    (suit-count suit-count set-suit-count!))
+
+  (define (test-runner-null)
+    (let ((t (make-test-runner)))
+      (set-test-count! t 0)
+      (set-failure-count! t 0)
+      (set-failures! t ())
+      (set-suit-count! t 0)))
+
+  (define current-test-runner% (make-parameter
+                                (test-runner-null)
+                                (lambda (t) (if (test-runner? t)
+                                                t
+                                                (error "~a is not a test runner" t)))))
+
+
+  (define (current-test-runner . t)
+    (if (null? t)
+        current-test-runner%
+        (set! current-test-runner% (car t))))
 
   (define no-name "no test name")
 
   (define fails '())
 
   (define (print-statistics)
-    (display "[0;34m")
-    (newline)
-    (display "Test Result: ")
-    (write (- counter failure-counter))
-    (display " / ")
-    (write counter)
-    (display " (")
-    (write (* (/ (- counter failure-counter) counter) 100))
-    (display "%)")
-    (display " [PASS/TOTAL]")
-    (newline)
-    (display "[0;39m")
-    (for-each
-     (lambda (fail)
-       (display fail))
-     (reverse fails)))
+    (let ((t (current-test-runner)))
+     (display "[0;34m")
+     (newline)
+     (display "Test Result: ")
+     (write (- (test-count t) (failure-count t)))
+     (display " / ")
+     (write (test-count t))
+     (display " (")
+     (write (* (/ (- (test-count t) (failure-count t)) (test-count t)) 100))
+     (display "%)")
+     (display " [PASS/TOTAL]")
+     (newline)
+     (display "[0;39m")
+     (for-each
+      (lambda (fail)
+        (display fail))
+      (reverse (failures t)))))
 
   (define (test-begin . o)
-    (set! test-counter (+ test-counter 1)))
+    (let ((t (current-test-runner)))
+     (set-test-count! t (+ (suit-count t) 1))))
 
   (define (test-end . o)
-    (set! test-counter (- test-counter 1))
-    (if (= test-counter 0)
-        (print-statistics)))
+    (let ((t (current-test-runner)))
+     (set-test-count! t (- (suit-count t) 1))
+     (if (= (suit-count t) 0)
+         (print-statistics))))
 
   
   (define (print-case out number test-name)
@@ -83,15 +110,16 @@
        (syntax-rules ()
          ((_ test-name expected expr)
           (begin
-            (let
+            (let*
+                ((t (current-test-runner)))
                 ((call-with-handle-failure (lambda (proc got)
-                                             (set! failure-counter (+ failure-counter 1))
+                                             (set-failure-count! t (+ (failure-count t) 1))
                                              (let ((out (open-output-string))
                                                    (str #f))
                                                (print-case out counter test-name)
                                                (proc out test-name expected 'expr got)
                                                (set! str (get-output-string out))
-                                               (set! fails (cons str fails))
+                                               (set-failures! t (cons str (failures t)))
                                                (display str)))))
               (with-exception-handler
                (lambda (e)
@@ -100,11 +128,11 @@
                  (let ((res expr))
                    (cond
                     ((test? res expected)
-                     (print-case (current-output-port) counter test-name)
+                     (print-case (current-output-port) (test-count t) test-name)
                      (print-pass (current-output-port) test-name expected 'expr))
                     (else
                      (call-with-handle-failure print-fail res)))))))
-            (set! counter (+ counter 1))))
+            (set-test-count! t (+ (test-count t) 1))))
          ((_ expected expr)
           (test no-name expected expr))))))
 
@@ -163,10 +191,6 @@
        (test-error no-name expr))
       ((_ expr)
        (test-error #t expr))))
-
-
-  (define (test-failure-count)
-    (length fails))
 
   (define-syntax test-syntax-error
     (syntax-rules ()
