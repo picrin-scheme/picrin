@@ -7,7 +7,8 @@
      (lambda (expr r c)
        (list (r 'define-syntax) (cadr expr)
              (list (r 'lambda) '_
-                   (list (r 'error) "invalid use of auxiliary syntax"))))))
+                   (list (r 'lambda) '_
+                         (list (r 'error) "invalid use of auxiliary syntax")))))))
 
   (define-auxiliary-syntax _)
   (define-auxiliary-syntax ...)

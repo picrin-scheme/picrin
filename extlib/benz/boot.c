@@ -24,21 +24,22 @@ my $src = <<'EOL';
                 val))))))
 
   (define (er-macro-transformer f)
-    (lambda (expr use-env mac-env)
+    (lambda (mac-env)
+      (lambda (expr use-env)
 
-      (define rename
-        (memoize
-         (lambda (sym)
-           (make-identifier sym mac-env))))
+        (define rename
+          (memoize
+           (lambda (sym)
+             (make-identifier sym mac-env))))
 
-      (define (compare x y)
-        (if (not (symbol? x))
-            #f
-            (if (not (symbol? y))
-                #f
-                (identifier=? use-env x use-env y))))
+        (define (compare x y)
+          (if (not (symbol? x))
+              #f
+              (if (not (symbol? y))
+                  #f
+                  (identifier=? use-env x use-env y))))
 
-      (f expr rename compare)))
+        (f expr rename compare))))
 
   (define-syntax syntax-error
     (er-macro-transformer
@@ -50,7 +51,8 @@ my $src = <<'EOL';
      (lambda (expr r c)
        (list (r 'define-syntax) (cadr expr)
              (list (r 'lambda) '_
-                   (list (r 'error) "invalid use of auxiliary syntax"))))))
+                   (list (r 'lambda) '_
+                         (list (r 'error) "invalid use of auxiliary syntax")))))))
 
   (define-auxiliary-syntax else)
   (define-auxiliary-syntax =>)
@@ -422,21 +424,22 @@ const char pic_boot[] =
 "                val))))))\n"
 "\n"
 "  (define (er-macro-transformer f)\n"
-"    (lambda (expr use-env mac-env)\n"
+"    (lambda (mac-env)\n"
+"      (lambda (expr use-env)\n"
 "\n"
-"      (define rename\n"
-"        (memoize\n"
-"         (lambda (sym)\n"
-"           (make-identifier sym mac-env))))\n"
+"        (define rename\n"
+"          (memoize\n"
+"           (lambda (sym)\n"
+"             (make-identifier sym mac-env))))\n"
 "\n"
-"      (define (compare x y)\n"
-"        (if (not (symbol? x))\n"
-"            #f\n"
-"            (if (not (symbol? y))\n"
-"                #f\n"
-"                (identifier=? use-env x use-env y))))\n"
+"        (define (compare x y)\n"
+"          (if (not (symbol? x))\n"
+"              #f\n"
+"              (if (not (symbol? y))\n"
+"                  #f\n"
+"                  (identifier=? use-env x use-env y))))\n"
 "\n"
-"      (f expr rename compare)))\n"
+"        (f expr rename compare))))\n"
 "\n"
 "  (define-syntax syntax-error\n"
 "    (er-macro-transformer\n"
@@ -448,7 +451,8 @@ const char pic_boot[] =
 "     (lambda (expr r c)\n"
 "       (list (r 'define-syntax) (cadr expr)\n"
 "             (list (r 'lambda) '_\n"
-"                   (list (r 'error) \"invalid use of auxiliary syntax\"))))))\n"
+"                   (list (r 'lambda) '_\n"
+"                         (list (r 'error) \"invalid use of auxiliary syntax\")))))))\n"
 "\n"
 "  (define-auxiliary-syntax else)\n"
 "  (define-auxiliary-syntax =>)\n"

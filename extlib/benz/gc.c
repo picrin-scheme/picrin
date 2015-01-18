@@ -415,17 +415,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLOB: {
     break;
   }
-  case PIC_TT_MACRO: {
-    struct pic_macro *mac = (struct pic_macro *)obj;
-
-    if (mac->proc) {
-      gc_mark_object(pic, (struct pic_object *)mac->proc);
-    }
-    if (mac->senv) {
-      gc_mark_object(pic, (struct pic_object *)mac->senv);
-    }
-    break;
-  }
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
 
@@ -648,9 +637,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_SENV: {
     struct pic_senv *senv = (struct pic_senv *)obj;
     xh_destroy(&senv->map);
-    break;
-  }
-  case PIC_TT_MACRO: {
     break;
   }
   case PIC_TT_LIB: {
