@@ -145,6 +145,26 @@
        (test-approximate no-name expected expr error))))
 
 
+  (define-syntax test-error
+    ;; :TODO: write for better failure message
+    (syntax-rules ()
+      ((_ test-name error-type expr)
+       (with-exception-handler
+        (lambda (e)
+          (case error-type
+            ((error)      (test-assert test-name (error? e)))
+            ((file-error) (test-assert test-name (file-error? e)))
+            ((read-error) (test-assert test-name (read-error? e)))
+            ((#t)         (test-assert test-name (error? e)))
+            (else => (lambda (t) (error "test-error: Unknown error type ~a specified." t)))))
+        (lambda ()
+          expr)))
+      ((_ error-type expr)
+       (test-error no-name expr))
+      ((_ expr)
+       (test-error #t expr))))
+
+
   (define (test-failure-count)
     (length fails))
 
