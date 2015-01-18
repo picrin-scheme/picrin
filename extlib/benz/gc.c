@@ -466,11 +466,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_RECORD: {
     struct pic_record *rec = (struct pic_record *)obj;
-    xh_entry *it;
 
-    for (it = xh_begin(&rec->hash); it != NULL; it = xh_next(it)) {
-      gc_mark(pic, xh_val(it, pic_value));
-    }
+    gc_mark_object(pic, (struct pic_object *)rec->data);
     break;
   }
   case PIC_TT_NIL:
@@ -662,8 +659,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_RECORD: {
-    struct pic_record *rec = (struct pic_record *)obj;
-    xh_destroy(&rec->hash);
     break;
   }
   case PIC_TT_NIL:

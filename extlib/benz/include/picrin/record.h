@@ -11,7 +11,7 @@ extern "C" {
 
 struct pic_record {
   PIC_OBJECT_HEADER
-  xhash     hash;
+  struct pic_dict *data;
 };
 
 #define pic_record_p(v) (pic_type(v) == PIC_TT_RECORD)
