@@ -52,7 +52,6 @@ extern "C" {
 #include "picrin/value.h"
 
 #define pic_sym(v) pic_ptr(v)
-#define pic_symbol_value(v) pic_sym_value(v)
 #define pic_sym_value(v) pic_obj_value(v)
 #define pic_sym_p(v) (pic_type(v) == PIC_TT_SYMBOL)
 
