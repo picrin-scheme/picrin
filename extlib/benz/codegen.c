@@ -1005,7 +1005,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
-  cxt->syms = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
+  cxt->syms = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_sym));
   cxt->slen = 0;
   cxt->scapa = PIC_POOL_SIZE;
 
