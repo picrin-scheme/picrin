@@ -166,7 +166,7 @@ read_quote(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sQUOTE), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -174,7 +174,7 @@ read_quasiquote(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sQUASIQUOTE), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sQUASIQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -182,7 +182,7 @@ read_unquote(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sUNQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -190,7 +190,7 @@ read_unquote_splicing(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -226,7 +226,7 @@ read_symbol(pic_state *pic, struct pic_port *port, const char *str)
   sym = pic_intern_cstr(pic, buf);
   pic_free(pic, buf);
 
-  return pic_sym_value(sym);
+  return pic_obj_value(sym);
 }
 
 static size_t
@@ -490,7 +490,7 @@ read_pipe(pic_state *pic, struct pic_port *port, const char *str)
   sym = pic_intern_cstr(pic, buf);
   pic_free(pic, buf);
 
-  return pic_sym_value(sym);
+  return pic_obj_value(sym);
 }
 
 static pic_value

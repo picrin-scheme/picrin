@@ -257,7 +257,7 @@ define_var(analyze_state *state, pic_sym sym)
   analyze_scope *scope = state->scope;
 
   if (lookup_scope(scope, sym)) {
-    pic_warnf(pic, "redefining variable: ~s", pic_sym_value(sym));
+    pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
     return;
   }
 
@@ -283,7 +283,7 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
       /* pass through */
     }
     else {
-      res = pic_list2(pic, pic_sym_value(state->sRETURN), res);
+      res = pic_list2(pic, pic_obj_value(state->sRETURN), res);
     }
   }
 
@@ -298,7 +298,7 @@ analyze_global_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
 
-  return pic_list2(pic, pic_sym_value(state->sGREF), pic_sym_value(sym));
+  return pic_list2(pic, pic_obj_value(state->sGREF), pic_obj_value(sym));
 }
 
 static pic_value
@@ -306,7 +306,7 @@ analyze_local_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
 
-  return pic_list2(pic, pic_sym_value(state->sLREF), pic_sym_value(sym));
+  return pic_list2(pic, pic_obj_value(state->sLREF), pic_obj_value(sym));
 }
 
 static pic_value
@@ -314,7 +314,7 @@ analyze_free_var(analyze_state *state, pic_sym sym, int depth)
 {
   pic_state *pic = state->pic;
 
-  return pic_list3(pic, pic_sym_value(state->sCREF), pic_int_value(depth), pic_sym_value(sym));
+  return pic_list3(pic, pic_obj_value(state->sCREF), pic_int_value(depth), pic_obj_value(sym));
 }
 
 static pic_value
@@ -343,7 +343,7 @@ analyze_defer(analyze_state *state, pic_value name, pic_value formal, pic_value 
   const pic_sym sNOWHERE = pic_intern_cstr(pic, " nowhere ");
   pic_value skel;
 
-  skel = pic_list2(pic, pic_sym_value(state->sGREF), pic_sym_value(sNOWHERE));
+  skel = pic_list2(pic, pic_obj_value(state->sGREF), pic_obj_value(sNOWHERE));
 
   pic_push(pic, pic_list4(pic, name, formal, body, skel), state->scope->defer);
 
@@ -388,7 +388,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     args = pic_nil_value();
     for (i = xv_size(&scope->args); i > 0; --i) {
       var = xv_get(&scope->args, i - 1);
-      pic_push(pic, pic_sym_value(*var), args);
+      pic_push(pic, pic_obj_value(*var), args);
     }
 
     varg = scope->varg
@@ -396,20 +396,20 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
       : pic_false_value();
 
     /* To know what kind of local variables are defined, analyze body at first. */
-    body = analyze(state, pic_cons(pic, pic_sym_value(pic->rBEGIN), body_exprs), true);
+    body = analyze(state, pic_cons(pic, pic_obj_value(pic->rBEGIN), body_exprs), true);
 
     analyze_deferred(state);
 
     locals = pic_nil_value();
     for (i = xv_size(&scope->locals); i > 0; --i) {
       var = xv_get(&scope->locals, i - 1);
-      pic_push(pic, pic_sym_value(*var), locals);
+      pic_push(pic, pic_obj_value(*var), locals);
     }
 
     captures = pic_nil_value();
     for (i = xv_size(&scope->captures); i > 0; --i) {
       var = xv_get(&scope->captures, i - 1);
-      pic_push(pic, pic_sym_value(*var), captures);
+      pic_push(pic, pic_obj_value(*var), captures);
     }
 
     pop_scope(state);
@@ -418,7 +418,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     pic_errorf(pic, "invalid formal syntax: ~s", args);
   }
 
-  return pic_list7(pic, pic_sym_value(pic->sLAMBDA), name, args, locals, varg, captures, body);
+  return pic_list7(pic, pic_obj_value(pic->sLAMBDA), name, args, locals, varg, captures, body);
 }
 
 static pic_value
@@ -472,7 +472,7 @@ analyze_define(analyze_state *state, pic_value obj)
     formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
     body_exprs = pic_list_tail(pic, pic_list_ref(pic, obj, 2), 2);
 
-    val = analyze_defer(state, pic_sym_value(sym), formals, body_exprs);
+    val = analyze_defer(state, pic_obj_value(sym), formals, body_exprs);
   } else {
     if (pic_length(pic, obj) != 3) {
       pic_errorf(pic, "syntax error");
@@ -480,7 +480,7 @@ analyze_define(analyze_state *state, pic_value obj)
     val = analyze(state, pic_list_ref(pic, obj, 2), false);
   }
 
-  return pic_list3(pic, pic_sym_value(pic->sSETBANG), var, val);
+  return pic_list3(pic, pic_obj_value(pic->sSETBANG), var, val);
 }
 
 static pic_value
@@ -505,7 +505,7 @@ analyze_if(analyze_state *state, pic_value obj, bool tailpos)
   if_true = analyze(state, if_true, tailpos);
   if_false = analyze(state, if_false, tailpos);
 
-  return pic_list4(pic, pic_sym_value(pic->sIF), cond, if_true, if_false);
+  return pic_list4(pic, pic_obj_value(pic->sIF), cond, if_true, if_false);
 }
 
 static pic_value
@@ -521,7 +521,7 @@ analyze_begin(analyze_state *state, pic_value obj, bool tailpos)
   case 2:
     return analyze(state, pic_list_ref(pic, obj, 1), tailpos);
   default:
-    seq = pic_list1(pic, pic_sym_value(pic->sBEGIN));
+    seq = pic_list1(pic, pic_obj_value(pic->sBEGIN));
     for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
       if (pic_nil_p(pic_cdr(pic, obj))) {
         tail = tailpos;
@@ -554,7 +554,7 @@ analyze_set(analyze_state *state, pic_value obj)
   var = analyze(state, var, false);
   val = analyze(state, val, false);
 
-  return pic_list3(pic, pic_sym_value(pic->sSETBANG), var, val);
+  return pic_list3(pic, pic_obj_value(pic->sSETBANG), var, val);
 }
 
 static pic_value
@@ -565,7 +565,7 @@ analyze_quote(analyze_state *state, pic_value obj)
   if (pic_length(pic, obj) != 2) {
     pic_errorf(pic, "syntax error");
   }
-  return pic_list2(pic, pic_sym_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
+  return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
 #define ARGC_ASSERT_GE(n) do {				\
@@ -577,7 +577,7 @@ analyze_quote(analyze_state *state, pic_value obj)
 #define FOLD_ARGS(sym) do {                             \
     obj = analyze(state, pic_car(pic, args), false);    \
     pic_for_each (arg, pic_cdr(pic, args)) {            \
-      obj = pic_list3(pic, pic_sym_value(sym), obj,     \
+      obj = pic_list3(pic, pic_obj_value(sym), obj,     \
                       analyze(state, arg, false));      \
     }                                                   \
   } while (0)
@@ -591,7 +591,7 @@ analyze_add(analyze_state *state, pic_value obj, bool tailpos)
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
   case 1:
-    return pic_list2(pic, pic_sym_value(pic->sQUOTE), pic_int_value(0));
+    return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_int_value(0));
   case 2:
     return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
   default:
@@ -610,7 +610,7 @@ analyze_sub(analyze_state *state, pic_value obj)
   ARGC_ASSERT_GE(1);
   switch (pic_length(pic, obj)) {
   case 2:
-    return pic_list2(pic, pic_sym_value(pic->sMINUS),
+    return pic_list2(pic, pic_obj_value(pic->sMINUS),
                      analyze(state, pic_car(pic, pic_cdr(pic, obj)), false));
   default:
     args = pic_cdr(pic, obj);
@@ -628,7 +628,7 @@ analyze_mul(analyze_state *state, pic_value obj, bool tailpos)
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
   case 1:
-    return pic_list2(pic, pic_sym_value(pic->sQUOTE), pic_int_value(1));
+    return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_int_value(1));
   case 2:
     return analyze(state, pic_car(pic, pic_cdr(pic, obj)), tailpos);
   default:
@@ -669,7 +669,7 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
   } else {
     call = state->sTAILCALL;
   }
-  seq = pic_list1(pic, pic_sym_value(call));
+  seq = pic_list1(pic, pic_obj_value(call));
   pic_for_each (elt, obj) {
     seq = pic_cons(pic, analyze(state, elt, false), seq);
   }
@@ -686,7 +686,7 @@ analyze_values(analyze_state *state, pic_value obj, bool tailpos)
     return analyze_call(state, obj, false);
   }
 
-  seq = pic_list1(pic, pic_sym_value(state->sRETURN));
+  seq = pic_list1(pic, pic_obj_value(state->sRETURN));
   pic_for_each (v, pic_cdr(pic, obj)) {
     seq = pic_cons(pic, analyze(state, v, false), seq);
   }
@@ -711,7 +711,7 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
   }
   prod = analyze(state, pic_list_ref(pic, obj, 1), false);
   cnsm = analyze(state, pic_list_ref(pic, obj, 2), false);
-  return pic_list3(pic, pic_sym_value(call), prod, cnsm);
+  return pic_list3(pic, pic_obj_value(call), prod, cnsm);
 }
 
 #define ARGC_ASSERT(n) do {				\
@@ -728,12 +728,12 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
 
 #define CONSTRUCT_OP1(op)                                       \
   pic_list2(pic,                                                \
-            pic_sym_value(op),                                  \
+            pic_obj_value(op),                                  \
             analyze(state, pic_list_ref(pic, obj, 1), false))
 
 #define CONSTRUCT_OP2(op)                                       \
   pic_list3(pic,                                                \
-            pic_sym_value(op),                                  \
+            pic_obj_value(op),                                  \
             analyze(state, pic_list_ref(pic, obj, 1), false),   \
             analyze(state, pic_list_ref(pic, obj, 2), false))
 
@@ -847,7 +847,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     return analyze_call(state, obj, tailpos);
   }
   default:
-    return pic_list2(pic, pic_sym_value(pic->sQUOTE), obj);
+    return pic_list2(pic, pic_obj_value(pic->sQUOTE), obj);
   }
 }
 

@@ -108,7 +108,7 @@ pic_symbol_string_to_symbol(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_sym_value(pic_intern(pic, str));
+  return pic_obj_value(pic_intern(pic, str));
 }
 
 void

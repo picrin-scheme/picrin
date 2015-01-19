@@ -50,7 +50,7 @@ pic_print_backtrace(pic_state *pic)
 
     e = pic_error_ptr(pic->err);
     if (e->type != pic_intern_cstr(pic, "")) {
-      trace = pic_format(pic, "~s ", pic_sym_value(e->type));
+      trace = pic_format(pic, "~s ", pic_obj_value(e->type));
     } else {
       trace = pic_make_str(pic, NULL, 0);
     }

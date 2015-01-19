@@ -32,7 +32,7 @@ pic_value
 pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym slot)
 {
   if (! pic_dict_has(pic, rec->data, slot)) {
-    pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_sym_value(slot), rec);
+    pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_obj_value(slot), rec);
   }
   return pic_dict_ref(pic, rec->data, slot);
 }

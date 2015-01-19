@@ -17,7 +17,7 @@ is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
 {
   return pic_pair_p(pic_cdr(pic, pair))
     && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_sym_value(tag));
+    && pic_eq_p(pic_car(pic, pair), pic_obj_value(tag));
 }
 
 static bool

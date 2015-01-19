@@ -104,7 +104,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
 
       prefix = pic_list_ref(pic, spec, 2);
       pic_dict_for_each (sym, table) {
-        id = pic_intern(pic, pic_format(pic, "~s~s", prefix, pic_sym_value(sym)));
+        id = pic_intern(pic, pic_format(pic, "~s~s", prefix, pic_obj_value(sym)));
         pic_dict_set(pic, imports, id, pic_dict_ref(pic, table, sym));
       }
       return;
@@ -155,7 +155,7 @@ export(pic_state *pic, pic_value spec)
       goto fail;
     if (! (pic_length(pic, spec) == 3))
       goto fail;
-    if (! pic_eq_p(pic_car(pic, spec), pic_sym_value(sRENAME)))
+    if (! pic_eq_p(pic_car(pic, spec), pic_obj_value(sRENAME)))
       goto fail;
     if (! pic_sym_p(a = pic_list_ref(pic, spec, 1)))
       goto fail;
@@ -171,7 +171,7 @@ export(pic_state *pic, pic_value spec)
   printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym(b)), pic_symbol_name(pic, rename));
 #endif
 
-  pic_dict_set(pic, pic->lib->exports, pic_sym(b), pic_sym_value(rename));
+  pic_dict_set(pic, pic->lib->exports, pic_sym(b), pic_obj_value(rename));
 
   return;
 
@@ -194,7 +194,7 @@ pic_import_library(pic_state *pic, struct pic_lib *lib)
 void
 pic_export(pic_state *pic, pic_sym sym)
 {
-  export(pic, pic_sym_value(sym));
+  export(pic, pic_obj_value(sym));
 }
 
 static bool
@@ -203,7 +203,7 @@ condexpand(pic_state *pic, pic_value clause)
   pic_sym tag;
   pic_value c, feature;
 
-  if (pic_eq_p(clause, pic_sym_value(pic->sELSE))) {
+  if (pic_eq_p(clause, pic_obj_value(pic->sELSE))) {
     return true;
   }
   if (pic_sym_p(clause)) {
@@ -254,7 +254,7 @@ pic_lib_condexpand(pic_state *pic)
 
   for (i = 0; i < argc; i++) {
     if (condexpand(pic, pic_car(pic, clauses[i]))) {
-      return pic_cons(pic, pic_sym_value(pic->rBEGIN), pic_cdr(pic, clauses[i]));
+      return pic_cons(pic, pic_obj_value(pic->rBEGIN), pic_cdr(pic, clauses[i]));
     }
   }
 

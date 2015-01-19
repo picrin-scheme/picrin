@@ -302,7 +302,7 @@ pic_error_error_object_type(pic_state *pic)
 
   pic_get_args(pic, "e", &e);
 
-  return pic_sym_value(e->type);
+  return pic_obj_value(e->type);
 }
 
 void

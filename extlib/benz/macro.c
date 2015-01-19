@@ -25,7 +25,7 @@ pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 void
 pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rename)
 {
-  pic_dict_set(pic, senv->map, sym, pic_sym_value(rename));
+  pic_dict_set(pic, senv->map, sym, pic_obj_value(rename));
 }
 
 bool
@@ -82,13 +82,13 @@ static pic_value macroexpand_lambda(pic_state *, pic_value, struct pic_senv *);
 static pic_value
 macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv)
 {
-  return pic_sym_value(make_identifier(pic, sym, senv));
+  return pic_obj_value(make_identifier(pic, sym, senv));
 }
 
 static pic_value
 macroexpand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, pic_sym_value(pic->rQUOTE), pic_cdr(pic, expr));
+  return pic_cons(pic, pic_obj_value(pic->rQUOTE), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -172,7 +172,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
   macroexpand_deferred(pic, in);
 
-  return pic_cons(pic, pic_sym_value(pic->rLAMBDA), pic_cons(pic, formal, body));
+  return pic_cons(pic, pic_obj_value(pic->rLAMBDA), pic_cons(pic, formal, body));
 }
 
 static pic_value
@@ -185,7 +185,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
     var = pic_car(pic, pic_cadr(pic, expr));
     val = pic_cdr(pic, pic_cadr(pic, expr));
 
-    expr = pic_list3(pic, pic_sym_value(pic->rDEFINE), var, pic_cons(pic, pic_sym_value(pic->rLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
+    expr = pic_list3(pic, pic_obj_value(pic->rDEFINE), var, pic_cons(pic, pic_obj_value(pic->rLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
   }
 
   if (pic_length(pic, expr) != 3) {
@@ -202,7 +202,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
   }
   val = macroexpand(pic, pic_list_ref(pic, expr, 2), senv);
 
-  return pic_list3(pic, pic_sym_value(pic->rDEFINE), pic_sym_value(rename), val);
+  return pic_list3(pic, pic_obj_value(pic->rDEFINE), pic_obj_value(rename), val);
 }
 
 static pic_value
@@ -223,7 +223,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   if (! pic_find_rename(pic, senv, sym, &rename)) {
     rename = pic_add_rename(pic, senv, sym);
   } else {
-    pic_warnf(pic, "redefining syntax variable: ~s", pic_sym_value(sym));
+    pic_warnf(pic, "redefining syntax variable: ~s", pic_obj_value(sym));
   }
 
   val = pic_cadr(pic, pic_cdr(pic, expr));
@@ -468,7 +468,7 @@ pic_identifier_eq_p(pic_state *pic, struct pic_senv *env1, pic_sym sym1, struct 
     b = sym2;
   }
 
-  return pic_eq_p(pic_sym_value(a), pic_sym_value(b));
+  return pic_eq_p(pic_obj_value(a), pic_obj_value(b));
 }
 
 static pic_value
@@ -491,7 +491,7 @@ pic_macro_make_identifier(pic_state *pic)
 
   pic_assert_type(pic, obj, senv);
 
-  return pic_sym_value(make_identifier(pic, sym, pic_senv_ptr(obj)));
+  return pic_obj_value(make_identifier(pic, sym, pic_senv_ptr(obj)));
 }
 
 static pic_value

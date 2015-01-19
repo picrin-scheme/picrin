@@ -26,7 +26,7 @@ pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym key)
 
   e = xh_get_ptr(&dict->hash, key);
   if (! e) {
-    pic_errorf(pic, "element not found for a key: ~s", pic_sym_value(key));
+    pic_errorf(pic, "element not found for a key: ~s", pic_obj_value(key));
   }
   return xh_val(e, pic_value);
 }
@@ -59,7 +59,7 @@ void
 pic_dict_del(pic_state *pic, struct pic_dict *dict, pic_sym key)
 {
   if (xh_get_ptr(&dict->hash, key) == NULL) {
-    pic_errorf(pic, "no slot named ~s found in dictionary", pic_sym_value(key));
+    pic_errorf(pic, "no slot named ~s found in dictionary", pic_obj_value(key));
   }
 
   xh_del_ptr(&dict->hash, key);
@@ -186,7 +186,7 @@ pic_dict_dictionary_map(pic_state *pic)
         if (it[i] == NULL) {
           break;
         }
-        pic_push(pic, pic_sym_value(xh_key(it[i], pic_sym)), arg);
+        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym)), arg);
         it[i] = xh_next(it[i]);
       }
       if (i != argc) {
@@ -232,7 +232,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
         if (it[i] == NULL) {
           break;
         }
-        pic_push(pic, pic_sym_value(xh_key(it[i], pic_sym)), arg);
+        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym)), arg);
         it[i] = xh_next(it[i]);
       }
       if (i != argc) {
@@ -261,7 +261,7 @@ pic_dict_dictionary_to_alist(pic_state *pic)
   pic_get_args(pic, "d", &dict);
 
   for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    item = pic_cons(pic, pic_sym_value(xh_key(it, pic_sym)), xh_val(it, pic_value));
+    item = pic_cons(pic, pic_obj_value(xh_key(it, pic_sym)), xh_val(it, pic_value));
     pic_push(pic, item, alist);
   }
 
@@ -296,7 +296,7 @@ pic_dict_dictionary_to_plist(pic_state *pic)
   pic_get_args(pic, "d", &dict);
 
   for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    pic_push(pic, pic_sym_value(xh_key(it, pic_sym)), plist);
+    pic_push(pic, pic_obj_value(xh_key(it, pic_sym)), plist);
     pic_push(pic, xh_val(it, pic_value), plist);
   }
 
