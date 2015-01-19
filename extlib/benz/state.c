@@ -202,6 +202,11 @@ pic_close(pic_state *pic)
     pic->wind = pic->wind->prev;
   }
 
+  /* free symbol names */
+  for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
+    free(xh_key(it, char *));
+  }
+
   /* clear out root objects */
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
@@ -210,6 +215,7 @@ pic_close(pic_state *pic)
   pic->err = pic_undef_value();
   pic->globals = NULL;
   pic->macros = NULL;
+  xh_clear(&pic->syms);
   xh_clear(&pic->attrs);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
@@ -229,11 +235,6 @@ pic_close(pic_state *pic)
   xh_destroy(&pic->reader->labels);
   pic_trie_delete(pic, pic->reader->trie);
   free(pic->reader);
-
-  /* free symbol names */
-  for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
-    free(xh_key(it, char *));
-  }
 
   /* free global stacks */
   xh_destroy(&pic->syms);
