@@ -117,8 +117,8 @@ pic_open(int argc, char *argv[], char **envp)
   S(sCAR, "car");
   S(sCDR, "cdr");
   S(sNILP, "null?");
-  S(sSYMBOL_P, "symbol?");
-  S(sPAIR_P, "pair?");
+  S(sSYMBOLP, "symbol?");
+  S(sPAIRP, "pair?");
   S(sADD, "+");
   S(sSUB, "-");
   S(sMUL, "*");

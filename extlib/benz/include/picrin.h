@@ -96,7 +96,7 @@ typedef struct {
   pic_sym sCOND_EXPAND, sAND, sOR, sELSE, sLIBRARY;
   pic_sym sONLY, sRENAME, sPREFIX, sEXCEPT;
   pic_sym sCONS, sCAR, sCDR, sNILP;
-  pic_sym sSYMBOL_P, sPAIR_P;
+  pic_sym sSYMBOLP, sPAIRP;
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
   pic_sym sREAD, sFILE;

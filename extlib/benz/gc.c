@@ -535,7 +535,7 @@ gc_mark_global_symbols(pic_state *pic)
   M(sCOND_EXPAND); M(sAND); M(sOR); M(sELSE); M(sLIBRARY);
   M(sONLY); M(sRENAME); M(sPREFIX); M(sEXCEPT);
   M(sCONS); M(sCAR); M(sCDR); M(sNILP);
-  M(sSYMBOL_P); M(sPAIR_P);
+  M(sSYMBOLP); M(sPAIRP);
   M(sADD); M(sSUB); M(sMUL); M(sDIV); M(sMINUS);
   M(sEQ); M(sLT); M(sLE); M(sGT); M(sGE); M(sNOT);
   M(sREAD); M(sFILE);

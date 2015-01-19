@@ -37,7 +37,7 @@ typedef struct analyze_state {
   pic_state *pic;
   analyze_scope *scope;
   pic_sym rCONS, rCAR, rCDR, rNILP;
-  pic_sym rSYMBOL_P, rPAIR_P;
+  pic_sym rSYMBOLP, rPAIRP;
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
   pic_sym rVALUES, rCALL_WITH_VALUES;
@@ -76,8 +76,8 @@ new_analyze_state(pic_state *pic)
   register_renamed_symbol(pic, state, rCAR, pic->PICRIN_BASE, "car");
   register_renamed_symbol(pic, state, rCDR, pic->PICRIN_BASE, "cdr");
   register_renamed_symbol(pic, state, rNILP, pic->PICRIN_BASE, "null?");
-  register_renamed_symbol(pic, state, rSYMBOL_P, pic->PICRIN_BASE, "symbol?");
-  register_renamed_symbol(pic, state, rPAIR_P, pic->PICRIN_BASE, "pair?");
+  register_renamed_symbol(pic, state, rSYMBOLP, pic->PICRIN_BASE, "symbol?");
+  register_renamed_symbol(pic, state, rPAIRP, pic->PICRIN_BASE, "pair?");
   register_renamed_symbol(pic, state, rADD, pic->PICRIN_BASE, "+");
   register_renamed_symbol(pic, state, rSUB, pic->PICRIN_BASE, "-");
   register_renamed_symbol(pic, state, rMUL, pic->PICRIN_BASE, "*");
@@ -792,13 +792,13 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 	ARGC_ASSERT(1);
         return CONSTRUCT_OP1(pic->sNILP);
       }
-      else if (sym == state->rSYMBOL_P) {
+      else if (sym == state->rSYMBOLP) {
         ARGC_ASSERT(1);
-        return CONSTRUCT_OP1(pic->sSYMBOL_P);
+        return CONSTRUCT_OP1(pic->sSYMBOLP);
       }
-      else if (sym == state->rPAIR_P) {
+      else if (sym == state->rPAIRP) {
         ARGC_ASSERT(1);
-        return CONSTRUCT_OP1(pic->sPAIR_P);
+        return CONSTRUCT_OP1(pic->sPAIRP);
       }
       else if (sym == state->rADD) {
         return analyze_add(state, obj, tailpos);
@@ -1340,15 +1340,15 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   }
-  else if (sym == pic->sSYMBOL_P) {
+  else if (sym == pic->sSYMBOLP) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_SYMBOL_P;
+    cxt->code[cxt->clen].insn = OP_SYMBOLP;
     cxt->clen++;
     return;
   }
-  else if (sym == pic->sPAIR_P) {
+  else if (sym == pic->sPAIRP) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_PAIR_P;
+    cxt->code[cxt->clen].insn = OP_PAIRP;
     cxt->clen++;
     return;
   }
