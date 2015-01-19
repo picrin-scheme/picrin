@@ -528,19 +528,6 @@ gc_mark_trie(pic_state *pic, struct pic_trie *trie)
 static void
 gc_mark_global_symbols(pic_state *pic)
 {
-  M(sDEFINE); M(sLAMBDA); M(sIF); M(sBEGIN); M(sQUOTE); M(sSETBANG);
-  M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
-  M(sDEFINE_SYNTAX); M(sIMPORT); M(sEXPORT);
-  M(sDEFINE_LIBRARY); M(sIN_LIBRARY);
-  M(sCOND_EXPAND); M(sAND); M(sOR); M(sELSE); M(sLIBRARY);
-  M(sONLY); M(sRENAME); M(sPREFIX); M(sEXCEPT);
-  M(sCONS); M(sCAR); M(sCDR); M(sNILP);
-  M(sSYMBOLP); M(sPAIRP);
-  M(sADD); M(sSUB); M(sMUL); M(sDIV); M(sMINUS);
-  M(sEQ); M(sLT); M(sLE); M(sGT); M(sGE); M(sNOT);
-  M(sREAD); M(sFILE);
-  M(sCALL); M(sTAILCALL); M(sCALL_WITH_VALUES); M(sTAILCALL_WITH_VALUES);
-  M(sGREF); M(sLREF); M(sCREF); M(sRETURN);
   M(rDEFINE); M(rLAMBDA); M(rIF); M(rBEGIN); M(rQUOTE); M(rSETBANG);
   M(rDEFINE_SYNTAX); M(rIMPORT); M(rEXPORT);
   M(rDEFINE_LIBRARY); M(rIN_LIBRARY);
@@ -584,9 +571,10 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, pic->arena[j]);
   }
 
+  /* mark reserved uninterned symbols */
   gc_mark_global_symbols(pic);
 
-  /* symbol table */
+  /* mark all interned symbols */
   for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
     gc_mark_object(pic, (struct pic_object *)xh_val(it, pic_sym));
   }
