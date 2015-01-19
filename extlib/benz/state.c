@@ -25,6 +25,9 @@ pic_open(int argc, char *argv[], char **envp)
 
   pic = malloc(sizeof(pic_state));
 
+  /* turn off GC */
+  pic->gc_enable = false;
+
   /* root block */
   pic->wind = NULL;
 
@@ -67,11 +70,10 @@ pic_open(int argc, char *argv[], char **envp)
   pic->libs = pic_nil_value();
   pic->lib = NULL;
 
-  /* reader */
-  pic->reader = malloc(sizeof(struct pic_reader));
-  pic->reader->typecase = PIC_CASE_DEFAULT;
-  pic->reader->trie = pic_make_trie(pic);
-  xh_init_int(&pic->reader->labels, sizeof(pic_value));
+  /* GC arena */
+  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena_size = PIC_ARENA_SIZE;
+  pic->arena_idx = 0;
 
   /* raised error object */
   pic->err = pic_undef_value();
@@ -81,17 +83,13 @@ pic_open(int argc, char *argv[], char **envp)
   pic->xSTDOUT = NULL;
   pic->xSTDERR = NULL;
 
-  /* GC arena */
-  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
-  pic->arena_size = PIC_ARENA_SIZE;
-  pic->arena_idx = 0;
-
   /* native stack marker */
   pic->native_stack_start = &t;
 
+  ai = pic_gc_arena_preserve(pic);
+
 #define S(slot,name) pic->slot = pic_intern_cstr(pic, name);
 
-  ai = pic_gc_arena_preserve(pic);
   S(sDEFINE, "define");
   S(sLAMBDA, "lambda");
   S(sIF, "if");
@@ -138,7 +136,6 @@ pic_open(int argc, char *argv[], char **envp)
 
 #define R(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));
 
-  ai = pic_gc_arena_preserve(pic);
   R(rDEFINE, "define");
   R(rLAMBDA, "lambda");
   R(rIF, "if");
@@ -163,6 +160,12 @@ pic_open(int argc, char *argv[], char **envp)
   pic->wind->depth = 0;
   pic->wind->in = pic->wind->out = NULL;
 
+  /* reader */
+  pic->reader = malloc(sizeof(struct pic_reader));
+  pic->reader->typecase = PIC_CASE_DEFAULT;
+  pic->reader->trie = pic_make_trie(pic);
+  xh_init_int(&pic->reader->labels, sizeof(pic_value));
+
   /* init readers */
   pic_init_reader(pic);
 
@@ -175,6 +178,11 @@ pic_open(int argc, char *argv[], char **envp)
   pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
   pic->xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
   pic->xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
+
+  pic_gc_arena_restore(pic, ai);
+
+  /* turn on GC */
+  pic->gc_enable = true;
 
   pic_init_core(pic);
 

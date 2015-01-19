@@ -760,6 +760,10 @@ pic_gc_run(pic_state *pic)
   struct heap_page *page;
 #endif
 
+  if (! pic->gc_enable) {
+    return;
+  }
+
 #if DEBUG
   puts("gc run!");
 #endif

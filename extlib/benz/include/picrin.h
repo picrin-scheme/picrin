@@ -119,6 +119,7 @@ typedef struct {
 
   struct pic_reader *reader;
 
+  bool gc_enable;
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
