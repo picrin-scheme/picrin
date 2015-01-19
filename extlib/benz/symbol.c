@@ -51,7 +51,14 @@ pic_gensym(pic_state *pic, pic_sym base)
 bool
 pic_interned_p(pic_state *pic, pic_sym sym)
 {
-  return sym == pic_intern(pic, sym->str);
+  xh_entry *e;
+
+  e = xh_get_str(&pic->syms, pic_str_cstr(sym->str));
+  if (e) {
+    return sym == xh_val(e, pic_sym);
+  } else {
+    return false;
+  }
 }
 
 const char *
