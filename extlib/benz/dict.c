@@ -14,7 +14,7 @@ pic_make_dict(pic_state *pic)
   struct pic_dict *dict;
 
   dict = (struct pic_dict *)pic_obj_alloc(pic, sizeof(struct pic_dict), PIC_TT_DICT);
-  xh_init_int(&dict->hash, sizeof(pic_value));
+  xh_init_ptr(&dict->hash, sizeof(pic_value));
 
   return dict;
 }
@@ -24,7 +24,7 @@ pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym key)
 {
   xh_entry *e;
 
-  e = xh_get_int(&dict->hash, key);
+  e = xh_get_ptr(&dict->hash, key);
   if (! e) {
     pic_errorf(pic, "element not found for a key: ~s", pic_sym_value(key));
   }
@@ -36,7 +36,7 @@ pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_sym key, pic_value val)
 {
   PIC_UNUSED(pic);
 
-  xh_put_int(&dict->hash, key, &val);
+  xh_put_ptr(&dict->hash, key, &val);
 }
 
 size_t
@@ -52,17 +52,17 @@ pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym key)
 {
   PIC_UNUSED(pic);
 
-  return xh_get_int(&dict->hash, key) != NULL;
+  return xh_get_ptr(&dict->hash, key) != NULL;
 }
 
 void
 pic_dict_del(pic_state *pic, struct pic_dict *dict, pic_sym key)
 {
-  if (xh_get_int(&dict->hash, key) == NULL) {
+  if (xh_get_ptr(&dict->hash, key) == NULL) {
     pic_errorf(pic, "no slot named ~s found in dictionary", pic_sym_value(key));
   }
 
-  xh_del_int(&dict->hash, key);
+  xh_del_ptr(&dict->hash, key);
 }
 
 static pic_value

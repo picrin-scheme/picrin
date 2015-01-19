@@ -50,9 +50,6 @@ pic_open(int argc, char *argv[], char **envp)
 
   /* symbol table */
   xh_init_str(&pic->syms, sizeof(pic_sym));
-  xh_init_int(&pic->sym_names, sizeof(const char *));
-  pic->sym_cnt = 0;
-  pic->uniq_sym_cnt = 0;
 
   /* global variables */
   pic->globals = NULL;
@@ -225,18 +222,17 @@ pic_close(pic_state *pic)
   pic_trie_delete(pic, pic->reader->trie);
   free(pic->reader);
 
+  /* free symbol names */
+  for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
+    free(xh_key(it, char *));
+  }
+
   /* free global stacks */
   xh_destroy(&pic->syms);
   xh_destroy(&pic->attrs);
 
   /* free GC arena */
   free(pic->arena);
-
-  /* free symbol names */
-  for (it = xh_begin(&pic->sym_names); it != NULL; it = xh_next(it)) {
-    free(xh_val(it, char *));
-  }
-  xh_destroy(&pic->sym_names);
 
   free(pic);
 }

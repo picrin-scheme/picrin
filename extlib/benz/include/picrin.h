@@ -51,6 +51,11 @@ extern "C" {
 #include "picrin/util.h"
 #include "picrin/value.h"
 
+#define pic_sym(v) pic_ptr(v)
+#define pic_symbol_value(v) pic_sym_value(v)
+#define pic_sym_value(v) pic_obj_value(v)
+#define pic_sym_p(v) (pic_type(v) == PIC_TT_SYMBOL)
+
 typedef struct pic_code pic_code;
 
 struct pic_winder {
@@ -112,10 +117,6 @@ typedef struct {
   pic_value features;
 
   xhash syms;                   /* name to symbol */
-  xhash sym_names;              /* symbol to name */
-  int sym_cnt;
-  int uniq_sym_cnt;
-
   struct pic_dict *globals;
   struct pic_dict *macros;
   pic_value libs;

@@ -949,24 +949,24 @@ create_activation(codegen_context *cxt)
   pic_sym *var;
   size_t offset;
 
-  xh_init_int(&regs, sizeof(size_t));
+  xh_init_ptr(&regs, sizeof(size_t));
 
   offset = 1;
   for (i = 0; i < xv_size(&cxt->args); ++i) {
     var = xv_get(&cxt->args, i);
     n = i + offset;
-    xh_put_int(&regs, *var, &n);
+    xh_put_ptr(&regs, *var, &n);
   }
   offset += i;
   for (i = 0; i < xv_size(&cxt->locals); ++i) {
     var = xv_get(&cxt->locals, i);
     n = i + offset;
-    xh_put_int(&regs, *var, &n);
+    xh_put_ptr(&regs, *var, &n);
   }
 
   for (i = 0; i < xv_size(&cxt->captures); ++i) {
     var = xv_get(&cxt->captures, i);
-    if ((n = xh_val(xh_get_int(&regs, *var), size_t)) <= xv_size(&cxt->args) || (cxt->varg && n == xv_size(&cxt->args) + 1)) {
+    if ((n = xh_val(xh_get_ptr(&regs, *var), size_t)) <= xv_size(&cxt->args) || (cxt->varg && n == xv_size(&cxt->args) + 1)) {
       /* copy arguments to capture variable area */
       cxt->code[cxt->clen].insn = OP_LREF;
       cxt->code[cxt->clen].u.i = (int)n;

@@ -19,6 +19,7 @@
 #include "picrin/dict.h"
 #include "picrin/record.h"
 #include "picrin/read.h"
+#include "picrin/symbol.h"
 
 union header {
   struct {
@@ -471,11 +472,16 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark_object(pic, (struct pic_object *)rec->data);
     break;
   }
+  case PIC_TT_SYMBOL: {
+    struct pic_symbol *sym = (struct pic_symbol *)obj;
+
+    gc_mark_object(pic, (struct pic_object *)sym->str);
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
-  case PIC_TT_SYMBOL:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
@@ -661,11 +667,13 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_RECORD: {
     break;
   }
+  case PIC_TT_SYMBOL: {
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
   case PIC_TT_FLOAT:
   case PIC_TT_INT:
-  case PIC_TT_SYMBOL:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
@@ -802,7 +810,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
 
   obj = (struct pic_object *)gc_alloc(pic, size);
   if (obj == NULL) {
-    pic_gc_run(pic);
+    /* pic_gc_run(pic); */
     obj = (struct pic_object *)gc_alloc(pic, size);
     if (obj == NULL) {
       add_heap_page(pic);
