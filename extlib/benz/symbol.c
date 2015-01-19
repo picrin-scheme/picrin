@@ -25,7 +25,9 @@ pic_intern(pic_state *pic, pic_str *str)
 
   e = xh_get_str(&pic->syms, pic_str_cstr(str));
   if (e) {
-    return xh_val(e, pic_sym);
+    sym = xh_val(e, pic_sym);
+    pic_gc_protect(pic, pic_obj_value(sym));
+    return sym;
   }
 
   cstr = pic_malloc(pic, pic_strlen(str) + 1);
