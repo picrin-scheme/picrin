@@ -100,6 +100,9 @@ typedef struct {
   pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
   pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
   pic_sym sREAD, sFILE;
+  pic_sym sGREF, sCREF, sLREF;
+  pic_sym sCALL, sTAILCALL, sRETURN;
+  pic_sym sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
 
   pic_sym rDEFINE, rLAMBDA, rIF, rBEGIN, rQUOTE, rSETBANG;
   pic_sym rDEFINE_SYNTAX, rIMPORT, rEXPORT;

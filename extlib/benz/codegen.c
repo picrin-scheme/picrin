@@ -41,8 +41,6 @@ typedef struct analyze_state {
   pic_sym rADD, rSUB, rMUL, rDIV;
   pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
   pic_sym rVALUES, rCALL_WITH_VALUES;
-  pic_sym sCALL, sTAILCALL, sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
-  pic_sym sGREF, sLREF, sCREF, sRETURN;
 } analyze_state;
 
 static bool push_scope(analyze_state *, pic_value);
@@ -90,15 +88,6 @@ new_analyze_state(pic_state *pic)
   register_renamed_symbol(pic, state, rNOT, pic->PICRIN_BASE, "not");
   register_renamed_symbol(pic, state, rVALUES, pic->PICRIN_BASE, "values");
   register_renamed_symbol(pic, state, rCALL_WITH_VALUES, pic->PICRIN_BASE, "call-with-values");
-
-  register_symbol(pic, state, sCALL, "call");
-  register_symbol(pic, state, sTAILCALL, "tail-call");
-  register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
-  register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
-  register_symbol(pic, state, sGREF, "gref");
-  register_symbol(pic, state, sLREF, "lref");
-  register_symbol(pic, state, sCREF, "cref");
-  register_symbol(pic, state, sRETURN, "return");
 
   /* push initial scope */
   push_scope(state, pic_nil_value());
@@ -280,11 +269,11 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
 
   tag = pic_sym(pic_car(pic, res));
   if (tailpos) {
-    if (tag == pic->sIF || tag == pic->sBEGIN || tag == state->sTAILCALL || tag == state->sTAILCALL_WITH_VALUES || tag == state->sRETURN) {
+    if (tag == pic->sIF || tag == pic->sBEGIN || tag == pic->sTAILCALL || tag == pic->sTAILCALL_WITH_VALUES || tag == pic->sRETURN) {
       /* pass through */
     }
     else {
-      res = pic_list2(pic, pic_obj_value(state->sRETURN), res);
+      res = pic_list2(pic, pic_obj_value(pic->sRETURN), res);
     }
   }
 
@@ -299,7 +288,7 @@ analyze_global_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
 
-  return pic_list2(pic, pic_obj_value(state->sGREF), pic_obj_value(sym));
+  return pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sym));
 }
 
 static pic_value
@@ -307,7 +296,7 @@ analyze_local_var(analyze_state *state, pic_sym sym)
 {
   pic_state *pic = state->pic;
 
-  return pic_list2(pic, pic_obj_value(state->sLREF), pic_obj_value(sym));
+  return pic_list2(pic, pic_obj_value(pic->sLREF), pic_obj_value(sym));
 }
 
 static pic_value
@@ -315,7 +304,7 @@ analyze_free_var(analyze_state *state, pic_sym sym, int depth)
 {
   pic_state *pic = state->pic;
 
-  return pic_list3(pic, pic_obj_value(state->sCREF), pic_int_value(depth), pic_obj_value(sym));
+  return pic_list3(pic, pic_obj_value(pic->sCREF), pic_int_value(depth), pic_obj_value(sym));
 }
 
 static pic_value
@@ -344,7 +333,7 @@ analyze_defer(analyze_state *state, pic_value name, pic_value formal, pic_value 
   const pic_sym sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
   pic_value skel;
 
-  skel = pic_list2(pic, pic_obj_value(state->sGREF), pic_obj_value(sNOWHERE));
+  skel = pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sNOWHERE));
 
   pic_push(pic, pic_list4(pic, name, formal, body, skel), state->scope->defer);
 
@@ -666,9 +655,9 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
   pic_sym call;
 
   if (! tailpos) {
-    call = state->sCALL;
+    call = pic->sCALL;
   } else {
-    call = state->sTAILCALL;
+    call = pic->sTAILCALL;
   }
   seq = pic_list1(pic, pic_obj_value(call));
   pic_for_each (elt, obj) {
@@ -687,7 +676,7 @@ analyze_values(analyze_state *state, pic_value obj, bool tailpos)
     return analyze_call(state, obj, false);
   }
 
-  seq = pic_list1(pic, pic_obj_value(state->sRETURN));
+  seq = pic_list1(pic, pic_obj_value(pic->sRETURN));
   pic_for_each (v, pic_cdr(pic, obj)) {
     seq = pic_cons(pic, analyze(state, v, false), seq);
   }
@@ -706,9 +695,9 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
   }
 
   if (! tailpos) {
-    call = state->sCALL_WITH_VALUES;
+    call = pic->sCALL_WITH_VALUES;
   } else {
-    call = state->sTAILCALL_WITH_VALUES;
+    call = pic->sTAILCALL_WITH_VALUES;
   }
   prod = analyze(state, pic_list_ref(pic, obj, 1), false);
   cnsm = analyze(state, pic_list_ref(pic, obj, 2), false);
@@ -899,9 +888,6 @@ typedef struct codegen_context {
 typedef struct codegen_state {
   pic_state *pic;
   codegen_context *cxt;
-  pic_sym sGREF, sCREF, sLREF;
-  pic_sym sCALL, sTAILCALL, sRETURN;
-  pic_sym sCALL_WITH_VALUES, sTAILCALL_WITH_VALUES;
 } codegen_state;
 
 static void push_codegen_context(codegen_state *, pic_value, pic_value, pic_value, bool, pic_value);
@@ -915,15 +901,6 @@ new_codegen_state(pic_state *pic)
   state = pic_alloc(pic, sizeof(codegen_state));
   state->pic = pic;
   state->cxt = NULL;
-
-  register_symbol(pic, state, sCALL, "call");
-  register_symbol(pic, state, sTAILCALL, "tail-call");
-  register_symbol(pic, state, sGREF, "gref");
-  register_symbol(pic, state, sLREF, "lref");
-  register_symbol(pic, state, sCREF, "cref");
-  register_symbol(pic, state, sRETURN, "return");
-  register_symbol(pic, state, sCALL_WITH_VALUES, "call-with-values");
-  register_symbol(pic, state, sTAILCALL_WITH_VALUES, "tailcall-with-values");
 
   push_codegen_context(state, pic_false_value(), pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 
@@ -1144,12 +1121,12 @@ codegen(codegen_state *state, pic_value obj)
   pic_sym sym;
 
   sym = pic_sym(pic_car(pic, obj));
-  if (sym == state->sGREF) {
+  if (sym == pic->sGREF) {
     cxt->code[cxt->clen].insn = OP_GREF;
     cxt->code[cxt->clen].u.i = index_symbol(state, pic_sym(pic_list_ref(pic, obj, 1)));
     cxt->clen++;
     return;
-  } else if (sym == state->sCREF) {
+  } else if (sym == pic->sCREF) {
     pic_sym name;
     int depth;
 
@@ -1160,7 +1137,7 @@ codegen(codegen_state *state, pic_value obj)
     cxt->code[cxt->clen].u.r.idx = index_capture(state, name, depth);
     cxt->clen++;
     return;
-  } else if (sym == state->sLREF) {
+  } else if (sym == pic->sLREF) {
     pic_sym name;
     int i;
 
@@ -1184,7 +1161,7 @@ codegen(codegen_state *state, pic_value obj)
 
     var = pic_list_ref(pic, obj, 1);
     type = pic_sym(pic_list_ref(pic, var, 0));
-    if (type == state->sGREF) {
+    if (type == pic->sGREF) {
       cxt->code[cxt->clen].insn = OP_GSET;
       cxt->code[cxt->clen].u.i = index_symbol(state, pic_sym(pic_list_ref(pic, var, 1)));
       cxt->clen++;
@@ -1192,7 +1169,7 @@ codegen(codegen_state *state, pic_value obj)
       cxt->clen++;
       return;
     }
-    else if (type == state->sCREF) {
+    else if (type == pic->sCREF) {
       pic_sym name;
       int depth;
 
@@ -1206,7 +1183,7 @@ codegen(codegen_state *state, pic_value obj)
       cxt->clen++;
       return;
     }
-    else if (type == state->sLREF) {
+    else if (type == pic->sLREF) {
       pic_sym name;
       int i;
 
@@ -1427,19 +1404,19 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   }
-  else if (sym == state->sCALL || sym == state->sTAILCALL) {
+  else if (sym == pic->sCALL || sym == pic->sTAILCALL) {
     int len = (int)pic_length(pic, obj);
     pic_value elt;
 
     pic_for_each (elt, pic_cdr(pic, obj)) {
       codegen(state, elt);
     }
-    cxt->code[cxt->clen].insn = (sym == state->sCALL) ? OP_CALL : OP_TAILCALL;
+    cxt->code[cxt->clen].insn = (sym == pic->sCALL) ? OP_CALL : OP_TAILCALL;
     cxt->code[cxt->clen].u.i = len - 1;
     cxt->clen++;
     return;
   }
-  else if (sym == state->sCALL_WITH_VALUES || sym == state->sTAILCALL_WITH_VALUES) {
+  else if (sym == pic->sCALL_WITH_VALUES || sym == pic->sTAILCALL_WITH_VALUES) {
     /* stack consumer at first */
     codegen(state, pic_list_ref(pic, obj, 2));
     codegen(state, pic_list_ref(pic, obj, 1));
@@ -1448,12 +1425,12 @@ codegen(codegen_state *state, pic_value obj)
     cxt->code[cxt->clen].u.i = 1;
     cxt->clen++;
     /* call consumer */
-    cxt->code[cxt->clen].insn = (sym == state->sCALL_WITH_VALUES) ? OP_CALL : OP_TAILCALL;
+    cxt->code[cxt->clen].insn = (sym == pic->sCALL_WITH_VALUES) ? OP_CALL : OP_TAILCALL;
     cxt->code[cxt->clen].u.i = -1;
     cxt->clen++;
     return;
   }
-  else if (sym == state->sRETURN) {
+  else if (sym == pic->sRETURN) {
     int len = (int)pic_length(pic, obj);
     pic_value elt;
 

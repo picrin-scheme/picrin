@@ -132,6 +132,15 @@ pic_open(int argc, char *argv[], char **envp)
   S(sNOT, "not");
   S(sREAD, "read");
   S(sFILE, "file");
+  S(sCALL, "call");
+  S(sTAILCALL, "tail-call");
+  S(sGREF, "gref");
+  S(sLREF, "lref");
+  S(sCREF, "cref");
+  S(sRETURN, "return");
+  S(sCALL_WITH_VALUES, "call-with-values");
+  S(sTAILCALL_WITH_VALUES, "tailcall-with-values");
+
   pic_gc_arena_restore(pic, ai);
 
 #define R(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));
