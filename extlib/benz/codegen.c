@@ -568,11 +568,14 @@ analyze_quote(analyze_state *state, pic_value obj)
   return pic_list2(pic, pic_sym_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
-#define ARGC_ASSERT_GE(n) do {				\
-	if (pic_length(pic, obj) < (n) + 1) {		\
-	  pic_errorf(pic, "wrong number of arguments");	\
-	}						\
-      } while (0)
+#define ARGC_ASSERT_GE(n, name) do {                                    \
+    if (pic_length(pic, obj) < (n) + 1) {                               \
+      pic_errorf(pic,                                                   \
+                 #name ": wrong number of arguments (%d for equal to or more than %d)", \
+                 pic_length(pic, obj) - 1,                                  \
+                 n);                                                    \
+    }                                                                   \
+  } while (0)
 
 #define FOLD_ARGS(sym) do {                                             \
         obj = analyze(state, pic_car(pic, args), false);                \
@@ -588,7 +591,7 @@ analyze_add(analyze_state *state, pic_value obj, bool tailpos)
   pic_state *pic = state->pic;
   pic_value args, arg;
 
-  ARGC_ASSERT_GE(0);
+  ARGC_ASSERT_GE(0, "+");
   switch (pic_length(pic, obj)) {
   case 1:
     return pic_list2(pic, pic_symbol_value(pic->sQUOTE), pic_int_value(0));
@@ -607,7 +610,7 @@ analyze_sub(analyze_state *state, pic_value obj)
   pic_state *pic = state->pic;
   pic_value args, arg;
 
-  ARGC_ASSERT_GE(1);
+  ARGC_ASSERT_GE(1, "-");
   switch (pic_length(pic, obj)) {
   case 2:
     return pic_list2(pic, pic_symbol_value(pic->sMINUS),
@@ -625,7 +628,7 @@ analyze_mul(analyze_state *state, pic_value obj, bool tailpos)
   pic_state *pic = state->pic;
   pic_value args, arg;
 
-  ARGC_ASSERT_GE(0);
+  ARGC_ASSERT_GE(0, "*");
   switch (pic_length(pic, obj)) {
   case 1:
     return pic_list2(pic, pic_symbol_value(pic->sQUOTE), pic_int_value(1));
@@ -644,7 +647,7 @@ analyze_div(analyze_state *state, pic_value obj)
   pic_state *pic = state->pic;
   pic_value args, arg;
 
-  ARGC_ASSERT_GE(1);
+  ARGC_ASSERT_GE(1, "/");
   switch (pic_length(pic, obj)) {
   case 2:
     args = pic_cdr(pic, obj);
