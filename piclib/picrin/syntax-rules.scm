@@ -8,7 +8,7 @@
        (list (r 'define-syntax) (cadr expr)
              (list (r 'lambda) '_
                    (list (r 'lambda) '_
-                         (list (r 'error) "invalid use of auxiliary syntax")))))))
+                         (list (r 'error) (list (r 'string-append) "invalid use of auxiliary syntax: '" (symbol->string (cadr expr)) "'"))))))))
 
   (define-auxiliary-syntax _)
   (define-auxiliary-syntax ...)
