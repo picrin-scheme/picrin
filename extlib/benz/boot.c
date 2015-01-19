@@ -52,7 +52,7 @@ my $src = <<'EOL';
        (list (r 'define-syntax) (cadr expr)
              (list (r 'lambda) '_
                    (list (r 'lambda) '_
-                         (list (r 'error) "invalid use of auxiliary syntax")))))))
+                         (list (r 'error) (list (r 'string-append) "invalid use of auxiliary syntax: '" (symbol->string (cadr expr)) "'"))))))))
 
   (define-auxiliary-syntax else)
   (define-auxiliary-syntax =>)
@@ -452,7 +452,7 @@ const char pic_boot[] =
 "       (list (r 'define-syntax) (cadr expr)\n"
 "             (list (r 'lambda) '_\n"
 "                   (list (r 'lambda) '_\n"
-"                         (list (r 'error) \"invalid use of auxiliary syntax\")))))))\n"
+"                         (list (r 'error) (list (r 'string-append) \"invalid use of auxiliary syntax: '\" (symbol->string (cadr expr)) \"'\"))))))))\n"
 "\n"
 "  (define-auxiliary-syntax else)\n"
 "  (define-auxiliary-syntax =>)\n"
