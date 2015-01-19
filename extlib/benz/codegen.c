@@ -696,7 +696,7 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
   pic_sym *call;
 
   if (pic_length(pic, obj) != 3) {
-    pic_errorf(pic, "wrong number of arguments");
+    pic_errorf(pic, "call-with-values: wrong number of arguments (%d for 2)", pic_length(pic, obj) - 1);
   }
 
   if (! tailpos) {
