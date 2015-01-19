@@ -14,6 +14,9 @@ struct pic_symbol {
   pic_str *str;
 };
 
+#define pic_sym(v) pic_ptr(v)
+#define pic_sym_p(v) (pic_type(v) == PIC_TT_SYMBOL)
+
 #if defined(__cplusplus)
 }
 #endif

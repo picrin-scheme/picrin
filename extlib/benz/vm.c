@@ -15,6 +15,7 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
+#include "picrin/symbol.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 

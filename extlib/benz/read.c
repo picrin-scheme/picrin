@@ -11,6 +11,7 @@
 #include "picrin/blob.h"
 #include "picrin/port.h"
 #include "picrin/proc.h"
+#include "picrin/symbol.h"
 
 static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);

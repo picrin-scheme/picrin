@@ -11,6 +11,7 @@
 #include "picrin/dict.h"
 #include "picrin/record.h"
 #include "picrin/proc.h"
+#include "picrin/symbol.h"
 
 static bool
 is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
