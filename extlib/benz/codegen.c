@@ -341,7 +341,7 @@ static pic_value
 analyze_defer(analyze_state *state, pic_value name, pic_value formal, pic_value body)
 {
   pic_state *pic = state->pic;
-  const pic_sym sNOWHERE = pic_intern_cstr(pic, " nowhere ");
+  const pic_sym sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
   pic_value skel;
 
   skel = pic_list2(pic, pic_obj_value(state->sGREF), pic_obj_value(sNOWHERE));
