@@ -709,10 +709,11 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
   return pic_list3(pic, pic_obj_value(call), prod, cnsm);
 }
 
-#define ARGC_ASSERT(n) do {				\
-    if (pic_length(pic, obj) != (n) + 1) {		\
-      pic_errorf(pic, "wrong number of arguments");	\
-    }                                                   \
+#define ARGC_ASSERT(n, name) do {                                       \
+    if (pic_length(pic, obj) != (n) + 1) {                              \
+      pic_errorf(pic, #name ": wrong number of arguments (%d for %d)",  \
+                 pic_length(pic, obj) - 1, n);                          \
+    }                                                                   \
   } while (0)
 
 #define ARGC_ASSERT_WITH_FALLBACK(n) do {       \
@@ -731,6 +732,7 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
             pic_obj_value(op),                                  \
             analyze(state, pic_list_ref(pic, obj, 1), false),   \
             analyze(state, pic_list_ref(pic, obj, 2), false))
+
 
 static pic_value
 analyze_node(analyze_state *state, pic_value obj, bool tailpos)
@@ -771,27 +773,27 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return analyze_quote(state, obj);
       }
       else if (sym == state->rCONS) {
-	ARGC_ASSERT(2);
+	ARGC_ASSERT(2, "cons");
         return CONSTRUCT_OP2(pic->sCONS);
       }
       else if (sym == state->rCAR) {
-	ARGC_ASSERT(1);
+	ARGC_ASSERT(1, "car");
         return CONSTRUCT_OP1(pic->sCAR);
       }
       else if (sym == state->rCDR) {
-	ARGC_ASSERT(1);
+	ARGC_ASSERT(1, "cdr");
         return CONSTRUCT_OP1(pic->sCDR);
       }
       else if (sym == state->rNILP) {
-	ARGC_ASSERT(1);
+	ARGC_ASSERT(1, "nil?");
         return CONSTRUCT_OP1(pic->sNILP);
       }
       else if (sym == state->rSYMBOLP) {
-        ARGC_ASSERT(1);
+        ARGC_ASSERT(1, "symbol?");
         return CONSTRUCT_OP1(pic->sSYMBOLP);
       }
       else if (sym == state->rPAIRP) {
-        ARGC_ASSERT(1);
+        ARGC_ASSERT(1, "pair?");
         return CONSTRUCT_OP1(pic->sPAIRP);
       }
       else if (sym == state->rADD) {
@@ -827,7 +829,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
         return CONSTRUCT_OP2(pic->sGE);
       }
       else if (sym == state->rNOT) {
-        ARGC_ASSERT(1);
+        ARGC_ASSERT(1, "not");
         return CONSTRUCT_OP1(pic->sNOT);
       }
       else if (sym == state->rVALUES) {
