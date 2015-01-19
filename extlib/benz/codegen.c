@@ -1465,7 +1465,7 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   }
-  pic_errorf(pic, "codegen: unknown AST type");
+  pic_errorf(pic, "codegen: unknown AST type ~s", obj);
 }
 
 static struct pic_irep *
