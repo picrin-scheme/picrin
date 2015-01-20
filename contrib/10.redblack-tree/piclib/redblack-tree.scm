@@ -5,21 +5,18 @@
     (define-record-type node
       (make-node color left key right)
       node?
-      (color node-color)                     ; 'black or 'red
-      (left node-left set-left!)             ; node or 'leaf
-      (key node-key)                         ; `compare'able
-      (right node-right set-right!)          ; node or 'leaf
+      (color node-color)                ; 'black or 'red
+      (left node-left set-left!)        ; node or 'leaf
+      (key node-key set-node-key!)                    ; `compare'able
+      (right node-right set-right!)     ; node or 'leaf
       )
 
     (define-record-type rb-tree
-      (%make-rb-tree cmp)
+      (%make-rb-tree compare)
       rb-tree?
       (node rb-tree-node set-node!)
-      (cmp rb-tree-compare)
+      (compare rb-tree-compare set-rb-tree-compare!)
       (size rb-tree-size set-size!))
-    
-    (define (compare i1 i2)
-      (- i1 i2))
 
     (define (red left key right)
       (make-node 'red left key right))
@@ -81,7 +78,7 @@
          else)
         ((_ node (pattern r ...) expr else)
          (expand-pattern node pattern expr
-             (expand-or-pattern node (r ...) expr else)))))
+                         (expand-or-pattern node (r ...) expr else)))))
 
     (define-syntax expand-pattern
       (syntax-rules (or)
@@ -98,18 +95,21 @@
          (begin expr ...))
         ((_ node (pattern expr ...))
          (let ((node% node))
-          (expand-pattern node% pattern
-                          (begin expr ...)
-                          #f)))
+           (expand-pattern node% pattern
+                           (begin expr ...)
+                           #f)))
         ((_ node (pattern expr ...) (rest-pattern rest-expr ...) ...)
          (let ((node% node))
-          (expand-pattern node% pattern
-                          (begin expr ...)
-                          (node-match node% (rest-pattern rest-expr ...) ...))))))
+           (expand-pattern node% pattern
+                           (begin expr ...)
+                           (node-match node% (rest-pattern rest-expr ...) ...))))))
     
 
+    (define (compare i1 i2)
+      (- i1 i2))
+
     (define (make-rb-tree . cmp)
-      (let* ((cmp (if (null? cmp) compare cmp))
+      (let* ((cmp (if (null? cmp) compare (car cmp)))
              (rb (%make-rb-tree cmp)))
         (set-node! rb 'leaf)
         (set-size! rb 0)
@@ -124,7 +124,13 @@
                    (red (black a x b) y (black c z d)))
                   (else node)))
     
-    (define (rb-tree-insert rb-tree key)
+    (define (rb-tree-display rb-tree)
+      (display "(rb-tree ")
+      (node-display (rb-tree-node rb-tree) #t)
+      (display ")"))
+
+
+    (define (insert rb-tree key)
       (let ((node (rb-tree-node rb-tree))
             (cmp (rb-tree-compare rb-tree))
             (inserted #t))
@@ -139,9 +145,9 @@
                                     (leaf (red 'leaf key 'leaf))))))
 
           (set-node! rb-tree
-           (node-match (ins node)
-                       ((node left label right)
-                        (black left label right))))
+                     (node-match (ins node)
+                                 ((node left label right)
+                                  (black left label right))))
           (if inserted
               (set-size! rb-tree (+ (rb-tree-size rb-tree) 1)))
           inserted)))
@@ -155,7 +161,7 @@
              ((= ord 0) #t)
              ((> ord 0) (node-mem? (node-left node) cmp key))))))
 
-    (define (rb-tree-mem? rb-tree key)
+    (define (mem? rb-tree key)
       (node-mem? (rb-tree-node rb-tree) (rb-tree-compare rb-tree) key))
 
     (define (node-display node last?)
@@ -163,20 +169,64 @@
                   ((c left key leaf)
                    (node-display left #f)
                    (display key)
-                   (display "[debug ") (display leaf) (display "]")
+                   ;; (display "[debug ") (display leaf) (display "]")
                    (if (not last?) (display " ")))                  
                   ((c left key right)
                    (node-display left #f)
                    (display key)
                    (node-display right last?))))
-    (define (rb-tree-display rb-tree)
-      (display "(rb-tree ")
-      (node-display (rb-tree-node rb-tree) #t)
-      (display ")"))
 
-    (define (rb-tree-delete rb-tree key)))
+    (define (node-min node)
+      (node-match node
+                  ((c leaf key node) key)
+                  ((c left key right)
+                   (node-min left))))
+
+    (define (rb-tree-min rb-tree)
+      (node-min (rb-tree-node rb-tree)))
+
+    (define (node-max node)
+      (node-match node
+                  ((c node key leaf) key)
+                  ((c left key right)
+                   (node-max right))))
+
+    (define (rb-tree-max rb-tree)
+      (node-max (rb-tree-node rb-tree)))
+
+    (define (delete rb-tree key)
+      (let ((node (rb-tree-node rb-tree))
+            (cmp (rb-tree-compare rb-tree))
+            (deleted #f))
+        (letrec ((del (lambda (node)
+                        (node-match node
+                                    ((color left label right)
+                                     (cond ((< (cmp key label) 0)
+                                            (balance (make-node color (del left) label right)))
+                                           ((> (cmp key label) 0)
+                                            (balance (make-node color left label (del right))))
+                                           (#t
+                                            (set! deleted #t)
+                                            (cond
+                                             ((eqv? left 'leaf) right)
+                                             ((eqv? right 'leaf) left)
+                                             (#t 'leaf)))))
+                                    (leaf 'leaf)))))
+
+          (set-node! rb-tree
+                     (node-match (del node)
+                                 ((node left label right)
+                                  (black left label right))))
+          (if deleted
+              (set-size! rb-tree (- (rb-tree-size rb-tree) 1)))
+          deleted))))
+
+  
   (export make-rb-tree
           rb-tree-size
-          rb-tree-insert
-          rb-tree-mem?
+          (rename insert rb-tree-insert)
+          (rename mem?   rb-tree-mem?)
+          rb-tree-min
+          rb-tree-max
+          (rename delete rb-tree-delete)
           rb-tree-display))
