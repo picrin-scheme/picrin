@@ -9,12 +9,6 @@
 extern "C" {
 #endif
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <assert.h>
-
 /* simple object to object hash table */
 
 #define XHASH_INIT_SIZE 11

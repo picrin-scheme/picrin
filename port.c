@@ -2,10 +2,6 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-
 #include "picrin.h"
 #include "picrin/proc.h"
 #include "picrin/port.h"

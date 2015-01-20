@@ -5,12 +5,6 @@
 extern "C" {
 #endif
 
-#include <stddef.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 typedef struct {
   int ungot;
   int flags;

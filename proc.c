@@ -34,7 +34,7 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
   return proc;
 }
 
-pic_sym
+pic_sym *
 pic_proc_name(struct pic_proc *proc)
 {
   switch (proc->kind) {
