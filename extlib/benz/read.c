@@ -11,6 +11,7 @@
 #include "picrin/blob.h"
 #include "picrin/port.h"
 #include "picrin/proc.h"
+#include "picrin/symbol.h"
 
 static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
@@ -166,7 +167,7 @@ read_quote(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sQUOTE), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -174,7 +175,7 @@ read_quasiquote(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sQUASIQUOTE), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sQUASIQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -182,7 +183,7 @@ read_unquote(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sUNQUOTE), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sUNQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -190,7 +191,7 @@ read_unquote_splicing(pic_state *pic, struct pic_port *port, const char *str)
 {
   PIC_UNUSED(str);
 
-  return pic_list2(pic, pic_sym_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
+  return pic_list2(pic, pic_obj_value(pic->sUNQUOTE_SPLICING), read(pic, port, next(port)));
 }
 
 static pic_value
@@ -198,7 +199,7 @@ read_symbol(pic_state *pic, struct pic_port *port, const char *str)
 {
   size_t len, i;
   char *buf;
-  pic_sym sym;
+  pic_sym *sym;
   int c;
 
   len = strlen(str);
@@ -222,10 +223,11 @@ read_symbol(pic_state *pic, struct pic_port *port, const char *str)
     buf[len - 1] = (char)c;
   }
 
-  sym = pic_intern(pic, buf, len);
+  buf[len] = 0;
+  sym = pic_intern_cstr(pic, buf);
   pic_free(pic, buf);
 
-  return pic_sym_value(sym);
+  return pic_obj_value(sym);
 }
 
 static size_t
@@ -318,10 +320,10 @@ read_minus(pic_state *pic, struct pic_port *port, const char *str)
   }
   else {
     sym = read_symbol(pic, port, str);
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "-inf.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-inf.0")) {
       return pic_float_value(-INFINITY);
     }
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "-nan.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-nan.0")) {
       return pic_float_value(-NAN);
     }
     return sym;
@@ -338,10 +340,10 @@ read_plus(pic_state *pic, struct pic_port *port, const char *str)
   }
   else {
     sym = read_symbol(pic, port, str);
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "+inf.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+inf.0")) {
       return pic_float_value(INFINITY);
     }
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "+nan.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+nan.0")) {
       return pic_float_value(NAN);
     }
     return sym;
@@ -450,7 +452,7 @@ read_pipe(pic_state *pic, struct pic_port *port, const char *str)
 {
   char *buf;
   size_t size, cnt;
-  pic_sym sym;
+  pic_sym *sym;
   /* Currently supports only ascii chars */
   char HEX_BUF[3];
   size_t i = 0;
@@ -489,7 +491,7 @@ read_pipe(pic_state *pic, struct pic_port *port, const char *str)
   sym = pic_intern_cstr(pic, buf);
   pic_free(pic, buf);
 
-  return pic_sym_value(sym);
+  return pic_obj_value(sym);
 }
 
 static pic_value

@@ -10,6 +10,7 @@
 #include "picrin/cont.h"
 #include "picrin/port.h"
 #include "picrin/error.h"
+#include "picrin/dict.h"
 
 void pic_init_core(pic_state *);
 
@@ -23,6 +24,9 @@ pic_open(int argc, char *argv[], char **envp)
   size_t ai;
 
   pic = malloc(sizeof(pic_state));
+
+  /* turn off GC */
+  pic->gc_enable = false;
 
   /* root block */
   pic->wind = NULL;
@@ -48,16 +52,13 @@ pic_open(int argc, char *argv[], char **envp)
   pic->heap = pic_heap_open();
 
   /* symbol table */
-  xh_init_str(&pic->syms, sizeof(pic_sym));
-  xh_init_int(&pic->sym_names, sizeof(const char *));
-  pic->sym_cnt = 0;
-  pic->uniq_sym_cnt = 0;
+  xh_init_str(&pic->syms, sizeof(pic_sym *));
 
   /* global variables */
-  xh_init_int(&pic->globals, sizeof(pic_value));
+  pic->globals = NULL;
 
   /* macros */
-  xh_init_int(&pic->macros, sizeof(struct pic_macro *));
+  pic->macros = NULL;
 
   /* attributes */
   xh_init_ptr(&pic->attrs, sizeof(struct pic_dict *));
@@ -69,11 +70,10 @@ pic_open(int argc, char *argv[], char **envp)
   pic->libs = pic_nil_value();
   pic->lib = NULL;
 
-  /* reader */
-  pic->reader = malloc(sizeof(struct pic_reader));
-  pic->reader->typecase = PIC_CASE_DEFAULT;
-  pic->reader->trie = pic_make_trie(pic);
-  xh_init_int(&pic->reader->labels, sizeof(pic_value));
+  /* GC arena */
+  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena_size = PIC_ARENA_SIZE;
+  pic->arena_idx = 0;
 
   /* raised error object */
   pic->err = pic_undef_value();
@@ -83,17 +83,13 @@ pic_open(int argc, char *argv[], char **envp)
   pic->xSTDOUT = NULL;
   pic->xSTDERR = NULL;
 
-  /* GC arena */
-  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
-  pic->arena_size = PIC_ARENA_SIZE;
-  pic->arena_idx = 0;
-
   /* native stack marker */
   pic->native_stack_start = &t;
 
+  ai = pic_gc_arena_preserve(pic);
+
 #define S(slot,name) pic->slot = pic_intern_cstr(pic, name);
 
-  ai = pic_gc_arena_preserve(pic);
   S(sDEFINE, "define");
   S(sLAMBDA, "lambda");
   S(sIF, "if");
@@ -121,8 +117,8 @@ pic_open(int argc, char *argv[], char **envp)
   S(sCAR, "car");
   S(sCDR, "cdr");
   S(sNILP, "null?");
-  S(sSYMBOL_P, "symbol?");
-  S(sPAIR_P, "pair?");
+  S(sSYMBOLP, "symbol?");
+  S(sPAIRP, "pair?");
   S(sADD, "+");
   S(sSUB, "-");
   S(sMUL, "*");
@@ -136,11 +132,19 @@ pic_open(int argc, char *argv[], char **envp)
   S(sNOT, "not");
   S(sREAD, "read");
   S(sFILE, "file");
+  S(sCALL, "call");
+  S(sTAILCALL, "tail-call");
+  S(sGREF, "gref");
+  S(sLREF, "lref");
+  S(sCREF, "cref");
+  S(sRETURN, "return");
+  S(sCALL_WITH_VALUES, "call-with-values");
+  S(sTAILCALL_WITH_VALUES, "tailcall-with-values");
+
   pic_gc_arena_restore(pic, ai);
 
 #define R(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));
 
-  ai = pic_gc_arena_preserve(pic);
   R(rDEFINE, "define");
   R(rLAMBDA, "lambda");
   R(rIF, "if");
@@ -155,11 +159,21 @@ pic_open(int argc, char *argv[], char **envp)
   R(rCOND_EXPAND, "cond-expand");
   pic_gc_arena_restore(pic, ai);
 
+  /* root tables */
+  pic->globals = pic_make_dict(pic);
+  pic->macros = pic_make_dict(pic);
+
   /* root block */
   pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
   pic->wind->prev = NULL;
   pic->wind->depth = 0;
   pic->wind->in = pic->wind->out = NULL;
+
+  /* reader */
+  pic->reader = malloc(sizeof(struct pic_reader));
+  pic->reader->typecase = PIC_CASE_DEFAULT;
+  pic->reader->trie = pic_make_trie(pic);
+  xh_init_int(&pic->reader->labels, sizeof(pic_value));
 
   /* init readers */
   pic_init_reader(pic);
@@ -173,6 +187,11 @@ pic_open(int argc, char *argv[], char **envp)
   pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
   pic->xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
   pic->xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
+
+  pic_gc_arena_restore(pic, ai);
+
+  /* turn on GC */
+  pic->gc_enable = true;
 
   pic_init_core(pic);
 
@@ -192,14 +211,20 @@ pic_close(pic_state *pic)
     pic->wind = pic->wind->prev;
   }
 
+  /* free symbol names */
+  for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
+    free(xh_key(it, char *));
+  }
+
   /* clear out root objects */
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
   pic->xp = pic->xpbase;
   pic->arena_idx = 0;
   pic->err = pic_undef_value();
-  xh_clear(&pic->globals);
-  xh_clear(&pic->macros);
+  pic->globals = NULL;
+  pic->macros = NULL;
+  xh_clear(&pic->syms);
   xh_clear(&pic->attrs);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
@@ -222,18 +247,10 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   xh_destroy(&pic->syms);
-  xh_destroy(&pic->globals);
-  xh_destroy(&pic->macros);
   xh_destroy(&pic->attrs);
 
   /* free GC arena */
   free(pic->arena);
-
-  /* free symbol names */
-  for (it = xh_begin(&pic->sym_names); it != NULL; it = xh_next(it)) {
-    free(xh_val(it, char *));
-  }
-  xh_destroy(&pic->sym_names);
 
   free(pic);
 }

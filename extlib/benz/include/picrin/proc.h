@@ -12,7 +12,7 @@ extern "C" {
 /* native C function */
 struct pic_func {
   pic_func_t f;
-  pic_sym name;
+  pic_sym *name;
 };
 
 struct pic_env {
@@ -48,7 +48,7 @@ struct pic_proc {
 struct pic_proc *pic_make_proc(pic_state *, pic_func_t, const char *);
 struct pic_proc *pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_env *);
 
-pic_sym pic_proc_name(struct pic_proc *);
+pic_sym *pic_proc_name(struct pic_proc *);
 
 #if defined(__cplusplus)
 }

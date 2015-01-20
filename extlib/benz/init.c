@@ -11,7 +11,7 @@
 void
 pic_add_feature(pic_state *pic, const char *feature)
 {
-  pic_push(pic, pic_sym_value(pic_intern_cstr(pic, feature)), pic->features);
+  pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
 }
 
 void pic_init_bool(pic_state *);

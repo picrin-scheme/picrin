@@ -11,13 +11,14 @@
 #include "picrin/dict.h"
 #include "picrin/record.h"
 #include "picrin/proc.h"
+#include "picrin/symbol.h"
 
 static bool
-is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
+is_tagged(pic_state *pic, pic_sym *tag, pic_value pair)
 {
   return pic_pair_p(pic_cdr(pic, pair))
     && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(tag));
+    && pic_eq_p(pic_car(pic, pair), pic_obj_value(tag));
 }
 
 static bool
@@ -175,7 +176,7 @@ write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 static void
 write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
 {
-  const pic_sym sWRITER = pic_intern_cstr(pic, "writer");
+  pic_sym *sWRITER = pic_intern_cstr(pic, "writer");
   pic_value type, writer, str;
 
 #if DEBUG
@@ -265,7 +266,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, ")");
     break;
   case PIC_TT_SYMBOL:
-    xfprintf(file, "%s", pic_symbol_name(pic, pic_sym(obj)));
+    xfprintf(file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
     break;
   case PIC_TT_CHAR:
     if (p->mode == DISPLAY_MODE) {
@@ -332,7 +333,7 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_DICT:
     xfprintf(file, "#.(dictionary");
     for (it = xh_begin(&pic_dict_ptr(obj)->hash); it != NULL; it = xh_next(it)) {
-      xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it, pic_sym)));
+      xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it, pic_sym *)));
       write_core(p, xh_val(it, pic_value));
     }
     xfprintf(file, ")");

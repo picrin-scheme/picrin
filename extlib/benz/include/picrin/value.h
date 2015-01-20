@@ -10,12 +10,6 @@ extern "C" {
 #endif
 
 /**
- * pic_sym is just an alias of int.
- */
-
-typedef int pic_sym;
-
-/**
  * `undef` values never seen from user-end: that is,
  *  it's used only for repsenting internal special state
  */
@@ -27,7 +21,6 @@ enum pic_vtype {
   PIC_VTYPE_UNDEF,
   PIC_VTYPE_FLOAT,
   PIC_VTYPE_INT,
-  PIC_VTYPE_SYMBOL,
   PIC_VTYPE_CHAR,
   PIC_VTYPE_EOF,
   PIC_VTYPE_HEAP
@@ -40,7 +33,6 @@ enum pic_vtype {
  *   float : FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF
  *   ptr   : 111111111111TTTT PPPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP
  *   int   : 1111111111110110 0000000000000000 IIIIIIIIIIIIIIII IIIIIIIIIIIIIIII
- *   sym   : 1111111111110111 0000000000000000 SSSSSSSSSSSSSSSS SSSSSSSSSSSSSSSS
  *   char  : 1111111111111000 0000000000000000 CCCCCCCCCCCCCCCC CCCCCCCCCCCCCCCC
  */
 
@@ -71,14 +63,6 @@ pic_int(pic_value v)
   return u.i;
 }
 
-static inline int
-pic_sym(pic_value v)
-{
-  union { int i; unsigned u; } u;
-  u.u = v & 0xfffffffful;
-  return u.i;
-}
-
 #define pic_char(v) ((v) & 0xfffffffful)
 
 #else
@@ -89,7 +73,6 @@ typedef struct {
     void *data;
     double f;
     int i;
-    pic_sym sym;
     char c;
   } u;
 } pic_value;
@@ -100,7 +83,6 @@ typedef struct {
 
 #define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
-#define pic_sym(v) ((v).u.sym)
 #define pic_char(v) ((v).u.c)
 
 #endif
@@ -111,11 +93,11 @@ enum pic_tt {
   PIC_TT_BOOL,
   PIC_TT_FLOAT,
   PIC_TT_INT,
-  PIC_TT_SYMBOL,
   PIC_TT_CHAR,
   PIC_TT_EOF,
   PIC_TT_UNDEF,
   /* heap */
+  PIC_TT_SYMBOL,
   PIC_TT_PAIR,
   PIC_TT_STRING,
   PIC_TT_VECTOR,
@@ -139,6 +121,7 @@ struct pic_object {
   PIC_OBJECT_HEADER
 };
 
+struct pic_symbol;
 struct pic_pair;
 struct pic_string;
 struct pic_vector;
@@ -150,6 +133,7 @@ struct pic_error;
 
 /* set aliases to basic types */
 typedef pic_value pic_list;
+typedef struct pic_symbol pic_sym;
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
@@ -164,7 +148,6 @@ typedef struct pic_blob pic_blob;
 #define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
 #define pic_float_p(v) (pic_vtype(v) == PIC_VTYPE_FLOAT)
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
-#define pic_sym_p(v) (pic_vtype(v) == PIC_VTYPE_SYMBOL)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
 #define pic_eof_p(v) (pic_vtype(v) == PIC_VTYPE_EOF)
 
@@ -189,11 +172,8 @@ static inline pic_value pic_obj_value(void *);
 static inline pic_value pic_float_value(double);
 static inline pic_value pic_int_value(int);
 static inline pic_value pic_size_value(size_t);
-static inline pic_value pic_sym_value(pic_sym);
 static inline pic_value pic_char_value(char c);
 static inline pic_value pic_none_value();
-
-#define pic_symbol_value(sym) pic_sym_value(sym)
 
 static inline bool pic_eq_p(pic_value, pic_value);
 static inline bool pic_eqv_p(pic_value, pic_value);
@@ -214,8 +194,6 @@ pic_type(pic_value v)
     return PIC_TT_FLOAT;
   case PIC_VTYPE_INT:
     return PIC_TT_INT;
-  case PIC_VTYPE_SYMBOL:
-    return PIC_TT_SYMBOL;
   case PIC_VTYPE_CHAR:
     return PIC_TT_CHAR;
   case PIC_VTYPE_EOF:
@@ -371,19 +349,6 @@ pic_int_value(int i)
 }
 
 static inline pic_value
-pic_symbol_value(pic_sym sym)
-{
-  union { int i; unsigned u; } u;
-  pic_value v;
-
-  u.i = sym;
-
-  pic_init_value(v, PIC_VTYPE_SYMBOL);
-  v |= u.u;
-  return v;
-}
-
-static inline pic_value
 pic_char_value(char c)
 {
   pic_value v;
@@ -422,16 +387,6 @@ pic_int_value(int i)
 
   pic_init_value(v, PIC_VTYPE_INT);
   v.u.i = i;
-  return v;
-}
-
-static inline pic_value
-pic_symbol_value(pic_sym sym)
-{
-  pic_value v;
-
-  pic_init_value(v, PIC_VTYPE_SYMBOL);
-  v.u.sym = sym;
   return v;
 }
 
@@ -493,8 +448,6 @@ pic_eq_p(pic_value x, pic_value y)
     return true;
   case PIC_TT_BOOL:
     return pic_vtype(x) == pic_vtype(y);
-  case PIC_TT_SYMBOL:
-    return pic_sym(x) == pic_sym(y);
   default:
     return pic_ptr(x) == pic_ptr(y);
   }
@@ -511,8 +464,6 @@ pic_eqv_p(pic_value x, pic_value y)
     return true;
   case PIC_TT_BOOL:
     return pic_vtype(x) == pic_vtype(y);
-  case PIC_TT_SYMBOL:
-    return pic_sym(x) == pic_sym(y);
   case PIC_TT_FLOAT:
     return pic_float(x) == pic_float(y);
   case PIC_TT_INT:

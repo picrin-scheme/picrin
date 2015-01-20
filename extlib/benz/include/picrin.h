@@ -89,22 +89,25 @@ typedef struct {
 
   struct pic_lib *lib;
 
-  pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
-  pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
-  pic_sym sDEFINE_SYNTAX, sIMPORT, sEXPORT;
-  pic_sym sDEFINE_LIBRARY, sIN_LIBRARY;
-  pic_sym sCOND_EXPAND, sAND, sOR, sELSE, sLIBRARY;
-  pic_sym sONLY, sRENAME, sPREFIX, sEXCEPT;
-  pic_sym sCONS, sCAR, sCDR, sNILP;
-  pic_sym sSYMBOL_P, sPAIR_P;
-  pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
-  pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
-  pic_sym sREAD, sFILE;
+  pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
+  pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
+  pic_sym *sDEFINE_SYNTAX, *sIMPORT, *sEXPORT;
+  pic_sym *sDEFINE_LIBRARY, *sIN_LIBRARY;
+  pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
+  pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
+  pic_sym *sCONS, *sCAR, *sCDR, *sNILP;
+  pic_sym *sSYMBOLP, *sPAIRP;
+  pic_sym *sADD, *sSUB, *sMUL, *sDIV, *sMINUS;
+  pic_sym *sEQ, *sLT, *sLE, *sGT, *sGE, *sNOT;
+  pic_sym *sREAD, *sFILE;
+  pic_sym *sGREF, *sCREF, *sLREF;
+  pic_sym *sCALL, *sTAILCALL, *sRETURN;
+  pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
-  pic_sym rDEFINE, rLAMBDA, rIF, rBEGIN, rQUOTE, rSETBANG;
-  pic_sym rDEFINE_SYNTAX, rIMPORT, rEXPORT;
-  pic_sym rDEFINE_LIBRARY, rIN_LIBRARY;
-  pic_sym rCOND_EXPAND;
+  pic_sym *rDEFINE, *rLAMBDA, *rIF, *rBEGIN, *rQUOTE, *rSETBANG;
+  pic_sym *rDEFINE_SYNTAX, *rIMPORT, *rEXPORT;
+  pic_sym *rDEFINE_LIBRARY, *rIN_LIBRARY;
+  pic_sym *rCOND_EXPAND;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
@@ -112,17 +115,14 @@ typedef struct {
   pic_value features;
 
   xhash syms;                   /* name to symbol */
-  xhash sym_names;              /* symbol to name */
-  int sym_cnt;
-  int uniq_sym_cnt;
-
-  xhash globals;
-  xhash macros;
+  struct pic_dict *globals;
+  struct pic_dict *macros;
   pic_value libs;
   xhash attrs;
 
   struct pic_reader *reader;
 
+  bool gc_enable;
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
@@ -175,13 +175,11 @@ bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
-pic_sym pic_intern(pic_state *, const char *, size_t);
-pic_sym pic_intern_str(pic_state *, pic_str *);
-pic_sym pic_intern_cstr(pic_state *, const char *);
-const char *pic_symbol_name(pic_state *, pic_sym);
-pic_sym pic_gensym(pic_state *, pic_sym);
-pic_sym pic_ungensym(pic_state *, pic_sym);
-bool pic_interned_p(pic_state *, pic_sym);
+pic_sym *pic_intern(pic_state *, pic_str *);
+pic_sym *pic_intern_cstr(pic_state *, const char *);
+const char *pic_symbol_name(pic_state *, pic_sym *);
+pic_sym *pic_gensym(pic_state *, pic_sym *);
+bool pic_interned_p(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
@@ -218,7 +216,7 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 void pic_import(pic_state *, pic_value);
 void pic_import_library(pic_state *, struct pic_lib *);
-void pic_export(pic_state *, pic_sym);
+void pic_export(pic_state *, pic_sym *);
 
 pic_noreturn void pic_panic(pic_state *, const char *);
 pic_noreturn void pic_errorf(pic_state *, const char *, ...);

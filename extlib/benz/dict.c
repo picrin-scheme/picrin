@@ -7,6 +7,7 @@
 #include "picrin/cont.h"
 #include "picrin/pair.h"
 #include "picrin/error.h"
+#include "picrin/symbol.h"
 
 struct pic_dict *
 pic_make_dict(pic_state *pic)
@@ -14,29 +15,29 @@ pic_make_dict(pic_state *pic)
   struct pic_dict *dict;
 
   dict = (struct pic_dict *)pic_obj_alloc(pic, sizeof(struct pic_dict), PIC_TT_DICT);
-  xh_init_int(&dict->hash, sizeof(pic_value));
+  xh_init_ptr(&dict->hash, sizeof(pic_value));
 
   return dict;
 }
 
 pic_value
-pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym key)
+pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 {
   xh_entry *e;
 
-  e = xh_get_int(&dict->hash, key);
+  e = xh_get_ptr(&dict->hash, key);
   if (! e) {
-    pic_errorf(pic, "element not found for a key: ~s", pic_sym_value(key));
+    pic_errorf(pic, "element not found for a key: ~s", pic_obj_value(key));
   }
   return xh_val(e, pic_value);
 }
 
 void
-pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_sym key, pic_value val)
+pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_sym *key, pic_value val)
 {
   PIC_UNUSED(pic);
 
-  xh_put_int(&dict->hash, key, &val);
+  xh_put_ptr(&dict->hash, key, &val);
 }
 
 size_t
@@ -48,21 +49,21 @@ pic_dict_size(pic_state *pic, struct pic_dict *dict)
 }
 
 bool
-pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym key)
+pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 {
   PIC_UNUSED(pic);
 
-  return xh_get_int(&dict->hash, key) != NULL;
+  return xh_get_ptr(&dict->hash, key) != NULL;
 }
 
 void
-pic_dict_del(pic_state *pic, struct pic_dict *dict, pic_sym key)
+pic_dict_del(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 {
-  if (xh_get_int(&dict->hash, key) == NULL) {
-    pic_errorf(pic, "no slot named ~s found in dictionary", pic_sym_value(key));
+  if (xh_get_ptr(&dict->hash, key) == NULL) {
+    pic_errorf(pic, "no slot named ~s found in dictionary", pic_obj_value(key));
   }
 
-  xh_del_int(&dict->hash, key);
+  xh_del_ptr(&dict->hash, key);
 }
 
 static pic_value
@@ -90,7 +91,7 @@ pic_dict_dictionary(pic_state *pic)
 
   for (i = 0; i < argc; i += 2) {
     pic_assert_type(pic, argv[i], sym);
-    pic_dict_set(pic, dict, pic_sym(argv[i]), argv[i+1]);
+    pic_dict_set(pic, dict, pic_sym_ptr(argv[i]), argv[i+1]);
   }
 
   return pic_obj_value(dict);
@@ -110,7 +111,7 @@ static pic_value
 pic_dict_dictionary_ref(pic_state *pic)
 {
   struct pic_dict *dict;
-  pic_sym key;
+  pic_sym *key;
 
   pic_get_args(pic, "dm", &dict, &key);
 
@@ -125,7 +126,7 @@ static pic_value
 pic_dict_dictionary_set(pic_state *pic)
 {
   struct pic_dict *dict;
-  pic_sym key;
+  pic_sym *key;
   pic_value val;
 
   pic_get_args(pic, "dmo", &dict, &key, &val);
@@ -139,7 +140,7 @@ static pic_value
 pic_dict_dictionary_del(pic_state *pic)
 {
   struct pic_dict *dict;
-  pic_sym key;
+  pic_sym *key;
 
   pic_get_args(pic, "dm", &dict, &key);
 
@@ -186,7 +187,7 @@ pic_dict_dictionary_map(pic_state *pic)
         if (it[i] == NULL) {
           break;
         }
-        pic_push(pic, pic_sym_value(xh_key(it[i], pic_sym)), arg);
+        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym *)), arg);
         it[i] = xh_next(it[i]);
       }
       if (i != argc) {
@@ -232,7 +233,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
         if (it[i] == NULL) {
           break;
         }
-        pic_push(pic, pic_sym_value(xh_key(it[i], pic_sym)), arg);
+        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym *)), arg);
         it[i] = xh_next(it[i]);
       }
       if (i != argc) {
@@ -261,7 +262,7 @@ pic_dict_dictionary_to_alist(pic_state *pic)
   pic_get_args(pic, "d", &dict);
 
   for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    item = pic_cons(pic, pic_sym_value(xh_key(it, pic_sym)), xh_val(it, pic_value));
+    item = pic_cons(pic, pic_obj_value(xh_key(it, pic_sym *)), xh_val(it, pic_value));
     pic_push(pic, item, alist);
   }
 
@@ -280,7 +281,7 @@ pic_dict_alist_to_dictionary(pic_state *pic)
 
   pic_for_each (e, pic_reverse(pic, alist)) {
     pic_assert_type(pic, pic_car(pic, e), sym);
-    pic_dict_set(pic, dict, pic_sym(pic_car(pic, e)), pic_cdr(pic, e));
+    pic_dict_set(pic, dict, pic_sym_ptr(pic_car(pic, e)), pic_cdr(pic, e));
   }
 
   return pic_obj_value(dict);
@@ -296,7 +297,7 @@ pic_dict_dictionary_to_plist(pic_state *pic)
   pic_get_args(pic, "d", &dict);
 
   for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    pic_push(pic, pic_sym_value(xh_key(it, pic_sym)), plist);
+    pic_push(pic, pic_obj_value(xh_key(it, pic_sym *)), plist);
     pic_push(pic, xh_val(it, pic_value), plist);
   }
 
@@ -315,7 +316,7 @@ pic_dict_plist_to_dictionary(pic_state *pic)
 
   for (e = pic_reverse(pic, plist); ! pic_nil_p(e); e = pic_cddr(pic, e)) {
     pic_assert_type(pic, pic_cadr(pic, e), sym);
-    pic_dict_set(pic, dict, pic_sym(pic_cadr(pic, e)), pic_car(pic, e));
+    pic_dict_set(pic, dict, pic_sym_ptr(pic_cadr(pic, e)), pic_car(pic, e));
   }
 
   return pic_obj_value(dict);

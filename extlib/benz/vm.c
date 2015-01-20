@@ -15,6 +15,7 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
+#include "picrin/symbol.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -40,7 +41,7 @@ pic_get_proc(pic_state *pic)
  *  F   double *, bool *        float with exactness
  *  s   pic_str **              string object
  *  z   char **                 c string
- *  m   pic_sym *               symbol
+ *  m   pic_sym **              symbol
  *  v   pic_vec **              vector object
  *  b   pic_blob **             bytevector object
  *  c   char *                  char
@@ -254,14 +255,14 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 'm': {
-      pic_sym *m;
+      pic_sym **m;
       pic_value v;
 
-      m = va_arg(ap, pic_sym *);
+      m = va_arg(ap, pic_sym **);
       if (i < argc) {
         v = GET_OPERAND(pic,i);
         if (pic_sym_p(v)) {
-          *m = pic_sym(v);
+          *m = pic_sym_ptr(v);
         }
         else {
           pic_errorf(pic, "pic_get_args: expected symbol, but got ~s", v);
@@ -432,7 +433,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 void
 pic_define_noexport(pic_state *pic, const char *name, pic_value val)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -442,7 +443,7 @@ pic_define_noexport(pic_state *pic, const char *name, pic_value val)
     pic_warn(pic, "redefining global");
   }
 
-  xh_put_int(&pic->globals, rename, &val);
+  pic_dict_set(pic, pic->globals, rename, val);
 }
 
 void
@@ -456,7 +457,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 pic_value
 pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -464,13 +465,13 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  return xh_val(xh_get_int(&pic->globals, rename), pic_value);
+  return pic_dict_ref(pic, pic->globals, rename);
 }
 
 void
 pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -478,7 +479,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  xh_put_int(&pic->globals, rename, &val);
+  pic_dict_set(pic, pic->globals, rename, val);
 }
 
 pic_value
@@ -548,6 +549,23 @@ pic_vm_tear_off(pic_state *pic)
       vm_tear_off(ci);
     }
   }
+}
+
+static struct pic_irep *
+vm_get_irep(pic_state *pic)
+{
+  pic_value self;
+  struct pic_irep *irep;
+
+  self = pic->ci->fp[0];
+  if (! pic_proc_p(self)) {
+    pic_errorf(pic, "logic flaw");
+  }
+  irep = pic_proc_ptr(self)->u.irep;
+  if (! pic_proc_irep_p(pic_proc_ptr(self))) {
+    pic_errorf(pic, "logic flaw");
+  }
+  return irep;
 }
 
 pic_value
@@ -688,7 +706,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
-    &&L_OP_SYMBOL_P, &&L_OP_PAIR_P, 
+    &&L_OP_SYMBOLP, &&L_OP_PAIRP,
     &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_MINUS,
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
@@ -751,34 +769,31 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      pic_value self;
-      struct pic_irep *irep;
+      struct pic_irep *irep = vm_get_irep(pic);
 
-      self = pic->ci->fp[0];
-      if (! pic_proc_p(self)) {
-        pic_errorf(pic, "logic flaw");
-      }
-      irep = pic_proc_ptr(self)->u.irep;
-      if (! pic_proc_irep_p(pic_proc_ptr(self))) {
-        pic_errorf(pic, "logic flaw");
-      }
       PUSH(irep->pool[c.u.i]);
       NEXT;
     }
     CASE(OP_GREF) {
-      xh_entry *e;
+      struct pic_irep *irep = vm_get_irep(pic);
+      pic_sym *sym;
 
-      if ((e = xh_get_int(&pic->globals, c.u.i)) == NULL) {
-        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, c.u.i));
+      sym = irep->syms[c.u.i];
+      if (! pic_dict_has(pic, pic->globals, sym)) {
+        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, sym));
       }
-      PUSH(xh_val(e, pic_value));
+      PUSH(pic_dict_ref(pic, pic->globals, sym));
       NEXT;
     }
     CASE(OP_GSET) {
+      struct pic_irep *irep = vm_get_irep(pic);
+      pic_sym *sym;
       pic_value val;
 
+      sym = irep->syms[c.u.i];
+
       val = POP();
-      xh_put_int(&pic->globals, c.u.i, &val);
+      pic_dict_set(pic, pic->globals, sym, val);
       NEXT;
     }
     CASE(OP_LREF) {
@@ -1031,14 +1046,14 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
 
-    CASE(OP_SYMBOL_P) {
+    CASE(OP_SYMBOLP) {
       pic_value p;
       p = POP();
       PUSH(pic_bool_value(pic_sym_p(p)));
       NEXT;
     }
 
-    CASE(OP_PAIR_P) {
+    CASE(OP_PAIRP) {
       pic_value p;
       p = POP();
       PUSH(pic_bool_value(pic_pair_p(p)));
