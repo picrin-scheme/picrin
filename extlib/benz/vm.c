@@ -41,7 +41,7 @@ pic_get_proc(pic_state *pic)
  *  F   double *, bool *        float with exactness
  *  s   pic_str **              string object
  *  z   char **                 c string
- *  m   pic_sym *               symbol
+ *  m   pic_sym **              symbol
  *  v   pic_vec **              vector object
  *  b   pic_blob **             bytevector object
  *  c   char *                  char
@@ -255,10 +255,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
       break;
     }
     case 'm': {
-      pic_sym *m;
+      pic_sym **m;
       pic_value v;
 
-      m = va_arg(ap, pic_sym *);
+      m = va_arg(ap, pic_sym **);
       if (i < argc) {
         v = GET_OPERAND(pic,i);
         if (pic_sym_p(v)) {
@@ -433,7 +433,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 void
 pic_define_noexport(pic_state *pic, const char *name, pic_value val)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -457,7 +457,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 pic_value
 pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -471,7 +471,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 void
 pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -776,7 +776,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_GREF) {
       struct pic_irep *irep = vm_get_irep(pic);
-      pic_sym sym;
+      pic_sym *sym;
 
       sym = irep->syms[c.u.i];
       if (! pic_dict_has(pic, pic->globals, sym)) {
@@ -787,7 +787,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_GSET) {
       struct pic_irep *irep = vm_get_irep(pic);
-      pic_sym sym;
+      pic_sym *sym;
       pic_value val;
 
       sym = irep->syms[c.u.i];

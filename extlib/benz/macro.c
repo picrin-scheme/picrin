@@ -13,10 +13,10 @@
 #include "picrin/cont.h"
 #include "picrin/symbol.h"
 
-pic_sym
-pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
+pic_sym *
+pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym *sym)
 {
-  pic_sym rename;
+  pic_sym *rename;
 
   rename = pic_gensym(pic, sym);
   pic_put_rename(pic, senv, sym, rename);
@@ -24,13 +24,13 @@ pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym)
 }
 
 void
-pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rename)
+pic_put_rename(pic_state *pic, struct pic_senv *senv, pic_sym *sym, pic_sym *rename)
 {
   pic_dict_set(pic, senv->map, sym, pic_obj_value(rename));
 }
 
 bool
-pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *rename)
+pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym *sym, pic_sym **rename)
 {
   if (! pic_dict_has(pic, senv->map, sym)) {
     return false;
@@ -42,13 +42,13 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
 }
 
 static void
-define_macro(pic_state *pic, pic_sym rename, struct pic_proc *mac)
+define_macro(pic_state *pic, pic_sym *rename, struct pic_proc *mac)
 {
   pic_dict_set(pic, pic->macros, rename, pic_obj_value(mac));
 }
 
 static struct pic_proc *
-find_macro(pic_state *pic, pic_sym rename)
+find_macro(pic_state *pic, pic_sym *rename)
 {
   if (! pic_dict_has(pic, pic->macros, rename)) {
     return NULL;
@@ -56,10 +56,10 @@ find_macro(pic_state *pic, pic_sym rename)
   return pic_proc_ptr(pic_dict_ref(pic, pic->macros, rename));
 }
 
-static pic_sym
-make_identifier(pic_state *pic, pic_sym sym, struct pic_senv *senv)
+static pic_sym *
+make_identifier(pic_state *pic, pic_sym *sym, struct pic_senv *senv)
 {
-  pic_sym rename;
+  pic_sym *rename;
 
   while (true) {
     if (pic_find_rename(pic, senv, sym, &rename)) {
@@ -81,7 +81,7 @@ static pic_value macroexpand(pic_state *, pic_value, struct pic_senv *);
 static pic_value macroexpand_lambda(pic_state *, pic_value, struct pic_senv *);
 
 static pic_value
-macroexpand_symbol(pic_state *pic, pic_sym sym, struct pic_senv *senv)
+macroexpand_symbol(pic_state *pic, pic_sym *sym, struct pic_senv *senv)
 {
   return pic_obj_value(make_identifier(pic, sym, senv));
 }
@@ -179,7 +179,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
 static pic_value
 macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
   pic_value var, val;
 
   while (pic_length(pic, expr) >= 2 && pic_pair_p(pic_cadr(pic, expr))) {
@@ -210,7 +210,7 @@ static pic_value
 macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   pic_value var, val;
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   if (pic_length(pic, expr) != 3) {
     pic_errorf(pic, "syntax error");
@@ -295,7 +295,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
     car = macroexpand(pic, pic_car(pic, expr), senv);
     if (pic_sym_p(car)) {
-      pic_sym tag = pic_sym_ptr(car);
+      pic_sym *tag = pic_sym_ptr(car);
 
       if (tag == pic->rDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, senv);
@@ -407,7 +407,7 @@ pic_null_syntactic_environment(pic_state *pic)
 }
 
 void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym rsym)
+pic_define_syntactic_keyword(pic_state *pic, struct pic_senv *senv, pic_sym *sym, pic_sym *rsym)
 {
   pic_put_rename(pic, senv, sym, rsym);
 
@@ -430,7 +430,7 @@ defmacro_call(pic_state *pic)
 }
 
 void
-pic_defmacro(pic_state *pic, pic_sym name, pic_sym id, pic_func_t func)
+pic_defmacro(pic_state *pic, pic_sym *name, pic_sym *id, pic_func_t func)
 {
   struct pic_proc *proc, *trans;
 
@@ -455,9 +455,9 @@ pic_identifier_p(pic_state *pic, pic_value obj)
 }
 
 bool
-pic_identifier_eq_p(pic_state *pic, struct pic_senv *env1, pic_sym sym1, struct pic_senv *env2, pic_sym sym2)
+pic_identifier_eq_p(pic_state *pic, struct pic_senv *env1, pic_sym *sym1, struct pic_senv *env2, pic_sym *sym2)
 {
-  pic_sym a, b;
+  pic_sym *a, *b;
 
   a = make_identifier(pic, sym1, env1);
   if (a != make_identifier(pic, sym1, env1)) {
@@ -486,7 +486,7 @@ static pic_value
 pic_macro_make_identifier(pic_state *pic)
 {
   pic_value obj;
-  pic_sym sym;
+  pic_sym *sym;
 
   pic_get_args(pic, "mo", &sym, &obj);
 
@@ -498,7 +498,7 @@ pic_macro_make_identifier(pic_state *pic)
 static pic_value
 pic_macro_identifier_eq_p(pic_state *pic)
 {
-  pic_sym sym1, sym2;
+  pic_sym *sym1, *sym2;
   pic_value env1, env2;
 
   pic_get_args(pic, "omom", &env1, &sym1, &env2, &sym2);

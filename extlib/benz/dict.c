@@ -21,7 +21,7 @@ pic_make_dict(pic_state *pic)
 }
 
 pic_value
-pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym key)
+pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 {
   xh_entry *e;
 
@@ -33,7 +33,7 @@ pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym key)
 }
 
 void
-pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_sym key, pic_value val)
+pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_sym *key, pic_value val)
 {
   PIC_UNUSED(pic);
 
@@ -49,7 +49,7 @@ pic_dict_size(pic_state *pic, struct pic_dict *dict)
 }
 
 bool
-pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym key)
+pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 {
   PIC_UNUSED(pic);
 
@@ -57,7 +57,7 @@ pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym key)
 }
 
 void
-pic_dict_del(pic_state *pic, struct pic_dict *dict, pic_sym key)
+pic_dict_del(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 {
   if (xh_get_ptr(&dict->hash, key) == NULL) {
     pic_errorf(pic, "no slot named ~s found in dictionary", pic_obj_value(key));
@@ -111,7 +111,7 @@ static pic_value
 pic_dict_dictionary_ref(pic_state *pic)
 {
   struct pic_dict *dict;
-  pic_sym key;
+  pic_sym *key;
 
   pic_get_args(pic, "dm", &dict, &key);
 
@@ -126,7 +126,7 @@ static pic_value
 pic_dict_dictionary_set(pic_state *pic)
 {
   struct pic_dict *dict;
-  pic_sym key;
+  pic_sym *key;
   pic_value val;
 
   pic_get_args(pic, "dmo", &dict, &key, &val);
@@ -140,7 +140,7 @@ static pic_value
 pic_dict_dictionary_del(pic_state *pic)
 {
   struct pic_dict *dict;
-  pic_sym key;
+  pic_sym *key;
 
   pic_get_args(pic, "dm", &dict, &key);
 
@@ -187,7 +187,7 @@ pic_dict_dictionary_map(pic_state *pic)
         if (it[i] == NULL) {
           break;
         }
-        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym)), arg);
+        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym *)), arg);
         it[i] = xh_next(it[i]);
       }
       if (i != argc) {
@@ -233,7 +233,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
         if (it[i] == NULL) {
           break;
         }
-        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym)), arg);
+        pic_push(pic, pic_obj_value(xh_key(it[i], pic_sym *)), arg);
         it[i] = xh_next(it[i]);
       }
       if (i != argc) {
@@ -262,7 +262,7 @@ pic_dict_dictionary_to_alist(pic_state *pic)
   pic_get_args(pic, "d", &dict);
 
   for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    item = pic_cons(pic, pic_obj_value(xh_key(it, pic_sym)), xh_val(it, pic_value));
+    item = pic_cons(pic, pic_obj_value(xh_key(it, pic_sym *)), xh_val(it, pic_value));
     pic_push(pic, item, alist);
   }
 
@@ -297,7 +297,7 @@ pic_dict_dictionary_to_plist(pic_state *pic)
   pic_get_args(pic, "d", &dict);
 
   for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    pic_push(pic, pic_obj_value(xh_key(it, pic_sym)), plist);
+    pic_push(pic, pic_obj_value(xh_key(it, pic_sym *)), plist);
     pic_push(pic, xh_val(it, pic_value), plist);
   }
 

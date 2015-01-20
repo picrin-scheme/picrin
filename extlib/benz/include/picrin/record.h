@@ -20,8 +20,8 @@ struct pic_record {
 struct pic_record *pic_make_record(pic_state *, pic_value);
 
 pic_value pic_record_type(pic_state *, struct pic_record *);
-pic_value pic_record_ref(pic_state *, struct pic_record *, pic_sym);
-void pic_record_set(pic_state *, struct pic_record *, pic_sym, pic_value);
+pic_value pic_record_ref(pic_state *, struct pic_record *, pic_sym *);
+void pic_record_set(pic_state *, struct pic_record *, pic_sym *, pic_value);
 
 #if defined(__cplusplus)
 }

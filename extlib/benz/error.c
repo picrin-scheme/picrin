@@ -125,7 +125,7 @@ pic_pop_try(pic_state *pic)
 }
 
 struct pic_error *
-pic_make_error(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
+pic_make_error(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
   pic_str *stack;
@@ -175,7 +175,7 @@ pic_raise(pic_state *pic, pic_value err)
 }
 
 void
-pic_throw(pic_state *pic, pic_sym type, const char *msg, pic_value irrs)
+pic_throw(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
@@ -253,7 +253,7 @@ static pic_value
 pic_error_make_error_object(pic_state *pic)
 {
   struct pic_error *e;
-  pic_sym type;
+  pic_sym *type;
   pic_str *msg;
   size_t argc;
   pic_value *argv;

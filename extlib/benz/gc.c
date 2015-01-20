@@ -470,7 +470,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     xh_entry *it;
 
     for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-      gc_mark_object(pic, (struct pic_object *)xh_key(it, pic_sym));
+      gc_mark_object(pic, (struct pic_object *)xh_key(it, pic_sym *));
       gc_mark(pic, xh_val(it, pic_value));
     }
     break;
@@ -578,7 +578,7 @@ gc_mark_phase(pic_state *pic)
 
   /* mark all interned symbols */
   for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
-    gc_mark_object(pic, (struct pic_object *)xh_val(it, pic_sym));
+    gc_mark_object(pic, (struct pic_object *)xh_val(it, pic_sym *));
   }
 
   /* global variables */

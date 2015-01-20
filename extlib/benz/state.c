@@ -52,7 +52,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->heap = pic_heap_open();
 
   /* symbol table */
-  xh_init_str(&pic->syms, sizeof(pic_sym));
+  xh_init_str(&pic->syms, sizeof(pic_sym *));
 
   /* global variables */
   pic->globals = NULL;

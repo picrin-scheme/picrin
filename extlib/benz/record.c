@@ -29,7 +29,7 @@ pic_record_type(pic_state *pic, struct pic_record *rec)
 }
 
 pic_value
-pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym slot)
+pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym *slot)
 {
   if (! pic_dict_has(pic, rec->data, slot)) {
     pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_obj_value(slot), rec);
@@ -38,7 +38,7 @@ pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym slot)
 }
 
 void
-pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym slot, pic_value val)
+pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym *slot, pic_value val)
 {
   pic_dict_set(pic, rec->data, slot, val);
 }
@@ -80,7 +80,7 @@ static pic_value
 pic_record_record_ref(pic_state *pic)
 {
   struct pic_record *rec;
-  pic_sym slot;
+  pic_sym *slot;
 
   pic_get_args(pic, "rm", &rec, &slot);
 
@@ -91,7 +91,7 @@ static pic_value
 pic_record_record_set(pic_state *pic)
 {
   struct pic_record *rec;
-  pic_sym slot;
+  pic_sym *slot;
   pic_value val;
 
   pic_get_args(pic, "rmo", &rec, &slot, &val);

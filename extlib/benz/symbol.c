@@ -6,26 +6,26 @@
 #include "picrin/symbol.h"
 #include "picrin/string.h"
 
-pic_sym
+pic_sym *
 pic_make_symbol(pic_state *pic, pic_str *str)
 {
-  pic_sym sym;
+  pic_sym *sym;
 
-  sym = (pic_sym)pic_obj_alloc(pic, sizeof(struct pic_symbol), PIC_TT_SYMBOL);
+  sym = (pic_sym *)pic_obj_alloc(pic, sizeof(struct pic_symbol), PIC_TT_SYMBOL);
   sym->str = str;
   return sym;
 }
 
-pic_sym
+pic_sym *
 pic_intern(pic_state *pic, pic_str *str)
 {
   xh_entry *e;
-  pic_sym sym;
+  pic_sym *sym;
   char *cstr;
 
   e = xh_get_str(&pic->syms, pic_str_cstr(str));
   if (e) {
-    sym = xh_val(e, pic_sym);
+    sym = xh_val(e, pic_sym *);
     pic_gc_protect(pic, pic_obj_value(sym));
     return sym;
   }
@@ -38,33 +38,33 @@ pic_intern(pic_state *pic, pic_str *str)
   return sym;
 }
 
-pic_sym
+pic_sym *
 pic_intern_cstr(pic_state *pic, const char *str)
 {
   return pic_intern(pic, pic_make_str(pic, str, strlen(str)));
 }
 
-pic_sym
-pic_gensym(pic_state *pic, pic_sym base)
+pic_sym *
+pic_gensym(pic_state *pic, pic_sym *base)
 {
   return pic_make_symbol(pic, base->str);
 }
 
 bool
-pic_interned_p(pic_state *pic, pic_sym sym)
+pic_interned_p(pic_state *pic, pic_sym *sym)
 {
   xh_entry *e;
 
   e = xh_get_str(&pic->syms, pic_str_cstr(sym->str));
   if (e) {
-    return sym == xh_val(e, pic_sym);
+    return sym == xh_val(e, pic_sym *);
   } else {
     return false;
   }
 }
 
 const char *
-pic_symbol_name(pic_state *pic, pic_sym sym)
+pic_symbol_name(pic_state *pic, pic_sym *sym)
 {
   PIC_UNUSED(pic);
 
@@ -103,7 +103,7 @@ pic_symbol_symbol_eq_p(pic_state *pic)
 static pic_value
 pic_symbol_symbol_to_string(pic_state *pic)
 {
-  pic_sym sym;
+  pic_sym *sym;
 
   pic_get_args(pic, "m", &sym);
 

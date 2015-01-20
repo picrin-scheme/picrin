@@ -199,7 +199,7 @@ read_symbol(pic_state *pic, struct pic_port *port, const char *str)
 {
   size_t len, i;
   char *buf;
-  pic_sym sym;
+  pic_sym *sym;
   int c;
 
   len = strlen(str);
@@ -452,7 +452,7 @@ read_pipe(pic_state *pic, struct pic_port *port, const char *str)
 {
   char *buf;
   size_t size, cnt;
-  pic_sym sym;
+  pic_sym *sym;
   /* Currently supports only ascii chars */
   char HEX_BUF[3];
   size_t i = 0;

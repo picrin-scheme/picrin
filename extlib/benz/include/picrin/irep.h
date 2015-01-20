@@ -62,13 +62,13 @@ struct pic_code {
 
 struct pic_irep {
   PIC_OBJECT_HEADER
-  pic_sym name;
+  pic_sym *name;
   pic_code *code;
   int argc, localc, capturec;
   bool varg;
   struct pic_irep **irep;
   pic_value *pool;
-  pic_sym *syms;
+  pic_sym **syms;
   size_t clen, ilen, plen, slen;
 };
 

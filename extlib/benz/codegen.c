@@ -36,11 +36,11 @@ typedef struct analyze_scope {
 typedef struct analyze_state {
   pic_state *pic;
   analyze_scope *scope;
-  pic_sym rCONS, rCAR, rCDR, rNILP;
-  pic_sym rSYMBOLP, rPAIRP;
-  pic_sym rADD, rSUB, rMUL, rDIV;
-  pic_sym rEQ, rLT, rLE, rGT, rGE, rNOT;
-  pic_sym rVALUES, rCALL_WITH_VALUES;
+  pic_sym *rCONS, *rCAR, *rCDR, *rNILP;
+  pic_sym *rSYMBOLP, *rPAIRP;
+  pic_sym *rADD, *rSUB, *rMUL, *rDIV;
+  pic_sym *rEQ, *rLT, *rLE, *rGT, *rGE, *rNOT;
+  pic_sym *rVALUES, *rCALL_WITH_VALUES;
 } analyze_state;
 
 static bool push_scope(analyze_state *, pic_value);
@@ -51,7 +51,7 @@ static void pop_scope(analyze_state *);
   } while (0)
 
 #define register_renamed_symbol(pic, state, slot, lib, id) do {         \
-    pic_sym sym, gsym;                                                  \
+    pic_sym *sym, *gsym;                                                  \
     sym = pic_intern_cstr(pic, id);                                     \
     if (! pic_find_rename(pic, lib->env, sym, &gsym)) {                 \
       pic_errorf(pic, "internal error! native VM procedure not found: %s", id); \
@@ -63,7 +63,7 @@ static analyze_state *
 new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
-  pic_sym sym;
+  pic_sym *sym;
 
   state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
@@ -110,7 +110,7 @@ static bool
 analyze_args(pic_state *pic, pic_value formals, bool *varg, xvect *args, xvect *locals)
 {
   pic_value v, t;
-  pic_sym sym;
+  pic_sym *sym;
 
   for (v = formals; pic_pair_p(v); v = pic_cdr(pic, v)) {
     t = pic_car(pic, v);
@@ -143,9 +143,9 @@ push_scope(analyze_state *state, pic_value formals)
   bool varg;
   xvect args, locals, captures;
 
-  xv_init(&args, sizeof(pic_sym));
-  xv_init(&locals, sizeof(pic_sym));
-  xv_init(&captures, sizeof(pic_sym));
+  xv_init(&args, sizeof(pic_sym *));
+  xv_init(&locals, sizeof(pic_sym *));
+  xv_init(&captures, sizeof(pic_sym *));
 
   if (analyze_args(pic, formals, &varg, &args, &locals)) {
     scope = pic_alloc(pic, sizeof(analyze_scope));
@@ -184,9 +184,9 @@ pop_scope(analyze_state *state)
 }
 
 static bool
-lookup_scope(analyze_scope *scope, pic_sym sym)
+lookup_scope(analyze_scope *scope, pic_sym *sym)
 {
-  pic_sym *arg, *local;
+  pic_sym **arg, **local;
   size_t i;
 
   /* args */
@@ -205,9 +205,9 @@ lookup_scope(analyze_scope *scope, pic_sym sym)
 }
 
 static void
-capture_var(analyze_scope *scope, pic_sym sym)
+capture_var(analyze_scope *scope, pic_sym *sym)
 {
-  pic_sym *var;
+  pic_sym **var;
   size_t i;
 
   for (i = 0; i < xv_size(&scope->captures); ++i) {
@@ -222,7 +222,7 @@ capture_var(analyze_scope *scope, pic_sym sym)
 }
 
 static int
-find_var(analyze_state *state, pic_sym sym)
+find_var(analyze_state *state, pic_sym *sym)
 {
   analyze_scope *scope = state->scope;
   int depth = 0;
@@ -241,7 +241,7 @@ find_var(analyze_state *state, pic_sym sym)
 }
 
 static void
-define_var(analyze_state *state, pic_sym sym)
+define_var(analyze_state *state, pic_sym *sym)
 {
   pic_state *pic = state->pic;
   analyze_scope *scope = state->scope;
@@ -263,7 +263,7 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
   pic_state *pic = state->pic;
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value res;
-  pic_sym tag;
+  pic_sym *tag;
 
   res = analyze_node(state, obj, tailpos);
 
@@ -284,7 +284,7 @@ analyze(analyze_state *state, pic_value obj, bool tailpos)
 }
 
 static pic_value
-analyze_global_var(analyze_state *state, pic_sym sym)
+analyze_global_var(analyze_state *state, pic_sym *sym)
 {
   pic_state *pic = state->pic;
 
@@ -292,7 +292,7 @@ analyze_global_var(analyze_state *state, pic_sym sym)
 }
 
 static pic_value
-analyze_local_var(analyze_state *state, pic_sym sym)
+analyze_local_var(analyze_state *state, pic_sym *sym)
 {
   pic_state *pic = state->pic;
 
@@ -300,7 +300,7 @@ analyze_local_var(analyze_state *state, pic_sym sym)
 }
 
 static pic_value
-analyze_free_var(analyze_state *state, pic_sym sym, int depth)
+analyze_free_var(analyze_state *state, pic_sym *sym, int depth)
 {
   pic_state *pic = state->pic;
 
@@ -308,7 +308,7 @@ analyze_free_var(analyze_state *state, pic_sym sym, int depth)
 }
 
 static pic_value
-analyze_var(analyze_state *state, pic_sym sym)
+analyze_var(analyze_state *state, pic_sym *sym)
 {
   pic_state *pic = state->pic;
   int depth;
@@ -330,7 +330,7 @@ static pic_value
 analyze_defer(analyze_state *state, pic_value name, pic_value formal, pic_value body)
 {
   pic_state *pic = state->pic;
-  const pic_sym sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
+  pic_sym *sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
   pic_value skel;
 
   skel = pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sNOWHERE));
@@ -372,7 +372,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
 
   if (push_scope(state, formals)) {
     analyze_scope *scope = state->scope;
-    pic_sym *var;
+    pic_sym **var;
     size_t i;
 
     args = pic_nil_value();
@@ -428,7 +428,7 @@ analyze_lambda(analyze_state *state, pic_value obj)
 }
 
 static pic_value
-analyze_declare(analyze_state *state, pic_sym var)
+analyze_declare(analyze_state *state, pic_sym *var)
 {
   define_var(state, var);
 
@@ -440,7 +440,7 @@ analyze_define(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   pic_value var, val;
-  pic_sym sym;
+  pic_sym *sym;
 
   if (pic_length(pic, obj) != 3) {
     pic_errorf(pic, "syntax error");
@@ -652,7 +652,7 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
   pic_value seq, elt;
-  pic_sym call;
+  pic_sym *call;
 
   if (! tailpos) {
     call = pic->sCALL;
@@ -688,7 +688,7 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
   pic_value prod, cnsm;
-  pic_sym call;
+  pic_sym *call;
 
   if (pic_length(pic, obj) != 3) {
     pic_errorf(pic, "wrong number of arguments");
@@ -745,7 +745,7 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 
     proc = pic_list_ref(pic, obj, 0);
     if (pic_sym_p(proc)) {
-      pic_sym sym = pic_sym_ptr(proc);
+      pic_sym *sym = pic_sym_ptr(proc);
 
       if (sym == pic->rDEFINE) {
         return analyze_define(state, obj);
@@ -861,7 +861,7 @@ pic_analyze(pic_state *pic, pic_value obj)
  */
 
 typedef struct codegen_context {
-  pic_sym name;
+  pic_sym *name;
   /* rest args variable is counted as a local */
   bool varg;
   xvect args, locals, captures;
@@ -875,7 +875,7 @@ typedef struct codegen_context {
   pic_value *pool;
   size_t plen, pcapa;
   /* symbol pool */
-  pic_sym *syms;
+  pic_sym **syms;
   size_t slen, scapa;
 
   struct codegen_context *up;
@@ -924,7 +924,7 @@ create_activation(codegen_context *cxt)
 {
   size_t i, n;
   xhash regs;
-  pic_sym *var;
+  pic_sym **var;
   size_t offset;
 
   xh_init_ptr(&regs, sizeof(size_t));
@@ -965,7 +965,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
   pic_state *pic = state->pic;
   codegen_context *cxt;
   pic_value var;
-  pic_sym sym;
+  pic_sym *sym;
 
   assert(pic_sym_p(name) || pic_false_p(name));
 
@@ -976,9 +976,9 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
     : pic_sym_ptr(name);
   cxt->varg = varg;
 
-  xv_init(&cxt->args, sizeof(pic_sym));
-  xv_init(&cxt->locals, sizeof(pic_sym));
-  xv_init(&cxt->captures, sizeof(pic_sym));
+  xv_init(&cxt->args, sizeof(pic_sym *));
+  xv_init(&cxt->locals, sizeof(pic_sym *));
+  xv_init(&cxt->captures, sizeof(pic_sym *));
 
   pic_for_each (var, args) {
     sym = pic_sym_ptr(var);
@@ -1005,7 +1005,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
-  cxt->syms = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_sym));
+  cxt->syms = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_sym *));
   cxt->slen = 0;
   cxt->scapa = PIC_POOL_SIZE;
 
@@ -1034,7 +1034,7 @@ pop_codegen_context(codegen_state *state)
   irep->ilen = state->cxt->ilen;
   irep->pool = pic_realloc(pic, state->cxt->pool, sizeof(pic_value) * state->cxt->plen);
   irep->plen = state->cxt->plen;
-  irep->syms = pic_realloc(pic, state->cxt->syms, sizeof(pic_sym) * state->cxt->slen);
+  irep->syms = pic_realloc(pic, state->cxt->syms, sizeof(pic_sym *) * state->cxt->slen);
   irep->slen = state->cxt->slen;
 
   /* finalize */
@@ -1051,11 +1051,11 @@ pop_codegen_context(codegen_state *state)
 }
 
 static int
-index_capture(codegen_state *state, pic_sym sym, int depth)
+index_capture(codegen_state *state, pic_sym *sym, int depth)
 {
   codegen_context *cxt = state->cxt;
   size_t i;
-  pic_sym *var;
+  pic_sym **var;
 
   while (depth-- > 0) {
     cxt = cxt->up;
@@ -1070,11 +1070,11 @@ index_capture(codegen_state *state, pic_sym sym, int depth)
 }
 
 static int
-index_local(codegen_state *state, pic_sym sym)
+index_local(codegen_state *state, pic_sym *sym)
 {
   codegen_context *cxt = state->cxt;
   size_t i, offset;
-  pic_sym *var;
+  pic_sym **var;
 
   offset = 1;
   for (i = 0; i < xv_size(&cxt->args); ++i) {
@@ -1092,7 +1092,7 @@ index_local(codegen_state *state, pic_sym sym)
 }
 
 static int
-index_symbol(codegen_state *state, pic_sym sym)
+index_symbol(codegen_state *state, pic_sym *sym)
 {
   pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
@@ -1105,7 +1105,7 @@ index_symbol(codegen_state *state, pic_sym sym)
   }
   if (cxt->slen >= cxt->scapa) {
     cxt->scapa *= 2;
-    cxt->syms = pic_realloc(pic, cxt->syms, sizeof(pic_sym) * cxt->scapa);
+    cxt->syms = pic_realloc(pic, cxt->syms, sizeof(pic_sym *) * cxt->scapa);
   }
   cxt->syms[cxt->slen++] = sym;
   return i;
@@ -1118,7 +1118,7 @@ codegen(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
-  pic_sym sym;
+  pic_sym *sym;
 
   sym = pic_sym_ptr(pic_car(pic, obj));
   if (sym == pic->sGREF) {
@@ -1127,7 +1127,7 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   } else if (sym == pic->sCREF) {
-    pic_sym name;
+    pic_sym *name;
     int depth;
 
     depth = pic_int(pic_list_ref(pic, obj, 1));
@@ -1138,7 +1138,7 @@ codegen(codegen_state *state, pic_value obj)
     cxt->clen++;
     return;
   } else if (sym == pic->sLREF) {
-    pic_sym name;
+    pic_sym *name;
     int i;
 
     name = pic_sym_ptr(pic_list_ref(pic, obj, 1));
@@ -1154,7 +1154,7 @@ codegen(codegen_state *state, pic_value obj)
     return;
   } else if (sym == pic->sSETBANG) {
     pic_value var, val;
-    pic_sym type;
+    pic_sym *type;
 
     val = pic_list_ref(pic, obj, 2);
     codegen(state, val);
@@ -1170,7 +1170,7 @@ codegen(codegen_state *state, pic_value obj)
       return;
     }
     else if (type == pic->sCREF) {
-      pic_sym name;
+      pic_sym *name;
       int depth;
 
       depth = pic_int(pic_list_ref(pic, var, 1));
@@ -1184,7 +1184,7 @@ codegen(codegen_state *state, pic_value obj)
       return;
     }
     else if (type == pic->sLREF) {
-      pic_sym name;
+      pic_sym *name;
       int i;
 
       name = pic_sym_ptr(pic_list_ref(pic, var, 1));

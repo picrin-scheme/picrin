@@ -74,7 +74,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   struct pic_lib *lib;
   struct pic_dict *table;
   pic_value val, tmp, prefix;
-  pic_sym sym, id, tag;
+  pic_sym *sym, *id, *tag;
 
   table = pic_make_dict(pic);
 
@@ -131,7 +131,7 @@ static void
 import(pic_state *pic, pic_value spec)
 {
   struct pic_dict *imports;
-  pic_sym sym;
+  pic_sym *sym;
 
   imports = pic_make_dict(pic);
 
@@ -145,9 +145,9 @@ import(pic_state *pic, pic_value spec)
 static void
 export(pic_state *pic, pic_value spec)
 {
-  const pic_sym sRENAME = pic_intern_cstr(pic, "rename");
+  pic_sym *sRENAME = pic_intern_cstr(pic, "rename");
   pic_value a, b;
-  pic_sym rename;
+  pic_sym *rename;
 
   if (pic_sym_p(spec)) {        /* (export a) */
     a = b = spec;
@@ -193,7 +193,7 @@ pic_import_library(pic_state *pic, struct pic_lib *lib)
 }
 
 void
-pic_export(pic_state *pic, pic_sym sym)
+pic_export(pic_state *pic, pic_sym *sym)
 {
   export(pic, pic_obj_value(sym));
 }
@@ -201,7 +201,7 @@ pic_export(pic_state *pic, pic_sym sym)
 static bool
 condexpand(pic_state *pic, pic_value clause)
 {
-  pic_sym tag;
+  pic_sym *tag;
   pic_value c, feature;
 
   if (pic_eq_p(clause, pic_obj_value(pic->sELSE))) {
@@ -335,7 +335,7 @@ pic_lib_in_library(pic_state *pic)
 void
 pic_init_lib(pic_state *pic)
 {
-  void pic_defmacro(pic_state *, pic_sym, pic_sym, pic_func_t);
+  void pic_defmacro(pic_state *, pic_sym *, pic_sym *, pic_func_t);
 
   pic_defmacro(pic, pic->sCOND_EXPAND, pic->rCOND_EXPAND, pic_lib_condexpand);
   pic_defmacro(pic, pic->sIMPORT, pic->rIMPORT, pic_lib_import);
