@@ -36,7 +36,7 @@ pic_find_rename(pic_state *pic, struct pic_senv *senv, pic_sym sym, pic_sym *ren
     return false;
   }
   if (rename != NULL) {
-    *rename = pic_sym(pic_dict_ref(pic, senv->map, sym));
+    *rename = pic_sym_ptr(pic_dict_ref(pic, senv->map, sym));
   }
   return true;
 }
@@ -159,10 +159,10 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_senv *senv)
     if (! pic_sym_p(v)) {
       pic_errorf(pic, "syntax error");
     }
-    pic_add_rename(pic, in, pic_sym(v));
+    pic_add_rename(pic, in, pic_sym_ptr(v));
   }
   if (pic_sym_p(a)) {
-    pic_add_rename(pic, in, pic_sym(a));
+    pic_add_rename(pic, in, pic_sym_ptr(a));
   }
   else if (! pic_nil_p(a)) {
     pic_errorf(pic, "syntax error");
@@ -197,7 +197,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_senv *senv)
   if (! pic_sym_p(var)) {
     pic_errorf(pic, "binding to non-symbol object");
   }
-  sym = pic_sym(var);
+  sym = pic_sym_ptr(var);
   if (! pic_find_rename(pic, senv, sym, &rename)) {
     rename = pic_add_rename(pic, senv, sym);
   }
@@ -220,7 +220,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_senv *senv)
   if (! pic_sym_p(var)) {
     pic_errorf(pic, "binding to non-symbol object");
   }
-  sym = pic_sym(var);
+  sym = pic_sym_ptr(var);
   if (! pic_find_rename(pic, senv, sym, &rename)) {
     rename = pic_add_rename(pic, senv, sym);
   } else {
@@ -283,7 +283,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 {
   switch (pic_type(expr)) {
   case PIC_TT_SYMBOL: {
-    return macroexpand_symbol(pic, pic_sym(expr), senv);
+    return macroexpand_symbol(pic, pic_sym_ptr(expr), senv);
   }
   case PIC_TT_PAIR: {
     pic_value car;
@@ -295,7 +295,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_senv *senv)
 
     car = macroexpand(pic, pic_car(pic, expr), senv);
     if (pic_sym_p(car)) {
-      pic_sym tag = pic_sym(car);
+      pic_sym tag = pic_sym_ptr(car);
 
       if (tag == pic->rDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, senv);
@@ -451,7 +451,7 @@ pic_defmacro(pic_state *pic, pic_sym name, pic_sym id, pic_func_t func)
 bool
 pic_identifier_p(pic_state *pic, pic_value obj)
 {
-  return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym(obj));
+  return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym_ptr(obj));
 }
 
 bool

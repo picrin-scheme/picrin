@@ -262,7 +262,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       if (i < argc) {
         v = GET_OPERAND(pic,i);
         if (pic_sym_p(v)) {
-          *m = pic_sym(v);
+          *m = pic_sym_ptr(v);
         }
         else {
           pic_errorf(pic, "pic_get_args: expected symbol, but got ~s", v);

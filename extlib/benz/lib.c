@@ -80,13 +80,13 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
 
   if (pic_pair_p(spec) && pic_sym_p(pic_car(pic, spec))) {
 
-    tag = pic_sym(pic_car(pic, spec));
+    tag = pic_sym_ptr(pic_car(pic, spec));
 
     if (tag == pic->sONLY) {
       import_table(pic, pic_cadr(pic, spec), table);
 
       pic_for_each (val, pic_cddr(pic, spec)) {
-        pic_dict_set(pic, imports, pic_sym(val), pic_dict_ref(pic, table, pic_sym(val)));
+        pic_dict_set(pic, imports, pic_sym_ptr(val), pic_dict_ref(pic, table, pic_sym_ptr(val)));
       }
       return;
     }
@@ -94,9 +94,9 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
       import_table(pic, pic_cadr(pic, spec), imports);
 
       pic_for_each (val, pic_cddr(pic, spec)) {
-        tmp = pic_dict_ref(pic, imports, pic_sym(pic_car(pic, val)));
-        pic_dict_del(pic, imports, pic_sym(pic_car(pic, val)));
-        pic_dict_set(pic, imports, pic_sym(pic_cadr(pic, val)), tmp);
+        tmp = pic_dict_ref(pic, imports, pic_sym_ptr(pic_car(pic, val)));
+        pic_dict_del(pic, imports, pic_sym_ptr(pic_car(pic, val)));
+        pic_dict_set(pic, imports, pic_sym_ptr(pic_cadr(pic, val)), tmp);
       }
       return;
     }
@@ -113,7 +113,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
     if (tag == pic->sEXCEPT) {
       import_table(pic, pic_cadr(pic, spec), imports);
       pic_for_each (val, pic_cddr(pic, spec)) {
-        pic_dict_del(pic, imports, pic_sym(val));
+        pic_dict_del(pic, imports, pic_sym_ptr(val));
       }
       return;
     }
@@ -138,7 +138,7 @@ import(pic_state *pic, pic_value spec)
   import_table(pic, spec, imports);
 
   pic_dict_for_each (sym, imports) {
-    pic_put_rename(pic, pic->lib->env, sym, pic_sym(pic_dict_ref(pic, imports, sym)));
+    pic_put_rename(pic, pic->lib->env, sym, pic_sym_ptr(pic_dict_ref(pic, imports, sym)));
   }
 }
 
@@ -164,15 +164,15 @@ export(pic_state *pic, pic_value spec)
       goto fail;
   }
 
-  if (! pic_find_rename(pic, pic->lib->env, pic_sym(a), &rename)) {
-    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, pic_sym(a)));
+  if (! pic_find_rename(pic, pic->lib->env, pic_sym_ptr(a), &rename)) {
+    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, pic_sym_ptr(a)));
   }
 
 #if DEBUG
   printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym(b)), pic_symbol_name(pic, rename));
 #endif
 
-  pic_dict_set(pic, pic->lib->exports, pic_sym(b), pic_obj_value(rename));
+  pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), pic_obj_value(rename));
 
   return;
 
@@ -218,7 +218,7 @@ condexpand(pic_state *pic, pic_value clause)
   if (! (pic_pair_p(clause) && pic_sym_p(pic_car(pic, clause)))) {
     pic_errorf(pic, "invalid 'cond-expand' clause ~s", clause);
   } else {
-    tag = pic_sym(pic_car(pic, clause));
+    tag = pic_sym_ptr(pic_car(pic, clause));
   }
 
   if (tag == pic->sLIBRARY) {

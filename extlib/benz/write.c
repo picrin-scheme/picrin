@@ -266,7 +266,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, ")");
     break;
   case PIC_TT_SYMBOL:
-    xfprintf(file, "%s", pic_symbol_name(pic, pic_sym(obj)));
+    xfprintf(file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
     break;
   case PIC_TT_CHAR:
     if (p->mode == DISPLAY_MODE) {

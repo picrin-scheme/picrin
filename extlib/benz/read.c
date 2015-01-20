@@ -320,10 +320,10 @@ read_minus(pic_state *pic, struct pic_port *port, const char *str)
   }
   else {
     sym = read_symbol(pic, port, str);
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "-inf.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-inf.0")) {
       return pic_float_value(-INFINITY);
     }
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "-nan.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-nan.0")) {
       return pic_float_value(-NAN);
     }
     return sym;
@@ -340,10 +340,10 @@ read_plus(pic_state *pic, struct pic_port *port, const char *str)
   }
   else {
     sym = read_symbol(pic, port, str);
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "+inf.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+inf.0")) {
       return pic_float_value(INFINITY);
     }
-    if (strcaseeq(pic_symbol_name(pic, pic_sym(sym)), "+nan.0")) {
+    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+nan.0")) {
       return pic_float_value(NAN);
     }
     return sym;
