@@ -64,6 +64,7 @@ new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
   pic_sym *sym;
+  xh_entry *it;
 
   state = pic_alloc(pic, sizeof(analyze_state));
   state->pic = pic;
@@ -92,7 +93,7 @@ new_analyze_state(pic_state *pic)
   /* push initial scope */
   push_scope(state, pic_nil_value());
 
-  pic_dict_for_each (sym, pic->globals) {
+  pic_dict_for_each (sym, pic->globals, it) {
     xv_push(&state->scope->locals, &sym);
   }
 

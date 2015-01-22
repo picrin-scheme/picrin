@@ -75,6 +75,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   struct pic_dict *table;
   pic_value val, tmp, prefix, it;
   pic_sym *sym, *id, *tag;
+  xh_entry *iter;
 
   table = pic_make_dict(pic);
 
@@ -104,7 +105,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
       import_table(pic, pic_cadr(pic, spec), table);
 
       prefix = pic_list_ref(pic, spec, 2);
-      pic_dict_for_each (sym, table) {
+      pic_dict_for_each (sym, table, iter) {
         id = pic_intern(pic, pic_format(pic, "~s~s", prefix, pic_obj_value(sym)));
         pic_dict_set(pic, imports, id, pic_dict_ref(pic, table, sym));
       }
@@ -122,7 +123,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   if (! lib) {
     pic_errorf(pic, "library not found: ~a", spec);
   }
-  pic_dict_for_each (sym, lib->exports) {
+  pic_dict_for_each (sym, lib->exports, iter) {
     pic_dict_set(pic, imports, sym, pic_dict_ref(pic, lib->exports, sym));
   }
 }
@@ -132,12 +133,13 @@ import(pic_state *pic, pic_value spec)
 {
   struct pic_dict *imports;
   pic_sym *sym;
+  xh_entry *it;
 
   imports = pic_make_dict(pic);
 
   import_table(pic, spec, imports);
 
-  pic_dict_for_each (sym, imports) {
+  pic_dict_for_each (sym, imports, it) {
     pic_put_rename(pic, pic->lib->env, sym, pic_sym_ptr(pic_dict_ref(pic, imports, sym)));
   }
 }
