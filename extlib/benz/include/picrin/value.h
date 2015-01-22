@@ -111,7 +111,7 @@ enum pic_tt {
   PIC_TT_IREP,
   PIC_TT_DATA,
   PIC_TT_DICT,
-  PIC_TT_RECORD,
+  PIC_TT_RECORD
 };
 
 #define PIC_OBJECT_HEADER			\
