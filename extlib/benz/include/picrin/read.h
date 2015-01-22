@@ -21,7 +21,8 @@ struct pic_reader {
   pic_reader_t dispatch[256];
 };
 
-void pic_init_reader(pic_state *);
+struct pic_reader *pic_reader_open(pic_state *);
+void pic_reader_close(pic_state *, struct pic_reader *);
 
 #if defined(__cplusplus)
 }

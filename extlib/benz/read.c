@@ -727,55 +727,80 @@ read(pic_state *pic, struct pic_port *port, int c)
   return val;
 }
 
-void
-pic_init_reader(pic_state *pic)
+static void
+reader_table_init(struct pic_reader *reader)
 {
   int c;
 
-  pic->reader->table[0] = NULL;
+  reader->table[0] = NULL;
 
   /* default reader */
   for (c = 1; c < 256; ++c) {
-    pic->reader->table[c] = read_symbol;
+    reader->table[c] = read_symbol;
   }
 
-  pic->reader->table[')'] = read_unmatch;
-  pic->reader->table[';'] = read_comment;
-  pic->reader->table['\''] = read_quote;
-  pic->reader->table['`'] = read_quasiquote;
-  pic->reader->table[','] = read_unquote;
-  pic->reader->table['"'] = read_string;
-  pic->reader->table['|'] = read_pipe;
-  pic->reader->table['+'] = read_plus;
-  pic->reader->table['-'] = read_minus;
-  pic->reader->table['('] = read_pair;
-  pic->reader->table['['] = read_pair;
-  pic->reader->table['#'] = read_dispatch;
+  reader->table[')'] = read_unmatch;
+  reader->table[';'] = read_comment;
+  reader->table['\''] = read_quote;
+  reader->table['`'] = read_quasiquote;
+  reader->table[','] = read_unquote;
+  reader->table['"'] = read_string;
+  reader->table['|'] = read_pipe;
+  reader->table['+'] = read_plus;
+  reader->table['-'] = read_minus;
+  reader->table['('] = read_pair;
+  reader->table['['] = read_pair;
+  reader->table['#'] = read_dispatch;
 
   /* read number */
   for (c = '0'; c <= '9'; ++c) {
-    pic->reader->table[c] = read_number;
+    reader->table[c] = read_number;
   }
 
-  /* default dispatch reader */
-  for (c = 0; c < 256; ++c) {
-    pic->reader->dispatch[c] = NULL;
-  }
-
-  pic->reader->dispatch['!'] = read_directive;
-  pic->reader->dispatch['|'] = read_block_comment;
-  pic->reader->dispatch[';'] = read_datum_comment;
-  pic->reader->dispatch['t'] = read_true;
-  pic->reader->dispatch['f'] = read_false;
-  pic->reader->dispatch['\\'] = read_char;
-  pic->reader->dispatch['('] = read_vector;
-  pic->reader->dispatch['u'] = read_blob;
-  pic->reader->dispatch['.'] = read_eval;
+  reader->dispatch['!'] = read_directive;
+  reader->dispatch['|'] = read_block_comment;
+  reader->dispatch[';'] = read_datum_comment;
+  reader->dispatch['t'] = read_true;
+  reader->dispatch['f'] = read_false;
+  reader->dispatch['\\'] = read_char;
+  reader->dispatch['('] = read_vector;
+  reader->dispatch['u'] = read_blob;
+  reader->dispatch['.'] = read_eval;
 
   /* read labels */
   for (c = '0'; c <= '9'; ++c) {
-    pic->reader->dispatch[c] = read_label;
+    reader->dispatch[c] = read_label;
   }
+}
+
+struct pic_reader *
+pic_reader_open(pic_state *pic)
+{
+  struct pic_reader *reader;
+  int c;
+
+  reader = pic_alloc(pic, sizeof(struct pic_reader));
+  reader->typecase = PIC_CASE_DEFAULT;
+  xh_init_int(&reader->labels, sizeof(pic_value));
+
+  for (c = 0; c < 256; ++c) {
+    reader->table[c] = NULL;
+  }
+
+  for (c = 0; c < 256; ++c) {
+    reader->dispatch[c] = NULL;
+  }
+
+  reader_table_init(reader);
+
+  return reader;
+}
+
+void
+pic_reader_close(pic_state *pic, struct pic_reader *reader)
+{
+  xh_destroy(&reader->labels);
+  pic_free(pic, reader);
 }
 
 pic_value

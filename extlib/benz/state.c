@@ -170,12 +170,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->wind->in = pic->wind->out = NULL;
 
   /* reader */
-  pic->reader = malloc(sizeof(struct pic_reader));
-  pic->reader->typecase = PIC_CASE_DEFAULT;
-  xh_init_int(&pic->reader->labels, sizeof(pic_value));
-
-  /* init readers */
-  pic_init_reader(pic);
+  pic->reader = pic_reader_open(pic);
 
   /* standard libraries */
   pic->PICRIN_BASE = pic_open_library(pic, pic_read_cstr(pic, "(picrin base)"));
@@ -234,14 +229,13 @@ pic_close(pic_state *pic)
   /* free heaps */
   pic_heap_close(pic, pic->heap);
 
+  /* free reader struct */
+  pic_reader_close(pic, pic->reader);
+
   /* free runtime context */
   free(pic->stbase);
   free(pic->cibase);
   free(pic->xpbase);
-
-  /* free reader struct */
-  xh_destroy(&pic->reader->labels);
-  free(pic->reader);
 
   /* free global stacks */
   xh_destroy(&pic->syms);
