@@ -20,11 +20,11 @@ pic_features(pic_state *pic)
 static pic_value
 pic_libraries(pic_state *pic)
 {
-  pic_value libs = pic_nil_value(), lib;
+  pic_value libs = pic_nil_value(), lib, it;
 
   pic_get_args(pic, "");
 
-  pic_for_each (lib, pic->libs) {
+  pic_for_each (lib, pic->libs, it) {
     libs = pic_cons(pic, pic_car(pic, lib), libs);
   }
 

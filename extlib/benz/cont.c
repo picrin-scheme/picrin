@@ -195,11 +195,11 @@ pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
 pic_value
 pic_values_by_list(pic_state *pic, pic_value list)
 {
-  pic_value v;
+  pic_value v, it;
   int i;
 
   i = 0;
-  pic_for_each (v, list) {
+  pic_for_each (v, list, it) {
     pic->sp[i++] = v;
   }
   pic->ci->retc = i;

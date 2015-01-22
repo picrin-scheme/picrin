@@ -344,9 +344,9 @@ static void
 analyze_deferred(analyze_state *state)
 {
   pic_state *pic = state->pic;
-  pic_value defer, val, name, formal, body, dst;
+  pic_value defer, val, name, formal, body, dst, it;
 
-  pic_for_each (defer, pic_reverse(pic, state->scope->defer)) {
+  pic_for_each (defer, pic_reverse(pic, state->scope->defer), it) {
     name = pic_list_ref(pic, defer, 0);
     formal = pic_list_ref(pic, defer, 1);
     body = pic_list_ref(pic, defer, 2);
@@ -566,7 +566,7 @@ analyze_quote(analyze_state *state, pic_value obj)
 
 #define FOLD_ARGS(sym) do {                             \
     obj = analyze(state, pic_car(pic, args), false);    \
-    pic_for_each (arg, pic_cdr(pic, args)) {            \
+    pic_for_each (arg, pic_cdr(pic, args), it) {        \
       obj = pic_list3(pic, pic_obj_value(sym), obj,     \
                       analyze(state, arg, false));      \
     }                                                   \
@@ -576,7 +576,7 @@ static pic_value
 analyze_add(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  pic_value args, arg;
+  pic_value args, arg, it;
 
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
@@ -595,7 +595,7 @@ static pic_value
 analyze_sub(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  pic_value args, arg;
+  pic_value args, arg, it;
 
   ARGC_ASSERT_GE(1);
   switch (pic_length(pic, obj)) {
@@ -613,7 +613,7 @@ static pic_value
 analyze_mul(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  pic_value args, arg;
+  pic_value args, arg, it;
 
   ARGC_ASSERT_GE(0);
   switch (pic_length(pic, obj)) {
@@ -632,7 +632,7 @@ static pic_value
 analyze_div(analyze_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
-  pic_value args, arg;
+  pic_value args, arg, it;
 
   ARGC_ASSERT_GE(1);
   switch (pic_length(pic, obj)) {
@@ -651,7 +651,7 @@ static pic_value
 analyze_call(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  pic_value seq, elt;
+  pic_value seq, elt, it;
   pic_sym *call;
 
   if (! tailpos) {
@@ -660,7 +660,7 @@ analyze_call(analyze_state *state, pic_value obj, bool tailpos)
     call = pic->sTAILCALL;
   }
   seq = pic_list1(pic, pic_obj_value(call));
-  pic_for_each (elt, obj) {
+  pic_for_each (elt, obj, it) {
     seq = pic_cons(pic, analyze(state, elt, false), seq);
   }
   return pic_reverse(pic, seq);
@@ -670,14 +670,14 @@ static pic_value
 analyze_values(analyze_state *state, pic_value obj, bool tailpos)
 {
   pic_state *pic = state->pic;
-  pic_value v, seq;
+  pic_value v, seq, it;
 
   if (! tailpos) {
     return analyze_call(state, obj, false);
   }
 
   seq = pic_list1(pic, pic_obj_value(pic->sRETURN));
-  pic_for_each (v, pic_cdr(pic, obj)) {
+  pic_for_each (v, pic_cdr(pic, obj), it) {
     seq = pic_cons(pic, analyze(state, v, false), seq);
   }
   return pic_reverse(pic, seq);
@@ -964,7 +964,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
 {
   pic_state *pic = state->pic;
   codegen_context *cxt;
-  pic_value var;
+  pic_value var, it;
   pic_sym *sym;
 
   assert(pic_sym_p(name) || pic_false_p(name));
@@ -980,15 +980,15 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
   xv_init(&cxt->locals, sizeof(pic_sym *));
   xv_init(&cxt->captures, sizeof(pic_sym *));
 
-  pic_for_each (var, args) {
+  pic_for_each (var, args, it) {
     sym = pic_sym_ptr(var);
     xv_push(&cxt->args, &sym);
   }
-  pic_for_each (var, locals) {
+  pic_for_each (var, locals, it) {
     sym = pic_sym_ptr(var);
     xv_push(&cxt->locals, &sym);
   }
-  pic_for_each (var, captures) {
+  pic_for_each (var, captures, it) {
     sym = pic_sym_ptr(var);
     xv_push(&cxt->captures, &sym);
   }
@@ -1240,10 +1240,10 @@ codegen(codegen_state *state, pic_value obj)
     return;
   }
   else if (sym == pic->sBEGIN) {
-    pic_value elt;
+    pic_value elt, it;
     int i = 0;
 
-    pic_for_each (elt, pic_cdr(pic, obj)) {
+    pic_for_each (elt, pic_cdr(pic, obj), it) {
       if (i++ != 0) {
         cxt->code[cxt->clen].insn = OP_POP;
         cxt->clen++;
@@ -1406,9 +1406,9 @@ codegen(codegen_state *state, pic_value obj)
   }
   else if (sym == pic->sCALL || sym == pic->sTAILCALL) {
     int len = (int)pic_length(pic, obj);
-    pic_value elt;
+    pic_value elt, it;
 
-    pic_for_each (elt, pic_cdr(pic, obj)) {
+    pic_for_each (elt, pic_cdr(pic, obj), it) {
       codegen(state, elt);
     }
     cxt->code[cxt->clen].insn = (sym == pic->sCALL) ? OP_CALL : OP_TAILCALL;
@@ -1432,9 +1432,9 @@ codegen(codegen_state *state, pic_value obj)
   }
   else if (sym == pic->sRETURN) {
     int len = (int)pic_length(pic, obj);
-    pic_value elt;
+    pic_value elt, it;
 
-    pic_for_each (elt, pic_cdr(pic, obj)) {
+    pic_for_each (elt, pic_cdr(pic, obj), it) {
       codegen(state, elt);
     }
     cxt->code[cxt->clen].insn = OP_RET;

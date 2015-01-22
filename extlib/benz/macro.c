@@ -124,9 +124,9 @@ macroexpand_defer(pic_state *pic, pic_value expr, struct pic_senv *senv)
 static void
 macroexpand_deferred(pic_state *pic, struct pic_senv *senv)
 {
-  pic_value defer, val, src, dst;
+  pic_value defer, val, src, dst, it;
 
-  pic_for_each (defer, pic_reverse(pic, senv->defer)) {
+  pic_for_each (defer, pic_reverse(pic, senv->defer), it) {
     src = pic_car(pic, defer);
     dst = pic_cdr(pic, defer);
 
