@@ -57,24 +57,24 @@ heap_init(struct pic_heap *heap)
 }
 
 struct pic_heap *
-pic_heap_open()
+pic_heap_open(pic_state *pic)
 {
   struct pic_heap *heap;
 
-  heap = (struct pic_heap *)calloc(1, sizeof(struct pic_heap));
+  heap = pic_calloc(pic, 1, sizeof(struct pic_heap));
   heap_init(heap);
   return heap;
 }
 
 void
-pic_heap_close(struct pic_heap *heap)
+pic_heap_close(pic_state *pic, struct pic_heap *heap)
 {
   struct heap_page *page;
 
   while (heap->pages) {
     page = heap->pages;
     heap->pages = heap->pages->next;
-    free(page);
+    pic_free(pic, page);
   }
 }
 

@@ -49,7 +49,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   /* memory heap */
-  pic->heap = pic_heap_open();
+  pic->heap = pic_heap_open(pic);
 
   /* symbol table */
   xh_init_str(&pic->syms, sizeof(pic_sym *));
@@ -232,7 +232,7 @@ pic_close(pic_state *pic)
   pic_gc_run(pic);
 
   /* free heaps */
-  pic_heap_close(pic->heap);
+  pic_heap_close(pic, pic->heap);
 
   /* free runtime context */
   free(pic->stbase);
