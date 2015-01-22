@@ -42,10 +42,10 @@ pic_init_picrin(pic_state *pic)
 
   pic_deflibrary (pic, "(scheme base)") {
     pic_defun(pic, "features", pic_features);
-
-    pic_init_contrib(pic);
-    pic_load_piclib(pic);
   }
+
+  pic_init_contrib(pic);
+  pic_load_piclib(pic);
 }
 
 int

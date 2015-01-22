@@ -87,7 +87,7 @@ typedef struct {
 
   pic_code *ip;
 
-  struct pic_lib *lib;
+  struct pic_lib *lib, *prev_lib;
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
@@ -208,11 +208,12 @@ struct pic_lib *pic_open_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define pic_deflibrary(pic, spec)                                       \
-  pic_deflibrary_helper_(pic, PIC_GENSYM(i), PIC_GENSYM(prev_lib), spec)
-#define pic_deflibrary_helper_(pic, i, prev_lib, spec)                  \
-  for (int i = 0; ! i; )                                                \
-    for (struct pic_lib *prev_lib; ! i; )                               \
-      for ((prev_lib = pic->lib), pic_open_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)
+  for (((assert(pic->prev_lib == NULL)),                                \
+        (pic->prev_lib = pic->lib),                                     \
+        (pic->lib = pic_open_library(pic, pic_read_cstr(pic, (spec))))); \
+       pic->prev_lib != NULL;                                           \
+       ((pic->lib = pic->prev_lib),                                     \
+        (pic->prev_lib = NULL)))
 
 void pic_import(pic_state *, pic_value);
 void pic_import_library(pic_state *, struct pic_lib *);

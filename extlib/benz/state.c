@@ -176,6 +176,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->PICRIN_BASE = pic_open_library(pic, pic_read_cstr(pic, "(picrin base)"));
   pic->PICRIN_USER = pic_open_library(pic, pic_read_cstr(pic, "(picrin user)"));
   pic->lib = pic->PICRIN_USER;
+  pic->prev_lib = NULL;
 
   /* standard I/O */
   pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
