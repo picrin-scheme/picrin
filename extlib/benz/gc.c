@@ -510,21 +510,6 @@ gc_mark(pic_state *pic, pic_value v)
   gc_mark_object(pic, obj);
 }
 
-static void
-gc_mark_trie(pic_state *pic, struct pic_trie *trie)
-{
-  size_t i;
-
-  for (i = 0; i < sizeof trie->table / sizeof(struct pic_trie *); ++i) {
-    if (trie->table[i] != NULL) {
-      gc_mark_trie(pic, trie->table[i]);
-    }
-  }
-  if (trie->proc != NULL) {
-    gc_mark_object(pic, (struct pic_object *)trie->proc);
-  }
-}
-
 #define M(x) gc_mark_object(pic, (struct pic_object *)pic->x)
 
 static void
@@ -605,9 +590,6 @@ gc_mark_phase(pic_state *pic)
 
   /* features */
   gc_mark(pic, pic->features);
-
-  /* readers */
-  gc_mark_trie(pic, pic->reader->trie);
 
   /* library table */
   gc_mark(pic, pic->libs);
