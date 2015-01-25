@@ -55,9 +55,9 @@ static void pop_scope(analyze_state *);
   } while (0)
 
 #define register_renamed_symbol(pic, state, slot, lib, id) do {         \
-    pic_sym *sym, *gsym;                                                  \
+    pic_sym *sym, *gsym;                                                \
     sym = pic_intern_cstr(pic, id);                                     \
-    if (! pic_find_rename(pic, lib->env, sym, &gsym)) {                 \
+    if ((gsym = pic_find_rename(pic, lib->env, sym)) == NULL) {         \
       pic_errorf(pic, "internal error! native VM procedure not found: %s", id); \
     }                                                                   \
     state->slot = gsym;                                                 \

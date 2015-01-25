@@ -437,7 +437,7 @@ pic_define_noexport(pic_state *pic, const char *name, pic_value val)
 
   sym = pic_intern_cstr(pic, name);
 
-  if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
+  if ((rename = pic_find_rename(pic, pic->lib->env, sym)) == NULL) {
     rename = pic_add_rename(pic, pic->lib->env, sym);
   } else {
     pic_warn(pic, "redefining global");
@@ -461,7 +461,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 
   sym = pic_intern_cstr(pic, name);
 
-  if (! pic_find_rename(pic, lib->env, sym, &rename)) {
+  if ((rename = pic_find_rename(pic, lib->env, sym)) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
@@ -475,7 +475,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 
   sym = pic_intern_cstr(pic, name);
 
-  if (! pic_find_rename(pic, lib->env, sym, &rename)) {
+  if ((rename = pic_find_rename(pic, lib->env, sym)) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
