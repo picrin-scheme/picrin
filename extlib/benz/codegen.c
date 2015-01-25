@@ -562,7 +562,7 @@ analyze_quote(analyze_state *state, pic_value obj)
 #define ARGC_ASSERT_GE(n, name) do {                                    \
     if (pic_length(pic, obj) < (n) + 1) {                               \
       pic_errorf(pic,                                                   \
-                 #name ": wrong number of arguments (%d for equal to or more than %d)", \
+                 #name ": wrong number of arguments (%d for at least %d)", \
                  pic_length(pic, obj) - 1,                                  \
                  n);                                                    \
     }                                                                   \
