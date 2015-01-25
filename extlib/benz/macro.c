@@ -445,13 +445,13 @@ pic_defmacro(pic_state *pic, pic_sym *name, pic_sym *id, pic_func_t func)
   pic_export(pic, name);
 }
 
-bool
+static bool
 pic_identifier_p(pic_state *pic, pic_value obj)
 {
   return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym_ptr(obj));
 }
 
-bool
+static bool
 pic_identifier_eq_p(pic_state *pic, struct pic_senv *env1, pic_sym *sym1, struct pic_senv *env2, pic_sym *sym2)
 {
   pic_sym *a, *b;
