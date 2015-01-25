@@ -112,7 +112,7 @@ pic_gensym(pic_state *pic, pic_sym *base)
   return pic_make_symbol(pic, base->str);
 }
 
-bool
+static bool
 pic_interned_p(pic_state *pic, pic_sym *sym)
 {
   xh_entry *e;
