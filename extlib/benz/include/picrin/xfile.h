@@ -20,47 +20,47 @@ typedef struct {
 } xFILE;
 
 /* generic file constructor */
-static inline xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*flush)(void *), int (*close)(void *));
+PIC_INLINE xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*flush)(void *), int (*close)(void *));
 
 /* resource aquisition */
-static inline xFILE *xfpopen(FILE *);
-static inline xFILE *xmopen();
-static inline xFILE *xfopen(const char *, const char *);
-static inline int xfclose(xFILE *);
+PIC_INLINE xFILE *xfpopen(FILE *);
+PIC_INLINE xFILE *xmopen();
+PIC_INLINE xFILE *xfopen(const char *, const char *);
+PIC_INLINE int xfclose(xFILE *);
 
 /* buffer management */
-static inline int xfflush(xFILE *);
+PIC_INLINE int xfflush(xFILE *);
 
 /* direct IO with buffering */
-static inline size_t xfread(void *, size_t, size_t, xFILE *);
-static inline size_t xfwrite(const void *, size_t, size_t, xFILE *);
+PIC_INLINE size_t xfread(void *, size_t, size_t, xFILE *);
+PIC_INLINE size_t xfwrite(const void *, size_t, size_t, xFILE *);
 
 /* indicator positioning */
-static inline long xfseek(xFILE *, long offset, int whence);
-static inline long xftell(xFILE *);
-static inline void xrewind(xFILE *);
+PIC_INLINE long xfseek(xFILE *, long offset, int whence);
+PIC_INLINE long xftell(xFILE *);
+PIC_INLINE void xrewind(xFILE *);
 
 /* stream status */
-static inline void xclearerr(xFILE *);
-static inline int xfeof(xFILE *);
-static inline int xferror(xFILE *);
+PIC_INLINE void xclearerr(xFILE *);
+PIC_INLINE int xfeof(xFILE *);
+PIC_INLINE int xferror(xFILE *);
 
 /* character IO */
-static inline int xfgetc(xFILE *);
-static inline char *xfgets(char *, int, xFILE *);
-static inline int xfputc(int, xFILE *);
-static inline int xfputs(const char *, xFILE *);
-static inline int xgetc(xFILE *);
-static inline int xgetchar(void);
-static inline int xputc(int, xFILE *);
-static inline int xputchar(int);
-static inline int xputs(const char *);
-static inline int xungetc(int, xFILE *);
+PIC_INLINE int xfgetc(xFILE *);
+PIC_INLINE char *xfgets(char *, int, xFILE *);
+PIC_INLINE int xfputc(int, xFILE *);
+PIC_INLINE int xfputs(const char *, xFILE *);
+PIC_INLINE int xgetc(xFILE *);
+PIC_INLINE int xgetchar(void);
+PIC_INLINE int xputc(int, xFILE *);
+PIC_INLINE int xputchar(int);
+PIC_INLINE int xputs(const char *);
+PIC_INLINE int xungetc(int, xFILE *);
 
 /* formatted I/O */
-static inline int xprintf(const char *, ...);
-static inline int xfprintf(xFILE *, const char *, ...);
-static inline int xvfprintf(xFILE *, const char *, va_list);
+PIC_INLINE int xprintf(const char *, ...);
+PIC_INLINE int xfprintf(xFILE *, const char *, ...);
+PIC_INLINE int xvfprintf(xFILE *, const char *, va_list);
 
 /* standard I/O */
 #define xstdin (xstdin_())
@@ -73,7 +73,7 @@ static inline int xvfprintf(xFILE *, const char *, va_list);
 #define XF_EOF 1
 #define XF_ERR 2
 
-static inline xFILE *
+PIC_INLINE xFILE *
 xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*flush)(void *), int (*close)(void *))
 {
   xFILE *file;
@@ -99,7 +99,7 @@ xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, co
  * Derieved xFILE Classes
  */
 
-static inline int
+PIC_INLINE int
 xf_file_read(void *cookie, char *ptr, int size)
 {
   FILE *file = cookie;
@@ -115,7 +115,7 @@ xf_file_read(void *cookie, char *ptr, int size)
   return r;
 }
 
-static inline int
+PIC_INLINE int
 xf_file_write(void *cookie, const char *ptr, int size)
 {
   FILE *file = cookie;
@@ -128,25 +128,25 @@ xf_file_write(void *cookie, const char *ptr, int size)
   return r;
 }
 
-static inline long
+PIC_INLINE long
 xf_file_seek(void *cookie, long pos, int whence)
 {
   return fseek(cookie, pos, whence);
 }
 
-static inline int
+PIC_INLINE int
 xf_file_flush(void *cookie)
 {
   return fflush(cookie);
 }
 
-static inline int
+PIC_INLINE int
 xf_file_close(void *cookie)
 {
   return fclose(cookie);
 }
 
-static inline xFILE *
+PIC_INLINE xFILE *
 xfpopen(FILE *fp)
 {
   xFILE *file;
@@ -161,7 +161,7 @@ xfpopen(FILE *fp)
 
 #define XF_FILE_VTABLE xf_file_read, xf_file_write, xf_file_seek, xf_file_flush, xf_file_close
 
-static inline xFILE *
+PIC_INLINE xFILE *
 xstdin_()
 {
   static xFILE x = { -1, 0, { NULL, XF_FILE_VTABLE } };
@@ -172,7 +172,7 @@ xstdin_()
   return &x;
 }
 
-static inline xFILE *
+PIC_INLINE xFILE *
 xstdout_()
 {
   static xFILE x = { -1, 0, { NULL, XF_FILE_VTABLE } };
@@ -183,7 +183,7 @@ xstdout_()
   return &x;
 }
 
-static inline xFILE *
+PIC_INLINE xFILE *
 xstderr_()
 {
   static xFILE x = { -1, 0, { NULL, XF_FILE_VTABLE } };
@@ -199,7 +199,7 @@ struct xf_membuf {
   long pos, end, capa;
 };
 
-static inline int
+PIC_INLINE int
 xf_mem_read(void *cookie, char *ptr, int size)
 {
   struct xf_membuf *mem;
@@ -213,7 +213,7 @@ xf_mem_read(void *cookie, char *ptr, int size)
   return size;
 }
 
-static inline int
+PIC_INLINE int
 xf_mem_write(void *cookie, const char *ptr, int size)
 {
   struct xf_membuf *mem;
@@ -231,7 +231,7 @@ xf_mem_write(void *cookie, const char *ptr, int size)
   return size;
 }
 
-static inline long
+PIC_INLINE long
 xf_mem_seek(void *cookie, long pos, int whence)
 {
   struct xf_membuf *mem;
@@ -253,7 +253,7 @@ xf_mem_seek(void *cookie, long pos, int whence)
   return mem->pos;
 }
 
-static inline int
+PIC_INLINE int
 xf_mem_flush(void *cookie)
 {
   (void)cookie;
@@ -261,7 +261,7 @@ xf_mem_flush(void *cookie)
   return 0;
 }
 
-static inline int
+PIC_INLINE int
 xf_mem_close(void *cookie)
 {
   struct xf_membuf *mem;
@@ -272,7 +272,7 @@ xf_mem_close(void *cookie)
   return 0;
 }
 
-static inline xFILE *
+PIC_INLINE xFILE *
 xmopen()
 {
   struct xf_membuf *mem;
@@ -288,7 +288,7 @@ xmopen()
 
 #undef XF_FILE_VTABLE
 
-static inline xFILE *
+PIC_INLINE xFILE *
 xfopen(const char *filename, const char *mode)
 {
   FILE *fp;
@@ -307,7 +307,7 @@ xfopen(const char *filename, const char *mode)
   return file;
 }
 
-static inline int
+PIC_INLINE int
 xfclose(xFILE *file)
 {
   int r;
@@ -321,13 +321,13 @@ xfclose(xFILE *file)
   return 0;
 }
 
-static inline int
+PIC_INLINE int
 xfflush(xFILE *file)
 {
   return file->vtable.flush(file->vtable.cookie);
 }
 
-static inline size_t
+PIC_INLINE size_t
 xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
 {
   char *dst = (char *)ptr;
@@ -362,7 +362,7 @@ xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
   return i;
 }
 
-static inline size_t
+PIC_INLINE size_t
 xfwrite(const void *ptr, size_t block, size_t nitems, xFILE *file)
 {
   char *dst = (char *)ptr;
@@ -386,44 +386,44 @@ xfwrite(const void *ptr, size_t block, size_t nitems, xFILE *file)
   return i;
 }
 
-static inline long
+PIC_INLINE long
 xfseek(xFILE *file, long offset, int whence)
 {
   file->ungot = -1;
   return file->vtable.seek(file->vtable.cookie, offset, whence);
 }
 
-static inline long
+PIC_INLINE long
 xftell(xFILE *file)
 {
   return xfseek(file, 0, SEEK_CUR);
 }
 
-static inline void
+PIC_INLINE void
 xrewind(xFILE *file)
 {
   xfseek(file, 0, SEEK_SET);
 }
 
-static inline void
+PIC_INLINE void
 xclearerr(xFILE *file)
 {
   file->flags = 0;
 }
 
-static inline int
+PIC_INLINE int
 xfeof(xFILE *file)
 {
   return file->flags & XF_EOF;
 }
 
-static inline int
+PIC_INLINE int
 xferror(xFILE *file)
 {
   return file->flags & XF_ERR;
 }
 
-static inline int
+PIC_INLINE int
 xfgetc(xFILE *file)
 {
   char buf[1];
@@ -437,13 +437,13 @@ xfgetc(xFILE *file)
   return buf[0];
 }
 
-static inline int
+PIC_INLINE int
 xgetc(xFILE *file)
 {
   return xfgetc(file);
 }
 
-static inline char *
+PIC_INLINE char *
 xfgets(char *str, int size, xFILE *file)
 {
   int c = EOF, i;
@@ -465,7 +465,7 @@ xfgets(char *str, int size, xFILE *file)
   return str;
 }
 
-static inline int
+PIC_INLINE int
 xungetc(int c, xFILE *file)
 {
   file->ungot = c;
@@ -475,13 +475,13 @@ xungetc(int c, xFILE *file)
   return c;
 }
 
-static inline int
+PIC_INLINE int
 xgetchar(void)
 {
   return xfgetc(xstdin);
 }
 
-static inline int
+PIC_INLINE int
 xfputc(int c, xFILE *file)
 {
   char buf[1];
@@ -495,19 +495,19 @@ xfputc(int c, xFILE *file)
   return buf[0];
 }
 
-static inline int
+PIC_INLINE int
 xputc(int c, xFILE *file)
 {
   return xfputc(c, file);
 }
 
-static inline int
+PIC_INLINE int
 xputchar(int c)
 {
   return xfputc(c, xstdout);
 }
 
-static inline int
+PIC_INLINE int
 xfputs(const char *str, xFILE *file)
 {
   size_t len;
@@ -521,13 +521,13 @@ xfputs(const char *str, xFILE *file)
   return 0;
 }
 
-static inline int
+PIC_INLINE int
 xputs(const char *s)
 {
   return xfputs(s, xstdout);
 }
 
-static inline int
+PIC_INLINE int
 xprintf(const char *fmt, ...)
 {
   va_list ap;
@@ -539,7 +539,7 @@ xprintf(const char *fmt, ...)
   return n;
 }
 
-static inline int
+PIC_INLINE int
 xfprintf(xFILE *stream, const char *fmt, ...)
 {
   va_list ap;
@@ -551,7 +551,7 @@ xfprintf(xFILE *stream, const char *fmt, ...)
   return n;
 }
 
-static inline int
+PIC_INLINE int
 xvfprintf(xFILE *stream, const char *fmt, va_list ap)
 {
   va_list ap2;

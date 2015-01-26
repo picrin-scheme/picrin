@@ -75,7 +75,7 @@ struct pic_irep {
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
 
-static inline void
+PIC_INLINE void
 pic_dump_code(pic_code c)
 {
   printf("[%2d] ", c.insn);
@@ -191,7 +191,7 @@ pic_dump_code(pic_code c)
   }
 }
 
-static inline void
+PIC_INLINE void
 pic_dump_irep(struct pic_irep *irep)
 {
   unsigned i;

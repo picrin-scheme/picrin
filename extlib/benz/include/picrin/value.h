@@ -153,32 +153,32 @@ typedef struct pic_blob pic_blob;
 
 #define pic_test(v) (! pic_false_p(v))
 
-static inline enum pic_tt pic_type(pic_value);
-static inline const char *pic_type_repr(enum pic_tt);
+PIC_INLINE enum pic_tt pic_type(pic_value);
+PIC_INLINE const char *pic_type_repr(enum pic_tt);
 
 #define pic_assert_type(pic, v, type)                           \
   if (! pic_##type##_p(v)) {                                    \
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-static inline bool pic_valid_int(double);
+PIC_INLINE bool pic_valid_int(double);
 
-static inline pic_value pic_nil_value();
-static inline pic_value pic_true_value();
-static inline pic_value pic_false_value();
-static inline pic_value pic_bool_value(bool);
-static inline pic_value pic_undef_value();
-static inline pic_value pic_obj_value(void *);
-static inline pic_value pic_float_value(double);
-static inline pic_value pic_int_value(int);
-static inline pic_value pic_size_value(size_t);
-static inline pic_value pic_char_value(char c);
-static inline pic_value pic_none_value();
+PIC_INLINE pic_value pic_nil_value();
+PIC_INLINE pic_value pic_true_value();
+PIC_INLINE pic_value pic_false_value();
+PIC_INLINE pic_value pic_bool_value(bool);
+PIC_INLINE pic_value pic_undef_value();
+PIC_INLINE pic_value pic_obj_value(void *);
+PIC_INLINE pic_value pic_float_value(double);
+PIC_INLINE pic_value pic_int_value(int);
+PIC_INLINE pic_value pic_size_value(size_t);
+PIC_INLINE pic_value pic_char_value(char c);
+PIC_INLINE pic_value pic_none_value();
 
-static inline bool pic_eq_p(pic_value, pic_value);
-static inline bool pic_eqv_p(pic_value, pic_value);
+PIC_INLINE bool pic_eq_p(pic_value, pic_value);
+PIC_INLINE bool pic_eqv_p(pic_value, pic_value);
 
-static inline enum pic_tt
+PIC_INLINE enum pic_tt
 pic_type(pic_value v)
 {
   switch (pic_vtype(v)) {
@@ -205,7 +205,7 @@ pic_type(pic_value v)
   PIC_UNREACHABLE();
 }
 
-static inline const char *
+PIC_INLINE const char *
 pic_type_repr(enum pic_tt tt)
 {
   switch (tt) {
@@ -257,13 +257,13 @@ pic_type_repr(enum pic_tt tt)
   PIC_UNREACHABLE();
 }
 
-static inline bool
+PIC_INLINE bool
 pic_valid_int(double v)
 {
   return INT_MIN <= v && v <= INT_MAX;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_nil_value()
 {
   pic_value v;
@@ -272,7 +272,7 @@ pic_nil_value()
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_true_value()
 {
   pic_value v;
@@ -281,7 +281,7 @@ pic_true_value()
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_false_value()
 {
   pic_value v;
@@ -290,7 +290,7 @@ pic_false_value()
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_bool_value(bool b)
 {
   pic_value v;
@@ -299,7 +299,7 @@ pic_bool_value(bool b)
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_size_value(size_t s)
 {
   if (sizeof(unsigned) < sizeof(size_t)) {
@@ -312,7 +312,7 @@ pic_size_value(size_t s)
 
 #if PIC_NAN_BOXING
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_obj_value(void *ptr)
 {
   pic_value v;
@@ -322,7 +322,7 @@ pic_obj_value(void *ptr)
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_float_value(double f)
 {
   union { double f; uint64_t i; } u;
@@ -335,7 +335,7 @@ pic_float_value(double f)
   }
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_int_value(int i)
 {
   union { int i; unsigned u; } u;
@@ -348,7 +348,7 @@ pic_int_value(int i)
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_char_value(char c)
 {
   pic_value v;
@@ -360,7 +360,7 @@ pic_char_value(char c)
 
 #else
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_obj_value(void *ptr)
 {
   pic_value v;
@@ -370,7 +370,7 @@ pic_obj_value(void *ptr)
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_float_value(double f)
 {
   pic_value v;
@@ -380,7 +380,7 @@ pic_float_value(double f)
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_int_value(int i)
 {
   pic_value v;
@@ -390,7 +390,7 @@ pic_int_value(int i)
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_char_value(char c)
 {
   pic_value v;
@@ -402,7 +402,7 @@ pic_char_value(char c)
 
 #endif
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_undef_value()
 {
   pic_value v;
@@ -411,7 +411,7 @@ pic_undef_value()
   return v;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_none_value()
 {
 #if PIC_NONE_IS_FALSE
@@ -423,13 +423,13 @@ pic_none_value()
 
 #if PIC_NAN_BOXING
 
-static inline bool
+PIC_INLINE bool
 pic_eq_p(pic_value x, pic_value y)
 {
   return x == y;
 }
 
-static inline bool
+PIC_INLINE bool
 pic_eqv_p(pic_value x, pic_value y)
 {
   return x == y;
@@ -437,7 +437,7 @@ pic_eqv_p(pic_value x, pic_value y)
 
 #else
 
-static inline bool
+PIC_INLINE bool
 pic_eq_p(pic_value x, pic_value y)
 {
   if (pic_type(x) != pic_type(y))
@@ -453,7 +453,7 @@ pic_eq_p(pic_value x, pic_value y)
   }
 }
 
-static inline bool
+PIC_INLINE bool
 pic_eqv_p(pic_value x, pic_value y)
 {
   if (pic_type(x) != pic_type(y))
