@@ -79,6 +79,15 @@ strcaseeq(const char *s1, const char *s2)
   return a == b;
 }
 
+static int
+case_fold(pic_state *pic, int c)
+{
+  if (pic->reader->typecase == PIC_CASE_FOLD) {
+    c = tolower(c);
+  }
+  return c;
+}
+
 static pic_value
 read_comment(pic_state *pic, struct pic_port *port, int c)
 {
@@ -198,17 +207,14 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
 
   len = 1;
   buf = pic_alloc(pic, len + 1);
-  buf[0] = c;
+  buf[0] = case_fold(pic, c);
   buf[1] = 0;
 
   while (! isdelim(peek(port))) {
     c = next(port);
-    if (pic->reader->typecase == PIC_CASE_FOLD) {
-      c = tolower(c);
-    }
     len += 1;
     buf = pic_realloc(pic, buf, len + 1);
-    buf[len - 1] = c;
+    buf[len - 1] = case_fold(pic, c);
     buf[len] = 0;
   }
 
