@@ -666,12 +666,13 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 #if VM_DEBUG
 # define VM_CALL_PRINT                                                  \
   do {                                                                  \
+    short i;                                                            \
     puts("\n== calling proc...");                                       \
     printf("  proc = ");                                                \
     pic_debug(pic, pic_obj_value(proc));                                \
     puts("");                                                           \
     printf("  argv = (");                                               \
-    for (short i = 1; i < c.u.i; ++i) {                                 \
+    for (i = 1; i < c.u.i; ++i) {                                       \
       if (i > 1)                                                        \
         printf(" ");                                                    \
       pic_debug(pic, pic->sp[-c.u.i + i]);                              \
