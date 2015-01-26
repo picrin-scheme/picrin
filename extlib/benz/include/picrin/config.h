@@ -39,10 +39,6 @@
 /* #define GC_DEBUG 1 */
 /* #define GC_DEBUG_DETAIL 1 */
 
-#if __STDC_VERSION__ < 199901L
-# error please activate c99 features
-#endif
-
 #ifndef PIC_DIRECT_THREADED_VM
 # if defined(__GNUC__) || defined(__clang__)
 #  define PIC_DIRECT_THREADED_VM 1
