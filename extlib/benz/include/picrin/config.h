@@ -40,7 +40,7 @@
 /* #define GC_DEBUG_DETAIL 1 */
 
 #ifndef PIC_DIRECT_THREADED_VM
-# if defined(__GNUC__) || defined(__clang__)
+# if (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
 #  define PIC_DIRECT_THREADED_VM 1
 # endif
 #endif
