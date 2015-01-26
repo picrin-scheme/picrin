@@ -46,7 +46,7 @@
 #endif
 
 #ifndef PIC_NAN_BOXING
-# if __x86_64__ && __STDC_VERSION__ >= 201112L
+# if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
 #  define PIC_NAN_BOXING 1
 # endif
 #endif
