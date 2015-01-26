@@ -11,11 +11,11 @@ extern "C" {
 
 #if __STDC_VERSION__ >= 201112L
 # include <stdnoreturn.h>
-# define pic_noreturn noreturn
+# define PIC_NORETURN noreturn
 #elif __GNUC__ || __clang__
-# define pic_noreturn __attribute__((noreturn))
+# define PIC_NORETURN __attribute__((noreturn))
 #else
-# define pic_noreturn
+# define PIC_NORETURN
 #endif
 
 #if __STDC_VERSION__ >= 199901L

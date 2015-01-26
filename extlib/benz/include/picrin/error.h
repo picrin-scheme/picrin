@@ -51,9 +51,9 @@ void pic_push_try(pic_state *, struct pic_escape *);
 void pic_pop_try(pic_state *);
 
 pic_value pic_raise_continuable(pic_state *, pic_value);
-pic_noreturn void pic_raise(pic_state *, pic_value);
-pic_noreturn void pic_throw(pic_state *, pic_sym *, const char *, pic_list);
-pic_noreturn void pic_error(pic_state *, const char *, pic_list);
+PIC_NORETURN void pic_raise(pic_state *, pic_value);
+PIC_NORETURN void pic_throw(pic_state *, pic_sym *, const char *, pic_list);
+PIC_NORETURN void pic_error(pic_state *, const char *, pic_list);
 
 #if defined(__cplusplus)
 }

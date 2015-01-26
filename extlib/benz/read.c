@@ -16,7 +16,7 @@
 static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
 
-pic_noreturn static void
+PIC_NORETURN static void
 read_error(pic_state *pic, const char *msg)
 {
   pic_throw(pic, pic->sREAD, msg, pic_nil_value());
