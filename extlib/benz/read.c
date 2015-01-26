@@ -534,8 +534,7 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_pair(pic_state *pic, struct pic_port *port, int c)
 {
-  const int tOPEN = c;
-  const int tCLOSE = (c == '(') ? ')' : ']';
+  static const int tCLOSE = ')';
   pic_value car, cdr;
 
  retry:
@@ -564,7 +563,7 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
       goto retry;
     }
 
-    cdr = read_pair(pic, port, tOPEN);
+    cdr = read_pair(pic, port, '(');
     return pic_cons(pic, car, cdr);
   }
 }
@@ -586,7 +585,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
   int c;
 
   switch ((c = skip(port, ' '))) {
-  case '(': case '[':
+  case '(':
     {
       pic_value tmp;
 
@@ -749,7 +748,6 @@ reader_table_init(struct pic_reader *reader)
   reader->table['+'] = read_plus;
   reader->table['-'] = read_minus;
   reader->table['('] = read_pair;
-  reader->table['['] = read_pair;
   reader->table['#'] = read_dispatch;
 
   /* read number */
