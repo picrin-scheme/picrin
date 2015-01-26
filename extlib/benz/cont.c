@@ -99,6 +99,7 @@ escape_call(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   e = pic_data_ptr(pic_attr_ref(pic, pic_obj_value(pic_get_proc(pic)), "@@escape"));
+  ((struct pic_escape *)e->data)->results = pic_list_by_array(pic, argc, argv);
 
   pic_load_point(pic, e->data);
 
