@@ -42,13 +42,14 @@ extern "C" {
 #include <math.h>
 #include <ctype.h>
 
+#include "picrin/config.h"
+#include "picrin/util.h"
+
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
 #include "picrin/xfile.h"
 #include "picrin/xrope.h"
 
-#include "picrin/config.h"
-#include "picrin/util.h"
 #include "picrin/value.h"
 
 typedef struct pic_code pic_code;
@@ -227,7 +228,7 @@ pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *);
 
 /* obsoleted */
-static inline void pic_warn(pic_state *pic, const char *msg)
+PIC_INLINE void pic_warn(pic_state *pic, const char *msg)
 {
   pic_warnf(pic, msg);
 }

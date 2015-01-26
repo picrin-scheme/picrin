@@ -18,6 +18,14 @@ extern "C" {
 # define pic_noreturn
 #endif
 
+#if __STDC_VERSION__ >= 199901L
+# define PIC_INLINE static inline
+#elif __GNUC__ || __clang__
+# define PIC_INLINE static __attribute__((unused))
+#else
+# define PIC_INLINE static
+#endif
+
 #define PIC_FALLTHROUGH ((void)0)
 #define PIC_UNUSED(v) ((void)(v))
 

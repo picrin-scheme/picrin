@@ -18,7 +18,7 @@ struct pic_pair {
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_car(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
@@ -31,7 +31,7 @@ pic_car(pic_state *pic, pic_value obj)
   return pair->car;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_cdr(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
