@@ -200,6 +200,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       if (i < argc) {
         pic_value v;
         int x;
+        size_t s;
 
         v = GET_OPERAND(pic, i);
         switch (pic_type(v)) {
@@ -208,8 +209,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
           if (x < 0) {
             pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
           }
+          s = (size_t)x;
           if (sizeof(unsigned) > sizeof(size_t)) {
-            if ((unsigned)x > (unsigned)SIZE_MAX) {
+            if (x != (int)s) {
               pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
             }
           }
