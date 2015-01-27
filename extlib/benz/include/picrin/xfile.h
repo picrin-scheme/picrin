@@ -561,24 +561,75 @@ xfprintf(xFILE *stream, const char *fmt, ...)
   return n;
 }
 
+static void
+xfile_printint(xFILE *stream, long x, int base)
+{
+  static char digits[] = "0123456789abcdef";
+  char buf[20];
+  int i, neg;
+
+  neg = 0;
+  if (x < 0) {
+    neg = 1;
+    x = -x;
+  }
+
+  i = 0;
+  do {
+    buf[i++] = digits[x % base];
+  } while ((x /= base) != 0);
+
+  if (neg) {
+    buf[i++] = '-';
+  }
+
+  while (i-- > 0) {
+    xputc(buf[i], stream);
+  }
+}
+
 PIC_INLINE int
 xvfprintf(xFILE *stream, const char *fmt, va_list ap)
 {
-  va_list ap2;
+  const char *p;
+  char *sval;
+  int ival;
+  double dval;
+  void *vp;
+  long seekr = xftell(stream);
 
-  va_copy(ap2, ap);
-  {
-    char buf[vsnprintf(NULL, 0, fmt, ap2)];
-
-    vsnprintf(buf, sizeof buf + 1, fmt, ap);
-
-    if (xfwrite(buf, sizeof buf, 1, stream) < 1) {
-      return -1;
+  for (p = fmt; *p; p++) {
+    if (*p != '%') {
+      xputc(*p, stream);
+      continue;
     }
-
-    va_end(ap2);
-    return (int)(sizeof buf);
+    switch (*++p) {
+    case 'd':
+    case 'i':
+      ival = va_arg(ap, int);
+      xfile_printint(stream, ival, 10);
+      break;
+    case 'f':
+      dval = va_arg(ap, double);
+      xfile_printint(stream, dval, 10);
+      xputc('.', stream);
+      xfile_printint(stream, fabs((dval - (int)dval) * 1e4), 10);
+      break;
+    case 's':
+      sval = va_arg(ap, char*);
+      xfputs(sval, stream);
+      break;
+    case 'p':
+      vp = va_arg(ap, void*);
+      xfputs("0x", stream);
+      xfile_printint(stream, dval, 16);
+      break;
+    default:
+      xputc(*(p-1), stream);
+      break;
+    }
   }
+  return xftell(stream) - seekr;
 }
 
 #if defined(__cplusplus)
