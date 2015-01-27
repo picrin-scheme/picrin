@@ -60,6 +60,11 @@ struct pic_code {
   } u;
 };
 
+#define PIC_INIT_CODE_I(code, op, ival) do {    \
+    code.insn = op;                             \
+    code.u.i = ival;                            \
+  } while (0)
+
 struct pic_irep {
   PIC_OBJECT_HEADER
   pic_sym *name;

@@ -1151,13 +1151,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  static const pic_code iseq[2] = {
-    { OP_NOP, { .i = 0 } },
-    { OP_TAILCALL, { .i = -1 } }
-  };
+  static pic_code iseq[2];
 
   pic_value v, it, *sp;
   pic_callinfo *ci;
+
+  PIC_INIT_CODE_I(iseq[0], OP_NOP, 0);
+  PIC_INIT_CODE_I(iseq[1], OP_TAILCALL, -1);
 
   *pic->sp++ = pic_obj_value(proc);
 
