@@ -525,6 +525,9 @@ pic_number_number_to_string(pic_state *pic)
   double f;
   bool e;
   int radix = 10;
+  pic_str *str;
+  size_t s;
+  char *buf;
 
   pic_get_args(pic, "F|i", &f, &e, &radix);
 
@@ -535,19 +538,24 @@ pic_number_number_to_string(pic_state *pic)
   if (e) {
     int ival = (int) f;
     int ilen = number_string_length(ival, radix);
-    char buf[ilen + 1];
+    s = ilen + 1;
+
+    buf = pic_malloc(pic, s);
 
     number_string(ival, radix, ilen, buf);
-
-    return pic_obj_value(pic_make_str(pic, buf, sizeof buf - 1));
   }
   else {
-    char buf[snprintf(NULL, 0, "%f", f) + 1];
+    s = snprintf(NULL, 0, "%f", f) + 1;
 
-    snprintf(buf, sizeof buf, "%f", f);
+    buf = pic_malloc(pic, s);
 
-    return pic_obj_value(pic_make_str(pic, buf, sizeof buf - 1));
+    snprintf(buf, s, "%f", f);
   }
+  str = pic_make_str(pic, buf, s - 1);
+
+  pic_free(pic, buf);
+
+  return pic_obj_value(str);
 }
 
 static pic_value
