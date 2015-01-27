@@ -330,10 +330,16 @@ xfflush(xFILE *file)
 PIC_INLINE size_t
 xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
 {
+  char cbuf[256], *buf;
   char *dst = (char *)ptr;
-  char buf[block];
   size_t i, offset;
   int n;
+
+  if (block <= 256) {
+    buf = cbuf;
+  } else {
+    buf = malloc(block);
+  }
 
   for (i = 0; i < nitems; ++i) {
     offset = 0;
@@ -359,6 +365,10 @@ xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
   }
 
  exit:
+
+  if (cbuf != buf) {
+    free(buf);
+  }
   return i;
 }
 
