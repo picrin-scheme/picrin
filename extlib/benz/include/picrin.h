@@ -42,13 +42,14 @@ extern "C" {
 #include <math.h>
 #include <ctype.h>
 
+#include "picrin/config.h"
+#include "picrin/util.h"
+
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
 #include "picrin/xfile.h"
 #include "picrin/xrope.h"
 
-#include "picrin/config.h"
-#include "picrin/util.h"
 #include "picrin/value.h"
 
 typedef struct pic_code pic_code;
@@ -87,7 +88,7 @@ typedef struct {
 
   pic_code *ip;
 
-  struct pic_lib *lib;
+  struct pic_lib *lib, *prev_lib;
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
@@ -208,25 +209,26 @@ struct pic_lib *pic_open_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define pic_deflibrary(pic, spec)                                       \
-  pic_deflibrary_helper_(pic, PIC_GENSYM(i), PIC_GENSYM(prev_lib), spec)
-#define pic_deflibrary_helper_(pic, i, prev_lib, spec)                  \
-  for (int i = 0; ! i; )                                                \
-    for (struct pic_lib *prev_lib; ! i; )                               \
-      for ((prev_lib = pic->lib), pic_open_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)
+  for (((assert(pic->prev_lib == NULL)),                                \
+        (pic->prev_lib = pic->lib),                                     \
+        (pic->lib = pic_open_library(pic, pic_read_cstr(pic, (spec))))); \
+       pic->prev_lib != NULL;                                           \
+       ((pic->lib = pic->prev_lib),                                     \
+        (pic->prev_lib = NULL)))
 
 void pic_import(pic_state *, pic_value);
 void pic_import_library(pic_state *, struct pic_lib *);
 void pic_export(pic_state *, pic_sym *);
 
-pic_noreturn void pic_panic(pic_state *, const char *);
-pic_noreturn void pic_errorf(pic_state *, const char *, ...);
+PIC_NORETURN void pic_panic(pic_state *, const char *);
+PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *);
 
 /* obsoleted */
-static inline void pic_warn(pic_state *pic, const char *msg)
+PIC_INLINE void pic_warn(pic_state *pic, const char *msg)
 {
   pic_warnf(pic, msg);
 }

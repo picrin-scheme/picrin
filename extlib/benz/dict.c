@@ -273,13 +273,13 @@ static pic_value
 pic_dict_alist_to_dictionary(pic_state *pic)
 {
   struct pic_dict *dict;
-  pic_value alist, e;
+  pic_value alist, e, it;
 
   pic_get_args(pic, "o", &alist);
 
   dict = pic_make_dict(pic);
 
-  pic_for_each (e, pic_reverse(pic, alist)) {
+  pic_for_each (e, pic_reverse(pic, alist), it) {
     pic_assert_type(pic, pic_car(pic, e), sym);
     pic_dict_set(pic, dict, pic_sym_ptr(pic_car(pic, e)), pic_cdr(pic, e));
   }

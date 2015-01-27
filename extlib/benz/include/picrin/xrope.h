@@ -20,19 +20,19 @@ typedef struct xrope xrope;
 
 #define xr_new(cstr) xr_new_cstr(cstr, strlen(cstr))
 #define xr_new_lit(cstr) xr_new_cstr(cstr, sizeof(cstr) - 1)
-static inline xrope *xr_new_cstr(const char *, size_t);
-static inline xrope *xr_new_imbed(const char *, size_t);
-static inline xrope *xr_new_move(const char *, size_t);
-static inline xrope *xr_new_copy(const char *, size_t);
+PIC_INLINE xrope *xr_new_cstr(const char *, size_t);
+PIC_INLINE xrope *xr_new_imbed(const char *, size_t);
+PIC_INLINE xrope *xr_new_move(const char *, size_t);
+PIC_INLINE xrope *xr_new_copy(const char *, size_t);
 
-static inline void XROPE_INCREF(xrope *);
-static inline void XROPE_DECREF(xrope *);
+PIC_INLINE void XROPE_INCREF(xrope *);
+PIC_INLINE void XROPE_DECREF(xrope *);
 
-static inline size_t xr_len(xrope *);
-static inline char xr_at(xrope *, size_t);
-static inline xrope *xr_cat(xrope *, xrope *);
-static inline xrope *xr_sub(xrope *, size_t, size_t);
-static inline const char *xr_cstr(xrope *); /* returns NULL-terminated string */
+PIC_INLINE size_t xr_len(xrope *);
+PIC_INLINE char xr_at(xrope *, size_t);
+PIC_INLINE xrope *xr_cat(xrope *, xrope *);
+PIC_INLINE xrope *xr_sub(xrope *, size_t, size_t);
+PIC_INLINE const char *xr_cstr(xrope *); /* returns NULL-terminated string */
 
 
 /* impl */
@@ -65,12 +65,12 @@ struct xrope {
   struct xrope *left, *right;
 };
 
-static inline void
+PIC_INLINE void
 XROPE_INCREF(xrope *x) {
   x->refcnt++;
 }
 
-static inline void
+PIC_INLINE void
 XROPE_DECREF(xrope *x) {
   if (! --x->refcnt) {
     if (x->chunk) {
@@ -84,7 +84,7 @@ XROPE_DECREF(xrope *x) {
   }
 }
 
-static inline xrope *
+PIC_INLINE xrope *
 xr_new_cstr(const char *cstr, size_t len)
 {
   xr_chunk *c;
@@ -108,7 +108,7 @@ xr_new_cstr(const char *cstr, size_t len)
   return x;
 }
 
-static inline xrope *
+PIC_INLINE xrope *
 xr_new_imbed(const char *str, size_t len)
 {
   xr_chunk *c;
@@ -132,7 +132,7 @@ xr_new_imbed(const char *str, size_t len)
   return x;
 }
 
-static inline xrope *
+PIC_INLINE xrope *
 xr_new_move(const char *cstr, size_t len)
 {
   xr_chunk *c;
@@ -156,7 +156,7 @@ xr_new_move(const char *cstr, size_t len)
   return x;
 }
 
-static inline xrope *
+PIC_INLINE xrope *
 xr_new_copy(const char *str, size_t len)
 {
   char *buf;
@@ -185,13 +185,13 @@ xr_new_copy(const char *str, size_t len)
   return x;
 }
 
-static inline size_t
+PIC_INLINE size_t
 xr_len(xrope *x)
 {
   return x->weight;
 }
 
-static inline char
+PIC_INLINE char
 xr_at(xrope *x, size_t i)
 {
   if (x->weight <= i) {
@@ -205,7 +205,7 @@ xr_at(xrope *x, size_t i)
     : xr_at(x->right, i - x->left->weight);
 }
 
-static inline xrope *
+PIC_INLINE xrope *
 xr_cat(xrope *x, xrope *y)
 {
   xrope *z;
@@ -224,7 +224,7 @@ xr_cat(xrope *x, xrope *y)
   return z;
 }
 
-static inline struct xrope *
+PIC_INLINE struct xrope *
 xr_sub(xrope *x, size_t i, size_t j)
 {
   assert(i <= j);
@@ -271,7 +271,7 @@ xr_sub(xrope *x, size_t i, size_t j)
   }
 }
 
-static inline void
+PIC_INLINE void
 xr_fold(xrope *x, xr_chunk *c, size_t offset)
 {
   if (x->chunk) {
@@ -294,7 +294,7 @@ xr_fold(xrope *x, xr_chunk *c, size_t offset)
   XR_CHUNK_INCREF(c);
 }
 
-static inline const char *
+PIC_INLINE const char *
 xr_cstr(xrope *x)
 {
   xr_chunk *c;

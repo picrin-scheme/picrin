@@ -1153,13 +1153,13 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
     { OP_TAILCALL, { .i = -1 } }
   };
 
-  pic_value v, *sp;
+  pic_value v, it, *sp;
   pic_callinfo *ci;
 
   *pic->sp++ = pic_obj_value(proc);
 
   sp = pic->sp;
-  pic_for_each (v, args) {
+  pic_for_each (v, args, it) {
     *sp++ = v;
   }
 

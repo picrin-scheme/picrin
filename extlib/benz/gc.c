@@ -57,24 +57,24 @@ heap_init(struct pic_heap *heap)
 }
 
 struct pic_heap *
-pic_heap_open()
+pic_heap_open(pic_state *pic)
 {
   struct pic_heap *heap;
 
-  heap = (struct pic_heap *)calloc(1, sizeof(struct pic_heap));
+  heap = pic_calloc(pic, 1, sizeof(struct pic_heap));
   heap_init(heap);
   return heap;
 }
 
 void
-pic_heap_close(struct pic_heap *heap)
+pic_heap_close(pic_state *pic, struct pic_heap *heap)
 {
   struct heap_page *page;
 
   while (heap->pages) {
     page = heap->pages;
     heap->pages = heap->pages->next;
-    free(page);
+    pic_free(pic, page);
   }
 }
 
@@ -510,21 +510,6 @@ gc_mark(pic_state *pic, pic_value v)
   gc_mark_object(pic, obj);
 }
 
-static void
-gc_mark_trie(pic_state *pic, struct pic_trie *trie)
-{
-  size_t i;
-
-  for (i = 0; i < sizeof trie->table / sizeof(struct pic_trie *); ++i) {
-    if (trie->table[i] != NULL) {
-      gc_mark_trie(pic, trie->table[i]);
-    }
-  }
-  if (trie->proc != NULL) {
-    gc_mark_object(pic, (struct pic_object *)trie->proc);
-  }
-}
-
 #define M(x) gc_mark_object(pic, (struct pic_object *)pic->x)
 
 static void
@@ -605,9 +590,6 @@ gc_mark_phase(pic_state *pic)
 
   /* features */
   gc_mark(pic, pic->features);
-
-  /* readers */
-  gc_mark_trie(pic, pic->reader->trie);
 
   /* library table */
   gc_mark(pic, pic->libs);
@@ -722,20 +704,20 @@ static void
 gc_sweep_symbols(pic_state *pic)
 {
   xh_entry *it;
-  xvect xv;
+  xvect_t(xh_entry *) xv;
   size_t i;
   char *cstr;
 
-  xv_init(&xv, sizeof(xh_entry *));
+  xv_init(xv);
 
   for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
     if (! gc_obj_is_marked((struct pic_object *)xh_val(it, pic_sym *))) {
-      xv_push(&xv, &it);
+      xv_push(xh_entry *, xv, it);
     }
   }
 
-  for (i = 0; i < xv_size(&xv); ++i) {
-    cstr = xh_key(*(xh_entry **)xv_get(&xv, i), char *);
+  for (i = 0; i < xv_size(xv); ++i) {
+    cstr = xh_key(xv_A(xv, i), char *);
 
     xh_del_str(&pic->syms, cstr);
 

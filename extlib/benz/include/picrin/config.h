@@ -26,6 +26,8 @@
 
 /* #define PIC_POOL_SIZE 8 */
 
+/* #define PIC_SYMS_SIZE 32 */
+
 /* #define PIC_ISEQ_SIZE 1024 */
 
 /** enable all debug flags */
@@ -83,6 +85,10 @@
 
 #ifndef PIC_POOL_SIZE
 # define PIC_POOL_SIZE 8
+#endif
+
+#ifndef PIC_SYMS_SIZE
+# define PIC_SYMS_SIZE 32
 #endif
 
 #ifndef PIC_ISEQ_SIZE

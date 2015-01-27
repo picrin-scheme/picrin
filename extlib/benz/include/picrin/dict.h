@@ -19,12 +19,9 @@ struct pic_dict {
 
 struct pic_dict *pic_make_dict(pic_state *);
 
-#define pic_dict_for_each(sym, dict)                    \
-  pic_dict_for_each_helper_((sym), PIC_GENSYM(tmp), (dict))
-#define pic_dict_for_each_helper_(var, tmp, dict)                       \
-  for (xh_entry *tmp = xh_begin(&dict->hash);                           \
-       (tmp && ((var = xh_key(tmp, pic_sym *)), 1));                    \
-       tmp = xh_next(tmp))
+#define pic_dict_for_each(sym, dict, it)                                \
+  for (it = xh_begin(&(dict)->hash); it != NULL; it = xh_next(it))      \
+    if ((sym = xh_key(it, pic_sym *)), true)
 
 pic_value pic_dict_ref(pic_state *, struct pic_dict *, pic_sym *);
 void pic_dict_set(pic_state *, struct pic_dict *, pic_sym *, pic_value);

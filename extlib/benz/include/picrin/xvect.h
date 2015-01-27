@@ -1,202 +1,76 @@
 #ifndef XVECT_H__
 #define XVECT_H__
 
-/*
- * Copyright (c) 2014 by Yuichi Nishiwaki <yuichi@idylls.jp>
- */
+/* The MIT License
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+   Copyright (c) 2008, by Attractive Chaos <attractor@live.co.uk>
+   Copyright (c) 2014, by Yuichi Nishiwaki <yuichi@idylls.jp>
 
-typedef struct xvect {
-  char *data;
-  size_t size, mask, head, tail, width;
-} xvect;
+   Permission is hereby granted, free of charge, to any person obtaining
+   a copy of this software and associated documentation files (the
+   "Software"), to deal in the Software without restriction, including
+   without limitation the rights to use, copy, modify, merge, publish,
+   distribute, sublicense, and/or sell copies of the Software, and to
+   permit persons to whom the Software is furnished to do so, subject to
+   the following conditions:
 
-static inline void xv_init(xvect *, size_t);
-static inline void xv_destroy(xvect *);
+   The above copyright notice and this permission notice shall be
+   included in all copies or substantial portions of the Software.
 
-static inline size_t xv_size(xvect *);
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+*/
 
-static inline void xv_reserve(xvect *, size_t);
-static inline void xv_shrink(xvect *, size_t);
+#define xv_realloc(P,Z) pic_realloc(pic,P,Z)
+#define xv_free(P) pic_free(pic,P)
 
-static inline void *xv_get(xvect *, size_t);
-static inline void xv_set(xvect *, size_t, void *);
+#define xv_roundup32(x)                                                 \
+  (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 
-static inline void xv_push(xvect *, void *);
-static inline void *xv_pop(xvect *);
+#define xvect_t(type) struct { size_t n, m; type *a; }
+#define xv_init(v) ((v).n = (v).m = 0, (v).a = 0)
+#define xv_destroy(v) xv_free((v).a)
+#define xv_A(v, i) ((v).a[(i)])
+#define xv_pop(v) ((v).a[--(v).n])
+#define xv_size(v) ((v).n)
+#define xv_max(v) ((v).m)
 
-static inline void *xv_shift(xvect *);
-static inline void xv_unshift(xvect *, void *);
+#define xv_resize(type, v, s)                                           \
+  ((v).m = (s), (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m))
 
-static inline void xv_splice(xvect *, size_t, size_t);
-static inline void xv_insert(xvect *, size_t, void *);
+#define xv_copy(type, v1, v0)                           \
+  do {                                                  \
+    if ((v1).m < (v0).n) xv_resize(type, v1, (v0).n);	\
+    (v1).n = (v0).n;                                    \
+    memcpy((v1).a, (v0).a, sizeof(type) * (v0).n);      \
+  } while (0)                                           \
 
-static inline void
-xv_init(xvect *x, size_t width)
-{
-  x->data = NULL;
-  x->width = width;
-  x->size = 0;
-  x->mask = (size_t)-1;
-  x->head = 0;
-  x->tail = 0;
-}
+#define xv_push(type, v, x)                                     \
+  do {                                                          \
+    if ((v).n == (v).m) {                                       \
+      (v).m = (v).m? (v).m<<1 : 2;                              \
+      (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m);	\
+    }                                                           \
+    (v).a[(v).n++] = (x);                                       \
+  } while (0)
 
-static inline void
-xv_destroy(xvect *x)
-{
-  free(x->data);
-}
+#define xv_pushp(type, v)                                       \
+  (((v).n == (v).m)?                                            \
+   ((v).m = ((v).m? (v).m<<1 : 2),                              \
+    (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m), 0)     \
+   : 0), ((v).a + ((v).n++))
 
-static inline size_t
-xv_size(xvect *x)
-{
-  return x->tail < x->head
-    ? x->tail + x->size - x->head
-    : x->tail - x->head;
-}
-
-static inline size_t
-xv_round2(size_t x)
-{
-  x -= 1;
-  x |= (x >> 1);
-  x |= (x >> 2);
-  x |= (x >> 4);
-  x |= (x >> 8);
-  x |= (x >> 16);
-  x |= (x >> 32);
-  x++;
-  return x;
-}
-
-static inline void
-xv_rotate(xvect *x)
-{
-  if (x->tail < x->head) {
-    char buf[x->size * x->width];
-
-    /* perform rotation */
-    memcpy(buf, x->data, sizeof buf);
-    memcpy(x->data, buf + x->head * x->width, (x->size - x->head) * x->width);
-    memcpy(x->data + (x->size - x->head) * x->width, buf, x->tail * x->width);
-    x->tail = x->size - x->head + x->tail;
-    x->head = 0;
-  }
-}
-
-static inline void
-xv_adjust(xvect *x, size_t size)
-{
-  size = xv_round2(size);
-  if (size != x->size) {
-    xv_rotate(x);
-    x->data = realloc(x->data, size * x->width);
-    x->size = size;
-    x->mask = size - 1;
-  }
-}
-
-static inline void
-xv_reserve(xvect *x, size_t mincapa)
-{
-  if (x->size < mincapa + 1) {
-    xv_adjust(x, mincapa + 1);  /* capa == size - 1 */
-  }
-}
-
-static inline void
-xv_shrink(xvect *x, size_t maxcapa)
-{
-  if (x->size > maxcapa + 1) {
-    xv_adjust(x, maxcapa + 1);  /* capa == size - 1 */
-  }
-}
-
-static inline void *
-xv_get(xvect *x, size_t i)
-{
-  assert(i < xv_size(x));
-
-  return x->data + ((x->head + i) & x->mask) * x->width;
-}
-
-static inline void
-xv_set(xvect *x, size_t i, void *src)
-{
-  memcpy(xv_get(x, i), src, x->width);
-}
-
-static inline void
-xv_push(xvect *x, void *src)
-{
-  xv_reserve(x, xv_size(x) + 1);
-  x->tail = (x->tail + 1) & x->mask;
-  xv_set(x, xv_size(x) - 1, src);
-}
-
-static inline void *
-xv_pop(xvect *x)
-{
-  void *dat;
-
-  assert(xv_size(x) >= 1);
-
-  dat = xv_get(x, xv_size(x) - 1);
-  x->tail = (x->tail - 1) & x->mask;
-  return dat;
-}
-
-static inline void *
-xv_shift(xvect *x)
-{
-  void *dat;
-
-  assert(xv_size(x) >= 1);
-
-  dat = xv_get(x, 0);
-  x->head = (x->head + 1) & x->mask;
-  return dat;
-}
-
-static inline void
-xv_unshift(xvect *x, void *src)
-{
-  xv_reserve(x, xv_size(x) + 1);
-  x->head = (x->head - 1) & x->mask;
-  xv_set(x, 0, src);
-}
-
-static inline void
-xv_splice(xvect *x, size_t i, size_t j)
-{
-  assert(i <= j && j < xv_size(x));
-
-  xv_rotate(x);
-  memmove(xv_get(x, i), xv_get(x, j), (xv_size(x) - j) * x->width);
-  x->tail = (x->tail - j + i) & x->mask;
-}
-
-static inline void
-xv_insert(xvect *x, size_t i, void *src)
-{
-  assert(i <= xv_size(x));
-
-  xv_reserve(x, xv_size(x) + 1);
-  xv_rotate(x);
-  x->tail = (x->tail + 1) & x->mask;
-
-  if (xv_size(x) - 1 != i) {
-    memmove(xv_get(x, i + 1), xv_get(x, i), (xv_size(x) - 1 - i) * x->width);
-  }
-  xv_set(x, i, src);
-}
-
-#if defined(__cplusplus)
-}
-#endif
+#define xv_a(type, v, i)                                        \
+  (((v).m <= (size_t)(i)?                                       \
+    ((v).m = (v).n = (i) + 1, xv_roundup32((v).m),              \
+     (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m), 0)    \
+    : (v).n <= (size_t)(i)? (v).n = (i) + 1                     \
+    : 0), (v).a[(i)])
 
 #endif

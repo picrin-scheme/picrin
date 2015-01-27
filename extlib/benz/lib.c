@@ -73,8 +73,9 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
 {
   struct pic_lib *lib;
   struct pic_dict *table;
-  pic_value val, tmp, prefix;
+  pic_value val, tmp, prefix, it;
   pic_sym *sym, *id, *tag;
+  xh_entry *iter;
 
   table = pic_make_dict(pic);
 
@@ -85,7 +86,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
     if (tag == pic->sONLY) {
       import_table(pic, pic_cadr(pic, spec), table);
 
-      pic_for_each (val, pic_cddr(pic, spec)) {
+      pic_for_each (val, pic_cddr(pic, spec), it) {
         pic_dict_set(pic, imports, pic_sym_ptr(val), pic_dict_ref(pic, table, pic_sym_ptr(val)));
       }
       return;
@@ -93,7 +94,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
     if (tag == pic->sRENAME) {
       import_table(pic, pic_cadr(pic, spec), imports);
 
-      pic_for_each (val, pic_cddr(pic, spec)) {
+      pic_for_each (val, pic_cddr(pic, spec), it) {
         tmp = pic_dict_ref(pic, imports, pic_sym_ptr(pic_car(pic, val)));
         pic_dict_del(pic, imports, pic_sym_ptr(pic_car(pic, val)));
         pic_dict_set(pic, imports, pic_sym_ptr(pic_cadr(pic, val)), tmp);
@@ -104,7 +105,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
       import_table(pic, pic_cadr(pic, spec), table);
 
       prefix = pic_list_ref(pic, spec, 2);
-      pic_dict_for_each (sym, table) {
+      pic_dict_for_each (sym, table, iter) {
         id = pic_intern(pic, pic_format(pic, "~s~s", prefix, pic_obj_value(sym)));
         pic_dict_set(pic, imports, id, pic_dict_ref(pic, table, sym));
       }
@@ -112,7 +113,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
     }
     if (tag == pic->sEXCEPT) {
       import_table(pic, pic_cadr(pic, spec), imports);
-      pic_for_each (val, pic_cddr(pic, spec)) {
+      pic_for_each (val, pic_cddr(pic, spec), it) {
         pic_dict_del(pic, imports, pic_sym_ptr(val));
       }
       return;
@@ -122,7 +123,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   if (! lib) {
     pic_errorf(pic, "library not found: ~a", spec);
   }
-  pic_dict_for_each (sym, lib->exports) {
+  pic_dict_for_each (sym, lib->exports, iter) {
     pic_dict_set(pic, imports, sym, pic_dict_ref(pic, lib->exports, sym));
   }
 }
@@ -132,12 +133,13 @@ import(pic_state *pic, pic_value spec)
 {
   struct pic_dict *imports;
   pic_sym *sym;
+  xh_entry *it;
 
   imports = pic_make_dict(pic);
 
   import_table(pic, spec, imports);
 
-  pic_dict_for_each (sym, imports) {
+  pic_dict_for_each (sym, imports, it) {
     pic_put_rename(pic, pic->lib->env, sym, pic_sym_ptr(pic_dict_ref(pic, imports, sym)));
   }
 }
@@ -202,13 +204,13 @@ static bool
 condexpand(pic_state *pic, pic_value clause)
 {
   pic_sym *tag;
-  pic_value c, feature;
+  pic_value c, feature, it;
 
   if (pic_eq_p(clause, pic_obj_value(pic->sELSE))) {
     return true;
   }
   if (pic_sym_p(clause)) {
-    pic_for_each (feature, pic->features) {
+    pic_for_each (feature, pic->features, it) {
       if(pic_eq_p(feature, clause))
         return true;
     }
@@ -228,14 +230,14 @@ condexpand(pic_state *pic, pic_value clause)
     return ! condexpand(pic, pic_list_ref(pic, clause, 1));
   }
   if (tag == pic->sAND) {
-    pic_for_each (c, pic_cdr(pic, clause)) {
+    pic_for_each (c, pic_cdr(pic, clause), it) {
       if (! condexpand(pic, c))
         return false;
     }
     return true;
   }
   if (tag == pic->sOR) {
-    pic_for_each (c, pic_cdr(pic, clause)) {
+    pic_for_each (c, pic_cdr(pic, clause), it) {
       if (condexpand(pic, c))
         return true;
     }

@@ -302,7 +302,7 @@ static pic_value
 pic_vec_list_to_vector(pic_state *pic)
 {
   struct pic_vector *vec;
-  pic_value list, e, *data;
+  pic_value list, e, it, *data;
 
   pic_get_args(pic, "o", &list);
 
@@ -310,7 +310,7 @@ pic_vec_list_to_vector(pic_state *pic)
 
   data = vec->data;
 
-  pic_for_each (e, list) {
+  pic_for_each (e, list, it) {
     *data++ = e;
   }
   return pic_obj_value(vec);

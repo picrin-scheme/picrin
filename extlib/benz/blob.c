@@ -203,7 +203,7 @@ pic_blob_list_to_bytevector(pic_state *pic)
 {
   pic_blob *blob;
   unsigned char *data;
-  pic_value list, e;
+  pic_value list, e, it;
 
   pic_get_args(pic, "o", &list);
 
@@ -211,7 +211,7 @@ pic_blob_list_to_bytevector(pic_state *pic)
 
   data = blob->data;
 
-  pic_for_each (e, list) {
+  pic_for_each (e, list, it) {
     pic_assert_type(pic, e, int);
 
     if (pic_int(e) < 0 || pic_int(e) > 255)
