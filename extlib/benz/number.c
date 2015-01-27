@@ -14,13 +14,13 @@
 static int
 number_string_length(int val, int radix)
 {
-  long long v = val; /* in case val == INT_MIN */
+  unsigned long v = val; /* in case val == INT_MIN */
   int count = 0;
   if (val == 0) {
     return 1;
   }
   if (val < 0) {
-    v = - v;
+    v = -val;
     count = 1;
   }
   while (v > 0) {
@@ -39,7 +39,7 @@ number_string_length(int val, int radix)
 static void
 number_string(int val, int radix, int length, char *buffer) {
   const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
-  long long v = val;
+  unsigned long v = val;
   int i;
   if (val == 0) {
     buffer[0] = '0';
@@ -48,7 +48,7 @@ number_string(int val, int radix, int length, char *buffer) {
   }
   if (val < 0) {
     buffer[0] = '-';
-    v = -v;
+    v = -val;
   }
 
   for(i = length - 1; v > 0; --i) {
@@ -625,8 +625,8 @@ pic_init_number(pic_state *pic)
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "abs", pic_number_abs);
-  pic_defun(pic, "sqrt", pic_number_sqrt);
   pic_defun(pic, "expt", pic_number_expt);
+  pic_defun(pic, "sqrt", pic_number_sqrt);
   pic_defun(pic, "exp", pic_number_exp);
   pic_defun(pic, "log", pic_number_log);
   pic_defun(pic, "sin", pic_number_sin);
