@@ -25,7 +25,7 @@ read_error(pic_state *pic, const char *msg)
 static int
 skip(struct pic_port *port, int c)
 {
-  while (isspace(c)) {
+  while (pic_isspace(c)) {
     c = xfgetc(port->file);
   }
   return c;
@@ -73,7 +73,7 @@ strcaseeq(const char *s1, const char *s2)
   char a, b;
 
   while ((a = *s1++) * (b = *s2++)) {
-    if (tolower(a) != tolower(b))
+    if (pic_tolower(a) != pic_tolower(b))
       return false;
   }
   return a == b;
@@ -83,7 +83,7 @@ static int
 case_fold(pic_state *pic, int c)
 {
   if (pic->reader->typecase == PIC_CASE_FOLD) {
-    c = tolower(c);
+    c = pic_tolower(c);
   }
   return c;
 }
@@ -229,12 +229,12 @@ read_uinteger(pic_state *pic, struct pic_port *port, int c, char buf[])
 {
   size_t i = 0;
 
-  if (! isdigit(c)) {
+  if (! pic_isdigit(c)) {
     read_error(pic, "expected one or more digits");
   }
 
   buf[i++] = (char)c;
-  while (isdigit(c = peek(port))) {
+  while (pic_isdigit(c = peek(port))) {
     buf[i++] = (char)next(port);
   }
 
@@ -309,7 +309,7 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
 {
   pic_value sym;
 
-  if (isdigit(peek(port))) {
+  if (pic_isdigit(peek(port))) {
     return negate(read_unsigned(pic, port, next(port)));
   }
   else {
@@ -329,7 +329,7 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
 {
   pic_value sym;
 
-  if (isdigit(peek(port))) {
+  if (pic_isdigit(peek(port))) {
     return read_unsigned(pic, port, next(port));
   }
   else {
@@ -501,7 +501,7 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 
   nbits = 0;
 
-  while (isdigit(c = next(port))) {
+  while (pic_isdigit(c = next(port))) {
     nbits = 10 * nbits + c - '0';
   }
 
@@ -664,7 +664,7 @@ read_label(pic_state *pic, struct pic_port *port, int c)
   i = 0;
   do {
     i = i * 10 + c - '0';
-  } while (isdigit(c = next(port)));
+  } while (pic_isdigit(c = next(port)));
 
   if (c == '=') {
     return read_label_set(pic, port, i);

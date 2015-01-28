@@ -39,10 +39,10 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include <ctype.h>
 
 #include "picrin/config.h"
 #include "picrin/util.h"
+#include "picrin/compat.h"
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
