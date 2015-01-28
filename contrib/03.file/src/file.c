@@ -5,6 +5,7 @@
 #include "picrin.h"
 #include "picrin/port.h"
 #include "picrin/error.h"
+#include "xfile_stdio.h"
 
 PIC_NORETURN static void
 file_error(pic_state *pic, const char *msg)

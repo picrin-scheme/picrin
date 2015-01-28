@@ -9,13 +9,16 @@
 #include "picrin/data.h"
 #include "picrin/string.h"
 #include "picrin/error.h"
+#include "picrin/port.h"
 
 void
 pic_panic(pic_state *pic, const char *msg)
 {
   PIC_UNUSED(pic);
 
+#if DEBUG
   fprintf(stderr, "abort: %s\n", msg);
+#endif
   abort();
 }
 

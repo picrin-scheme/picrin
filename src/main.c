@@ -5,6 +5,7 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/error.h"
+#include "xfile_stdio.h"
 
 void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);
@@ -55,7 +56,7 @@ main(int argc, char *argv[], char **envp)
   struct pic_lib *PICRIN_MAIN;
   int status = 0;
 
-  pic = pic_open(argc, argv, envp);
+  pic = pic_open(argc, argv, envp, xstdin, xstdout, xstdout);
 
   pic_init_picrin(pic);
 

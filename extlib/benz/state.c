@@ -146,7 +146,7 @@ pic_init_core(pic_state *pic)
 }
 
 pic_state *
-pic_open(int argc, char *argv[], char **envp)
+pic_open(int argc, char *argv[], char **envp, xFILE *xstdin, xFILE *xstdout, xFILE *xstderr)
 {
   struct pic_port *pic_make_standard_port(pic_state *, xFILE *, short);
   char t;

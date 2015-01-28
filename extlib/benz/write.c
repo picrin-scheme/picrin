@@ -406,7 +406,7 @@ display(pic_state *pic, pic_value obj, xFILE *file)
 pic_value
 pic_write(pic_state *pic, pic_value obj)
 {
-  return pic_fwrite(pic, obj, xstdout);
+  return pic_fwrite(pic, obj, pic_stdout(pic)->file);
 }
 
 pic_value
@@ -420,7 +420,7 @@ pic_fwrite(pic_state *pic, pic_value obj, xFILE *file)
 pic_value
 pic_display(pic_state *pic, pic_value obj)
 {
-  return pic_fdisplay(pic, obj, xstdout);
+  return pic_fdisplay(pic, obj, pic_stdout(pic)->file);
 }
 
 pic_value

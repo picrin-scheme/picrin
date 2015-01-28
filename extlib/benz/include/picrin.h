@@ -34,7 +34,6 @@ extern "C" {
 #include <limits.h>
 #include <stdarg.h>
 
-#include <stdio.h>
 #include <setjmp.h>
 #include <assert.h>
 #include <string.h>
@@ -157,7 +156,7 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-pic_state *pic_open(int argc, char *argv[], char **envp);
+pic_state *pic_open(int argc, char *argv[], char **envp, xFILE *xstdin, xFILE *xstdout, xFILE *stderr);
 void pic_close(pic_state *);
 
 void pic_add_feature(pic_state *, const char *);

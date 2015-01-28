@@ -6,6 +6,7 @@
 #include "picrin/pair.h"
 #include "picrin/port.h"
 #include "picrin/error.h"
+#include "xfile_stdio.h"
 
 void
 pic_load(pic_state *pic, const char *filename)
