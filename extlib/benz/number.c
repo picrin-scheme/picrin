@@ -404,11 +404,15 @@ pic_number_number_to_string(pic_state *pic)
     number_string(ival, radix, ilen, buf);
   }
   else {
-    s = snprintf(NULL, 0, "%f", f) + 1;
+    xFILE *file = xmopen();
 
+    xfprintf(file, "%f", f);
+
+    s = xftell(file);
     buf = pic_malloc(pic, s);
-
-    snprintf(buf, s, "%f", f);
+    xrewind(file);
+    xfread(buf, s, 1, file);
+    xfclose(file);
   }
   str = pic_make_str(pic, buf, s - 1);
 
