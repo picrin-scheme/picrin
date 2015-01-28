@@ -5,6 +5,7 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/error.h"
+#include "picrin/string.h"
 #include "xfile_stdio.h"
 
 void pic_init_contrib(pic_state *);
@@ -66,7 +67,7 @@ main(int argc, char *argv[], char **envp)
     pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
   }
   pic_catch {
-    pic_print_backtrace(pic);
+    fputs(pic_str_cstr(pic_format_error(pic)), stderr);
     status = 1;
   }
 

@@ -434,6 +434,7 @@ pic_fdisplay(pic_state *pic, pic_value obj, xFILE *file)
 void
 pic_printf(pic_state *pic, const char *fmt, ...)
 {
+  xFILE *file = pic_stdout(pic)->file;
   va_list ap;
   pic_str *str;
 
@@ -443,8 +444,8 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 
   va_end(ap);
 
-  xprintf("%s", pic_str_cstr(str));
-  xfflush(xstdout);
+  xfprintf(file, "%s", pic_str_cstr(str));
+  xfflush(file);
 }
 
 static pic_value
