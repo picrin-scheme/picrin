@@ -38,7 +38,6 @@ extern "C" {
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "picrin/config.h"
 #include "picrin/util.h"
