@@ -3,17 +3,24 @@
 #define XF_EOF 1
 #define XF_ERR 2
 
+static xFILE pool[XFOPEN_MAX];
+
 xFILE *
 xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*flush)(void *), int (*close)(void *))
 {
   xFILE *file;
 
-  file = (xFILE *)malloc(sizeof(xFILE));
-  if (! file) {
+  for (file = pool; file < pool + XFOPEN_MAX; file++) {
+    if (file->vtable.read == 0 && file->vtable.write == 0) {
+      break;
+    }
+  }
+  if (file >= pool + XFOPEN_MAX) {
     return NULL;
   }
+
   file->ungot = -1;
-  file->flags = 0;
+  file->err = 0;
   /* set vtable */
   file->vtable.cookie = cookie;
   file->vtable.read = read;
@@ -34,8 +41,8 @@ xfclose(xFILE *file)
   if (r == EOF) {
     return -1;
   }
-
-  free(file);
+  file->vtable.read = NULL;
+  file->vtable.write = NULL;
   return 0;
 }
 
@@ -69,11 +76,11 @@ xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
     while (offset < block) {
       n = file->vtable.read(file->vtable.cookie, buf + offset, (int)(block - offset));
       if (n < 0) {
-        file->flags |= XF_ERR;
+        file->err |= XF_ERR;
         goto exit;
       }
       if (n == 0) {
-        file->flags |= XF_EOF;
+        file->err |= XF_EOF;
         goto exit;
       }
       offset += (unsigned)n;
@@ -102,7 +109,7 @@ xfwrite(const void *ptr, size_t block, size_t nitems, xFILE *file)
     while (offset < block) {
       n = file->vtable.write(file->vtable.cookie, dst + offset, (int)(block - offset));
       if (n < 0) {
-        file->flags |= XF_ERR;
+        file->err |= XF_ERR;
         goto exit;
       }
       offset += (unsigned)n;
@@ -136,19 +143,19 @@ xrewind(xFILE *file)
 void
 xclearerr(xFILE *file)
 {
-  file->flags = 0;
+  file->err = 0;
 }
 
 int
 xfeof(xFILE *file)
 {
-  return file->flags & XF_EOF;
+  return file->err & XF_EOF;
 }
 
 int
 xferror(xFILE *file)
 {
-  return file->flags & XF_ERR;
+  return file->err & XF_ERR;
 }
 
 int
@@ -198,7 +205,7 @@ xungetc(int c, xFILE *file)
 {
   file->ungot = c;
   if (c != EOF) {
-    file->flags &= ~XF_EOF;
+    file->err &= ~XF_EOF;
   }
   return c;
 }
@@ -306,7 +313,7 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
       dval = va_arg(ap, double);
       print_int(stream, dval, 10);
       xputc('.', stream);
-      print_int(stream, ABS((dval - (int)dval) * 1e4), 10);
+      print_int(stream, ABS((dval - floor(dval)) * 1e4), 10);
       break;
 #endif
     case 's':
