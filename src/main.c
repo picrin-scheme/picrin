@@ -67,7 +67,7 @@ main(int argc, char *argv[], char **envp)
     pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
   }
   pic_catch {
-    fputs(pic_str_cstr(pic_format_error(pic)), stderr);
+    pic_print_backtrace(pic, xstderr);
     status = 1;
   }
 

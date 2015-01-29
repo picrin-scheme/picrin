@@ -35,35 +35,28 @@ pic_get_backtrace(pic_state *pic)
   return trace;
 }
 
-pic_str *
-pic_format_error(pic_state *pic)
+void
+pic_print_backtrace(pic_state *pic, xFILE *file)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_str *fmt;
-
   assert(! pic_undef_p(pic->err));
 
   if (! pic_error_p(pic->err)) {
-    fmt = pic_format(pic, "raised: ~s", pic->err);
+    xfprintf(file, "raise: ");
+    pic_fwrite(pic, pic->err, file);
   } else {
     struct pic_error *e;
 
     e = pic_error_ptr(pic->err);
     if (e->type != pic_intern_cstr(pic, "")) {
-      fmt = pic_format(pic, "~s ", pic_obj_value(e->type));
-    } else {
-      fmt = pic_make_str(pic, NULL, 0);
+      pic_fwrite(pic, pic_obj_value(e->type), file);
+      xfprintf(file, " ");
     }
-    fmt = pic_strcat(pic, fmt, pic_format(pic, "error: ~s", pic_obj_value(e->msg)));
+    xfprintf(file, "error: ");
+    pic_fwrite(pic, pic_obj_value(e->msg), file);
+    xfprintf(file, "\n");
 
     /* TODO: print error irritants */
 
-    fmt = pic_strcat(pic, fmt, pic_make_str(pic, "\n", 1));
-    fmt = pic_strcat(pic, fmt, e->stack);
+    xfputs(pic_str_cstr(e->stack), file);
   }
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, pic_obj_value(fmt));
-
-  return fmt;
 }
