@@ -5,6 +5,7 @@
 #include "picrin.h"
 #include "picrin/string.h"
 #include "picrin/cont.h"
+#include "picrin/port.h"
 
 #if ! PIC_ENABLE_FLOAT
 static pic_value
@@ -568,8 +569,6 @@ pic_number_number_to_string(pic_state *pic)
   bool e;
   int radix = 10;
   pic_str *str;
-  size_t s;
-  char *buf;
 
   pic_get_args(pic, "F|i", &f, &e, &radix);
 
@@ -580,26 +579,24 @@ pic_number_number_to_string(pic_state *pic)
   if (e) {
     int ival = (int) f;
     int ilen = number_string_length(ival, radix);
-    s = ilen + 1;
-
-    buf = pic_malloc(pic, s);
+    size_t s = ilen + 1;
+    char *buf = pic_malloc(pic, s);
 
     number_string(ival, radix, ilen, buf);
+
+    str = pic_make_str(pic, buf, s - 1);
+
+    pic_free(pic, buf);
   }
   else {
-    xFILE *file = xmopen();
+    struct pic_port *port = pic_open_output_string(pic);
 
-    xfprintf(file, "%f", f);
+    xfprintf(port->file, "%f", f);
 
-    s = xftell(file);
-    buf = pic_malloc(pic, s);
-    xrewind(file);
-    xfread(buf, s, 1, file);
-    xfclose(file);
+    str = pic_get_output_string(pic, port);
+
+    pic_close_port(pic, port);
   }
-  str = pic_make_str(pic, buf, s - 1);
-
-  pic_free(pic, buf);
 
   return pic_obj_value(str);
 }
