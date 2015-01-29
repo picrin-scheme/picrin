@@ -67,7 +67,7 @@ isdelim(int c)
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
-#if PIE_ENABLE_FLOAT
+#if PIC_ENABLE_FLOAT
 static bool
 strcaseeq(const char *s1, const char *s2)
 {

@@ -448,7 +448,9 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
   const char *p;
   char *sval;
   int ival;
+#if PIC_ENABLE_FLOAT
   double dval;
+#endif
   void *vp;
   long seekr = xftell(stream);
 
@@ -463,12 +465,14 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
       ival = va_arg(ap, int);
       xfile_printint(stream, ival, 10);
       break;
+#if PIC_ENABLE_FLOAT
     case 'f':
       dval = va_arg(ap, double);
       xfile_printint(stream, dval, 10);
       xputc('.', stream);
       xfile_printint(stream, XFILE_ABS((dval - (int)dval) * 1e4), 10);
       break;
+#endif
     case 's':
       sval = va_arg(ap, char*);
       xfputs(sval, stream);
@@ -476,9 +480,13 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
     case 'p':
       vp = va_arg(ap, void*);
       xfputs("0x", stream);
-      xfile_printint(stream, dval, 16);
+      xfile_printint(stream, (long)vp, 16);
+      break;
+    case '%':
+      xputc(*(p-1), stream);
       break;
     default:
+      xputc('%', stream);
       xputc(*(p-1), stream);
       break;
     }

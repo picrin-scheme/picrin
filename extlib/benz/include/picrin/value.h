@@ -169,7 +169,21 @@ PIC_INLINE const char *pic_type_repr(enum pic_tt);
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-PIC_INLINE bool pic_valid_int(double);
+#if PIC_ENABLE_FLOAT
+PIC_INLINE bool
+pic_valid_int(double v)
+{
+  return INT_MIN <= v && v <= INT_MAX;
+}
+
+#else
+PIC_INLINE bool
+pic_valid_int(int v)
+{
+  PIC_UNUSED(v);
+  return true;
+}
+#endif
 
 PIC_INLINE pic_value pic_nil_value();
 PIC_INLINE pic_value pic_true_value();
@@ -269,12 +283,6 @@ pic_type_repr(enum pic_tt tt)
     return "record";
   }
   PIC_UNREACHABLE();
-}
-
-PIC_INLINE bool
-pic_valid_int(double v)
-{
-  return INT_MIN <= v && v <= INT_MAX;
 }
 
 PIC_INLINE pic_value
