@@ -440,6 +440,8 @@ xfile_printint(xFILE *stream, long x, int base)
   }
 }
 
+#define XFILE_ABS(x) ((x) < 0 ? -(x) : (x))
+
 PIC_INLINE int
 xvfprintf(xFILE *stream, const char *fmt, va_list ap)
 {
@@ -465,7 +467,7 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
       dval = va_arg(ap, double);
       xfile_printint(stream, dval, 10);
       xputc('.', stream);
-      xfile_printint(stream, fabs((dval - (int)dval) * 1e4), 10);
+      xfile_printint(stream, XFILE_ABS((dval - (int)dval) * 1e4), 10);
       break;
     case 's':
       sval = va_arg(ap, char*);

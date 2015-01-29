@@ -285,6 +285,7 @@ write_core(struct writer_control *p, pic_value obj)
     case '\t': xfprintf(file, "#\\tab"); break;
     }
     break;
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     f = pic_float(obj);
     if (isnan(f)) {
@@ -295,6 +296,7 @@ write_core(struct writer_control *p, pic_value obj)
       xfprintf(file, "%f", pic_float(obj));
     }
     break;
+#endif
   case PIC_TT_INT:
     xfprintf(file, "%d", pic_int(obj));
     break;

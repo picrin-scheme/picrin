@@ -8,6 +8,9 @@
 /** switch internal value representation */
 /* #define PIC_NAN_BOXING 1 */
 
+/** enable floating point number support */
+/* #define PIC_ENABLE_FLOAT 1 */
+
 /** treat false value as none */
 /* #define PIC_NONE_IS_FALSE 1 */
 
@@ -49,6 +52,14 @@
 # if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
 #  define PIC_NAN_BOXING 1
 # endif
+#endif
+
+#ifndef PIC_ENABLE_FLOAT
+# define PIC_ENABLE_FLOAT 1
+#endif
+
+#if PIC_NAN_BOXING && defined(PIC_ENABLE_FLOAT) && ! PIC_ENABLE_FLOAT
+# error cannot disable float support when nan boxing is on
 #endif
 
 #ifndef PIC_NONE_IS_FALSE
