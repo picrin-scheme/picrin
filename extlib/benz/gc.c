@@ -169,7 +169,7 @@ pic_free(pic_state *pic, void *ptr)
 {
   PIC_UNUSED(pic);
 
-  free(ptr);
+  alloc(ptr, 0);
 }
 
 static void
