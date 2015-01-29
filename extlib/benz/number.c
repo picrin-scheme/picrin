@@ -525,16 +525,24 @@ pic_number_expt(pic_state *pic)
 static pic_value
 pic_number_expt(pic_state *pic)
 {
-  int x, y, i, e = 1, r = 1;
+  int x, y, i, e = 1, r = 1, s = 0;
 
   pic_get_args(pic, "ii", &x, &y);
 
-  for (i = 0; i < 32; ++i) {
-    e *= x;
+  if (y < 0) {
+    s = 1;
+    y = -y;
+  }
+  e = x;
+  for (i = 0; y; ++i) {
     if ((y & 1) != 0) {
       r *= e;
     }
+    e *= e;
     y >>= 1;
+  }
+  if (s != 0) {
+    r = 1 / r;
   }
   return pic_int_value(r);
 }
