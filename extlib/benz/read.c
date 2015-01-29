@@ -64,7 +64,7 @@ expect(struct pic_port *port, const char *str)
 static bool
 isdelim(int c)
 {
-  return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
+  return c == EOF || pic_strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
 #if PIC_ENABLE_FLOAT

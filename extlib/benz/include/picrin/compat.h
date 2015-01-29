@@ -27,6 +27,16 @@ pic_isdigit(int c)
   return '0' <= c && c <= '9';
 }
 
+PIC_INLINE char *
+pic_strchr(const char *s, int c)
+{
+  do {
+    if (*s == c)
+      return (char *)s;
+  } while (*s++ != '\0');
+  return NULL;
+}
+
 #if defined(__cplusplus)
 }
 #endif
