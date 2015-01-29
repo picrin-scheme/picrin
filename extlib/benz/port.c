@@ -60,6 +60,99 @@ pic_make_standard_port(pic_state *pic, xFILE *file, short dir)
   return port;
 }
 
+struct xf_membuf {
+  char *buf;
+  long pos, end, capa;
+};
+
+int
+xf_mem_read(void *cookie, char *ptr, int size)
+{
+  struct xf_membuf *mem;
+
+  mem = (struct xf_membuf *)cookie;
+
+  if (size > (int)(mem->end - mem->pos))
+    size = (int)(mem->end - mem->pos);
+  memcpy(ptr, mem->buf + mem->pos, size);
+  mem->pos += size;
+  return size;
+}
+
+int
+xf_mem_write(void *cookie, const char *ptr, int size)
+{
+  struct xf_membuf *mem;
+
+  mem = (struct xf_membuf *)cookie;
+
+  if (mem->pos + size >= mem->capa) {
+    mem->capa = (mem->pos + size) * 2;
+    mem->buf = realloc(mem->buf, (size_t)mem->capa);
+  }
+  memcpy(mem->buf + mem->pos, ptr, size);
+  mem->pos += size;
+  if (mem->end < mem->pos)
+    mem->end = mem->pos;
+  return size;
+}
+
+long
+xf_mem_seek(void *cookie, long pos, int whence)
+{
+  struct xf_membuf *mem;
+
+  mem = (struct xf_membuf *)cookie;
+
+  switch (whence) {
+  case XF_SEEK_SET:
+    mem->pos = pos;
+    break;
+  case XF_SEEK_CUR:
+    mem->pos += pos;
+    break;
+  case XF_SEEK_END:
+    mem->pos = mem->end + pos;
+    break;
+  }
+
+  return mem->pos;
+}
+
+int
+xf_mem_flush(void *cookie)
+{
+  (void)cookie;
+
+  return 0;
+}
+
+int
+xf_mem_close(void *cookie)
+{
+  struct xf_membuf *mem;
+
+  mem = (struct xf_membuf *)cookie;
+  free(mem->buf);
+  free(mem);
+  return 0;
+}
+
+xFILE *
+xmopen()
+{
+  static const size_t size = 128;
+  struct xf_membuf *mem;
+
+  mem = (struct xf_membuf *)malloc(sizeof(struct xf_membuf));
+  mem->buf = (char *)malloc(size);
+  mem->pos = 0;
+  mem->end = 0;
+  mem->capa = size;
+
+  return xfunopen(mem, xf_mem_read, xf_mem_write, xf_mem_seek, xf_mem_flush, xf_mem_close);
+}
+
 struct pic_port *
 pic_open_input_string(pic_state *pic, const char *str)
 {
