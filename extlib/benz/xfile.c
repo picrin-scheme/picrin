@@ -317,7 +317,15 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
       dval = va_arg(ap, double);
       print_int(stream, dval, 10);
       xputc('.', stream);
-      print_int(stream, ABS((dval - floor(dval)) * 1e4), 10);
+      if ((ival = ABS((dval - floor(dval)) * 1e4) + 0.5) == 0) {
+        xfputs("0000", stream);
+      } else {
+        int i;
+        for (i = 0; i < 3 - (int)log10(ival); ++i) {
+          xputc('0', stream);
+        }
+        print_int(stream, ival, 10);
+      }
       break;
 #endif
     case 's':
