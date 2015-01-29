@@ -37,6 +37,10 @@ xfclose(xFILE *file)
 {
   int r;
 
+  r = xfflush(file);
+  if (r == EOF) {
+    return -1;
+  }
   r = file->vtable.close(file->vtable.cookie);
   if (r == EOF) {
     return -1;
