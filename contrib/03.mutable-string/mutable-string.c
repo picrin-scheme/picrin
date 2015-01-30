@@ -16,8 +16,8 @@ pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
 
   tmp = pic_strcat(pic, x, pic_strcat(pic, y, z));
 
-  XROPE_INCREF(tmp->rope);
-  XROPE_DECREF(str->rope);
+  pic_rope_incref(tmp->rope);
+  pic_rope_decref(str->rope);
   str->rope = tmp->rope;
 }
 

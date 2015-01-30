@@ -14,8 +14,8 @@ struct pic_string {
   struct pic_rope *rope;
 };
 
-void XROPE_INCREF(struct pic_rope *);
-void XROPE_DECREF(struct pic_rope *);
+void pic_rope_incref(struct pic_rope *);
+void pic_rope_decref(struct pic_rope *);
 
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))

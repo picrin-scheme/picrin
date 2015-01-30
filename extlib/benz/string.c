@@ -23,47 +23,46 @@ struct pic_rope {
   struct pic_rope *left, *right;
 };
 
-#define XR_CHUNK_INCREF(c) do {                 \
+#define CHUNK_INCREF(c) do {                    \
     (c)->refcnt++;                              \
   } while (0)
 
-#define XR_CHUNK_DECREF(c) do {                 \
-    struct pic_chunk *c__ = (c);                \
-    if (! --c__->refcnt) {                      \
-      if (c__->autofree)                        \
-        free(c__->str);                         \
-      free(c__);                                \
+#define CHUNK_DECREF(c) do {                    \
+    struct pic_chunk *c_ = (c);                 \
+    if (! --c_->refcnt) {                       \
+      if (c_->autofree)                         \
+        free(c_->str);                          \
+      free(c_);                                 \
     }                                           \
   } while (0)
 
 void
-XROPE_INCREF(struct pic_rope *x) {
+pic_rope_incref(struct pic_rope *x) {
   x->refcnt++;
 }
 
 void
-XROPE_DECREF(struct pic_rope *x) {
+pic_rope_decref(struct pic_rope *x) {
   if (! --x->refcnt) {
     if (x->chunk) {
-      XR_CHUNK_DECREF(x->chunk);
+      CHUNK_DECREF(x->chunk);
       free(x);
       return;
     }
-    XROPE_DECREF(x->left);
-    XROPE_DECREF(x->right);
+    pic_rope_decref(x->left);
+    pic_rope_decref(x->right);
     free(x);
   }
 }
 
-static struct pic_rope *
-xr_new_copy(const char *str, size_t len)
+static struct pic_chunk *
+pic_make_chunk(const char *str, size_t len)
 {
   char *buf;
   struct pic_chunk *c;
-  struct pic_rope *x;
 
   buf = (char *)malloc(len + 1);
-  buf[len] = '\0';
+  buf[len] = 0;
   memcpy(buf, str, len);
 
   c = (struct pic_chunk *)malloc(sizeof(struct pic_chunk));
@@ -73,15 +72,33 @@ xr_new_copy(const char *str, size_t len)
   c->autofree = 1;
   c->zeroterm = 1;
 
+  return c;
+}
+
+static struct pic_rope *
+pic_make_rope(struct pic_chunk *c)
+{
+  struct pic_rope *x;
+
   x = (struct pic_rope *)malloc(sizeof(struct pic_rope));
   x->refcnt = 1;
   x->left = NULL;
   x->right = NULL;
   x->weight = c->len;
   x->offset = 0;
-  x->chunk = c;
+  x->chunk = c;                 /* delegate ownership */
 
   return x;
+}
+
+static pic_str *
+pic_make_string(pic_state *pic, struct pic_rope *rope)
+{
+  pic_str *str;
+
+  str = (pic_str *)pic_obj_alloc(pic, sizeof(pic_str), PIC_TT_STRING);
+  str->rope = rope;             /* delegate ownership */
+  return str;
 }
 
 static size_t
@@ -117,8 +134,8 @@ xr_cat(struct pic_rope *x, struct pic_rope *y)
   z->offset = 0;
   z->chunk = NULL;
 
-  XROPE_INCREF(x);
-  XROPE_INCREF(y);
+  pic_rope_incref(x);
+  pic_rope_incref(y);
 
   return z;
 }
@@ -130,7 +147,7 @@ xr_sub(struct pic_rope *x, size_t i, size_t j)
   assert(j <= x->weight);
 
   if (i == 0 && x->weight == j) {
-    XROPE_INCREF(x);
+    pic_rope_incref(x);
     return x;
   }
 
@@ -145,7 +162,7 @@ xr_sub(struct pic_rope *x, size_t i, size_t j)
     y->offset = x->offset + i;
     y->chunk = x->chunk;
 
-    XR_CHUNK_INCREF(x->chunk);
+    CHUNK_INCREF(x->chunk);
 
     return y;
   }
@@ -163,8 +180,8 @@ xr_sub(struct pic_rope *x, size_t i, size_t j)
     r = xr_sub(x->right, 0, j - x->left->weight);
     x = xr_cat(l, r);
 
-    XROPE_DECREF(l);
-    XROPE_DECREF(r);
+    pic_rope_decref(l);
+    pic_rope_decref(r);
 
     return x;
   }
@@ -175,22 +192,22 @@ xr_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
 {
   if (x->chunk) {
     memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
-    XR_CHUNK_DECREF(x->chunk);
+    CHUNK_DECREF(x->chunk);
 
     x->chunk = c;
     x->offset = offset;
-    XR_CHUNK_INCREF(c);
+    CHUNK_INCREF(c);
     return;
   }
   xr_fold(x->left, c, offset);
   xr_fold(x->right, c, offset + x->left->weight);
 
-  XROPE_DECREF(x->left);
-  XROPE_DECREF(x->right);
+  pic_rope_decref(x->left);
+  pic_rope_decref(x->right);
   x->left = x->right = NULL;
   x->chunk = c;
   x->offset = offset;
-  XR_CHUNK_INCREF(c);
+  CHUNK_INCREF(c);
 }
 
 static const char *
@@ -212,18 +229,8 @@ xr_cstr(struct pic_rope *x)
 
   xr_fold(x, c, 0);
 
-  XR_CHUNK_DECREF(c);
+  CHUNK_DECREF(c);
   return c->str;
-}
-
-static pic_str *
-make_str_rope(pic_state *pic, struct pic_rope *rope)
-{
-  pic_str *str;
-
-  str = (pic_str *)pic_obj_alloc(pic, sizeof(pic_str), PIC_TT_STRING);
-  str->rope = rope;             /* delegate ownership */
-  return str;
 }
 
 pic_str *
@@ -232,7 +239,7 @@ pic_make_str(pic_state *pic, const char *imbed, size_t len)
   if (imbed == NULL && len > 0) {
     pic_errorf(pic, "zero length specified against NULL ptr");
   }
-  return make_str_rope(pic, xr_new_copy(imbed, len));
+  return pic_make_string(pic, pic_make_rope(pic_make_chunk(imbed, len)));
 }
 
 pic_str *
@@ -281,13 +288,13 @@ pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 pic_str *
 pic_strcat(pic_state *pic, pic_str *a, pic_str *b)
 {
-  return make_str_rope(pic, xr_cat(a->rope, b->rope));
+  return pic_make_string(pic, xr_cat(a->rope, b->rope));
 }
 
 pic_str *
 pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
 {
-  return make_str_rope(pic, xr_sub(str->rope, s, e));
+  return pic_make_string(pic, xr_sub(str->rope, s, e));
 }
 
 int
