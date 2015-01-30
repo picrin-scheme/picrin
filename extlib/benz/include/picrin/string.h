@@ -14,21 +14,6 @@ struct pic_string {
   struct pic_rope *rope;
 };
 
-struct pic_chunk {
-  char *str;
-  int refcnt;
-  size_t len;
-  char autofree, zeroterm;
-};
-
-struct pic_rope {
-  int refcnt;
-  size_t weight;
-  struct pic_chunk *chunk;
-  size_t offset;
-  struct pic_rope *left, *right;
-};
-
 void XROPE_INCREF(struct pic_rope *);
 void XROPE_DECREF(struct pic_rope *);
 
