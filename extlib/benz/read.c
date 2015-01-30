@@ -522,7 +522,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
           if (i >= sizeof HEX_BUF)
             read_error(pic, "expected ';'");
         }
-        c = (char)strtol(HEX_BUF, NULL, 16);
+        c = (char)pic_strtol(HEX_BUF, NULL, 16);
         break;
       }
     }
