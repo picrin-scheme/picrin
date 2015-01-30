@@ -175,7 +175,7 @@ pic_open(pic_allocf allocf, int argc, char *argv[], char **envp, xFILE *xstdin, 
   pic->envp = envp;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = calloc(PIC_STACK_SIZE, sizeof(pic_value));
+  pic->stbase = pic->sp = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   if (! pic->sp) {
@@ -183,7 +183,7 @@ pic_open(pic_allocf allocf, int argc, char *argv[], char **envp, xFILE *xstdin, 
   }
 
   /* callinfo */
-  pic->cibase = pic->ci = calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
+  pic->cibase = pic->ci = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   if (! pic->ci) {
@@ -191,7 +191,7 @@ pic_open(pic_allocf allocf, int argc, char *argv[], char **envp, xFILE *xstdin, 
   }
 
   /* exception handler */
-  pic->xpbase = pic->xp = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_proc *));
+  pic->xpbase = pic->xp = allocf(NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   if (! pic->xp) {
@@ -199,7 +199,7 @@ pic_open(pic_allocf allocf, int argc, char *argv[], char **envp, xFILE *xstdin, 
   }
 
   /* GC arena */
-  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena = allocf(NULL, PIC_ARENA_SIZE * sizeof(struct pic_object **));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
