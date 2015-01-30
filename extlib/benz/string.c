@@ -111,15 +111,18 @@ rope_len(struct pic_rope *x)
 static char
 rope_at(struct pic_rope *x, size_t i)
 {
-  if (x->weight <= i) {
-    return -1;
+  while (i < x->weight) {
+    if (x->chunk) {
+      return x->chunk->str[x->offset + i];
+    }
+    if (i < x->left->weight) {
+      x = x->left;
+    } else {
+      x = x->right;
+      i -= x->left->weight;
+    }
   }
-  if (x->chunk) {
-    return x->chunk->str[x->offset + i];
-  }
-  return (i < x->left->weight)
-    ? rope_at(x->left, i)
-    : rope_at(x->right, i - x->left->weight);
+  return -1;
 }
 
 static struct pic_rope *
