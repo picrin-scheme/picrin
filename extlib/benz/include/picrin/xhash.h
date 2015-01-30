@@ -287,9 +287,15 @@ xh_str_hash(const void *key, void *data)
 PIC_INLINE int
 xh_str_equal(const void *key1, const void *key2, void *data)
 {
+  const char *s1 = *(const char **)key1, *s2 = *(const char **)key2;
+
   (void)data;
 
-  return strcmp(*(const char **)key1, *(const char **)key2) == 0;
+  while (*s1 && *s1 == *s2) {
+    s1++;
+    s2++;
+  }
+  return *(const unsigned char*)s1 == *(const unsigned char*)s2;
 }
 
 PIC_INLINE void

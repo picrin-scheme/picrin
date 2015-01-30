@@ -303,7 +303,7 @@ pic_str_sub(pic_state *pic, pic_str *str, size_t s, size_t e)
 int
 pic_str_cmp(pic_state *pic, pic_str *str1, pic_str *str2)
 {
-  return strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
+  return pic_strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
 }
 
 const char *
