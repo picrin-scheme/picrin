@@ -12,7 +12,7 @@ struct pic_chunk {
   char *str;
   int refcnt;
   size_t len;
-  char autofree, zeroterm;
+  char autofree;
 };
 
 struct pic_rope {
@@ -70,7 +70,6 @@ pic_make_chunk(const char *str, size_t len)
   c->str = buf;
   c->len = len;
   c->autofree = 1;
-  c->zeroterm = 1;
 
   return c;
 }
@@ -215,7 +214,7 @@ rope_cstr(struct pic_rope *x)
 {
   struct pic_chunk *c;
 
-  if (x->chunk && x->offset == 0 && x->weight == x->chunk->len && x->chunk->zeroterm) {
+  if (x->chunk && x->offset == 0 && x->weight == x->chunk->len) {
     return x->chunk->str;       /* reuse cached chunk */
   }
 
@@ -223,7 +222,6 @@ rope_cstr(struct pic_rope *x)
   c->refcnt = 1;
   c->len = x->weight;
   c->autofree = 1;
-  c->zeroterm = 1;
   c->str = (char *)malloc(c->len + 1);
   c->str[c->len] = '\0';
 
