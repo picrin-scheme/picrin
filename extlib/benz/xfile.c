@@ -228,13 +228,7 @@ xputc(int c, xFILE *file)
 int
 xfputs(const char *str, xFILE *file)
 {
-  const char *s = str;
-  size_t len = 0;
-
-  while (*s++) {
-    len++;
-  }
-  xfwrite(str, len, 1, file);
+  xfwrite(str, strlen(str), 1, file);
 
   if (xferror(file)) {
     return EOF;

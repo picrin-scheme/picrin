@@ -291,11 +291,7 @@ xh_str_equal(const void *key1, const void *key2, void *data)
 
   (void)data;
 
-  while (*s1 && *s1 == *s2) {
-    s1++;
-    s2++;
-  }
-  return *(const unsigned char*)s1 == *(const unsigned char*)s2;
+  return strcmp(s1, s2) == 0;
 }
 
 PIC_INLINE void
