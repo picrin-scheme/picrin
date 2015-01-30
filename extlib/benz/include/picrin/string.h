@@ -21,19 +21,6 @@ struct pic_chunk {
   char autofree, zeroterm;
 };
 
-#define XR_CHUNK_INCREF(c) do {                 \
-    (c)->refcnt++;                              \
-  } while (0)
-
-#define XR_CHUNK_DECREF(c) do {                 \
-    struct pic_chunk *c__ = (c);                \
-    if (! --c__->refcnt) {                      \
-      if (c__->autofree)                        \
-        free(c__->str);                         \
-      free(c__);                                \
-    }                                           \
-  } while (0)
-
 struct pic_rope {
   int refcnt;
   size_t weight;
@@ -42,24 +29,8 @@ struct pic_rope {
   struct pic_rope *left, *right;
 };
 
-PIC_INLINE void
-XROPE_INCREF(struct pic_rope *x) {
-  x->refcnt++;
-}
-
-PIC_INLINE void
-XROPE_DECREF(struct pic_rope *x) {
-  if (! --x->refcnt) {
-    if (x->chunk) {
-      XR_CHUNK_DECREF(x->chunk);
-      free(x);
-      return;
-    }
-    XROPE_DECREF(x->left);
-    XROPE_DECREF(x->right);
-    free(x);
-  }
-}
+void XROPE_INCREF(struct pic_rope *);
+void XROPE_DECREF(struct pic_rope *);
 
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))

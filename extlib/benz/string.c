@@ -8,7 +8,39 @@
 #include "picrin/port.h"
 #include "picrin/error.h"
 
-PIC_INLINE struct pic_rope *
+#define XR_CHUNK_INCREF(c) do {                 \
+    (c)->refcnt++;                              \
+  } while (0)
+
+#define XR_CHUNK_DECREF(c) do {                 \
+    struct pic_chunk *c__ = (c);                \
+    if (! --c__->refcnt) {                      \
+      if (c__->autofree)                        \
+        free(c__->str);                         \
+      free(c__);                                \
+    }                                           \
+  } while (0)
+
+void
+XROPE_INCREF(struct pic_rope *x) {
+  x->refcnt++;
+}
+
+void
+XROPE_DECREF(struct pic_rope *x) {
+  if (! --x->refcnt) {
+    if (x->chunk) {
+      XR_CHUNK_DECREF(x->chunk);
+      free(x);
+      return;
+    }
+    XROPE_DECREF(x->left);
+    XROPE_DECREF(x->right);
+    free(x);
+  }
+}
+
+static struct pic_rope *
 xr_new_copy(const char *str, size_t len)
 {
   char *buf;
@@ -37,13 +69,13 @@ xr_new_copy(const char *str, size_t len)
   return x;
 }
 
-PIC_INLINE size_t
+static size_t
 xr_len(struct pic_rope *x)
 {
   return x->weight;
 }
 
-PIC_INLINE char
+static char
 xr_at(struct pic_rope *x, size_t i)
 {
   if (x->weight <= i) {
@@ -57,7 +89,7 @@ xr_at(struct pic_rope *x, size_t i)
     : xr_at(x->right, i - x->left->weight);
 }
 
-PIC_INLINE struct pic_rope *
+static struct pic_rope *
 xr_cat(struct pic_rope *x, struct pic_rope *y)
 {
   struct pic_rope *z;
@@ -76,7 +108,7 @@ xr_cat(struct pic_rope *x, struct pic_rope *y)
   return z;
 }
 
-PIC_INLINE struct pic_rope *
+static struct pic_rope *
 xr_sub(struct pic_rope *x, size_t i, size_t j)
 {
   assert(i <= j);
@@ -123,7 +155,7 @@ xr_sub(struct pic_rope *x, size_t i, size_t j)
   }
 }
 
-PIC_INLINE void
+static void
 xr_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
 {
   if (x->chunk) {
@@ -146,7 +178,7 @@ xr_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
   XR_CHUNK_INCREF(c);
 }
 
-PIC_INLINE const char *
+static const char *
 xr_cstr(struct pic_rope *x)
 {
   struct pic_chunk *c;
