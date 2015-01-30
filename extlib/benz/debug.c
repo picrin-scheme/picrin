@@ -57,6 +57,6 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
 
     /* TODO: print error irritants */
 
-    xfputs(pic_str_cstr(e->stack), file);
+    xfputs(pic_str_cstr(pic, e->stack), file);
   }
 }

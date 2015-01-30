@@ -255,7 +255,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         if (! pic_str_p(v)) {
           pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
         }
-        *cstr = pic_str_cstr(pic_str_ptr(v));
+        *cstr = pic_str_cstr(pic, pic_str_ptr(v));
         i++;
       }
       break;

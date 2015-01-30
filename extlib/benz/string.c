@@ -31,41 +31,43 @@ struct pic_rope {
     struct pic_chunk *c_ = (c);                 \
     if (! --c_->refcnt) {                       \
       if (c_->autofree)                         \
-        free(c_->str);                          \
-      free(c_);                                 \
+        pic_free(pic, c_->str);                 \
+      pic_free(pic, c_);                         \
     }                                           \
   } while (0)
 
 void
-pic_rope_incref(struct pic_rope *x) {
+pic_rope_incref(pic_state *pic, struct pic_rope *x) {
+  PIC_UNUSED(pic);
+
   x->refcnt++;
 }
 
 void
-pic_rope_decref(struct pic_rope *x) {
+pic_rope_decref(pic_state *pic, struct pic_rope *x) {
   if (! --x->refcnt) {
     if (x->chunk) {
       CHUNK_DECREF(x->chunk);
-      free(x);
+      pic_free(pic, x);
       return;
     }
-    pic_rope_decref(x->left);
-    pic_rope_decref(x->right);
-    free(x);
+    pic_rope_decref(pic, x->left);
+    pic_rope_decref(pic, x->right);
+    pic_free(pic, x);
   }
 }
 
 static struct pic_chunk *
-pic_make_chunk(const char *str, size_t len)
+pic_make_chunk(pic_state *pic, const char *str, size_t len)
 {
   char *buf;
   struct pic_chunk *c;
 
-  buf = (char *)malloc(len + 1);
+  buf = pic_malloc(pic, len + 1);
   buf[len] = 0;
   memcpy(buf, str, len);
 
-  c = (struct pic_chunk *)malloc(sizeof(struct pic_chunk));
+  c = pic_malloc(pic, sizeof(struct pic_chunk));
   c->refcnt = 1;
   c->str = buf;
   c->len = len;
@@ -75,11 +77,11 @@ pic_make_chunk(const char *str, size_t len)
 }
 
 static struct pic_rope *
-pic_make_rope(struct pic_chunk *c)
+pic_make_rope(pic_state *pic, struct pic_chunk *c)
 {
   struct pic_rope *x;
 
-  x = (struct pic_rope *)malloc(sizeof(struct pic_rope));
+  x = pic_malloc(pic, sizeof(struct pic_rope));
   x->refcnt = 1;
   x->left = NULL;
   x->right = NULL;
@@ -121,11 +123,11 @@ rope_at(struct pic_rope *x, size_t i)
 }
 
 static struct pic_rope *
-rope_cat(struct pic_rope *x, struct pic_rope *y)
+rope_cat(pic_state *pic, struct pic_rope *x, struct pic_rope *y)
 {
   struct pic_rope *z;
 
-  z = (struct pic_rope *)malloc(sizeof(struct pic_rope));
+  z = pic_malloc(pic, sizeof(struct pic_rope));
   z->refcnt = 1;
   z->left = x;
   z->right = y;
@@ -133,27 +135,27 @@ rope_cat(struct pic_rope *x, struct pic_rope *y)
   z->offset = 0;
   z->chunk = NULL;
 
-  pic_rope_incref(x);
-  pic_rope_incref(y);
+  pic_rope_incref(pic, x);
+  pic_rope_incref(pic, y);
 
   return z;
 }
 
 static struct pic_rope *
-rope_sub(struct pic_rope *x, size_t i, size_t j)
+rope_sub(pic_state *pic, struct pic_rope *x, size_t i, size_t j)
 {
   assert(i <= j);
   assert(j <= x->weight);
 
   if (i == 0 && x->weight == j) {
-    pic_rope_incref(x);
+    pic_rope_incref(pic, x);
     return x;
   }
 
   if (x->chunk) {
     struct pic_rope *y;
 
-    y = (struct pic_rope *)malloc(sizeof(struct pic_rope));
+    y = pic_malloc(pic, sizeof(struct pic_rope));
     y->refcnt = 1;
     y->left = NULL;
     y->right = NULL;
@@ -167,27 +169,27 @@ rope_sub(struct pic_rope *x, size_t i, size_t j)
   }
 
   if (j <= x->left->weight) {
-    return rope_sub(x->left, i, j);
+    return rope_sub(pic, x->left, i, j);
   }
   else if (x->left->weight <= i) {
-    return rope_sub(x->right, i - x->left->weight, j - x->left->weight);
+    return rope_sub(pic, x->right, i - x->left->weight, j - x->left->weight);
   }
   else {
     struct pic_rope *r, *l;
 
-    l = rope_sub(x->left, i, x->left->weight);
-    r = rope_sub(x->right, 0, j - x->left->weight);
-    x = rope_cat(l, r);
+    l = rope_sub(pic, x->left, i, x->left->weight);
+    r = rope_sub(pic, x->right, 0, j - x->left->weight);
+    x = rope_cat(pic, l, r);
 
-    pic_rope_decref(l);
-    pic_rope_decref(r);
+    pic_rope_decref(pic, l);
+    pic_rope_decref(pic, r);
 
     return x;
   }
 }
 
 static void
-flatten(struct pic_rope *x, struct pic_chunk *c, size_t offset)
+flatten(pic_state *pic, struct pic_rope *x, struct pic_chunk *c, size_t offset)
 {
   if (x->chunk) {
     memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
@@ -198,11 +200,11 @@ flatten(struct pic_rope *x, struct pic_chunk *c, size_t offset)
     CHUNK_INCREF(c);
     return;
   }
-  flatten(x->left, c, offset);
-  flatten(x->right, c, offset + x->left->weight);
+  flatten(pic, x->left, c, offset);
+  flatten(pic, x->right, c, offset + x->left->weight);
 
-  pic_rope_decref(x->left);
-  pic_rope_decref(x->right);
+  pic_rope_decref(pic, x->left);
+  pic_rope_decref(pic, x->right);
   x->left = x->right = NULL;
   x->chunk = c;
   x->offset = offset;
@@ -210,7 +212,7 @@ flatten(struct pic_rope *x, struct pic_chunk *c, size_t offset)
 }
 
 static const char *
-rope_cstr(struct pic_rope *x)
+rope_cstr(pic_state *pic, struct pic_rope *x)
 {
   struct pic_chunk *c;
 
@@ -218,26 +220,26 @@ rope_cstr(struct pic_rope *x)
     return x->chunk->str;       /* reuse cached chunk */
   }
 
-  c = (struct pic_chunk *)malloc(sizeof(struct pic_chunk));
+  c = pic_malloc(pic, sizeof(struct pic_chunk));
   c->refcnt = 1;
   c->len = x->weight;
   c->autofree = 1;
-  c->str = (char *)malloc(c->len + 1);
+  c->str = pic_malloc(pic, c->len + 1);
   c->str[c->len] = '\0';
 
-  flatten(x, c, 0);
+  flatten(pic, x, c, 0);
 
   CHUNK_DECREF(c);
   return c->str;
 }
 
 pic_str *
-pic_make_str(pic_state *pic, const char *imbed, size_t len)
+pic_make_str(pic_state *pic, const char *str, size_t len)
 {
-  if (imbed == NULL && len > 0) {
+  if (str == NULL && len > 0) {
     pic_errorf(pic, "zero length specified against NULL ptr");
   }
-  return pic_make_string(pic, pic_make_rope(pic_make_chunk(imbed, len)));
+  return pic_make_string(pic, pic_make_rope(pic, pic_make_chunk(pic, str, len)));
 }
 
 pic_str *
@@ -286,25 +288,25 @@ pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 pic_str *
 pic_strcat(pic_state *pic, pic_str *a, pic_str *b)
 {
-  return pic_make_string(pic, rope_cat(a->rope, b->rope));
+  return pic_make_string(pic, rope_cat(pic, a->rope, b->rope));
 }
 
 pic_str *
 pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
 {
-  return pic_make_string(pic, rope_sub(str->rope, s, e));
+  return pic_make_string(pic, rope_sub(pic, str->rope, s, e));
 }
 
 int
-pic_strcmp(pic_str *str1, pic_str *str2)
+pic_strcmp(pic_state *pic, pic_str *str1, pic_str *str2)
 {
-  return strcmp(pic_str_cstr(str1), pic_str_cstr(str2));
+  return strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
 }
 
 const char *
-pic_str_cstr(pic_str *str)
+pic_str_cstr(pic_state *pic, pic_str *str)
 {
-  return rope_cstr(str->rope);
+  return rope_cstr(pic, str->rope);
 }
 
 pic_value
@@ -521,7 +523,7 @@ pic_str_string_ref(pic_state *pic)
       if (! pic_str_p(argv[i])) {                                       \
 	return pic_false_value();                                       \
       }                                                                 \
-      if (! (pic_strcmp(pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
+      if (! (pic_strcmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
 	return pic_false_value();                                       \
       }                                                                 \
     }                                                                   \
