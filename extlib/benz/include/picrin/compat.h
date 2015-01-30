@@ -13,8 +13,11 @@ extern "C" {
 
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 #else
+
+# define assert(v) 0
 
 PIC_INLINE int
 isspace(int c)
