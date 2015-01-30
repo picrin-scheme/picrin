@@ -30,7 +30,7 @@ pic_intern(pic_state *pic, pic_str *str)
     return sym;
   }
 
-  cstr = pic_malloc(pic, pic_strlen(str) + 1);
+  cstr = pic_malloc(pic, pic_str_len(str) + 1);
   strcpy(cstr, pic_str_cstr(pic, str));
 
   sym = pic_make_symbol(pic, str);

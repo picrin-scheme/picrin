@@ -165,7 +165,7 @@ write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 
   PIC_UNUSED(pic);
 
-  for (i = 0; i < pic_strlen(str); ++i) {
+  for (i = 0; i < pic_str_len(str); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       xfputc('\\', file);
     }

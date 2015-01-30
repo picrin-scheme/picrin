@@ -168,13 +168,13 @@ pic_regexp_regexp_replace(pic_state *pic)
   pic_assert_type(pic, reg, regexp);
 
   while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
-    output = pic_strcat(pic, output, pic_make_str(pic, input, match.rm_so));
-    output = pic_strcat(pic, output, txt);
+    output = pic_str_cat(pic, output, pic_make_str(pic, input, match.rm_so));
+    output = pic_str_cat(pic, output, txt);
 
     input += match.rm_eo;
   }
 
-  output = pic_strcat(pic, output, pic_make_str(pic, input, strlen(input)));
+  output = pic_str_cat(pic, output, pic_make_str(pic, input, strlen(input)));
 
   return pic_obj_value(output);
 }

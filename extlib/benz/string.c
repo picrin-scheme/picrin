@@ -268,7 +268,7 @@ pic_make_str_fill(pic_state *pic, size_t len, char fill)
 }
 
 size_t
-pic_strlen(pic_str *str)
+pic_str_len(pic_str *str)
 {
   return rope_len(str->rope);
 }
@@ -286,19 +286,19 @@ pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 }
 
 pic_str *
-pic_strcat(pic_state *pic, pic_str *a, pic_str *b)
+pic_str_cat(pic_state *pic, pic_str *a, pic_str *b)
 {
   return pic_make_string(pic, rope_cat(pic, a->rope, b->rope));
 }
 
 pic_str *
-pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
+pic_str_sub(pic_state *pic, pic_str *str, size_t s, size_t e)
 {
   return pic_make_string(pic, rope_sub(pic, str->rope, s, e));
 }
 
 int
-pic_strcmp(pic_state *pic, pic_str *str1, pic_str *str2)
+pic_str_cmp(pic_state *pic, pic_str *str1, pic_str *str2)
 {
   return strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
 }
@@ -492,7 +492,7 @@ pic_str_string_length(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_size_value(pic_strlen(str));
+  return pic_size_value(pic_str_len(str));
 }
 
 static pic_value
@@ -523,7 +523,7 @@ pic_str_string_ref(pic_state *pic)
       if (! pic_str_p(argv[i])) {                                       \
 	return pic_false_value();                                       \
       }                                                                 \
-      if (! (pic_strcmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
+      if (! (pic_str_cmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
 	return pic_false_value();                                       \
       }                                                                 \
     }                                                                   \
@@ -549,10 +549,10 @@ pic_str_string_copy(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_strlen(str);
+    end = pic_str_len(str);
   }
 
-  return pic_obj_value(pic_substr(pic, str, start, end));
+  return pic_obj_value(pic_str_sub(pic, str, start, end));
 }
 
 static pic_value
@@ -569,7 +569,7 @@ pic_str_string_append(pic_state *pic)
     if (! pic_str_p(argv[i])) {
       pic_errorf(pic, "type error");
     }
-    str = pic_strcat(pic, str, pic_str_ptr(argv[i]));
+    str = pic_str_cat(pic, str, pic_str_ptr(argv[i]));
   }
   return pic_obj_value(str);
 }
@@ -589,14 +589,14 @@ pic_str_string_map(pic_state *pic)
     pic_errorf(pic, "string-map: one or more strings expected, but got zero");
   } else {
     pic_assert_type(pic, argv[0], str);
-    len = pic_strlen(pic_str_ptr(argv[0]));
+    len = pic_str_len(pic_str_ptr(argv[0]));
   }
   for (i = 1; i < argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
-    len = len < pic_strlen(pic_str_ptr(argv[i]))
+    len = len < pic_str_len(pic_str_ptr(argv[i]))
       ? len
-      : pic_strlen(pic_str_ptr(argv[i]));
+      : pic_str_len(pic_str_ptr(argv[i]));
   }
   buf = pic_malloc(pic, len);
 
@@ -636,14 +636,14 @@ pic_str_string_for_each(pic_state *pic)
     pic_errorf(pic, "string-map: one or more strings expected, but got zero");
   } else {
     pic_assert_type(pic, argv[0], str);
-    len = pic_strlen(pic_str_ptr(argv[0]));
+    len = pic_str_len(pic_str_ptr(argv[0]));
   }
   for (i = 1; i < argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
-    len = len < pic_strlen(pic_str_ptr(argv[i]))
+    len = len < pic_str_len(pic_str_ptr(argv[i]))
       ? len
-      : pic_strlen(pic_str_ptr(argv[i]));
+      : pic_str_len(pic_str_ptr(argv[i]));
   }
 
   for (i = 0; i < len; ++i) {
@@ -705,7 +705,7 @@ pic_str_string_to_list(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_strlen(str);
+    end = pic_str_len(str);
   }
 
   list = pic_nil_value();

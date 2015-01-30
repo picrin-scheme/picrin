@@ -11,7 +11,7 @@
 static bool
 str_equal_p(pic_state *pic, struct pic_string *str1, struct pic_string *str2)
 {
-  return pic_strcmp(pic, str1, str2) == 0;
+  return pic_str_cmp(pic, str1, str2) == 0;
 }
 
 static bool

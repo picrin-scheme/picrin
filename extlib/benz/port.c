@@ -520,7 +520,7 @@ pic_port_read_line(pic_state *pic)
   }
 
   str = pic_get_output_string(pic, buf);
-  if (pic_strlen(str) == 0 && c == EOF) {
+  if (pic_str_len(str) == 0 && c == EOF) {
     return pic_eof_object();
   }
   else {
@@ -561,7 +561,7 @@ pic_port_read_string(pic_state *pic){
   }
 
   str = pic_get_output_string(pic, buf);
-  if (pic_strlen(str) == 0 && c == EOF) {
+  if (pic_str_len(str) == 0 && c == EOF) {
     return pic_eof_object();
   }
   else {
