@@ -187,7 +187,7 @@ rope_sub(struct pic_rope *x, size_t i, size_t j)
 }
 
 static void
-rope_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
+flatten(struct pic_rope *x, struct pic_chunk *c, size_t offset)
 {
   if (x->chunk) {
     memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
@@ -198,8 +198,8 @@ rope_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
     CHUNK_INCREF(c);
     return;
   }
-  rope_fold(x->left, c, offset);
-  rope_fold(x->right, c, offset + x->left->weight);
+  flatten(x->left, c, offset);
+  flatten(x->right, c, offset + x->left->weight);
 
   pic_rope_decref(x->left);
   pic_rope_decref(x->right);
@@ -225,7 +225,7 @@ rope_cstr(struct pic_rope *x)
   c->str = (char *)malloc(c->len + 1);
   c->str[c->len] = '\0';
 
-  rope_fold(x, c, 0);
+  flatten(x, c, 0);
 
   CHUNK_DECREF(c);
   return c->str;
