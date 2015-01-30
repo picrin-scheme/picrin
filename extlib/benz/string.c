@@ -102,13 +102,13 @@ pic_make_string(pic_state *pic, struct pic_rope *rope)
 }
 
 static size_t
-xr_len(struct pic_rope *x)
+rope_len(struct pic_rope *x)
 {
   return x->weight;
 }
 
 static char
-xr_at(struct pic_rope *x, size_t i)
+rope_at(struct pic_rope *x, size_t i)
 {
   if (x->weight <= i) {
     return -1;
@@ -117,12 +117,12 @@ xr_at(struct pic_rope *x, size_t i)
     return x->chunk->str[x->offset + i];
   }
   return (i < x->left->weight)
-    ? xr_at(x->left, i)
-    : xr_at(x->right, i - x->left->weight);
+    ? rope_at(x->left, i)
+    : rope_at(x->right, i - x->left->weight);
 }
 
 static struct pic_rope *
-xr_cat(struct pic_rope *x, struct pic_rope *y)
+rope_cat(struct pic_rope *x, struct pic_rope *y)
 {
   struct pic_rope *z;
 
@@ -141,7 +141,7 @@ xr_cat(struct pic_rope *x, struct pic_rope *y)
 }
 
 static struct pic_rope *
-xr_sub(struct pic_rope *x, size_t i, size_t j)
+rope_sub(struct pic_rope *x, size_t i, size_t j)
 {
   assert(i <= j);
   assert(j <= x->weight);
@@ -168,17 +168,17 @@ xr_sub(struct pic_rope *x, size_t i, size_t j)
   }
 
   if (j <= x->left->weight) {
-    return xr_sub(x->left, i, j);
+    return rope_sub(x->left, i, j);
   }
   else if (x->left->weight <= i) {
-    return xr_sub(x->right, i - x->left->weight, j - x->left->weight);
+    return rope_sub(x->right, i - x->left->weight, j - x->left->weight);
   }
   else {
     struct pic_rope *r, *l;
 
-    l = xr_sub(x->left, i, x->left->weight);
-    r = xr_sub(x->right, 0, j - x->left->weight);
-    x = xr_cat(l, r);
+    l = rope_sub(x->left, i, x->left->weight);
+    r = rope_sub(x->right, 0, j - x->left->weight);
+    x = rope_cat(l, r);
 
     pic_rope_decref(l);
     pic_rope_decref(r);
@@ -188,7 +188,7 @@ xr_sub(struct pic_rope *x, size_t i, size_t j)
 }
 
 static void
-xr_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
+rope_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
 {
   if (x->chunk) {
     memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
@@ -199,8 +199,8 @@ xr_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
     CHUNK_INCREF(c);
     return;
   }
-  xr_fold(x->left, c, offset);
-  xr_fold(x->right, c, offset + x->left->weight);
+  rope_fold(x->left, c, offset);
+  rope_fold(x->right, c, offset + x->left->weight);
 
   pic_rope_decref(x->left);
   pic_rope_decref(x->right);
@@ -211,7 +211,7 @@ xr_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
 }
 
 static const char *
-xr_cstr(struct pic_rope *x)
+rope_cstr(struct pic_rope *x)
 {
   struct pic_chunk *c;
 
@@ -227,7 +227,7 @@ xr_cstr(struct pic_rope *x)
   c->str = (char *)malloc(c->len + 1);
   c->str[c->len] = '\0';
 
-  xr_fold(x, c, 0);
+  rope_fold(x, c, 0);
 
   CHUNK_DECREF(c);
   return c->str;
@@ -270,7 +270,7 @@ pic_make_str_fill(pic_state *pic, size_t len, char fill)
 size_t
 pic_strlen(pic_str *str)
 {
-  return xr_len(str->rope);
+  return rope_len(str->rope);
 }
 
 char
@@ -278,7 +278,7 @@ pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 {
   int c;
 
-  c = xr_at(str->rope, i);
+  c = rope_at(str->rope, i);
   if (c == -1) {
     pic_errorf(pic, "index out of range %d", i);
   }
@@ -288,25 +288,25 @@ pic_str_ref(pic_state *pic, pic_str *str, size_t i)
 pic_str *
 pic_strcat(pic_state *pic, pic_str *a, pic_str *b)
 {
-  return pic_make_string(pic, xr_cat(a->rope, b->rope));
+  return pic_make_string(pic, rope_cat(a->rope, b->rope));
 }
 
 pic_str *
 pic_substr(pic_state *pic, pic_str *str, size_t s, size_t e)
 {
-  return pic_make_string(pic, xr_sub(str->rope, s, e));
+  return pic_make_string(pic, rope_sub(str->rope, s, e));
 }
 
 int
 pic_strcmp(pic_str *str1, pic_str *str2)
 {
-  return strcmp(xr_cstr(str1->rope), xr_cstr(str2->rope));
+  return strcmp(pic_str_cstr(str1), pic_str_cstr(str2));
 }
 
 const char *
 pic_str_cstr(pic_str *str)
 {
-  return xr_cstr(str->rope);
+  return rope_cstr(str->rope);
 }
 
 pic_value
