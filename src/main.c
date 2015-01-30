@@ -57,7 +57,7 @@ main(int argc, char *argv[], char **envp)
   struct pic_lib *PICRIN_MAIN;
   int status = 0;
 
-  pic = pic_open(argc, argv, envp, xstdin, xstdout, xstdout);
+  pic = pic_open(pic_default_allocf, argc, argv, envp, xstdin, xstdout, xstdout);
 
   pic_init_picrin(pic);
 
