@@ -41,7 +41,6 @@ extern "C" {
 
 #include <setjmp.h>
 #include <assert.h>
-#include <string.h>
 #include <stdlib.h>
 
 #if PIC_ENABLE_FLOAT

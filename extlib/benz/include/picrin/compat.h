@@ -11,6 +11,9 @@ extern "C" {
 
 #if PIC_ENABLE_LIBC
 
+#include <string.h>
+#include <ctype.h>
+
 #else
 
 PIC_INLINE int
@@ -90,6 +93,39 @@ strtol(const char *nptr, char **endptr, int base)
   if (endptr)
     *endptr = (char *)nptr;
   return l;
+}
+
+PIC_INLINE void *
+memset(void *s, int n, size_t c)
+{
+  char *p = s;
+
+  while (c-- > 0) {
+    *p++ = n;
+  }
+  return s;
+}
+
+PIC_INLINE void *
+memcpy(void *dst, const void *src, size_t n)
+{
+  const char *s = src;
+  char *d = dst;
+
+  while (n-- > 0) {
+    *d++ = *s++;
+  }
+  return d;
+}
+
+PIC_INLINE char *
+strcpy(char *dst, const char *src)
+{
+  char *d = dst;
+
+  while ((*dst++ = *src++) != 0);
+
+  return d;
 }
 
 #endif
