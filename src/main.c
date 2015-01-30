@@ -50,6 +50,22 @@ pic_init_picrin(pic_state *pic)
   pic_load_piclib(pic);
 }
 
+static void *
+pic_default_allocf(void *ptr, size_t size)
+{
+  if (size == 0) {
+    if (ptr) {
+      free(ptr);
+    }
+    return NULL;
+  }
+  if (ptr) {
+    return realloc(ptr, size);
+  } else {
+    return malloc(size);
+  }
+}
+
 int
 main(int argc, char *argv[], char **envp)
 {

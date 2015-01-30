@@ -75,22 +75,6 @@ typedef struct {
 
 typedef void *(*pic_allocf)(void *, size_t);
 
-PIC_INLINE void *
-pic_default_allocf(void *ptr, size_t size)
-{
-  if (size == 0) {
-    if (ptr) {
-      free(ptr);
-    }
-    return NULL;
-  }
-  if (ptr) {
-    return realloc(ptr, size);
-  } else {
-    return malloc(size);
-  }
-}
-
 typedef struct {
   int argc;
   char **argv, **envp;
