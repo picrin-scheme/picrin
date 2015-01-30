@@ -18,6 +18,8 @@ pic_panic(pic_state *pic, const char *msg)
 
 #if DEBUG
   fprintf(stderr, "abort: %s\n", msg);
+#else
+  PIC_UNUSED(msg);
 #endif
   abort();
 }
