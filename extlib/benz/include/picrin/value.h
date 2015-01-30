@@ -30,6 +30,8 @@ enum pic_vtype {
 
 #if PIC_NAN_BOXING
 
+#include <stdint.h>
+
 /**
  * value representation by nan-boxing:
  *   float : FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF

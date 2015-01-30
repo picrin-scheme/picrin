@@ -8,6 +8,8 @@
 #include "picrin/string.h"
 #include "xfile_stdio.h"
 
+#include <stdlib.h>
+
 void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);
 

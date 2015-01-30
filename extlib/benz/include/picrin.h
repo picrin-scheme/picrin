@@ -32,12 +32,17 @@ extern "C" {
 #include <limits.h>
 #include <stdarg.h>
 
+#if __STDC_VERSION__ >= 199901L
+# include <stdbool.h>
+#else
+# define bool char
+# define true 1
+# define false 0
+#endif
+
 #include "picrin/config.h"
 #include "picrin/util.h"
 #include "picrin/compat.h"
-
-#include <stdbool.h>
-#include <stdint.h>
 
 #include <setjmp.h>
 
