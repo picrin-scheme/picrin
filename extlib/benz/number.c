@@ -341,7 +341,7 @@ pic_number_abs(pic_state *pic)
   pic_get_args(pic, "F", &f, &e);
 
   if (e) {
-    return pic_int_value(abs((int)f));
+    return pic_int_value(f < 0 ? -f : f);
   }
   else {
     return pic_float_value(fabs(f));

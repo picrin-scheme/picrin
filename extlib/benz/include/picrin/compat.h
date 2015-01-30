@@ -14,6 +14,7 @@ extern "C" {
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #else
 

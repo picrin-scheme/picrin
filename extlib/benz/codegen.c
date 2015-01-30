@@ -921,7 +921,7 @@ destroy_codegen_state(codegen_state *state)
 }
 
 static void
-create_activation(codegen_context *cxt)
+create_activation(pic_state *pic, codegen_context *cxt)
 {
   size_t i, n;
   xhash regs;
@@ -1005,7 +1005,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
 
   state->cxt = cxt;
 
-  create_activation(cxt);
+  create_activation(pic, cxt);
 }
 
 static struct pic_irep *

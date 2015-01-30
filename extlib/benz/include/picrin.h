@@ -40,7 +40,6 @@ extern "C" {
 #include <stdint.h>
 
 #include <setjmp.h>
-#include <stdlib.h>
 
 #if PIC_ENABLE_FLOAT
 # include <math.h>
