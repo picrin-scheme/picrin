@@ -56,29 +56,25 @@ xfflush(xFILE *file)
   return file->vtable.flush(file->vtable.cookie);
 }
 
+#define min(a,b) ((a) < (b) ? (a) : (b))
+
 size_t
 xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
 {
-  char cbuf[256], *buf;
-  char *dst = (char *)ptr;
-  size_t i, offset;
-  int n;
-
-  if (block <= 256) {
-    buf = cbuf;
-  } else {
-    buf = malloc(block);
-  }
+  char buf[256];
+  char *dst = ptr;
+  size_t i;
+  int n, rest;
 
   for (i = 0; i < nitems; ++i) {
-    offset = 0;
+    rest = (int)block;
     if (file->ungot != -1 && block > 0) {
-      buf[0] = (char)file->ungot;
-      offset += 1;
+      *dst++ = file->ungot;
+      rest--;
       file->ungot = -1;
     }
-    while (offset < block) {
-      n = file->vtable.read(file->vtable.cookie, buf + offset, (int)(block - offset));
+    for (; rest > 0; rest -= n) {
+      n = file->vtable.read(file->vtable.cookie, buf, min((int)sizeof buf, rest));
       if (n < 0) {
         file->err |= XF_ERR;
         goto exit;
@@ -87,17 +83,12 @@ xfread(void *ptr, size_t block, size_t nitems, xFILE *file)
         file->err |= XF_EOF;
         goto exit;
       }
-      offset += (unsigned)n;
+      memcpy(dst, buf, n);
+      dst += (unsigned)n;
     }
-    memcpy(dst, buf, block);
-    dst += block;
   }
 
  exit:
-
-  if (cbuf != buf) {
-    free(buf);
-  }
   return i;
 }
 
