@@ -146,7 +146,7 @@ pic_init_core(pic_state *pic)
 }
 
 pic_state *
-pic_open(pic_allocf allocf, int argc, char *argv[], char **envp, xFILE *xstdin, xFILE *xstdout, xFILE *xstderr)
+pic_open(pic_allocf allocf, pic_abortf abortf, int argc, char *argv[], char **envp, xFILE *xstdin, xFILE *xstdout, xFILE *xstderr)
 {
   struct pic_port *pic_make_standard_port(pic_state *, xFILE *, short);
   char t;
@@ -160,8 +160,9 @@ pic_open(pic_allocf allocf, int argc, char *argv[], char **envp, xFILE *xstdin, 
     goto EXIT_PIC;
   }
 
-  /* allocator */
+  /* functions */
   pic->allocf = allocf;
+  pic->abortf = abortf;
 
   /* turn off GC */
   pic->gc_enable = false;
