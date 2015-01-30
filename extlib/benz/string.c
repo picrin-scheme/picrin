@@ -8,25 +8,25 @@
 #include "picrin/port.h"
 #include "picrin/error.h"
 
-PIC_INLINE xrope *
+PIC_INLINE struct pic_rope *
 xr_new_copy(const char *str, size_t len)
 {
   char *buf;
-  xr_chunk *c;
-  xrope *x;
+  struct pic_chunk *c;
+  struct pic_rope *x;
 
   buf = (char *)malloc(len + 1);
   buf[len] = '\0';
   memcpy(buf, str, len);
 
-  c = (xr_chunk *)malloc(sizeof(xr_chunk));
+  c = (struct pic_chunk *)malloc(sizeof(struct pic_chunk));
   c->refcnt = 1;
   c->str = buf;
   c->len = len;
   c->autofree = 1;
   c->zeroterm = 1;
 
-  x = (xrope *)malloc(sizeof(xrope));
+  x = (struct pic_rope *)malloc(sizeof(struct pic_rope));
   x->refcnt = 1;
   x->left = NULL;
   x->right = NULL;
@@ -38,13 +38,13 @@ xr_new_copy(const char *str, size_t len)
 }
 
 PIC_INLINE size_t
-xr_len(xrope *x)
+xr_len(struct pic_rope *x)
 {
   return x->weight;
 }
 
 PIC_INLINE char
-xr_at(xrope *x, size_t i)
+xr_at(struct pic_rope *x, size_t i)
 {
   if (x->weight <= i) {
     return -1;
@@ -57,12 +57,12 @@ xr_at(xrope *x, size_t i)
     : xr_at(x->right, i - x->left->weight);
 }
 
-PIC_INLINE xrope *
-xr_cat(xrope *x, xrope *y)
+PIC_INLINE struct pic_rope *
+xr_cat(struct pic_rope *x, struct pic_rope *y)
 {
-  xrope *z;
+  struct pic_rope *z;
 
-  z = (xrope *)malloc(sizeof(xrope));
+  z = (struct pic_rope *)malloc(sizeof(struct pic_rope));
   z->refcnt = 1;
   z->left = x;
   z->right = y;
@@ -76,8 +76,8 @@ xr_cat(xrope *x, xrope *y)
   return z;
 }
 
-PIC_INLINE struct xrope *
-xr_sub(xrope *x, size_t i, size_t j)
+PIC_INLINE struct pic_rope *
+xr_sub(struct pic_rope *x, size_t i, size_t j)
 {
   assert(i <= j);
   assert(j <= x->weight);
@@ -88,9 +88,9 @@ xr_sub(xrope *x, size_t i, size_t j)
   }
 
   if (x->chunk) {
-    xrope *y;
+    struct pic_rope *y;
 
-    y = (xrope *)malloc(sizeof(xrope));
+    y = (struct pic_rope *)malloc(sizeof(struct pic_rope));
     y->refcnt = 1;
     y->left = NULL;
     y->right = NULL;
@@ -110,7 +110,7 @@ xr_sub(xrope *x, size_t i, size_t j)
     return xr_sub(x->right, i - x->left->weight, j - x->left->weight);
   }
   else {
-    xrope *r, *l;
+    struct pic_rope *r, *l;
 
     l = xr_sub(x->left, i, x->left->weight);
     r = xr_sub(x->right, 0, j - x->left->weight);
@@ -124,7 +124,7 @@ xr_sub(xrope *x, size_t i, size_t j)
 }
 
 PIC_INLINE void
-xr_fold(xrope *x, xr_chunk *c, size_t offset)
+xr_fold(struct pic_rope *x, struct pic_chunk *c, size_t offset)
 {
   if (x->chunk) {
     memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
@@ -147,15 +147,15 @@ xr_fold(xrope *x, xr_chunk *c, size_t offset)
 }
 
 PIC_INLINE const char *
-xr_cstr(xrope *x)
+xr_cstr(struct pic_rope *x)
 {
-  xr_chunk *c;
+  struct pic_chunk *c;
 
   if (x->chunk && x->offset == 0 && x->weight == x->chunk->len && x->chunk->zeroterm) {
     return x->chunk->str;       /* reuse cached chunk */
   }
 
-  c = (xr_chunk *)malloc(sizeof(xr_chunk));
+  c = (struct pic_chunk *)malloc(sizeof(struct pic_chunk));
   c->refcnt = 1;
   c->len = x->weight;
   c->autofree = 1;
@@ -170,7 +170,7 @@ xr_cstr(xrope *x)
 }
 
 static pic_str *
-make_str_rope(pic_state *pic, xrope *rope)
+make_str_rope(pic_state *pic, struct pic_rope *rope)
 {
   pic_str *str;
 

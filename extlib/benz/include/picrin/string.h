@@ -9,26 +9,24 @@
 extern "C" {
 #endif
 
-typedef struct xrope xrope;
-
 struct pic_string {
   PIC_OBJECT_HEADER
-  xrope *rope;
+  struct pic_rope *rope;
 };
 
-typedef struct {
+struct pic_chunk {
   char *str;
   int refcnt;
   size_t len;
   char autofree, zeroterm;
-} xr_chunk;
+};
 
 #define XR_CHUNK_INCREF(c) do {                 \
     (c)->refcnt++;                              \
   } while (0)
 
 #define XR_CHUNK_DECREF(c) do {                 \
-    xr_chunk *c__ = (c);                        \
+    struct pic_chunk *c__ = (c);                \
     if (! --c__->refcnt) {                      \
       if (c__->autofree)                        \
         free(c__->str);                         \
@@ -36,21 +34,21 @@ typedef struct {
     }                                           \
   } while (0)
 
-struct xrope {
+struct pic_rope {
   int refcnt;
   size_t weight;
-  xr_chunk *chunk;
+  struct pic_chunk *chunk;
   size_t offset;
-  struct xrope *left, *right;
+  struct pic_rope *left, *right;
 };
 
 PIC_INLINE void
-XROPE_INCREF(xrope *x) {
+XROPE_INCREF(struct pic_rope *x) {
   x->refcnt++;
 }
 
 PIC_INLINE void
-XROPE_DECREF(xrope *x) {
+XROPE_DECREF(struct pic_rope *x) {
   if (! --x->refcnt) {
     if (x->chunk) {
       XR_CHUNK_DECREF(x->chunk);
