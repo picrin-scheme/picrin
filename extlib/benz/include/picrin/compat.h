@@ -37,6 +37,17 @@ pic_strchr(const char *s, int c)
   return NULL;
 }
 
+PIC_INLINE size_t
+pic_strlen(const char *s)
+{
+  size_t l = 0;
+
+  while (*s++) {
+    l++;
+  }
+  return l;
+}
+
 #if defined(__cplusplus)
 }
 #endif

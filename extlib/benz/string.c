@@ -248,7 +248,7 @@ pic_make_str(pic_state *pic, const char *str, size_t len)
 pic_str *
 pic_make_str_cstr(pic_state *pic, const char *cstr)
 {
-  return pic_make_str(pic, cstr, strlen(cstr));
+  return pic_make_str(pic, cstr, pic_strlen(cstr));
 }
 
 pic_str *

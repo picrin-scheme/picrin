@@ -41,7 +41,7 @@ pic_intern(pic_state *pic, pic_str *str)
 pic_sym *
 pic_intern_cstr(pic_state *pic, const char *str)
 {
-  return pic_intern(pic, pic_make_str(pic, str, strlen(str)));
+  return pic_intern(pic, pic_make_str(pic, str, pic_strlen(str)));
 }
 
 pic_sym *
