@@ -18,7 +18,7 @@ pic_isspace(int c)
 PIC_INLINE int
 pic_tolower(int c)
 {
-  return 'A' <= c && c <= 'Z' ? c - 'a' + 'A' : c;
+  return ('A' <= c && c <= 'Z') ? c - 'A' + 'a' : c;
 }
 
 PIC_INLINE int
