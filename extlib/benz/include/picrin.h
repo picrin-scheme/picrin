@@ -28,13 +28,16 @@
 extern "C" {
 #endif
 
-#include "picrin/config.h"
-
 #include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <limits.h>
 #include <stdarg.h>
+
+#include "picrin/config.h"
+#include "picrin/util.h"
+#include "picrin/compat.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 
 #include <setjmp.h>
 #include <assert.h>
@@ -44,9 +47,6 @@ extern "C" {
 #if PIC_ENABLE_FLOAT
 # include <math.h>
 #endif
-
-#include "picrin/util.h"
-#include "picrin/compat.h"
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"

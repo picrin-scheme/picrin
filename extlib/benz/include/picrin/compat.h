@@ -9,26 +9,30 @@
 extern "C" {
 #endif
 
+#if PIC_ENABLE_LIBC
+
+#else
+
 PIC_INLINE int
-pic_isspace(int c)
+isspace(int c)
 {
   return c == ' ' || c == '\t' || c == '\r' || c == '\v' || c == '\f' || c == '\n';
 }
 
 PIC_INLINE int
-pic_tolower(int c)
+tolower(int c)
 {
   return ('A' <= c && c <= 'Z') ? c - 'A' + 'a' : c;
 }
 
 PIC_INLINE int
-pic_isdigit(int c)
+isdigit(int c)
 {
   return '0' <= c && c <= '9';
 }
 
 PIC_INLINE char *
-pic_strchr(const char *s, int c)
+strchr(const char *s, int c)
 {
   do {
     if (*s == c)
@@ -38,7 +42,7 @@ pic_strchr(const char *s, int c)
 }
 
 PIC_INLINE size_t
-pic_strlen(const char *s)
+strlen(const char *s)
 {
   size_t l = 0;
 
@@ -49,7 +53,7 @@ pic_strlen(const char *s)
 }
 
 PIC_INLINE int
-pic_strcmp(const char *s1, const char *s2)
+strcmp(const char *s1, const char *s2)
 {
   while (*s1 && *s1 == *s2) {
     s1++;
@@ -59,7 +63,7 @@ pic_strcmp(const char *s1, const char *s2)
 }
 
 PIC_INLINE long
-pic_strtol(const char *nptr, char **endptr, int base)
+strtol(const char *nptr, char **endptr, int base)
 {
   long l = 0;
   char c;
@@ -87,6 +91,8 @@ pic_strtol(const char *nptr, char **endptr, int base)
     *endptr = (char *)nptr;
   return l;
 }
+
+#endif
 
 #if defined(__cplusplus)
 }

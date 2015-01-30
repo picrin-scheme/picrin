@@ -11,6 +11,9 @@
 /** enable floating point number support */
 /* #define PIC_ENABLE_FLOAT 1 */
 
+/** no dependency on libc  */
+/* #define PIC_ENABLE_LIBC 1 */
+
 /** treat false value as none */
 /* #define PIC_NONE_IS_FALSE 1 */
 
@@ -56,6 +59,10 @@
 
 #ifndef PIC_ENABLE_FLOAT
 # define PIC_ENABLE_FLOAT 1
+#endif
+
+#ifndef PIC_ENABLE_LIBC
+# define PIC_ENABLE_LIBC 1
 #endif
 
 #if PIC_NAN_BOXING && defined(PIC_ENABLE_FLOAT) && ! PIC_ENABLE_FLOAT

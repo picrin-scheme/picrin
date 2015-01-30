@@ -620,7 +620,7 @@ pic_number_string_to_number(pic_state *pic)
 
   pic_get_args(pic, "z|i", &str, &radix);
 
-  num = pic_strtol(str, &eptr, radix);
+  num = strtol(str, &eptr, radix);
   if (*eptr == '\0') {
     return pic_valid_int(num)
       ? pic_int_value((int)num)
@@ -679,7 +679,7 @@ pic_number_string_to_number(pic_state *pic)
 
   pic_get_args(pic, "z|i", &str, &radix);
 
-  num = pic_strtol(str, &eptr, radix);
+  num = strtol(str, &eptr, radix);
   if (*eptr == '\0') {
     return pic_int_value(num);
   }

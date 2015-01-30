@@ -25,7 +25,7 @@ read_error(pic_state *pic, const char *msg)
 static int
 skip(struct pic_port *port, int c)
 {
-  while (pic_isspace(c)) {
+  while (isspace(c)) {
     c = xfgetc(port->file);
   }
   return c;
@@ -64,7 +64,7 @@ expect(struct pic_port *port, const char *str)
 static bool
 isdelim(int c)
 {
-  return c == EOF || pic_strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
+  return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
 #if PIC_ENABLE_FLOAT
@@ -74,7 +74,7 @@ strcaseeq(const char *s1, const char *s2)
   char a, b;
 
   while ((a = *s1++) * (b = *s2++)) {
-    if (pic_tolower(a) != pic_tolower(b))
+    if (tolower(a) != tolower(b))
       return false;
   }
   return a == b;
@@ -85,7 +85,7 @@ static int
 case_fold(pic_state *pic, int c)
 {
   if (pic->reader->typecase == PIC_CASE_FOLD) {
-    c = pic_tolower(c);
+    c = tolower(c);
   }
   return c;
 }
@@ -231,12 +231,12 @@ read_uinteger(pic_state *pic, struct pic_port *port, int c)
 {
   unsigned u = 0;
 
-  if (! pic_isdigit(c)) {
+  if (! isdigit(c)) {
     read_error(pic, "expected one or more digits");
   }
 
   u = c - '0';
-  while (pic_isdigit(c = peek(port))) {
+  while (isdigit(c = peek(port))) {
     u = u * 10 + next(port) - '0';
   }
 
@@ -282,7 +282,7 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
   case '.':
     next(port);
     w = 0, f = 1;
-    while (pic_isdigit(c = peek(port))) {
+    while (isdigit(c = peek(port))) {
       w = w * 10 + next(port) - '0';
       f /= 10;
     }
@@ -354,7 +354,7 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
 {
   pic_value sym;
 
-  if (pic_isdigit(peek(port))) {
+  if (isdigit(peek(port))) {
     return negate(read_unsigned(pic, port, next(port)));
   }
   else {
@@ -376,7 +376,7 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
 {
   pic_value sym;
 
-  if (pic_isdigit(peek(port))) {
+  if (isdigit(peek(port))) {
     return read_unsigned(pic, port, next(port));
   }
   else {
@@ -522,7 +522,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
           if (i >= sizeof HEX_BUF)
             read_error(pic, "expected ';'");
         }
-        c = (char)pic_strtol(HEX_BUF, NULL, 16);
+        c = (char)strtol(HEX_BUF, NULL, 16);
         break;
       }
     }
@@ -549,7 +549,7 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 
   nbits = 0;
 
-  while (pic_isdigit(c = next(port))) {
+  while (isdigit(c = next(port))) {
     nbits = 10 * nbits + c - '0';
   }
 
@@ -711,7 +711,7 @@ read_label(pic_state *pic, struct pic_port *port, int c)
   i = 0;
   do {
     i = i * 10 + c - '0';
-  } while (pic_isdigit(c = next(port)));
+  } while (isdigit(c = next(port)));
 
   if (c == '=') {
     return read_label_set(pic, port, i);
