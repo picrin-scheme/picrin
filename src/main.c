@@ -9,6 +9,7 @@
 #include "xfile_stdio.h"
 
 #include <stdlib.h>
+#include <setjmp.h>
 
 void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);
@@ -68,6 +69,24 @@ pic_default_allocf(void *ptr, size_t size)
   }
 }
 
+static void
+pic_default_abortf(void)
+{
+  abort();
+}
+
+static int
+pic_default_setjmpf(void *buf)
+{
+  return setjmp(*(jmp_buf *)buf);
+}
+
+static void
+pic_default_longjmpf(void *buf, int val)
+{
+  longjmp(*(jmp_buf *)buf, val);
+}
+
 int
 main(int argc, char *argv[], char **envp)
 {
@@ -75,7 +94,7 @@ main(int argc, char *argv[], char **envp)
   struct pic_lib *PICRIN_MAIN;
   int status = 0;
 
-  pic = pic_open(pic_default_allocf, abort, argc, argv, envp, xstdin, xstdout, xstdout);
+  pic = pic_open(pic_default_allocf, pic_default_abortf, pic_default_setjmpf, pic_default_longjmpf, sizeof(jmp_buf), argc, argv, envp, xstdin, xstdout, xstdout);
 
   pic_init_picrin(pic);
 
