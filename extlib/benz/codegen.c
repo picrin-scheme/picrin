@@ -635,7 +635,11 @@ analyze_div(analyze_state *state, pic_value obj)
   switch (pic_length(pic, obj)) {
   case 2:
     args = pic_cdr(pic, obj);
+#if PIC_ENABLE_FLOAT
     obj = pic_list3(pic, pic_car(pic, obj), pic_float_value(1), pic_car(pic, args));
+#else
+    obj = pic_list3(pic, pic_car(pic, obj), pic_int_value(1), pic_car(pic, args));
+#endif
     return analyze(state, obj, false);
   default:
     args = pic_cdr(pic, obj);
@@ -917,7 +921,7 @@ destroy_codegen_state(codegen_state *state)
 }
 
 static void
-create_activation(codegen_context *cxt)
+create_activation(pic_state *pic, codegen_context *cxt)
 {
   size_t i, n;
   xhash regs;
@@ -1001,7 +1005,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
 
   state->cxt = cxt;
 
-  create_activation(cxt);
+  create_activation(pic, cxt);
 }
 
 static struct pic_irep *

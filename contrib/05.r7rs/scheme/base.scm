@@ -4,7 +4,8 @@
           (picrin record)
           (picrin syntax-rules)
           (picrin string)
-          (scheme file))
+          (scheme file)
+          (scheme inexact))
 
   ;; 4.1.2. Literal expressions
 

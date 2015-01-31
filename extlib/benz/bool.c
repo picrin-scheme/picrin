@@ -9,9 +9,9 @@
 #include "picrin/string.h"
 
 static bool
-str_equal_p(struct pic_string *str1, struct pic_string *str2)
+str_equal_p(pic_state *pic, struct pic_string *str1, struct pic_string *str2)
 {
-  return pic_strcmp(str1, str2) == 0;
+  return pic_str_cmp(pic, str1, str2) == 0;
 }
 
 static bool
@@ -65,7 +65,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
 
   switch (pic_type(x)) {
   case PIC_TT_STRING:
-    return str_equal_p(pic_str_ptr(x), pic_str_ptr(y));
+    return str_equal_p(pic, pic_str_ptr(x), pic_str_ptr(y));
 
   case PIC_TT_BLOB:
     return blob_equal_p(pic_blob_ptr(x), pic_blob_ptr(y));

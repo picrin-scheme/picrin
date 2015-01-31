@@ -392,7 +392,7 @@ pic_vec_string_to_vector(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_strlen(str);
+    end = pic_str_len(str);
   }
 
   if (end < start) {

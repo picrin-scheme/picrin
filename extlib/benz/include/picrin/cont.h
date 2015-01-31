@@ -10,8 +10,6 @@ extern "C" {
 #endif
 
 struct pic_escape {
-  jmp_buf jmp;
-
   bool valid;
 
   struct pic_winder *wind;
@@ -24,6 +22,8 @@ struct pic_escape {
   pic_code *ip;
 
   pic_value results;
+
+  char jmp[1];
 };
 
 void pic_save_point(pic_state *, struct pic_escape *);

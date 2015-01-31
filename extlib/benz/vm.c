@@ -97,6 +97,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+#if PIC_ENABLE_FLOAT
     case 'f': {
       double *f;
 
@@ -171,6 +172,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+#endif
     case 'i': {
       int *k;
 
@@ -180,9 +182,11 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
         v = GET_OPERAND(pic, i);
         switch (pic_type(v)) {
+#if PIC_ENABLE_FLOAT
         case PIC_TT_FLOAT:
           *k = (int)pic_float(v);
           break;
+#endif
         case PIC_TT_INT:
           *k = pic_int(v);
           break;
@@ -200,6 +204,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       if (i < argc) {
         pic_value v;
         int x;
+        size_t s;
 
         v = GET_OPERAND(pic, i);
         switch (pic_type(v)) {
@@ -208,8 +213,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
           if (x < 0) {
             pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
           }
+          s = (size_t)x;
           if (sizeof(unsigned) > sizeof(size_t)) {
-            if ((unsigned)x > (unsigned)SIZE_MAX) {
+            if (x != (int)s) {
               pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
             }
           }
@@ -249,7 +255,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         if (! pic_str_p(v)) {
           pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
         }
-        *cstr = pic_str_cstr(pic_str_ptr(v));
+        *cstr = pic_str_cstr(pic, pic_str_ptr(v));
         i++;
       }
       break;
@@ -666,12 +672,13 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 #if VM_DEBUG
 # define VM_CALL_PRINT                                                  \
   do {                                                                  \
+    short i;                                                            \
     puts("\n== calling proc...");                                       \
     printf("  proc = ");                                                \
     pic_debug(pic, pic_obj_value(proc));                                \
     puts("");                                                           \
     printf("  argv = (");                                               \
-    for (short i = 1; i < c.u.i; ++i) {                                 \
+    for (i = 1; i < c.u.i; ++i) {                                       \
       if (i > 1)                                                        \
         printf(" ");                                                    \
       pic_debug(pic, pic->sp[-c.u.i + i]);                              \
@@ -1089,10 +1096,31 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;							\
     }
 
+#define DEFINE_ARITH_OP2(opcode, op)                            \
+    CASE(opcode) {						\
+      pic_value a, b;						\
+      b = POP();						\
+      a = POP();						\
+      if (pic_int_p(a) && pic_int_p(b)) {			\
+        PUSH(pic_int_value(pic_int(a) op pic_int(b)));          \
+      }								\
+      else {							\
+	pic_errorf(pic, #op " got non-number operands");        \
+      }								\
+      NEXT;							\
+    }
+
+#if PIC_ENABLE_FLOAT
     DEFINE_ARITH_OP(OP_ADD, +, true);
     DEFINE_ARITH_OP(OP_SUB, -, true);
     DEFINE_ARITH_OP(OP_MUL, *, true);
     DEFINE_ARITH_OP(OP_DIV, /, f == round(f));
+#else
+    DEFINE_ARITH_OP2(OP_ADD, +);
+    DEFINE_ARITH_OP2(OP_SUB, -);
+    DEFINE_ARITH_OP2(OP_MUL, *);
+    DEFINE_ARITH_OP2(OP_DIV, /);
+#endif
 
     CASE(OP_MINUS) {
       pic_value n;
@@ -1100,9 +1128,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       if (pic_int_p(n)) {
 	PUSH(pic_int_value(-pic_int(n)));
       }
+#if PIC_ENABLE_FLOAT
       else if (pic_float_p(n)) {
 	PUSH(pic_float_value(-pic_float(n)));
       }
+#endif
       else {
 	pic_errorf(pic, "unary - got a non-number operand");
       }
@@ -1132,9 +1162,29 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;							\
     }
 
+#define DEFINE_COMP_OP2(opcode, op)				\
+    CASE(opcode) {						\
+      pic_value a, b;						\
+      b = POP();						\
+      a = POP();						\
+      if (pic_int_p(a) && pic_int_p(b)) {			\
+	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
+      }								\
+      else {							\
+	pic_errorf(pic, #op " got non-number operands");        \
+      }								\
+      NEXT;							\
+    }
+
+#if PIC_ENABLE_FLOAT
     DEFINE_COMP_OP(OP_EQ, ==);
     DEFINE_COMP_OP(OP_LT, <);
     DEFINE_COMP_OP(OP_LE, <=);
+#else
+    DEFINE_COMP_OP2(OP_EQ, ==);
+    DEFINE_COMP_OP2(OP_LT, <);
+    DEFINE_COMP_OP2(OP_LE, <=);
+#endif
 
     CASE(OP_STOP) {
 
@@ -1148,13 +1198,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  static const pic_code iseq[2] = {
-    { OP_NOP, { .i = 0 } },
-    { OP_TAILCALL, { .i = -1 } }
-  };
+  static pic_code iseq[2];
 
   pic_value v, it, *sp;
   pic_callinfo *ci;
+
+  PIC_INIT_CODE_I(iseq[0], OP_NOP, 0);
+  PIC_INIT_CODE_I(iseq[1], OP_TAILCALL, -1);
 
   *pic->sp++ = pic_obj_value(proc);
 

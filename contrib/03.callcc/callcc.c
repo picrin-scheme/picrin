@@ -4,6 +4,8 @@
 #include "picrin/pair.h"
 #include "picrin/cont.h"
 
+#include <setjmp.h>
+
 struct pic_cont {
   jmp_buf jmp;
 
