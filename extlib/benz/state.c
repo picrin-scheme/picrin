@@ -42,7 +42,7 @@ void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_attr(pic_state *);
 
-extern const char pic_boot[];
+extern const char pic_boot[][80];
 
 static void
 pic_init_features(pic_state *pic)
@@ -139,7 +139,7 @@ pic_init_core(pic_state *pic)
     pic_init_lib(pic); DONE;
     pic_init_attr(pic); DONE;
 
-    pic_load_cstr(pic, pic_boot);
+    pic_load_cstr(pic, &pic_boot[0][0]);
   }
 
   pic_import_library(pic, pic->PICRIN_BASE);
