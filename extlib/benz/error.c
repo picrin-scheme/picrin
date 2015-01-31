@@ -21,7 +21,7 @@ pic_panic(pic_state *pic, const char *msg)
 #else
   PIC_UNUSED(msg);
 #endif
-  pic->abortf();
+  pic->longjmpf(NULL, 0);
 
   PIC_UNREACHABLE();
 }
