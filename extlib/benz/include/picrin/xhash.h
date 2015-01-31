@@ -14,7 +14,7 @@ extern "C" {
 /* simple object to object hash table */
 
 #define XHASH_INIT_SIZE 11
-#define XHASH_RESIZE_RATIO 0.75
+#define XHASH_RESIZE_RATIO(x) ((x) * 3 / 4)
 
 #define XHASH_ALIGNMENT 3       /* quad word alignment */
 #define XHASH_MASK (~(size_t)((1 << XHASH_ALIGNMENT) - 1))
@@ -162,7 +162,7 @@ xh_put_(xhash *x, const void *key, void *val)
     return e;
   }
 
-  if (x->count + 1 > x->size * XHASH_RESIZE_RATIO) {
+  if (x->count + 1 > XHASH_RESIZE_RATIO(x->size)) {
     xh_resize_(x, x->size * 2 + 1);
   }
 
