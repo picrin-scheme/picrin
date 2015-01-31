@@ -1,7 +1,7 @@
 Introduction
 ============
 
-Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C99 and does not require any special external libraries installed on the platform.
+Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C89 and does not require any special external libraries installed on the platform.
 
 - R7RS compatibility
 - reentrant design (all VM states are stored in single global state object)
