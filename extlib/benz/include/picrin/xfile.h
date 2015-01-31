@@ -27,7 +27,7 @@ enum {
   XF_SEEK_END
 };
 
-#define XFOPEN_MAX 128
+#define XFOPEN_MAX 1024
 
 /* resource aquisition */
 xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*flush)(void *), int (*close)(void *));
