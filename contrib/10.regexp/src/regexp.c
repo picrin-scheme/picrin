@@ -58,7 +58,7 @@ pic_regexp_regexp(pic_state *pic)
   reg->flags = flags;
 
   if ((err = regcomp(&reg->reg, ptrn, cflags)) != 0) {
-    char errbuf[regerror(err, &reg->reg, NULL, 0)];
+    char errbuf[256];
 
     regerror(err, &reg->reg, errbuf, sizeof errbuf);
     regexp_dtor(pic, &reg->reg);
