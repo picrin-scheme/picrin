@@ -402,7 +402,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     pop_scope(state);
   }
   else {
-    pic_errorf(pic, "invalid formal syntax: ~s", args);
+    pic_errorf(pic, "invalid formal syntax: ~s", formals);
   }
 
   return pic_list7(pic, pic_obj_value(pic->sLAMBDA), name, args, locals, varg, captures, body);
