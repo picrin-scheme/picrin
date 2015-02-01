@@ -520,7 +520,7 @@ vm_push_env(pic_state *pic)
 {
   pic_callinfo *ci = pic->ci;
 
-  ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_ENV);
+  ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_ENV);
   ci->env->up = ci->up;
   ci->env->regc = ci->regc;
   ci->env->regs = ci->regs;
@@ -623,7 +623,7 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 # define JUMP c = *pic->ip; goto *oplabels[c.insn];
 # define VM_LOOP_END
 #else
-# define VM_LOOP for (;;) { c = *pic->ip; switch (c.insn) {
+# define VM_LOOP for (;;) { memcpy(&c, pic->ip, sizeof(pic_code)); switch (c.insn) {
 # define CASE(x) case x:
 # define NEXT pic->ip++; break
 # define JUMP break

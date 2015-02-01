@@ -144,22 +144,17 @@ static bool
 push_scope(analyze_state *state, pic_value formals)
 {
   pic_state *pic = state->pic;
-  analyze_scope *scope;
+  analyze_scope *scope = pic_alloc(pic, sizeof(analyze_scope));
   bool varg;
-  xvect args, locals, captures;
 
-  xv_init(args);
-  xv_init(locals);
-  xv_init(captures);
+  xv_init(scope->args);
+  xv_init(scope->locals);
+  xv_init(scope->captures);
 
-  if (analyze_args(pic, formals, &varg, &args, &locals)) {
-    scope = pic_alloc(pic, sizeof(analyze_scope));
+  if (analyze_args(pic, formals, &varg, &scope->args, &scope->locals)) {
     scope->up = state->scope;
     scope->depth = scope->up ? scope->up->depth + 1 : 0;
     scope->varg = varg;
-    scope->args = args;
-    scope->locals = locals;
-    scope->captures = captures;
     scope->defer = pic_nil_value();
 
     state->scope = scope;
@@ -167,8 +162,10 @@ push_scope(analyze_state *state, pic_value formals)
     return true;
   }
   else {
-    xv_destroy(args);
-    xv_destroy(locals);
+    xv_destroy(scope->args);
+    xv_destroy(scope->locals);
+    xv_destroy(scope->captures);
+    pic_free(pic, scope);
     return false;
   }
 }

@@ -25,7 +25,7 @@ union header {
   struct {
     union header *ptr;
     size_t size;
-    unsigned int mark : 1;
+    char mark;
   } s;
   long alignment[2];
 };
