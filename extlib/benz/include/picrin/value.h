@@ -19,7 +19,9 @@ enum pic_vtype {
   PIC_VTYPE_TRUE,
   PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
+#if PIC_ENABLE_FLOAT
   PIC_VTYPE_FLOAT,
+#endif
   PIC_VTYPE_INT,
   PIC_VTYPE_CHAR,
   PIC_VTYPE_EOF,
@@ -27,6 +29,8 @@ enum pic_vtype {
 };
 
 #if PIC_NAN_BOXING
+
+#include <stdint.h>
 
 /**
  * value representation by nan-boxing:
@@ -71,7 +75,9 @@ typedef struct {
   enum pic_vtype type;
   union {
     void *data;
+#if PIC_ENABLE_FLOAT
     double f;
+#endif
     int i;
     char c;
   } u;
@@ -81,7 +87,9 @@ typedef struct {
 #define pic_vtype(v) ((v).type)
 #define pic_init_value(v,vtype) ((v).type = (vtype), (v).u.data = NULL)
 
-#define pic_float(v) ((v).u.f)
+#if PIC_ENABLE_FLOAT
+# define pic_float(v) ((v).u.f)
+#endif
 #define pic_int(v) ((v).u.i)
 #define pic_char(v) ((v).u.c)
 
@@ -91,7 +99,9 @@ enum pic_tt {
   /* immediate */
   PIC_TT_NIL,
   PIC_TT_BOOL,
+#if PIC_ENABLE_FLOAT
   PIC_TT_FLOAT,
+#endif
   PIC_TT_INT,
   PIC_TT_CHAR,
   PIC_TT_EOF,
@@ -161,7 +171,21 @@ PIC_INLINE const char *pic_type_repr(enum pic_tt);
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-PIC_INLINE bool pic_valid_int(double);
+#if PIC_ENABLE_FLOAT
+PIC_INLINE bool
+pic_valid_int(double v)
+{
+  return INT_MIN <= v && v <= INT_MAX;
+}
+
+#else
+PIC_INLINE bool
+pic_valid_int(int v)
+{
+  PIC_UNUSED(v);
+  return true;
+}
+#endif
 
 PIC_INLINE pic_value pic_nil_value();
 PIC_INLINE pic_value pic_true_value();
@@ -169,7 +193,9 @@ PIC_INLINE pic_value pic_false_value();
 PIC_INLINE pic_value pic_bool_value(bool);
 PIC_INLINE pic_value pic_undef_value();
 PIC_INLINE pic_value pic_obj_value(void *);
+#if PIC_ENABLE_FLOAT
 PIC_INLINE pic_value pic_float_value(double);
+#endif
 PIC_INLINE pic_value pic_int_value(int);
 PIC_INLINE pic_value pic_size_value(size_t);
 PIC_INLINE pic_value pic_char_value(char c);
@@ -190,8 +216,10 @@ pic_type(pic_value v)
     return PIC_TT_BOOL;
   case PIC_VTYPE_UNDEF:
     return PIC_TT_UNDEF;
+#if PIC_ENABLE_FLOAT
   case PIC_VTYPE_FLOAT:
     return PIC_TT_FLOAT;
+#endif
   case PIC_VTYPE_INT:
     return PIC_TT_INT;
   case PIC_VTYPE_CHAR:
@@ -213,8 +241,10 @@ pic_type_repr(enum pic_tt tt)
     return "nil";
   case PIC_TT_BOOL:
     return "boolean";
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     return "float";
+#endif
   case PIC_TT_INT:
     return "int";
   case PIC_TT_SYMBOL:
@@ -257,12 +287,6 @@ pic_type_repr(enum pic_tt tt)
   PIC_UNREACHABLE();
 }
 
-PIC_INLINE bool
-pic_valid_int(double v)
-{
-  return INT_MIN <= v && v <= INT_MAX;
-}
-
 PIC_INLINE pic_value
 pic_nil_value()
 {
@@ -302,11 +326,13 @@ pic_bool_value(bool b)
 PIC_INLINE pic_value
 pic_size_value(size_t s)
 {
+#if PIC_ENABLE_FLOAT
   if (sizeof(unsigned) < sizeof(size_t)) {
     if (s > (size_t)INT_MAX) {
       return pic_float_value(s);
     }
   }
+#endif
   return pic_int_value((int)s);
 }
 
@@ -370,6 +396,8 @@ pic_obj_value(void *ptr)
   return v;
 }
 
+#if PIC_ENABLE_FLOAT
+
 PIC_INLINE pic_value
 pic_float_value(double f)
 {
@@ -379,6 +407,8 @@ pic_float_value(double f)
   v.u.f = f;
   return v;
 }
+
+#endif
 
 PIC_INLINE pic_value
 pic_int_value(int i)
@@ -464,8 +494,10 @@ pic_eqv_p(pic_value x, pic_value y)
     return true;
   case PIC_TT_BOOL:
     return pic_vtype(x) == pic_vtype(y);
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     return pic_float(x) == pic_float(y);
+#endif
   case PIC_TT_INT:
     return pic_int(x) == pic_int(y);
   default:

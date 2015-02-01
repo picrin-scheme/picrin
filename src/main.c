@@ -5,6 +5,11 @@
 #include "picrin.h"
 #include "picrin/pair.h"
 #include "picrin/error.h"
+#include "picrin/string.h"
+#include "xfile_stdio.h"
+
+#include <stdlib.h>
+#include <setjmp.h>
 
 void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);
@@ -48,6 +53,37 @@ pic_init_picrin(pic_state *pic)
   pic_load_piclib(pic);
 }
 
+static void *
+pic_default_allocf(void *ptr, size_t size)
+{
+  if (size == 0) {
+    if (ptr) {
+      free(ptr);
+    }
+    return NULL;
+  }
+  if (ptr) {
+    return realloc(ptr, size);
+  } else {
+    return malloc(size);
+  }
+}
+
+static int
+pic_default_setjmpf(void *buf)
+{
+  return setjmp(*(jmp_buf *)buf);
+}
+
+static void
+pic_default_longjmpf(void *buf, int val)
+{
+  if (buf == NULL) {
+    abort();
+  }
+  longjmp(*(jmp_buf *)buf, val);
+}
+
 int
 main(int argc, char *argv[], char **envp)
 {
@@ -55,7 +91,7 @@ main(int argc, char *argv[], char **envp)
   struct pic_lib *PICRIN_MAIN;
   int status = 0;
 
-  pic = pic_open(argc, argv, envp);
+  pic = pic_open(pic_default_allocf, pic_default_setjmpf, pic_default_longjmpf, sizeof(jmp_buf), argc, argv, envp, xstdin, xstdout, xstdout);
 
   pic_init_picrin(pic);
 
@@ -65,7 +101,7 @@ main(int argc, char *argv[], char **envp)
     pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
   }
   pic_catch {
-    pic_print_backtrace(pic);
+    pic_print_backtrace(pic, xstderr);
     status = 1;
   }
 

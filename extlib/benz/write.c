@@ -161,11 +161,11 @@ static void
 write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 {
   size_t i;
-  const char *cstr = pic_str_cstr(str);
+  const char *cstr = pic_str_cstr(pic, str);
 
   PIC_UNUSED(pic);
 
-  for (i = 0; i < pic_strlen(str); ++i) {
+  for (i = 0; i < pic_str_len(str); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       xfputc('\\', file);
     }
@@ -197,7 +197,7 @@ write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
   if (! pic_str_p(str)) {
     pic_errorf(pic, "return value from writer procedure is not of string type");
   }
-  xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(str)));
+  xfprintf(file, "%s", pic_str_cstr(pic, pic_str_ptr(str)));
 
 #endif
 }
@@ -210,7 +210,9 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e, *it;
   int c;
+#if PIC_ENABLE_FLOAT
   double f;
+#endif
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
@@ -285,6 +287,7 @@ write_core(struct writer_control *p, pic_value obj)
     case '\t': xfprintf(file, "#\\tab"); break;
     }
     break;
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     f = pic_float(obj);
     if (isnan(f)) {
@@ -295,6 +298,7 @@ write_core(struct writer_control *p, pic_value obj)
       xfprintf(file, "%f", pic_float(obj));
     }
     break;
+#endif
   case PIC_TT_INT:
     xfprintf(file, "%d", pic_int(obj));
     break;
@@ -303,7 +307,7 @@ write_core(struct writer_control *p, pic_value obj)
     break;
   case PIC_TT_STRING:
     if (p->mode == DISPLAY_MODE) {
-      xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(obj)));
+      xfprintf(file, "%s", pic_str_cstr(pic, pic_str_ptr(obj)));
       break;
     }
     xfprintf(file, "\"");
@@ -406,7 +410,7 @@ display(pic_state *pic, pic_value obj, xFILE *file)
 pic_value
 pic_write(pic_state *pic, pic_value obj)
 {
-  return pic_fwrite(pic, obj, xstdout);
+  return pic_fwrite(pic, obj, pic_stdout(pic)->file);
 }
 
 pic_value
@@ -420,7 +424,7 @@ pic_fwrite(pic_state *pic, pic_value obj, xFILE *file)
 pic_value
 pic_display(pic_state *pic, pic_value obj)
 {
-  return pic_fdisplay(pic, obj, xstdout);
+  return pic_fdisplay(pic, obj, pic_stdout(pic)->file);
 }
 
 pic_value
@@ -434,6 +438,7 @@ pic_fdisplay(pic_state *pic, pic_value obj, xFILE *file)
 void
 pic_printf(pic_state *pic, const char *fmt, ...)
 {
+  xFILE *file = pic_stdout(pic)->file;
   va_list ap;
   pic_str *str;
 
@@ -443,8 +448,8 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 
   va_end(ap);
 
-  xprintf("%s", pic_str_cstr(str));
-  xfflush(xstdout);
+  xfprintf(file, "%s", pic_str_cstr(pic, str));
+  xfflush(file);
 }
 
 static pic_value

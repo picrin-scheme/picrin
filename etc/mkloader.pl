@@ -13,6 +13,7 @@ print <<EOL;
 
 #include "picrin.h"
 #include "picrin/error.h"
+#include "picrin/port.h"
 
 EOL
 
@@ -51,9 +52,9 @@ foreach my $file (@ARGV) {
   }
   pic_catch {
     /* error! */
-    fputs("fatal error: failure in loading $dirname/$basename\\n", stderr);
-    fputs(pic_errmsg(pic), stderr);
-    abort();
+    xfprintf(pic->xSTDERR->file, "fatal error: failure in loading $dirname/$basename\\n");
+    xfprintf(pic->xSTDERR->file, pic_errmsg(pic));
+    pic_panic(pic, "failure in loading $dirname/$basename");
   }
 EOL
 }

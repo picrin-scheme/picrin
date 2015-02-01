@@ -67,6 +67,7 @@ isdelim(int c)
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
+#if PIC_ENABLE_FLOAT
 static bool
 strcaseeq(const char *s1, const char *s2)
 {
@@ -78,6 +79,7 @@ strcaseeq(const char *s1, const char *s2)
   }
   return a == b;
 }
+#endif
 
 static int
 case_fold(pic_state *pic, int c)
@@ -224,67 +226,106 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
   return pic_obj_value(sym);
 }
 
-static size_t
-read_uinteger(pic_state *pic, struct pic_port *port, int c, char buf[])
+static unsigned
+read_uinteger(pic_state *pic, struct pic_port *port, int c)
 {
-  size_t i = 0;
+  unsigned u = 0;
 
   if (! isdigit(c)) {
     read_error(pic, "expected one or more digits");
   }
 
-  buf[i++] = (char)c;
+  u = c - '0';
   while (isdigit(c = peek(port))) {
-    buf[i++] = (char)next(port);
+    u = u * 10 + next(port) - '0';
   }
 
-  buf[i] = '\0';
-
-  return i;
+  return u;
 }
 
-static size_t
-read_suffix(pic_state *pic, struct pic_port *port, char buf[])
+static int
+read_suffix(pic_state *pic, struct pic_port *port)
 {
-  size_t i = 0;
-  int c;
+  int c, s = 1;
 
   c = peek(port);
 
   if (c != 'e' && c != 'E') {
-    return i;
+    return 0;
   }
 
-  buf[i++] = (char)next(port);
+  next(port);
 
   switch ((c = next(port))) {
   case '-':
+    s = -1;
   case '+':
-    buf[i++] = (char)c;
     c = next(port);
   default:
-    return i + read_uinteger(pic, port, c, buf + i);
+    return s * read_uinteger(pic, port, c);
   }
 }
 
 static pic_value
 read_unsigned(pic_state *pic, struct pic_port *port, int c)
 {
-  char buf[256];
-  size_t i;
+  unsigned u, w = 0;
+  int exp, s, i, e;
+#if PIC_ENABLE_FLOAT
+  double f;
+#endif
 
-  i = read_uinteger(pic, port, c, buf);
+  u = read_uinteger(pic, port, c);
 
   switch (peek(port)) {
+#if PIC_ENABLE_FLOAT
   case '.':
-    buf[i++] = (char)next(port);
-    i += read_uinteger(pic, port, next(port), buf + i);
-    read_suffix(pic, port, buf + i);
-    return pic_float_value(atof(buf));
+    next(port);
+    w = 0, f = 1;
+    while (isdigit(c = peek(port))) {
+      w = w * 10 + next(port) - '0';
+      f /= 10;
+    }
+    f = u + w * f;
+
+    exp = read_suffix(pic, port);
+    if (exp >= 0) {
+      s = 0;
+    } else {
+      exp = -exp;
+      s = 1;
+    }
+
+    e = 10;
+    for (i = 0; exp; ++i) {
+      if ((exp & 1) != 0) {
+        f = s ? f / e : (f * e);
+      }
+      e *= e;
+      exp >>= 1;
+    }
+    return pic_float_value(f);
+#endif
 
   default:
-    read_suffix(pic, port, buf + i);
-    return pic_int_value((int)(atof(buf)));
+    exp = read_suffix(pic, port);
+    if (exp >= 0) {
+      s = 0;
+    } else {
+      exp = -exp;
+      s = 1;
+    }
+
+    e = 10;
+    for (i = 0; exp; ++i) {
+      if ((exp & 1) != 0) {
+        u = s ? u / e : (u * e);
+      }
+      e *= e;
+      exp >>= 1;
+    }
+
+    return pic_int_value(u);
   }
 }
 
@@ -297,11 +338,15 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 negate(pic_value n)
 {
+#if PIC_ENABLE_FLOAT
   if (pic_int_p(n)) {
     return pic_int_value(-pic_int(n));
   } else {
     return pic_float_value(-pic_float(n));
   }
+#else
+  return pic_int_value(-pic_int(n));
+#endif
 }
 
 static pic_value
@@ -314,12 +359,14 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
+#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-inf.0")) {
       return pic_float_value(-INFINITY);
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-nan.0")) {
       return pic_float_value(-NAN);
     }
+#endif
     return sym;
   }
 }
@@ -334,12 +381,14 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
+#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+inf.0")) {
       return pic_float_value(INFINITY);
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+nan.0")) {
       return pic_float_value(NAN);
     }
+#endif
     return sym;
   }
 }
@@ -495,7 +544,6 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 {
   int nbits, n;
   size_t len, i;
-  char buf[256];
   unsigned char *dat;
   pic_blob *blob;
 
@@ -517,8 +565,7 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
   dat = NULL;
   c = next(port);
   while ((c = skip(port, c)) != ')') {
-    read_uinteger(pic, port, c, buf);
-    n = atoi(buf);
+    n = read_uinteger(pic, port, c);
     if (n < 0 || (1 << nbits) <= n) {
       read_error(pic, "invalid element in bytevector literal");
     }

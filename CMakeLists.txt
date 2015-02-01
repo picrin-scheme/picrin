@@ -19,7 +19,7 @@ if(STRICT_C89_MODE)
   add_definitions(-std=c89 -ansi -pedantic)
 endif()
 
-include_directories(extlib/benz/include)
+include_directories(extlib/benz/include include)
 
 # build picrin
 include(piclib/CMakeLists.txt)

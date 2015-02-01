@@ -112,28 +112,12 @@ add_heap_page(pic_state *pic)
   pic->heap->pages = page;
 }
 
-static void *
-alloc(void *ptr, size_t size)
-{
-  if (size == 0) {
-    if (ptr) {
-      free(ptr);
-    }
-    return NULL;
-  }
-  if (ptr) {
-    return realloc(ptr, size);
-  } else {
-    return malloc(size);
-  }
-}
-
 void *
 pic_alloc(pic_state *pic, size_t size)
 {
   void *ptr;
 
-  ptr = alloc(NULL, size);
+  ptr = pic->allocf(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -143,7 +127,7 @@ pic_alloc(pic_state *pic, size_t size)
 void *
 pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
-  ptr = alloc(ptr, size);
+  ptr = pic->allocf(ptr, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -156,7 +140,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
   void *ptr;
 
   size *= count;
-  ptr = alloc(NULL, size);
+  ptr = pic->allocf(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -169,7 +153,7 @@ pic_free(pic_state *pic, void *ptr)
 {
   PIC_UNUSED(pic);
 
-  free(ptr);
+  pic->allocf(ptr, 0);
 }
 
 static void
@@ -489,7 +473,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
+#endif
   case PIC_TT_INT:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
@@ -649,7 +635,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_STRING: {
-    XROPE_DECREF(((struct pic_string *)obj)->rope);
+    pic_rope_decref(pic, ((struct pic_string *)obj)->rope);
     break;
   }
   case PIC_TT_PORT: {
@@ -691,7 +677,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
+#endif
   case PIC_TT_INT:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:

@@ -80,19 +80,7 @@
           round
           expt
           number->string
-          string->number
-          finite?
-          infinite?
-          nan?
-          exp
-          log
-          sin
-          cos
-          tan
-          acos
-          asin
-          atan
-          sqrt)
+          string->number)
 
   (export pair?
           cons

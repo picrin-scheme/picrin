@@ -23,15 +23,15 @@ pic_intern(pic_state *pic, pic_str *str)
   pic_sym *sym;
   char *cstr;
 
-  e = xh_get_str(&pic->syms, pic_str_cstr(str));
+  e = xh_get_str(&pic->syms, pic_str_cstr(pic, str));
   if (e) {
     sym = xh_val(e, pic_sym *);
     pic_gc_protect(pic, pic_obj_value(sym));
     return sym;
   }
 
-  cstr = pic_malloc(pic, pic_strlen(str) + 1);
-  strcpy(cstr, pic_str_cstr(str));
+  cstr = pic_malloc(pic, pic_str_len(str) + 1);
+  strcpy(cstr, pic_str_cstr(pic, str));
 
   sym = pic_make_symbol(pic, str);
   xh_put_str(&pic->syms, cstr, &sym);
@@ -55,7 +55,7 @@ pic_interned_p(pic_state *pic, pic_sym *sym)
 {
   xh_entry *e;
 
-  e = xh_get_str(&pic->syms, pic_str_cstr(sym->str));
+  e = xh_get_str(&pic->syms, pic_str_cstr(pic, sym->str));
   if (e) {
     return sym == xh_val(e, pic_sym *);
   } else {
@@ -66,9 +66,7 @@ pic_interned_p(pic_state *pic, pic_sym *sym)
 const char *
 pic_symbol_name(pic_state *pic, pic_sym *sym)
 {
-  PIC_UNUSED(pic);
-
-  return pic_str_cstr(sym->str);
+  return pic_str_cstr(pic, sym->str);
 }
 
 static pic_value

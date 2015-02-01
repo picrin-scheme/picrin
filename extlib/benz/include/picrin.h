@@ -29,26 +29,28 @@ extern "C" {
 #endif
 
 #include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <limits.h>
 #include <stdarg.h>
 
-#include <stdio.h>
-#include <setjmp.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <ctype.h>
+#if __STDC_VERSION__ >= 199901L
+# include <stdbool.h>
+#else
+# define bool char
+# define true 1
+# define false 0
+#endif
 
 #include "picrin/config.h"
 #include "picrin/util.h"
+#include "picrin/compat.h"
+
+#if PIC_ENABLE_FLOAT
+# include <math.h>
+#endif
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
 #include "picrin/xfile.h"
-#include "picrin/xrope.h"
 
 #include "picrin/value.h"
 
@@ -71,9 +73,18 @@ typedef struct {
   struct pic_env *up;
 } pic_callinfo;
 
+typedef void *(*pic_allocf)(void *, size_t);
+typedef int (*pic_setjmpf)(void *);
+typedef void (*pic_longjmpf)(void *, int);
+
 typedef struct {
   int argc;
   char **argv, **envp;
+
+  pic_allocf allocf;
+  pic_setjmpf setjmpf;
+  pic_longjmpf longjmpf;
+  size_t jmpbuf_size;
 
   struct pic_winder *wind;
 
@@ -157,7 +168,7 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-pic_state *pic_open(int argc, char *argv[], char **envp);
+pic_state *pic_open(pic_allocf, pic_setjmpf, pic_longjmpf, size_t jmpbuf_size, int argc, char *argv[], char **envp, xFILE *xstdin, xFILE *xstdout, xFILE *stderr);
 void pic_close(pic_state *);
 
 void pic_add_feature(pic_state *, const char *);
@@ -225,7 +236,7 @@ PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
-void pic_print_backtrace(pic_state *);
+void pic_print_backtrace(pic_state *, xFILE *);
 
 /* obsoleted */
 PIC_INLINE void pic_warn(pic_state *pic, const char *msg)

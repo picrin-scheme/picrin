@@ -80,6 +80,8 @@ struct pic_irep {
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
 
+#if DEBUG
+
 PIC_INLINE void
 pic_dump_code(pic_code c)
 {
@@ -212,6 +214,8 @@ pic_dump_irep(struct pic_irep *irep)
     pic_dump_irep(irep->irep[i]);
   }
 }
+
+#endif
 
 #if defined(__cplusplus)
 }

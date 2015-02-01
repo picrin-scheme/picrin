@@ -6,18 +6,18 @@ pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
 {
   pic_str *x, *y, *z, *tmp;
 
-  if (pic_strlen(str) <= i) {
+  if (pic_str_len(str) <= i) {
     pic_errorf(pic, "index out of range %d", i);
   }
 
-  x = pic_substr(pic, str, 0, i);
+  x = pic_str_sub(pic, str, 0, i);
   y = pic_make_str_fill(pic, 1, c);
-  z = pic_substr(pic, str, i + 1, pic_strlen(str));
+  z = pic_str_sub(pic, str, i + 1, pic_str_len(str));
 
-  tmp = pic_strcat(pic, x, pic_strcat(pic, y, z));
+  tmp = pic_str_cat(pic, x, pic_str_cat(pic, y, z));
 
-  XROPE_INCREF(tmp->rope);
-  XROPE_DECREF(str->rope);
+  pic_rope_incref(pic, tmp->rope);
+  pic_rope_decref(pic, str->rope);
   str->rope = tmp->rope;
 }
 
@@ -46,10 +46,10 @@ pic_str_string_copy_ip(pic_state *pic)
   case 3:
     start = 0;
   case 4:
-    end = pic_strlen(from);
+    end = pic_str_len(from);
   }
   if (to == from) {
-    from = pic_substr(pic, from, 0, end);
+    from = pic_str_sub(pic, from, 0, end);
   }
 
   while (start < end) {
@@ -71,7 +71,7 @@ pic_str_string_fill_ip(pic_state *pic)
   case 2:
     start = 0;
   case 3:
-    end = pic_strlen(str);
+    end = pic_str_len(str);
   }
 
   while (start < end) {
