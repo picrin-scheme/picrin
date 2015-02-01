@@ -6,6 +6,7 @@
 #include "picrin/string.h"
 #include "picrin/pair.h"
 #include "picrin/port.h"
+#include "picrin/error.h"
 
 static pic_str *
 make_str_rope(pic_state *pic, xrope *rope)
@@ -36,14 +37,19 @@ pic_str *
 pic_make_str_fill(pic_state *pic, size_t len, char fill)
 {
   size_t i;
-  char buf[len + 1];
+  char *buf = pic_malloc(pic, len);
+  pic_str *str;
 
   for (i = 0; i < len; ++i) {
     buf[i] = fill;
   }
   buf[i] = '\0';
 
-  return pic_make_str(pic, buf, len);
+  str = pic_make_str(pic, buf, len);
+
+  pic_free(pic, buf);
+
+  return str;
 }
 
 size_t
@@ -357,23 +363,27 @@ pic_str_string_map(pic_state *pic)
   struct pic_proc *proc;
   pic_value *argv, vals, val;
   size_t argc, i, len, j;
+  pic_str *str;
+  char *buf;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
-  len = SIZE_MAX;
-  for (i = 0; i < argc; ++i) {
+  if (argc == 0) {
+    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
+  } else {
+    pic_assert_type(pic, argv[0], str);
+    len = pic_strlen(pic_str_ptr(argv[0]));
+  }
+  for (i = 1; i < argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
     len = len < pic_strlen(pic_str_ptr(argv[i]))
       ? len
       : pic_strlen(pic_str_ptr(argv[i]));
   }
-  if (len == SIZE_MAX) {
-    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
-  }
-  else {
-    char buf[len];
+  buf = pic_malloc(pic, len);
 
+  pic_try {
     for (i = 0; i < len; ++i) {
       vals = pic_nil_value();
       for (j = 0; j < argc; ++j) {
@@ -384,9 +394,16 @@ pic_str_string_map(pic_state *pic)
       pic_assert_type(pic, val, char);
       buf[i] = pic_char(val);
     }
-
-    return pic_obj_value(pic_make_str(pic, buf, len));
+    str = pic_make_str(pic, buf, len);
   }
+  pic_catch {
+    pic_free(pic, buf);
+    pic_raise(pic, pic->err);
+  }
+
+  pic_free(pic, buf);
+
+  return pic_obj_value(str);
 }
 
 static pic_value
@@ -398,16 +415,18 @@ pic_str_string_for_each(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
-  len = SIZE_MAX;
-  for (i = 0; i < argc; ++i) {
+  if (argc == 0) {
+    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
+  } else {
+    pic_assert_type(pic, argv[0], str);
+    len = pic_strlen(pic_str_ptr(argv[0]));
+  }
+  for (i = 1; i < argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
     len = len < pic_strlen(pic_str_ptr(argv[i]))
       ? len
       : pic_strlen(pic_str_ptr(argv[i]));
-  }
-  if (len == SIZE_MAX) {
-    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
   }
 
   for (i = 0; i < len; ++i) {
@@ -427,14 +446,17 @@ pic_str_list_to_string(pic_state *pic)
   pic_str *str;
   pic_value list, e, it;
   size_t i = 0;
+  char *buf;
 
   pic_get_args(pic, "o", &list);
 
   if (pic_length(pic, list) == 0) {
     return pic_obj_value(pic_make_str(pic, NULL, 0));
-  } else {
-    char buf[pic_length(pic, list)];
+  }
 
+  buf = pic_malloc(pic, pic_length(pic, list));
+
+  pic_try {
     pic_for_each (e, list, it) {
       pic_assert_type(pic, e, char);
 
@@ -442,9 +464,14 @@ pic_str_list_to_string(pic_state *pic)
     }
 
     str = pic_make_str(pic, buf, i);
-
-    return pic_obj_value(str);
   }
+  pic_catch {
+    pic_free(pic, buf);
+    pic_raise(pic, pic->err);
+  }
+  pic_free(pic, buf);
+
+  return pic_obj_value(str);
 }
 
 static pic_value
