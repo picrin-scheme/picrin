@@ -204,6 +204,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       k = va_arg(ap, size_t *);
       pic_value v;
       int x;
+      size_t s;
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
@@ -212,8 +213,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
         if (x < 0) {
           pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
         }
+        s = (size_t)x;
         if (sizeof(unsigned) > sizeof(size_t)) {
-          if ((unsigned)x > (unsigned)SIZE_MAX) {
+          if (x != (int)s) {
             pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
           }
         }
@@ -631,12 +633,13 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 #if VM_DEBUG
 # define VM_CALL_PRINT                                                  \
   do {                                                                  \
+    short i;                                                            \
     puts("\n== calling proc...");                                       \
     printf("  proc = ");                                                \
     pic_debug(pic, pic_obj_value(proc));                                \
     puts("");                                                           \
     printf("  argv = (");                                               \
-    for (short i = 1; i < c.u.i; ++i) {                                 \
+    for (i = 1; i < c.u.i; ++i) {                                       \
       if (i > 1)                                                        \
         printf(" ");                                                    \
       pic_debug(pic, pic->sp[-c.u.i + i]);                              \
@@ -1113,13 +1116,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  static const pic_code iseq[2] = {
-    { OP_NOP, { .i = 0 } },
-    { OP_TAILCALL, { .i = -1 } }
-  };
+  static pic_code iseq[2];
 
   pic_value v, it, *sp;
   pic_callinfo *ci;
+
+  PIC_INIT_CODE_I(iseq[0], OP_NOP, 0);
+  PIC_INIT_CODE_I(iseq[1], OP_TAILCALL, -1);
 
   *pic->sp++ = pic_obj_value(proc);
 

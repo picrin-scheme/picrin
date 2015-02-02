@@ -14,11 +14,9 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 set(CMAKE_C_FLAGS "-O2 -Wall -Wextra")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g -DDEBUG=1")
 
-option(USE_C11_FEATURE "Enable c11 feature" OFF)
-if(USE_C11_FEATURE)
-  add_definitions(-std=c11)
-else()
-  add_definitions(-std=c99)     # at least c99 is required
+option(STRICT_C89_MODE "Strict c89 mode" OFF)
+if(STRICT_C89_MODE)
+  add_definitions(-std=c89 -ansi -pedantic)
 endif()
 
 include_directories(extlib/benz/include)
