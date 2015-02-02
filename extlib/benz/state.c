@@ -129,17 +129,17 @@ pic_init_core(pic_state *pic)
     pic_init_char(pic); DONE;
     pic_init_error(pic); DONE;
     pic_init_str(pic); DONE;
-    pic_init_macro(pic); DONE;
+    /* pic_init_macro(pic); DONE; */
     pic_init_var(pic); DONE;
-    pic_init_write(pic); DONE;
-    pic_init_read(pic); DONE;
-    pic_init_dict(pic); DONE;
-    pic_init_record(pic); DONE;
-    pic_init_eval(pic); DONE;
-    pic_init_lib(pic); DONE;
-    pic_init_attr(pic); DONE;
+    /* pic_init_write(pic); DONE; */
+    /* pic_init_read(pic); DONE; */
+    /* pic_init_dict(pic); DONE; */
+    /* pic_init_record(pic); DONE; */
+    /* pic_init_eval(pic); DONE; */
+    /* pic_init_lib(pic); DONE; */
+    /* pic_init_attr(pic); DONE; */
 
-    pic_load_cstr(pic, pic_boot);
+    /* pic_load_cstr(pic, pic_boot); */
   }
 
   pic_import_library(pic, pic->PICRIN_BASE);

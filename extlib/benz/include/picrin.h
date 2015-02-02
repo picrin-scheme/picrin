@@ -24,6 +24,8 @@
 #ifndef PICRIN_H
 #define PICRIN_H
 
+#include <stdio.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

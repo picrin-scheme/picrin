@@ -65,6 +65,7 @@ pic_make_chunk(pic_state *pic, const char *str, size_t len)
 
   buf = pic_malloc(pic, len + 1);
   buf[len] = 0;
+
   memcpy(buf, str, len);
 
   c = pic_malloc(pic, sizeof(struct pic_chunk));
