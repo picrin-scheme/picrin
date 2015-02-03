@@ -58,8 +58,8 @@ int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  int paramc, optc, min;
-  int i , argc = pic->ci->argc - 1;
+  size_t paramc, optc, min;
+  size_t i , argc = pic->ci->argc - 1;
   va_list ap;
   bool rest = false, opt = false;
 
@@ -103,7 +103,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
   
   /* start dispatching */
   va_start(ap, format);
-  min = paramc + optc + rest < argc ? paramc + optc + rest : argc;
+  min = paramc + optc < argc ? paramc + optc : argc;
   for(i = 1; i  < min + 1; i++) {
 
     c = *format++;
@@ -382,22 +382,19 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
-    case '*': {
+    default:
+      pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
+    }
+  }
+  if (rest) {
       size_t *n;
       pic_value **argv;
 
       n = va_arg(ap, size_t *);
       argv = va_arg(ap, pic_value **);
-      if ( paramc + optc < argc) {
-        *n = (size_t)(argc - (paramc + optc));
-        *argv = &GET_OPERAND(pic, i);
-      }
-      break;
+      *n = (size_t)(argc - (i - 1));
+      *argv = &GET_OPERAND(pic, i);
     }
-    default:
-      pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
-    }
-  }
   va_end(ap);
   return argc;
 }
