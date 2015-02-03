@@ -58,38 +58,43 @@ int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  int paramc, optc, ext = 0;
-  int i , argc = pic->ci->argc;
+  int paramc, optc, min;
+  int i , argc = pic->ci->argc - 1;
   va_list ap;
-  bool rest = false;
+  bool rest = false, opt = false;
+
+  /* paramc: required args count as scheme proc
+     optc:   optional args count as scheme proc
+     argc:   passed args count as scheme proc
+     vargc:  args count passed to this function
+  */
 
   /* check nparams first */
-  for (paramc = 0; format[paramc]; paramc++) {
-    if (format[paramc] == '|') {
-      /* mark to skip '|' */
-      ext = 1;
+  for (paramc = 0, c = *format; c;  c = format[++paramc]) {
+    if (c == '|') {
+      opt = true;
       break;
     }
-    if (format[paramc] == '*') {
+    else if (c == '*') {
       rest = true;
       break;
     }
   }
 
-  for (optc = 0; rest || format[paramc + optc + ext]; optc++) {
-    if (format[paramc + optc + ext] == '*') {
+  for (optc = 0;  opt && c; c = format[paramc + opt + ++optc]) {
+     if (c == '*') {
       rest = true;
       break;
     }
   }
 
   /* '|' should be followed by at least 1 char */
-  assert(ext <= optc);
+  assert(opt <= optc);
   /* '*' should not be followed by any char */
-  assert(format[paramc+optc+ext+rest] == '\0')
+  assert(format[paramc + opt + optc + rest] == '\0');
 
-  /* check argc */
-  if ((argc < paramc || paramc + optc < argc) && ! rest) {
+  /* check argc. */
+  if (argc < paramc || (paramc + optc < argc && ! rest)) {
     pic_errorf(pic, "%s: wrong number of arguments (%d for %s%d)",
                "procname", argc,
                rest? "at least " : "",
@@ -98,13 +103,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
   
   /* start dispatching */
   va_start(ap, format);
-  for(i = 1; i  < min(argc, paramc+optc+ext) + 1; i++) {
+  min = paramc + optc + rest < argc ? paramc + optc + rest : argc;
+  for(i = 1; i  < min + 1; i++) {
 
+    c = *format++;
     /* skip '|' if exists. This is always safe because of assert and argc check */
-    if ( i == paramc)
-      i += ext;
-
-    c = format[i];
+    c = c == '|' ? *format++ : c;
 
     switch (c) {
     case 'o': {
@@ -378,23 +382,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+    case '*': {
+      size_t *n;
+      pic_value **argv;
+
+      n = va_arg(ap, size_t *);
+      argv = va_arg(ap, pic_value **);
+      if ( paramc + optc < argc) {
+        *n = (size_t)(argc - (paramc + optc));
+        *argv = &GET_OPERAND(pic, i);
+      }
+      break;
+    }
     default:
       pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
     }
   }
-  if ( rest ) {
-    size_t *n;
-    pic_value **argv;
-
-    n = va_arg(ap, size_t *);
-    argv = va_arg(ap, pic_value **);
-    if (i <= argc) {
-      *n = (size_t)(argc - (paramc + optc));
-      *argv = &GET_OPERAND(pic, i);
-    }
-  }
   va_end(ap);
-  return argc - 1;
+  return argc;
 }
 
 void
