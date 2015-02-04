@@ -96,7 +96,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
   /* check argc. */
   if (argc < paramc || (paramc + optc < argc && ! rest)) {
     pic_errorf(pic, "%s: wrong number of arguments (%d for %s%d)",
-               "procname", argc,
+               pic_symbol_name(pic, pic_proc_name(pic_proc_ptr(GET_OPERAND(pic, 0)))) ,
+               argc,
                rest? "at least " : "",
                paramc);
   }
