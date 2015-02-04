@@ -643,7 +643,11 @@ pic_pair_map(pic_state *pic)
   pic_value *args;
   pic_value arg, ret;
 
+  argc = 0;
   pic_get_args(pic, "l*", &proc, &argc, &args);
+
+  if (argc == 0)
+    pic_errorf(pic, "map: wrong number of arguments (1 for at least 2)");
 
   ret = pic_nil_value();
   do {
@@ -655,6 +659,7 @@ pic_pair_map(pic_state *pic)
       pic_push(pic, pic_car(pic, args[i]), arg);
       args[i] = pic_cdr(pic, args[i]);
     }
+
     if (i != argc) {
       break;
     }
