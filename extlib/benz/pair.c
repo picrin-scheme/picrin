@@ -643,7 +643,6 @@ pic_pair_map(pic_state *pic)
   pic_value *args;
   pic_value arg, ret;
 
-  argc = 0;
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   if (argc == 0)
