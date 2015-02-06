@@ -294,7 +294,7 @@
                  (t (make-test test-name expected expr)))
             (set-current-test! r t)
             ((cb-test-enter r) r)
-            (if (and (not (member #t (map (lambda (f) (f r)) (applys r))))
+            (if (and #;(not (member #t (map (lambda (f) (f r)) (applys r))))
                      (member #t (map (lambda (f) (f r)) (skips r))))
                 ((cb-test-skip r) r test-name expected 'expr)
                 (with-exception-handler
