@@ -204,10 +204,10 @@ pic_value
 pic_reverse(pic_state *pic, pic_value list)
 {
   size_t ai = pic_gc_arena_preserve(pic);
-  pic_value v, acc;
+  pic_value v, acc, it;
 
   acc = pic_nil_value();
-  pic_for_each(v, list) {
+  pic_for_each(v, list, it) {
     acc = pic_cons(pic, v, acc);
 
     pic_gc_arena_restore(pic, ai);
@@ -220,10 +220,10 @@ pic_value
 pic_append(pic_state *pic, pic_value xs, pic_value ys)
 {
   size_t ai = pic_gc_arena_preserve(pic);
-  pic_value x;
+  pic_value x, it;
 
   xs = pic_reverse(pic, xs);
-  pic_for_each (x, xs) {
+  pic_for_each (x, xs, it) {
     ys = pic_cons(pic, x, ys);
 
     pic_gc_arena_restore(pic, ai);
@@ -645,6 +645,9 @@ pic_pair_map(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
+  if (argc == 0)
+    pic_errorf(pic, "map: wrong number of arguments (1 for at least 2)");
+
   ret = pic_nil_value();
   do {
     arg = pic_nil_value();
@@ -655,6 +658,7 @@ pic_pair_map(pic_state *pic)
       pic_push(pic, pic_car(pic, args[i]), arg);
       args[i] = pic_cdr(pic, args[i]);
     }
+
     if (i != argc) {
       break;
     }

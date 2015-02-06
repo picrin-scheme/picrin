@@ -99,6 +99,7 @@ escape_call(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   e = pic_data_ptr(pic_attr_ref(pic, pic_obj_value(pic_get_proc(pic)), "@@escape"));
+  ((struct pic_escape *)e->data)->results = pic_list_by_array(pic, argc, argv);
 
   pic_load_point(pic, e->data);
 
@@ -195,11 +196,11 @@ pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
 pic_value
 pic_values_by_list(pic_state *pic, pic_value list)
 {
-  pic_value v;
+  pic_value v, it;
   int i;
 
   i = 0;
-  pic_for_each (v, list) {
+  pic_for_each (v, list, it) {
     pic->sp[i++] = v;
   }
   pic->ci->retc = i;

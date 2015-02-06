@@ -13,7 +13,7 @@ struct pic_lib {
   PIC_OBJECT_HEADER
   pic_value name;
   struct pic_senv *env;
-  xhash exports;
+  struct pic_dict *exports;
 };
 
 #define pic_lib_ptr(o) ((struct pic_lib *)pic_ptr(o))

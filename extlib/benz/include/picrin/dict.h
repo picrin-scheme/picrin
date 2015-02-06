@@ -19,11 +19,15 @@ struct pic_dict {
 
 struct pic_dict *pic_make_dict(pic_state *);
 
-pic_value pic_dict_ref(pic_state *, struct pic_dict *, pic_sym);
-void pic_dict_set(pic_state *, struct pic_dict *, pic_sym, pic_value);
-void pic_dict_del(pic_state *, struct pic_dict *, pic_sym);
+#define pic_dict_for_each(sym, dict, it)                                \
+  for (it = xh_begin(&(dict)->hash); it != NULL; it = xh_next(it))      \
+    if ((sym = xh_key(it, pic_sym *)), true)
+
+pic_value pic_dict_ref(pic_state *, struct pic_dict *, pic_sym *);
+void pic_dict_set(pic_state *, struct pic_dict *, pic_sym *, pic_value);
+void pic_dict_del(pic_state *, struct pic_dict *, pic_sym *);
 size_t pic_dict_size(pic_state *, struct pic_dict *);
-bool pic_dict_has(pic_state *, struct pic_dict *, pic_sym);
+bool pic_dict_has(pic_state *, struct pic_dict *, pic_sym *);
 
 #if defined(__cplusplus)
 }

@@ -26,6 +26,8 @@
 
 /* #define PIC_POOL_SIZE 8 */
 
+/* #define PIC_SYMS_SIZE 32 */
+
 /* #define PIC_ISEQ_SIZE 1024 */
 
 /** enable all debug flags */
@@ -37,18 +39,14 @@
 /* #define GC_DEBUG 1 */
 /* #define GC_DEBUG_DETAIL 1 */
 
-#if __STDC_VERSION__ < 199901L
-# error please activate c99 features
-#endif
-
 #ifndef PIC_DIRECT_THREADED_VM
-# if defined(__GNUC__) || defined(__clang__)
+# if (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
 #  define PIC_DIRECT_THREADED_VM 1
 # endif
 #endif
 
 #ifndef PIC_NAN_BOXING
-# if __x86_64__ && __STDC_VERSION__ >= 201112L
+# if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
 #  define PIC_NAN_BOXING 1
 # endif
 #endif
@@ -83,6 +81,10 @@
 
 #ifndef PIC_POOL_SIZE
 # define PIC_POOL_SIZE 8
+#endif
+
+#ifndef PIC_SYMS_SIZE
+# define PIC_SYMS_SIZE 32
 #endif
 
 #ifndef PIC_ISEQ_SIZE

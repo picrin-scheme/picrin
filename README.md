@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/picrin-scheme/picrin.png)](https://travis-ci.org/picrin-scheme/picrin)
 [![Docs Status](https://readthedocs.org/projects/picrin/badge/?version=latest)](https://picrin.readthedocs.org/)
 
-Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C99 and does not require any special external libraries installed on the platform.
+Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C89 and does not require any special external libraries installed on the platform.
 
 ## Documentation
 

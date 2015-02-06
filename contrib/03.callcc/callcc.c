@@ -161,7 +161,7 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
   restore_cont(pic, cont);
 }
 
-pic_noreturn static void
+PIC_NORETURN static void
 restore_cont(pic_state *pic, struct pic_cont *cont)
 {
   char v;
@@ -203,7 +203,7 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   longjmp(tmp->jmp, 1);
 }
 
-pic_noreturn static pic_value
+PIC_NORETURN static pic_value
 cont_call(pic_state *pic)
 {
   struct pic_proc *proc;
@@ -287,6 +287,12 @@ pic_callcc_callcc(pic_state *pic)
 void
 pic_init_callcc(pic_state *pic)
 {
-  pic_redefun(pic, pic->PICRIN_BASE, "call-with-current-continuation", pic_callcc_callcc);
-  pic_redefun(pic, pic->PICRIN_BASE, "call/cc", pic_callcc_callcc);
+  pic_deflibrary (pic, "(picrin control)") {
+    pic_define(pic, "escape", pic_ref(pic, pic->PICRIN_BASE, "call-with-current-continuation"));
+  }
+
+  pic_deflibrary (pic, "(scheme base)") {
+    pic_redefun(pic, pic->PICRIN_BASE, "call-with-current-continuation", pic_callcc_callcc);
+    pic_redefun(pic, pic->PICRIN_BASE, "call/cc", pic_callcc_callcc);
+  }
 }

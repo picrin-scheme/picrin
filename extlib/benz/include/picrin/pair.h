@@ -18,7 +18,7 @@ struct pic_pair {
 #define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_car(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
@@ -31,7 +31,7 @@ pic_car(pic_state *pic, pic_value obj)
   return pair->car;
 }
 
-static inline pic_value
+PIC_INLINE pic_value
 pic_cdr(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
@@ -59,12 +59,9 @@ pic_value pic_list7(pic_state *, pic_value, pic_value, pic_value, pic_value, pic
 pic_value pic_list_by_array(pic_state *, size_t, pic_value *);
 pic_value pic_make_list(pic_state *, size_t, pic_value);
 
-#define pic_for_each(var, list)                         \
-  pic_for_each_helper_(var, PIC_GENSYM(tmp), list)
-#define pic_for_each_helper_(var, tmp, list)                            \
-  for (pic_value tmp = (list);                                          \
-       pic_nil_p(tmp) ? false : ((var = pic_car(pic, tmp)), true);      \
-       tmp = pic_cdr(pic, tmp))
+#define pic_for_each(var, list, it)                             \
+  for (it = (list); ! pic_nil_p(it); it = pic_cdr(pic, it))     \
+    if ((var = pic_car(pic, it)), true)
 
 #define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
 #define pic_pop(pic, place) (place = pic_cdr(pic, place))

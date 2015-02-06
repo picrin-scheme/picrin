@@ -42,13 +42,14 @@ extern "C" {
 #include <math.h>
 #include <ctype.h>
 
+#include "picrin/config.h"
+#include "picrin/util.h"
+
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
 #include "picrin/xfile.h"
 #include "picrin/xrope.h"
 
-#include "picrin/config.h"
-#include "picrin/util.h"
 #include "picrin/value.h"
 
 typedef struct pic_code pic_code;
@@ -87,24 +88,27 @@ typedef struct {
 
   pic_code *ip;
 
-  struct pic_lib *lib;
+  struct pic_lib *lib, *prev_lib;
 
-  pic_sym sDEFINE, sLAMBDA, sIF, sBEGIN, sQUOTE, sSETBANG;
-  pic_sym sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
-  pic_sym sDEFINE_SYNTAX, sIMPORT, sEXPORT;
-  pic_sym sDEFINE_LIBRARY, sIN_LIBRARY;
-  pic_sym sCOND_EXPAND, sAND, sOR, sELSE, sLIBRARY;
-  pic_sym sONLY, sRENAME, sPREFIX, sEXCEPT;
-  pic_sym sCONS, sCAR, sCDR, sNILP;
-  pic_sym sSYMBOL_P, sPAIR_P;
-  pic_sym sADD, sSUB, sMUL, sDIV, sMINUS;
-  pic_sym sEQ, sLT, sLE, sGT, sGE, sNOT;
-  pic_sym sREAD, sFILE;
+  pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
+  pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
+  pic_sym *sDEFINE_SYNTAX, *sIMPORT, *sEXPORT;
+  pic_sym *sDEFINE_LIBRARY, *sIN_LIBRARY;
+  pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
+  pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
+  pic_sym *sCONS, *sCAR, *sCDR, *sNILP;
+  pic_sym *sSYMBOLP, *sPAIRP;
+  pic_sym *sADD, *sSUB, *sMUL, *sDIV, *sMINUS;
+  pic_sym *sEQ, *sLT, *sLE, *sGT, *sGE, *sNOT;
+  pic_sym *sREAD, *sFILE;
+  pic_sym *sGREF, *sCREF, *sLREF;
+  pic_sym *sCALL, *sTAILCALL, *sRETURN;
+  pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
-  pic_sym rDEFINE, rLAMBDA, rIF, rBEGIN, rQUOTE, rSETBANG;
-  pic_sym rDEFINE_SYNTAX, rIMPORT, rEXPORT;
-  pic_sym rDEFINE_LIBRARY, rIN_LIBRARY;
-  pic_sym rCOND_EXPAND;
+  pic_sym *rDEFINE, *rLAMBDA, *rIF, *rBEGIN, *rQUOTE, *rSETBANG;
+  pic_sym *rDEFINE_SYNTAX, *rIMPORT, *rEXPORT;
+  pic_sym *rDEFINE_LIBRARY, *rIN_LIBRARY;
+  pic_sym *rCOND_EXPAND;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
@@ -112,17 +116,14 @@ typedef struct {
   pic_value features;
 
   xhash syms;                   /* name to symbol */
-  xhash sym_names;              /* symbol to name */
-  int sym_cnt;
-  int uniq_sym_cnt;
-
-  xhash globals;
-  xhash macros;
+  struct pic_dict *globals;
+  struct pic_dict *macros;
   pic_value libs;
   xhash attrs;
 
   struct pic_reader *reader;
 
+  bool gc_enable;
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
@@ -175,13 +176,11 @@ bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
-pic_sym pic_intern(pic_state *, const char *, size_t);
-pic_sym pic_intern_str(pic_state *, pic_str *);
-pic_sym pic_intern_cstr(pic_state *, const char *);
-const char *pic_symbol_name(pic_state *, pic_sym);
-pic_sym pic_gensym(pic_state *, pic_sym);
-pic_sym pic_ungensym(pic_state *, pic_sym);
-bool pic_interned_p(pic_state *, pic_sym);
+pic_sym *pic_intern(pic_state *, pic_str *);
+pic_sym *pic_intern_cstr(pic_state *, const char *);
+const char *pic_symbol_name(pic_state *, pic_sym *);
+pic_sym *pic_gensym(pic_state *, pic_sym *);
+bool pic_interned_p(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
@@ -210,25 +209,26 @@ struct pic_lib *pic_open_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define pic_deflibrary(pic, spec)                                       \
-  pic_deflibrary_helper_(pic, PIC_GENSYM(i), PIC_GENSYM(prev_lib), spec)
-#define pic_deflibrary_helper_(pic, i, prev_lib, spec)                  \
-  for (int i = 0; ! i; )                                                \
-    for (struct pic_lib *prev_lib; ! i; )                               \
-      for ((prev_lib = pic->lib), pic_open_library(pic, pic_read_cstr(pic, spec)), pic_in_library(pic, pic_read_cstr(pic, spec)); ! i++; pic->lib = prev_lib)
+  for (((assert(pic->prev_lib == NULL)),                                \
+        (pic->prev_lib = pic->lib),                                     \
+        (pic->lib = pic_open_library(pic, pic_read_cstr(pic, (spec))))); \
+       pic->prev_lib != NULL;                                           \
+       ((pic->lib = pic->prev_lib),                                     \
+        (pic->prev_lib = NULL)))
 
 void pic_import(pic_state *, pic_value);
 void pic_import_library(pic_state *, struct pic_lib *);
-void pic_export(pic_state *, pic_sym);
+void pic_export(pic_state *, pic_sym *);
 
-pic_noreturn void pic_panic(pic_state *, const char *);
-pic_noreturn void pic_errorf(pic_state *, const char *, ...);
+PIC_NORETURN void pic_panic(pic_state *, const char *);
+PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *);
 
 /* obsoleted */
-static inline void pic_warn(pic_state *pic, const char *msg)
+PIC_INLINE void pic_warn(pic_state *pic, const char *msg)
 {
   pic_warnf(pic, msg);
 }

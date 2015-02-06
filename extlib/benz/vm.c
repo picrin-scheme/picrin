@@ -15,6 +15,7 @@
 #include "picrin/error.h"
 #include "picrin/dict.h"
 #include "picrin/record.h"
+#include "picrin/symbol.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
@@ -40,7 +41,7 @@ pic_get_proc(pic_state *pic)
  *  F   double *, bool *        float with exactness
  *  s   pic_str **              string object
  *  z   char **                 c string
- *  m   pic_sym *               symbol
+ *  m   pic_sym **              symbol
  *  v   pic_vec **              vector object
  *  b   pic_blob **             bytevector object
  *  c   char *                  char
@@ -57,64 +58,83 @@ int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  int i = 1, argc = pic->ci->argc;
+  size_t paramc, optc, min;
+  size_t i , argc = pic->ci->argc - 1;
   va_list ap;
-  bool opt = false;
+  bool rest = false, opt = false;
 
-  va_start(ap, format);
-  while ((c = *format++)) {
-    switch (c) {
-    default:
-      if (argc <= i && ! opt) {
-	pic_errorf(pic, "wrong number of arguments");
-      }
-      break;
-    case '|':
-      break;
-    case '*':
-      break;
-    }
+  /* paramc: required args count as scheme proc
+     optc:   optional args count as scheme proc
+     argc:   passed args count as scheme proc
+     vargc:  args count passed to this function
+  */
 
-    /* in order to run out of all arguments passed to this function
-       (i.e. do va_arg for each argument), optional argument existence
-       check is done in every case closure */
-
-    if (c == '*')
-      break;
-
-    switch (c) {
-    case '|':
+  /* check nparams first */
+  for (paramc = 0, c = *format; c;  c = format[++paramc]) {
+    if (c == '|') {
       opt = true;
       break;
+    }
+    else if (c == '*') {
+      rest = true;
+      break;
+    }
+  }
+
+  for (optc = 0;  opt && c; c = format[paramc + opt + ++optc]) {
+     if (c == '*') {
+      rest = true;
+      break;
+    }
+  }
+
+  /* '|' should be followed by at least 1 char */
+  assert(opt <= optc);
+  /* '*' should not be followed by any char */
+  assert(format[paramc + opt + optc + rest] == '\0');
+
+  /* check argc. */
+  if (argc < paramc || (paramc + optc < argc && ! rest)) {
+    pic_errorf(pic, "%s: wrong number of arguments (%d for %s%d)",
+               pic_symbol_name(pic, pic_proc_name(pic_proc_ptr(GET_OPERAND(pic, 0)))) ,
+               argc,
+               rest? "at least " : "",
+               paramc);
+  }
+  
+  /* start dispatching */
+  va_start(ap, format);
+  min = paramc + optc < argc ? paramc + optc : argc;
+  for(i = 1; i  < min + 1; i++) {
+
+    c = *format++;
+    /* skip '|' if exists. This is always safe because of assert and argc check */
+    c = c == '|' ? *format++ : c;
+
+    switch (c) {
     case 'o': {
       pic_value *p;
 
       p = va_arg(ap, pic_value*);
-      if (i < argc) {
-        *p = GET_OPERAND(pic,i);
-        i++;
-      }
+      *p = GET_OPERAND(pic,i);
       break;
     }
     case 'f': {
       double *f;
 
       f = va_arg(ap, double *);
-      if (i < argc) {
-        pic_value v;
+      pic_value v;
 
-        v = GET_OPERAND(pic, i);
-        switch (pic_type(v)) {
-        case PIC_TT_FLOAT:
-          *f = pic_float(v);
-          break;
-        case PIC_TT_INT:
-          *f = pic_int(v);
-          break;
-        default:
-          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic, i);
+      switch (pic_type(v)) {
+      case PIC_TT_FLOAT:
+        *f = pic_float(v);
+        break;
+      case PIC_TT_INT:
+        *f = pic_int(v);
+        break;
+      default:
+        pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
       }
       break;
     }
@@ -124,23 +144,20 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       f = va_arg(ap, double *);
       e = va_arg(ap, bool *);
-      if (i < argc) {
-        pic_value v;
+      pic_value v;
 
-        v = GET_OPERAND(pic, i);
-        switch (pic_type(v)) {
-        case PIC_TT_FLOAT:
-          *f = pic_float(v);
-          *e = false;
-          break;
-        case PIC_TT_INT:
-          *f = pic_int(v);
-          *e = true;
-          break;
-        default:
-          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic, i);
+      switch (pic_type(v)) {
+      case PIC_TT_FLOAT:
+        *f = pic_float(v);
+        *e = false;
+        break;
+      case PIC_TT_INT:
+        *f = pic_int(v);
+        *e = true;
+        break;
+      default:
+        pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
       }
       break;
     }
@@ -150,23 +167,20 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       k = va_arg(ap, int *);
       e = va_arg(ap, bool *);
-      if (i < argc) {
-        pic_value v;
+      pic_value v;
 
-        v = GET_OPERAND(pic, i);
-        switch (pic_type(v)) {
-        case PIC_TT_FLOAT:
-          *k = (int)pic_float(v);
-          *e = false;
-          break;
-        case PIC_TT_INT:
-          *k = pic_int(v);
-          *e = true;
-          break;
-        default:
-          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic, i);
+      switch (pic_type(v)) {
+      case PIC_TT_FLOAT:
+        *k = (int)pic_float(v);
+        *e = false;
+        break;
+      case PIC_TT_INT:
+        *k = pic_int(v);
+        *e = true;
+        break;
+      default:
+        pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
       }
       break;
     }
@@ -174,21 +188,18 @@ pic_get_args(pic_state *pic, const char *format, ...)
       int *k;
 
       k = va_arg(ap, int *);
-      if (i < argc) {
-        pic_value v;
+      pic_value v;
 
-        v = GET_OPERAND(pic, i);
-        switch (pic_type(v)) {
-        case PIC_TT_FLOAT:
-          *k = (int)pic_float(v);
-          break;
-        case PIC_TT_INT:
-          *k = pic_int(v);
-          break;
-        default:
-          pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic, i);
+      switch (pic_type(v)) {
+      case PIC_TT_FLOAT:
+        *k = (int)pic_float(v);
+        break;
+      case PIC_TT_INT:
+        *k = pic_int(v);
+        break;
+      default:
+        pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
       }
       break;
     }
@@ -196,28 +207,27 @@ pic_get_args(pic_state *pic, const char *format, ...)
       size_t *k;
 
       k = va_arg(ap, size_t *);
-      if (i < argc) {
-        pic_value v;
-        int x;
+      pic_value v;
+      int x;
+      size_t s;
 
-        v = GET_OPERAND(pic, i);
-        switch (pic_type(v)) {
-        case PIC_TT_INT:
-          x = pic_int(v);
-          if (x < 0) {
-            pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
-          }
-          if (sizeof(unsigned) > sizeof(size_t)) {
-            if ((unsigned)x > (unsigned)SIZE_MAX) {
-              pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
-            }
-          }
-          *k = (size_t)x;
-          break;
-        default:
-          pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
+      v = GET_OPERAND(pic, i);
+      switch (pic_type(v)) {
+      case PIC_TT_INT:
+        x = pic_int(v);
+        if (x < 0) {
+          pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
         }
-        i++;
+        s = (size_t)x;
+        if (sizeof(unsigned) > sizeof(size_t)) {
+          if (x != (int)s) {
+            pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
+          }
+        }
+        *k = (size_t)x;
+        break;
+      default:
+        pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
       }
       break;
     }
@@ -226,15 +236,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       str = va_arg(ap, pic_str **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_str_p(v)) {
-          *str = pic_str_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_str_p(v)) {
+        *str = pic_str_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
       }
       break;
     }
@@ -243,30 +250,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       cstr = va_arg(ap, const char **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (! pic_str_p(v)) {
-          pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
-        }
-        *cstr = pic_str_cstr(pic_str_ptr(v));
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (! pic_str_p(v)) {
+        pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
       }
+      *cstr = pic_str_cstr(pic_str_ptr(v));
       break;
     }
     case 'm': {
-      pic_sym *m;
+      pic_sym **m;
       pic_value v;
 
-      m = va_arg(ap, pic_sym *);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_sym_p(v)) {
-          *m = pic_sym(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args: expected symbol, but got ~s", v);
-        }
-        i++;
+      m = va_arg(ap, pic_sym **);
+      v = GET_OPERAND(pic,i);
+      if (pic_sym_p(v)) {
+        *m = pic_sym_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected symbol, but got ~s", v);
       }
       break;
     }
@@ -275,15 +276,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       vec = va_arg(ap, struct pic_vector **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_vec_p(v)) {
-          *vec = pic_vec_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args: expected vector, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_vec_p(v)) {
+        *vec = pic_vec_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected vector, but got ~s", v);
       }
       break;
     }
@@ -292,15 +290,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       b = va_arg(ap, struct pic_blob **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_blob_p(v)) {
-          *b = pic_blob_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args: expected bytevector, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_blob_p(v)) {
+        *b = pic_blob_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected bytevector, but got ~s", v);
       }
       break;
     }
@@ -309,15 +304,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       k = va_arg(ap, char *);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_char_p(v)) {
-          *k = pic_char(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args: expected char, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_char_p(v)) {
+        *k = pic_char(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected char, but got ~s", v);
       }
       break;
     }
@@ -326,15 +318,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       l = va_arg(ap, struct pic_proc **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_proc_p(v)) {
-          *l = pic_proc_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args, expected procedure, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_proc_p(v)) {
+        *l = pic_proc_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args, expected procedure, but got ~s", v);
       }
       break;
     }
@@ -343,15 +332,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       p = va_arg(ap, struct pic_port **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_port_p(v)) {
-          *p = pic_port_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args, expected port, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_port_p(v)) {
+        *p = pic_port_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args, expected port, but got ~s", v);
       }
       break;
     }
@@ -360,15 +346,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       d = va_arg(ap, struct pic_dict **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_dict_p(v)) {
-          *d = pic_dict_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args, expected dictionary, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_dict_p(v)) {
+        *d = pic_dict_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args, expected dictionary, but got ~s", v);
       }
       break;
     }
@@ -377,15 +360,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       r = va_arg(ap, struct pic_record **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_record_p(v)) {
-          *r = pic_record_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args: expected record, but got ~s", v);
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_record_p(v)) {
+        *r = pic_record_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected record, but got ~s", v);
       }
       break;
     }
@@ -394,15 +374,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value v;
 
       e = va_arg(ap, struct pic_error **);
-      if (i < argc) {
-        v = GET_OPERAND(pic,i);
-        if (pic_error_p(v)) {
-          *e = pic_error_ptr(v);
-        }
-        else {
-          pic_errorf(pic, "pic_get_args, expected error");
-        }
-        i++;
+      v = GET_OPERAND(pic,i);
+      if (pic_error_p(v)) {
+        *e = pic_error_ptr(v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args, expected error");
       }
       break;
     }
@@ -410,29 +387,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
     }
   }
-  if ('*' == c) {
-    size_t *n;
-    pic_value **argv;
+  if (rest) {
+      size_t *n;
+      pic_value **argv;
 
-    n = va_arg(ap, size_t *);
-    argv = va_arg(ap, pic_value **);
-    if (i <= argc) {
-      *n = (size_t)(argc - i);
+      n = va_arg(ap, size_t *);
+      argv = va_arg(ap, pic_value **);
+      *n = (size_t)(argc - (i - 1));
       *argv = &GET_OPERAND(pic, i);
-      i = argc;
     }
-  }
-  else if (argc > i) {
-    pic_errorf(pic, "wrong number of arguments");
-  }
   va_end(ap);
-  return i - 1;
+  return argc;
 }
 
 void
 pic_define_noexport(pic_state *pic, const char *name, pic_value val)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -442,7 +413,7 @@ pic_define_noexport(pic_state *pic, const char *name, pic_value val)
     pic_warn(pic, "redefining global");
   }
 
-  xh_put_int(&pic->globals, rename, &val);
+  pic_dict_set(pic, pic->globals, rename, val);
 }
 
 void
@@ -456,7 +427,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 pic_value
 pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -464,13 +435,13 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  return xh_val(xh_get_int(&pic->globals, rename), pic_value);
+  return pic_dict_ref(pic, pic->globals, rename);
 }
 
 void
 pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
-  pic_sym sym, rename;
+  pic_sym *sym, *rename;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -478,7 +449,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  xh_put_int(&pic->globals, rename, &val);
+  pic_dict_set(pic, pic->globals, rename, val);
 }
 
 pic_value
@@ -548,6 +519,23 @@ pic_vm_tear_off(pic_state *pic)
       vm_tear_off(ci);
     }
   }
+}
+
+static struct pic_irep *
+vm_get_irep(pic_state *pic)
+{
+  pic_value self;
+  struct pic_irep *irep;
+
+  self = pic->ci->fp[0];
+  if (! pic_proc_p(self)) {
+    pic_errorf(pic, "logic flaw");
+  }
+  irep = pic_proc_ptr(self)->u.irep;
+  if (! pic_proc_irep_p(pic_proc_ptr(self))) {
+    pic_errorf(pic, "logic flaw");
+  }
+  return irep;
 }
 
 pic_value
@@ -648,12 +636,13 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 #if VM_DEBUG
 # define VM_CALL_PRINT                                                  \
   do {                                                                  \
+    short i;                                                            \
     puts("\n== calling proc...");                                       \
     printf("  proc = ");                                                \
     pic_debug(pic, pic_obj_value(proc));                                \
     puts("");                                                           \
     printf("  argv = (");                                               \
-    for (short i = 1; i < c.u.i; ++i) {                                 \
+    for (i = 1; i < c.u.i; ++i) {                                       \
       if (i > 1)                                                        \
         printf(" ");                                                    \
       pic_debug(pic, pic->sp[-c.u.i + i]);                              \
@@ -688,7 +677,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
-    &&L_OP_SYMBOL_P, &&L_OP_PAIR_P, 
+    &&L_OP_SYMBOLP, &&L_OP_PAIRP,
     &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_MINUS,
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
@@ -751,34 +740,31 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      pic_value self;
-      struct pic_irep *irep;
+      struct pic_irep *irep = vm_get_irep(pic);
 
-      self = pic->ci->fp[0];
-      if (! pic_proc_p(self)) {
-        pic_errorf(pic, "logic flaw");
-      }
-      irep = pic_proc_ptr(self)->u.irep;
-      if (! pic_proc_irep_p(pic_proc_ptr(self))) {
-        pic_errorf(pic, "logic flaw");
-      }
       PUSH(irep->pool[c.u.i]);
       NEXT;
     }
     CASE(OP_GREF) {
-      xh_entry *e;
+      struct pic_irep *irep = vm_get_irep(pic);
+      pic_sym *sym;
 
-      if ((e = xh_get_int(&pic->globals, c.u.i)) == NULL) {
-        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, c.u.i));
+      sym = irep->syms[c.u.i];
+      if (! pic_dict_has(pic, pic->globals, sym)) {
+        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, sym));
       }
-      PUSH(xh_val(e, pic_value));
+      PUSH(pic_dict_ref(pic, pic->globals, sym));
       NEXT;
     }
     CASE(OP_GSET) {
+      struct pic_irep *irep = vm_get_irep(pic);
+      pic_sym *sym;
       pic_value val;
 
+      sym = irep->syms[c.u.i];
+
       val = POP();
-      xh_put_int(&pic->globals, c.u.i, &val);
+      pic_dict_set(pic, pic->globals, sym, val);
       NEXT;
     }
     CASE(OP_LREF) {
@@ -897,7 +883,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 
 	if (ci->argc != irep->argc) {
 	  if (! (irep->varg && ci->argc >= irep->argc)) {
-            pic_errorf(pic, "wrong number of arguments (%d for %d%s)", ci->argc - 1, irep->argc - 1, (irep->varg ? "+" : ""));
+            pic_errorf(pic, "wrong number of arguments (%d for %s%d)", ci->argc - 1, (irep->varg ? "at least " : ""), irep->argc - 1);
 	  }
 	}
 	/* prepare rest args */
@@ -1031,14 +1017,14 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
 
-    CASE(OP_SYMBOL_P) {
+    CASE(OP_SYMBOLP) {
       pic_value p;
       p = POP();
       PUSH(pic_bool_value(pic_sym_p(p)));
       NEXT;
     }
 
-    CASE(OP_PAIR_P) {
+    CASE(OP_PAIRP) {
       pic_value p;
       p = POP();
       PUSH(pic_bool_value(pic_pair_p(p)));
@@ -1133,18 +1119,18 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  static const pic_code iseq[2] = {
-    { OP_NOP, { .i = 0 } },
-    { OP_TAILCALL, { .i = -1 } }
-  };
+  static pic_code iseq[2];
 
-  pic_value v, *sp;
+  pic_value v, it, *sp;
   pic_callinfo *ci;
+
+  PIC_INIT_CODE_I(iseq[0], OP_NOP, 0);
+  PIC_INIT_CODE_I(iseq[1], OP_TAILCALL, -1);
 
   *pic->sp++ = pic_obj_value(proc);
 
   sp = pic->sp;
-  pic_for_each (v, args) {
+  pic_for_each (v, args, it) {
     *sp++ = v;
   }
 

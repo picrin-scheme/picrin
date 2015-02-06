@@ -50,32 +50,32 @@ typedef struct xhash {
  */
 
 /* string map */
-static inline void xh_init_str(xhash *x, size_t width);
-static inline xh_entry *xh_get_str(xhash *x, const char *key);
-static inline xh_entry *xh_put_str(xhash *x, const char *key, void *);
-static inline void xh_del_str(xhash *x, const char *key);
+PIC_INLINE void xh_init_str(xhash *x, size_t width);
+PIC_INLINE xh_entry *xh_get_str(xhash *x, const char *key);
+PIC_INLINE xh_entry *xh_put_str(xhash *x, const char *key, void *);
+PIC_INLINE void xh_del_str(xhash *x, const char *key);
 
 /* object map */
-static inline void xh_init_ptr(xhash *x, size_t width);
-static inline xh_entry *xh_get_ptr(xhash *x, const void *key);
-static inline xh_entry *xh_put_ptr(xhash *x, const void *key, void *);
-static inline void xh_del_ptr(xhash *x, const void *key);
+PIC_INLINE void xh_init_ptr(xhash *x, size_t width);
+PIC_INLINE xh_entry *xh_get_ptr(xhash *x, const void *key);
+PIC_INLINE xh_entry *xh_put_ptr(xhash *x, const void *key, void *);
+PIC_INLINE void xh_del_ptr(xhash *x, const void *key);
 
 /* int map */
-static inline void xh_init_int(xhash *x, size_t width);
-static inline xh_entry *xh_get_int(xhash *x, int key);
-static inline xh_entry *xh_put_int(xhash *x, int key, void *);
-static inline void xh_del_int(xhash *x, int key);
+PIC_INLINE void xh_init_int(xhash *x, size_t width);
+PIC_INLINE xh_entry *xh_get_int(xhash *x, int key);
+PIC_INLINE xh_entry *xh_put_int(xhash *x, int key, void *);
+PIC_INLINE void xh_del_int(xhash *x, int key);
 
-static inline size_t xh_size(xhash *x);
-static inline void xh_clear(xhash *x);
-static inline void xh_destroy(xhash *x);
+PIC_INLINE size_t xh_size(xhash *x);
+PIC_INLINE void xh_clear(xhash *x);
+PIC_INLINE void xh_destroy(xhash *x);
 
-static inline xh_entry *xh_begin(xhash *x);
-static inline xh_entry *xh_next(xh_entry *e);
+PIC_INLINE xh_entry *xh_begin(xhash *x);
+PIC_INLINE xh_entry *xh_next(xh_entry *e);
 
 
-static inline void
+PIC_INLINE void
 xh_bucket_realloc(xhash *x, size_t newsize)
 {
   x->size = newsize;
@@ -83,7 +83,7 @@ xh_bucket_realloc(xhash *x, size_t newsize)
   memset(x->buckets, 0, (x->size + 1) * sizeof(xh_entry *));
 }
 
-static inline void
+PIC_INLINE void
 xh_init_(xhash *x, size_t kwidth, size_t vwidth, xh_hashf hashf, xh_equalf equalf, void *data)
 {
   x->size = 0;
@@ -102,7 +102,7 @@ xh_init_(xhash *x, size_t kwidth, size_t vwidth, xh_hashf hashf, xh_equalf equal
   xh_bucket_realloc(x, XHASH_INIT_SIZE);
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_get_(xhash *x, const void *key)
 {
   int hash;
@@ -118,7 +118,7 @@ xh_get_(xhash *x, const void *key)
   return e;
 }
 
-static inline void
+PIC_INLINE void
 xh_resize_(xhash *x, size_t newsize)
 {
   xhash y;
@@ -145,7 +145,7 @@ xh_resize_(xhash *x, size_t newsize)
   memcpy(x, &y, sizeof(xhash));
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_put_(xhash *x, const void *key, void *val)
 {
   int hash;
@@ -186,7 +186,7 @@ xh_put_(xhash *x, const void *key, void *val)
   return x->buckets[idx] = e;
 }
 
-static inline void
+PIC_INLINE void
 xh_del_(xhash *x, const void *key)
 {
   int hash;
@@ -235,13 +235,13 @@ xh_del_(xhash *x, const void *key)
   x->count--;
 }
 
-static inline size_t
+PIC_INLINE size_t
 xh_size(xhash *x)
 {
   return x->count;
 }
 
-static inline void
+PIC_INLINE void
 xh_clear(xhash *x)
 {
   size_t i;
@@ -261,7 +261,7 @@ xh_clear(xhash *x)
   x->count = 0;
 }
 
-static inline void
+PIC_INLINE void
 xh_destroy(xhash *x)
 {
   xh_clear(x);
@@ -270,7 +270,7 @@ xh_destroy(xhash *x)
 
 /* string map */
 
-static inline int
+PIC_INLINE int
 xh_str_hash(const void *key, void *data)
 {
   const char *str = *(const char **)key;
@@ -284,7 +284,7 @@ xh_str_hash(const void *key, void *data)
   return hash;
 }
 
-static inline int
+PIC_INLINE int
 xh_str_equal(const void *key1, const void *key2, void *data)
 {
   (void)data;
@@ -292,25 +292,25 @@ xh_str_equal(const void *key1, const void *key2, void *data)
   return strcmp(*(const char **)key1, *(const char **)key2) == 0;
 }
 
-static inline void
+PIC_INLINE void
 xh_init_str(xhash *x, size_t width)
 {
   xh_init_(x, sizeof(const char *), width, xh_str_hash, xh_str_equal, NULL);
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_get_str(xhash *x, const char *key)
 {
   return xh_get_(x, &key);
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_put_str(xhash *x, const char *key, void *val)
 {
   return xh_put_(x, &key, val);
 }
 
-static inline void
+PIC_INLINE void
 xh_del_str(xhash *x, const char *key)
 {
   xh_del_(x, &key);
@@ -318,7 +318,7 @@ xh_del_str(xhash *x, const char *key)
 
 /* object map */
 
-static inline int
+PIC_INLINE int
 xh_ptr_hash(const void *key, void *data)
 {
   (void)data;
@@ -326,7 +326,7 @@ xh_ptr_hash(const void *key, void *data)
   return (int)(size_t)*(const void **)key;
 }
 
-static inline int
+PIC_INLINE int
 xh_ptr_equal(const void *key1, const void *key2, void *data)
 {
   (void) data;
@@ -334,25 +334,25 @@ xh_ptr_equal(const void *key1, const void *key2, void *data)
   return *(const void **)key1 == *(const void **)key2;
 }
 
-static inline void
+PIC_INLINE void
 xh_init_ptr(xhash *x, size_t width)
 {
   xh_init_(x, sizeof(const void *), width, xh_ptr_hash, xh_ptr_equal, NULL);
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_get_ptr(xhash *x, const void *key)
 {
   return xh_get_(x, &key);
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_put_ptr(xhash *x, const void *key, void *val)
 {
   return xh_put_(x, &key, val);
 }
 
-static inline void
+PIC_INLINE void
 xh_del_ptr(xhash *x, const void *key)
 {
   xh_del_(x, &key);
@@ -360,7 +360,7 @@ xh_del_ptr(xhash *x, const void *key)
 
 /* int map */
 
-static inline int
+PIC_INLINE int
 xh_int_hash(const void *key, void *data)
 {
   (void)data;
@@ -368,7 +368,7 @@ xh_int_hash(const void *key, void *data)
   return *(int *)key;
 }
 
-static inline int
+PIC_INLINE int
 xh_int_equal(const void *key1, const void *key2, void *data)
 {
   (void)data;
@@ -376,25 +376,25 @@ xh_int_equal(const void *key1, const void *key2, void *data)
   return *(int *)key1 == *(int *)key2;
 }
 
-static inline void
+PIC_INLINE void
 xh_init_int(xhash *x, size_t width)
 {
   xh_init_(x, sizeof(int), width, xh_int_hash, xh_int_equal, NULL);
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_get_int(xhash *x, int key)
 {
   return xh_get_(x, &key);
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_put_int(xhash *x, int key, void *val)
 {
   return xh_put_(x, &key, val);
 }
 
-static inline void
+PIC_INLINE void
 xh_del_int(xhash *x, int key)
 {
   xh_del_(x, &key);
@@ -402,13 +402,13 @@ xh_del_int(xhash *x, int key)
 
 /** iteration */
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_begin(xhash *x)
 {
   return x->head;
 }
 
-static inline xh_entry *
+PIC_INLINE xh_entry *
 xh_next(xh_entry *e)
 {
   return e->bw;
