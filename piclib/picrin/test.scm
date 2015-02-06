@@ -24,13 +24,18 @@
 
     (cb-begin cb-begin set-cb-begin!)
     (cb-end cb-end set-cb-end!)
+    (cb-group-begin cb-group-begin set-cb-group-begin!)
+    (cb-group-end cb-group-end set-cb-group-end!)
+
     (cb-test-enter cb-test-enter set-cb-test-enter!)
+
     (cb-test-pass cb-test-pass set-cb-test-pass!)
     (cb-test-fail cb-test-fail set-cb-test-fail!)
     (cb-test-xpass cb-test-xpass set-cb-test-xpass!)
     (cb-test-xfail cb-test-xfail set-cb-test-xfail!)
     (cb-test-skip cb-test-skip set-cb-test-skip!)
     (cb-test-error cb-test-error set-cb-test-error!)
+
     (cb-test-exit cb-test-exit set-cb-test-exit!))
 
   (define-record-type <test>
@@ -142,6 +147,9 @@
       (display str)))
 
 
+  (define (simple-cb-test-enter r)
+    (set-test-count! r (+ (test-count r) 1)))
+
   (define (simple-cb-test-pass r test-name expected expr got)
     (print-case (current-output-port) (test-count r) test-name)
     (display "[0;32m")
@@ -219,7 +227,7 @@
                              (display "[0;39m" out))))
 
   (define (simple-cb-test-exit r)
-    (set-test-count! r (+ (test-count r) 1)))
+    #f)
 
 
   (define (test-runner-simple)
@@ -227,6 +235,7 @@
       (set-cb-begin! r simple-cb-begin)
       (set-cb-end! r simple-cb-end)
       
+      (set-cb-test-enter! r simple-cb-test-enter)
       (set-cb-test-pass! r simple-cb-test-pass)
       (set-cb-test-fail! r simple-cb-test-fail)
       (set-cb-test-xpass! r simple-cb-test-xpass)
