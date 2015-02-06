@@ -466,4 +466,55 @@
   (test-runner-factory test-runner-simple)
   (test-runner-current (test-runner-simple))
 
-  (export test test-begin test-end test-values test-syntax-error))
+  (export
+   test-assert
+   test-eqv
+   test-equal
+   test-eq
+   test-approximate
+
+   test-error
+
+                                        ;test-read-string
+
+   test-begin
+   test-end
+   test-group
+
+   test-group-with-cleanup
+
+   test-match-name
+   test-match-nth
+   test-match-any
+   test-match-all
+
+   test-skip
+
+   test-expect-fail
+
+   test-runner?
+   test-runner-current
+   test-runner-get
+   test-runner-simple
+   test-runner-null
+   test-runner-create
+   test-runner-factory
+
+   test-apply
+   test-with-runner
+
+                                        ;test-result-kind
+                                        ;test-passed?
+                                        ;test-result-ref
+                                        ;test-result-set!
+                                        ;test-result-remove
+                                        ;test-result-clear
+                                        ;test-result-alist
+   
+   )
+
+  (export
+   test
+   test-values
+   test-syntax-error)
+  )
