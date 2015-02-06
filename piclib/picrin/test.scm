@@ -6,18 +6,22 @@
   (define-record-type <test-runner>
     (make-test-runner)
     test-runner?
-    ;; members
+
     (test-count test-count set-test-count!)
     (fail-count fail-count set-fail-count!)
-    (fails fails set-fails!)
     (xpass-count xpass-count set-xpass-count!)
     (xfail-count xfail-count set-xfail-count!)
     (skip-count skip-count set-skip-count!)
-    (skips skips set-skips!)
     (suit-count suit-count set-suit-count!)
+
     (current-test current-test set-current-test!)
 
-    ;; call backs
+    (fails fails set-fails!)
+    (skips skips set-skips!)
+    (applys applys set-applys!)
+    (xfails xfails set-xfails!)
+
+
     (cb-begin cb-begin set-cb-begin!)
     (cb-end cb-end set-cb-end!)
     (cb-test-enter cb-test-enter set-cb-test-enter!)
@@ -38,7 +42,8 @@
     (test-result test-result set-test-result!)
     (test-result-kind test-result-kind)
     (test-error-value test-error-value set-test-error-value!)
-    (test-expected-error test-expected-erro set-test-expected-error!))
+    (test-expected-error test-expected-erro set-test-expected-error!)
+    (test-xfail? test-xfail? set-test-xfail!))
 
   (define (null-cb-begin r name count) #f)
   (define (null-cb-end r name) #f)
@@ -62,6 +67,7 @@
       (set-suit-count! r 0)
       
       (set-skips! r ())
+      (set-xfails! r ())
 
       (set-cb-test-enter! r null-cb-test-enter)
       (set-cb-begin! r null-cb-begin)
@@ -241,12 +247,34 @@
             #t
             #f))))
 
+  (define (canonicalize-specifier s)
+    (cond
+     ((number? s)
+      (test-match-nth 1 s))
+     ((string? s)
+      (test-match-name s))
+     ((procedure? s)
+      s)
+     (else (error "error: specifier is expected a number, a string or a procedure but got other."))))
+
   (define (test-match-any . rest)
-    (lambda (r)
-      (member #t (map (lambda (f) (f r)) rest))))
+    (let ((specifiers (map canonicalize-specifier rest)))
+      (lambda (r)
+        (member #t (map (lambda (f) (f r)) specifiers)))))
   (define (test-match-all . rest)
-    (lambda (r)
-      (not (member #t (map (lambda (f) (not (f r))) rest)))))
+    (let ((specifiers (map canonicalize-specifier rest)))
+      (lambda (r)
+        (not (member #t (map (lambda (f) (not (f r))) specifiers))))))
+
+  (define (test-skip specifier)
+    (let ((r (test-runner-current))
+          (s (canonicalize-specifier specifier)))
+      (set-skips! r (cons s r))))
+
+  (define (test-expect-fail specifier)
+    (let ((r (test-runner-current))
+          (s (canonicalize-specifier specifier)))
+      (set-xfails! r (cons s r))))
 
   (define-syntax define-test-macro
     (syntax-rules ()
@@ -257,20 +285,26 @@
                  (t (make-test test-name expected expr)))
             (set-current-test! r t)
             ((cb-test-enter r) r)
-            (if (member #t (map (lambda (f) (f r)) (skips r)))
+            (if (and (not (member #t (map (lambda (f) (f r)) (applys r))))
+                     (member #t (map (lambda (f) (f r)) (skips r))))
                 ((cb-test-skip r) r test-name expected 'expr)
-             (with-exception-handler
-              (lambda (e)
-                (set-test-error-value! t e)
-                ((cb-test-error r) r test-name expected 'expr e))
-              (lambda ()
-                (let ((res expr))
-                  (set-test-result! t res)
-                  (cond
-                   ((test? res expected)
-                    ((cb-test-pass r) r test-name expected 'expr res))
-                   (else
-                    ((cb-test-fail r) r test-name expected 'expr res)))))))
+                (with-exception-handler
+                 (lambda (e)
+                   (set-test-error-value! t e)
+                   ((cb-test-error r) r test-name expected 'expr e))
+                 (lambda ()
+                   (if (member #t (map (lambda (f) (f r)) (xfails r)))
+                       (set-test-xfail! t #t)
+                       (set-test-xfail! t #f))
+                   (let ((res expr))
+                     (set-test-result! t res)
+                     (if (test-xfail? t)
+                         (if (test? res expected)
+                             ((cb-test-xpass r) r test-name expected 'expr res)
+                             ((cb-test-xfail r) r test-name expected 'expr res))
+                         (if (test? res expected)
+                             ((cb-test-pass r) r test-name expected 'expr res)
+                             ((cb-test-fail r) r test-name expected 'expr res)))))))
             ((cb-test-exit r) r)))
          ((_ expected expr)
           (test no-name expected expr))))))
@@ -331,6 +365,10 @@
       ((_ expr)
        (test-error #t expr))))
 
+  (define-syntax test-syntax-error
+    (syntax-rules ()
+      ((_) (syntax-error "invalid use of test-syntax-error"))))
+
 
   (define-syntax test-begin
     (syntax-rules ()
@@ -347,6 +385,7 @@
     (syntax-rules ()
       ((_ suit-name)
        (let ((r (test-runner-current)))
+         (set-skips! r ())
          ((cb-end r) r suit-name)))
       ((_)
        (test-end #f))))
@@ -368,9 +407,52 @@
            (lambda () (test-end name)
                    cleanup-form)))))
 
-  (define-syntax test-syntax-error
+  (define-syntax test-with-runner
     (syntax-rules ()
-      ((_) (syntax-error "invalid use of test-syntax-error"))))
+      ((_ r decl-or-expr ...)
+       (let ((prev-runner (test-runner-current)))
+         (dynamic-wind
+             (lambda ()
+               (test-runner-current r)
+               (test-begin))
+             (lambda () decl-or-expr ...)
+             (lambda ()
+               (test-end)
+               (test-runner-current prev-runner)))))))
+
+  (define (test-apply r-or-s s-or-p . rest)
+    (let ((runner #f)
+          (specifiers #f)
+          (proc #f))
+      (cond
+       ((test-runner? r-or-s)
+        (set! runner r-or-s)
+        (set! specifiers (list s-or-p)))
+       ((null? rest)
+        (set! runner (test-runner-current))
+        (set! specifiers r-or-s)
+        (set! proc s-or-p))
+       (else
+        (set! runner (test-runner-current))
+        (set! specifiers (list r-or-s s-or-p))))
+      (if (not proc)
+          (begin
+            (set! rest (reverse rest))
+            (set! proc (car rest))
+            (set! specifiers (map canonicalize-specifier (append specifiers (cdr rest))))))
+      (let ((prev-runner (test-runner-current))
+            (prev-applys (applys runner)))
+        (dynamic-wind
+            (lambda ()
+              (test-runner-current runner)
+              (set-applys! runner (append specifiers prev-applys))
+              (test-begin))
+            proc
+            (lambda ()
+              (test-end)
+              (set-applys! runner prev-applys)
+              (test-runner-current prev-runner))))
+      ))
 
   (test-runner-factory test-runner-simple)
   (test-runner-current (test-runner-simple))
