@@ -11,13 +11,16 @@ struct pic_proc *
 pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
 {
   struct pic_proc *proc;
+  pic_sym *sym;
 
   assert(name != NULL);
+
+  sym = pic_intern_cstr(pic, name);
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
   proc->kind = PIC_PROC_KIND_FUNC;
   proc->u.func.f = func;
-  proc->u.func.name = pic_intern_cstr(pic, name);
+  proc->u.func.name = sym;
   proc->env = NULL;
   return proc;
 }
