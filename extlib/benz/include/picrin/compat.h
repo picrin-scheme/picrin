@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#if PIC_ENABLE_LIBC
+#if PIC_ENABLE_LIBC == 1
 
 #include <string.h>
 #include <ctype.h>

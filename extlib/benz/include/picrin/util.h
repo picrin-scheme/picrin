@@ -12,7 +12,7 @@ extern "C" {
 #if __STDC_VERSION__ >= 201112L
 # include <stdnoreturn.h>
 # define PIC_NORETURN noreturn
-#elif __GNUC__ || __clang__
+#elif defined(__GNUC__) || defined(__clang__)
 # define PIC_NORETURN __attribute__((noreturn))
 #else
 # define PIC_NORETURN
@@ -20,7 +20,7 @@ extern "C" {
 
 #if __STDC_VERSION__ >= 199901L
 # define PIC_INLINE static inline
-#elif __GNUC__ || __clang__
+#elif defined(__GNUC__) || defined(__clang__)
 # define PIC_INLINE static __attribute__((unused))
 #else
 # define PIC_INLINE static
@@ -37,7 +37,7 @@ extern "C" {
 # define PIC_GENSYM(x) PIC_GENSYM1_(__LINE__,x)
 #endif
 
-#if GCC_VERSION >= 40500 || __clang__
+#if GCC_VERSION >= 40500 || defined(__clang__)
 # define PIC_UNREACHABLE() (__builtin_unreachable())
 #else
 # define PIC_UNREACHABLE() (assert(false))
