@@ -15,6 +15,9 @@ extern "C" {
 #include <ctype.h>
 #include <assert.h>
 #include <stdlib.h>
+#if DEBUG == 1
+#include <stdio.h>
+#endif
 
 #else
 
