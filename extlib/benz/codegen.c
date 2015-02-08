@@ -918,8 +918,70 @@ destroy_codegen_state(codegen_state *state)
 }
 
 static void
-create_activation(pic_state *pic, codegen_context *cxt)
+emit_n(codegen_state *state, enum pic_opcode insn)
 {
+  pic_state *pic = state->pic;
+  codegen_context *cxt = state->cxt;
+
+  if (cxt->clen >= cxt->ccapa) {
+    cxt->ccapa *= 2;
+    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
+  }
+  cxt->code[cxt->clen].insn = insn;
+  cxt->clen++;
+}
+
+static void
+emit_i(codegen_state *state, enum pic_opcode insn, int i)
+{
+  pic_state *pic = state->pic;
+  codegen_context *cxt = state->cxt;
+
+  if (cxt->clen >= cxt->ccapa) {
+    cxt->ccapa *= 2;
+    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
+  }
+  cxt->code[cxt->clen].insn = insn;
+  cxt->code[cxt->clen].u.i = i;
+  cxt->clen++;
+}
+
+static void
+emit_c(codegen_state *state, enum pic_opcode insn, char c)
+{
+  pic_state *pic = state->pic;
+  codegen_context *cxt = state->cxt;
+
+  if (cxt->clen >= cxt->ccapa) {
+    cxt->ccapa *= 2;
+    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
+  }
+  cxt->code[cxt->clen].insn = insn;
+  cxt->code[cxt->clen].u.c = c;
+  cxt->clen++;
+}
+
+static void
+emit_r(codegen_state *state, enum pic_opcode insn, int d, int i)
+{
+  pic_state *pic = state->pic;
+  codegen_context *cxt = state->cxt;
+
+  if (cxt->clen >= cxt->ccapa) {
+    cxt->ccapa *= 2;
+    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
+  }
+  cxt->code[cxt->clen].insn = insn;
+  cxt->code[cxt->clen].u.r.depth = d;
+  cxt->code[cxt->clen].u.r.idx = i;
+  cxt->clen++;
+}
+
+static void
+create_activation(codegen_state *state)
+{
+  pic_state *pic = state->pic;
+  codegen_context *cxt = state->cxt;
   size_t i, n;
   xhash regs;
   size_t offset;
@@ -941,13 +1003,10 @@ create_activation(pic_state *pic, codegen_context *cxt)
     n = xh_val(xh_get_ptr(&regs, xv_A(cxt->captures, i)), size_t);
     if (n <= xv_size(cxt->args) || (cxt->varg && n == xv_size(cxt->args) + 1)) {
       /* copy arguments to capture variable area */
-      cxt->code[cxt->clen].insn = OP_LREF;
-      cxt->code[cxt->clen].u.i = (int)n;
-      cxt->clen++;
+      emit_i(state, OP_LREF, (int)n);
     } else {
       /* otherwise, just extend the stack */
-      cxt->code[cxt->clen].insn = OP_PUSHNONE;
-      cxt->clen++;
+      emit_n(state, OP_PUSHNONE);
     }
   }
 
@@ -1002,7 +1061,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
 
   state->cxt = cxt;
 
-  create_activation(pic, cxt);
+  create_activation(state);
 }
 
 static struct pic_irep *
@@ -1108,9 +1167,7 @@ codegen(codegen_state *state, pic_value obj)
 
   sym = pic_sym_ptr(pic_car(pic, obj));
   if (sym == pic->sGREF) {
-    cxt->code[cxt->clen].insn = OP_GREF;
-    cxt->code[cxt->clen].u.i = index_symbol(state, pic_sym_ptr(pic_list_ref(pic, obj, 1)));
-    cxt->clen++;
+    emit_i(state, OP_GREF, index_symbol(state, pic_sym_ptr(pic_list_ref(pic, obj, 1))));
     return;
   } else if (sym == pic->sCREF) {
     pic_sym *name;
@@ -1118,10 +1175,7 @@ codegen(codegen_state *state, pic_value obj)
 
     depth = pic_int(pic_list_ref(pic, obj, 1));
     name  = pic_sym_ptr(pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_CREF;
-    cxt->code[cxt->clen].u.r.depth = depth;
-    cxt->code[cxt->clen].u.r.idx = index_capture(state, name, depth);
-    cxt->clen++;
+    emit_r(state, OP_CREF, depth, index_capture(state, name, depth));
     return;
   } else if (sym == pic->sLREF) {
     pic_sym *name;
@@ -1129,14 +1183,10 @@ codegen(codegen_state *state, pic_value obj)
 
     name = pic_sym_ptr(pic_list_ref(pic, obj, 1));
     if ((i = index_capture(state, name, 0)) != -1) {
-      cxt->code[cxt->clen].insn = OP_LREF;
-      cxt->code[cxt->clen].u.i = i + (int)xv_size(cxt->args) + (int)xv_size(cxt->locals) + 1;
-      cxt->clen++;
+      emit_i(state, OP_LREF, i + (int)xv_size(cxt->args) + (int)xv_size(cxt->locals) + 1);
       return;
     }
-    cxt->code[cxt->clen].insn = OP_LREF;
-    cxt->code[cxt->clen].u.i = index_local(state, name);
-    cxt->clen++;
+    emit_i(state, OP_LREF, index_local(state, name));
     return;
   } else if (sym == pic->sSETBANG) {
     pic_value var, val;
@@ -1148,11 +1198,8 @@ codegen(codegen_state *state, pic_value obj)
     var = pic_list_ref(pic, obj, 1);
     type = pic_sym_ptr(pic_list_ref(pic, var, 0));
     if (type == pic->sGREF) {
-      cxt->code[cxt->clen].insn = OP_GSET;
-      cxt->code[cxt->clen].u.i = index_symbol(state, pic_sym_ptr(pic_list_ref(pic, var, 1)));
-      cxt->clen++;
-      cxt->code[cxt->clen].insn = OP_PUSHNONE;
-      cxt->clen++;
+      emit_i(state, OP_GSET, index_symbol(state, pic_sym_ptr(pic_list_ref(pic, var, 1))));
+      emit_n(state, OP_PUSHNONE);
       return;
     }
     else if (type == pic->sCREF) {
@@ -1161,12 +1208,8 @@ codegen(codegen_state *state, pic_value obj)
 
       depth = pic_int(pic_list_ref(pic, var, 1));
       name  = pic_sym_ptr(pic_list_ref(pic, var, 2));
-      cxt->code[cxt->clen].insn = OP_CSET;
-      cxt->code[cxt->clen].u.r.depth = depth;
-      cxt->code[cxt->clen].u.r.idx = index_capture(state, name, depth);
-      cxt->clen++;
-      cxt->code[cxt->clen].insn = OP_PUSHNONE;
-      cxt->clen++;
+      emit_r(state, OP_CSET, depth, index_capture(state, name, depth));
+      emit_n(state, OP_PUSHNONE);
       return;
     }
     else if (type == pic->sLREF) {
@@ -1175,18 +1218,12 @@ codegen(codegen_state *state, pic_value obj)
 
       name = pic_sym_ptr(pic_list_ref(pic, var, 1));
       if ((i = index_capture(state, name, 0)) != -1) {
-        cxt->code[cxt->clen].insn = OP_LSET;
-        cxt->code[cxt->clen].u.i = i + (int)xv_size(cxt->args) + (int)xv_size(cxt->locals) + 1;
-        cxt->clen++;
-        cxt->code[cxt->clen].insn = OP_PUSHNONE;
-        cxt->clen++;
+        emit_i(state, OP_LSET, i + (int)xv_size(cxt->args) + (int)xv_size(cxt->locals) + 1);
+        emit_n(state, OP_PUSHNONE);
         return;
       }
-      cxt->code[cxt->clen].insn = OP_LSET;
-      cxt->code[cxt->clen].u.i = index_local(state, name);
-      cxt->clen++;
-      cxt->code[cxt->clen].insn = OP_PUSHNONE;
-      cxt->clen++;
+      emit_i(state, OP_LSET, index_local(state, name));
+      emit_n(state, OP_PUSHNONE);
       return;
     }
   }
@@ -1198,9 +1235,7 @@ codegen(codegen_state *state, pic_value obj)
       cxt->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->icapa);
     }
     k = (int)cxt->ilen++;
-    cxt->code[cxt->clen].insn = OP_LAMBDA;
-    cxt->code[cxt->clen].u.i = k;
-    cxt->clen++;
+    emit_i(state, OP_LAMBDA, k);
 
     cxt->irep[k] = codegen_lambda(state, obj);
     return;
@@ -1210,13 +1245,16 @@ codegen(codegen_state *state, pic_value obj)
 
     codegen(state, pic_list_ref(pic, obj, 1));
 
-    cxt->code[cxt->clen].insn = OP_JMPIF;
-    s = (int)cxt->clen++;
+    s = (int)cxt->clen;
+
+    emit_n(state, OP_JMPIF);
 
     /* if false branch */
     codegen(state, pic_list_ref(pic, obj, 3));
-    cxt->code[cxt->clen].insn = OP_JMP;
-    t = (int)cxt->clen++;
+
+    t = (int)cxt->clen;
+
+    emit_n(state, OP_JMP);
 
     cxt->code[s].u.i = (int)cxt->clen - s;
 
@@ -1231,8 +1269,7 @@ codegen(codegen_state *state, pic_value obj)
 
     pic_for_each (elt, pic_cdr(pic, obj), it) {
       if (i++ != 0) {
-        cxt->code[cxt->clen].insn = OP_POP;
-        cxt->clen++;
+        emit_n(state, OP_POP);
       }
       codegen(state, elt);
     }
@@ -1244,26 +1281,16 @@ codegen(codegen_state *state, pic_value obj)
     obj = pic_list_ref(pic, obj, 1);
     switch (pic_type(obj)) {
     case PIC_TT_BOOL:
-      if (pic_true_p(obj)) {
-        cxt->code[cxt->clen].insn = OP_PUSHTRUE;
-      } else {
-        cxt->code[cxt->clen].insn = OP_PUSHFALSE;
-      }
-      cxt->clen++;
+      emit_n(state, (pic_true_p(obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
       return;
     case PIC_TT_INT:
-      cxt->code[cxt->clen].insn = OP_PUSHINT;
-      cxt->code[cxt->clen].u.i = pic_int(obj);
-      cxt->clen++;
+      emit_i(state, OP_PUSHINT, pic_int(obj));
       return;
     case PIC_TT_NIL:
-      cxt->code[cxt->clen].insn = OP_PUSHNIL;
-      cxt->clen++;
+      emit_n(state, OP_PUSHNIL);
       return;
     case PIC_TT_CHAR:
-      cxt->code[cxt->clen].insn = OP_PUSHCHAR;
-      cxt->code[cxt->clen].u.c = pic_char(obj);
-      cxt->clen++;
+      emit_c(state, OP_PUSHCHAR, pic_char(obj));
       return;
     default:
       if (cxt->plen >= cxt->pcapa) {
@@ -1272,122 +1299,103 @@ codegen(codegen_state *state, pic_value obj)
       }
       pidx = (int)cxt->plen++;
       cxt->pool[pidx] = obj;
-      cxt->code[cxt->clen].insn = OP_PUSHCONST;
-      cxt->code[cxt->clen].u.i = pidx;
-      cxt->clen++;
+      emit_i(state, OP_PUSHCONST, pidx);
       return;
     }
   }
   else if (sym == pic->sCONS) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_CONS;
-    cxt->clen++;
+    emit_n(state, OP_CONS);
     return;
   }
   else if (sym == pic->sCAR) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_CAR;
-    cxt->clen++;
+    emit_n(state, OP_CAR);
     return;
   }
   else if (sym == pic->sCDR) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_CDR;
-    cxt->clen++;
+    emit_n(state, OP_CDR);
     return;
   }
   else if (sym == pic->sNILP) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_NILP;
-    cxt->clen++;
+    emit_n(state, OP_NILP);
     return;
   }
   else if (sym == pic->sSYMBOLP) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_SYMBOLP;
-    cxt->clen++;
+    emit_n(state, OP_SYMBOLP);
     return;
   }
   else if (sym == pic->sPAIRP) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_PAIRP;
-    cxt->clen++;
+    emit_n(state, OP_PAIRP);
     return;
   }
   else if (sym == pic->sADD) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_ADD;
-    cxt->clen++;
+    emit_n(state, OP_ADD);
     return;
   }
   else if (sym == pic->sSUB) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_SUB;
-    cxt->clen++;
+    emit_n(state, OP_SUB);
     return;
   }
   else if (sym == pic->sMUL) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_MUL;
-    cxt->clen++;
+    emit_n(state, OP_MUL);
     return;
   }
   else if (sym == pic->sDIV) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_DIV;
-    cxt->clen++;
+    emit_n(state, OP_DIV);
     return;
   }
   else if (sym == pic->sMINUS) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_MINUS;
-    cxt->clen++;
+    emit_n(state, OP_MINUS);
     return;
   }
   else if (sym == pic->sEQ) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_EQ;
-    cxt->clen++;
+    emit_n(state, OP_EQ);
     return;
   }
   else if (sym == pic->sLT) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_LT;
-    cxt->clen++;
+    emit_n(state, OP_LT);
     return;
   }
   else if (sym == pic->sLE) {
     codegen(state, pic_list_ref(pic, obj, 1));
     codegen(state, pic_list_ref(pic, obj, 2));
-    cxt->code[cxt->clen].insn = OP_LE;
-    cxt->clen++;
+    emit_n(state, OP_LE);
     return;
   }
   else if (sym == pic->sGT) {
     codegen(state, pic_list_ref(pic, obj, 2));
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_LT;
-    cxt->clen++;
+    emit_n(state, OP_LT);
     return;
   }
   else if (sym == pic->sGE) {
     codegen(state, pic_list_ref(pic, obj, 2));
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_LE;
-    cxt->clen++;
+    emit_n(state, OP_LE);
     return;
   }
   else if (sym == pic->sNOT) {
     codegen(state, pic_list_ref(pic, obj, 1));
-    cxt->code[cxt->clen].insn = OP_NOT;
-    cxt->clen++;
+    emit_n(state, OP_NOT);
     return;
   }
   else if (sym == pic->sCALL || sym == pic->sTAILCALL) {
@@ -1397,9 +1405,7 @@ codegen(codegen_state *state, pic_value obj)
     pic_for_each (elt, pic_cdr(pic, obj), it) {
       codegen(state, elt);
     }
-    cxt->code[cxt->clen].insn = (sym == pic->sCALL) ? OP_CALL : OP_TAILCALL;
-    cxt->code[cxt->clen].u.i = len - 1;
-    cxt->clen++;
+    emit_i(state, (sym == pic->sCALL ? OP_CALL : OP_TAILCALL), len - 1);
     return;
   }
   else if (sym == pic->sCALL_WITH_VALUES || sym == pic->sTAILCALL_WITH_VALUES) {
@@ -1407,13 +1413,9 @@ codegen(codegen_state *state, pic_value obj)
     codegen(state, pic_list_ref(pic, obj, 2));
     codegen(state, pic_list_ref(pic, obj, 1));
     /* call producer */
-    cxt->code[cxt->clen].insn = OP_CALL;
-    cxt->code[cxt->clen].u.i = 1;
-    cxt->clen++;
+    emit_i(state, OP_CALL, 1);
     /* call consumer */
-    cxt->code[cxt->clen].insn = (sym == pic->sCALL_WITH_VALUES) ? OP_CALL : OP_TAILCALL;
-    cxt->code[cxt->clen].u.i = -1;
-    cxt->clen++;
+    emit_i(state, (sym == pic->sCALL_WITH_VALUES ? OP_CALL : OP_TAILCALL), -1);
     return;
   }
   else if (sym == pic->sRETURN) {
@@ -1423,9 +1425,7 @@ codegen(codegen_state *state, pic_value obj)
     pic_for_each (elt, pic_cdr(pic, obj), it) {
       codegen(state, elt);
     }
-    cxt->code[cxt->clen].insn = OP_RET;
-    cxt->code[cxt->clen].u.i = len - 1;
-    cxt->clen++;
+    emit_i(state, OP_RET, len - 1);
     return;
   }
   pic_errorf(pic, "codegen: unknown AST type ~s", obj);
