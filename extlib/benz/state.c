@@ -42,7 +42,7 @@ void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_attr(pic_state *);
 
-extern const char pic_boot[];
+extern const char pic_boot[][80];
 
 static void
 pic_init_features(pic_state *pic)
@@ -104,11 +104,11 @@ pic_init_features(pic_state *pic)
 static void
 pic_init_core(pic_state *pic)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
-
   pic_init_features(pic);
 
   pic_deflibrary (pic, "(picrin base)") {
+    size_t ai = pic_gc_arena_preserve(pic);
+
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->rSETBANG);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->rQUOTE);
@@ -129,17 +129,17 @@ pic_init_core(pic_state *pic)
     pic_init_char(pic); DONE;
     pic_init_error(pic); DONE;
     pic_init_str(pic); DONE;
-    /* pic_init_macro(pic); DONE; */
+    pic_init_macro(pic); DONE;
     pic_init_var(pic); DONE;
-    /* pic_init_write(pic); DONE; */
-    /* pic_init_read(pic); DONE; */
-    /* pic_init_dict(pic); DONE; */
-    /* pic_init_record(pic); DONE; */
-    /* pic_init_eval(pic); DONE; */
-    /* pic_init_lib(pic); DONE; */
-    /* pic_init_attr(pic); DONE; */
+    pic_init_write(pic); DONE;
+    pic_init_read(pic); DONE;
+    pic_init_dict(pic); DONE;
+    pic_init_record(pic); DONE;
+    pic_init_eval(pic); DONE;
+    pic_init_lib(pic); DONE;
+    pic_init_attr(pic); DONE;
 
-    /* pic_load_cstr(pic, pic_boot); */
+    pic_load_cstr(pic, &pic_boot[0][0]);
   }
 
   pic_import_library(pic, pic->PICRIN_BASE);
@@ -346,6 +346,8 @@ pic_open(pic_allocf allocf, pic_setjmpf setjmpf, pic_longjmpf longjmpf, size_t j
   pic->gc_enable = true;
 
   pic_init_core(pic);
+
+  pic_gc_arena_restore(pic, ai);
 
   return pic;
 
