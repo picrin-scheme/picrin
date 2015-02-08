@@ -9,7 +9,6 @@ xFILE *
 xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*flush)(void *), int (*close)(void *))
 {
   xFILE *file;
-  static int c = 0;
 
   for (file = pool; file < pool + XFOPEN_MAX; file++) {
     if (file->vtable.read == 0 && file->vtable.write == 0) {
