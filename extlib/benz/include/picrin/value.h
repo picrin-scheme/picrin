@@ -71,7 +71,7 @@ pic_int(pic_value v)
 
 #elif PIC_WORD_BOXING
 
-typedef long pic_value;
+typedef unsigned long pic_value;
 
 #define pic_ptr(v) ((void *)(v))
 #define pic_init_value(v,vtype) do {            \
@@ -96,7 +96,11 @@ pic_vtype(pic_value v)
 PIC_INLINE int
 pic_int(pic_value v)
 {
-  return v >> 2;
+  v >>= 2;
+  if ((v & ((ULONG_MAX >> 3) + 1)) != 0) {
+    v |= ULONG_MAX - (ULONG_MAX >> 2);
+  }
+  return v;
 }
 
 PIC_INLINE char
