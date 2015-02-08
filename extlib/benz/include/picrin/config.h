@@ -3,50 +3,33 @@
  */
 
 /** switch normal VM and direct threaded VM */
-#define PIC_DIRECT_THREADED_VM 0
+/* #define PIC_DIRECT_THREADED_VM 0 */
 
 /** switch internal value representation */
-#define PIC_NAN_BOXING 0
+/* #define PIC_NAN_BOXING 0 */
 
 /** enable word boxing  */
-#define PIC_WORD_BOXING 1
+/* #define PIC_WORD_BOXING 1 */
 
 /** enable floating point number support */
-#define PIC_ENABLE_FLOAT 0
+/* #define PIC_ENABLE_FLOAT 0 */
 
 /** no dependency on libc  */
-#define PIC_ENABLE_LIBC 0
+/* #define PIC_ENABLE_LIBC 0 */
 
 /** treat false value as none */
 /* #define PIC_NONE_IS_FALSE 1 */
 
 /** initial memory size (to be dynamically extended if necessary) */
-#define PIC_ARENA_SIZE 100
-
-#define PIC_HEAP_PAGE_SIZE 1024
-
-#define PIC_STACK_SIZE 1024
-
-#define PIC_RESCUE_SIZE 30
-
-#define PIC_SYM_POOL_SIZE 128
-
-#define PIC_IREP_SIZE 8
-
-#define PIC_POOL_SIZE 8
-
-#define PIC_SYMS_SIZE 32
-
-#define PIC_ISEQ_SIZE 32
-
-/** enable all debug flags */
-/* #define DEBUG 1 */
-
-/** auxiliary debug flags */
-/* #define GC_STRESS 1 */
-/* #define VM_DEBUG 1 */
-/* #define GC_DEBUG 1 */
-/* #define GC_DEBUG_DETAIL 1 */
+/* #define PIC_ARENA_SIZE 100 */
+/* #define PIC_HEAP_PAGE_SIZE 1024 */
+/* #define PIC_STACK_SIZE 1024 */
+/* #define PIC_RESCUE_SIZE 30 */
+/* #define PIC_SYM_POOL_SIZE 128 */
+/* #define PIC_IREP_SIZE 8 */
+/* #define PIC_POOL_SIZE 8 */
+/* #define PIC_SYMS_SIZE 32 */
+/* #define PIC_ISEQ_SIZE 32 */
 
 #ifndef PIC_DIRECT_THREADED_VM
 # if (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
