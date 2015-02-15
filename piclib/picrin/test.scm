@@ -494,7 +494,7 @@
 
    test-error
 
-                                        ;test-read-string
+                                        ;test-read-eval-string
 
    test-begin
    test-end
@@ -522,14 +522,45 @@
    test-apply
    test-with-runner
 
-                                        ;test-result-kind
+   test-result-kind
                                         ;test-passed?
                                         ;test-result-ref
                                         ;test-result-set!
                                         ;test-result-remove
                                         ;test-result-clear
                                         ;test-result-alist
-   
+   (rename on-test-begin test-runner-on-test-begin)
+   (rename on-test-begin! test-runner-on-test-begin!)
+   (rename on-test-end test-runner-on-test-end)
+   (rename on-test-end!  test-runner-on-test-end!)
+   (rename on-group-begin test-runner-on-group-begin)
+   (rename on-group-begin!  test-runner-on-group-begin!)
+   (rename on-group-end test-runner-on-group-end)
+   (rename on-group-end! test-runner-on-group-end!)
+   ;; test-runner-on-bad-count
+   ;; test-runner-on-bad-count!
+   ;; test-runner-on-bad-end-name
+   ;; test-runner-on-bad-end-name!
+   ;; test-runner-on-final
+   ;; test-runner-on-final!
+   (rename on-test-begin-simple test-on-test-begin-simple)
+   (rename on-test-end-simple test-on-test-end-simple)
+   ;; test-on-group-begin-simple
+   ;; test-on-group-end-simple
+   ;; test-on-bad-count-simple
+   ;; test-on-bad-end-name-simple
+
+   (rename pass-count test-runner-pass-count)
+   (rename fail-count test-runner-fail-count)
+   (rename xpass-count test-runner-xpass-count)
+   (rename xfail-count test-runner-xfail-count)
+   (rename skip-count test-runner-skip-count)
+   ;; test-runner-test-name
+   ;; test-runner-group-path
+   ;; test-runner-group-stack
+   ;; test-runner-aux-value
+   ;; test-runner-aux-value!
+   ;; test-runner-reset
    )
 
   (export
