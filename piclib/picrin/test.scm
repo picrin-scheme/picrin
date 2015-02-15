@@ -16,6 +16,8 @@
     (suit-count suit-count set-suit-count!)
 
     (current-test current-test set-current-test!)
+    (group-stack group-stack group-stack!)
+    (aux-value aux-value aux-value!)
 
     (fails fails set-fails!)
     (skips skips set-skips!)
@@ -52,10 +54,13 @@
     (test-result-kind test-result-kind)
     (test-error-value test-error-value set-test-error-value!)
     (test-expected-error test-expected-error set-test-expected-error!)
-    (test-xfail? test-xfail? set-test-xfail!))
+    (test-xfail? test-xfail? set-test-xfail!)
+    (test-result-alist% test-result-alist% test-result-alist%!))
 
   (define (on-test-begin-null r name count) #f)
   (define (on-test-end-null r name) #f)
+  (define (on-bad-count-null r) #f)
+  (define (on-bad-end-name-null r) #f)
   (define (on-test-enter-null r) #f)
   (define (on-test-pass-null r name expect form got) #f)
   (define (on-test-fail-null r name expect form got) #f)
@@ -76,6 +81,7 @@
       (set-suit-count! r 0)
       
       (set-current-test! r #f)
+      (group-stack! r ())
 
       (set-skips! r ())
       (set-xfails! r ())
@@ -83,6 +89,8 @@
       (on-test-enter! r on-test-enter-null)
       (on-test-begin! r on-test-begin-null)
       (on-test-end! r on-test-end-null)
+      (on-bad-count! r on-bad-count-null)
+      (on-bad-end-name! r on-bad-end-name-null)
       (on-test-pass! r on-test-pass-null)
       (on-test-fail! r on-test-fail-null)
       (on-test-xpass! r on-test-xpass-null)
@@ -400,6 +408,7 @@
     (syntax-rules ()
       ((_ suit-name count)
        (let ((r (test-runner-current)))         
+         (group-stack! r (cons suit-name (group-stack r)))
          ((on-test-begin r) r suit-name count)))
       ((_ suit-name)
        (test-begin suit-name 0))
@@ -410,7 +419,11 @@
   (define-syntax test-end
     (syntax-rules ()
       ((_ suit-name)
-       (let ((r (test-runner-current)))
+       (let* ((r (test-runner-current))
+              (name (car (group-stack r))))
+         (if (not (equal? name suit-name))
+             ((on-bad-end-name r) r))
+         (group-stack! r (cdr (group-stack r)))
          (set-skips! r ())
          ((on-test-end r) r suit-name)
          (if (= (suit-count r) 0)
@@ -422,7 +435,9 @@
     (syntax-rules ()
       ((_ name decl-or-expr ...)
        (dynamic-wind
-           (lambda () (test-begin name))
+           (lambda ()
+             (test-begin name)
+             (group-stack! (current-test-runner) (cons name (group-stack (current-test-factory)))))
            (lambda () decl-or-expr ...)
            (lambda () (test-end name))))))
 
@@ -499,10 +514,46 @@
              (error-value (test-error-value t))
              (expected-error (test-expected-error t))
              (xfail? (test-xfail? t))
-             (else default)))))
+             (else (or (assq pname (test-result-alist% t)) default))))))
+
+  (define (test-passed? . r)
+    (if (null? r)
+        (set! r (current-test-runner))
+        (set! r (car r)))
+    (eq? 'pass (test-result-kind (current-test r))))
 
   (define (test-runner-test-name r)
     (test-name (current-test r)))
+
+  (define (test-result-alist r)
+    (let ((t (current-test r)))
+     (append `((test-name . ,(test-name t))
+               (test-expected . ,(test-expected t))
+               (test-form . ,(test-form t))
+               (test-result . ,(test-result t))
+               (test-result-kind . ,(test-result-kind t))
+               (test-error-value . ,(test-error-value t))
+               (test-xfail? . ,(test-xfail? t)))
+             (test-result-alist% t))))
+
+  (define (test-runner-reset r)
+    (set-test-count! r 0)
+    (set-pass-count! r 0)
+    (set-fail-count! r 0)
+    (set-xpass-count! r 0)
+    (set-xfail-count! r 0)
+    (set-skip-count! r 0)
+    (set-suit-count! r 0)
+    (set-current-test! r #f)
+    (group-stack! r ())
+    (aux-value! r #f)
+    (set-fails! r ())
+    (set-skips! r ())
+    (set-applys! r ())
+    (set-xfails! r ()))
+
+  (define (group-path r)
+    (reverse (group-stack r)))
 
   (export
    test-assert
@@ -542,12 +593,12 @@
    test-with-runner
 
    test-result-kind
-                                        ;test-passed?
-                                        ;test-result-ref
+   test-passed?
+   test-result-ref
                                         ;test-result-set!
                                         ;test-result-remove
                                         ;test-result-clear
-                                        ;test-result-alist
+   test-result-alist
    (rename on-test-begin test-runner-on-test-begin)
    (rename on-test-begin! test-runner-on-test-begin!)
    (rename on-test-end test-runner-on-test-end)
@@ -575,11 +626,11 @@
    (rename xfail-count test-runner-xfail-count)
    (rename skip-count test-runner-skip-count)
    test-runner-test-name
-   ;; test-runner-group-path
-   ;; test-runner-group-stack
-   ;; test-runner-aux-value
-   ;; test-runner-aux-value!
-   ;; test-runner-reset
+   (rename group-path test-runner-group-path)
+   (rename group-stack test-runner-group-stack)
+   (rename aux-value test-runner-aux-value)
+   (rename aux-value test-runner-aux-value!)
+   test-runner-reset
    )
 
   (export
