@@ -383,12 +383,9 @@
       ((_ test-name error-type expr)
        (with-exception-handler
         (lambda (e)
-          (case error-type
-            ((error)      (test-assert test-name (error? e)))
-            ((file-error) (test-assert test-name (file-error? e)))
-            ((read-error) (test-assert test-name (read-error? e)))
-            ((#t)         (test-assert test-name (error? e)))
-            (else => (lambda (type) (error (string-append "test-error: Unknown error type " (symbol->string type) " specified."))))))
+          (if (eq? error-type #t)
+              (test-assert test-name (error-object? e))
+              (test-eq test-name error-type (error-object-type e))))
         (lambda ()
           expr)))
       ((_ error-type expr)
