@@ -403,6 +403,9 @@
     (syntax-rules ()
       ((_) (syntax-error "invalid use of test-syntax-error"))))
 
+  (define (test-read-eval-string str)
+    #f)
+
 
   (define-syntax test-begin
     (syntax-rules ()
@@ -571,7 +574,7 @@
 
    test-error
 
-                                        ;test-read-eval-string
+   test-read-eval-string
 
    test-begin
    test-end
