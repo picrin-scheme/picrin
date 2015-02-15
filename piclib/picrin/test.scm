@@ -364,7 +364,7 @@
       ((_ test-name expr)
        (test-eq test-name #t expr))
       ((_ expr)
-       (test-assert no-name))))
+       (test-assert no-name expr))))
 
   (define-syntax test-approximate
     ;; :TODO: write for better failure message
@@ -392,7 +392,7 @@
         (lambda ()
           expr)))
       ((_ error-type expr)
-       (test-error no-name expr))
+       (test-error no-name error-type expr))
       ((_ expr)
        (test-error #t expr))))
 
