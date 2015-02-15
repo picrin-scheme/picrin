@@ -8,6 +8,7 @@
     test-runner?
 
     (test-count test-count set-test-count!)
+    (pass-count pass-count set-pass-count!)
     (fail-count fail-count set-fail-count!)
     (xpass-count xpass-count set-xpass-count!)
     (xfail-count xfail-count set-xfail-count!)
@@ -26,8 +27,8 @@
     (on-test-end on-test-end on-test-end!)
     (on-group-begin on-group-begin on-group-begin!)
     (on-group-end on-group-end on-group-end!)
-    (on-test-bad-count on-test-bad-count on-test-bad-count!)
-    (on-test-bad-end-name on-test-bad-end-name on-test-bad-end-name!)
+    (on-bad-count on-bad-count on-bad-count!)
+    (on-bad-end-name on-bad-end-name on-bad-end-name!)
     (on-final on-final on-final!)
 
     (on-test-enter on-test-enter on-test-enter!)
@@ -50,7 +51,7 @@
     (test-result test-result set-test-result!)
     (test-result-kind test-result-kind)
     (test-error-value test-error-value set-test-error-value!)
-    (test-expected-error test-expected-erro set-test-expected-error!)
+    (test-expected-error test-expected-error set-test-expected-error!)
     (test-xfail? test-xfail? set-test-xfail!))
 
   (define (on-test-begin-null r name count) #f)
@@ -137,9 +138,7 @@
     (set-suit-count! r (+ (suit-count r) 1)))
 
   (define (on-test-end-simple r suit-name)
-    (set-suit-count! r (- (suit-count r) 1))
-    (if (= (suit-count r) 0)
-        (on-test-final r)))
+    (set-suit-count! r (- (suit-count r) 1)))
 
   (define (on-group-begin-simple r name count)
     #f)
@@ -150,7 +149,7 @@
   (define (on-bad-end-name-simple r begin-name end-name)
     #f)
 
-  (define (on-test-final r)
+  (define (on-final-simple r)
     (print-statistics r))
 
   (define (call-with-handle-fail r test-name expected expr got proc)
@@ -251,6 +250,7 @@
     (let ((r (test-runner-null)))
       (on-test-begin! r on-test-begin-simple)
       (on-test-end! r on-test-end-simple)
+      (on-final! r on-final-simple)
       
       (on-test-enter! r on-test-enter-simple)
       (on-test-pass! r on-test-pass-simple)
@@ -412,7 +412,9 @@
       ((_ suit-name)
        (let ((r (test-runner-current)))
          (set-skips! r ())
-         ((on-test-end r) r suit-name)))
+         ((on-test-end r) r suit-name)
+         (if (= (suit-count r) 0)
+             ((on-final r) r))))
       ((_)
        (test-end #f))))
 
@@ -483,22 +485,24 @@
   (test-runner-factory test-runner-simple)
   (test-runner-current (test-runner-simple))
 
-  (define test-result-ref
-    (case-lambda
-     ((runner pname)
-      (test-result-ref runner pname #f))
-     ((runner pname default)
-      (let ((t (current-test (current-test-runner))))
-        (and t
-             (case pname
-               (name (test-name t))
-               (expected (test-expected t))
-               (form (test-form t))
-               (result (test-result t))
-               (error-value (test-error-value t))
-               (expected-error (test-expected-error t))
-               (xfail? (test-xfail? t))
-               (else default)))))))
+  (define (test-result-ref pname . default)
+    (if (null? default)
+        (set! default #f)
+        (set! default (car default)))
+    (let ((t (current-test (current-test-runner))))
+      (and t
+           (case pname
+             (name (test-name t))
+             (expected (test-expected t))
+             (form (test-form t))
+             (result (test-result t))
+             (error-value (test-error-value t))
+             (expected-error (test-expected-error t))
+             (xfail? (test-xfail? t))
+             (else default)))))
+
+  (define (test-runner-test-name r)
+    (test-name (current-test r)))
 
   (export
    test-assert
@@ -555,7 +559,7 @@
    (rename on-bad-count test-runner-on-bad-count)
    (rename on-bad-count! test-runner-on-bad-count!)
    (rename on-bad-end-name test-runner-on-bad-end-name)
-   (rename on-bad-end-nametest-runner-on-bad-end-name!)
+   (rename on-bad-end-name test-runner-on-bad-end-name!)
    (rename on-final test-runner-on-final)
    (rename on-final test-runner-on-final!)
    (rename on-test-begin-simple test-on-test-begin-simple)
@@ -570,7 +574,7 @@
    (rename xpass-count test-runner-xpass-count)
    (rename xfail-count test-runner-xfail-count)
    (rename skip-count test-runner-skip-count)
-   ;; test-runner-test-name
+   test-runner-test-name
    ;; test-runner-group-path
    ;; test-runner-group-stack
    ;; test-runner-aux-value
