@@ -555,6 +555,13 @@
   (define (group-path r)
     (reverse (group-stack r)))
 
+  (define (test-result-set! r pname value)
+    #f)
+  (define (test-result-remove r pname)
+    #f)
+  (define (test-result-clear r)
+    #f)
+
   (export
    test-assert
    test-eqv
@@ -595,9 +602,9 @@
    test-result-kind
    test-passed?
    test-result-ref
-                                        ;test-result-set!
-                                        ;test-result-remove
-                                        ;test-result-clear
+   test-result-set!
+   test-result-remove
+   test-result-clear
    test-result-alist
    (rename on-test-begin test-runner-on-test-begin)
    (rename on-test-begin! test-runner-on-test-begin!)
