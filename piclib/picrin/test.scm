@@ -468,6 +468,23 @@
   (test-runner-factory test-runner-simple)
   (test-runner-current (test-runner-simple))
 
+  (define test-result-ref
+    (case-lambda
+     ((runner pname)
+      (test-result-ref runner pname #f))
+     ((runner pname default)
+      (let ((t (current-test (current-test-runner))))
+        (and t
+             (case pname
+               (name (test-name t))
+               (expected (test-expected t))
+               (form (test-form t))
+               (result (test-result t))
+               (error-value (test-error-value t))
+               (expected-error (test-expected-error t))
+               (xfail? (test-xfail? t))
+               (else default)))))))
+
   (export
    test-assert
    test-eqv
