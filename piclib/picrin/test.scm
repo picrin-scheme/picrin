@@ -26,17 +26,20 @@
     (on-test-end on-test-end on-test-end!)
     (on-group-begin on-group-begin on-group-begin!)
     (on-group-end on-group-end on-group-end!)
+    (on-test-bad-count on-test-bad-count on-test-bad-count!)
+    (on-test-bad-end-name on-test-bad-end-name on-test-bad-end-name!)
+    (on-final on-final on-final!)
 
-    (on-test-enter on-test-enter set-on-test-enter!)
+    (on-test-enter on-test-enter on-test-enter!)
 
-    (on-test-pass on-test-pass set-on-test-pass!)
-    (on-test-fail on-test-fail set-on-test-fail!)
-    (on-test-xpass on-test-xpass set-on-test-xpass!)
-    (on-test-xfail on-test-xfail set-on-test-xfail!)
-    (on-test-skip on-test-skip set-on-test-skip!)
-    (on-test-error on-test-error set-on-test-error!)
+    (on-test-pass on-test-pass on-test-pass!)
+    (on-test-fail on-test-fail on-test-fail!)
+    (on-test-xpass on-test-xpass on-test-xpass!)
+    (on-test-xfail on-test-xfail on-test-xfail!)
+    (on-test-skip on-test-skip on-test-skip!)
+    (on-test-error on-test-error on-test-error!)
 
-    (on-test-exit on-test-exit set-on-test-exit!))
+    (on-test-exit on-test-exit on-test-exit!))
 
   (define-record-type <test>
     (make-test name expected form)
@@ -76,15 +79,15 @@
       (set-skips! r ())
       (set-xfails! r ())
 
-      (set-on-test-enter! r on-test-enter-null)
+      (on-test-enter! r on-test-enter-null)
       (on-test-begin! r on-test-begin-null)
       (on-test-end! r on-test-end-null)
-      (set-on-test-pass! r on-test-pass-null)
-      (set-on-test-fail! r on-test-fail-null)
-      (set-on-test-xpass! r on-test-xpass-null)
-      (set-on-test-xfail! r on-test-xfail-null)
-      (set-on-test-skip! r on-test-skip-null)
-      (set-on-test-exit! r on-test-exit-null)            
+      (on-test-pass! r on-test-pass-null)
+      (on-test-fail! r on-test-fail-null)
+      (on-test-xpass! r on-test-xpass-null)
+      (on-test-xfail! r on-test-xfail-null)
+      (on-test-skip! r on-test-skip-null)
+      (on-test-exit! r on-test-exit-null)            
       r))
 
   (define current-test-runner #f)
@@ -136,7 +139,19 @@
   (define (on-test-end-simple r suit-name)
     (set-suit-count! r (- (suit-count r) 1))
     (if (= (suit-count r) 0)
-        (print-statistics r)))
+        (on-test-final r)))
+
+  (define (on-group-begin-simple r name count)
+    #f)
+  (define (on-group-end-simple r)
+    #f)
+  (define (on-bad-count-simple r acutual-count expected-count)
+    #f)
+  (define (on-bad-end-name-simple r begin-name end-name)
+    #f)
+
+  (define (on-test-final r)
+    (print-statistics r))
 
   (define (call-with-handle-fail r test-name expected expr got proc)
     (set-fail-count! r (+ (fail-count r) 1))
@@ -237,14 +252,14 @@
       (on-test-begin! r on-test-begin-simple)
       (on-test-end! r on-test-end-simple)
       
-      (set-on-test-enter! r on-test-enter-simple)
-      (set-on-test-pass! r on-test-pass-simple)
-      (set-on-test-fail! r on-test-fail-simple)
-      (set-on-test-xpass! r on-test-xpass-simple)
-      (set-on-test-xfail! r on-test-xfail-simple)
-      (set-on-test-skip! r on-test-skip-simple)
-      (set-on-test-error! r on-test-error-simple)
-      (set-on-test-exit! r on-test-exit-simple)
+      (on-test-enter! r on-test-enter-simple)
+      (on-test-pass! r on-test-pass-simple)
+      (on-test-fail! r on-test-fail-simple)
+      (on-test-xpass! r on-test-xpass-simple)
+      (on-test-xfail! r on-test-xfail-simple)
+      (on-test-skip! r on-test-skip-simple)
+      (on-test-error! r on-test-error-simple)
+      (on-test-exit! r on-test-exit-simple)
       r))
 
   (define (test-match-name name)
@@ -537,18 +552,18 @@
    (rename on-group-begin!  test-runner-on-group-begin!)
    (rename on-group-end test-runner-on-group-end)
    (rename on-group-end! test-runner-on-group-end!)
-   ;; test-runner-on-bad-count
-   ;; test-runner-on-bad-count!
-   ;; test-runner-on-bad-end-name
-   ;; test-runner-on-bad-end-name!
-   ;; test-runner-on-final
-   ;; test-runner-on-final!
+   (rename on-bad-count test-runner-on-bad-count)
+   (rename on-bad-count! test-runner-on-bad-count!)
+   (rename on-bad-end-name test-runner-on-bad-end-name)
+   (rename on-bad-end-nametest-runner-on-bad-end-name!)
+   (rename on-final test-runner-on-final)
+   (rename on-final test-runner-on-final!)
    (rename on-test-begin-simple test-on-test-begin-simple)
    (rename on-test-end-simple test-on-test-end-simple)
-   ;; test-on-group-begin-simple
-   ;; test-on-group-end-simple
-   ;; test-on-bad-count-simple
-   ;; test-on-bad-end-name-simple
+   (rename on-group-begin-simple test-on-group-begin-simple)
+   (rename on-group-end-simple test-on-group-end-simple)
+   (rename on-bad-count-simple test-on-bad-count-simple)
+   (rename on-bad-end-name-simple test-on-bad-end-name-simple)
 
    (rename pass-count test-runner-pass-count)
    (rename fail-count test-runner-fail-count)
