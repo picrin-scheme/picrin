@@ -549,7 +549,12 @@ pic_number_number_to_string(pic_state *pic)
 
     buf = pic_malloc(pic, s);
 
+
     snprintf(buf, s, "%f", f);
+
+    while(buf[s - 2] == '0')
+      s -= 1;
+
   }
   str = pic_make_str(pic, buf, s - 1);
 
