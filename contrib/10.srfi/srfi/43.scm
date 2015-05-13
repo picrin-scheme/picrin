@@ -1,5 +1,5 @@
 (define-library (srfi 43)
-  (import (scheme base)
+  (import (except (scheme base) vector-map)
           (srfi 8))
   
   ;; # Constructors
