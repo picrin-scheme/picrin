@@ -622,7 +622,7 @@ xvfprintf(xFILE *stream, const char *fmt, va_list ap)
     case 'p':
       vp = va_arg(ap, void*);
       xfputs("0x", stream);
-      xfile_printint(stream, (int)vp, 16);
+      xfile_printint(stream, (long)vp, 16);
       break;
     default:
       xputc(*(p-1), stream);
