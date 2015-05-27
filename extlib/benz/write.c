@@ -210,7 +210,9 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e, *it;
   int c;
+#if PIC_ENABLE_FLOAT
   double f;
+#endif
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
@@ -285,6 +287,7 @@ write_core(struct writer_control *p, pic_value obj)
     case '\t': xfprintf(file, "#\\tab"); break;
     }
     break;
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     f = pic_float(obj);
     if (isnan(f)) {
@@ -295,6 +298,7 @@ write_core(struct writer_control *p, pic_value obj)
       xfprintf(file, "%f", pic_float(obj));
     }
     break;
+#endif
   case PIC_TT_INT:
     xfprintf(file, "%d", pic_int(obj));
     break;

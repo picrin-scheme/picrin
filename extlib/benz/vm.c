@@ -119,6 +119,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       *p = GET_OPERAND(pic,i);
       break;
     }
+#if PIC_ENABLE_FLOAT
     case 'f': {
       double *f;
 
@@ -184,6 +185,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
+#endif
     case 'i': {
       int *k;
 
@@ -192,9 +194,11 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
+#if PIC_ENABLE_FLOAT
       case PIC_TT_FLOAT:
         *k = (int)pic_float(v);
         break;
+#endif
       case PIC_TT_INT:
         *k = pic_int(v);
         break;
@@ -1060,10 +1064,31 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;							\
     }
 
+#define DEFINE_ARITH_OP2(opcode, op)                            \
+    CASE(opcode) {						\
+      pic_value a, b;						\
+      b = POP();						\
+      a = POP();						\
+      if (pic_int_p(a) && pic_int_p(b)) {			\
+        PUSH(pic_int_value(pic_int(a) op pic_int(b)));          \
+      }								\
+      else {							\
+	pic_errorf(pic, #op " got non-number operands");        \
+      }								\
+      NEXT;							\
+    }
+
+#if PIC_ENABLE_FLOAT
     DEFINE_ARITH_OP(OP_ADD, +, true);
     DEFINE_ARITH_OP(OP_SUB, -, true);
     DEFINE_ARITH_OP(OP_MUL, *, true);
     DEFINE_ARITH_OP(OP_DIV, /, f == round(f));
+#else
+    DEFINE_ARITH_OP2(OP_ADD, +);
+    DEFINE_ARITH_OP2(OP_SUB, -);
+    DEFINE_ARITH_OP2(OP_MUL, *);
+    DEFINE_ARITH_OP2(OP_DIV, /);
+#endif
 
     CASE(OP_MINUS) {
       pic_value n;
@@ -1071,9 +1096,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       if (pic_int_p(n)) {
 	PUSH(pic_int_value(-pic_int(n)));
       }
+#if PIC_ENABLE_FLOAT
       else if (pic_float_p(n)) {
 	PUSH(pic_float_value(-pic_float(n)));
       }
+#endif
       else {
 	pic_errorf(pic, "unary - got a non-number operand");
       }
@@ -1103,9 +1130,29 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;							\
     }
 
+#define DEFINE_COMP_OP2(opcode, op)				\
+    CASE(opcode) {						\
+      pic_value a, b;						\
+      b = POP();						\
+      a = POP();						\
+      if (pic_int_p(a) && pic_int_p(b)) {			\
+	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
+      }								\
+      else {							\
+	pic_errorf(pic, #op " got non-number operands");        \
+      }								\
+      NEXT;							\
+    }
+
+#if PIC_ENABLE_FLOAT
     DEFINE_COMP_OP(OP_EQ, ==);
     DEFINE_COMP_OP(OP_LT, <);
     DEFINE_COMP_OP(OP_LE, <=);
+#else
+    DEFINE_COMP_OP2(OP_EQ, ==);
+    DEFINE_COMP_OP2(OP_LT, <);
+    DEFINE_COMP_OP2(OP_LE, <=);
+#endif
 
     CASE(OP_STOP) {
 

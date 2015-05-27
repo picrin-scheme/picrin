@@ -489,7 +489,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
+#endif
   case PIC_TT_INT:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
@@ -691,7 +693,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
+#endif
   case PIC_TT_INT:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:

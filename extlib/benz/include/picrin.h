@@ -30,7 +30,6 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <limits.h>
 #include <stdarg.h>
 
@@ -38,11 +37,14 @@ extern "C" {
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 #include <ctype.h>
 
 #include "picrin/config.h"
 #include "picrin/util.h"
+
+#if PIC_ENABLE_FLOAT
+# include <math.h>
+#endif
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"

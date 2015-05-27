@@ -67,6 +67,7 @@ isdelim(int c)
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
+#if PIC_ENABLE_FLOAT
 static bool
 strcaseeq(const char *s1, const char *s2)
 {
@@ -78,6 +79,7 @@ strcaseeq(const char *s1, const char *s2)
   }
   return a == b;
 }
+#endif
 
 static int
 case_fold(pic_state *pic, int c)
@@ -269,11 +271,14 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
 {
   unsigned u;
   int exp, s, i, e;
+#if PIC_ENABLE_FLOAT
   double f, g;
+#endif
 
   u = read_uinteger(pic, port, c);
 
   switch (peek(port)) {
+#if PIC_ENABLE_FLOAT
   case '.':
     next(port);
     g = 0, e = 0;
@@ -300,6 +305,7 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
       exp >>= 1;
     }
     return pic_float_value(f);
+#endif
 
   default:
     exp = read_suffix(pic, port);
@@ -332,11 +338,15 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 negate(pic_value n)
 {
+#if PIC_ENABLE_FLOAT
   if (pic_int_p(n)) {
     return pic_int_value(-pic_int(n));
   } else {
     return pic_float_value(-pic_float(n));
   }
+#else
+  return pic_int_value(-pic_int(n));
+#endif
 }
 
 static pic_value
@@ -349,12 +359,14 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
+#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-inf.0")) {
       return pic_float_value(-INFINITY);
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-nan.0")) {
       return pic_float_value(-NAN);
     }
+#endif
     return sym;
   }
 }
@@ -369,12 +381,14 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
+#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+inf.0")) {
       return pic_float_value(INFINITY);
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+nan.0")) {
       return pic_float_value(NAN);
     }
+#endif
     return sym;
   }
 }

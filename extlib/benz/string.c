@@ -347,9 +347,11 @@ pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
       case 'p':
         xfprintf(file, "%p", va_arg(ap, void *));
         break;
+#if PIC_ENABLE_FLOAT
       case 'f':
         xfprintf(file, "%f", va_arg(ap, double));
         break;
+#endif
       }
       break;
     case '~':
