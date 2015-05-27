@@ -35,7 +35,6 @@ extern "C" {
 #include <stdarg.h>
 
 #include <stdio.h>
-#include <setjmp.h>
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>

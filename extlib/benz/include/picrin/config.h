@@ -11,6 +11,11 @@
 /** treat false value as none */
 /* #define PIC_NONE_IS_FALSE 1 */
 
+/** custom setjmp/longjmp */
+/* #define PIC_JMPBUF_SIZE sizeof(jmp_buf) */
+/* #define PIC_SETJMP(pic, buf) setjmp(buf) */
+/* #define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val)) */
+
 /** initial memory size (to be dynamically extended if necessary) */
 /* #define PIC_ARENA_SIZE 1000 */
 
@@ -53,6 +58,21 @@
 
 #ifndef PIC_NONE_IS_FALSE
 # define PIC_NONE_IS_FALSE 1
+#endif
+
+#ifndef PIC_JMPBUF_SIZE
+# include <setjmp.h>
+# define PIC_JMPBUF_SIZE sizeof(jmp_buf)
+#endif
+
+#ifndef PIC_SETJMP
+# include <setjmp.h>
+# define PIC_SETJMP(pic, buf) setjmp(buf)
+#endif
+
+#ifndef PIC_LONGJMP
+# include <setjmp.h>
+# define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val))
 #endif
 
 #ifndef PIC_ARENA_SIZE

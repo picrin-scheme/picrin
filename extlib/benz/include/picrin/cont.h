@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 struct pic_escape {
-  jmp_buf jmp;
+  char jmp[PIC_JMPBUF_SIZE];
 
   bool valid;
 

@@ -34,7 +34,7 @@ struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list)
   do {                                                                  \
     struct pic_escape *escape = pic_alloc(pic, sizeof(struct pic_escape)); \
     pic_save_point(pic, escape);                                        \
-    if (setjmp(escape->jmp) == 0) {                                     \
+    if (PIC_SETJMP(pic, (void *)escape->jmp) == 0) {                    \
       pic_push_try(pic, escape);                                        \
       do
 #define pic_catch_(label)                                 \
