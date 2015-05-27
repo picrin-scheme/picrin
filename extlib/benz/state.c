@@ -104,11 +104,11 @@ pic_init_features(pic_state *pic)
 static void
 pic_init_core(pic_state *pic)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
-
   pic_init_features(pic);
 
   pic_deflibrary (pic, "(picrin base)") {
+    size_t ai = pic_gc_arena_preserve(pic);
+
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->rSETBANG);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->rQUOTE);
@@ -156,6 +156,10 @@ pic_open(int argc, char *argv[], char **envp)
 
   pic = malloc(sizeof(pic_state));
 
+  if (! pic) {
+    goto EXIT_PIC;
+  }
+
   /* turn off GC */
   pic->gc_enable = false;
 
@@ -171,13 +175,34 @@ pic_open(int argc, char *argv[], char **envp)
   pic->stbase = pic->sp = calloc(PIC_STACK_SIZE, sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
+  if (! pic->sp) {
+    goto EXIT_SP;
+  }
+
   /* callinfo */
   pic->cibase = pic->ci = calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
+  if (! pic->ci) {
+    goto EXIT_CI;
+  }
+
   /* exception handler */
   pic->xpbase = pic->xp = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_proc *));
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
+
+  if (! pic->xp) {
+    goto EXIT_XP;
+  }
+
+  /* GC arena */
+  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena_size = PIC_ARENA_SIZE;
+  pic->arena_idx = 0;
+
+  if (! pic->arena) {
+    goto EXIT_ARENA;
+  }
 
   /* memory heap */
   pic->heap = pic_heap_open(pic);
@@ -200,11 +225,6 @@ pic_open(int argc, char *argv[], char **envp)
   /* libraries */
   pic->libs = pic_nil_value();
   pic->lib = NULL;
-
-  /* GC arena */
-  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
-  pic->arena_size = PIC_ARENA_SIZE;
-  pic->arena_idx = 0;
 
   /* raised error object */
   pic->err = pic_undef_value();
@@ -321,7 +341,20 @@ pic_open(int argc, char *argv[], char **envp)
 
   pic_init_core(pic);
 
+  pic_gc_arena_restore(pic, ai);
+
   return pic;
+
+ EXIT_ARENA:
+  free(pic->xp);
+ EXIT_XP:
+  free(pic->ci);
+ EXIT_CI:
+  free(pic->sp);
+ EXIT_SP:
+  free(pic);
+ EXIT_PIC:
+  return NULL;
 }
 
 void
