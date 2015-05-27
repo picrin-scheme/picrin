@@ -9,6 +9,7 @@
 #include "picrin/data.h"
 #include "picrin/string.h"
 #include "picrin/error.h"
+#include "picrin/port.h"
 
 void
 pic_panic(pic_state *pic, const char *msg)
@@ -29,7 +30,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   err_line = pic_xvformat(pic, fmt, ap);
   va_end(ap);
 
-  fprintf(stderr, "warn: %s\n", pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line))));
+  xfprintf(pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line))));
 }
 
 void

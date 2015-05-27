@@ -39,6 +39,16 @@ pic_stdout(pic_state *pic)
 }
 
 struct pic_port *
+pic_stderr(pic_state *pic)
+{
+  pic_value obj;
+
+  obj = pic_funcall(pic, pic->PICRIN_BASE, "current-error-port", pic_nil_value());
+
+  return pic_port_ptr(obj);
+}
+
+struct pic_port *
 pic_make_standard_port(pic_state *pic, xFILE *file, short dir)
 {
   struct pic_port *port;

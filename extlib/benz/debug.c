@@ -36,34 +36,27 @@ pic_get_backtrace(pic_state *pic)
 }
 
 void
-pic_print_backtrace(pic_state *pic)
+pic_print_backtrace(pic_state *pic, xFILE *file)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_str *trace;
-
   assert(! pic_undef_p(pic->err));
 
   if (! pic_error_p(pic->err)) {
-    trace = pic_format(pic, "raised: ~s", pic->err);
+    xfprintf(file, "raise: ");
+    pic_fwrite(pic, pic->err, file);
   } else {
     struct pic_error *e;
 
     e = pic_error_ptr(pic->err);
     if (e->type != pic_intern_cstr(pic, "")) {
-      trace = pic_format(pic, "~s ", pic_obj_value(e->type));
-    } else {
-      trace = pic_make_str(pic, NULL, 0);
+      pic_fwrite(pic, pic_obj_value(e->type), file);
+      xfprintf(file, " ");
     }
-    trace = pic_str_cat(pic, trace, pic_format(pic, "error: ~s", pic_obj_value(e->msg)));
+    xfprintf(file, "error: ");
+    pic_fwrite(pic, pic_obj_value(e->msg), file);
+    xfprintf(file, "\n");
 
     /* TODO: print error irritants */
 
-    trace = pic_str_cat(pic, trace, pic_make_str(pic, "\n", 1));
-    trace = pic_str_cat(pic, trace, e->stack);
+    xfputs(pic_str_cstr(pic, e->stack), file);
   }
-
-  /* print! */
-  xfprintf(xstderr, "%s", pic_str_cstr(pic, trace));
-
-  pic_gc_arena_restore(pic, ai);
 }

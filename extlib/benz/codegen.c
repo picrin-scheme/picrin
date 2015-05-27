@@ -555,7 +555,6 @@ analyze_quote(analyze_state *state, pic_value obj)
   return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
-
 #define ARGC_ASSERT_GE(n, name) do {                                    \
     if (pic_length(pic, obj) < (n) + 1) {                               \
       pic_errorf(pic,                                                   \
@@ -572,7 +571,6 @@ analyze_quote(analyze_state *state, pic_value obj)
                       analyze(state, arg, false));      \
     }                                                   \
   } while (0)
-
 
 static pic_value
 analyze_add(analyze_state *state, pic_value obj, bool tailpos)
@@ -729,7 +727,6 @@ analyze_call_with_values(analyze_state *state, pic_value obj, bool tailpos)
             pic_obj_value(op),                                  \
             analyze(state, pic_list_ref(pic, obj, 1), false),   \
             analyze(state, pic_list_ref(pic, obj, 2), false))
-
 
 static pic_value
 analyze_node(analyze_state *state, pic_value obj, bool tailpos)

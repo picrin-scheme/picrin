@@ -224,7 +224,7 @@ PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
-void pic_print_backtrace(pic_state *);
+void pic_print_backtrace(pic_state *, xFILE *);
 
 /* obsoleted */
 PIC_INLINE void pic_warn(pic_state *pic, const char *msg)
