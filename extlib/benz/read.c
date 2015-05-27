@@ -267,21 +267,21 @@ read_suffix(pic_state *pic, struct pic_port *port)
 static pic_value
 read_unsigned(pic_state *pic, struct pic_port *port, int c)
 {
-  unsigned u, w = 0;
+  unsigned u;
   int exp, s, i, e;
-  double f;
+  double f, g;
 
   u = read_uinteger(pic, port, c);
 
   switch (peek(port)) {
   case '.':
     next(port);
-    w = 0, f = 1;
+    g = 0, e = 0;
     while (isdigit(c = peek(port))) {
-      w = w * 10 + next(port) - '0';
-      f /= 10;
+      g = g * 10 + (next(port) - '0');
+      e++;
     }
-    f = u + w * f;
+    f = u + g * pow(10, -e);
 
     exp = read_suffix(pic, port);
     if (exp >= 0) {
