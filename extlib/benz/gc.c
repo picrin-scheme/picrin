@@ -25,7 +25,7 @@ union header {
   struct {
     union header *ptr;
     size_t size;
-    unsigned int mark : 1;
+    char mark;
   } s;
   long alignment[2];
 };
@@ -93,7 +93,7 @@ add_heap_page(pic_state *pic)
 
   nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
 
-  up = (union header *)pic_calloc(pic, 1 + nu + 1, sizeof(union header));
+  up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
   up->s.size = nu + 1;
   up->s.mark = PIC_GC_UNMARK;
   gc_free(pic, up);
@@ -104,7 +104,7 @@ add_heap_page(pic_state *pic)
   up->s.size = 1;
   up->s.ptr = np;
 
-  page = (struct heap_page *)pic_alloc(pic, sizeof(struct heap_page));
+  page = pic_alloc(pic, sizeof(struct heap_page));
   page->basep = up;
   page->endp = up + nu + 1;
   page->next = pic->heap->pages;
