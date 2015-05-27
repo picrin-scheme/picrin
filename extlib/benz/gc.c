@@ -649,7 +649,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_STRING: {
-    XROPE_DECREF(((struct pic_string *)obj)->rope);
+    pic_rope_decref(pic, ((struct pic_string *)obj)->rope);
     break;
   }
   case PIC_TT_PORT: {

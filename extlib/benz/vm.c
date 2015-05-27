@@ -254,7 +254,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       if (! pic_str_p(v)) {
         pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
       }
-      *cstr = pic_str_cstr(pic_str_ptr(v));
+      *cstr = pic_str_cstr(pic, pic_str_ptr(v));
       break;
     }
     case 'm': {
@@ -484,7 +484,7 @@ vm_push_env(pic_state *pic)
 {
   pic_callinfo *ci = pic->ci;
 
-  ci->env = (struct pic_env *)pic_obj_alloc(pic, offsetof(struct pic_env, storage) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_ENV);
+  ci->env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_ENV);
   ci->env->up = ci->up;
   ci->env->regc = ci->regc;
   ci->env->regs = ci->regs;

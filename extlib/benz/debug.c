@@ -19,13 +19,13 @@ pic_get_backtrace(pic_state *pic)
   for (ci = pic->ci; ci != pic->cibase; --ci) {
     struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
 
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "  at "));
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, pic_symbol_name(pic, pic_proc_name(proc))));
+    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "  at "));
+    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, pic_symbol_name(pic, pic_proc_name(proc))));
 
     if (pic_proc_func_p(proc)) {
-      trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));
+      trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));
     } else if (pic_proc_irep_p(proc)) {
-      trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, " (unknown location)\n")); /* TODO */
+      trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (unknown location)\n")); /* TODO */
     }
   }
 
@@ -54,16 +54,16 @@ pic_print_backtrace(pic_state *pic)
     } else {
       trace = pic_make_str(pic, NULL, 0);
     }
-    trace = pic_strcat(pic, trace, pic_format(pic, "error: ~s", pic_obj_value(e->msg)));
+    trace = pic_str_cat(pic, trace, pic_format(pic, "error: ~s", pic_obj_value(e->msg)));
 
     /* TODO: print error irritants */
 
-    trace = pic_strcat(pic, trace, pic_make_str(pic, "\n", 1));
-    trace = pic_strcat(pic, trace, e->stack);
+    trace = pic_str_cat(pic, trace, pic_make_str(pic, "\n", 1));
+    trace = pic_str_cat(pic, trace, e->stack);
   }
 
   /* print! */
-  xfprintf(xstderr, "%s", pic_str_cstr(trace));
+  xfprintf(xstderr, "%s", pic_str_cstr(pic, trace));
 
   pic_gc_arena_restore(pic, ai);
 }

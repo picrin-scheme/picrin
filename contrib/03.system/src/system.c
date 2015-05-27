@@ -111,7 +111,7 @@ pic_system_getenvs(pic_state *pic)
       ;
 
     key = pic_make_str(pic, *envp, i);
-    val = pic_make_str_cstr(pic, getenv(pic_str_cstr(key)));
+    val = pic_make_str_cstr(pic, getenv(pic_str_cstr(pic, key)));
 
     /* push */
     data = pic_acons(pic, pic_obj_value(key), pic_obj_value(val), data);

@@ -29,7 +29,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   err_line = pic_xvformat(pic, fmt, ap);
   va_end(ap);
 
-  fprintf(stderr, "warn: %s\n", pic_str_cstr(pic_str_ptr(pic_car(pic, err_line))));
+  fprintf(stderr, "warn: %s\n", pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line))));
 }
 
 void
@@ -43,7 +43,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   err_line = pic_xvformat(pic, fmt, ap);
   va_end(ap);
 
-  msg = pic_str_cstr(pic_str_ptr(pic_car(pic, err_line)));
+  msg = pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line)));
   irrs = pic_cdr(pic, err_line);
 
   pic_error(pic, msg, irrs);
@@ -62,7 +62,7 @@ pic_errmsg(pic_state *pic)
     str = pic_error_ptr(pic->err)->msg;
   }
 
-  return pic_str_cstr(str);
+  return pic_str_cstr(pic, str);
 }
 
 static pic_value
@@ -260,7 +260,7 @@ pic_error_make_error_object(pic_state *pic)
 
   pic_get_args(pic, "ms*", &type, &msg, &argc, &argv);
 
-  e = pic_make_error(pic, type, pic_str_cstr(msg), pic_list_by_array(pic, argc, argv));
+  e = pic_make_error(pic, type, pic_str_cstr(pic, msg), pic_list_by_array(pic, argc, argv));
 
   return pic_obj_value(e);
 }
