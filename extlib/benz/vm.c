@@ -255,10 +255,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       cstr = va_arg(ap, const char **);
       v = GET_OPERAND(pic,i);
-      if (! pic_str_p(v)) {
+      if (pic_str_p(v)) {
+        *cstr = pic_str_cstr(pic, pic_str_ptr(v));
+      }
+      else {
         pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
       }
-      *cstr = pic_str_cstr(pic, pic_str_ptr(v));
       break;
     }
     case 'm': {

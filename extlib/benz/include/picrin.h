@@ -29,18 +29,28 @@ extern "C" {
 #endif
 
 #include <stddef.h>
-#include <stdbool.h>
 #include <limits.h>
 #include <stdarg.h>
 
 #include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
+
+#if __STDC_VERSION__ >= 199901L
+# include <stdbool.h>
+#else
+# define bool char
+# define true 1
+# define false 0
+#endif
+
+#if __STDC_VERSION__ >= 199901L
+# include <stddef.h>
+#elif ! defined(offsetof)
+# define offsetof(s,m) ((size_t)&(((s *)NULL)->m))
+#endif
 
 #include "picrin/config.h"
 #include "picrin/util.h"
+#include "picrin/compat.h"
 
 #if PIC_ENABLE_FLOAT
 # include <math.h>
