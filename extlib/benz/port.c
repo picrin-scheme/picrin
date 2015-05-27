@@ -7,6 +7,7 @@
 #include "picrin/port.h"
 #include "picrin/string.h"
 #include "picrin/blob.h"
+#include "picrin/error.h"
 
 pic_value
 pic_eof_object()
@@ -60,13 +61,107 @@ pic_make_standard_port(pic_state *pic, xFILE *file, short dir)
   return port;
 }
 
+struct strfile {
+  pic_state *pic;
+  char *buf;
+  long pos, end, capa;
+};
+
+static int
+strfile_read(void *cookie, char *ptr, int size)
+{
+  struct strfile *m = cookie;
+
+  if (size > (int)(m->end - m->pos))
+    size = (int)(m->end - m->pos);
+  memcpy(ptr, m->buf + m->pos, size);
+  m->pos += size;
+  return size;
+}
+
+static int
+strfile_write(void *cookie, const char *ptr, int size)
+{
+  struct strfile *m = cookie;
+
+  if (m->pos + size >= m->capa) {
+    m->capa = (m->pos + size) * 2;
+    m->buf = pic_realloc(m->pic, m->buf, (size_t)m->capa);
+  }
+  memcpy(m->buf + m->pos, ptr, size);
+  m->pos += size;
+  if (m->end < m->pos)
+    m->end = m->pos;
+  return size;
+}
+
+static long
+strfile_seek(void *cookie, long pos, int whence)
+{
+  struct strfile *m = cookie;
+
+  switch (whence) {
+  case XF_SEEK_SET:
+    m->pos = pos;
+    break;
+  case XF_SEEK_CUR:
+    m->pos += pos;
+    break;
+  case XF_SEEK_END:
+    m->pos = m->end + pos;
+    break;
+  }
+
+  return m->pos;
+}
+
+static int
+strfile_flush(void *cookie)
+{
+  (void)cookie;
+
+  return 0;
+}
+
+static int
+strfile_close(void *cookie)
+{
+  struct strfile *m = cookie;
+
+  pic_free(m->pic, m->buf);
+  pic_free(m->pic, m);
+  return 0;
+}
+
+static xFILE *
+strfile_open(pic_state *pic)
+{
+  static const size_t size = 128;
+  struct strfile *m;
+  xFILE *file;
+
+  m = pic_malloc(pic, sizeof(struct strfile));
+  m->pic = pic;
+  m->buf = pic_malloc(pic, size);
+  m->pos = 0;
+  m->end = 0;
+  m->capa = size;
+
+  file = xfunopen(m, strfile_read, strfile_write, strfile_seek, strfile_flush, strfile_close);
+  if (file == NULL) {
+    strfile_close(m);
+    pic_error(pic, "could not open new output string/bytevector port", pic_nil_value());
+  }
+  return file;
+}
+
 struct pic_port *
 pic_open_input_string(pic_state *pic, const char *str)
 {
   struct pic_port *port;
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = strfile_open(pic);
   port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
 
@@ -83,7 +178,7 @@ pic_open_output_string(pic_state *pic)
   struct pic_port *port;
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = strfile_open(pic);
   port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
 
@@ -322,7 +417,7 @@ pic_port_open_input_blob(pic_state *pic)
   pic_get_args(pic, "b", &blob);
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = strfile_open(pic);
   port->flags = PIC_PORT_IN | PIC_PORT_BINARY;
   port->status = PIC_PORT_OPEN;
 
@@ -341,7 +436,7 @@ pic_port_open_output_bytevector(pic_state *pic)
   pic_get_args(pic, "");
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = strfile_open(pic);
   port->flags = PIC_PORT_OUT | PIC_PORT_BINARY;
   port->status = PIC_PORT_OPEN;
 
