@@ -384,6 +384,7 @@ foreach (@lines) {
   s/\n/\\n/g;
   print "\"$_\",\n";
 }
+print "\"\"\n";
 
 =pod
 */
@@ -558,6 +559,7 @@ const char pic_boot[][80] = {
 "d or\n          cond case else =>\n          do when unless\n          parameterize",
 "\n          let-syntax letrec-syntax\n          syntax-error))\n\n",
 "",
+""
 };
 
 #if 0
