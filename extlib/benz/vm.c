@@ -101,11 +101,11 @@ pic_get_args(pic_state *pic, const char *format, ...)
                rest? "at least " : "",
                paramc);
   }
-  
+
   /* start dispatching */
   va_start(ap, format);
   min = paramc + optc < argc ? paramc + optc : argc;
-  for(i = 1; i  < min + 1; i++) {
+  for (i = 1; i < min + 1; i++) {
 
     c = *format++;
     /* skip '|' if exists. This is always safe because of assert and argc check */
@@ -395,7 +395,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       argv = va_arg(ap, pic_value **);
       *n = (size_t)(argc - (i - 1));
       *argv = &GET_OPERAND(pic, i);
-    }
+  }
   va_end(ap);
   return argc;
 }
