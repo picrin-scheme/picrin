@@ -16,8 +16,14 @@ pic_panic(pic_state *pic, const char *msg)
 {
   PIC_UNUSED(pic);
 
+#if DEBUG
   fprintf(stderr, "abort: %s\n", msg);
-  abort();
+#else
+  PIC_UNUSED(msg);
+#endif
+  PIC_ABORT(pic);
+
+  PIC_UNREACHABLE();
 }
 
 void

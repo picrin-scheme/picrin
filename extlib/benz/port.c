@@ -101,13 +101,13 @@ strfile_seek(void *cookie, long pos, int whence)
   struct strfile *m = cookie;
 
   switch (whence) {
-  case XF_SEEK_SET:
+  case SEEK_SET:
     m->pos = pos;
     break;
-  case XF_SEEK_CUR:
+  case SEEK_CUR:
     m->pos += pos;
     break;
-  case XF_SEEK_END:
+  case SEEK_END:
     m->pos = m->end + pos;
     break;
   }

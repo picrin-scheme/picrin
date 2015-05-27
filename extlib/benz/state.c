@@ -146,7 +146,7 @@ pic_init_core(pic_state *pic)
 }
 
 pic_state *
-pic_open(int argc, char *argv[], char **envp)
+pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 {
   struct pic_port *pic_make_standard_port(pic_state *, xFILE *, short);
   char t;
@@ -154,11 +154,14 @@ pic_open(int argc, char *argv[], char **envp)
   pic_state *pic;
   size_t ai;
 
-  pic = malloc(sizeof(pic_state));
+  pic = allocf(NULL, sizeof(pic_state));
 
   if (! pic) {
     goto EXIT_PIC;
   }
+
+  /* allocator */
+  pic->allocf = allocf;
 
   /* turn off GC */
   pic->gc_enable = false;
@@ -172,7 +175,7 @@ pic_open(int argc, char *argv[], char **envp)
   pic->envp = envp;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = calloc(PIC_STACK_SIZE, sizeof(pic_value));
+  pic->stbase = pic->sp = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   if (! pic->sp) {
@@ -180,7 +183,7 @@ pic_open(int argc, char *argv[], char **envp)
   }
 
   /* callinfo */
-  pic->cibase = pic->ci = calloc(PIC_STACK_SIZE, sizeof(pic_callinfo));
+  pic->cibase = pic->ci = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   if (! pic->ci) {
@@ -188,7 +191,7 @@ pic_open(int argc, char *argv[], char **envp)
   }
 
   /* exception handler */
-  pic->xpbase = pic->xp = calloc(PIC_RESCUE_SIZE, sizeof(struct pic_proc *));
+  pic->xpbase = pic->xp = allocf(NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   if (! pic->xp) {
@@ -196,7 +199,7 @@ pic_open(int argc, char *argv[], char **envp)
   }
 
   /* GC arena */
-  pic->arena = calloc(PIC_ARENA_SIZE, sizeof(struct pic_object **));
+  pic->arena = allocf(NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
@@ -346,13 +349,13 @@ pic_open(int argc, char *argv[], char **envp)
   return pic;
 
  EXIT_ARENA:
-  free(pic->xp);
+  allocf(pic->xp, 0);
  EXIT_XP:
-  free(pic->ci);
+  allocf(pic->ci, 0);
  EXIT_CI:
-  free(pic->sp);
+  allocf(pic->sp, 0);
  EXIT_SP:
-  free(pic);
+  allocf(pic, 0);
  EXIT_PIC:
   return NULL;
 }
@@ -361,6 +364,7 @@ void
 pic_close(pic_state *pic)
 {
   xh_entry *it;
+  pic_allocf allocf = pic->allocf;
 
   /* invoke exit handlers */
   while (pic->wind) {
@@ -372,7 +376,7 @@ pic_close(pic_state *pic)
 
   /* free symbol names */
   for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
-    free(xh_key(it, char *));
+    allocf(xh_key(it, char *), 0);
   }
 
   /* clear out root objects */
@@ -398,16 +402,16 @@ pic_close(pic_state *pic)
   pic_reader_close(pic, pic->reader);
 
   /* free runtime context */
-  free(pic->stbase);
-  free(pic->cibase);
-  free(pic->xpbase);
+  allocf(pic->stbase, 0);
+  allocf(pic->cibase, 0);
+  allocf(pic->xpbase, 0);
 
   /* free global stacks */
   xh_destroy(&pic->syms);
   xh_destroy(&pic->attrs);
 
   /* free GC arena */
-  free(pic->arena);
+  allocf(pic->arena, 0);
 
-  free(pic);
+  allocf(pic, 0);
 }

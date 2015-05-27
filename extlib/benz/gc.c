@@ -112,8 +112,9 @@ add_heap_page(pic_state *pic)
   pic->heap->pages = page;
 }
 
-static void *
-alloc(void *ptr, size_t size)
+#if PIC_ENABLE_LIBC
+void *
+pic_default_allocf(void *ptr, size_t size)
 {
   if (size == 0) {
     if (ptr) {
@@ -127,13 +128,14 @@ alloc(void *ptr, size_t size)
     return malloc(size);
   }
 }
+#endif
 
 void *
 pic_alloc(pic_state *pic, size_t size)
 {
   void *ptr;
 
-  ptr = alloc(NULL, size);
+  ptr = pic->allocf(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -143,7 +145,7 @@ pic_alloc(pic_state *pic, size_t size)
 void *
 pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
-  ptr = alloc(ptr, size);
+  ptr = pic->allocf(ptr, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -156,7 +158,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
   void *ptr;
 
   size *= count;
-  ptr = alloc(NULL, size);
+  ptr = pic->allocf(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -169,7 +171,7 @@ pic_free(pic_state *pic, void *ptr)
 {
   PIC_UNUSED(pic);
 
-  free(ptr);
+  pic->allocf(ptr, 0);
 }
 
 static void

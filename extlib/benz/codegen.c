@@ -984,6 +984,7 @@ emit_r(codegen_state *state, enum pic_opcode insn, int d, int i)
 static void
 create_activation(codegen_state *state)
 {
+  pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
   size_t i, n;
   xhash regs;

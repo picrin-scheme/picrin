@@ -25,6 +25,9 @@
 /* #define PIC_SETJMP(pic, buf) setjmp(buf) */
 /* #define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val)) */
 
+/** custom abort */
+/* #define PIC_ABORT(pic) abort() */
+
 /** initial memory size (to be dynamically extended if necessary) */
 /* #define PIC_ARENA_SIZE 1000 */
 
@@ -110,6 +113,10 @@
 #ifndef PIC_LONGJMP
 # include <setjmp.h>
 # define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val))
+#endif
+
+#ifndef PIC_ABORT
+# define PIC_ABORT(pic) abort()
 #endif
 
 #ifndef PIC_ARENA_SIZE
