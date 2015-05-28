@@ -35,13 +35,18 @@ extern "C" {
 #if __STDC_VERSION__ >= 199901L
 # define PIC_INLINE static inline
 #elif __GNUC__ || __clang__
-# define PIC_INLINE static __attribute__((unused))
+# define PIC_INLINE static __inline__
 #else
 # define PIC_INLINE static
 #endif
 
 #define PIC_FALLTHROUGH ((void)0)
-#define PIC_UNUSED(v) ((void)(v))
+
+#if __GNUC__ || __clang__
+# define PIC_UNUSED(v) __attribute__((unused)) v
+#else
+# define PIC_UNUSED(v) v
+#endif
 
 #define PIC_GENSYM2_(x,y) PIC_G##x##_##y##_
 #define PIC_GENSYM1_(x,y) PIC_GENSYM2_(x,y)

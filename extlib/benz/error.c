@@ -12,14 +12,12 @@
 #include "picrin/port.h"
 
 void
-pic_panic(pic_state *pic, const char *msg)
+pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)
 {
-  PIC_UNUSED(pic);
-
 #if DEBUG
   fprintf(stderr, "abort: %s\n", msg);
 #else
-  PIC_UNUSED(msg);
+  (void)msg;
 #endif
   PIC_ABORT(pic);
 

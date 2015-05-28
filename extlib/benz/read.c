@@ -91,10 +91,8 @@ case_fold(pic_state *pic, int c)
 }
 
 static pic_value
-read_comment(pic_state *pic, struct pic_port *port, int c)
+read_comment(pic_state PIC_UNUSED(*pic), struct pic_port *port, int c)
 {
-  PIC_UNUSED(pic);
-
   do {
     c = next(port);
   } while (! (c == EOF || c == '\n'));
@@ -103,13 +101,10 @@ read_comment(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_block_comment(pic_state *pic, struct pic_port *port, int c)
+read_block_comment(pic_state PIC_UNUSED(*pic), struct pic_port *port, int PIC_UNUSED(c))
 {
   int x, y;
   int i = 1;
-
-  PIC_UNUSED(pic);
-  PIC_UNUSED(c);
 
   y = next(port);
 
@@ -128,10 +123,8 @@ read_block_comment(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_datum_comment(pic_state *pic, struct pic_port *port, int c)
+read_datum_comment(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 {
-  PIC_UNUSED(c);
-
   read(pic, port, next(port));
 
   return pic_undef_value();
@@ -159,11 +152,9 @@ read_directive(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_eval(pic_state *pic, struct pic_port *port, int c)
+read_eval(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 {
   pic_value form;
-
-  PIC_UNUSED(c);
 
   form = read(pic, port, next(port));
 
@@ -171,27 +162,21 @@ read_eval(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_quote(pic_state *pic, struct pic_port *port, int c)
+read_quote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 {
-  PIC_UNUSED(c);
-
   return pic_list2(pic, pic_obj_value(pic->sQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
-read_quasiquote(pic_state *pic, struct pic_port *port, int c)
+read_quasiquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 {
-  PIC_UNUSED(c);
-
   return pic_list2(pic, pic_obj_value(pic->sQUASIQUOTE), read(pic, port, next(port)));
 }
 
 static pic_value
-read_unquote(pic_state *pic, struct pic_port *port, int c)
+read_unquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 {
   pic_sym *tag = pic->sUNQUOTE;
-
-  PIC_UNUSED(c);
 
   if (peek(port) == '@') {
     tag = pic->sUNQUOTE_SPLICING;
@@ -396,8 +381,6 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_true(pic_state *pic, struct pic_port *port, int c)
 {
-  PIC_UNUSED(pic);
-
   if ((c = peek(port)) == 'r') {
     if (! expect(port, "rue")) {
       read_error(pic, "unexpected character while reading #true");
@@ -412,8 +395,6 @@ read_true(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_false(pic_state *pic, struct pic_port *port, int c)
 {
-  PIC_UNUSED(pic);
-
   if ((c = peek(port)) == 'a') {
     if (! expect(port, "alse")) {
       read_error(pic, "unexpected character while reading #false");
@@ -690,11 +671,9 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 }
 
 static pic_value
-read_label_ref(pic_state *pic, struct pic_port *port, int i)
+read_label_ref(pic_state *pic, struct pic_port PIC_UNUSED(*port), int i)
 {
   xh_entry *e;
-
-  PIC_UNUSED(port);
 
   e = xh_get_int(&pic->reader->labels, i);
   if (! e) {
@@ -723,11 +702,8 @@ read_label(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_unmatch(pic_state *pic, struct pic_port *port, int c)
+read_unmatch(pic_state *pic, struct pic_port PIC_UNUSED(*port), int PIC_UNUSED(c))
 {
-  PIC_UNUSED(port);
-  PIC_UNUSED(c);
-
   read_error(pic, "unmatched parenthesis");
 }
 

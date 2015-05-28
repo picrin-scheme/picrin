@@ -33,26 +33,20 @@ pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 }
 
 void
-pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_sym *key, pic_value val)
+pic_dict_set(pic_state PIC_UNUSED(*pic), struct pic_dict *dict, pic_sym *key, pic_value val)
 {
-  PIC_UNUSED(pic);
-
   xh_put_ptr(&dict->hash, key, &val);
 }
 
 size_t
-pic_dict_size(pic_state *pic, struct pic_dict *dict)
+pic_dict_size(pic_state PIC_UNUSED(*pic), struct pic_dict *dict)
 {
-  PIC_UNUSED(pic);
-
   return dict->hash.count;
 }
 
 bool
-pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym *key)
+pic_dict_has(pic_state PIC_UNUSED(*pic), struct pic_dict *dict, pic_sym *key)
 {
-  PIC_UNUSED(pic);
-
   return xh_get_ptr(&dict->hash, key) != NULL;
 }
 

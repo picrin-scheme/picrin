@@ -37,9 +37,7 @@ struct pic_rope {
   } while (0)
 
 void
-pic_rope_incref(pic_state *pic, struct pic_rope *x) {
-  PIC_UNUSED(pic);
-
+pic_rope_incref(pic_state PIC_UNUSED(*pic), struct pic_rope *x) {
   x->refcnt++;
 }
 

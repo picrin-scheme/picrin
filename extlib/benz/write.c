@@ -163,8 +163,6 @@ write_str(pic_state *pic, struct pic_string *str, xFILE *file)
   size_t i;
   const char *cstr = pic_str_cstr(pic, str);
 
-  PIC_UNUSED(pic);
-
   for (i = 0; i < pic_str_len(str); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       xfputc('\\', file);
