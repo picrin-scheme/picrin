@@ -244,9 +244,12 @@ pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
 void pic_printf(pic_state *, const char *, ...);
 pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
-/* obsoleted macros */
-#define pic_debug(pic,obj) pic_write(pic,obj)
-#define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
+
+#if DEBUG
+# include "picrin/port.h"
+# define pic_debug(pic,obj) pic_fwrite(pic,obj,pic->xSTDERR->file)
+# define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
+#endif
 
 #if defined(__cplusplus)
 }
