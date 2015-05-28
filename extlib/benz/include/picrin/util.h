@@ -9,6 +9,20 @@
 extern "C" {
 #endif
 
+#if __STDC_VERSION__ >= 199901L
+# include <stdbool.h>
+#else
+# define bool char
+# define true 1
+# define false 0
+#endif
+
+#if __STDC_VERSION__ >= 199901L
+# include <stddef.h>
+#elif ! defined(offsetof)
+# define offsetof(s,m) ((size_t)&(((s *)NULL)->m))
+#endif
+
 #if __STDC_VERSION__ >= 201112L
 # include <stdnoreturn.h>
 # define PIC_NORETURN noreturn
