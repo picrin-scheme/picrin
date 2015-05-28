@@ -12,7 +12,7 @@ struct pic_chunk {
   char *str;
   int refcnt;
   size_t len;
-  char autofree;
+  char buf[1];
 };
 
 struct pic_rope {
@@ -30,9 +30,9 @@ struct pic_rope {
 #define CHUNK_DECREF(c) do {                    \
     struct pic_chunk *c_ = (c);                 \
     if (! --c_->refcnt) {                       \
-      if (c_->autofree)                         \
+      if (c_->str != c_->buf)                   \
         pic_free(pic, c_->str);                 \
-      pic_free(pic, c_);                         \
+      pic_free(pic, c_);                        \
     }                                           \
   } while (0)
 
@@ -58,19 +58,14 @@ pic_rope_decref(pic_state *pic, struct pic_rope *x) {
 static struct pic_chunk *
 pic_make_chunk(pic_state *pic, const char *str, size_t len)
 {
-  char *buf;
   struct pic_chunk *c;
 
-  buf = pic_malloc(pic, len + 1);
-  buf[len] = 0;
-
-  memcpy(buf, str, len);
-
-  c = pic_malloc(pic, sizeof(struct pic_chunk));
+  c = pic_malloc(pic, sizeof(struct pic_chunk) + len);
   c->refcnt = 1;
-  c->str = buf;
+  c->str = c->buf;
   c->len = len;
-  c->autofree = 1;
+  c->buf[len] = 0;
+  memcpy(c->buf, str, len);
 
   return c;
 }
@@ -222,11 +217,10 @@ rope_cstr(pic_state *pic, struct pic_rope *x)
     return x->chunk->str;       /* reuse cached chunk */
   }
 
-  c = pic_malloc(pic, sizeof(struct pic_chunk));
+  c = pic_malloc(pic, sizeof(struct pic_chunk) + x->weight);
   c->refcnt = 1;
   c->len = x->weight;
-  c->autofree = 1;
-  c->str = pic_malloc(pic, c->len + 1);
+  c->str = c->buf;
   c->str[c->len] = '\0';
 
   flatten(pic, x, c, 0);
