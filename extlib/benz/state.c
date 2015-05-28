@@ -318,7 +318,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->macros = pic_make_dict(pic);
 
   /* root block */
-  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
+  pic->wind = pic_malloc(pic, sizeof(struct pic_winder));
   pic->wind->prev = NULL;
   pic->wind->depth = 0;
   pic->wind->in = pic->wind->out = NULL;

@@ -197,7 +197,7 @@ pic_get_output_string(pic_state *pic, struct pic_port *port)
   xrewind(port->file);
 
   /* copy to buf */
-  buf = (char *)pic_alloc(pic, size + 1);
+  buf = (char *)pic_malloc(pic, size + 1);
   buf[size] = 0;
   xfread(buf, size, 1, port->file);
 

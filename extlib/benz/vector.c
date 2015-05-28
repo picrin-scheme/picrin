@@ -15,7 +15,7 @@ pic_make_vec(pic_state *pic, size_t len)
 
   vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TT_VECTOR);
   vec->len = len;
-  vec->data = (pic_value *)pic_alloc(pic, sizeof(pic_value) * len);
+  vec->data = (pic_value *)pic_malloc(pic, sizeof(pic_value) * len);
   for (i = 0; i < len; ++i) {
     vec->data[i] = pic_none_value();
   }
@@ -363,7 +363,7 @@ pic_vec_vector_to_string(pic_state *pic)
     pic_errorf(pic, "vector->string: end index must not be less than start index");
   }
 
-  buf = pic_alloc(pic, end - start);
+  buf = pic_malloc(pic, end - start);
 
   for (i = start; i < end; ++i) {
     pic_assert_type(pic, vec->data[i], char);

@@ -36,7 +36,7 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   }
 
   here = pic->wind;
-  pic->wind = pic_alloc(pic, sizeof(struct pic_winder));
+  pic->wind = pic_malloc(pic, sizeof(struct pic_winder));
   pic->wind->prev = here;
   pic->wind->depth = here->depth + 1;
   pic->wind->in = in;
@@ -128,7 +128,7 @@ pic_make_econt(pic_state *pic, struct pic_escape *escape)
 pic_value
 pic_escape(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_escape *escape = pic_alloc(pic, sizeof(struct pic_escape));
+  struct pic_escape *escape = pic_malloc(pic, sizeof(struct pic_escape));
 
   pic_save_point(pic, escape);
 

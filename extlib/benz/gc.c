@@ -104,7 +104,7 @@ add_heap_page(pic_state *pic)
   up->s.size = 1;
   up->s.ptr = np;
 
-  page = pic_alloc(pic, sizeof(struct heap_page));
+  page = pic_malloc(pic, sizeof(struct heap_page));
   page->basep = up;
   page->endp = up + nu + 1;
   page->next = pic->heap->pages;
@@ -131,7 +131,7 @@ pic_default_allocf(void *ptr, size_t size)
 #endif
 
 void *
-pic_alloc(pic_state *pic, size_t size)
+pic_malloc(pic_state *pic, size_t size)
 {
   void *ptr;
 

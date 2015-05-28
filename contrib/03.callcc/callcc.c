@@ -117,36 +117,36 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   pic_vm_tear_off(pic);         /* tear off */
 
-  cont = *c = pic_alloc(pic, sizeof(struct pic_cont));
+  cont = *c = pic_malloc(pic, sizeof(struct pic_cont));
 
   cont->wind = pic->wind;
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
   assert(cont->stk_len > 0);
-  cont->stk_ptr = pic_alloc(pic, cont->stk_len);
+  cont->stk_ptr = pic_malloc(pic, cont->stk_len);
   memcpy(cont->stk_ptr, cont->stk_pos, cont->stk_len);
 
   cont->sp_offset = pic->sp - pic->stbase;
   cont->st_len = pic->stend - pic->stbase;
-  cont->st_ptr = pic_alloc(pic, sizeof(pic_value) * cont->st_len);
+  cont->st_ptr = pic_malloc(pic, sizeof(pic_value) * cont->st_len);
   memcpy(cont->st_ptr, pic->stbase, sizeof(pic_value) * cont->st_len);
 
   cont->ci_offset = pic->ci - pic->cibase;
   cont->ci_len = pic->ciend - pic->cibase;
-  cont->ci_ptr = pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
+  cont->ci_ptr = pic_malloc(pic, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
 
   cont->xp_offset = pic->xp - pic->xpbase;
   cont->xp_len = pic->xpend - pic->xpbase;
-  cont->xp_ptr = pic_alloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
+  cont->xp_ptr = pic_malloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
   memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
 
   cont->ip = pic->ip;
 
   cont->arena_idx = pic->arena_idx;
   cont->arena_size = pic->arena_size;
-  cont->arena = pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
+  cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
   cont->results = pic_undef_value();

@@ -70,7 +70,7 @@ new_analyze_state(pic_state *pic)
   pic_sym *sym;
   xh_entry *it;
 
-  state = pic_alloc(pic, sizeof(analyze_state));
+  state = pic_malloc(pic, sizeof(analyze_state));
   state->pic = pic;
   state->scope = NULL;
 
@@ -144,7 +144,7 @@ static bool
 push_scope(analyze_state *state, pic_value formals)
 {
   pic_state *pic = state->pic;
-  analyze_scope *scope = pic_alloc(pic, sizeof(analyze_scope));
+  analyze_scope *scope = pic_malloc(pic, sizeof(analyze_scope));
   bool varg;
 
   xv_init(scope->args);
@@ -900,7 +900,7 @@ new_codegen_state(pic_state *pic)
 {
   codegen_state *state;
 
-  state = pic_alloc(pic, sizeof(codegen_state));
+  state = pic_malloc(pic, sizeof(codegen_state));
   state->pic = pic;
   state->cxt = NULL;
 
@@ -1026,7 +1026,7 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
 
   assert(pic_sym_p(name) || pic_false_p(name));
 
-  cxt = pic_alloc(pic, sizeof(codegen_context));
+  cxt = pic_malloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
   cxt->name = pic_false_p(name)
     ? pic_intern_cstr(pic, "(anonymous lambda)")

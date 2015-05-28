@@ -170,7 +170,7 @@ pic_dict_dictionary_map(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
-  it = pic_alloc(pic, argc * sizeof(xh_entry));
+  it = pic_malloc(pic, argc * sizeof(xh_entry));
   for (i = 0; i < argc; ++i) {
     if (! pic_dict_p(args[i])) {
       pic_free(pic, it);
@@ -217,7 +217,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
-  it = pic_alloc(pic, argc * sizeof(xh_entry));
+  it = pic_malloc(pic, argc * sizeof(xh_entry));
   for (i = 0; i < argc; ++i) {
     if (! pic_dict_p(args[i])) {
       pic_free(pic, it);

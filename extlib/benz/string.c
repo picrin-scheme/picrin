@@ -465,7 +465,7 @@ pic_str_string(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  buf = pic_alloc(pic, (size_t)argc);
+  buf = pic_malloc(pic, (size_t)argc);
 
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], char);

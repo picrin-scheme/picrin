@@ -208,7 +208,7 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
   pic_sym *sym;
 
   len = 1;
-  buf = pic_alloc(pic, len + 1);
+  buf = pic_malloc(pic, len + 1);
   buf[0] = case_fold(pic, c);
   buf[1] = 0;
 
@@ -468,7 +468,7 @@ read_string(pic_state *pic, struct pic_port *port, int c)
   pic_str *str;
 
   size = 256;
-  buf = pic_alloc(pic, size);
+  buf = pic_malloc(pic, size);
   cnt = 0;
 
   /* TODO: intraline whitespaces */
@@ -506,7 +506,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
   size_t i = 0;
 
   size = 256;
-  buf = pic_alloc(pic, size);
+  buf = pic_malloc(pic, size);
   cnt = 0;
   while ((c = next(port)) != '|') {
     if (c == '\\') {
@@ -830,7 +830,7 @@ pic_reader_open(pic_state *pic)
   struct pic_reader *reader;
   int c;
 
-  reader = pic_alloc(pic, sizeof(struct pic_reader));
+  reader = pic_malloc(pic, sizeof(struct pic_reader));
   reader->typecase = PIC_CASE_DEFAULT;
   xh_init_int(&reader->labels, sizeof(pic_value));
 

@@ -54,7 +54,7 @@ pic_regexp_regexp(pic_state *pic)
     }
   }
 
-  reg = pic_alloc(pic, sizeof(struct pic_regexp_t));
+  reg = pic_malloc(pic, sizeof(struct pic_regexp_t));
   reg->flags = flags;
 
   if ((err = regcomp(&reg->reg, ptrn, cflags)) != 0) {
