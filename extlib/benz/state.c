@@ -3,16 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/gc.h"
-#include "picrin/read.h"
-#include "picrin/proc.h"
-#include "picrin/macro.h"
-#include "picrin/cont.h"
-#include "picrin/port.h"
-#include "picrin/error.h"
-#include "picrin/dict.h"
-#include "picrin/pair.h"
-#include "picrin/lib.h"
 
 void
 pic_add_feature(pic_state *pic, const char *feature)

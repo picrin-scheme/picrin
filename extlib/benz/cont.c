@@ -3,11 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/proc.h"
-#include "picrin/cont.h"
-#include "picrin/pair.h"
-#include "picrin/data.h"
-#include "picrin/error.h"
 
 void
 pic_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)

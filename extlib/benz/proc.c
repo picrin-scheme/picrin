@@ -3,9 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/proc.h"
-#include "picrin/irep.h"
 
 struct pic_proc *
 pic_make_proc(pic_state *pic, pic_func_t func, const char *name)

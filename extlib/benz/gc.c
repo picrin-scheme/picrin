@@ -3,23 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/gc.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/vector.h"
-#include "picrin/irep.h"
-#include "picrin/proc.h"
-#include "picrin/port.h"
-#include "picrin/blob.h"
-#include "picrin/cont.h"
-#include "picrin/error.h"
-#include "picrin/macro.h"
-#include "picrin/lib.h"
-#include "picrin/data.h"
-#include "picrin/dict.h"
-#include "picrin/record.h"
-#include "picrin/read.h"
-#include "picrin/symbol.h"
 
 union header {
   struct {

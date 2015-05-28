@@ -3,15 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/read.h"
-#include "picrin/error.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/vector.h"
-#include "picrin/blob.h"
-#include "picrin/port.h"
-#include "picrin/proc.h"
-#include "picrin/symbol.h"
 
 static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);

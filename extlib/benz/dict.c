@@ -3,11 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/dict.h"
-#include "picrin/cont.h"
-#include "picrin/pair.h"
-#include "picrin/error.h"
-#include "picrin/symbol.h"
 
 struct pic_dict *
 pic_make_dict(pic_state *pic)

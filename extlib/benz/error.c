@@ -3,13 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/proc.h"
-#include "picrin/cont.h"
-#include "picrin/data.h"
-#include "picrin/string.h"
-#include "picrin/error.h"
-#include "picrin/port.h"
 
 void
 pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)

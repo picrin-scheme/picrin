@@ -1,5 +1,4 @@
 #include "picrin.h"
-#include "picrin/dict.h"
 
 struct pic_dict *
 pic_attr(pic_state *pic, pic_value obj)

@@ -3,7 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/macro.h"
 
 pic_value
 pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)

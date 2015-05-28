@@ -3,15 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/port.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/vector.h"
-#include "picrin/blob.h"
-#include "picrin/dict.h"
-#include "picrin/record.h"
-#include "picrin/proc.h"
-#include "picrin/symbol.h"
 
 static bool
 is_tagged(pic_state *pic, pic_sym *tag, pic_value pair)

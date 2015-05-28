@@ -3,9 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/string.h"
-#include "picrin/error.h"
-#include "picrin/proc.h"
 
 pic_str *
 pic_get_backtrace(pic_state *pic)

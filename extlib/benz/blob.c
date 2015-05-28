@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/blob.h"
-#include "picrin/pair.h"
 
 struct pic_blob *
 pic_make_blob(pic_state *pic, size_t len)

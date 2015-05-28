@@ -3,9 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/port.h"
-#include "picrin/error.h"
 
 void
 pic_load(pic_state *pic, const char *filename)

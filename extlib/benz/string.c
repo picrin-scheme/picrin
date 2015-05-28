@@ -3,10 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/string.h"
-#include "picrin/pair.h"
-#include "picrin/port.h"
-#include "picrin/error.h"
 
 struct pic_chunk {
   char *str;

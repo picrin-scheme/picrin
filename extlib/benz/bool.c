@@ -3,10 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/vector.h"
-#include "picrin/blob.h"
-#include "picrin/string.h"
 
 static bool
 str_equal_p(pic_state *pic, struct pic_string *str1, struct pic_string *str2)

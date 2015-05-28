@@ -3,9 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/string.h"
-#include "picrin/cont.h"
-#include "picrin/port.h"
 
 #if ! PIC_ENABLE_FLOAT
 static pic_value

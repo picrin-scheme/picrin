@@ -246,10 +246,28 @@ pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
 #if DEBUG
-# include "picrin/port.h"
 # define pic_debug(pic,obj) pic_fwrite(pic,obj,pic->xSTDERR->file)
 # define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
 #endif
+
+#include "picrin/blob.h"
+#include "picrin/cont.h"
+#include "picrin/data.h"
+#include "picrin/dict.h"
+#include "picrin/error.h"
+#include "picrin/gc.h"
+#include "picrin/irep.h"
+#include "picrin/lib.h"
+#include "picrin/macro.h"
+#include "picrin/pair.h"
+#include "picrin/port.h"
+#include "picrin/proc.h"
+#include "picrin/read.h"
+#include "picrin/record.h"
+#include "picrin/string.h"
+#include "picrin/symbol.h"
+#include "picrin/read.h"
+#include "picrin/vector.h"
 
 #if defined(__cplusplus)
 }

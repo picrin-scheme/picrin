@@ -3,15 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/proc.h"
-#include "picrin/macro.h"
-#include "picrin/lib.h"
-#include "picrin/error.h"
-#include "picrin/dict.h"
-#include "picrin/cont.h"
-#include "picrin/symbol.h"
 
 pic_sym *
 pic_add_rename(pic_state *pic, struct pic_senv *senv, pic_sym *sym)

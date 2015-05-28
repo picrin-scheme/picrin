@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/proc.h"
 
 static pic_value
 var_lookup(pic_state *pic, pic_value var)

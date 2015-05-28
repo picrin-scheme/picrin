@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/symbol.h"
-#include "picrin/string.h"
 
 pic_sym *
 pic_make_symbol(pic_state *pic, pic_str *str)

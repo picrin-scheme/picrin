@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-#include "picrin/cont.h"
-
 struct pic_error {
   PIC_OBJECT_HEADER
   pic_sym *type;

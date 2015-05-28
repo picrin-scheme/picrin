@@ -5,9 +5,6 @@
 #include <stdlib.h>
 
 #include "picrin.h"
-#include "picrin/string.h"
-#include "picrin/pair.h"
-#include "picrin/cont.h"
 
 static pic_value
 pic_system_cmdline(pic_state *pic)

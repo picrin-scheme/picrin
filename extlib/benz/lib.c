@@ -3,14 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/lib.h"
-#include "picrin/pair.h"
-#include "picrin/macro.h"
-#include "picrin/error.h"
-#include "picrin/string.h"
-#include "picrin/proc.h"
-#include "picrin/dict.h"
-#include "picrin/symbol.h"
 
 struct pic_lib *
 pic_open_library(pic_state *pic, pic_value name)

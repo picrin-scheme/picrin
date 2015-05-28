@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/error.h"
 
 void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);

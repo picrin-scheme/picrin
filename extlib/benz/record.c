@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/record.h"
-#include "picrin/dict.h"
 
 struct pic_record *
 pic_make_record(pic_state *pic, pic_value rectype)

@@ -3,19 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/vector.h"
-#include "picrin/proc.h"
-#include "picrin/port.h"
-#include "picrin/irep.h"
-#include "picrin/blob.h"
-#include "picrin/lib.h"
-#include "picrin/macro.h"
-#include "picrin/error.h"
-#include "picrin/dict.h"
-#include "picrin/record.h"
-#include "picrin/symbol.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 

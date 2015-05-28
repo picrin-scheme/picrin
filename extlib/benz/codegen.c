@@ -3,13 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/irep.h"
-#include "picrin/proc.h"
-#include "picrin/lib.h"
-#include "picrin/macro.h"
-#include "picrin/dict.h"
-#include "picrin/symbol.h"
 
 #if PIC_NONE_IS_FALSE
 # define OP_PUSHNONE OP_PUSHFALSE
