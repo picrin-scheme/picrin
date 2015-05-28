@@ -32,8 +32,6 @@ extern "C" {
 #include <limits.h>
 #include <stdarg.h>
 
-#include <stdio.h>
-
 #include "picrin/config.h"
 #include "picrin/util.h"
 #include "picrin/compat.h"

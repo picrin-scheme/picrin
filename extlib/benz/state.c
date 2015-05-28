@@ -326,16 +326,16 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* reader */
   pic->reader = pic_reader_open(pic);
 
+  /* standard I/O */
+  pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
+  pic->xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
+  pic->xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
+
   /* standard libraries */
   pic->PICRIN_BASE = pic_open_library(pic, pic_read_cstr(pic, "(picrin base)"));
   pic->PICRIN_USER = pic_open_library(pic, pic_read_cstr(pic, "(picrin user)"));
   pic->lib = pic->PICRIN_USER;
   pic->prev_lib = NULL;
-
-  /* standard I/O */
-  pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
-  pic->xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
-  pic->xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
 
   pic_gc_arena_restore(pic, ai);
 

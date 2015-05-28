@@ -856,11 +856,14 @@ pic_read(pic_state *pic, struct pic_port *port)
 pic_value
 pic_read_cstr(pic_state *pic, const char *str)
 {
-  struct pic_port *port;
+  struct pic_port *port = pic_open_input_string(pic, str);
+  pic_value form;
 
-  port = pic_open_input_string(pic, str);
+  form = pic_read(pic, port);
 
-  return pic_read(pic, port);
+  pic_close_port(pic, port);
+
+  return form;
 }
 
 static pic_value

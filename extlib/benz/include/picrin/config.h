@@ -156,6 +156,7 @@
 #endif
 
 #if DEBUG
+# include <stdio.h>
 # define GC_STRESS 0
 # define VM_DEBUG 1
 # define GC_DEBUG 0
