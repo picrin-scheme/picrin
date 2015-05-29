@@ -38,7 +38,7 @@ debug: CFLAGS += -O0 -g -DDEBUG=1
 debug: bin/picrin
 
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
-	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
+	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a -lm
 
 src/load_piclib.c: $(PICRIN_LIBS) $(CONTRIB_LIBS)
 	perl etc/mkloader.pl $(PICRIN_LIBS) $(CONTRIB_LIBS) > $@
