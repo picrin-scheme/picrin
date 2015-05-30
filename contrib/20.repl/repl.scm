@@ -11,7 +11,9 @@
    (else
     (begin
       (define (readline str)
-        (if (tty?) (display str))
+        (when (tty?)
+          (display str)
+          (flush-output-port))
         (read-line))
       (define (add-history str)
         #f))))
