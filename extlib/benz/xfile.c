@@ -374,7 +374,7 @@ int xfprintf(xFILE *stream, const char *fmt, ...) {
 }
 
 static int print_int(xFILE *stream, long x, int base) {
-  static char digits[] = "0123456789abcdef";
+  static const char digits[] = "0123456789abcdef";
   char buf[20];
   int i, c, neg;
 
