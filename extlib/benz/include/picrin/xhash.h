@@ -54,19 +54,16 @@ typedef struct xhash {
  */
 
 /* string map */
-PIC_INLINE void xh_init_str(xhash *x, size_t width);
 PIC_INLINE xh_entry *xh_get_str(xhash *x, const char *key);
 PIC_INLINE xh_entry *xh_put_str(xhash *x, const char *key, void *);
 PIC_INLINE void xh_del_str(xhash *x, const char *key);
 
 /* object map */
-PIC_INLINE void xh_init_ptr(xhash *x, size_t width);
 PIC_INLINE xh_entry *xh_get_ptr(xhash *x, const void *key);
 PIC_INLINE xh_entry *xh_put_ptr(xhash *x, const void *key, void *);
 PIC_INLINE void xh_del_ptr(xhash *x, const void *key);
 
 /* int map */
-PIC_INLINE void xh_init_int(xhash *x, size_t width);
 PIC_INLINE xh_entry *xh_get_int(xhash *x, int key);
 PIC_INLINE xh_entry *xh_put_int(xhash *x, int key, void *);
 PIC_INLINE void xh_del_int(xhash *x, int key);
