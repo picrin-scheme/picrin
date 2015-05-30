@@ -94,6 +94,8 @@ xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(voi
 }
 
 int xfclose(xFILE *fp) {
+  extern void free(void *);     /* FIXME */
+
   xfflush(fp);
   fp->flag = 0;
   if (fp->base != fp->buf)
@@ -102,6 +104,7 @@ int xfclose(xFILE *fp) {
 }
 
 int x_fillbuf(xFILE *fp) {
+  extern void *malloc(size_t);  /* FIXME */
   int bufsize;
 
   if ((fp->flag & (X_READ|X_EOF|X_ERR)) != X_READ)
@@ -136,6 +139,7 @@ int x_fillbuf(xFILE *fp) {
 }
 
 int x_flushbuf(int x, xFILE *fp) {
+  extern void *malloc(size_t);  /* FIXME */
   int num_written=0, bufsize=0;
   char c = x;
 
@@ -284,14 +288,15 @@ int xungetc(int c, xFILE *fp) {
 }
 
 size_t xfread(void *ptr, size_t size, size_t count, xFILE *fp) {
+  char *bptr = ptr;
   long nbytes;
   int c;
 
   nbytes = size * count;
   while (nbytes > fp->cnt) {
-    memcpy((char *)ptr, fp->ptr, fp->cnt);
+    memcpy(bptr, fp->ptr, fp->cnt);
     fp->ptr += fp->cnt;
-    ptr += fp->cnt;
+    bptr += fp->cnt;
     nbytes -= fp->cnt;
     if ((c = x_fillbuf(fp)) == EOF) {
       return (size * count - nbytes) / size;
@@ -299,26 +304,27 @@ size_t xfread(void *ptr, size_t size, size_t count, xFILE *fp) {
       xungetc(c, fp);
     }
   }
-  memcpy((char *)ptr, fp->ptr, nbytes);
+  memcpy(bptr, fp->ptr, nbytes);
   fp->ptr += nbytes;
   fp->cnt -= nbytes;
   return count;
 }
 
 size_t xfwrite(const void *ptr, size_t size, size_t count, xFILE *fp) {
+  const char *bptr = ptr;
   long nbytes;
 
   nbytes = size * count;
   while (nbytes > fp->cnt) {
-    memcpy(fp->ptr, (char *)ptr, fp->cnt);
+    memcpy(fp->ptr, bptr, fp->cnt);
     fp->ptr += fp->cnt;
-    ptr += fp->cnt;
+    bptr += fp->cnt;
     nbytes -= fp->cnt;
     if (x_flushbuf(EOF, fp) == EOF) {
       return (size * count - nbytes) / size;
     }
   }
-  memcpy(fp->ptr, (char *)ptr, nbytes);
+  memcpy(fp->ptr, bptr, nbytes);
   fp->ptr += nbytes;
   fp->cnt -= nbytes;
   return count;

@@ -220,9 +220,8 @@ pic_valid_int(double v)
 
 #else
 PIC_INLINE bool
-pic_valid_int(int v)
+pic_valid_int(int PIC_UNUSED(v))
 {
-  PIC_UNUSED(v);
   return true;
 }
 #endif

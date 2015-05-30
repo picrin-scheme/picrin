@@ -109,9 +109,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
 #if PIC_ENABLE_FLOAT
     case 'f': {
       double *f;
+      pic_value v;
 
       f = va_arg(ap, double *);
-      pic_value v;
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
@@ -129,10 +129,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
     case 'F': {
       double *f;
       bool *e;
+      pic_value v;
 
       f = va_arg(ap, double *);
       e = va_arg(ap, bool *);
-      pic_value v;
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
@@ -152,10 +152,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
     case 'I': {
       int *k;
       bool *e;
+      pic_value v;
 
       k = va_arg(ap, int *);
       e = va_arg(ap, bool *);
-      pic_value v;
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
@@ -175,9 +175,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
 #endif
     case 'i': {
       int *k;
+      pic_value v;
 
       k = va_arg(ap, int *);
-      pic_value v;
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
@@ -196,11 +196,11 @@ pic_get_args(pic_state *pic, const char *format, ...)
     }
     case 'k': {
       size_t *k;
-
-      k = va_arg(ap, size_t *);
       pic_value v;
       int x;
       size_t s;
+
+      k = va_arg(ap, size_t *);
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
