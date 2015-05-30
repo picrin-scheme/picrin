@@ -15,11 +15,11 @@ struct pic_func {
   pic_sym *name;
 };
 
-struct pic_env {
+struct pic_context {
   PIC_OBJECT_HEADER
   pic_value *regs;
   int regc;
-  struct pic_env *up;
+  struct pic_context *up;
   pic_value storage[1];
 };
 
@@ -30,7 +30,7 @@ struct pic_proc {
     struct pic_func func;
     struct pic_irep *irep;
   } u;
-  struct pic_env *env;
+  struct pic_context *cxt;
 };
 
 #define PIC_PROC_KIND_FUNC 1
@@ -42,11 +42,11 @@ struct pic_proc {
 #define pic_proc_p(o) (pic_type(o) == PIC_TT_PROC)
 #define pic_proc_ptr(o) ((struct pic_proc *)pic_ptr(o))
 
-#define pic_env_p(o) (pic_type(o) == PIC_TT_ENV)
-#define pic_env_ptr(o) ((struct pic_env *)pic_ptr(o))
+#define pic_context_p(o) (pic_type(o) == PIC_TT_CXT)
+#define pic_context_ptr(o) ((struct pic_context *)pic_ptr(o))
 
 struct pic_proc *pic_make_proc(pic_state *, pic_func_t, const char *);
-struct pic_proc *pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_env *);
+struct pic_proc *pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_context *);
 
 pic_sym *pic_proc_name(struct pic_proc *);
 

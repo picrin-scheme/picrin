@@ -59,10 +59,10 @@ typedef struct {
   int argc, retc;
   pic_code *ip;
   pic_value *fp;
-  struct pic_env *env;
+  struct pic_context *cxt;
   int regc;
   pic_value *regs;
-  struct pic_env *up;
+  struct pic_context *up;
 } pic_callinfo;
 
 typedef void *(*pic_allocf)(void *, size_t);

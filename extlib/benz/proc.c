@@ -18,19 +18,19 @@ pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
   proc->kind = PIC_PROC_KIND_FUNC;
   proc->u.func.f = func;
   proc->u.func.name = sym;
-  proc->env = NULL;
+  proc->cxt = NULL;
   return proc;
 }
 
 struct pic_proc *
-pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_env *env)
+pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cxt)
 {
   struct pic_proc *proc;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
   proc->kind = PIC_PROC_KIND_IREP;
   proc->u.irep = irep;
-  proc->env = env;
+  proc->cxt = cxt;
   return proc;
 }
 

@@ -354,22 +354,22 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, ((struct pic_pair *)obj)->cdr);
     break;
   }
-  case PIC_TT_ENV: {
-    struct pic_env *env = (struct pic_env *)obj;
+  case PIC_TT_CXT: {
+    struct pic_context *cxt = (struct pic_context *)obj;
     int i;
 
-    for (i = 0; i < env->regc; ++i) {
-      gc_mark(pic, env->regs[i]);
+    for (i = 0; i < cxt->regc; ++i) {
+      gc_mark(pic, cxt->regs[i]);
     }
-    if (env->up) {
-      gc_mark_object(pic, (struct pic_object *)env->up);
+    if (cxt->up) {
+      gc_mark_object(pic, (struct pic_object *)cxt->up);
     }
     break;
   }
   case PIC_TT_PROC: {
     struct pic_proc *proc = (struct pic_proc *)obj;
-    if (proc->env) {
-      gc_mark_object(pic, (struct pic_object *)proc->env);
+    if (proc->cxt) {
+      gc_mark_object(pic, (struct pic_object *)proc->cxt);
     }
     if (pic_proc_irep_p(proc)) {
       gc_mark_object(pic, (struct pic_object *)proc->u.irep);
@@ -542,8 +542,8 @@ gc_mark_phase(pic_state *pic)
 
   /* callinfo */
   for (ci = pic->ci; ci != pic->cibase; --ci) {
-    if (ci->env) {
-      gc_mark_object(pic, (struct pic_object *)ci->env);
+    if (ci->cxt) {
+      gc_mark_object(pic, (struct pic_object *)ci->cxt);
     }
   }
 
@@ -619,7 +619,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_PAIR: {
     break;
   }
-  case PIC_TT_ENV: {
+  case PIC_TT_CXT: {
     break;
   }
   case PIC_TT_PROC: {
