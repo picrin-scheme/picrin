@@ -25,7 +25,6 @@ CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
 
 CFLAGS += -I./extlib/benz/include
-# CFLAGS += -std=c89 -ansi -pedantic
 LDFLAGS += -lm
 
 prefix = /usr/local
@@ -72,6 +71,10 @@ test-r7rs: bin/picrin t/r7rs-tests.scm
 	bin/picrin t/r7rs-tests.scm
 
 test-contribs: bin/picrin $(CONTRIB_TESTS)
+
+test-nostdlib:
+	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0'-nostdlib -shared -std=c89 -ansi -pedantic -Wall -Wextra -Werror -o lib/libbenz.so $(BENZ_SRCS)
+	rm -f lib/libbenz.so
 
 install: all
 	install -c bin/picrin $(prefix)/bin/picrin
