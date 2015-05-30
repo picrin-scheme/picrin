@@ -5,21 +5,14 @@
 #include "picrin.h"
 
 struct pic_lib *
-pic_open_library(pic_state *pic, pic_value name)
+pic_make_library(pic_state *pic, pic_value name)
 {
   struct pic_lib *lib;
   struct pic_env *env;
   struct pic_dict *exports;
 
   if ((lib = pic_find_library(pic, name)) != NULL) {
-
-#if DEBUG
-    printf("* reopen library: ");
-    pic_debug(pic, name);
-    puts("");
-#endif
-
-    return lib;
+    pic_errorf(pic, "library name already in use: ~s", name);
   }
 
   env = pic_null_syntactic_environment(pic);
@@ -295,7 +288,9 @@ pic_lib_define_library(pic_state *pic)
 
   pic_get_args(pic, "o*", &spec, &argc, &argv);
 
-  pic_open_library(pic, spec);
+  if (! pic_find_library(pic, spec)) {
+    pic_make_library(pic, spec);
+  }
 
   pic_try {
     pic_in_library(pic, spec);
