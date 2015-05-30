@@ -8,7 +8,7 @@ struct pic_lib *
 pic_open_library(pic_state *pic, pic_value name)
 {
   struct pic_lib *lib;
-  struct pic_senv *senv;
+  struct pic_env *env;
   struct pic_dict *exports;
 
   if ((lib = pic_find_library(pic, name)) != NULL) {
@@ -22,12 +22,12 @@ pic_open_library(pic_state *pic, pic_value name)
     return lib;
   }
 
-  senv = pic_null_syntactic_environment(pic);
+  env = pic_null_syntactic_environment(pic);
   exports = pic_make_dict(pic);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->name = name;
-  lib->env = senv;
+  lib->env = env;
   lib->exports = exports;
 
   /* register! */

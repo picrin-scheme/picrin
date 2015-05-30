@@ -402,14 +402,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLOB: {
     break;
   }
-  case PIC_TT_SENV: {
-    struct pic_senv *senv = (struct pic_senv *)obj;
+  case PIC_TT_ENV: {
+    struct pic_env *env = (struct pic_env *)obj;
 
-    if (senv->up) {
-      gc_mark_object(pic, (struct pic_object *)senv->up);
+    if (env->up) {
+      gc_mark_object(pic, (struct pic_object *)env->up);
     }
-    gc_mark(pic, senv->defer);
-    gc_mark_object(pic, (struct pic_object *)senv->map);
+    gc_mark(pic, env->defer);
+    gc_mark_object(pic, (struct pic_object *)env->map);
     break;
   }
   case PIC_TT_LIB: {
@@ -643,7 +643,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_ERROR: {
     break;
   }
-  case PIC_TT_SENV: {
+  case PIC_TT_ENV: {
     break;
   }
   case PIC_TT_LIB: {
