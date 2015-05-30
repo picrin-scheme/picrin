@@ -7,13 +7,7 @@ forget to use the C++ extern "C" to get it to compile.
 */
 #include "picrin.h"
 
-#if PIC_READLINE_INCLUDE_DIR_SUFFIX == readline
-#include <readline/readline.h>
-#include <readline/history.h>
-#else
 #include <editline/readline.h>
-#include <editline/history.h>
-#endif
 
 static pic_value
 pic_rl_readline(pic_state *pic)

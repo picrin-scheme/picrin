@@ -26,19 +26,20 @@ CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
 
 CFLAGS += -I./extlib/benz/include
 # CFLAGS += -std=c89 -ansi -pedantic
+LDFLAGS += -lm
 
 prefix = /usr/local
 
 all: CFLAGS += -O2 -Wall -Wextra
 all: bin/picrin
 
-include contrib/*/nitro.mk # nitros define test-foo targets
+include contrib/*/nitro.mk
 
 debug: CFLAGS += -O0 -g -DDEBUG=1
 debug: bin/picrin
 
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
-	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a -lm
+	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a $(LDFLAGS)
 
 src/load_piclib.c: $(PICRIN_LIBS) $(CONTRIB_LIBS)
 	perl etc/mkloader.pl $(PICRIN_LIBS) $(CONTRIB_LIBS) > $@
@@ -49,8 +50,7 @@ src/init_contrib.c:
 lib/libbenz.a: $(BENZ_OBJS)
 	$(AR) $(ARFLAGS) $@ $(BENZ_OBJS)
 
-%.o: %.c extlib/benz/include/picrin.h extlib/benz/include/picrin/*.h
-	$(CC) $(CFLAGS) -c -o $@ $<
+%.o: extlib/benz/include/picrin.h extlib/benz/include/picrin/*.h
 
 doc: docs/*.rst docs/contrib.rst
 	$(MAKE) -C docs html
