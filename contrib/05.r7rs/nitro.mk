@@ -1,3 +1,13 @@
+CONTRIB_INITS += r7rs
+
+CONTRIB_SRCS += \
+	contrib/05.r7rs/src/r7rs.c\
+	contrib/05.r7rs/src/file.c\
+	contrib/05.r7rs/src/load.c\
+	contrib/05.r7rs/src/mutable-string.c\
+	contrib/05.r7rs/src/system.c\
+	contrib/05.r7rs/src/time.c
+
 CONTRIB_LIBS += \
 	contrib/05.r7rs/scheme/base.scm\
 	contrib/05.r7rs/scheme/cxr.scm\
