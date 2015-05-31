@@ -15,9 +15,9 @@ pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
   sym = pic_intern_cstr(pic, name);
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->kind = PIC_PROC_KIND_FUNC;
-  proc->u.func.f = func;
-  proc->u.func.name = sym;
+  proc->tag = PIC_PROC_TAG_FUNC;
+  proc->u.f.func = func;
+  proc->u.f.name = sym;
   return proc;
 }
 
@@ -27,7 +27,7 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
   struct pic_proc *proc;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->kind = PIC_PROC_KIND_IREP;
+  proc->tag = PIC_PROC_TAG_IREP;
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
   return proc;
@@ -36,10 +36,10 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
 pic_sym *
 pic_proc_name(struct pic_proc *proc)
 {
-  switch (proc->kind) {
-  case PIC_PROC_KIND_FUNC:
-    return proc->u.func.name;
-  case PIC_PROC_KIND_IREP:
+  switch (proc->tag) {
+  case PIC_PROC_TAG_FUNC:
+    return proc->u.f.name;
+  case PIC_PROC_TAG_IREP:
     return proc->u.i.irep->name;
   }
   PIC_UNREACHABLE();

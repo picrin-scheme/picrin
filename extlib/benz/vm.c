@@ -862,7 +862,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       if (pic_proc_func_p(pic_proc_ptr(x))) {
 
         /* invoke! */
-        v = proc->u.func.f(pic);
+        v = proc->u.f.func(pic);
         pic->sp[0] = v;
         pic->sp += pic->ci->retc;
 

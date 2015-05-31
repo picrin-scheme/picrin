@@ -9,12 +9,6 @@
 extern "C" {
 #endif
 
-/* native C function */
-struct pic_func {
-  pic_func_t f;
-  pic_sym *name;
-};
-
 struct pic_context {
   PIC_OBJECT_HEADER
   pic_value *regs;
@@ -25,9 +19,15 @@ struct pic_context {
 
 struct pic_proc {
   PIC_OBJECT_HEADER
-  char kind;
+  enum {
+    PIC_PROC_TAG_IREP,
+    PIC_PROC_TAG_FUNC
+  } tag;
   union {
-    struct pic_func func;
+    struct {
+      pic_func_t func;
+      pic_sym *name;
+    } f;
     struct {
       struct pic_irep *irep;
       struct pic_context *cxt;
@@ -35,11 +35,8 @@ struct pic_proc {
   } u;
 };
 
-#define PIC_PROC_KIND_FUNC 1
-#define PIC_PROC_KIND_IREP 2
-
-#define pic_proc_func_p(proc) ((proc)->kind == PIC_PROC_KIND_FUNC)
-#define pic_proc_irep_p(proc) ((proc)->kind == PIC_PROC_KIND_IREP)
+#define pic_proc_func_p(proc) ((proc)->tag == PIC_PROC_TAG_FUNC)
+#define pic_proc_irep_p(proc) ((proc)->tag == PIC_PROC_TAG_IREP)
 
 #define pic_proc_p(o) (pic_type(o) == PIC_TT_PROC)
 #define pic_proc_ptr(o) ((struct pic_proc *)pic_ptr(o))

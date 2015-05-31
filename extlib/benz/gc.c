@@ -374,7 +374,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
         gc_mark_object(pic, (struct pic_object *)proc->u.i.cxt);
       }
     } else {
-      gc_mark_object(pic, (struct pic_object *)proc->u.func.name);
+      gc_mark_object(pic, (struct pic_object *)proc->u.f.name);
     }
     break;
   }
