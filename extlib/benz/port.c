@@ -133,9 +133,9 @@ string_open(pic_state *pic, const char *data, size_t size)
   m->end = size;
   m->capa = size;
 
-  memcpy(m->buf, data, size);
 
   if (data != NULL) {
+    memcpy(m->buf, data, size);
     file = xfunopen(m, string_read, NULL, string_seek, string_close);
   } else {
     file = xfunopen(m, NULL, string_write, string_seek, string_close);
