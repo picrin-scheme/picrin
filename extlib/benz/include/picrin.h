@@ -203,13 +203,16 @@ struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_lib *);
 pic_value pic_macroexpand(pic_state *, pic_value, struct pic_lib *);
 
 void pic_in_library(pic_state *, pic_value);
-struct pic_lib *pic_open_library(pic_state *, pic_value);
+struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
 #define pic_deflibrary(pic, spec)                                       \
   for (((assert(pic->prev_lib == NULL)),                                \
         (pic->prev_lib = pic->lib),                                     \
-        (pic->lib = pic_open_library(pic, pic_read_cstr(pic, (spec))))); \
+        (pic->lib = pic_find_library(pic, pic_read_cstr(pic, (spec)))), \
+        (pic->lib = pic->lib                                            \
+         ? pic->lib                                                     \
+         : pic_make_library(pic, pic_read_cstr(pic, (spec)))));         \
        pic->prev_lib != NULL;                                           \
        ((pic->lib = pic->prev_lib),                                     \
         (pic->prev_lib = NULL)))
