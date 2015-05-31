@@ -73,7 +73,7 @@ test: test-r7rs test-contribs test-nostdlib
 test-r7rs: bin/picrin t/r7rs-tests.scm
 	bin/picrin t/r7rs-tests.scm
 
-test-contribs: bin/picrin 
+test-contribs: bin/picrin $(CONTRIB_TESTS_LIST) $(shell cat $(CONTRIB_TESTS_LIST))
 
 test-nostdlib:
 	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0'-nostdlib -fPIC -shared -std=c89 -ansi -pedantic -Wall -Wextra -o lib/libbenz.so $(BENZ_SRCS)
