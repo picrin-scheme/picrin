@@ -24,12 +24,12 @@ CONTRIB_INITS =
 CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
 
-CFLAGS += -I./extlib/benz/include
+CFLAGS += -I./extlib/benz/include -Wall -Wextra
 LDFLAGS += -lm
 
 prefix = /usr/local
 
-all: CFLAGS += -O2 -Wall -Wextra
+all: CFLAGS += -O2
 all: bin/picrin
 
 include contrib/*/nitro.mk
