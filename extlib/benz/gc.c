@@ -375,6 +375,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       }
     } else {
       gc_mark_object(pic, (struct pic_object *)proc->u.f.name);
+      if (proc->u.f.env) {
+        gc_mark_object(pic, (struct pic_object *)proc->u.f.env);
+      }
     }
     break;
   }

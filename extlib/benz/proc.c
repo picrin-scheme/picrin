@@ -18,6 +18,7 @@ pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
   proc->tag = PIC_PROC_TAG_FUNC;
   proc->u.f.func = func;
   proc->u.f.name = sym;
+  proc->u.f.env = NULL;
   return proc;
 }
 
@@ -43,6 +44,29 @@ pic_proc_name(struct pic_proc *proc)
     return proc->u.i.irep->name;
   }
   PIC_UNREACHABLE();
+}
+
+struct pic_dict *
+pic_proc_env(pic_state *pic, struct pic_proc *proc)
+{
+  assert(pic_proc_func_p(proc));
+
+  if (! proc->u.f.env) {
+    proc->u.f.env = pic_make_dict(pic);
+  }
+  return proc->u.f.env;
+}
+
+pic_value
+pic_proc_env_ref(pic_state *pic, struct pic_proc *proc, const char *key)
+{
+  return pic_dict_ref(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
+}
+
+void
+pic_proc_env_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value val)
+{
+  pic_dict_set(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key), val);
 }
 
 static pic_value
