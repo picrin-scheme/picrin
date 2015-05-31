@@ -32,7 +32,7 @@ prefix = /usr/local
 all: CFLAGS += -O2
 all: bin/picrin
 
-include contrib/*/nitro.mk
+include $(sort $(wildcard contrib/*/nitro.mk))
 
 debug: CFLAGS += -O0 -g -DDEBUG=1
 debug: bin/picrin
