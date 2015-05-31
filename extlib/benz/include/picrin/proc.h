@@ -28,9 +28,11 @@ struct pic_proc {
   char kind;
   union {
     struct pic_func func;
-    struct pic_irep *irep;
+    struct {
+      struct pic_irep *irep;
+      struct pic_context *cxt;
+    } i;
   } u;
-  struct pic_context *cxt;
 };
 
 #define PIC_PROC_KIND_FUNC 1

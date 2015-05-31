@@ -524,7 +524,7 @@ vm_get_irep(pic_state *pic)
   if (! pic_proc_p(self)) {
     pic_errorf(pic, "logic flaw");
   }
-  irep = pic_proc_ptr(self)->u.irep;
+  irep = pic_proc_ptr(self)->u.i.irep;
   if (! pic_proc_irep_p(pic_proc_ptr(self))) {
     pic_errorf(pic, "logic flaw");
   }
@@ -642,9 +642,9 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
     }                                                                   \
     puts(")");                                                          \
     if (! pic_proc_func_p(proc)) {                                      \
-      printf("  irep = %p\n", proc->u.irep);                            \
+      printf("  irep = %p\n", proc->u.i.irep);                          \
       printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc))); \
-      pic_dump_irep(proc->u.irep);                                      \
+      pic_dump_irep(proc->u.i.irep);                                    \
     }                                                                   \
     else {                                                              \
       printf("  cfunc = %p\n", (void *)proc->u.func.f);                 \
@@ -765,7 +765,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       struct pic_irep *irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        irep = pic_get_proc(pic)->u.irep;
+        irep = pic_get_proc(pic)->u.i.irep;
         if (c.u.i >= irep->argc + irep->localc) {
           PUSH(ci->cxt->regs[c.u.i - (ci->regs - ci->fp)]);
           NEXT;
@@ -779,7 +779,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       struct pic_irep *irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        irep = pic_get_proc(pic)->u.irep;
+        irep = pic_get_proc(pic)->u.i.irep;
         if (c.u.i >= irep->argc + irep->localc) {
           ci->cxt->regs[c.u.i - (ci->regs - ci->fp)] = POP();
           NEXT;
@@ -870,7 +870,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
         goto L_RET;
       }
       else {
-        struct pic_irep *irep = proc->u.irep;
+        struct pic_irep *irep = proc->u.i.irep;
 	int i;
 	pic_value rest;
 
@@ -900,7 +900,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 	}
 
 	/* prepare cxt */
-        ci->up = proc->cxt;
+        if (pic_proc_irep_p(proc)) {
+          ci->up = proc->u.i.cxt;
+        } else {
+          ci->up = NULL;
+        }
         ci->regc = irep->capturec;
         ci->regs = ci->fp + irep->argc + irep->localc;
 
@@ -969,7 +973,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       if (! pic_proc_p(self)) {
         pic_errorf(pic, "logic flaw");
       }
-      irep = pic_proc_ptr(self)->u.irep;
+      irep = pic_proc_ptr(self)->u.i.irep;
       if (! pic_proc_irep_p(pic_proc_ptr(self))) {
         pic_errorf(pic, "logic flaw");
       }
