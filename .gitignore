@@ -11,3 +11,7 @@ GTAGS
 _build
 _static
 _template
+contrib/inits.txt
+contrib/srcs.txt
+contrib/libs.txt
+contrib/tests.txt

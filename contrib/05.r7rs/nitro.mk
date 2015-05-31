@@ -1,24 +1,21 @@
-CONTRIB_INITS += r7rs
-
-CONTRIB_SRCS += \
-	contrib/05.r7rs/src/r7rs.c\
-	contrib/05.r7rs/src/file.c\
-	contrib/05.r7rs/src/load.c\
-	contrib/05.r7rs/src/mutable-string.c\
-	contrib/05.r7rs/src/system.c\
-	contrib/05.r7rs/src/time.c
-
-CONTRIB_LIBS += \
-	contrib/05.r7rs/scheme/base.scm\
-	contrib/05.r7rs/scheme/cxr.scm\
-	contrib/05.r7rs/scheme/read.scm\
-	contrib/05.r7rs/scheme/write.scm\
-	contrib/05.r7rs/scheme/file.scm\
-	contrib/05.r7rs/scheme/case-lambda.scm\
-	contrib/05.r7rs/scheme/lazy.scm\
-	contrib/05.r7rs/scheme/eval.scm\
-	contrib/05.r7rs/scheme/inexact.scm\
-	contrib/05.r7rs/scheme/load.scm\
-	contrib/05.r7rs/scheme/process-context.scm\
-	contrib/05.r7rs/scheme/time.scm\
-	contrib/05.r7rs/scheme/r5rs.scm
+r7rs:
+	echo r7rs >> $(CONTRIB_INITS_LIST)
+	echo contrib/05.r7rs/src/r7rs.c >> $(CONTRIB_SRCS_LIST)
+	echo contrib/05.r7rs/src/file.c >> $(CONTRIB_SRCS_LIST)
+	echo contrib/05.r7rs/src/load.c >> $(CONTRIB_SRCS_LIST)
+	echo contrib/05.r7rs/src/mutable-string.c >> $(CONTRIB_SRCS_LIST)
+	echo contrib/05.r7rs/src/system.c >> $(CONTRIB_SRCS_LIST)
+	echo contrib/05.r7rs/src/time.c >> $(CONTRIB_SRCS_LIST)
+	echo contrib/05.r7rs/scheme/base.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/cxr.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/read.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/write.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/file.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/case-lambda.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/lazy.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/eval.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/inexact.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/load.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/process-context.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/time.scm >> $(CONTRIB_LIBS_LIST)
+	echo contrib/05.r7rs/scheme/r5rs.scm >> $(CONTRIB_LIBS_LIST)
