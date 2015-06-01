@@ -167,7 +167,7 @@ pic_raise(pic_state *pic, pic_value err)
 
   val = pic_raise_continuable(pic, err);
 
-  pic_pop_try(pic);
+  --pic->xp;
 
   pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
 }
