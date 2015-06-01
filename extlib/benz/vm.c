@@ -647,7 +647,7 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
       pic_dump_irep(proc->u.i.irep);                                    \
     }                                                                   \
     else {                                                              \
-      printf("  cfunc = %p\n", (void *)proc->u.func.f);                 \
+      printf("  cfunc = %p\n", (void *)proc->u.f.func);                 \
       printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc))); \
     }                                                                   \
     puts("== end\n");                                                   \
