@@ -33,11 +33,11 @@ struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list)
     struct pic_escape *escape = pic_malloc(pic, sizeof(struct pic_escape)); \
     pic_save_point(pic, escape);                                        \
     if (PIC_SETJMP(pic, (void *)escape->jmp) == 0) {                    \
-      pic_push_try(pic, escape);                                        \
-      do
+      do {                                                              \
+        pic_push_try(pic, pic_make_econt(pic, escape));
 #define pic_catch_(label)                                 \
-      while (0);                                          \
-      pic_pop_try(pic);                                   \
+        pic_pop_try(pic);                                 \
+      } while (0);                                        \
     } else {                                              \
       goto label;                                         \
     }                                                     \
@@ -45,7 +45,7 @@ struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list)
   if (0)                                                  \
   label:
 
-void pic_push_try(pic_state *, struct pic_escape *);
+void pic_push_try(pic_state *, struct pic_proc *);
 void pic_pop_try(pic_state *);
 
 pic_value pic_raise_continuable(pic_state *, pic_value);
