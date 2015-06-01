@@ -368,13 +368,16 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_PROC: {
     struct pic_proc *proc = (struct pic_proc *)obj;
-    if (proc->cxt) {
-      gc_mark_object(pic, (struct pic_object *)proc->cxt);
-    }
     if (pic_proc_irep_p(proc)) {
-      gc_mark_object(pic, (struct pic_object *)proc->u.irep);
+      gc_mark_object(pic, (struct pic_object *)proc->u.i.irep);
+      if (proc->u.i.cxt) {
+        gc_mark_object(pic, (struct pic_object *)proc->u.i.cxt);
+      }
     } else {
-      gc_mark_object(pic, (struct pic_object *)proc->u.func.name);
+      gc_mark_object(pic, (struct pic_object *)proc->u.f.name);
+      if (proc->u.f.env) {
+        gc_mark_object(pic, (struct pic_object *)proc->u.f.env);
+      }
     }
     break;
   }

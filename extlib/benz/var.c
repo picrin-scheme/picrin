@@ -5,12 +5,13 @@
 #include "picrin.h"
 
 static pic_value
-var_lookup(pic_state *pic, pic_value var)
+var_lookup(pic_state *pic, struct pic_proc *var)
 {
   pic_value val, env, binding;
+  pic_value key = pic_obj_value(var);
 
   val = pic_ref(pic, pic->PICRIN_BASE, "current-dynamic-environment");
-  if (pic_eq_p(val, var)) {
+  if (pic_eq_p(val, key)) {
     return pic_false_value();
   }
 
@@ -19,7 +20,7 @@ var_lookup(pic_state *pic, pic_value var)
     binding = pic_car(pic, env);
 
     while (! pic_nil_p(binding)) {
-      if (pic_eq_p(pic_caar(pic, binding), var)) {
+      if (pic_eq_p(pic_caar(pic, binding), key)) {
         return pic_car(pic, binding);
       }
       binding = pic_cdr(pic, binding);
@@ -39,9 +40,9 @@ var_call(pic_state *pic)
 
   n = pic_get_args(pic, "|oo", &val, &tmp);
 
-  box = var_lookup(pic, pic_obj_value(self));
+  box = var_lookup(pic, self);
   if (! pic_test(box)) {
-    box = pic_attr_ref(pic, pic_obj_value(self), "@@box");
+    box = pic_proc_env_ref(pic, self, "box");
   }
 
   switch (n) {
@@ -49,7 +50,7 @@ var_call(pic_state *pic)
     return pic_cdr(pic, box);
 
   case 1:
-    conv = pic_attr_ref(pic, pic_obj_value(self), "@@converter");
+    conv = pic_proc_env_ref(pic, self, "conv");
     if (pic_test(conv)) {
       pic_assert_type(pic, conv, proc);
 
@@ -62,7 +63,7 @@ var_call(pic_state *pic)
   case 2:
     assert(pic_false_p(tmp));
 
-    conv = pic_attr_ref(pic, pic_obj_value(self), "@@converter");
+    conv = pic_proc_env_ref(pic, self, "conv");
     if (pic_test(conv)) {
       pic_assert_type(pic, conv, proc);
 
@@ -80,8 +81,8 @@ pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
   struct pic_proc *var;
 
   var = pic_make_proc(pic, var_call, "<var-call>");
-  pic_attr_set(pic, pic_obj_value(var), "@@box", pic_cons(pic, pic_false_value(), init));
-  pic_attr_set(pic, pic_obj_value(var), "@@converter", conv ? pic_obj_value(conv) : pic_false_value());
+  pic_proc_env_set(pic, var, "box", pic_cons(pic, pic_false_value(), init));
+  pic_proc_env_set(pic, var, "conv", conv ? pic_obj_value(conv) : pic_false_value());
 
   return var;
 }

@@ -99,7 +99,7 @@ cont_call(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  e = pic_data_ptr(pic_attr_ref(pic, pic_obj_value(pic_get_proc(pic)), "@@escape"));
+  e = pic_data_ptr(pic_proc_env_ref(pic, pic_get_proc(pic), "escape"));
   ((struct pic_cont *)e->data)->results = pic_list_by_array(pic, argc, argv);
 
   pic_load_point(pic, e->data);
@@ -121,7 +121,7 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
   e = pic_data_alloc(pic, &cont_type, cont);
 
   /* save the escape continuation in proc */
-  pic_attr_set(pic, pic_obj_value(c), "@@escape", pic_obj_value(e));
+  pic_proc_env_set(pic, c, "escape", pic_obj_value(e));
 
   return c;
 }

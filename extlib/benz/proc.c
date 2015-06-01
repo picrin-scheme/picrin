@@ -15,10 +15,10 @@ pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
   sym = pic_intern_cstr(pic, name);
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->kind = PIC_PROC_KIND_FUNC;
-  proc->u.func.f = func;
-  proc->u.func.name = sym;
-  proc->cxt = NULL;
+  proc->tag = PIC_PROC_TAG_FUNC;
+  proc->u.f.func = func;
+  proc->u.f.name = sym;
+  proc->u.f.env = NULL;
   return proc;
 }
 
@@ -28,22 +28,45 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
   struct pic_proc *proc;
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
-  proc->kind = PIC_PROC_KIND_IREP;
-  proc->u.irep = irep;
-  proc->cxt = cxt;
+  proc->tag = PIC_PROC_TAG_IREP;
+  proc->u.i.irep = irep;
+  proc->u.i.cxt = cxt;
   return proc;
 }
 
 pic_sym *
 pic_proc_name(struct pic_proc *proc)
 {
-  switch (proc->kind) {
-  case PIC_PROC_KIND_FUNC:
-    return proc->u.func.name;
-  case PIC_PROC_KIND_IREP:
-    return proc->u.irep->name;
+  switch (proc->tag) {
+  case PIC_PROC_TAG_FUNC:
+    return proc->u.f.name;
+  case PIC_PROC_TAG_IREP:
+    return proc->u.i.irep->name;
   }
   PIC_UNREACHABLE();
+}
+
+struct pic_dict *
+pic_proc_env(pic_state *pic, struct pic_proc *proc)
+{
+  assert(pic_proc_func_p(proc));
+
+  if (! proc->u.f.env) {
+    proc->u.f.env = pic_make_dict(pic);
+  }
+  return proc->u.f.env;
+}
+
+pic_value
+pic_proc_env_ref(pic_state *pic, struct pic_proc *proc, const char *key)
+{
+  return pic_dict_ref(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
+}
+
+void
+pic_proc_env_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value val)
+{
+  pic_dict_set(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key), val);
 }
 
 static pic_value
