@@ -49,7 +49,7 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
 }
 
 void
-pic_save_point(pic_state *pic, struct pic_escape *escape)
+pic_save_point(pic_state *pic, struct pic_cont *escape)
 {
   escape->jmp.prev = pic->jmp;
   pic->jmp = &escape->jmp;
@@ -66,7 +66,7 @@ pic_save_point(pic_state *pic, struct pic_escape *escape)
 }
 
 void
-pic_load_point(pic_state *pic, struct pic_escape *escape)
+pic_load_point(pic_state *pic, struct pic_cont *escape)
 {
   pic_jmpbuf *jmp;
 
@@ -100,17 +100,17 @@ escape_call(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   e = pic_data_ptr(pic_attr_ref(pic, pic_obj_value(pic_get_proc(pic)), "@@escape"));
-  ((struct pic_escape *)e->data)->results = pic_list_by_array(pic, argc, argv);
+  ((struct pic_cont *)e->data)->results = pic_list_by_array(pic, argc, argv);
 
   pic_load_point(pic, e->data);
 
-  PIC_LONGJMP(pic, (void *)((struct pic_escape *)e->data)->jmp.buf, 1);
+  PIC_LONGJMP(pic, ((struct pic_cont *)e->data)->jmp.buf, 1);
 
   PIC_UNREACHABLE();
 }
 
 struct pic_proc *
-pic_make_econt(pic_state *pic, struct pic_escape *escape)
+pic_make_cont(pic_state *pic, struct pic_cont *escape)
 {
   static const pic_data_type escape_type = { "escape", pic_free, NULL };
   struct pic_proc *cont;
@@ -127,13 +127,13 @@ pic_make_econt(pic_state *pic, struct pic_escape *escape)
 }
 
 pic_value
-pic_escape(pic_state *pic, struct pic_proc *proc)
+pic_callcc(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_escape *escape = pic_malloc(pic, sizeof(struct pic_escape));
+  struct pic_cont *escape = pic_malloc(pic, sizeof(struct pic_cont));
 
   pic_save_point(pic, escape);
 
-  if (PIC_SETJMP(pic, (void *)escape->jmp.buf)) {
+  if (PIC_SETJMP(pic, escape->jmp.buf)) {
     pic->jmp = pic->jmp->prev;
 
     return pic_values_by_list(pic, escape->results);
@@ -141,7 +141,7 @@ pic_escape(pic_state *pic, struct pic_proc *proc)
   else {
     pic_value val;
 
-    val = pic_apply1(pic, proc, pic_obj_value(pic_make_econt(pic, escape)));
+    val = pic_apply1(pic, proc, pic_obj_value(pic_make_cont(pic, escape)));
 
     pic->jmp = pic->jmp->prev;
 
@@ -237,7 +237,7 @@ pic_cont_callcc(pic_state *pic)
 
   pic_get_args(pic, "l", &cb);
 
-  return pic_escape(pic, cb);
+  return pic_callcc(pic, cb);
 }
 
 static pic_value

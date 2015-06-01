@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-struct pic_escape {
+struct pic_cont {
   pic_jmpbuf jmp;
 
   struct pic_winder *wind;
@@ -24,10 +24,10 @@ struct pic_escape {
   pic_value results;
 };
 
-void pic_save_point(pic_state *, struct pic_escape *);
-void pic_load_point(pic_state *, struct pic_escape *);
+void pic_save_point(pic_state *, struct pic_cont *);
+void pic_load_point(pic_state *, struct pic_cont *);
 
-struct pic_proc *pic_make_econt(pic_state *, struct pic_escape *);
+struct pic_proc *pic_make_cont(pic_state *, struct pic_cont *);
 
 void pic_wind(pic_state *, struct pic_winder *, struct pic_winder *);
 pic_value pic_dynamic_wind(pic_state *, struct pic_proc *, struct pic_proc *, struct pic_proc *);
@@ -42,7 +42,7 @@ pic_value pic_values_by_array(pic_state *, size_t, pic_value *);
 pic_value pic_values_by_list(pic_state *, pic_value);
 size_t pic_receive(pic_state *, size_t, pic_value *);
 
-pic_value pic_escape(pic_state *, struct pic_proc *);
+pic_value pic_callcc(pic_state *, struct pic_proc *);
 
 #if defined(__cplusplus)
 }
