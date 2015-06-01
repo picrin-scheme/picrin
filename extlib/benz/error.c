@@ -63,8 +63,8 @@ pic_errmsg(pic_state *pic)
   return pic_str_cstr(pic, str);
 }
 
-static pic_value
-native_exception_handler(pic_state *pic)
+pic_value
+pic_native_exception_handler(pic_state *pic)
 {
   pic_value err;
   struct pic_proc *cont;
@@ -81,15 +81,10 @@ native_exception_handler(pic_state *pic)
 }
 
 void
-pic_push_try(pic_state *pic, struct pic_proc *cont)
+pic_push_handler(pic_state *pic, struct pic_proc *handler)
 {
-  struct pic_proc *handler;
   size_t xp_len;
   ptrdiff_t xp_offset;
-
-  handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
-
-  pic_proc_env_set(pic, handler, "cont", pic_obj_value(cont));
 
   if (pic->xp >= pic->xpend) {
     xp_len = (size_t)(pic->xpend - pic->xpbase) * 2;
@@ -102,10 +97,14 @@ pic_push_try(pic_state *pic, struct pic_proc *cont)
   *pic->xp++ = handler;
 }
 
-void
-pic_pop_try(pic_state *pic)
+struct pic_proc *
+pic_pop_handler(pic_state *pic)
 {
-  --pic->xp;
+  if (pic->xp == pic->xpbase) {
+    pic_panic(pic, "no exception handler registered");
+  }
+
+  return *--pic->xp;
 }
 
 struct pic_error *
@@ -131,17 +130,13 @@ pic_raise_continuable(pic_state *pic, pic_value err)
   struct pic_proc *handler;
   pic_value v;
 
-  if (pic->xp == pic->xpbase) {
-    pic_panic(pic, "no exception handler registered");
-  }
-
-  handler = *--pic->xp;
+  handler = pic_pop_handler(pic);
 
   pic_gc_protect(pic, pic_obj_value(handler));
 
   v = pic_apply1(pic, handler, err);
 
-  *pic->xp++ = handler;
+  pic_push_handler(pic, handler);
 
   return v;
 }
@@ -153,7 +148,7 @@ pic_raise(pic_state *pic, pic_value err)
 
   val = pic_raise_continuable(pic, err);
 
-  --pic->xp;
+  pic_pop_handler(pic);
 
   pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
 }
@@ -179,24 +174,14 @@ pic_error_with_exception_handler(pic_state *pic)
 {
   struct pic_proc *handler, *thunk;
   pic_value val;
-  size_t xp_len;
-  ptrdiff_t xp_offset;
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  if (pic->xp >= pic->xpend) {
-    xp_len = (size_t)(pic->xpend - pic->xpbase) * 2;
-    xp_offset = pic->xp - pic->xpbase;
-    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
-    pic->xp = pic->xpbase + xp_offset;
-    pic->xpend = pic->xpbase + xp_len;
-  }
-
-  *pic->xp++ = handler;
+  pic_push_handler(pic, handler);
 
   val = pic_apply0(pic, thunk);
 
-  --pic->xp;
+  pic_pop_handler(pic);
 
   return val;
 }
