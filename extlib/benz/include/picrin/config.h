@@ -21,7 +21,7 @@
 /* #define PIC_NONE_IS_FALSE 1 */
 
 /** custom setjmp/longjmp */
-/* #define PIC_JMPBUF_SIZE sizeof(jmp_buf) */
+/* #define PIC_JMPBUF jmp_buf */
 /* #define PIC_SETJMP(pic, buf) setjmp(buf) */
 /* #define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val)) */
 
@@ -100,9 +100,9 @@
 # define PIC_NONE_IS_FALSE 1
 #endif
 
-#ifndef PIC_JMPBUF_SIZE
+#ifndef PIC_JMPBUF
 # include <setjmp.h>
-# define PIC_JMPBUF_SIZE sizeof(jmp_buf)
+# define PIC_JMPBUF jmp_buf
 #endif
 
 #ifndef PIC_SETJMP

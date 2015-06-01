@@ -48,6 +48,11 @@ extern "C" {
 
 typedef struct pic_code pic_code;
 
+typedef struct pic_jmpbuf {
+  PIC_JMPBUF buf;
+  struct pic_jmpbuf *prev;
+} pic_jmpbuf;
+
 struct pic_winder {
   struct pic_proc *in;
   struct pic_proc *out;
@@ -73,6 +78,7 @@ typedef struct {
 
   pic_allocf allocf;
 
+  pic_jmpbuf *jmp;
   struct pic_winder *wind;
 
   pic_value *sp;

@@ -81,13 +81,11 @@ native_exception_handler(pic_state *pic)
 }
 
 void
-pic_push_try(pic_state *pic, struct pic_escape *escape)
+pic_push_try(pic_state *pic, struct pic_proc *cont)
 {
-  struct pic_proc *cont, *handler;
+  struct pic_proc *handler;
   size_t xp_len;
   ptrdiff_t xp_offset;
-
-  cont = pic_make_econt(pic, escape);
 
   handler = pic_make_proc(pic, native_exception_handler, "(native-exception-handler)");
 
@@ -107,19 +105,7 @@ pic_push_try(pic_state *pic, struct pic_escape *escape)
 void
 pic_pop_try(pic_state *pic)
 {
-  pic_value cont, escape;
-
-  assert(pic->xp > pic->xpbase);
-
-  cont = pic_attr_ref(pic, pic_obj_value(*--pic->xp), "@@escape");
-
-  assert(pic_proc_p(cont));
-
-  escape = pic_attr_ref(pic, cont, "@@escape");
-
-  assert(pic_data_p(escape));
-
-  ((struct pic_escape *)pic_data_ptr(escape)->data)->valid = false;
+  --pic->xp;
 }
 
 struct pic_error *
@@ -167,7 +153,7 @@ pic_raise(pic_state *pic, pic_value err)
 
   val = pic_raise_continuable(pic, err);
 
-  pic_pop_try(pic);
+  --pic->xp;
 
   pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
 }

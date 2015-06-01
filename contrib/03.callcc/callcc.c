@@ -1,7 +1,9 @@
 #include "picrin.h"
 
-struct pic_cont {
+struct pic_fullcont {
   jmp_buf jmp;
+
+  pic_jmpbuf *prev_jmp;
 
   struct pic_winder *wind;
 
@@ -29,7 +31,7 @@ struct pic_cont {
 static void
 cont_dtor(pic_state *pic, void *data)
 {
-  struct pic_cont *cont = data;
+  struct pic_fullcont *cont = data;
 
   pic_free(pic, cont->stk_ptr);
   pic_free(pic, cont->st_ptr);
@@ -42,7 +44,7 @@ cont_dtor(pic_state *pic, void *data)
 static void
 cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 {
-  struct pic_cont *cont = data;
+  struct pic_fullcont *cont = data;
   struct pic_winder *wind;
   pic_value *stack;
   pic_callinfo *ci;
@@ -87,8 +89,8 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 
 static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
 
-static void save_cont(pic_state *, struct pic_cont **);
-static void restore_cont(pic_state *, struct pic_cont *);
+static void save_cont(pic_state *, struct pic_fullcont **);
+static void restore_cont(pic_state *, struct pic_fullcont *);
 
 static ptrdiff_t
 native_stack_length(pic_state *pic, char **pos)
@@ -105,15 +107,17 @@ native_stack_length(pic_state *pic, char **pos)
 }
 
 static void
-save_cont(pic_state *pic, struct pic_cont **c)
+save_cont(pic_state *pic, struct pic_fullcont **c)
 {
   void pic_vm_tear_off(pic_state *);
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
   char *pos;
 
   pic_vm_tear_off(pic);         /* tear off */
 
-  cont = *c = pic_malloc(pic, sizeof(struct pic_cont));
+  cont = *c = pic_malloc(pic, sizeof(struct pic_fullcont));
+
+  cont->prev_jmp = pic->jmp;
 
   cont->wind = pic->wind;
 
@@ -149,7 +153,7 @@ save_cont(pic_state *pic, struct pic_cont **c)
 }
 
 static void
-native_stack_extend(pic_state *pic, struct pic_cont *cont)
+native_stack_extend(pic_state *pic, struct pic_fullcont *cont)
 {
   volatile pic_value v[1024];
 
@@ -158,10 +162,10 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
 }
 
 PIC_NORETURN static void
-restore_cont(pic_state *pic, struct pic_cont *cont)
+restore_cont(pic_state *pic, struct pic_fullcont *cont)
 {
   char v;
-  struct pic_cont *tmp = cont;
+  struct pic_fullcont *tmp = cont;
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
@@ -169,6 +173,8 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   else {
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
+
+  pic->jmp = cont->prev_jmp;
 
   pic->wind = cont->wind;
 
@@ -205,7 +211,7 @@ cont_call(pic_state *pic)
   struct pic_proc *proc;
   size_t argc;
   pic_value *argv;
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
 
   proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
@@ -220,9 +226,9 @@ cont_call(pic_state *pic)
 }
 
 pic_value
-pic_callcc(pic_state *pic, struct pic_proc *proc)
+pic_callcc_full(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
@@ -244,9 +250,9 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
 }
 
 static pic_value
-pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
+pic_callcc_full_trampoline(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
@@ -274,7 +280,7 @@ pic_callcc_callcc(pic_state *pic)
 
   pic_get_args(pic, "l", &cb);
 
-  return pic_callcc_trampoline(pic, cb);
+  return pic_callcc_full_trampoline(pic, cb);
 }
 
 #define pic_redefun(pic, lib, name, func)       \
