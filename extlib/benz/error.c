@@ -105,19 +105,7 @@ pic_push_try(pic_state *pic, struct pic_proc *cont)
 void
 pic_pop_try(pic_state *pic)
 {
-  pic_value cont, escape;
-
-  assert(pic->xp > pic->xpbase);
-
-  cont = pic_attr_ref(pic, pic_obj_value(*--pic->xp), "@@escape");
-
-  assert(pic_proc_p(cont));
-
-  escape = pic_attr_ref(pic, cont, "@@escape");
-
-  assert(pic_data_p(escape));
-
-  ((struct pic_escape *)pic_data_ptr(escape)->data)->valid = false;
+  --pic->xp;
 }
 
 struct pic_error *

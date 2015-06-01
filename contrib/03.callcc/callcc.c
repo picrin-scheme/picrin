@@ -3,6 +3,8 @@
 struct pic_cont {
   jmp_buf jmp;
 
+  pic_jmpbuf *prev_jmp;
+
   struct pic_winder *wind;
 
   char *stk_pos, *stk_ptr;
@@ -115,6 +117,8 @@ save_cont(pic_state *pic, struct pic_cont **c)
 
   cont = *c = pic_malloc(pic, sizeof(struct pic_cont));
 
+  cont->prev_jmp = pic->jmp;
+
   cont->wind = pic->wind;
 
   cont->stk_len = native_stack_length(pic, &pos);
@@ -169,6 +173,8 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
   else {
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
+
+  pic->jmp = cont->prev_jmp;
 
   pic->wind = cont->wind;
 

@@ -32,13 +32,15 @@ struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list)
   do {                                                                  \
     struct pic_escape *escape = pic_malloc(pic, sizeof(struct pic_escape)); \
     pic_save_point(pic, escape);                                        \
-    if (PIC_SETJMP(pic, (void *)escape->jmp) == 0) {                    \
+    if (PIC_SETJMP(pic, (void *)escape->jmp.buf) == 0) {                \
       do {                                                              \
         pic_push_try(pic, pic_make_econt(pic, escape));
 #define pic_catch_(label)                                 \
         pic_pop_try(pic);                                 \
       } while (0);                                        \
+      pic->jmp = pic->jmp->prev;                          \
     } else {                                              \
+      pic->jmp = pic->jmp->prev;                          \
       goto label;                                         \
     }                                                     \
   } while (0);                                            \

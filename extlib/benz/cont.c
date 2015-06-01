@@ -51,7 +51,8 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
 void
 pic_save_point(pic_state *pic, struct pic_escape *escape)
 {
-  escape->valid = true;
+  escape->jmp.prev = pic->jmp;
+  pic->jmp = &escape->jmp;
 
   /* save runtime context */
   escape->wind = pic->wind;
@@ -67,7 +68,14 @@ pic_save_point(pic_state *pic, struct pic_escape *escape)
 void
 pic_load_point(pic_state *pic, struct pic_escape *escape)
 {
-  if (! escape->valid) {
+  pic_jmpbuf *jmp;
+
+  for (jmp = pic->jmp; jmp != NULL; jmp = jmp->prev) {
+    if (jmp == &escape->jmp) {
+      break;
+    }
+  }
+  if (jmp == NULL) {
     pic_errorf(pic, "calling dead escape continuation");
   }
 
@@ -80,8 +88,6 @@ pic_load_point(pic_state *pic, struct pic_escape *escape)
   pic->xp = pic->xpbase + escape->xp_offset;
   pic->arena_idx = escape->arena_idx;
   pic->ip = escape->ip;
-
-  escape->valid = false;
 }
 
 static pic_value
@@ -98,7 +104,7 @@ escape_call(pic_state *pic)
 
   pic_load_point(pic, e->data);
 
-  PIC_LONGJMP(pic, (void *)((struct pic_escape *)e->data)->jmp, 1);
+  PIC_LONGJMP(pic, (void *)((struct pic_escape *)e->data)->jmp.buf, 1);
 
   PIC_UNREACHABLE();
 }
@@ -127,7 +133,9 @@ pic_escape(pic_state *pic, struct pic_proc *proc)
 
   pic_save_point(pic, escape);
 
-  if (PIC_SETJMP(pic, (void *)escape->jmp)) {
+  if (PIC_SETJMP(pic, (void *)escape->jmp.buf)) {
+    pic->jmp = pic->jmp->prev;
+
     return pic_values_by_list(pic, escape->results);
   }
   else {
@@ -135,7 +143,7 @@ pic_escape(pic_state *pic, struct pic_proc *proc)
 
     val = pic_apply1(pic, proc, pic_obj_value(pic_make_econt(pic, escape)));
 
-    escape->valid = false;
+    pic->jmp = pic->jmp->prev;
 
     return val;
   }

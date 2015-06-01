@@ -10,9 +10,7 @@ extern "C" {
 #endif
 
 struct pic_escape {
-  char jmp[PIC_JMPBUF_SIZE];
-
-  bool valid;
+  pic_jmpbuf jmp;
 
   struct pic_winder *wind;
 
