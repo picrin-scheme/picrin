@@ -216,7 +216,7 @@ cont_call(pic_state *pic)
   proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
 
-  cont = pic_data_ptr(pic_attr_ref(pic, pic_obj_value(proc), "@@cont"))->data;
+  cont = pic_data_ptr(pic_proc_env_ref(pic, proc, "cont"))->data;
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
@@ -243,7 +243,7 @@ pic_callcc_full(pic_state *pic, struct pic_proc *proc)
     dat = pic_data_alloc(pic, &cont_type, cont);
 
     /* save the continuation object in proc */
-    pic_attr_set(pic, pic_obj_value(c), "@@cont", pic_obj_value(dat));
+    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
 
     return pic_apply1(pic, proc, pic_obj_value(c));
   }
@@ -267,7 +267,7 @@ pic_callcc_full_trampoline(pic_state *pic, struct pic_proc *proc)
     dat = pic_data_alloc(pic, &cont_type, cont);
 
     /* save the continuation object in proc */
-    pic_attr_set(pic, pic_obj_value(c), "@@cont", pic_obj_value(dat));
+    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
 
     return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
   }
