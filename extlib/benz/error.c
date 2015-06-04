@@ -154,19 +154,13 @@ pic_raise(pic_state *pic, pic_value err)
 }
 
 void
-pic_throw(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
+pic_error(pic_state *pic, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, type, msg, irrs);
+  e = pic_make_error(pic, pic_intern_cstr(pic, ""), msg, irrs);
 
   pic_raise(pic, pic_obj_value(e));
-}
-
-void
-pic_error(pic_state *pic, const char *msg, pic_value irrs)
-{
-  pic_throw(pic, pic_intern_cstr(pic, ""), msg, irrs);
 }
 
 static pic_value
