@@ -304,6 +304,24 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   R(rDEFINE_LIBRARY, "define-library");
   R(rIN_LIBRARY, "in-library");
   R(rCOND_EXPAND, "cond-expand");
+  R(rCONS, "cons");
+  R(rCAR, "car");
+  R(rCDR, "cdr");
+  R(rNILP, "null?");
+  R(rSYMBOLP, "symbol?");
+  R(rPAIRP, "pair?");
+  R(rADD, "+");
+  R(rSUB, "-");
+  R(rMUL, "*");
+  R(rDIV, "/");
+  R(rEQ, "=");
+  R(rLT, "<");
+  R(rLE, "<=");
+  R(rGT, ">");
+  R(rGE, ">=");
+  R(rNOT, "not");
+  R(rVALUES, "values");
+  R(rCALL_WITH_VALUES, "call-with-values");
   pic_gc_arena_restore(pic, ai);
 
   /* root tables */

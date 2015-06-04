@@ -801,6 +801,8 @@ pic_number_sqrt(pic_state *pic)
 void
 pic_init_number(pic_state *pic)
 {
+  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
+
   size_t ai = pic_gc_arena_preserve(pic);
 
   pic_defun(pic, "number?", pic_number_real_p);
@@ -814,17 +816,17 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "inexact?", pic_number_inexact_p);
   pic_gc_arena_restore(pic, ai);
 
-  pic_defun(pic, "=", pic_number_eq);
-  pic_defun(pic, "<", pic_number_lt);
-  pic_defun(pic, ">", pic_number_gt);
-  pic_defun(pic, "<=", pic_number_le);
-  pic_defun(pic, ">=", pic_number_ge);
+  pic_defun_vm(pic, "=", pic->rEQ, pic_number_eq);
+  pic_defun_vm(pic, "<", pic->rLT, pic_number_lt);
+  pic_defun_vm(pic, ">", pic->rGT, pic_number_gt);
+  pic_defun_vm(pic, "<=", pic->rLE, pic_number_le);
+  pic_defun_vm(pic, ">=", pic->rGE, pic_number_ge);
   pic_gc_arena_restore(pic, ai);
 
-  pic_defun(pic, "+", pic_number_add);
-  pic_defun(pic, "-", pic_number_sub);
-  pic_defun(pic, "*", pic_number_mul);
-  pic_defun(pic, "/", pic_number_div);
+  pic_defun_vm(pic, "+", pic->rADD, pic_number_add);
+  pic_defun_vm(pic, "-", pic->rSUB, pic_number_sub);
+  pic_defun_vm(pic, "*", pic->rMUL, pic_number_mul);
+  pic_defun_vm(pic, "/", pic->rDIV, pic_number_div);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "abs", pic_number_abs);

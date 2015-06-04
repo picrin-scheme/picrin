@@ -33,28 +33,10 @@ typedef struct analyze_scope {
 typedef struct analyze_state {
   pic_state *pic;
   analyze_scope *scope;
-  pic_sym *rCONS, *rCAR, *rCDR, *rNILP;
-  pic_sym *rSYMBOLP, *rPAIRP;
-  pic_sym *rADD, *rSUB, *rMUL, *rDIV;
-  pic_sym *rEQ, *rLT, *rLE, *rGT, *rGE, *rNOT;
-  pic_sym *rVALUES, *rCALL_WITH_VALUES;
 } analyze_state;
 
 static bool push_scope(analyze_state *, pic_value);
 static void pop_scope(analyze_state *);
-
-#define register_symbol(pic, state, slot, name) do {    \
-    state->slot = pic_intern_cstr(pic, name);           \
-  } while (0)
-
-#define register_renamed_symbol(pic, state, slot, lib, id) do {         \
-    pic_sym *sym, *gsym;                                                  \
-    sym = pic_intern_cstr(pic, id);                                     \
-    if (! pic_find_rename(pic, lib->env, sym, &gsym)) {                 \
-      pic_errorf(pic, "internal error! native VM procedure not found: %s", id); \
-    }                                                                   \
-    state->slot = gsym;                                                 \
-  } while (0)
 
 static analyze_state *
 new_analyze_state(pic_state *pic)
@@ -66,26 +48,6 @@ new_analyze_state(pic_state *pic)
   state = pic_malloc(pic, sizeof(analyze_state));
   state->pic = pic;
   state->scope = NULL;
-
-  /* native VM procedures */
-  register_renamed_symbol(pic, state, rCONS, pic->PICRIN_BASE, "cons");
-  register_renamed_symbol(pic, state, rCAR, pic->PICRIN_BASE, "car");
-  register_renamed_symbol(pic, state, rCDR, pic->PICRIN_BASE, "cdr");
-  register_renamed_symbol(pic, state, rNILP, pic->PICRIN_BASE, "null?");
-  register_renamed_symbol(pic, state, rSYMBOLP, pic->PICRIN_BASE, "symbol?");
-  register_renamed_symbol(pic, state, rPAIRP, pic->PICRIN_BASE, "pair?");
-  register_renamed_symbol(pic, state, rADD, pic->PICRIN_BASE, "+");
-  register_renamed_symbol(pic, state, rSUB, pic->PICRIN_BASE, "-");
-  register_renamed_symbol(pic, state, rMUL, pic->PICRIN_BASE, "*");
-  register_renamed_symbol(pic, state, rDIV, pic->PICRIN_BASE, "/");
-  register_renamed_symbol(pic, state, rEQ, pic->PICRIN_BASE, "=");
-  register_renamed_symbol(pic, state, rLT, pic->PICRIN_BASE, "<");
-  register_renamed_symbol(pic, state, rLE, pic->PICRIN_BASE, "<=");
-  register_renamed_symbol(pic, state, rGT, pic->PICRIN_BASE, ">");
-  register_renamed_symbol(pic, state, rGE, pic->PICRIN_BASE, ">=");
-  register_renamed_symbol(pic, state, rNOT, pic->PICRIN_BASE, "not");
-  register_renamed_symbol(pic, state, rVALUES, pic->PICRIN_BASE, "values");
-  register_renamed_symbol(pic, state, rCALL_WITH_VALUES, pic->PICRIN_BASE, "call-with-values");
 
   /* push initial scope */
   push_scope(state, pic_nil_value());
@@ -760,70 +722,70 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
       else if (sym == pic->rQUOTE) {
         return analyze_quote(state, obj);
       }
-      else if (sym == state->rCONS) {
+      else if (sym == pic->rCONS) {
 	ARGC_ASSERT(2, "cons");
         return CONSTRUCT_OP2(pic->sCONS);
       }
-      else if (sym == state->rCAR) {
+      else if (sym == pic->rCAR) {
 	ARGC_ASSERT(1, "car");
         return CONSTRUCT_OP1(pic->sCAR);
       }
-      else if (sym == state->rCDR) {
+      else if (sym == pic->rCDR) {
 	ARGC_ASSERT(1, "cdr");
         return CONSTRUCT_OP1(pic->sCDR);
       }
-      else if (sym == state->rNILP) {
+      else if (sym == pic->rNILP) {
 	ARGC_ASSERT(1, "nil?");
         return CONSTRUCT_OP1(pic->sNILP);
       }
-      else if (sym == state->rSYMBOLP) {
+      else if (sym == pic->rSYMBOLP) {
         ARGC_ASSERT(1, "symbol?");
         return CONSTRUCT_OP1(pic->sSYMBOLP);
       }
-      else if (sym == state->rPAIRP) {
+      else if (sym == pic->rPAIRP) {
         ARGC_ASSERT(1, "pair?");
         return CONSTRUCT_OP1(pic->sPAIRP);
       }
-      else if (sym == state->rADD) {
+      else if (sym == pic->rADD) {
         return analyze_add(state, obj, tailpos);
       }
-      else if (sym == state->rSUB) {
+      else if (sym == pic->rSUB) {
         return analyze_sub(state, obj);
       }
-      else if (sym == state->rMUL) {
+      else if (sym == pic->rMUL) {
         return analyze_mul(state, obj, tailpos);
       }
-      else if (sym == state->rDIV) {
+      else if (sym == pic->rDIV) {
         return analyze_div(state, obj);
       }
-      else if (sym == state->rEQ) {
+      else if (sym == pic->rEQ) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sEQ);
       }
-      else if (sym == state->rLT) {
+      else if (sym == pic->rLT) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLT);
       }
-      else if (sym == state->rLE) {
+      else if (sym == pic->rLE) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLE);
       }
-      else if (sym == state->rGT) {
+      else if (sym == pic->rGT) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGT);
       }
-      else if (sym == state->rGE) {
+      else if (sym == pic->rGE) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGE);
       }
-      else if (sym == state->rNOT) {
+      else if (sym == pic->rNOT) {
         ARGC_ASSERT(1, "not");
         return CONSTRUCT_OP1(pic->sNOT);
       }
-      else if (sym == state->rVALUES) {
+      else if (sym == pic->rVALUES) {
         return analyze_values(state, obj, tailpos);
       }
-      else if (sym == state->rCALL_WITH_VALUES) {
+      else if (sym == pic->rCALL_WITH_VALUES) {
         return analyze_call_with_values(state, obj, tailpos);
       }
     }

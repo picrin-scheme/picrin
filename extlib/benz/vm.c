@@ -467,6 +467,23 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 }
 
 void
+pic_defun_vm(pic_state *pic, const char *name, pic_sym *rename, pic_func_t func)
+{
+  struct pic_proc *proc;
+  pic_sym *sym;
+
+  proc = pic_make_proc(pic, func, name);
+
+  sym = pic_intern_cstr(pic, name);
+
+  pic_put_rename(pic, pic->lib->env, sym, rename);
+
+  pic_dict_set(pic, pic->globals, rename, pic_obj_value(proc));
+
+  pic_export(pic, sym);
+}
+
+void
 pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
 {
   pic_define(pic, name, pic_obj_value(pic_make_var(pic, init, conv)));

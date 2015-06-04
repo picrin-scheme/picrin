@@ -280,9 +280,12 @@ pic_cont_call_with_values(pic_state *pic)
 void
 pic_init_cont(pic_state *pic)
 {
+  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
+
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
-  pic_defun(pic, "values", pic_cont_values);
-  pic_defun(pic, "call-with-values", pic_cont_call_with_values);
+
+  pic_defun_vm(pic, "values", pic->rVALUES, pic_cont_values);
+  pic_defun_vm(pic, "call-with-values", pic->rCALL_WITH_VALUES, pic_cont_call_with_values);
 }

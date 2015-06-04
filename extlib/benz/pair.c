@@ -760,13 +760,16 @@ pic_pair_assoc(pic_state *pic)
 void
 pic_init_pair(pic_state *pic)
 {
-  pic_defun(pic, "pair?", pic_pair_pair_p);
-  pic_defun(pic, "cons", pic_pair_cons);
-  pic_defun(pic, "car", pic_pair_car);
-  pic_defun(pic, "cdr", pic_pair_cdr);
+  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
+
+  pic_defun_vm(pic, "pair?", pic->rPAIRP, pic_pair_pair_p);
+  pic_defun_vm(pic, "cons", pic->rCONS, pic_pair_cons);
+  pic_defun_vm(pic, "car", pic->rCAR, pic_pair_car);
+  pic_defun_vm(pic, "cdr", pic->rCDR, pic_pair_cdr);
+  pic_defun_vm(pic, "null?", pic->rNILP, pic_pair_null_p);
+
   pic_defun(pic, "set-car!", pic_pair_set_car);
   pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
-  pic_defun(pic, "null?", pic_pair_null_p);
 
   pic_defun(pic, "caar", pic_pair_caar);
   pic_defun(pic, "cadr", pic_pair_cadr);
