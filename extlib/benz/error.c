@@ -163,7 +163,6 @@ pic_error(pic_state *pic, const char *msg, pic_value irrs)
   pic_raise(pic, pic_obj_value(e));
 }
 
-
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {

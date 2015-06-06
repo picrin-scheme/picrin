@@ -391,6 +391,7 @@ pic_null_syntactic_environment(pic_state *pic)
   pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
   pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->rIMPORT);
   pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->rEXPORT);
+  pic_define_syntactic_keyword(pic, env, pic->sIN_LIBRARY, pic->rIN_LIBRARY);
   pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->rCOND_EXPAND);
 
   return env;

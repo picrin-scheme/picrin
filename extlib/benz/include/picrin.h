@@ -97,7 +97,7 @@ typedef struct {
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
   pic_sym *sDEFINE_SYNTAX, *sIMPORT, *sEXPORT;
-  pic_sym *sDEFINE_LIBRARY;
+  pic_sym *sDEFINE_LIBRARY, *sIN_LIBRARY;
   pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
   pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
   pic_sym *sCONS, *sCAR, *sCDR, *sNILP;
@@ -111,7 +111,7 @@ typedef struct {
 
   pic_sym *rDEFINE, *rLAMBDA, *rIF, *rBEGIN, *rQUOTE, *rSETBANG;
   pic_sym *rDEFINE_SYNTAX, *rIMPORT, *rEXPORT;
-  pic_sym *rDEFINE_LIBRARY;
+  pic_sym *rDEFINE_LIBRARY, *rIN_LIBRARY;
   pic_sym *rCOND_EXPAND;
   pic_sym *rCONS, *rCAR, *rCDR, *rNILP;
   pic_sym *rSYMBOLP, *rPAIRP;
@@ -213,6 +213,7 @@ pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
 struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_lib *);
 pic_value pic_macroexpand(pic_state *, pic_value, struct pic_lib *);
 
+void pic_in_library(pic_state *, pic_value);
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
 
