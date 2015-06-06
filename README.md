@@ -1,6 +1,6 @@
 <img width="500" src="https://raw.githubusercontent.com/picrin-scheme/picrin/master/etc/picrin-logo-fin01-02.png"></img>
 
-[![Build Status](https://travis-ci.org/picrin-scheme/picrin.png)](https://travis-ci.org/picrin-scheme/picrin)
+[![Build Status](https://travis-ci.org/picrin-scheme/picrin.png?branch=master)](https://travis-ci.org/picrin-scheme/picrin)
 [![Docs Status](https://readthedocs.org/projects/picrin/badge/?version=latest)](https://picrin.readthedocs.org/)
 
 Picrin is a lightweight R7RS scheme implementation written in pure C89. It contains a reasonably fast VM, an improved hygienic macro system, usuful contribution libraries, and simple but powerful C interface.
