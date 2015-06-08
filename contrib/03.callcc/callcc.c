@@ -5,7 +5,7 @@ struct pic_fullcont {
 
   pic_jmpbuf *prev_jmp;
 
-  struct pic_winder *wind;
+  pic_checkpoint *cp;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;
@@ -45,19 +45,19 @@ static void
 cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 {
   struct pic_fullcont *cont = data;
-  struct pic_winder *wind;
+  pic_checkpoint *cp;
   pic_value *stack;
   pic_callinfo *ci;
   struct pic_proc **xp;
   size_t i;
 
-  /* winder */
-  for (wind = cont->wind; wind != NULL; wind = wind->prev) {
-    if (wind->in) {
-      mark(pic, pic_obj_value(wind->in));
+  /* checkpoint */
+  for (cp = cont->cp; cp != NULL; cp = cp->prev) {
+    if (cp->in) {
+      mark(pic, pic_obj_value(cp->in));
     }
-    if (wind->out) {
-      mark(pic, pic_obj_value(wind->out));
+    if (cp->out) {
+      mark(pic, pic_obj_value(cp->out));
     }
   }
 
@@ -119,7 +119,7 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
 
   cont->prev_jmp = pic->jmp;
 
-  cont->wind = pic->wind;
+  cont->cp = pic->cp;
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
@@ -176,7 +176,7 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
 
   pic->jmp = cont->prev_jmp;
 
-  pic->wind = cont->wind;
+  pic->cp = cont->cp;
 
   pic->stbase = pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
@@ -220,7 +220,7 @@ cont_call(pic_state *pic)
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
-  pic_wind(pic, pic->wind, cont->wind);
+  pic_wind(pic, pic->cp, cont->cp);
 
   restore_cont(pic, cont);
 }

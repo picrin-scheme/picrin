@@ -5,7 +5,7 @@
 #include "picrin.h"
 
 void
-pic_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
+pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)
 {
   if (here == there)
     return;
@@ -23,23 +23,23 @@ pic_wind(pic_state *pic, struct pic_winder *here, struct pic_winder *there)
 pic_value
 pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
 {
-  struct pic_winder *here;
+  pic_checkpoint *here;
   pic_value val;
 
   if (in != NULL) {
     pic_apply0(pic, in);        /* enter */
   }
 
-  here = pic->wind;
-  pic->wind = pic_malloc(pic, sizeof(struct pic_winder));
-  pic->wind->prev = here;
-  pic->wind->depth = here->depth + 1;
-  pic->wind->in = in;
-  pic->wind->out = out;
+  here = pic->cp;
+  pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
+  pic->cp->prev = here;
+  pic->cp->depth = here->depth + 1;
+  pic->cp->in = in;
+  pic->cp->out = out;
 
   val = pic_apply0(pic, thunk);
 
-  pic->wind = here;
+  pic->cp = here;
 
   if (out != NULL) {
     pic_apply0(pic, out);       /* exit */
@@ -55,7 +55,7 @@ pic_save_point(pic_state *pic, struct pic_cont *cont)
   pic->jmp = &cont->jmp;
 
   /* save runtime context */
-  cont->wind = pic->wind;
+  cont->cp = pic->cp;
   cont->sp_offset = pic->sp - pic->stbase;
   cont->ci_offset = pic->ci - pic->cibase;
   cont->xp_offset = pic->xp - pic->xpbase;
@@ -79,10 +79,10 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
     pic_errorf(pic, "calling dead escape continuation");
   }
 
-  pic_wind(pic, pic->wind, cont->wind);
+  pic_wind(pic, pic->cp, cont->cp);
 
   /* load runtime context */
-  pic->wind = cont->wind;
+  pic->cp = cont->cp;
   pic->sp = pic->stbase + cont->sp_offset;
   pic->ci = pic->cibase + cont->ci_offset;
   pic->xp = pic->xpbase + cont->xp_offset;

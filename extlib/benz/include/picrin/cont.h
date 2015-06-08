@@ -12,7 +12,7 @@ extern "C" {
 struct pic_cont {
   pic_jmpbuf jmp;
 
-  struct pic_winder *wind;
+  pic_checkpoint *cp;
 
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
@@ -29,7 +29,7 @@ void pic_load_point(pic_state *, struct pic_cont *);
 
 struct pic_proc *pic_make_cont(pic_state *, struct pic_cont *);
 
-void pic_wind(pic_state *, struct pic_winder *, struct pic_winder *);
+void pic_wind(pic_state *, pic_checkpoint *, pic_checkpoint *);
 pic_value pic_dynamic_wind(pic_state *, struct pic_proc *, struct pic_proc *, struct pic_proc *);
 
 pic_value pic_values0(pic_state *);

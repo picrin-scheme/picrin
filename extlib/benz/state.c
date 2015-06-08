@@ -160,7 +160,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->jmp = NULL;
 
   /* root block */
-  pic->wind = NULL;
+  pic->cp = NULL;
 
   /* command line */
   pic->argc = argc;
@@ -329,10 +329,10 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->macros = pic_make_dict(pic);
 
   /* root block */
-  pic->wind = pic_malloc(pic, sizeof(struct pic_winder));
-  pic->wind->prev = NULL;
-  pic->wind->depth = 0;
-  pic->wind->in = pic->wind->out = NULL;
+  pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
+  pic->cp->prev = NULL;
+  pic->cp->depth = 0;
+  pic->cp->in = pic->cp->out = NULL;
 
   /* reader */
   pic->reader = pic_reader_open(pic);
@@ -378,11 +378,11 @@ pic_close(pic_state *pic)
   pic_allocf allocf = pic->allocf;
 
   /* invoke exit handlers */
-  while (pic->wind) {
-    if (pic->wind->out) {
-      pic_apply0(pic, pic->wind->out);
+  while (pic->cp) {
+    if (pic->cp->out) {
+      pic_apply0(pic, pic->cp->out);
     }
-    pic->wind = pic->wind->prev;
+    pic->cp = pic->cp->prev;
   }
 
   /* free symbol names */

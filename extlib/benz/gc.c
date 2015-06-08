@@ -324,16 +324,16 @@ gc_unmark(union header *p)
 }
 
 static void
-gc_mark_winder(pic_state *pic, struct pic_winder *wind)
+gc_mark_checkpoint(pic_state *pic, pic_checkpoint *cp)
 {
-  if (wind->prev) {
-    gc_mark_object(pic, (struct pic_object *)wind->prev);
+  if (cp->prev) {
+    gc_mark_object(pic, (struct pic_object *)cp->prev);
   }
-  if (wind->in) {
-    gc_mark_object(pic, (struct pic_object *)wind->in);
+  if (cp->in) {
+    gc_mark_object(pic, (struct pic_object *)cp->in);
   }
-  if (wind->out) {
-    gc_mark_object(pic, (struct pic_object *)wind->out);
+  if (cp->out) {
+    gc_mark_object(pic, (struct pic_object *)cp->out);
   }
 }
 
@@ -538,9 +538,9 @@ gc_mark_phase(pic_state *pic)
   xh_entry *it;
   struct pic_object *obj;
 
-  /* winder */
-  if (pic->wind) {
-    gc_mark_winder(pic, pic->wind);
+  /* checkpoint */
+  if (pic->cp) {
+    gc_mark_checkpoint(pic, pic->cp);
   }
 
   /* stack */

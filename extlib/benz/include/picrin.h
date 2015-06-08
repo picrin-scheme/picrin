@@ -53,12 +53,12 @@ typedef struct pic_jmpbuf {
   struct pic_jmpbuf *prev;
 } pic_jmpbuf;
 
-struct pic_winder {
+typedef struct pic_checkpoint {
   struct pic_proc *in;
   struct pic_proc *out;
   int depth;
-  struct pic_winder *prev;
-};
+  struct pic_checkpoint *prev;
+} pic_checkpoint;
 
 typedef struct {
   int argc, retc;
@@ -79,7 +79,7 @@ typedef struct {
   pic_allocf allocf;
 
   pic_jmpbuf *jmp;
-  struct pic_winder *wind;
+  pic_checkpoint *cp;
 
   pic_value *sp;
   pic_value *stbase, *stend;
