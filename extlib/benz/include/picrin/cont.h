@@ -21,6 +21,8 @@ struct pic_cont {
 
   pic_code *ip;
 
+  pic_value ptable;
+
   pic_value results;
 };
 

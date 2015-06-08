@@ -230,6 +230,10 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->xSTDOUT = NULL;
   pic->xSTDERR = NULL;
 
+  /* parameter table */
+  pic->ptable = pic_nil_value();
+  pic->pnum = 0;
+
   /* native stack marker */
   pic->native_stack_start = &t;
 
@@ -341,6 +345,9 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
   pic->xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
   pic->xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
+
+  /* parameter table */
+  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_dict(pic)), pic->ptable);
 
   /* standard libraries */
   pic->PICRIN_BASE = pic_make_library(pic, pic_read_cstr(pic, "(picrin base)"));

@@ -598,6 +598,9 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct pic_object *)pic->xSTDERR);
   }
 
+  /* parameter table */
+  gc_mark(pic, pic->ptable);
+
   /* attributes */
   do {
     j = 0;

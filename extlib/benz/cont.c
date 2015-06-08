@@ -61,6 +61,7 @@ pic_save_point(pic_state *pic, struct pic_cont *cont)
   cont->xp_offset = pic->xp - pic->xpbase;
   cont->arena_idx = pic->arena_idx;
   cont->ip = pic->ip;
+  cont->ptable = pic->ptable;
 
   cont->results = pic_undef_value();
 }
@@ -88,6 +89,7 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
   pic->xp = pic->xpbase + cont->xp_offset;
   pic->arena_idx = cont->arena_idx;
   pic->ip = cont->ip;
+  pic->ptable = cont->ptable;
 }
 
 static pic_value

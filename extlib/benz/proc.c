@@ -57,6 +57,12 @@ pic_proc_env(pic_state *pic, struct pic_proc *proc)
   return proc->u.f.env;
 }
 
+bool
+pic_proc_env_has(pic_state *pic, struct pic_proc *proc, const char *key)
+{
+  return pic_dict_has(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
+}
+
 pic_value
 pic_proc_env_ref(pic_state *pic, struct pic_proc *proc, const char *key)
 {

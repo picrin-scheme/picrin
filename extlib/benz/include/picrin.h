@@ -130,6 +130,9 @@ typedef struct {
   pic_value libs;
   xhash attrs;
 
+  pic_value ptable;
+  size_t pnum;
+
   struct pic_reader *reader;
 
   bool gc_enable;

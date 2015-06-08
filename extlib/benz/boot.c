@@ -306,30 +306,15 @@ my $src = <<'EOL';
                             `(,(r 'begin) ,@(cdr clause)))
                        ,(loop (cdr clauses)))))))))))
 
-  (define (dynamic-bind parameters values body)
-    (let* ((old-bindings
-            (current-dynamic-environment))
-           (binding
-            (map (lambda (parameter value)
-                   (cons parameter (parameter value #f)))
-                 parameters
-                 values))
-           (new-bindings
-            (cons binding old-bindings)))
-      (dynamic-wind
-          (lambda () (current-dynamic-environment new-bindings))
-          body
-          (lambda () (current-dynamic-environment old-bindings)))))
-
   (define-syntax parameterize
     (er-macro-transformer
      (lambda (form r compare)
        (let ((formal (cadr form))
              (body (cddr form)))
-         `(,(r 'dynamic-bind)
-           (list ,@(map car formal))
-           (list ,@(map cadr formal))
-           (,(r 'lambda) () ,@body))))))
+         `(,(r 'with-parameter)
+           (lambda ()
+             ,@formal
+             ,@body))))))
 
   (define-syntax letrec-syntax
     (er-macro-transformer
@@ -538,26 +523,19 @@ const char pic_boot[][80] = {
 "      (car clause))))\n                       ,(if (compare (r '=>) (list-ref cla",
 "use 1))\n                            `(,(list-ref clause 2) ,(r 'key))\n          ",
 "                  `(,(r 'begin) ,@(cdr clause)))\n                       ,(loop (",
-"cdr clauses)))))))))))\n\n  (define (dynamic-bind parameters values body)\n    (let",
-"* ((old-bindings\n            (current-dynamic-environment))\n           (binding\n",
-"            (map (lambda (parameter value)\n                   (cons parameter (p",
-"arameter value #f)))\n                 parameters\n                 values))\n     ",
-"      (new-bindings\n            (cons binding old-bindings)))\n      (dynamic-win",
-"d\n          (lambda () (current-dynamic-environment new-bindings))\n          bod",
-"y\n          (lambda () (current-dynamic-environment old-bindings)))))\n\n  (define",
-"-syntax parameterize\n    (er-macro-transformer\n     (lambda (form r compare)\n   ",
-"    (let ((formal (cadr form))\n             (body (cddr form)))\n         `(,(r '",
-"dynamic-bind)\n           (list ,@(map car formal))\n           (list ,@(map cadr ",
-"formal))\n           (,(r 'lambda) () ,@body))))))\n\n  (define-syntax letrec-synta",
-"x\n    (er-macro-transformer\n     (lambda (form r c)\n       (let ((formal (car (c",
-"dr form)))\n             (body   (cdr (cdr form))))\n         `(let ()\n           ",
-" ,@(map (lambda (x)\n                     `(,(r 'define-syntax) ,(car x) ,(cadr x",
-")))\n                   formal)\n            ,@body)))))\n\n  (define-syntax let-syn",
-"tax\n    (er-macro-transformer\n     (lambda (form r c)\n       `(,(r 'letrec-synta",
-"x) ,@(cdr form)))))\n\n  (export let let* letrec letrec*\n          let-values let*",
-"-values define-values\n          quasiquote unquote unquote-splicing\n          an",
-"d or\n          cond case else =>\n          do when unless\n          parameterize",
-"\n          let-syntax letrec-syntax\n          syntax-error))\n\n",
+"cdr clauses)))))))))))\n\n  (define-syntax parameterize\n    (er-macro-transformer\n",
+"     (lambda (form r compare)\n       (let ((formal (cadr form))\n             (bo",
+"dy (cddr form)))\n         `(,(r 'with-parameter)\n           (lambda ()\n         ",
+"    ,@formal\n             ,@body))))))\n\n  (define-syntax letrec-syntax\n    (er-m",
+"acro-transformer\n     (lambda (form r c)\n       (let ((formal (car (cdr form)))\n",
+"             (body   (cdr (cdr form))))\n         `(let ()\n            ,@(map (la",
+"mbda (x)\n                     `(,(r 'define-syntax) ,(car x) ,(cadr x)))\n       ",
+"            formal)\n            ,@body)))))\n\n  (define-syntax let-syntax\n    (er",
+"-macro-transformer\n     (lambda (form r c)\n       `(,(r 'letrec-syntax) ,@(cdr f",
+"orm)))))\n\n  (export let let* letrec letrec*\n          let-values let*-values def",
+"ine-values\n          quasiquote unquote unquote-splicing\n          and or\n      ",
+"    cond case else =>\n          do when unless\n          parameterize\n          ",
+"let-syntax letrec-syntax\n          syntax-error))\n\n",
 "",
 ""
 };

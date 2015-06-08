@@ -21,6 +21,8 @@ struct pic_fullcont {
 
   pic_code *ip;
 
+  pic_value ptable;
+
   struct pic_object **arena;
   size_t arena_size;
   int arena_idx;
@@ -83,6 +85,9 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
     mark(pic, pic_obj_value(cont->arena[i]));
   }
 
+  /* parameter table */
+  mark(pic, cont->ptable);
+
   /* result values */
   mark(pic, cont->results);
 }
@@ -144,6 +149,8 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
 
   cont->ip = pic->ip;
 
+  cont->ptable = pic->ptable;
+
   cont->arena_idx = pic->arena_idx;
   cont->arena_size = pic->arena_size;
   cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
@@ -194,6 +201,8 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
   pic->xpend = pic->xpbase + cont->xp_len;
 
   pic->ip = cont->ip;
+
+  pic->ptable = cont->ptable;
 
   pic->arena = pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * cont->arena_size);
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);

@@ -50,6 +50,7 @@ struct pic_proc *pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_c
 
 pic_sym *pic_proc_name(struct pic_proc *);
 struct pic_dict *pic_proc_env(pic_state *, struct pic_proc *);
+bool pic_proc_env_has(pic_state *, struct pic_proc *, const char *);
 pic_value pic_proc_env_ref(pic_state *, struct pic_proc *, const char *);
 void pic_proc_env_set(pic_state *, struct pic_proc *, const char *, pic_value);
 
