@@ -41,7 +41,7 @@ var_set(pic_state *pic, struct pic_proc *var, pic_value val)
 
   dict = pic_dict_ptr(pic_car(pic, pic->ptable));
 
-  pic_dict_set(pic, dict, id, var_conv(pic, var, val));
+  pic_dict_set(pic, dict, id, val);
 
   return pic_none_value();
 }
@@ -58,7 +58,7 @@ var_call(pic_state *pic)
   if (n == 0) {
     return var_get(pic, self);
   } else {
-    return var_set(pic, self, val);
+    return var_set(pic, self, var_conv(pic, self, val));
   }
 }
 
