@@ -3,21 +3,20 @@
 struct pic_dict *
 pic_attr(pic_state *pic, pic_value obj)
 {
-  xh_entry *e;
+  struct pic_dict *dict;
 
-  if (pic_vtype(obj) != PIC_VTYPE_HEAP) {
+  if (! pic_obj_p(obj)) {
     pic_errorf(pic, "attribute: expected heap object, but got immediate value ~s", obj);
   }
 
-  e = xh_get_ptr(&pic->attrs, pic_ptr(obj));
-  if (e == NULL) {
-    struct pic_dict *dict = pic_make_dict(pic);
+  if (! pic_reg_has(pic, pic->attrs, pic_ptr(obj))) {
+    dict = pic_make_dict(pic);
 
-    e = xh_put_ptr(&pic->attrs, pic_ptr(obj), &dict);
+    pic_reg_set(pic, pic->attrs, pic_ptr(obj), pic_obj_value(dict));
 
-    assert(dict == xh_val(e, struct pic_dict *));
+    return dict;
   }
-  return xh_val(e, struct pic_dict *);
+  return pic_dict_ptr(pic_reg_ref(pic, pic->attrs, pic_ptr(obj)));
 }
 
 pic_value

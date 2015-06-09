@@ -32,6 +32,7 @@ void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_attr(pic_state *);
+void pic_init_reg(pic_state *);
 
 extern const char pic_boot[][80];
 
@@ -130,6 +131,7 @@ pic_init_core(pic_state *pic)
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
     pic_init_attr(pic); DONE;
+    pic_init_reg(pic); DONE;
 
     pic_load_cstr(pic, &pic_boot[0][0]);
   }
@@ -205,6 +207,9 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* memory heap */
   pic->heap = pic_heap_open(pic);
 
+  /* registries */
+  pic->regs = NULL;
+
   /* symbol table */
   xh_init_str(&pic->syms, sizeof(pic_sym *));
 
@@ -215,7 +220,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->macros = NULL;
 
   /* attributes */
-  xh_init_ptr(&pic->attrs, sizeof(struct pic_dict *));
+  pic->attrs = NULL;
 
   /* features */
   pic->features = pic_nil_value();
@@ -234,7 +239,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   /* parameter table */
   pic->ptable = pic_nil_value();
-  pic->pnum = 0;
 
   /* native stack marker */
   pic->native_stack_start = &t;
@@ -333,6 +337,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* root tables */
   pic->globals = pic_make_dict(pic);
   pic->macros = pic_make_dict(pic);
+  pic->attrs = pic_make_reg(pic);
 
   /* root block */
   pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
@@ -407,8 +412,8 @@ pic_close(pic_state *pic)
   pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
+  pic->attrs = NULL;
   xh_clear(&pic->syms);
-  xh_clear(&pic->attrs);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 
@@ -428,7 +433,6 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   xh_destroy(&pic->syms);
-  xh_destroy(&pic->attrs);
 
   /* free GC arena */
   allocf(pic->arena, 0);

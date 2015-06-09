@@ -92,6 +92,8 @@ typedef struct {
 
   pic_code *ip;
 
+  pic_value ptable;
+
   struct pic_lib *lib, *prev_lib;
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
@@ -128,10 +130,7 @@ typedef struct {
   struct pic_dict *globals;
   struct pic_dict *macros;
   pic_value libs;
-  xhash attrs;
-
-  pic_value ptable;
-  size_t pnum;
+  struct pic_reg *attrs;
 
   struct pic_reader *reader;
 
@@ -139,6 +138,7 @@ typedef struct {
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
+  struct pic_reg *regs;
 
   struct pic_port *xSTDIN, *xSTDOUT, *xSTDERR;
 
@@ -285,6 +285,7 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/read.h"
 #include "picrin/vector.h"
+#include "picrin/reg.h"
 
 #if defined(__cplusplus)
 }
