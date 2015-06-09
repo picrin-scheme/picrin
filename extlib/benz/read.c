@@ -92,7 +92,7 @@ read_comment(pic_state PIC_UNUSED(*pic), struct pic_port *port, int c)
     c = next(port);
   } while (! (c == EOF || c == '\n'));
 
-  return pic_undef_value();
+  return pic_invalid_value();
 }
 
 static pic_value
@@ -114,7 +114,7 @@ read_block_comment(pic_state PIC_UNUSED(*pic), struct pic_port *port, int PIC_UN
     }
   }
 
-  return pic_undef_value();
+  return pic_invalid_value();
 }
 
 static pic_value
@@ -122,7 +122,7 @@ read_datum_comment(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 {
   read(pic, port, next(port));
 
-  return pic_undef_value();
+  return pic_invalid_value();
 }
 
 static pic_value
@@ -132,13 +132,13 @@ read_directive(pic_state *pic, struct pic_port *port, int c)
   case 'n':
     if (expect(port, "no-fold-case")) {
       pic->reader->typecase = PIC_CASE_DEFAULT;
-      return pic_undef_value();
+      return pic_invalid_value();
     }
     break;
   case 'f':
     if (expect(port, "fold-case")) {
       pic->reader->typecase = PIC_CASE_FOLD;
-      return pic_undef_value();
+      return pic_invalid_value();
     }
     break;
   }
@@ -561,6 +561,21 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
+read_undef_or_blob(pic_state *pic, struct pic_port *port, int c)
+{
+  if ((c = peek(port)) == 'n') {
+    if (! expect(port, "ndefined")) {
+      read_error(pic, "unexpected character while reading #undefined");
+    }
+    return pic_undef_value();
+  }
+  if (! isdigit(c)) {
+    read_error(pic, "expect #undefined or #u8(...), but illegal character given");
+  }
+  return read_blob(pic, port, 'u');
+}
+
+static pic_value
 read_pair(pic_state *pic, struct pic_port *port, int c)
 {
   static const int tCLOSE = ')';
@@ -578,7 +593,7 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
 
   closing:
     if ((c = skip(port, ' ')) != tCLOSE) {
-      if (pic_undef_p(read_nullable(pic, port, c))) {
+      if (pic_invalid_p(read_nullable(pic, port, c))) {
         goto closing;
       }
       read_error(pic, "unmatched parenthesis");
@@ -588,7 +603,7 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
   else {
     car = read_nullable(pic, port, c);
 
-    if (pic_undef_p(car)) {
+    if (pic_invalid_p(car)) {
       goto retry;
     }
 
@@ -618,7 +633,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
     {
       pic_value tmp;
 
-      val = pic_cons(pic, pic_none_value(), pic_none_value());
+      val = pic_cons(pic, pic_undef_value(), pic_undef_value());
 
       xh_put_int(&pic->reader->labels, i, &val);
 
@@ -742,7 +757,7 @@ read(pic_state *pic, struct pic_port *port, int c)
  retry:
   val = read_nullable(pic, port, c);
 
-  if (pic_undef_p(val)) {
+  if (pic_invalid_p(val)) {
     c = next(port);
     goto retry;
   }
@@ -786,7 +801,7 @@ reader_table_init(struct pic_reader *reader)
   reader->dispatch['f'] = read_false;
   reader->dispatch['\\'] = read_char;
   reader->dispatch['('] = read_vector;
-  reader->dispatch['u'] = read_blob;
+  reader->dispatch['u'] = read_undef_or_blob;
   reader->dispatch['.'] = read_eval;
 
   /* read labels */
@@ -840,7 +855,7 @@ pic_read(pic_state *pic, struct pic_port *port)
 
   val = read_nullable(pic, port, c);
 
-  if (pic_undef_p(val)) {
+  if (pic_invalid_p(val)) {
     c = next(port);
     goto retry;
   }

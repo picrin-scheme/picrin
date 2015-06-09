@@ -37,6 +37,8 @@
           eqv?
           equal?)
 
+  (export undefined?)
+
   (export boolean?
           boolean=?
           not)

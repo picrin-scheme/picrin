@@ -35,7 +35,7 @@ pic_load_load(pic_state *pic)
 
   pic_load(pic, fn);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void

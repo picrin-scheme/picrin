@@ -246,7 +246,7 @@ pic_lib_condexpand(pic_state *pic)
     }
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -261,7 +261,7 @@ pic_lib_import(pic_state *pic)
     import(pic, argv[i]);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -276,7 +276,7 @@ pic_lib_export(pic_state *pic)
     export(pic, argv[i]);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -306,7 +306,7 @@ pic_lib_define_library(pic_state *pic)
     pic_raise(pic, pic->err);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -318,7 +318,7 @@ pic_lib_in_library(pic_state *pic)
 
   pic_in_library(pic, spec);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void

@@ -482,6 +482,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
+  case PIC_TT_INVALID:
     pic_panic(pic, "logic flaw");
   }
 }
@@ -694,6 +695,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
+  case PIC_TT_INVALID:
     pic_panic(pic, "logic flaw");
   }
 }

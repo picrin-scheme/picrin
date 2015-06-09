@@ -14,7 +14,7 @@ pic_make_vec(pic_state *pic, size_t len)
   vec->len = len;
   vec->data = (pic_value *)pic_malloc(pic, sizeof(pic_value) * len);
   for (i = 0; i < len; ++i) {
-    vec->data[i] = pic_none_value();
+    vec->data[i] = pic_undef_value();
   }
   return vec;
 }
@@ -119,7 +119,7 @@ pic_vec_vector_set(pic_state *pic)
     pic_errorf(pic, "vector-set!: index out of range");
   }
   v->data[k] = o;
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -144,14 +144,14 @@ pic_vec_vector_copy_i(pic_state *pic)
     while (start < end) {
       to->data[--at] = from->data[--end];
     }
-    return pic_none_value();
+    return pic_undef_value();
   }
 
   while (start < end) {
     to->data[at++] = from->data[start++];
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -231,7 +231,7 @@ pic_vec_vector_fill_i(pic_state *pic)
     vec->data[start++] = obj;
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -292,7 +292,7 @@ pic_vec_vector_for_each(pic_state *pic)
     pic_apply(pic, proc, vals);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value

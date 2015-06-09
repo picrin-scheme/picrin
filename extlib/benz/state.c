@@ -10,6 +10,7 @@ pic_add_feature(pic_state *pic, const char *feature)
   pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
 }
 
+void pic_init_undef(pic_state *);
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -107,6 +108,7 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->rBEGIN);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
 
+    pic_init_undef(pic); DONE;
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
     pic_init_port(pic); DONE;
@@ -223,7 +225,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->lib = NULL;
 
   /* raised error object */
-  pic->err = pic_undef_value();
+  pic->err = pic_invalid_value();
 
   /* standard ports */
   pic->xSTDIN = NULL;
@@ -402,7 +404,7 @@ pic_close(pic_state *pic)
   pic->ci = pic->cibase;
   pic->xp = pic->xpbase;
   pic->arena_idx = 0;
-  pic->err = pic_undef_value();
+  pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
   xh_clear(&pic->syms);

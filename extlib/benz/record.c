@@ -96,7 +96,7 @@ pic_record_record_set(pic_state *pic)
 
   pic_record_set(pic, rec, slot, val);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void

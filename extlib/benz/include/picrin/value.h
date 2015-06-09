@@ -10,8 +10,8 @@ extern "C" {
 #endif
 
 /**
- * `undef` values never seen from user-end: that is,
- *  it's used only for repsenting internal special state
+ * `invalid` value will never be seen from user-end:
+ *  it is only used for repsenting internal special state
  */
 
 enum pic_vtype {
@@ -19,6 +19,7 @@ enum pic_vtype {
   PIC_VTYPE_TRUE,
   PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
+  PIC_VTYPE_INVALID,
 #if PIC_ENABLE_FLOAT
   PIC_VTYPE_FLOAT,
 #endif
@@ -146,6 +147,7 @@ enum pic_tt {
   PIC_TT_CHAR,
   PIC_TT_EOF,
   PIC_TT_UNDEF,
+  PIC_TT_INVALID,
   /* heap */
   PIC_TT_SYMBOL,
   PIC_TT_PAIR,
@@ -196,6 +198,7 @@ typedef struct pic_blob pic_blob;
 #define pic_true_p(v) (pic_vtype(v) == PIC_VTYPE_TRUE)
 #define pic_false_p(v) (pic_vtype(v) == PIC_VTYPE_FALSE)
 #define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
+#define pic_invalid_p(v) (pic_vtype(v) == PIC_VTYPE_INVALID)
 #define pic_float_p(v) (pic_vtype(v) == PIC_VTYPE_FLOAT)
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
@@ -231,6 +234,7 @@ PIC_INLINE pic_value pic_true_value();
 PIC_INLINE pic_value pic_false_value();
 PIC_INLINE pic_value pic_bool_value(bool);
 PIC_INLINE pic_value pic_undef_value();
+PIC_INLINE pic_value pic_invalid_value();
 PIC_INLINE pic_value pic_obj_value(void *);
 #if PIC_ENABLE_FLOAT
 PIC_INLINE pic_value pic_float_value(double);
@@ -238,7 +242,6 @@ PIC_INLINE pic_value pic_float_value(double);
 PIC_INLINE pic_value pic_int_value(int);
 PIC_INLINE pic_value pic_size_value(size_t);
 PIC_INLINE pic_value pic_char_value(char c);
-PIC_INLINE pic_value pic_none_value();
 
 PIC_INLINE bool pic_eq_p(pic_value, pic_value);
 PIC_INLINE bool pic_eqv_p(pic_value, pic_value);
@@ -255,6 +258,8 @@ pic_type(pic_value v)
     return PIC_TT_BOOL;
   case PIC_VTYPE_UNDEF:
     return PIC_TT_UNDEF;
+  case PIC_VTYPE_INVALID:
+    return PIC_TT_INVALID;
 #if PIC_ENABLE_FLOAT
   case PIC_VTYPE_FLOAT:
     return PIC_TT_FLOAT;
@@ -294,6 +299,8 @@ pic_type_repr(enum pic_tt tt)
     return "eof";
   case PIC_TT_UNDEF:
     return "undef";
+  case PIC_TT_INVALID:
+    return "invalid";
   case PIC_TT_PAIR:
     return "pair";
   case PIC_TT_STRING:
@@ -501,13 +508,12 @@ pic_undef_value()
 }
 
 PIC_INLINE pic_value
-pic_none_value()
+pic_invalid_value()
 {
-#if PIC_NONE_IS_FALSE
-  return pic_false_value();
-#else
-# error enable PIC_NONE_IS_FALSE
-#endif
+  pic_value v;
+
+  pic_init_value(v, PIC_VTYPE_INVALID);
+  return v;
 }
 
 #if PIC_NAN_BOXING || PIC_WORD_BOXING

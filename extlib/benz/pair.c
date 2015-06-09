@@ -492,7 +492,7 @@ pic_pair_set_car(pic_state *pic)
 
   pic_set_car(pic, v, w);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -504,7 +504,7 @@ pic_pair_set_cdr(pic_state *pic)
 
   pic_set_cdr(pic, v, w);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -531,7 +531,7 @@ static pic_value
 pic_pair_make_list(pic_state *pic)
 {
   size_t i;
-  pic_value fill = pic_none_value();
+  pic_value fill = pic_undef_value();
 
   pic_get_args(pic, "k|o", &i, &fill);
 
@@ -621,7 +621,7 @@ pic_pair_list_set(pic_state *pic)
 
   pic_list_set(pic, list, i, obj);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -692,7 +692,7 @@ pic_pair_for_each(pic_state *pic)
     pic_apply(pic, proc, pic_reverse(pic, arg));
   } while (1);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value

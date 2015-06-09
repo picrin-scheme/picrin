@@ -4,12 +4,6 @@
 
 #include "picrin.h"
 
-#if PIC_NONE_IS_FALSE
-# define OP_PUSHNONE OP_PUSHFALSE
-#else
-# error enable PIC_NONE_IS_FALSE
-#endif
-
 typedef xvect_t(pic_sym *) xvect;
 
 #define xv_push_sym(v, x) xv_push(pic_sym *, (v), (x))
@@ -428,7 +422,7 @@ analyze_if(analyze_state *state, pic_value obj, bool tailpos)
   pic_state *pic = state->pic;
   pic_value cond, if_true, if_false;
 
-  if_false = pic_none_value();
+  if_false = pic_undef_value();
   switch (pic_length(pic, obj)) {
   default:
     pic_errorf(pic, "syntax error");
@@ -456,7 +450,7 @@ analyze_begin(analyze_state *state, pic_value obj, bool tailpos)
 
   switch (pic_length(pic, obj)) {
   case 1:
-    return analyze(state, pic_none_value(), tailpos);
+    return analyze(state, pic_undef_value(), tailpos);
   case 2:
     return analyze(state, pic_list_ref(pic, obj, 1), tailpos);
   default:
@@ -965,7 +959,7 @@ create_activation(codegen_state *state)
       emit_i(state, OP_LREF, (int)n);
     } else {
       /* otherwise, just extend the stack */
-      emit_n(state, OP_PUSHNONE);
+      emit_n(state, OP_PUSHUNDEF);
     }
   }
 
@@ -1158,7 +1152,7 @@ codegen(codegen_state *state, pic_value obj)
     type = pic_sym_ptr(pic_list_ref(pic, var, 0));
     if (type == pic->sGREF) {
       emit_i(state, OP_GSET, index_symbol(state, pic_sym_ptr(pic_list_ref(pic, var, 1))));
-      emit_n(state, OP_PUSHNONE);
+      emit_n(state, OP_PUSHUNDEF);
       return;
     }
     else if (type == pic->sCREF) {
@@ -1168,7 +1162,7 @@ codegen(codegen_state *state, pic_value obj)
       depth = pic_int(pic_list_ref(pic, var, 1));
       name  = pic_sym_ptr(pic_list_ref(pic, var, 2));
       emit_r(state, OP_CSET, depth, index_capture(state, name, depth));
-      emit_n(state, OP_PUSHNONE);
+      emit_n(state, OP_PUSHUNDEF);
       return;
     }
     else if (type == pic->sLREF) {
@@ -1178,11 +1172,11 @@ codegen(codegen_state *state, pic_value obj)
       name = pic_sym_ptr(pic_list_ref(pic, var, 1));
       if ((i = index_capture(state, name, 0)) != -1) {
         emit_i(state, OP_LSET, i + (int)xv_size(cxt->args) + (int)xv_size(cxt->locals) + 1);
-        emit_n(state, OP_PUSHNONE);
+        emit_n(state, OP_PUSHUNDEF);
         return;
       }
       emit_i(state, OP_LSET, index_local(state, name));
-      emit_n(state, OP_PUSHNONE);
+      emit_n(state, OP_PUSHUNDEF);
       return;
     }
   }
