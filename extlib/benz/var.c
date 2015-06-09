@@ -17,15 +17,12 @@ static pic_value
 var_get(pic_state *pic, struct pic_proc *var)
 {
   pic_value elem, it;
-  pic_sym *id;
-  struct pic_dict *dict;
-
-  id = pic_sym_ptr(pic_proc_env_ref(pic, var, "id"));
+  struct pic_reg *reg;
 
   pic_for_each (elem, pic->ptable, it) {
-    dict = pic_dict_ptr(elem);
-    if (pic_dict_has(pic, dict, id)) {
-      return pic_dict_ref(pic, dict, id);
+    reg = pic_reg_ptr(elem);
+    if (pic_reg_has(pic, reg, var)) {
+      return pic_reg_ref(pic, reg, var);
     }
   }
   pic_panic(pic, "logic flaw");
@@ -34,14 +31,11 @@ var_get(pic_state *pic, struct pic_proc *var)
 static pic_value
 var_set(pic_state *pic, struct pic_proc *var, pic_value val)
 {
-  pic_sym *id;
-  struct pic_dict *dict;
+  struct pic_reg *reg;
 
-  id = pic_sym_ptr(pic_proc_env_ref(pic, var, "id"));
+  reg = pic_reg_ptr(pic_car(pic, pic->ptable));
 
-  dict = pic_dict_ptr(pic_car(pic, pic->ptable));
-
-  pic_dict_set(pic, dict, id, val);
+  pic_reg_set(pic, reg, var, val);
 
   return pic_undef_value();
 }
@@ -66,16 +60,12 @@ struct pic_proc *
 pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
 {
   struct pic_proc *var;
-  pic_value converter = conv ? pic_obj_value(conv) : pic_false_value();
-  pic_sym *id;
 
   var = pic_make_proc(pic, var_call, "<var-call>");
 
   if (conv != NULL) {
-    pic_proc_env_set(pic, var, "conv", converter);
+    pic_proc_env_set(pic, var, "conv", pic_obj_value(conv));
   }
-  id = pic_intern(pic, pic_format(pic, "%d", pic->pnum++));
-  pic_proc_env_set(pic, var, "id", pic_obj_value(id));
 
   pic_apply1(pic, var, init);
 
@@ -101,7 +91,7 @@ pic_var_with_parameter(pic_state *pic)
 
   pic_get_args(pic, "l", &body);
 
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_dict(pic)), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_reg(pic)), pic->ptable);
 
   val = pic_apply0(pic, body);
 

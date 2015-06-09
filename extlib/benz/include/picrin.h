@@ -92,6 +92,8 @@ typedef struct {
 
   pic_code *ip;
 
+  pic_value ptable;
+
   struct pic_lib *lib, *prev_lib;
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
@@ -129,9 +131,6 @@ typedef struct {
   struct pic_dict *macros;
   pic_value libs;
   struct pic_reg *attrs;
-
-  pic_value ptable;
-  size_t pnum;
 
   struct pic_reader *reader;
 

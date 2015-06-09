@@ -237,7 +237,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   /* parameter table */
   pic->ptable = pic_nil_value();
-  pic->pnum = 0;
 
   /* native stack marker */
   pic->native_stack_start = &t;
