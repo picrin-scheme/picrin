@@ -172,7 +172,7 @@ export(pic_state *pic, pic_value spec)
   }
 
 #if DEBUG
-  printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym_ptr(b)), pic_symbol_name(pic, rename));
+  printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym_ptr(b)), pic_symbol_name(pic, pic_sym_ptr(a)));
 #endif
 
   pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), a);
