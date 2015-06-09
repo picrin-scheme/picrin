@@ -98,7 +98,7 @@ typedef struct {
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sDEFINE_SYNTAX, *sIMPORT, *sEXPORT;
+  pic_sym *sDEFINE_MACRO, *sIMPORT, *sEXPORT;
   pic_sym *sDEFINE_LIBRARY;
   pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
   pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
@@ -112,7 +112,7 @@ typedef struct {
   pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
   pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG;
-  pic_sym *uDEFINE_SYNTAX, *uIMPORT, *uEXPORT;
+  pic_sym *uDEFINE_MACRO, *uIMPORT, *uEXPORT;
   pic_sym *uDEFINE_LIBRARY;
   pic_sym *uCOND_EXPAND;
   pic_sym *uCONS, *uCAR, *uCDR, *uNILP;
@@ -127,6 +127,7 @@ typedef struct {
   pic_value features;
 
   xhash syms;                   /* name to symbol */
+  int ucnt;
   struct pic_dict *globals;
   struct pic_dict *macros;
   pic_value libs;
@@ -193,8 +194,6 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 pic_sym *pic_intern(pic_state *, pic_str *);
 pic_sym *pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym *);
-pic_sym *pic_gensym(pic_state *, pic_sym *);
-bool pic_interned_p(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);

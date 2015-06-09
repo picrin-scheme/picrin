@@ -9,24 +9,35 @@
 extern "C" {
 #endif
 
+struct pic_id {
+  PIC_OBJECT_HEADER
+  pic_value var;
+  struct pic_env *env;
+};
+
 struct pic_env {
   PIC_OBJECT_HEADER
-  struct pic_dict *map;
+  xhash map;
   pic_value defer;
   struct pic_env *up;
 };
 
+#define pic_id_p(v) (pic_type(v) == PIC_TT_ID)
+#define pic_id_ptr(v) ((struct pic_id *)pic_ptr(v))
+
 #define pic_env_p(v) (pic_type(v) == PIC_TT_ENV)
 #define pic_env_ptr(v) ((struct pic_env *)pic_ptr(v))
 
-bool pic_identifier_p(pic_state *pic, pic_value obj);
-bool pic_identifier_eq_p(pic_state *, struct pic_env *, pic_sym *, struct pic_env *, pic_sym *);
-
+struct pic_id *pic_make_id(pic_state *, pic_value, struct pic_env *);
 struct pic_env *pic_make_env(pic_state *, struct pic_env *);
 
-pic_sym *pic_add_rename(pic_state *, struct pic_env *, pic_sym *);
-pic_sym *pic_find_rename(pic_state *, struct pic_env *, pic_sym *);
-void pic_put_rename(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
+pic_sym *pic_uniq(pic_state *, pic_value);
+
+pic_sym *pic_add_variable(pic_state *, struct pic_env *, pic_value);
+void pic_put_variable(pic_state *, struct pic_env *, pic_value, pic_sym *);
+pic_sym *pic_find_variable(pic_state *, struct pic_env *, pic_value);
+
+pic_sym *pic_var_name(pic_state *, pic_value);
 
 #if defined(__cplusplus)
 }

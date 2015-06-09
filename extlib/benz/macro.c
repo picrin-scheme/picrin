@@ -4,74 +4,155 @@
 
 #include "picrin.h"
 
+static bool
+pic_var_p(pic_value obj)
+{
+  return pic_sym_p(obj) || pic_id_p(obj);
+}
+
+struct pic_id *
+pic_make_id(pic_state *pic, pic_value var, struct pic_env *env)
+{
+  struct pic_id *id;
+
+  assert(pic_var_p(var));
+
+  id = (struct pic_id *)pic_obj_alloc(pic, sizeof(struct pic_id), PIC_TT_ID);
+  id->var = var;
+  id->env = env;
+  return id;
+}
+
+struct pic_env *
+pic_make_env(pic_state *pic, struct pic_env *up)
+{
+  struct pic_env *env;
+
+  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+  env->up = up;
+  env->defer = pic_nil_value();
+  xh_init_ptr(&env->map, sizeof(pic_sym *));
+  return env;
+}
+
 pic_sym *
-pic_add_rename(pic_state *pic, struct pic_env *env, pic_sym *sym)
+pic_var_name(pic_state PIC_UNUSED(*pic), pic_value var)
 {
-  pic_sym *rename = pic_gensym(pic, sym);
+  assert(pic_var_p(var));
 
-  pic_put_rename(pic, env, sym, rename);
-
-  return rename;
-}
-
-void
-pic_put_rename(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *rename)
-{
-  pic_dict_set(pic, env->map, sym, pic_obj_value(rename));
+  while (pic_id_p(var)) {
+    var = pic_id_ptr(var)->var;
+  }
+  return pic_sym_ptr(var);
 }
 
 pic_sym *
-pic_find_rename(pic_state *pic, struct pic_env *env, pic_sym *sym)
+pic_uniq(pic_state *pic, pic_value var)
 {
-  if (! pic_dict_has(pic, env->map, sym)) {
-    return NULL;
-  }
-  return pic_sym_ptr(pic_dict_ref(pic, env->map, sym));
-}
+  pic_str *str;
 
-static void
-define_macro(pic_state *pic, pic_sym *rename, struct pic_proc *mac)
-{
-  pic_dict_set(pic, pic->macros, rename, pic_obj_value(mac));
-}
+  assert(pic_var_p(var));
 
-static struct pic_proc *
-find_macro(pic_state *pic, pic_sym *rename)
-{
-  if (! pic_dict_has(pic, pic->macros, rename)) {
-    return NULL;
-  }
-  return pic_proc_ptr(pic_dict_ref(pic, pic->macros, rename));
+  str = pic_format(pic, "%s.%d", pic_symbol_name(pic, pic_var_name(pic, var)), pic->ucnt++);
+
+  return pic_intern(pic, str);
 }
 
 static pic_sym *
-make_identifier(pic_state *pic, pic_sym *sym, struct pic_env *env)
+lookup(pic_state PIC_UNUSED(*pic), pic_value var, struct pic_env *env)
 {
-  pic_sym *rename;
+  xh_entry *e;
 
-  while (true) {
-    if ((rename = pic_find_rename(pic, env, sym)) != NULL) {
-      return rename;
+  assert(pic_var_p(var));
+
+  while (env != NULL) {
+    if ((e = xh_get_ptr(&env->map, pic_ptr(var))) != NULL) {
+      return xh_val(e, pic_sym *);
     }
-    if (! env->up)
-      break;
     env = env->up;
   }
-  if (! pic_interned_p(pic, sym)) {
-    return sym;
+  return NULL;
+}
+
+static pic_sym *
+resolve(pic_state *pic, pic_value var, struct pic_env *env)
+{
+  pic_sym *uid;
+
+  assert(pic_var_p(var));
+
+  while ((uid = lookup(pic, var, env)) == NULL) {
+    if (pic_sym_p(var)) {
+      return NULL;
+    }
+    env = pic_id_ptr(var)->env;
+    var = pic_id_ptr(var)->var;
   }
-  else {
-    return pic_gensym(pic, sym);
+  return uid;
+}
+
+pic_sym *
+pic_add_variable(pic_state *pic, struct pic_env *env, pic_value var)
+{
+  pic_sym *uid;
+
+  assert(pic_var_p(var));
+
+  uid = pic_uniq(pic, var);
+
+  pic_put_variable(pic, env, var, uid);
+
+  return uid;
+}
+
+void
+pic_put_variable(pic_state PIC_UNUSED(*pic), struct pic_env *env, pic_value var, pic_sym *uid)
+{
+  assert(pic_var_p(var));
+
+  xh_put_ptr(&env->map, pic_ptr(var), &uid);
+}
+
+pic_sym *
+pic_find_variable(pic_state PIC_UNUSED(*pic), struct pic_env *env, pic_value var)
+{
+  xh_entry *e;
+
+  assert(pic_var_p(var));
+
+  if ((e = xh_get_ptr(&env->map, pic_ptr(var))) == NULL) {
+    return NULL;
   }
+  return xh_val(e, pic_sym *);
+}
+
+static void
+define_macro(pic_state *pic, pic_sym *uid, struct pic_proc *mac)
+{
+  pic_dict_set(pic, pic->macros, uid, pic_obj_value(mac));
+}
+
+static struct pic_proc *
+find_macro(pic_state *pic, pic_sym *uid)
+{
+  if (! pic_dict_has(pic, pic->macros, uid)) {
+    return NULL;
+  }
+  return pic_proc_ptr(pic_dict_ref(pic, pic->macros, uid));
 }
 
 static pic_value macroexpand(pic_state *, pic_value, struct pic_env *);
 static pic_value macroexpand_lambda(pic_state *, pic_value, struct pic_env *);
 
 static pic_value
-macroexpand_symbol(pic_state *pic, pic_sym *sym, struct pic_env *env)
+macroexpand_var(pic_state *pic, pic_value var, struct pic_env *env)
 {
-  return pic_obj_value(make_identifier(pic, sym, env));
+  pic_sym *uid;
+
+  if ((uid = resolve(pic, var, env)) == NULL) {
+    pic_errorf(pic, "unbound variable found: ~s", var);
+  }
+  return pic_obj_value(uid);
 }
 
 static pic_value
@@ -142,15 +223,15 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
   in = pic_make_env(pic, env);
 
   for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
-    pic_value v = pic_car(pic, a);
+    pic_value var = pic_car(pic, a);
 
-    if (! pic_sym_p(v)) {
+    if (! pic_var_p(var)) {
       pic_errorf(pic, "syntax error");
     }
-    pic_add_rename(pic, in, pic_sym_ptr(v));
+    pic_add_variable(pic, in, var);
   }
-  if (pic_sym_p(a)) {
-    pic_add_rename(pic, in, pic_sym_ptr(a));
+  if (pic_var_p(a)) {
+    pic_add_variable(pic, in, a);
   }
   else if (! pic_nil_p(a)) {
     pic_errorf(pic, "syntax error");
@@ -167,14 +248,14 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 static pic_value
 macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
 {
-  pic_sym *sym, *rename;
+  pic_sym *uid;
   pic_value var, val;
 
   while (pic_length(pic, expr) >= 2 && pic_pair_p(pic_cadr(pic, expr))) {
     var = pic_car(pic, pic_cadr(pic, expr));
     val = pic_cdr(pic, pic_cadr(pic, expr));
 
-    expr = pic_list3(pic, pic_obj_value(pic->uDEFINE), var, pic_cons(pic, pic_obj_value(pic->uLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
+    expr = pic_list3(pic, pic_obj_value(pic->uDEFINE), var, pic_cons(pic, pic_obj_value(pic->sLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
   }
 
   if (pic_length(pic, expr) != 3) {
@@ -182,37 +263,35 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
   }
 
   var = pic_cadr(pic, expr);
-  if (! pic_sym_p(var)) {
-    pic_errorf(pic, "binding to non-symbol object");
+  if (! pic_var_p(var)) {
+    pic_errorf(pic, "binding to non-variable object");
   }
-  sym = pic_sym_ptr(var);
-  if ((rename = pic_find_rename(pic, env, sym)) == NULL) {
-    rename = pic_add_rename(pic, env, sym);
+  if ((uid = pic_find_variable(pic, env, var)) == NULL) {
+    uid = pic_add_variable(pic, env, var);
   }
   val = macroexpand(pic, pic_list_ref(pic, expr, 2), env);
 
-  return pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_obj_value(rename), val);
+  return pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_obj_value(uid), val);
 }
 
 static pic_value
-macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_env *env)
+macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_value var, val;
-  pic_sym *sym, *rename;
+  pic_sym *uid;
 
   if (pic_length(pic, expr) != 3) {
     pic_errorf(pic, "syntax error");
   }
 
   var = pic_cadr(pic, expr);
-  if (! pic_sym_p(var)) {
-    pic_errorf(pic, "binding to non-symbol object");
+  if (! pic_var_p(var)) {
+    pic_errorf(pic, "binding to non-variable object");
   }
-  sym = pic_sym_ptr(var);
-  if ((rename = pic_find_rename(pic, env, sym)) == NULL) {
-    rename = pic_add_rename(pic, env, sym);
+  if ((uid = pic_find_variable(pic, env, var)) == NULL) {
+    uid = pic_add_variable(pic, env, var);
   } else {
-    pic_warnf(pic, "redefining syntax variable: ~s", pic_obj_value(sym));
+    pic_warnf(pic, "redefining syntax variable: ~s", var);
   }
 
   val = pic_cadr(pic, pic_cdr(pic, expr));
@@ -227,13 +306,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_env *env)
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
   }
 
-  val = pic_apply1(pic, pic_proc_ptr(val), pic_obj_value(env));
-
-  if (! pic_proc_p(val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
-  }
-
-  define_macro(pic, rename, pic_proc_ptr(val));
+  define_macro(pic, uid, pic_proc_ptr(val));
 
   return pic_undef_value();
 }
@@ -241,7 +314,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_env *env)
 static pic_value
 macroexpand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct pic_env *env)
 {
-  pic_value v, args;
+  pic_value v;
 
 #if DEBUG
   puts("before expand-1:");
@@ -249,10 +322,8 @@ macroexpand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct p
   puts("");
 #endif
 
-  args = pic_list2(pic, expr, pic_obj_value(env));
-
   pic_try {
-    v = pic_apply(pic, mac, args);
+    v = pic_apply2(pic, mac, expr, pic_obj_value(env));
   } pic_catch {
     pic_errorf(pic, "macroexpand error while application: %s", pic_errmsg(pic));
   }
@@ -270,40 +341,44 @@ static pic_value
 macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   switch (pic_type(expr)) {
+  case PIC_TT_ID:
   case PIC_TT_SYMBOL: {
-    return macroexpand_symbol(pic, pic_sym_ptr(expr), env);
+    return macroexpand_var(pic, expr, env);
   }
   case PIC_TT_PAIR: {
-    pic_value car;
     struct pic_proc *mac;
 
     if (! pic_list_p(expr)) {
       pic_errorf(pic, "cannot macroexpand improper list: ~s", expr);
     }
 
-    car = macroexpand(pic, pic_car(pic, expr), env);
-    if (pic_sym_p(car)) {
-      pic_sym *tag = pic_sym_ptr(car);
+    if (pic_var_p(pic_car(pic, expr))) {
+      pic_sym *functor;
 
-      if (tag == pic->uDEFINE_SYNTAX) {
-        return macroexpand_defsyntax(pic, expr, env);
+      if ((functor = resolve(pic, pic_car(pic, expr), env)) == NULL) {
+        goto call;
       }
-      else if (tag == pic->uLAMBDA) {
+
+      if (functor == pic->uDEFINE_MACRO) {
+        return macroexpand_defmacro(pic, expr, env);
+      }
+      else if (functor == pic->uLAMBDA) {
         return macroexpand_defer(pic, expr, env);
       }
-      else if (tag == pic->uDEFINE) {
+      else if (functor == pic->uDEFINE) {
         return macroexpand_define(pic, expr, env);
       }
-      else if (tag == pic->uQUOTE) {
+      else if (functor == pic->uQUOTE) {
         return macroexpand_quote(pic, expr);
       }
 
-      if ((mac = find_macro(pic, tag)) != NULL) {
+      if ((mac = find_macro(pic, functor)) != NULL) {
         return macroexpand_node(pic, macroexpand_macro(pic, mac, expr, env), env);
       }
     }
+    call:
 
-    return pic_cons(pic, car, macroexpand_list(pic, pic_cdr(pic, expr), env));
+    return macroexpand_list(pic, expr, env);
   }
   default:
     return expr;
@@ -362,22 +437,6 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
   return v;
 }
 
-struct pic_env *
-pic_make_env(pic_state *pic, struct pic_env *up)
-{
-  struct pic_env *env;
-  struct pic_dict *map;
-
-  map = pic_make_dict(pic);
-
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
-  env->up = up;
-  env->defer = pic_nil_value();
-  env->map = map;
-
-  return env;
-}
-
 static pic_value
 defmacro_call(pic_state *pic)
 {
@@ -398,7 +457,7 @@ pic_defmacro(pic_state *pic, pic_sym *name, pic_sym *id, pic_func_t func)
 
   trans = pic_make_proc(pic, func, pic_symbol_name(pic, name));
 
-  pic_put_rename(pic, pic->lib->env, name, id);
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(name), id);
 
   proc = pic_make_proc(pic, defmacro_call, "defmacro_call");
   pic_attr_set(pic, pic_obj_value(proc), "@@transformer", pic_obj_value(trans));
@@ -410,30 +469,6 @@ pic_defmacro(pic_state *pic, pic_sym *name, pic_sym *id, pic_func_t func)
   pic_export(pic, name);
 }
 
-bool
-pic_identifier_p(pic_state *pic, pic_value obj)
-{
-  return pic_sym_p(obj) && ! pic_interned_p(pic, pic_sym_ptr(obj));
-}
-
-bool
-pic_identifier_eq_p(pic_state *pic, struct pic_env *env1, pic_sym *sym1, struct pic_env *env2, pic_sym *sym2)
-{
-  pic_sym *a, *b;
-
-  a = make_identifier(pic, sym1, env1);
-  if (a != make_identifier(pic, sym1, env1)) {
-    a = sym1;
-  }
-
-  b = make_identifier(pic, sym2, env2);
-  if (b != make_identifier(pic, sym2, env2)) {
-    b = sym2;
-  }
-
-  return pic_eq_p(pic_obj_value(a), pic_obj_value(b));
-}
-
 static pic_value
 pic_macro_identifier_p(pic_state *pic)
 {
@@ -441,40 +476,62 @@ pic_macro_identifier_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(pic_identifier_p(pic, obj));
+  return pic_bool_value(pic_id_p(obj));
 }
 
 static pic_value
 pic_macro_make_identifier(pic_state *pic)
 {
-  pic_value obj;
-  pic_sym *sym;
+  pic_value var, env;
 
-  pic_get_args(pic, "mo", &sym, &obj);
+  pic_get_args(pic, "oo", &var, &env);
 
-  pic_assert_type(pic, obj, env);
+  pic_assert_type(pic, var, var);
+  pic_assert_type(pic, env, env);
 
-  return pic_obj_value(make_identifier(pic, sym, pic_env_ptr(obj)));
+  return pic_obj_value(pic_make_id(pic, var, pic_env_ptr(env)));
 }
 
 static pic_value
-pic_macro_identifier_eq_p(pic_state *pic)
+pic_macro_variable_p(pic_state *pic)
 {
-  pic_sym *sym1, *sym2;
-  pic_value env1, env2;
+  pic_value obj;
 
-  pic_get_args(pic, "omom", &env1, &sym1, &env2, &sym2);
+  pic_get_args(pic, "o", &obj);
 
-  pic_assert_type(pic, env1, env);
-  pic_assert_type(pic, env2, env);
+  return pic_bool_value(pic_var_p(obj));
+}
 
-  return pic_bool_value(pic_identifier_eq_p(pic, pic_env_ptr(env1), sym1, pic_env_ptr(env2), sym2));
+static pic_value
+pic_macro_variable_eq_p(pic_state *pic)
+{
+  pic_value var1, var2;
+  pic_sym *uid1, *uid2;
+
+  pic_get_args(pic, "oo", &var1, &var2);
+
+  pic_assert_type(pic, var1, var);
+  pic_assert_type(pic, var2, var);
+
+  if (pic_eq_p(var1, var2)) {
+    return pic_true_value();
+  }
+
+  uid1 = resolve(pic, var1, NULL);
+  uid2 = resolve(pic, var2, NULL);
+
+  if (uid1 || uid2) {
+    return pic_bool_value(uid1 == uid2);
+  }
+  return pic_false_value();
 }
 
 void
 pic_init_macro(pic_state *pic)
 {
   pic_defun(pic, "identifier?", pic_macro_identifier_p);
-  pic_defun(pic, "identifier=?", pic_macro_identifier_eq_p);
   pic_defun(pic, "make-identifier", pic_macro_make_identifier);
+
+  pic_defun(pic, "variable?", pic_macro_variable_p);
+  pic_defun(pic, "variable=?", pic_macro_variable_eq_p);
 }

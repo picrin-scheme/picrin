@@ -4,7 +4,7 @@
 
 #include "picrin.h"
 
-pic_sym *
+static pic_sym *
 pic_make_symbol(pic_state *pic, pic_str *str)
 {
   pic_sym *sym;
@@ -40,25 +40,6 @@ pic_sym *
 pic_intern_cstr(pic_state *pic, const char *str)
 {
   return pic_intern(pic, pic_make_str(pic, str, strlen(str)));
-}
-
-pic_sym *
-pic_gensym(pic_state *pic, pic_sym *base)
-{
-  return pic_make_symbol(pic, base->str);
-}
-
-bool
-pic_interned_p(pic_state *pic, pic_sym *sym)
-{
-  xh_entry *e;
-
-  e = xh_get_str(&pic->syms, pic_str_cstr(pic, sym->str));
-  if (e) {
-    return sym == xh_val(e, pic_sym *);
-  } else {
-    return false;
-  }
 }
 
 const char *
