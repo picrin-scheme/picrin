@@ -7,10 +7,10 @@
 pic_sym *
 pic_add_rename(pic_state *pic, struct pic_env *env, pic_sym *sym)
 {
-  pic_sym *rename;
+  pic_sym *rename = pic_gensym(pic, sym);
 
-  rename = pic_gensym(pic, sym);
   pic_put_rename(pic, env, sym, rename);
+
   return rename;
 }
 
@@ -20,16 +20,13 @@ pic_put_rename(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *renam
   pic_dict_set(pic, env->map, sym, pic_obj_value(rename));
 }
 
-bool
-pic_find_rename(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym **rename)
+pic_sym *
+pic_find_rename(pic_state *pic, struct pic_env *env, pic_sym *sym)
 {
   if (! pic_dict_has(pic, env->map, sym)) {
-    return false;
+    return NULL;
   }
-  if (rename != NULL) {
-    *rename = pic_sym_ptr(pic_dict_ref(pic, env->map, sym));
-  }
-  return true;
+  return pic_sym_ptr(pic_dict_ref(pic, env->map, sym));
 }
 
 static void
@@ -53,7 +50,7 @@ make_identifier(pic_state *pic, pic_sym *sym, struct pic_env *env)
   pic_sym *rename;
 
   while (true) {
-    if (pic_find_rename(pic, env, sym, &rename)) {
+    if ((rename = pic_find_rename(pic, env, sym)) != NULL) {
       return rename;
     }
     if (! env->up)
@@ -189,7 +186,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
     pic_errorf(pic, "binding to non-symbol object");
   }
   sym = pic_sym_ptr(var);
-  if (! pic_find_rename(pic, env, sym, &rename)) {
+  if ((rename = pic_find_rename(pic, env, sym)) == NULL) {
     rename = pic_add_rename(pic, env, sym);
   }
   val = macroexpand(pic, pic_list_ref(pic, expr, 2), env);
@@ -212,7 +209,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_env *env)
     pic_errorf(pic, "binding to non-symbol object");
   }
   sym = pic_sym_ptr(var);
-  if (! pic_find_rename(pic, env, sym, &rename)) {
+  if ((rename = pic_find_rename(pic, env, sym)) == NULL) {
     rename = pic_add_rename(pic, env, sym);
   } else {
     pic_warnf(pic, "redefining syntax variable: ~s", pic_obj_value(sym));

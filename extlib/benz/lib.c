@@ -165,7 +165,7 @@ export(pic_state *pic, pic_value spec)
       goto fail;
   }
 
-  if (! pic_find_rename(pic, pic->lib->env, pic_sym_ptr(a), &rename)) {
+  if ((rename = pic_find_rename(pic, pic->lib->env, pic_sym_ptr(a))) == NULL) {
     pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, pic_sym_ptr(a)));
   }
 
