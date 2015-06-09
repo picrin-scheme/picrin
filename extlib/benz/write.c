@@ -220,7 +220,7 @@ write_core(struct writer_control *p, pic_value obj)
 
   switch (pic_type(obj)) {
   case PIC_TT_UNDEF:
-    xfprintf(file, "#<undef>");
+    xfprintf(file, "#undefined");
     break;
   case PIC_TT_NIL:
     xfprintf(file, "()");

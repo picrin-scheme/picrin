@@ -561,6 +561,21 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
+read_undef_or_blob(pic_state *pic, struct pic_port *port, int c)
+{
+  if ((c = peek(port)) == 'n') {
+    if (! expect(port, "ndefined")) {
+      read_error(pic, "unexpected character while reading #undefined");
+    }
+    return pic_undef_value();
+  }
+  if (! isdigit(c)) {
+    read_error(pic, "expect #undefined or #u8(...), but illegal character given");
+  }
+  return read_blob(pic, port, 'u');
+}
+
+static pic_value
 read_pair(pic_state *pic, struct pic_port *port, int c)
 {
   static const int tCLOSE = ')';
@@ -786,7 +801,7 @@ reader_table_init(struct pic_reader *reader)
   reader->dispatch['f'] = read_false;
   reader->dispatch['\\'] = read_char;
   reader->dispatch['('] = read_vector;
-  reader->dispatch['u'] = read_blob;
+  reader->dispatch['u'] = read_undef_or_blob;
   reader->dispatch['.'] = read_eval;
 
   /* read labels */
