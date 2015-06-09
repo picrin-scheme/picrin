@@ -381,32 +381,6 @@ pic_make_env(pic_state *pic, struct pic_env *up)
   return env;
 }
 
-struct pic_env *
-pic_null_syntactic_environment(pic_state *pic)
-{
-  struct pic_env *env;
-
-  env = pic_make_env(pic, NULL);
-
-  pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
-  pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->rIMPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->rEXPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sIN_LIBRARY, pic->rIN_LIBRARY);
-  pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->rCOND_EXPAND);
-
-  return env;
-}
-
-void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *rsym)
-{
-  pic_put_rename(pic, env, sym, rsym);
-
-  if (pic->lib && pic->lib->env == env) {
-    pic_export(pic, sym);
-  }
-}
-
 static pic_value
 defmacro_call(pic_state *pic)
 {

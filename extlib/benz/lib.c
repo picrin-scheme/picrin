@@ -4,6 +4,18 @@
 
 #include "picrin.h"
 
+static void
+setup_default_env(pic_state *pic, struct pic_env *env)
+{
+  void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
+
+  pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
+  pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->rIMPORT);
+  pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->rEXPORT);
+  pic_define_syntactic_keyword(pic, env, pic->sIN_LIBRARY, pic->rIN_LIBRARY);
+  pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->rCOND_EXPAND);
+}
+
 struct pic_lib *
 pic_make_library(pic_state *pic, pic_value name)
 {
@@ -15,8 +27,10 @@ pic_make_library(pic_state *pic, pic_value name)
     pic_errorf(pic, "library name already in use: ~s", name);
   }
 
-  env = pic_null_syntactic_environment(pic);
+  env = pic_make_env(pic, NULL);
   exports = pic_make_dict(pic);
+
+  setup_default_env(pic, env);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->name = name;

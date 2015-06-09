@@ -96,6 +96,8 @@ pic_init_features(pic_state *pic)
 static void
 pic_init_core(pic_state *pic)
 {
+  void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
+
   pic_init_features(pic);
 
   pic_deflibrary (pic, "(picrin base)") {

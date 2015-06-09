@@ -394,6 +394,16 @@ pic_get_args(pic_state *pic, const char *format, ...)
 }
 
 void
+pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *rsym)
+{
+  pic_put_rename(pic, env, sym, rsym);
+
+  if (pic->lib && pic->lib->env == env) {
+    pic_export(pic, sym);
+  }
+}
+
+void
 pic_define_noexport(pic_state *pic, const char *name, pic_value val)
 {
   pic_sym *sym, *rename;
