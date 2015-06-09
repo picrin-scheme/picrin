@@ -44,7 +44,7 @@ void
 pic_reg_del(pic_state *pic, struct pic_reg *reg, void *key)
 {
   if (xh_get_ptr(&reg->hash, key) == NULL) {
-    pic_errorf(pic, "no slot named ~s found in registry", pic_obj_value(key));
+    pic_errorf(pic, "no slot named ~s found in register", pic_obj_value(key));
   }
 
   xh_del_ptr(&reg->hash, key);
@@ -85,7 +85,7 @@ reg_call(pic_state *pic)
   n = pic_get_args(pic, "o|o", &key, &val);
 
   if (! pic_obj_p(key)) {
-    pic_errorf(pic, "attempted to set a non-object key '~s' in a registory", key);
+    pic_errorf(pic, "attempted to set a non-object key '~s' in a register", key);
   }
 
   reg = pic_reg_ptr(pic_proc_env_ref(pic, self, "reg"));
@@ -98,7 +98,7 @@ reg_call(pic_state *pic)
 }
 
 static pic_value
-pic_reg_make_registry(pic_state *pic)
+pic_reg_make_register(pic_state *pic)
 {
   struct pic_reg *reg;
   struct pic_proc *proc;
@@ -117,5 +117,5 @@ pic_reg_make_registry(pic_state *pic)
 void
 pic_init_reg(pic_state *pic)
 {
-  pic_defun(pic, "make-registry", pic_reg_make_registry);
+  pic_defun(pic, "make-register", pic_reg_make_register);
 }
