@@ -531,15 +531,15 @@ gc_mark_global_symbols(pic_state *pic)
   M(sCALL); M(sTAILCALL); M(sCALL_WITH_VALUES); M(sTAILCALL_WITH_VALUES);
   M(sGREF); M(sLREF); M(sCREF); M(sRETURN);
 
-  M(rDEFINE); M(rLAMBDA); M(rIF); M(rBEGIN); M(rQUOTE); M(rSETBANG);
-  M(rDEFINE_SYNTAX); M(rIMPORT); M(rEXPORT);
-  M(rDEFINE_LIBRARY);
-  M(rCOND_EXPAND);
-  M(rCONS); M(rCAR); M(rCDR); M(rNILP);
-  M(rSYMBOLP); M(rPAIRP);
-  M(rADD); M(rSUB); M(rMUL); M(rDIV);
-  M(rEQ); M(rLT); M(rLE); M(rGT); M(rGE); M(rNOT);
-  M(rVALUES); M(rCALL_WITH_VALUES);
+  M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG);
+  M(uDEFINE_SYNTAX); M(uIMPORT); M(uEXPORT);
+  M(uDEFINE_LIBRARY);
+  M(uCOND_EXPAND);
+  M(uCONS); M(uCAR); M(uCDR); M(uNILP);
+  M(uSYMBOLP); M(uPAIRP);
+  M(uADD); M(uSUB); M(uMUL); M(uDIV);
+  M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
+  M(uVALUES); M(uCALL_WITH_VALUES);
 }
 
 static void

@@ -111,15 +111,15 @@ typedef struct {
   pic_sym *sCALL, *sTAILCALL, *sRETURN;
   pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
-  pic_sym *rDEFINE, *rLAMBDA, *rIF, *rBEGIN, *rQUOTE, *rSETBANG;
-  pic_sym *rDEFINE_SYNTAX, *rIMPORT, *rEXPORT;
-  pic_sym *rDEFINE_LIBRARY;
-  pic_sym *rCOND_EXPAND;
-  pic_sym *rCONS, *rCAR, *rCDR, *rNILP;
-  pic_sym *rSYMBOLP, *rPAIRP;
-  pic_sym *rADD, *rSUB, *rMUL, *rDIV;
-  pic_sym *rEQ, *rLT, *rLE, *rGT, *rGE, *rNOT;
-  pic_sym *rVALUES, *rCALL_WITH_VALUES;
+  pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG;
+  pic_sym *uDEFINE_SYNTAX, *uIMPORT, *uEXPORT;
+  pic_sym *uDEFINE_LIBRARY;
+  pic_sym *uCOND_EXPAND;
+  pic_sym *uCONS, *uCAR, *uCDR, *uNILP;
+  pic_sym *uSYMBOLP, *uPAIRP;
+  pic_sym *uADD, *uSUB, *uMUL, *uDIV;
+  pic_sym *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
+  pic_sym *uVALUES, *uCALL_WITH_VALUES;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
