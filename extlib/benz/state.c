@@ -223,7 +223,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->lib = NULL;
 
   /* raised error object */
-  pic->err = pic_undef_value();
+  pic->err = pic_invalid_value();
 
   /* standard ports */
   pic->xSTDIN = NULL;
@@ -402,7 +402,7 @@ pic_close(pic_state *pic)
   pic->ci = pic->cibase;
   pic->xp = pic->xpbase;
   pic->arena_idx = 0;
-  pic->err = pic_undef_value();
+  pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
   xh_clear(&pic->syms);

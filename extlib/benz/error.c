@@ -52,7 +52,7 @@ pic_errmsg(pic_state *pic)
 {
   pic_str *str;
 
-  assert(! pic_undef_p(pic->err));
+  assert(! pic_invalid_p(pic->err));
 
   if (! pic_error_p(pic->err)) {
     str = pic_format(pic, "~s", pic->err);
