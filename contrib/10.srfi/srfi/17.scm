@@ -16,11 +16,10 @@
   (define setter
     (letrec ((setter
               (lambda (proc)
-                (receive (setter exists) (dictionary-ref (attribute proc)
-                                                         '@@setter)
-                  (if exists
-                      setter
-                      (error "No setter found")))))
+                (let ((setter (dictionary-ref (attribute proc) '@@setter)))
+                  (if (undefined? setter)
+                      (error "no setter found")
+                      setter))))
              (set-setter!
               (lambda (proc setter)
                 (dictionary-set! (attribute proc) '@@setter setter))))

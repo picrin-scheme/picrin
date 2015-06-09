@@ -20,14 +20,13 @@
     "memoize on symbols"
     (define cache (make-dictionary))
     (lambda (sym)
-      (call-with-values (lambda () (dictionary-ref cache sym))
-        (lambda (value exists)
-          (if exists
-              value
-              (begin
-                (define val (f sym))
-                (dictionary-set! cache sym val)
-                val))))))
+      (define value (dictionary-ref cache sym))
+      (if (not (undefined? value))
+          value
+          (begin
+            (define val (f sym))
+            (dictionary-set! cache sym val)
+            val))))
 
   (define (make-syntactic-closure env free form)
 
@@ -105,11 +104,10 @@
                   (identifier=? mac-env x mac-env y))))
 
         (walk (lambda (sym)
-                (call-with-values (lambda () (dictionary-ref icache* sym))
-                  (lambda (value exists)
-                    (if exists
-                        value
-                        (rename sym)))))
+                (let ((value (dictionary-ref icache* sym)))
+                  (if (undefined? value)
+                      (rename sym)
+                      value)))
               (f (walk inject expr) inject compare)))))
 
   ;; (define (strip-syntax form)
