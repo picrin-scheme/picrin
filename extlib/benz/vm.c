@@ -413,7 +413,7 @@ pic_define_noexport(pic_state *pic, const char *name, pic_value val)
   if (! pic_find_rename(pic, pic->lib->env, sym, &rename)) {
     rename = pic_add_rename(pic, pic->lib->env, sym);
   } else {
-    pic_warn(pic, "redefining global");
+    pic_warnf(pic, "redefining global");
   }
 
   pic_dict_set(pic, pic->globals, rename, val);

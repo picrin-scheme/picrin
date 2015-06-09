@@ -243,13 +243,6 @@ void pic_warnf(pic_state *, const char *, ...);
 const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
-
-/* obsoleted */
-PIC_INLINE void pic_warn(pic_state *pic, const char *msg)
-{
-  pic_warnf(pic, msg);
-}
-
 struct pic_dict *pic_attr(pic_state *, pic_value);
 pic_value pic_attr_ref(pic_state *, pic_value, const char *);
 void pic_attr_set(pic_state *, pic_value, const char *, pic_value);
