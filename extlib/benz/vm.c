@@ -394,9 +394,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
 }
 
 void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *rsym)
+pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
 {
-  pic_put_rename(pic, env, sym, rsym);
+  pic_put_variable(pic, env, pic_obj_value(sym), uid);
 
   if (pic->lib && pic->lib->env == env) {
     pic_export(pic, sym);
@@ -406,17 +406,17 @@ pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, 
 void
 pic_define_noexport(pic_state *pic, const char *name, pic_value val)
 {
-  pic_sym *sym, *rename;
+  pic_sym *sym, *uid;
 
   sym = pic_intern_cstr(pic, name);
 
-  if ((rename = pic_find_rename(pic, pic->lib->env, sym)) == NULL) {
-    rename = pic_add_rename(pic, pic->lib->env, sym);
+  if ((uid = pic_find_variable(pic, pic->lib->env, pic_obj_value(sym))) == NULL) {
+    uid = pic_add_variable(pic, pic->lib->env, pic_obj_value(sym));
   } else {
     pic_warnf(pic, "redefining global");
   }
 
-  pic_dict_set(pic, pic->globals, rename, val);
+  pic_dict_set(pic, pic->globals, uid, val);
 }
 
 void
@@ -430,29 +430,29 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 pic_value
 pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
-  pic_sym *sym, *rename;
+  pic_sym *sym, *uid;
 
   sym = pic_intern_cstr(pic, name);
 
-  if ((rename = pic_find_rename(pic, lib->env, sym)) == NULL) {
+  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  return pic_dict_ref(pic, pic->globals, rename);
+  return pic_dict_ref(pic, pic->globals, uid);
 }
 
 void
 pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
-  pic_sym *sym, *rename;
+  pic_sym *sym, *uid;
 
   sym = pic_intern_cstr(pic, name);
 
-  if ((rename = pic_find_rename(pic, lib->env, sym)) == NULL) {
+  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  pic_dict_set(pic, pic->globals, rename, val);
+  pic_dict_set(pic, pic->globals, uid, val);
 }
 
 pic_value
@@ -477,7 +477,7 @@ pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 }
 
 void
-pic_defun_vm(pic_state *pic, const char *name, pic_sym *rename, pic_func_t func)
+pic_defun_vm(pic_state *pic, const char *name, pic_sym *uid, pic_func_t func)
 {
   struct pic_proc *proc;
   pic_sym *sym;
@@ -486,9 +486,9 @@ pic_defun_vm(pic_state *pic, const char *name, pic_sym *rename, pic_func_t func)
 
   sym = pic_intern_cstr(pic, name);
 
-  pic_put_rename(pic, pic->lib->env, sym, rename);
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(sym), uid);
 
-  pic_dict_set(pic, pic->globals, rename, pic_obj_value(proc));
+  pic_dict_set(pic, pic->globals, uid, pic_obj_value(proc));
 
   pic_export(pic, sym);
 }

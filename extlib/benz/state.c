@@ -222,6 +222,9 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* symbol table */
   xh_init_str(&pic->syms, sizeof(pic_sym *));
 
+  /* unique symbol count */
+  pic->ucnt = 0;
+
   /* global variables */
   pic->globals = NULL;
 
@@ -308,7 +311,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   pic_gc_arena_restore(pic, ai);
 
-#define U(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name))
+#define U(slot,name) pic->slot = pic_uniq(pic, pic_obj_value(pic_intern_cstr(pic, name)))
 
   U(uDEFINE, "define");
   U(uLAMBDA, "lambda");

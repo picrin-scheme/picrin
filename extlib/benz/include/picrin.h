@@ -127,6 +127,7 @@ typedef struct {
   pic_value features;
 
   xhash syms;                   /* name to symbol */
+  int ucnt;
   struct pic_dict *globals;
   struct pic_dict *macros;
   pic_value libs;
@@ -193,8 +194,6 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 pic_sym *pic_intern(pic_state *, pic_str *);
 pic_sym *pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym *);
-pic_sym *pic_gensym(pic_state *, pic_sym *);
-bool pic_interned_p(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
