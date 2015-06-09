@@ -1,6 +1,19 @@
 (define-library (picrin macro)
   (import (picrin base))
 
+  (export identifier?
+          identifier=?
+          make-identifier
+          make-syntactic-closure
+          close-syntax
+          capture-syntactic-environment
+          sc-macro-transformer
+          rsc-macro-transformer
+          er-macro-transformer
+          ir-macro-transformer
+          ;; strip-syntax
+          define-macro)
+
   ;; assumes no derived expressions are provided yet
 
   (define (walk proc expr)
@@ -125,17 +138,4 @@
            (list (r 'define-macro) (car formal)
                  (cons (r 'lambda)
                        (cons (cdr formal)
-                             body)))))))
-
-  (export identifier?
-          identifier=?
-          make-identifier
-          make-syntactic-closure
-          close-syntax
-          capture-syntactic-environment
-          sc-macro-transformer
-          rsc-macro-transformer
-          er-macro-transformer
-          ir-macro-transformer
-          ;; strip-syntax
-          define-macro))
+                             body))))))))

@@ -73,7 +73,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   struct pic_lib *lib;
   struct pic_dict *table;
   pic_value val, tmp, prefix, it;
-  pic_sym *sym, *id, *tag;
+  pic_sym *sym, *id, *tag, *nick;
   xh_entry *iter;
 
   table = pic_make_dict(pic);
@@ -122,8 +122,15 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   if (! lib) {
     pic_errorf(pic, "library not found: ~a", spec);
   }
-  pic_dict_for_each (sym, lib->exports, iter) {
-    pic_dict_set(pic, imports, sym, pic_dict_ref(pic, lib->exports, sym));
+  pic_dict_for_each (nick, lib->exports, iter) {
+    pic_sym *realname, *rename;
+
+    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, nick));
+
+    if ((rename = pic_find_rename(pic, lib->env, realname)) == NULL) {
+      pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
+    }
+    pic_dict_set(pic, imports, nick, pic_obj_value(rename));
   }
 }
 
@@ -148,7 +155,6 @@ export(pic_state *pic, pic_value spec)
 {
   pic_sym *sRENAME = pic_intern_cstr(pic, "rename");
   pic_value a, b;
-  pic_sym *rename;
 
   if (pic_sym_p(spec)) {        /* (export a) */
     a = b = spec;
@@ -165,15 +171,11 @@ export(pic_state *pic, pic_value spec)
       goto fail;
   }
 
-  if ((rename = pic_find_rename(pic, pic->lib->env, pic_sym_ptr(a))) == NULL) {
-    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, pic_sym_ptr(a)));
-  }
-
 #if DEBUG
   printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym_ptr(b)), pic_symbol_name(pic, rename));
 #endif
 
-  pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), pic_obj_value(rename));
+  pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), a);
 
   return;
 
