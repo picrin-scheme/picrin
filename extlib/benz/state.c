@@ -269,7 +269,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   S(sIMPORT, "import");
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
-  S(sIN_LIBRARY, "in-library");
   S(sCOND_EXPAND, "cond-expand");
   S(sAND, "and");
   S(sOR, "or");
@@ -321,7 +320,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   R(rIMPORT, "import");
   R(rEXPORT, "export");
   R(rDEFINE_LIBRARY, "define-library");
-  R(rIN_LIBRARY, "in-library");
   R(rCOND_EXPAND, "cond-expand");
   R(rCONS, "cons");
   R(rCAR, "car");
