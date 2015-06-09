@@ -646,7 +646,7 @@ pic_str_string_for_each(pic_state *pic)
     pic_apply(pic, proc, vals);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value

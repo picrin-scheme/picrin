@@ -105,7 +105,7 @@ macroexpand_list(pic_state *pic, pic_value obj, struct pic_env *env)
 static pic_value
 macroexpand_defer(pic_state *pic, pic_value expr, struct pic_env *env)
 {
-  pic_value skel = pic_list1(pic, pic_none_value()); /* (#<none>) */
+  pic_value skel = pic_list1(pic, pic_invalid_value()); /* (#<invalid>) */
 
   pic_push(pic, pic_cons(pic, expr, skel), env->defer);
 
@@ -238,7 +238,7 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_env *env)
 
   define_macro(pic, rename, pic_proc_ptr(val));
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value

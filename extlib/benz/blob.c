@@ -105,7 +105,7 @@ pic_blob_bytevector_u8_set(pic_state *pic)
     pic_errorf(pic, "byte out of range");
 
   bv->data[k] = (unsigned char)v;
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -130,14 +130,14 @@ pic_blob_bytevector_copy_i(pic_state *pic)
     while (start < end) {
       to->data[--at] = from->data[--end];
     }
-    return pic_none_value();
+    return pic_undef_value();
   }
 
   while (start < end) {
     to->data[at++] = from->data[start++];
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value

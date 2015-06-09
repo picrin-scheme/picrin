@@ -197,7 +197,7 @@ pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
   }
   pic->ci->retc = (int)argc;
 
-  return argc == 0 ? pic_none_value() : pic->sp[0];
+  return argc == 0 ? pic_undef_value() : pic->sp[0];
 }
 
 pic_value
@@ -212,7 +212,7 @@ pic_values_by_list(pic_state *pic, pic_value list)
   }
   pic->ci->retc = i;
 
-  return pic_nil_p(list) ? pic_none_value() : pic->sp[0];
+  return pic_nil_p(list) ? pic_undef_value() : pic->sp[0];
 }
 
 size_t

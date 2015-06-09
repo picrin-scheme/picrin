@@ -682,8 +682,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 
 #if PIC_DIRECT_THREADED_VM
   static void *oplabels[] = {
-    &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE, &&L_OP_PUSHFALSE,
-    &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHCONST,
+    &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHUNDEF, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE,
+    &&L_OP_PUSHFALSE, &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHCONST,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
@@ -727,6 +727,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_POP) {
       (void)(POP());
+      NEXT;
+    }
+    CASE(OP_PUSHUNDEF) {
+      PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_PUSHNIL) {
@@ -1197,7 +1201,7 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   ci->retc = (int)pic_length(pic, args);
 
   if (ci->retc == 0) {
-    return pic_none_value();
+    return pic_undef_value();
   } else {
     return pic_car(pic, args);
   }

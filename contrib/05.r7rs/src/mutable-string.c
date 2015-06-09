@@ -30,7 +30,7 @@ pic_str_string_set(pic_state *pic)
   pic_get_args(pic, "sic", &str, &k, &c);
 
   pic_str_set(pic, str, k, c);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -54,7 +54,7 @@ pic_str_string_copy_ip(pic_state *pic)
   while (start < end) {
     pic_str_set(pic, to, at++, pic_str_ref(pic, from, start++));
   }
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -76,7 +76,7 @@ pic_str_string_fill_ip(pic_state *pic)
   while (start < end) {
     pic_str_set(pic, str, start++, c);
   }
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void

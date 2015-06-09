@@ -17,9 +17,6 @@
 /** no dependency on libc */
 /* #define PIC_ENABLE_LIBC 1 */
 
-/** treat false value as none */
-/* #define PIC_NONE_IS_FALSE 1 */
-
 /** custom setjmp/longjmp */
 /* #define PIC_JMPBUF jmp_buf */
 /* #define PIC_SETJMP(pic, buf) setjmp(buf) */
@@ -94,10 +91,6 @@
 
 #if PIC_NAN_BOXING && defined(PIC_ENABLE_FLOAT) && ! PIC_ENABLE_FLOAT
 # error cannot disable float support when nan boxing is on
-#endif
-
-#ifndef PIC_NONE_IS_FALSE
-# define PIC_NONE_IS_FALSE 1
 #endif
 
 #ifndef PIC_JMPBUF

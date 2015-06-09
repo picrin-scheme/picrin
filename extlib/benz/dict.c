@@ -107,7 +107,7 @@ pic_dict_dictionary_ref(pic_state *pic)
   if (pic_dict_has(pic, dict, key)) {
     return pic_values2(pic, pic_dict_ref(pic, dict, key), pic_true_value());
   } else {
-    return pic_values2(pic, pic_none_value(), pic_false_value());
+    return pic_values2(pic, pic_undef_value(), pic_false_value());
   }
 }
 
@@ -122,7 +122,7 @@ pic_dict_dictionary_set(pic_state *pic)
 
   pic_dict_set(pic, dict, key, val);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -135,7 +135,7 @@ pic_dict_dictionary_del(pic_state *pic)
 
   pic_dict_del(pic, dict, key);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -238,7 +238,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
 
   pic_free(pic, it);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value

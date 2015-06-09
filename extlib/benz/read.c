@@ -633,7 +633,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
     {
       pic_value tmp;
 
-      val = pic_cons(pic, pic_none_value(), pic_none_value());
+      val = pic_cons(pic, pic_undef_value(), pic_undef_value());
 
       xh_put_int(&pic->reader->labels, i, &val);
 

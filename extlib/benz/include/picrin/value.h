@@ -242,7 +242,6 @@ PIC_INLINE pic_value pic_float_value(double);
 PIC_INLINE pic_value pic_int_value(int);
 PIC_INLINE pic_value pic_size_value(size_t);
 PIC_INLINE pic_value pic_char_value(char c);
-PIC_INLINE pic_value pic_none_value();
 
 PIC_INLINE bool pic_eq_p(pic_value, pic_value);
 PIC_INLINE bool pic_eqv_p(pic_value, pic_value);
@@ -515,16 +514,6 @@ pic_invalid_value()
 
   pic_init_value(v, PIC_VTYPE_INVALID);
   return v;
-}
-
-PIC_INLINE pic_value
-pic_none_value()
-{
-#if PIC_NONE_IS_FALSE
-  return pic_false_value();
-#else
-# error enable PIC_NONE_IS_FALSE
-#endif
 }
 
 #if PIC_NAN_BOXING || PIC_WORD_BOXING

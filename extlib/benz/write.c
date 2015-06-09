@@ -449,7 +449,7 @@ pic_write_write(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -460,7 +460,7 @@ pic_write_write_simple(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write_simple(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -471,7 +471,7 @@ pic_write_write_shared(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write_shared(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -482,7 +482,7 @@ pic_write_display(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   display(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void
