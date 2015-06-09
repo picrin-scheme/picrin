@@ -144,6 +144,8 @@ typedef struct {
 
   pic_value err;
 
+  pic_code *iseq;               /* for pic_apply_trampoline */
+
   char *native_stack_start;
 } pic_state;
 

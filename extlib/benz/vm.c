@@ -76,7 +76,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
   }
 
   /* '|' should be followed by at least 1 char */
-  assert(opt <= optc);
+  assert((opt ? 1 : 0) <= optc);
   /* '*' should not be followed by any char */
   assert(format[paramc + opt + optc + rest] == '\0');
 
@@ -681,7 +681,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
   pic_code boot[2];
 
 #if PIC_DIRECT_THREADED_VM
-  static void *oplabels[] = {
+  static const void *oplabels[] = {
     &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHUNDEF, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE,
     &&L_OP_PUSHFALSE, &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHCONST,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
@@ -1180,13 +1180,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 pic_value
 pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  static pic_code iseq[2];
-
   pic_value v, it, *sp;
   pic_callinfo *ci;
 
-  PIC_INIT_CODE_I(iseq[0], OP_NOP, 0);
-  PIC_INIT_CODE_I(iseq[1], OP_TAILCALL, -1);
+  PIC_INIT_CODE_I(pic->iseq[0], OP_NOP, 0);
+  PIC_INIT_CODE_I(pic->iseq[1], OP_TAILCALL, -1);
 
   *pic->sp++ = pic_obj_value(proc);
 
@@ -1196,7 +1194,7 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   }
 
   ci = PUSHCI();
-  ci->ip = (pic_code *)iseq;
+  ci->ip = pic->iseq;
   ci->fp = pic->sp;
   ci->retc = (int)pic_length(pic, args);
 

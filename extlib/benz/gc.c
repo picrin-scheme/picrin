@@ -760,9 +760,9 @@ static void
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
 #if GC_DEBUG
-  static union header *NIL = (union header *)0xdeadbeef;
+  static union header * const NIL = (union header *)0xdeadbeef;
 #else
-  static union header *NIL = NULL;
+  static union header * const NIL = NULL;
 #endif
   union header *bp, *p, *s = NIL, *t = NIL;
 
