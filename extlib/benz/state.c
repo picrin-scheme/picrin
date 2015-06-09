@@ -109,7 +109,7 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sLAMBDA, pic->uLAMBDA);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->uIF);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->uBEGIN);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->uDEFINE_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_MACRO, pic->uDEFINE_MACRO);
 
     pic_init_undef(pic); DONE;
     pic_init_bool(pic); DONE;
@@ -268,7 +268,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   S(sQUASIQUOTE, "quasiquote");
   S(sUNQUOTE, "unquote");
   S(sUNQUOTE_SPLICING, "unquote-splicing");
-  S(sDEFINE_SYNTAX, "define-syntax");
+  S(sDEFINE_MACRO, "define-macro");
   S(sIMPORT, "import");
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
@@ -319,7 +319,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   U(uBEGIN, "begin");
   U(uSETBANG, "set!");
   U(uQUOTE, "quote");
-  U(uDEFINE_SYNTAX, "define-syntax");
+  U(uDEFINE_MACRO, "define-macro");
   U(uIMPORT, "import");
   U(uEXPORT, "export");
   U(uDEFINE_LIBRARY, "define-library");

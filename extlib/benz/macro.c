@@ -275,7 +275,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 static pic_value
-macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_env *env)
+macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_value var, val;
   pic_sym *uid;
@@ -301,12 +301,6 @@ macroexpand_defsyntax(pic_state *pic, pic_value expr, struct pic_env *env)
   } pic_catch {
     pic_errorf(pic, "macroexpand error while definition: %s", pic_errmsg(pic));
   }
-
-  if (! pic_proc_p(val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
-  }
-
-  val = pic_apply1(pic, pic_proc_ptr(val), pic_obj_value(env));
 
   if (! pic_proc_p(val)) {
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
@@ -365,8 +359,8 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
         goto call;
       }
 
-      if (functor == pic->uDEFINE_SYNTAX) {
-        return macroexpand_defsyntax(pic, expr, env);
+      if (functor == pic->uDEFINE_MACRO) {
+        return macroexpand_defmacro(pic, expr, env);
       }
       else if (functor == pic->uLAMBDA) {
         return macroexpand_defer(pic, expr, env);

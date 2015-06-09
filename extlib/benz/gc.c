@@ -529,7 +529,7 @@ gc_mark_global_symbols(pic_state *pic)
 {
   M(sDEFINE); M(sLAMBDA); M(sIF); M(sBEGIN); M(sQUOTE); M(sSETBANG);
   M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
-  M(sDEFINE_SYNTAX); M(sIMPORT); M(sEXPORT);
+  M(sDEFINE_MACRO); M(sIMPORT); M(sEXPORT);
   M(sDEFINE_LIBRARY);
   M(sCOND_EXPAND); M(sAND); M(sOR); M(sELSE); M(sLIBRARY);
   M(sONLY); M(sRENAME); M(sPREFIX); M(sEXCEPT);
@@ -542,7 +542,7 @@ gc_mark_global_symbols(pic_state *pic)
   M(sGREF); M(sLREF); M(sCREF); M(sRETURN);
 
   M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG);
-  M(uDEFINE_SYNTAX); M(uIMPORT); M(uEXPORT);
+  M(uDEFINE_MACRO); M(uIMPORT); M(uEXPORT);
   M(uDEFINE_LIBRARY);
   M(uCOND_EXPAND);
   M(uCONS); M(uCAR); M(uCDR); M(uNILP);

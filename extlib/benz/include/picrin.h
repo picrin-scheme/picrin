@@ -98,7 +98,7 @@ typedef struct {
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sDEFINE_SYNTAX, *sIMPORT, *sEXPORT;
+  pic_sym *sDEFINE_MACRO, *sIMPORT, *sEXPORT;
   pic_sym *sDEFINE_LIBRARY;
   pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
   pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
@@ -112,7 +112,7 @@ typedef struct {
   pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
   pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG;
-  pic_sym *uDEFINE_SYNTAX, *uIMPORT, *uEXPORT;
+  pic_sym *uDEFINE_MACRO, *uIMPORT, *uEXPORT;
   pic_sym *uDEFINE_LIBRARY;
   pic_sym *uCOND_EXPAND;
   pic_sym *uCONS, *uCAR, *uCDR, *uNILP;
