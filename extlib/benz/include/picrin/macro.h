@@ -25,7 +25,7 @@ bool pic_identifier_eq_p(pic_state *, struct pic_env *, pic_sym *, struct pic_en
 struct pic_env *pic_make_env(pic_state *, struct pic_env *);
 
 pic_sym *pic_add_rename(pic_state *, struct pic_env *, pic_sym *);
-bool pic_find_rename(pic_state *, struct pic_env *, pic_sym *, pic_sym ** /* = NULL */);
+pic_sym *pic_find_rename(pic_state *, struct pic_env *, pic_sym *);
 void pic_put_rename(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
 
 #if defined(__cplusplus)
