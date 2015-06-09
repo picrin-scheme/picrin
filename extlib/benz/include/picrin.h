@@ -128,7 +128,7 @@ typedef struct {
   struct pic_dict *globals;
   struct pic_dict *macros;
   pic_value libs;
-  xhash attrs;
+  struct pic_reg *attrs;
 
   pic_value ptable;
   size_t pnum;
@@ -139,6 +139,7 @@ typedef struct {
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
+  struct pic_reg *regs;
 
   struct pic_port *xSTDIN, *xSTDOUT, *xSTDERR;
 
@@ -285,6 +286,7 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/read.h"
 #include "picrin/vector.h"
+#include "picrin/reg.h"
 
 #if defined(__cplusplus)
 }

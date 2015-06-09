@@ -317,6 +317,12 @@ gc_obj_is_marked(struct pic_object *obj)
   return gc_is_marked(p);
 }
 
+static bool
+gc_value_need_mark(pic_value value)
+{
+  return pic_obj_p(value) && (! gc_obj_is_marked(pic_obj_ptr(value)));
+}
+
 static void
 gc_unmark(union header *p)
 {
@@ -473,6 +479,13 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark_object(pic, (struct pic_object *)sym->str);
     break;
   }
+  case PIC_TT_REG: {
+    struct pic_reg *reg = (struct pic_reg *)obj;
+
+    reg->prev = pic->regs;
+    pic->regs = reg;
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
 #if PIC_ENABLE_FLOAT
@@ -536,8 +549,8 @@ gc_mark_phase(pic_state *pic)
   pic_callinfo *ci;
   struct pic_proc **xhandler;
   size_t j;
-  xh_entry *it;
-  struct pic_object *obj;
+
+  assert(pic->regs == NULL);
 
   /* checkpoint */
   if (pic->cp) {
@@ -579,6 +592,11 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct pic_object *)pic->macros);
   }
 
+  /* attribute table */
+  if (pic->attrs) {
+    gc_mark_object(pic, (struct pic_object *)pic->attrs);
+  }
+
   /* error object */
   gc_mark(pic, pic->err);
 
@@ -602,18 +620,26 @@ gc_mark_phase(pic_state *pic)
   /* parameter table */
   gc_mark(pic, pic->ptable);
 
-  /* attributes */
+  /* registries */
   do {
-    j = 0;
+    struct pic_object *key;
+    pic_value val;
+    xh_entry *it;
+    struct pic_reg *reg;
 
-    for (it = xh_begin(&pic->attrs); it != NULL; it = xh_next(it)) {
-      if (gc_obj_is_marked(xh_key(it, struct pic_object *))) {
-        obj = (struct pic_object *)xh_val(it, struct pic_dict *);
-        if (! gc_obj_is_marked(obj)) {
-          gc_mark_object(pic, obj);
+    j = 0;
+    reg = pic->regs;
+
+    while (reg != NULL) {
+      for (it = xh_begin(&reg->hash); it != NULL; it = xh_next(it)) {
+        key = xh_key(it, struct pic_object *);
+        val = xh_val(it, pic_value);
+        if (gc_obj_is_marked(key) && gc_value_need_mark(val)) {
+          gc_mark(pic, val);
           ++j;
         }
       }
+      reg = reg->prev;
     }
   } while (j > 0);
 }
@@ -684,6 +710,11 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
+    break;
+  }
+  case PIC_TT_REG: {
+    struct pic_reg *reg = (struct pic_reg *)obj;
+    xh_destroy(&reg->hash);
     break;
   }
   case PIC_TT_NIL:
@@ -782,14 +813,16 @@ gc_sweep_phase(pic_state *pic)
   struct heap_page *page = pic->heap->pages;
   xh_entry *it, *next;
 
-  do {
-    for (it = xh_begin(&pic->attrs); it != NULL; it = next) {
+  /* registries */
+  while (pic->regs != NULL) {
+    for (it = xh_begin(&pic->regs->hash); it != NULL; it = next) {
       next = xh_next(it);
       if (! gc_obj_is_marked(xh_key(it, struct pic_object *))) {
-        xh_del_ptr(&pic->attrs, xh_key(it, struct pic_object *));
+        xh_del_ptr(&pic->regs->hash, xh_key(it, struct pic_object *));
       }
     }
-  } while (it != NULL);
+    pic->regs = pic->regs->prev;
+  }
 
   gc_sweep_symbols(pic);
 

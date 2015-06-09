@@ -163,6 +163,7 @@ enum pic_tt {
   PIC_TT_IREP,
   PIC_TT_DATA,
   PIC_TT_DICT,
+  PIC_TT_REG,
   PIC_TT_RECORD
 };
 
@@ -327,6 +328,8 @@ pic_type_repr(enum pic_tt tt)
     return "data";
   case PIC_TT_DICT:
     return "dict";
+  case PIC_TT_REG:
+    return "reg";
   case PIC_TT_RECORD:
     return "record";
   }

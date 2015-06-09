@@ -205,6 +205,9 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* memory heap */
   pic->heap = pic_heap_open(pic);
 
+  /* registries */
+  pic->regs = NULL;
+
   /* symbol table */
   xh_init_str(&pic->syms, sizeof(pic_sym *));
 
@@ -215,7 +218,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->macros = NULL;
 
   /* attributes */
-  xh_init_ptr(&pic->attrs, sizeof(struct pic_dict *));
+  pic->attrs = NULL;
 
   /* features */
   pic->features = pic_nil_value();
@@ -333,6 +336,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* root tables */
   pic->globals = pic_make_dict(pic);
   pic->macros = pic_make_dict(pic);
+  pic->attrs = pic_make_reg(pic);
 
   /* root block */
   pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
@@ -407,8 +411,8 @@ pic_close(pic_state *pic)
   pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
+  pic->attrs = NULL;
   xh_clear(&pic->syms);
-  xh_clear(&pic->attrs);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 
@@ -428,7 +432,6 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   xh_destroy(&pic->syms);
-  xh_destroy(&pic->attrs);
 
   /* free GC arena */
   allocf(pic->arena, 0);
