@@ -9,10 +9,10 @@ setup_default_env(pic_state *pic, struct pic_env *env)
 {
   void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
 
-  pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
-  pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->rIMPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->rEXPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->rCOND_EXPAND);
+  pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->uDEFINE_LIBRARY);
+  pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->uIMPORT);
+  pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->uEXPORT);
+  pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->uCOND_EXPAND);
 }
 
 struct pic_lib *
@@ -245,7 +245,7 @@ pic_lib_condexpand(pic_state *pic)
 
   for (i = 0; i < argc; i++) {
     if (condexpand(pic, pic_car(pic, clauses[i]))) {
-      return pic_cons(pic, pic_obj_value(pic->rBEGIN), pic_cdr(pic, clauses[i]));
+      return pic_cons(pic, pic_obj_value(pic->sBEGIN), pic_cdr(pic, clauses[i]));
     }
   }
 
@@ -317,8 +317,8 @@ pic_init_lib(pic_state *pic)
 {
   void pic_defmacro(pic_state *, pic_sym *, pic_sym *, pic_func_t);
 
-  pic_defmacro(pic, pic->sCOND_EXPAND, pic->rCOND_EXPAND, pic_lib_condexpand);
-  pic_defmacro(pic, pic->sIMPORT, pic->rIMPORT, pic_lib_import);
-  pic_defmacro(pic, pic->sEXPORT, pic->rEXPORT, pic_lib_export);
-  pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY, pic_lib_define_library);
+  pic_defmacro(pic, pic->sCOND_EXPAND, pic->uCOND_EXPAND, pic_lib_condexpand);
+  pic_defmacro(pic, pic->sIMPORT, pic->uIMPORT, pic_lib_import);
+  pic_defmacro(pic, pic->sEXPORT, pic->uEXPORT, pic_lib_export);
+  pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->uDEFINE_LIBRARY, pic_lib_define_library);
 }

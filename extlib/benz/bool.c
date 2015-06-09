@@ -195,7 +195,7 @@ pic_init_bool(pic_state *pic)
   pic_defun(pic, "eqv?", pic_bool_eqv_p);
   pic_defun(pic, "equal?", pic_bool_equal_p);
 
-  pic_defun_vm(pic, "not", pic->rNOT, pic_bool_not);
+  pic_defun_vm(pic, "not", pic->uNOT, pic_bool_not);
 
   pic_defun(pic, "boolean?", pic_bool_boolean_p);
   pic_defun(pic, "boolean=?", pic_bool_boolean_eq_p);

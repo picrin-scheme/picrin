@@ -77,7 +77,7 @@ macroexpand_symbol(pic_state *pic, pic_sym *sym, struct pic_env *env)
 static pic_value
 macroexpand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, pic_obj_value(pic->rQUOTE), pic_cdr(pic, expr));
+  return pic_cons(pic, pic_obj_value(pic->uQUOTE), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -161,7 +161,7 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 
   macroexpand_deferred(pic, in);
 
-  return pic_cons(pic, pic_obj_value(pic->rLAMBDA), pic_cons(pic, formal, body));
+  return pic_cons(pic, pic_obj_value(pic->uLAMBDA), pic_cons(pic, formal, body));
 }
 
 static pic_value
@@ -174,7 +174,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
     var = pic_car(pic, pic_cadr(pic, expr));
     val = pic_cdr(pic, pic_cadr(pic, expr));
 
-    expr = pic_list3(pic, pic_obj_value(pic->rDEFINE), var, pic_cons(pic, pic_obj_value(pic->rLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
+    expr = pic_list3(pic, pic_obj_value(pic->uDEFINE), var, pic_cons(pic, pic_obj_value(pic->uLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
   }
 
   if (pic_length(pic, expr) != 3) {
@@ -191,7 +191,7 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
   }
   val = macroexpand(pic, pic_list_ref(pic, expr, 2), env);
 
-  return pic_list3(pic, pic_obj_value(pic->rDEFINE), pic_obj_value(rename), val);
+  return pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_obj_value(rename), val);
 }
 
 static pic_value
@@ -285,16 +285,16 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
     if (pic_sym_p(car)) {
       pic_sym *tag = pic_sym_ptr(car);
 
-      if (tag == pic->rDEFINE_SYNTAX) {
+      if (tag == pic->uDEFINE_SYNTAX) {
         return macroexpand_defsyntax(pic, expr, env);
       }
-      else if (tag == pic->rLAMBDA) {
+      else if (tag == pic->uLAMBDA) {
         return macroexpand_defer(pic, expr, env);
       }
-      else if (tag == pic->rDEFINE) {
+      else if (tag == pic->uDEFINE) {
         return macroexpand_define(pic, expr, env);
       }
-      else if (tag == pic->rQUOTE) {
+      else if (tag == pic->uQUOTE) {
         return macroexpand_quote(pic, expr);
       }
 

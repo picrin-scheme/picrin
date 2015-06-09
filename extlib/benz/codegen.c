@@ -331,7 +331,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
       : pic_false_value();
 
     /* To know what kind of local variables are defined, analyze body at first. */
-    body = analyze(state, pic_cons(pic, pic_obj_value(pic->rBEGIN), body_exprs), true);
+    body = analyze(state, pic_cons(pic, pic_obj_value(pic->uBEGIN), body_exprs), true);
 
     analyze_deferred(state);
 
@@ -399,7 +399,7 @@ analyze_define(analyze_state *state, pic_value obj)
 
   if (pic_pair_p(pic_list_ref(pic, obj, 2))
       && pic_sym_p(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0))
-      && pic_sym_ptr(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->rLAMBDA) {
+      && pic_sym_ptr(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->uLAMBDA) {
     pic_value formals, body_exprs;
 
     formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
@@ -698,88 +698,88 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     if (pic_sym_p(proc)) {
       pic_sym *sym = pic_sym_ptr(proc);
 
-      if (sym == pic->rDEFINE) {
+      if (sym == pic->uDEFINE) {
         return analyze_define(state, obj);
       }
-      else if (sym == pic->rLAMBDA) {
+      else if (sym == pic->uLAMBDA) {
         return analyze_lambda(state, obj);
       }
-      else if (sym == pic->rIF) {
+      else if (sym == pic->uIF) {
         return analyze_if(state, obj, tailpos);
       }
-      else if (sym == pic->rBEGIN) {
+      else if (sym == pic->uBEGIN) {
         return analyze_begin(state, obj, tailpos);
       }
-      else if (sym == pic->rSETBANG) {
+      else if (sym == pic->uSETBANG) {
         return analyze_set(state, obj);
       }
-      else if (sym == pic->rQUOTE) {
+      else if (sym == pic->uQUOTE) {
         return analyze_quote(state, obj);
       }
-      else if (sym == pic->rCONS) {
+      else if (sym == pic->uCONS) {
 	ARGC_ASSERT(2, "cons");
         return CONSTRUCT_OP2(pic->sCONS);
       }
-      else if (sym == pic->rCAR) {
+      else if (sym == pic->uCAR) {
 	ARGC_ASSERT(1, "car");
         return CONSTRUCT_OP1(pic->sCAR);
       }
-      else if (sym == pic->rCDR) {
+      else if (sym == pic->uCDR) {
 	ARGC_ASSERT(1, "cdr");
         return CONSTRUCT_OP1(pic->sCDR);
       }
-      else if (sym == pic->rNILP) {
+      else if (sym == pic->uNILP) {
 	ARGC_ASSERT(1, "nil?");
         return CONSTRUCT_OP1(pic->sNILP);
       }
-      else if (sym == pic->rSYMBOLP) {
+      else if (sym == pic->uSYMBOLP) {
         ARGC_ASSERT(1, "symbol?");
         return CONSTRUCT_OP1(pic->sSYMBOLP);
       }
-      else if (sym == pic->rPAIRP) {
+      else if (sym == pic->uPAIRP) {
         ARGC_ASSERT(1, "pair?");
         return CONSTRUCT_OP1(pic->sPAIRP);
       }
-      else if (sym == pic->rADD) {
+      else if (sym == pic->uADD) {
         return analyze_add(state, obj, tailpos);
       }
-      else if (sym == pic->rSUB) {
+      else if (sym == pic->uSUB) {
         return analyze_sub(state, obj);
       }
-      else if (sym == pic->rMUL) {
+      else if (sym == pic->uMUL) {
         return analyze_mul(state, obj, tailpos);
       }
-      else if (sym == pic->rDIV) {
+      else if (sym == pic->uDIV) {
         return analyze_div(state, obj);
       }
-      else if (sym == pic->rEQ) {
+      else if (sym == pic->uEQ) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sEQ);
       }
-      else if (sym == pic->rLT) {
+      else if (sym == pic->uLT) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLT);
       }
-      else if (sym == pic->rLE) {
+      else if (sym == pic->uLE) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLE);
       }
-      else if (sym == pic->rGT) {
+      else if (sym == pic->uGT) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGT);
       }
-      else if (sym == pic->rGE) {
+      else if (sym == pic->uGE) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGE);
       }
-      else if (sym == pic->rNOT) {
+      else if (sym == pic->uNOT) {
         ARGC_ASSERT(1, "not");
         return CONSTRUCT_OP1(pic->sNOT);
       }
-      else if (sym == pic->rVALUES) {
+      else if (sym == pic->uVALUES) {
         return analyze_values(state, obj, tailpos);
       }
-      else if (sym == pic->rCALL_WITH_VALUES) {
+      else if (sym == pic->uCALL_WITH_VALUES) {
         return analyze_call_with_values(state, obj, tailpos);
       }
     }
