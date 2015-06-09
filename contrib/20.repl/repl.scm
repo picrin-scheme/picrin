@@ -30,7 +30,6 @@
             (scheme lazy)
             (scheme time)
             (picrin macro)
-            (picrin dictionary)
             (picrin array)
             (picrin library))
    '(picrin user))

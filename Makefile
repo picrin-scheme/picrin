@@ -12,7 +12,6 @@ PICRIN_LIBS = \
 	piclib/picrin/macro.scm\
 	piclib/picrin/record.scm\
 	piclib/picrin/array.scm\
-	piclib/picrin/dictionary.scm\
 	piclib/picrin/experimental/lambda.scm\
 	piclib/picrin/syntax-rules.scm\
 	piclib/picrin/test.scm
