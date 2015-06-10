@@ -181,6 +181,30 @@ read_unquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 }
 
 static pic_value
+read_syntax_quote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+{
+  return pic_list2(pic, pic_obj_value(pic->sSYNTAX_QUOTE), read(pic, port, next(port)));
+}
+
+static pic_value
+read_syntax_quasiquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+{
+  return pic_list2(pic, pic_obj_value(pic->sSYNTAX_QUASIQUOTE), read(pic, port, next(port)));
+}
+
+static pic_value
+read_syntax_unquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+{
+  pic_sym *tag = pic->sSYNTAX_UNQUOTE;
+
+  if (peek(port) == '@') {
+    tag = pic->sSYNTAX_UNQUOTE_SPLICING;
+    next(port);
+  }
+  return pic_list2(pic, pic_obj_value(tag), read(pic, port, next(port)));
+}
+
+static pic_value
 read_symbol(pic_state *pic, struct pic_port *port, int c)
 {
   size_t len;
@@ -799,6 +823,9 @@ reader_table_init(struct pic_reader *reader)
   reader->dispatch[';'] = read_datum_comment;
   reader->dispatch['t'] = read_true;
   reader->dispatch['f'] = read_false;
+  reader->dispatch['\''] = read_syntax_quote;
+  reader->dispatch['`'] = read_syntax_quasiquote;
+  reader->dispatch[','] = read_syntax_unquote;
   reader->dispatch['\\'] = read_char;
   reader->dispatch['('] = read_vector;
   reader->dispatch['u'] = read_undef_or_blob;

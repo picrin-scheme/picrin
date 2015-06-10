@@ -98,6 +98,8 @@ typedef struct {
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
+  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE;
+  pic_sym *sSYNTAX_UNQUOTE_SPLICING;
   pic_sym *sDEFINE_MACRO, *sIMPORT, *sEXPORT;
   pic_sym *sDEFINE_LIBRARY;
   pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;

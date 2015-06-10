@@ -268,6 +268,10 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   S(sQUASIQUOTE, "quasiquote");
   S(sUNQUOTE, "unquote");
   S(sUNQUOTE_SPLICING, "unquote-splicing");
+  S(sSYNTAX_QUOTE, "syntax-quote");
+  S(sSYNTAX_QUASIQUOTE, "syntax-quasiquote");
+  S(sSYNTAX_UNQUOTE, "syntax-unquote");
+  S(sSYNTAX_UNQUOTE_SPLICING, "syntax-unquote-splicing");
   S(sDEFINE_MACRO, "define-macro");
   S(sIMPORT, "import");
   S(sEXPORT, "export");
