@@ -1,6 +1,19 @@
 (define-library (picrin macro)
   (import (picrin base))
 
+  (export identifier?
+          identifier=?
+          make-identifier
+          make-syntactic-closure
+          close-syntax
+          capture-syntactic-environment
+          sc-macro-transformer
+          rsc-macro-transformer
+          er-macro-transformer
+          ir-macro-transformer
+          ;; strip-syntax
+          define-macro)
+
   ;; assumes no derived expressions are provided yet
 
   (define (walk proc expr)
@@ -20,14 +33,13 @@
     "memoize on symbols"
     (define cache (make-dictionary))
     (lambda (sym)
-      (call-with-values (lambda () (dictionary-ref cache sym))
-        (lambda (value exists)
-          (if exists
-              value
-              (begin
-                (define val (f sym))
-                (dictionary-set! cache sym val)
-                val))))))
+      (define value (dictionary-ref cache sym))
+      (if (not (undefined? value))
+          value
+          (begin
+            (define val (f sym))
+            (dictionary-set! cache sym val)
+            val))))
 
   (define (make-syntactic-closure env free form)
 
@@ -47,65 +59,69 @@
     (make-syntactic-closure env '() form))
 
   (define-syntax capture-syntactic-environment
-    (lambda (form use-env mac-env)
-      (list (cadr form) (list (make-identifier 'quote mac-env) mac-env))))
+    (lambda (mac-env)
+      (lambda (form use-env)
+        (list (cadr form) (list (make-identifier 'quote mac-env) mac-env)))))
 
   (define (sc-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure mac-env '() (f expr use-env))))
+    (lambda (mac-env)
+      (lambda (expr use-env)
+        (make-syntactic-closure mac-env '() (f expr use-env)))))
 
   (define (rsc-macro-transformer f)
-    (lambda (expr use-env mac-env)
-      (make-syntactic-closure use-env '() (f expr mac-env))))
+    (lambda (mac-env)
+      (lambda (expr use-env)
+        (make-syntactic-closure use-env '() (f expr mac-env)))))
 
   (define (er-macro-transformer f)
-    (lambda (expr use-env mac-env)
+    (lambda (mac-env)
+      (lambda (expr use-env)
 
-      (define rename
-        (memoize
-         (lambda (sym)
-           (make-identifier sym mac-env))))
+        (define rename
+          (memoize
+           (lambda (sym)
+             (make-identifier sym mac-env))))
 
-      (define (compare x y)
-        (if (not (symbol? x))
-            #f
-            (if (not (symbol? y))
-                #f
-                (identifier=? use-env x use-env y))))
+        (define (compare x y)
+          (if (not (symbol? x))
+              #f
+              (if (not (symbol? y))
+                  #f
+                  (identifier=? use-env x use-env y))))
 
-      (f expr rename compare)))
+        (f expr rename compare))))
 
   (define (ir-macro-transformer f)
-    (lambda (expr use-env mac-env)
+    (lambda (mac-env)
+      (lambda (expr use-env)
 
-      (define icache* (make-dictionary))
+        (define icache* (make-dictionary))
 
-      (define inject
-        (memoize
-         (lambda (sym)
-           (define id (make-identifier sym use-env))
-           (dictionary-set! icache* id sym)
-           id)))
+        (define inject
+          (memoize
+           (lambda (sym)
+             (define id (make-identifier sym use-env))
+             (dictionary-set! icache* id sym)
+             id)))
 
-      (define rename
-        (memoize
-         (lambda (sym)
-           (make-identifier sym mac-env))))
+        (define rename
+          (memoize
+           (lambda (sym)
+             (make-identifier sym mac-env))))
 
-      (define (compare x y)
-        (if (not (symbol? x))
-            #f
-            (if (not (symbol? y))
-                #f
-                (identifier=? mac-env x mac-env y))))
+        (define (compare x y)
+          (if (not (symbol? x))
+              #f
+              (if (not (symbol? y))
+                  #f
+                  (identifier=? mac-env x mac-env y))))
 
-      (walk (lambda (sym)
-              (call-with-values (lambda () (dictionary-ref icache* sym))
-                (lambda (value exists)
-                  (if exists
-                      value
-                      (rename sym)))))
-            (f (walk inject expr) inject compare))))
+        (walk (lambda (sym)
+                (let ((value (dictionary-ref icache* sym)))
+                  (if (undefined? value)
+                      (rename sym)
+                      value)))
+              (f (walk inject expr) inject compare)))))
 
   ;; (define (strip-syntax form)
   ;;   (walk ungensym form))
@@ -122,17 +138,4 @@
            (list (r 'define-macro) (car formal)
                  (cons (r 'lambda)
                        (cons (cdr formal)
-                             body)))))))
-
-  (export identifier?
-          identifier=?
-          make-identifier
-          make-syntactic-closure
-          close-syntax
-          capture-syntactic-environment
-          sc-macro-transformer
-          rsc-macro-transformer
-          er-macro-transformer
-          ir-macro-transformer
-          ;; strip-syntax
-          define-macro))
+                             body))))))))

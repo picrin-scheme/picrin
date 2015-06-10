@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/port.h"
-#include "picrin/error.h"
 
 void
 pic_load_port(pic_state *pic, struct pic_port *port)

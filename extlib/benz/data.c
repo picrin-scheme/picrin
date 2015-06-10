@@ -1,5 +1,4 @@
 #include "picrin.h"
-#include "picrin/data.h"
 
 struct pic_data *
 pic_data_alloc(pic_state *pic, const pic_data_type *type, void *userdata)
