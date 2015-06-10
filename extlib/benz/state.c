@@ -429,6 +429,9 @@ pic_close(pic_state *pic)
   /* free all heap objects */
   pic_gc_run(pic);
 
+  /* flush all xfiles */
+  xfflush(NULL);
+
   /* free heaps */
   pic_heap_close(pic, pic->heap);
 
