@@ -1,6 +1,19 @@
 (define-library (picrin macro)
   (import (picrin base))
 
+  (export identifier?
+          identifier=?
+          make-identifier
+          make-syntactic-closure
+          close-syntax
+          capture-syntactic-environment
+          sc-macro-transformer
+          rsc-macro-transformer
+          er-macro-transformer
+          ir-macro-transformer
+          ;; strip-syntax
+          define-macro)
+
   ;; assumes no derived expressions are provided yet
 
   (define (walk proc expr)
@@ -20,14 +33,13 @@
     "memoize on symbols"
     (define cache (make-dictionary))
     (lambda (sym)
-      (call-with-values (lambda () (dictionary-ref cache sym))
-        (lambda (value exists)
-          (if exists
-              value
-              (begin
-                (define val (f sym))
-                (dictionary-set! cache sym val)
-                val))))))
+      (define value (dictionary-ref cache sym))
+      (if (not (undefined? value))
+          value
+          (begin
+            (define val (f sym))
+            (dictionary-set! cache sym val)
+            val))))
 
   (define (make-syntactic-closure env free form)
 
@@ -105,11 +117,10 @@
                   (identifier=? mac-env x mac-env y))))
 
         (walk (lambda (sym)
-                (call-with-values (lambda () (dictionary-ref icache* sym))
-                  (lambda (value exists)
-                    (if exists
-                        value
-                        (rename sym)))))
+                (let ((value (dictionary-ref icache* sym)))
+                  (if (undefined? value)
+                      (rename sym)
+                      value)))
               (f (walk inject expr) inject compare)))))
 
   ;; (define (strip-syntax form)
@@ -127,17 +138,4 @@
            (list (r 'define-macro) (car formal)
                  (cons (r 'lambda)
                        (cons (cdr formal)
-                             body)))))))
-
-  (export identifier?
-          identifier=?
-          make-identifier
-          make-syntactic-closure
-          close-syntax
-          capture-syntactic-environment
-          sc-macro-transformer
-          rsc-macro-transformer
-          er-macro-transformer
-          ir-macro-transformer
-          ;; strip-syntax
-          define-macro))
+                             body))))))))

@@ -9,17 +9,44 @@
 extern "C" {
 #endif
 
+#if __STDC_VERSION__ >= 199901L
+# include <stdbool.h>
+#else
+# define bool char
+# define true 1
+# define false 0
+#endif
+
+#if __STDC_VERSION__ >= 199901L
+# include <stddef.h>
+#elif ! defined(offsetof)
+# define offsetof(s,m) ((size_t)&(((s *)NULL)->m))
+#endif
+
 #if __STDC_VERSION__ >= 201112L
 # include <stdnoreturn.h>
-# define pic_noreturn noreturn
+# define PIC_NORETURN noreturn
 #elif __GNUC__ || __clang__
-# define pic_noreturn __attribute__((noreturn))
+# define PIC_NORETURN __attribute__((noreturn))
 #else
-# define pic_noreturn
+# define PIC_NORETURN
+#endif
+
+#if __STDC_VERSION__ >= 199901L
+# define PIC_INLINE static inline
+#elif __GNUC__ || __clang__
+# define PIC_INLINE static __inline__
+#else
+# define PIC_INLINE static
 #endif
 
 #define PIC_FALLTHROUGH ((void)0)
-#define PIC_UNUSED(v) ((void)(v))
+
+#if __GNUC__ || __clang__
+# define PIC_UNUSED(v) __attribute__((unused)) v
+#else
+# define PIC_UNUSED(v) v
+#endif
 
 #define PIC_GENSYM2_(x,y) PIC_G##x##_##y##_
 #define PIC_GENSYM1_(x,y) PIC_GENSYM2_(x,y)

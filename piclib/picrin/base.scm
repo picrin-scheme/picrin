@@ -37,6 +37,8 @@
           eqv?
           equal?)
 
+  (export undefined?)
+
   (export boolean?
           boolean=?
           not)
@@ -176,7 +178,6 @@
           dictionary
           dictionary-ref
           dictionary-set!
-          dictionary-delete!
           dictionary-size
           dictionary-map
           dictionary-for-each

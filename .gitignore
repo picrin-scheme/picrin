@@ -1,6 +1,9 @@
-build/*
+*.o
+bin/
+lib/
 src/load_piclib.c
 src/init_contrib.c
+docs/contrib.rst
 .dir-locals.el
 GPATH
 GRTAGS

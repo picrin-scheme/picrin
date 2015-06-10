@@ -3,21 +3,13 @@
  */
 
 #include "picrin.h"
-#include "picrin/port.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/vector.h"
-#include "picrin/blob.h"
-#include "picrin/dict.h"
-#include "picrin/record.h"
-#include "picrin/proc.h"
 
 static bool
-is_tagged(pic_state *pic, pic_sym tag, pic_value pair)
+is_tagged(pic_state *pic, pic_sym *tag, pic_value pair)
 {
   return pic_pair_p(pic_cdr(pic, pair))
     && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_symbol_value(tag));
+    && pic_eq_p(pic_car(pic, pair), pic_obj_value(tag));
 }
 
 static bool
@@ -160,11 +152,9 @@ static void
 write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 {
   size_t i;
-  const char *cstr = pic_str_cstr(str);
+  const char *cstr = pic_str_cstr(pic, str);
 
-  PIC_UNUSED(pic);
-
-  for (i = 0; i < pic_strlen(str); ++i) {
+  for (i = 0; i < pic_str_len(str); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       xfputc('\\', file);
     }
@@ -175,7 +165,7 @@ write_str(pic_state *pic, struct pic_string *str, xFILE *file)
 static void
 write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
 {
-  const pic_sym sWRITER = pic_intern_cstr(pic, "writer");
+  pic_sym *sWRITER = pic_intern_cstr(pic, "writer");
   pic_value type, writer, str;
 
 #if DEBUG
@@ -196,7 +186,7 @@ write_record(pic_state *pic, struct pic_record *rec, xFILE *file)
   if (! pic_str_p(str)) {
     pic_errorf(pic, "return value from writer procedure is not of string type");
   }
-  xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(str)));
+  xfprintf(file, "%s", pic_str_cstr(pic, pic_str_ptr(str)));
 
 #endif
 }
@@ -209,7 +199,9 @@ write_core(struct writer_control *p, pic_value obj)
   size_t i;
   xh_entry *e, *it;
   int c;
+#if PIC_ENABLE_FLOAT
   double f;
+#endif
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP
@@ -228,7 +220,7 @@ write_core(struct writer_control *p, pic_value obj)
 
   switch (pic_type(obj)) {
   case PIC_TT_UNDEF:
-    xfprintf(file, "#<undef>");
+    xfprintf(file, "#undefined");
     break;
   case PIC_TT_NIL:
     xfprintf(file, "()");
@@ -265,7 +257,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(file, ")");
     break;
   case PIC_TT_SYMBOL:
-    xfprintf(file, "%s", pic_symbol_name(pic, pic_sym(obj)));
+    xfprintf(file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
     break;
   case PIC_TT_CHAR:
     if (p->mode == DISPLAY_MODE) {
@@ -284,6 +276,7 @@ write_core(struct writer_control *p, pic_value obj)
     case '\t': xfprintf(file, "#\\tab"); break;
     }
     break;
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     f = pic_float(obj);
     if (isnan(f)) {
@@ -294,6 +287,7 @@ write_core(struct writer_control *p, pic_value obj)
       xfprintf(file, "%f", pic_float(obj));
     }
     break;
+#endif
   case PIC_TT_INT:
     xfprintf(file, "%d", pic_int(obj));
     break;
@@ -302,7 +296,7 @@ write_core(struct writer_control *p, pic_value obj)
     break;
   case PIC_TT_STRING:
     if (p->mode == DISPLAY_MODE) {
-      xfprintf(file, "%s", pic_str_cstr(pic_str_ptr(obj)));
+      xfprintf(file, "%s", pic_str_cstr(pic, pic_str_ptr(obj)));
       break;
     }
     xfprintf(file, "\"");
@@ -332,7 +326,7 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_DICT:
     xfprintf(file, "#.(dictionary");
     for (it = xh_begin(&pic_dict_ptr(obj)->hash); it != NULL; it = xh_next(it)) {
-      xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it, pic_sym)));
+      xfprintf(file, " '%s ", pic_symbol_name(pic, xh_key(it, pic_sym *)));
       write_core(p, xh_val(it, pic_value));
     }
     xfprintf(file, ")");
@@ -405,7 +399,7 @@ display(pic_state *pic, pic_value obj, xFILE *file)
 pic_value
 pic_write(pic_state *pic, pic_value obj)
 {
-  return pic_fwrite(pic, obj, xstdout);
+  return pic_fwrite(pic, obj, pic_stdout(pic)->file);
 }
 
 pic_value
@@ -419,7 +413,7 @@ pic_fwrite(pic_state *pic, pic_value obj, xFILE *file)
 pic_value
 pic_display(pic_state *pic, pic_value obj)
 {
-  return pic_fdisplay(pic, obj, xstdout);
+  return pic_fdisplay(pic, obj, pic_stdout(pic)->file);
 }
 
 pic_value
@@ -433,6 +427,7 @@ pic_fdisplay(pic_state *pic, pic_value obj, xFILE *file)
 void
 pic_printf(pic_state *pic, const char *fmt, ...)
 {
+  xFILE *file = pic_stdout(pic)->file;
   va_list ap;
   pic_str *str;
 
@@ -442,8 +437,8 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 
   va_end(ap);
 
-  xprintf("%s", pic_str_cstr(str));
-  xfflush(xstdout);
+  xfprintf(file, "%s", pic_str_cstr(pic, str));
+  xfflush(file);
 }
 
 static pic_value
@@ -454,7 +449,7 @@ pic_write_write(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -465,7 +460,7 @@ pic_write_write_simple(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write_simple(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -476,7 +471,7 @@ pic_write_write_shared(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write_shared(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -487,7 +482,7 @@ pic_write_display(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   display(pic, v, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void

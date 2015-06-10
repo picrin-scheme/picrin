@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/error.h"
 
 void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);
@@ -20,11 +18,11 @@ pic_features(pic_state *pic)
 static pic_value
 pic_libraries(pic_state *pic)
 {
-  pic_value libs = pic_nil_value(), lib;
+  pic_value libs = pic_nil_value(), lib, it;
 
   pic_get_args(pic, "");
 
-  pic_for_each (lib, pic->libs) {
+  pic_for_each (lib, pic->libs, it) {
     libs = pic_cons(pic, pic_car(pic, lib), libs);
   }
 
@@ -42,10 +40,10 @@ pic_init_picrin(pic_state *pic)
 
   pic_deflibrary (pic, "(scheme base)") {
     pic_defun(pic, "features", pic_features);
-
-    pic_init_contrib(pic);
-    pic_load_piclib(pic);
   }
+
+  pic_init_contrib(pic);
+  pic_load_piclib(pic);
 }
 
 int
@@ -55,7 +53,7 @@ main(int argc, char *argv[], char **envp)
   struct pic_lib *PICRIN_MAIN;
   int status = 0;
 
-  pic = pic_open(argc, argv, envp);
+  pic = pic_open(argc, argv, envp, pic_default_allocf);
 
   pic_init_picrin(pic);
 
@@ -65,7 +63,7 @@ main(int argc, char *argv[], char **envp)
     pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
   }
   pic_catch {
-    pic_print_backtrace(pic);
+    pic_print_backtrace(pic, xstderr);
     status = 1;
   }
 

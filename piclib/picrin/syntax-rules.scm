@@ -1,5 +1,6 @@
 (define-library (picrin syntax-rules)
   (import (picrin base)
+          (picrin control)
           (picrin macro))
 
   (define-syntax define-auxiliary-syntax
@@ -8,7 +9,7 @@
        (list (r 'define-syntax) (cadr expr)
              (list (r 'lambda) '_
                    (list (r 'lambda) '_
-                         (list (r 'error) "invalid use of auxiliary syntax")))))))
+                         (list (r 'error) (list (r 'string-append) "invalid use of auxiliary syntax: '" (symbol->string (cadr expr)) "'"))))))))
 
   (define-auxiliary-syntax _)
   (define-auxiliary-syntax ...)
@@ -74,7 +75,7 @@
        (define _unquote (r 'unquote))
        (define _unquote-splicing (r 'unquote-splicing))
        (define _syntax-error (r 'syntax-error))
-       (define _call/cc (r 'call/cc))
+       (define _escape (r 'escape))
        (define _er-macro-transformer (r 'er-macro-transformer))
 
        (define (var->sym v)
@@ -303,7 +304,7 @@
 		      (match (list-ref (car clauses) 1))
 		      (expand (list-ref (car clauses) 2)))
 		  `(,_let ,(map (lambda (v) (list (var->sym v) '())) vars)
-			  (,_let ((result (,_call/cc (,_lambda (exit) ,match))))
+			  (,_let ((result (,_escape (,_lambda (exit) ,match))))
 				 (,_if result
 				       ,expand
 				       ,(expand-clauses (cdr clauses) rename))))))))

@@ -3,9 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/vector.h"
-#include "picrin/string.h"
-#include "picrin/pair.h"
 
 struct pic_vector *
 pic_make_vec(pic_state *pic, size_t len)
@@ -15,9 +12,9 @@ pic_make_vec(pic_state *pic, size_t len)
 
   vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TT_VECTOR);
   vec->len = len;
-  vec->data = (pic_value *)pic_alloc(pic, sizeof(pic_value) * len);
+  vec->data = (pic_value *)pic_malloc(pic, sizeof(pic_value) * len);
   for (i = 0; i < len; ++i) {
-    vec->data[i] = pic_none_value();
+    vec->data[i] = pic_undef_value();
   }
   return vec;
 }
@@ -122,7 +119,7 @@ pic_vec_vector_set(pic_state *pic)
     pic_errorf(pic, "vector-set!: index out of range");
   }
   v->data[k] = o;
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -147,14 +144,14 @@ pic_vec_vector_copy_i(pic_state *pic)
     while (start < end) {
       to->data[--at] = from->data[--end];
     }
-    return pic_none_value();
+    return pic_undef_value();
   }
 
   while (start < end) {
     to->data[at++] = from->data[start++];
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -234,7 +231,7 @@ pic_vec_vector_fill_i(pic_state *pic)
     vec->data[start++] = obj;
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -295,14 +292,14 @@ pic_vec_vector_for_each(pic_state *pic)
     pic_apply(pic, proc, vals);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
 pic_vec_list_to_vector(pic_state *pic)
 {
   struct pic_vector *vec;
-  pic_value list, e, *data;
+  pic_value list, e, it, *data;
 
   pic_get_args(pic, "o", &list);
 
@@ -310,7 +307,7 @@ pic_vec_list_to_vector(pic_state *pic)
 
   data = vec->data;
 
-  pic_for_each (e, list) {
+  pic_for_each (e, list, it) {
     *data++ = e;
   }
   return pic_obj_value(vec);
@@ -363,7 +360,7 @@ pic_vec_vector_to_string(pic_state *pic)
     pic_errorf(pic, "vector->string: end index must not be less than start index");
   }
 
-  buf = pic_alloc(pic, end - start);
+  buf = pic_malloc(pic, end - start);
 
   for (i = start; i < end; ++i) {
     pic_assert_type(pic, vec->data[i], char);
@@ -392,7 +389,7 @@ pic_vec_string_to_vector(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_strlen(str);
+    end = pic_str_len(str);
   }
 
   if (end < start) {

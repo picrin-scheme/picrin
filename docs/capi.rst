@@ -51,7 +51,6 @@ When you use dynamic memory allocation inside C APIs, you must be caseful about 
   /** foo.c **/
   #include <stdlib.h>
   #include "picrin.h"
-  #include "picrin/data.h"
 
   /*
    * C-side API
