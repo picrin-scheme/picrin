@@ -239,9 +239,13 @@
   (export make-parameter
           parameterize)
 
-  (export identifier?
-          identifier=?
-          make-identifier)
+  (export make-identifier
+          identifier?
+          identifier-variable
+          identifier-environment
+
+          variable?
+          variable=?)
 
   (export call-with-current-continuation
           call/cc

@@ -491,6 +491,30 @@ pic_macro_make_identifier(pic_state *pic)
 }
 
 static pic_value
+pic_macro_identifier_variable(pic_state *pic)
+{
+  pic_value id;
+
+  pic_get_args(pic, "o", &id);
+
+  pic_assert_type(pic, id, id);
+
+  return pic_id_ptr(id)->var;
+}
+
+static pic_value
+pic_macro_identifier_environment(pic_state *pic)
+{
+  pic_value id;
+
+  pic_get_args(pic, "o", &id);
+
+  pic_assert_type(pic, id, id);
+
+  return pic_obj_value(pic_id_ptr(id)->env);
+}
+
+static pic_value
 pic_macro_variable_p(pic_state *pic)
 {
   pic_value obj;
@@ -526,8 +550,10 @@ pic_macro_variable_eq_p(pic_state *pic)
 void
 pic_init_macro(pic_state *pic)
 {
-  pic_defun(pic, "identifier?", pic_macro_identifier_p);
   pic_defun(pic, "make-identifier", pic_macro_make_identifier);
+  pic_defun(pic, "identifier?", pic_macro_identifier_p);
+  pic_defun(pic, "identifier-variable", pic_macro_identifier_variable);
+  pic_defun(pic, "identifier-environment", pic_macro_identifier_environment);
 
   pic_defun(pic, "variable?", pic_macro_variable_p);
   pic_defun(pic, "variable=?", pic_macro_variable_eq_p);
