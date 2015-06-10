@@ -93,19 +93,6 @@
   (define (array-for-each proc ary)
     (for-each proc (array->list ary)))
 
-  (define-record-writer (<array> array)
-    (let ((port (open-output-string)))
-      (display "#.(array" port)
-      (array-for-each
-       (lambda (obj)
-         (display " " port)
-         (write obj port))
-       array)
-      (display ")" port)
-      (let ((str (get-output-string port)))
-        (close-port port)
-        str)))
-
   (export make-array
           array
           array?
