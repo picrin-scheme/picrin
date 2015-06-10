@@ -94,7 +94,7 @@ my $src = <<'EOL';
     (lambda (form env)
       (let ((clauses (cdr form)))
         (if (null? clauses)
-            #f
+            #undefined
             (let ((clause (car clauses)))
               (if (and (variable? (car clause))
                        (variable=? (the 'else) (make-identifier (car clause) env)))
