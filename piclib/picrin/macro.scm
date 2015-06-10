@@ -138,11 +138,11 @@
                                  (register var id)
                                  id)
                                id)))))
-             (flip (lambda (var2)       ; unwrap if injected, wrap if not injected
-                       (let ((var1 (register2 var2)))
-                         (if (undefined? var1)
-                             (rename var2)
-                             var1))))
+             (flip (lambda (var2) ; unwrap if injected, wrap if not injected
+                     (let ((var1 (register2 var2)))
+                       (if (undefined? var1)
+                           (rename var2)
+                           var1))))
              (walk (lambda (f form)
                      (cond
                       ((variable? form)
@@ -158,12 +158,6 @@
                          (make-identifier x mac-env)
                          (make-identifier y mac-env)))))
           (walk flip (f (walk inject form) inject compare))))))
-
-  (define-syntax (define-transformer name transformer)
-    #`(define-macro #,name
-        (lambda (f mac-env)
-          #`(lambda (form use-env)
-              ((#,#,transformer #,(cadr f)) form use-env #,mac-env)))))
 
   (define-macro sc-macro-transformer
     (lambda (f mac-env)
