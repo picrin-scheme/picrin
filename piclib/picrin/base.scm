@@ -6,11 +6,16 @@
           quote
           set!
           begin
-          define-syntax)
+          define-macro)
 
   (export syntax-error
+          define-syntax
           let-syntax
-          letrec-syntax)
+          letrec-syntax
+          syntax-quote
+          syntax-quasiquote
+          syntax-unquote
+          syntax-unquote-splicing)
 
   (export let
           let*
