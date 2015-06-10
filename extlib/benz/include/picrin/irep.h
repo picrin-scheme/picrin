@@ -12,6 +12,7 @@ extern "C" {
 enum pic_opcode {
   OP_NOP,
   OP_POP,
+  OP_PUSHUNDEF,
   OP_PUSHNIL,
   OP_PUSHTRUE,
   OP_PUSHFALSE,
@@ -80,6 +81,8 @@ struct pic_irep {
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
 
+#if DEBUG
+
 PIC_INLINE void
 pic_dump_code(pic_code c)
 {
@@ -90,6 +93,9 @@ pic_dump_code(pic_code c)
     break;
   case OP_POP:
     puts("OP_POP");
+    break;
+  case OP_PUSHUNDEF:
+    puts("OP_PUSHUNDEF");
     break;
   case OP_PUSHNIL:
     puts("OP_PUSHNIL");
@@ -212,6 +218,8 @@ pic_dump_irep(struct pic_irep *irep)
     pic_dump_irep(irep->irep[i]);
   }
 }
+
+#endif
 
 #if defined(__cplusplus)
 }

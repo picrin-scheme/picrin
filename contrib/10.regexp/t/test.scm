@@ -8,5 +8,5 @@
 (test '("a" "b" "c" "d") (regexp-split (regexp ",") "a,b,c,d"))
 (test '("a" "b" "c" "d") (regexp-split (regexp "\\.+") "a.b....c.....d"))
 (test "a b c d" (regexp-replace (regexp ",") "a,b,c,d" " "))
-(test "newline tab space " (regexp-replace (regexp "\\s") "newline
+(test "newline tab space " (regexp-replace (regexp "[\n\t ]") "newline
 tab	space " " "))

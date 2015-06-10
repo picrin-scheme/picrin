@@ -3,57 +3,43 @@
  */
 
 #include "picrin.h"
-#include "picrin/lib.h"
-#include "picrin/pair.h"
-#include "picrin/macro.h"
-#include "picrin/error.h"
-#include "picrin/string.h"
-#include "picrin/proc.h"
-#include "picrin/dict.h"
-#include "picrin/symbol.h"
+
+static void
+setup_default_env(pic_state *pic, struct pic_env *env)
+{
+  void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
+
+  pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
+  pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->rIMPORT);
+  pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->rEXPORT);
+  pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->rCOND_EXPAND);
+}
 
 struct pic_lib *
-pic_open_library(pic_state *pic, pic_value name)
+pic_make_library(pic_state *pic, pic_value name)
 {
   struct pic_lib *lib;
-  struct pic_senv *senv;
+  struct pic_env *env;
   struct pic_dict *exports;
 
   if ((lib = pic_find_library(pic, name)) != NULL) {
-
-#if DEBUG
-    printf("* reopen library: ");
-    pic_debug(pic, name);
-    puts("");
-#endif
-
-    return lib;
+    pic_errorf(pic, "library name already in use: ~s", name);
   }
 
-  senv = pic_null_syntactic_environment(pic);
+  env = pic_make_env(pic, NULL);
   exports = pic_make_dict(pic);
+
+  setup_default_env(pic, env);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->name = name;
-  lib->env = senv;
+  lib->env = env;
   lib->exports = exports;
 
   /* register! */
   pic->libs = pic_acons(pic, name, pic_obj_value(lib), pic->libs);
 
   return lib;
-}
-
-void
-pic_in_library(pic_state *pic, pic_value spec)
-{
-  struct pic_lib *lib;
-
-  lib = pic_find_library(pic, spec);
-  if (! lib) {
-    pic_errorf(pic, "library not found: ~a", spec);
-  }
-  pic->lib = lib;
 }
 
 struct pic_lib *
@@ -74,7 +60,7 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   struct pic_lib *lib;
   struct pic_dict *table;
   pic_value val, tmp, prefix, it;
-  pic_sym *sym, *id, *tag;
+  pic_sym *sym, *id, *tag, *nick;
   xh_entry *iter;
 
   table = pic_make_dict(pic);
@@ -123,8 +109,15 @@ import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
   if (! lib) {
     pic_errorf(pic, "library not found: ~a", spec);
   }
-  pic_dict_for_each (sym, lib->exports, iter) {
-    pic_dict_set(pic, imports, sym, pic_dict_ref(pic, lib->exports, sym));
+  pic_dict_for_each (nick, lib->exports, iter) {
+    pic_sym *realname, *rename;
+
+    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, nick));
+
+    if ((rename = pic_find_rename(pic, lib->env, realname)) == NULL) {
+      pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
+    }
+    pic_dict_set(pic, imports, nick, pic_obj_value(rename));
   }
 }
 
@@ -149,7 +142,6 @@ export(pic_state *pic, pic_value spec)
 {
   pic_sym *sRENAME = pic_intern_cstr(pic, "rename");
   pic_value a, b;
-  pic_sym *rename;
 
   if (pic_sym_p(spec)) {        /* (export a) */
     a = b = spec;
@@ -166,15 +158,11 @@ export(pic_state *pic, pic_value spec)
       goto fail;
   }
 
-  if (! pic_find_rename(pic, pic->lib->env, pic_sym_ptr(a), &rename)) {
-    pic_errorf(pic, "export: symbol not defined %s", pic_symbol_name(pic, pic_sym_ptr(a)));
-  }
-
 #if DEBUG
-  printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym_ptr(b)), pic_symbol_name(pic, rename));
+  printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym_ptr(b)), pic_symbol_name(pic, pic_sym_ptr(a)));
 #endif
 
-  pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), pic_obj_value(rename));
+  pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), a);
 
   return;
 
@@ -261,7 +249,7 @@ pic_lib_condexpand(pic_state *pic)
     }
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -276,7 +264,7 @@ pic_lib_import(pic_state *pic)
     import(pic, argv[i]);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -291,47 +279,37 @@ pic_lib_export(pic_state *pic)
     export(pic, argv[i]);
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
 pic_lib_define_library(pic_state *pic)
 {
-  struct pic_lib *prev = pic->lib;
+  struct pic_lib *lib, *prev = pic->lib;
   size_t argc, i;
   pic_value spec, *argv;
 
   pic_get_args(pic, "o*", &spec, &argc, &argv);
 
-  pic_open_library(pic, spec);
+  if ((lib = pic_find_library(pic, spec)) == NULL) {
+    lib = pic_make_library(pic, spec);
+  }
 
   pic_try {
-    pic_in_library(pic, spec);
+    pic->lib = lib;
 
     for (i = 0; i < argc; ++i) {
       pic_void(pic_eval(pic, argv[i], pic->lib));
     }
 
-    pic_in_library(pic, prev->name);
+    pic->lib = prev;
   }
   pic_catch {
-    pic_in_library(pic, prev->name); /* restores pic->lib even if an error occurs */
+    pic->lib = prev;   /* restores pic->lib even if an error occured */
     pic_raise(pic, pic->err);
   }
 
-  return pic_none_value();
-}
-
-static pic_value
-pic_lib_in_library(pic_state *pic)
-{
-  pic_value spec;
-
-  pic_get_args(pic, "o", &spec);
-
-  pic_in_library(pic, spec);
-
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void
@@ -343,5 +321,4 @@ pic_init_lib(pic_state *pic)
   pic_defmacro(pic, pic->sIMPORT, pic->rIMPORT, pic_lib_import);
   pic_defmacro(pic, pic->sEXPORT, pic->rEXPORT, pic_lib_export);
   pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY, pic_lib_define_library);
-  pic_defmacro(pic, pic->sIN_LIBRARY, pic->rIN_LIBRARY, pic_lib_in_library);
 }

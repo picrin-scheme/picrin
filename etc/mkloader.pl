@@ -12,7 +12,6 @@ print <<EOL;
  */
 
 #include "picrin.h"
-#include "picrin/error.h"
 
 EOL
 

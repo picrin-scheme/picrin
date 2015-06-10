@@ -3,29 +3,12 @@
  */
 
 #include "picrin.h"
-#include "picrin/gc.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/vector.h"
-#include "picrin/irep.h"
-#include "picrin/proc.h"
-#include "picrin/port.h"
-#include "picrin/blob.h"
-#include "picrin/cont.h"
-#include "picrin/error.h"
-#include "picrin/macro.h"
-#include "picrin/lib.h"
-#include "picrin/data.h"
-#include "picrin/dict.h"
-#include "picrin/record.h"
-#include "picrin/read.h"
-#include "picrin/symbol.h"
 
 union header {
   struct {
     union header *ptr;
     size_t size;
-    unsigned int mark : 1;
+    char mark;
   } s;
   long alignment[2];
 };
@@ -93,7 +76,7 @@ add_heap_page(pic_state *pic)
 
   nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
 
-  up = (union header *)pic_calloc(pic, 1 + nu + 1, sizeof(union header));
+  up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
   up->s.size = nu + 1;
   up->s.mark = PIC_GC_UNMARK;
   gc_free(pic, up);
@@ -104,7 +87,7 @@ add_heap_page(pic_state *pic)
   up->s.size = 1;
   up->s.ptr = np;
 
-  page = (struct heap_page *)pic_alloc(pic, sizeof(struct heap_page));
+  page = pic_malloc(pic, sizeof(struct heap_page));
   page->basep = up;
   page->endp = up + nu + 1;
   page->next = pic->heap->pages;
@@ -112,8 +95,9 @@ add_heap_page(pic_state *pic)
   pic->heap->pages = page;
 }
 
-static void *
-alloc(void *ptr, size_t size)
+#if PIC_ENABLE_LIBC
+void *
+pic_default_allocf(void *ptr, size_t size)
 {
   if (size == 0) {
     if (ptr) {
@@ -127,13 +111,14 @@ alloc(void *ptr, size_t size)
     return malloc(size);
   }
 }
+#endif
 
 void *
-pic_alloc(pic_state *pic, size_t size)
+pic_malloc(pic_state *pic, size_t size)
 {
   void *ptr;
 
-  ptr = alloc(NULL, size);
+  ptr = pic->allocf(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -143,7 +128,7 @@ pic_alloc(pic_state *pic, size_t size)
 void *
 pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
-  ptr = alloc(ptr, size);
+  ptr = pic->allocf(ptr, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -156,7 +141,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
   void *ptr;
 
   size *= count;
-  ptr = alloc(NULL, size);
+  ptr = pic->allocf(NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -167,9 +152,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
 void
 pic_free(pic_state *pic, void *ptr)
 {
-  PIC_UNUSED(pic);
-
-  free(ptr);
+  pic->allocf(ptr, 0);
 }
 
 static void
@@ -334,6 +317,12 @@ gc_obj_is_marked(struct pic_object *obj)
   return gc_is_marked(p);
 }
 
+static bool
+gc_value_need_mark(pic_value value)
+{
+  return pic_obj_p(value) && (! gc_obj_is_marked(pic_obj_ptr(value)));
+}
+
 static void
 gc_unmark(union header *p)
 {
@@ -341,16 +330,16 @@ gc_unmark(union header *p)
 }
 
 static void
-gc_mark_winder(pic_state *pic, struct pic_winder *wind)
+gc_mark_checkpoint(pic_state *pic, pic_checkpoint *cp)
 {
-  if (wind->prev) {
-    gc_mark_object(pic, (struct pic_object *)wind->prev);
+  if (cp->prev) {
+    gc_mark_object(pic, (struct pic_object *)cp->prev);
   }
-  if (wind->in) {
-    gc_mark_object(pic, (struct pic_object *)wind->in);
+  if (cp->in) {
+    gc_mark_object(pic, (struct pic_object *)cp->in);
   }
-  if (wind->out) {
-    gc_mark_object(pic, (struct pic_object *)wind->out);
+  if (cp->out) {
+    gc_mark_object(pic, (struct pic_object *)cp->out);
   }
 }
 
@@ -371,27 +360,30 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, ((struct pic_pair *)obj)->cdr);
     break;
   }
-  case PIC_TT_ENV: {
-    struct pic_env *env = (struct pic_env *)obj;
+  case PIC_TT_CXT: {
+    struct pic_context *cxt = (struct pic_context *)obj;
     int i;
 
-    for (i = 0; i < env->regc; ++i) {
-      gc_mark(pic, env->regs[i]);
+    for (i = 0; i < cxt->regc; ++i) {
+      gc_mark(pic, cxt->regs[i]);
     }
-    if (env->up) {
-      gc_mark_object(pic, (struct pic_object *)env->up);
+    if (cxt->up) {
+      gc_mark_object(pic, (struct pic_object *)cxt->up);
     }
     break;
   }
   case PIC_TT_PROC: {
     struct pic_proc *proc = (struct pic_proc *)obj;
-    if (proc->env) {
-      gc_mark_object(pic, (struct pic_object *)proc->env);
-    }
     if (pic_proc_irep_p(proc)) {
-      gc_mark_object(pic, (struct pic_object *)proc->u.irep);
+      gc_mark_object(pic, (struct pic_object *)proc->u.i.irep);
+      if (proc->u.i.cxt) {
+        gc_mark_object(pic, (struct pic_object *)proc->u.i.cxt);
+      }
     } else {
-      gc_mark_object(pic, (struct pic_object *)proc->u.func.name);
+      gc_mark_object(pic, (struct pic_object *)proc->u.f.name);
+      if (proc->u.f.env) {
+        gc_mark_object(pic, (struct pic_object *)proc->u.f.env);
+      }
     }
     break;
   }
@@ -419,14 +411,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLOB: {
     break;
   }
-  case PIC_TT_SENV: {
-    struct pic_senv *senv = (struct pic_senv *)obj;
+  case PIC_TT_ENV: {
+    struct pic_env *env = (struct pic_env *)obj;
 
-    if (senv->up) {
-      gc_mark_object(pic, (struct pic_object *)senv->up);
+    if (env->up) {
+      gc_mark_object(pic, (struct pic_object *)env->up);
     }
-    gc_mark(pic, senv->defer);
-    gc_mark_object(pic, (struct pic_object *)senv->map);
+    gc_mark(pic, env->defer);
+    gc_mark_object(pic, (struct pic_object *)env->map);
     break;
   }
   case PIC_TT_LIB: {
@@ -487,13 +479,23 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark_object(pic, (struct pic_object *)sym->str);
     break;
   }
+  case PIC_TT_REG: {
+    struct pic_reg *reg = (struct pic_reg *)obj;
+
+    reg->prev = pic->regs;
+    pic->regs = reg;
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
+#endif
   case PIC_TT_INT:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
+  case PIC_TT_INVALID:
     pic_panic(pic, "logic flaw");
   }
 }
@@ -518,7 +520,7 @@ gc_mark_global_symbols(pic_state *pic)
   M(sDEFINE); M(sLAMBDA); M(sIF); M(sBEGIN); M(sQUOTE); M(sSETBANG);
   M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
   M(sDEFINE_SYNTAX); M(sIMPORT); M(sEXPORT);
-  M(sDEFINE_LIBRARY); M(sIN_LIBRARY);
+  M(sDEFINE_LIBRARY);
   M(sCOND_EXPAND); M(sAND); M(sOR); M(sELSE); M(sLIBRARY);
   M(sONLY); M(sRENAME); M(sPREFIX); M(sEXCEPT);
   M(sCONS); M(sCAR); M(sCDR); M(sNILP);
@@ -531,8 +533,13 @@ gc_mark_global_symbols(pic_state *pic)
 
   M(rDEFINE); M(rLAMBDA); M(rIF); M(rBEGIN); M(rQUOTE); M(rSETBANG);
   M(rDEFINE_SYNTAX); M(rIMPORT); M(rEXPORT);
-  M(rDEFINE_LIBRARY); M(rIN_LIBRARY);
+  M(rDEFINE_LIBRARY);
   M(rCOND_EXPAND);
+  M(rCONS); M(rCAR); M(rCDR); M(rNILP);
+  M(rSYMBOLP); M(rPAIRP);
+  M(rADD); M(rSUB); M(rMUL); M(rDIV);
+  M(rEQ); M(rLT); M(rLE); M(rGT); M(rGE); M(rNOT);
+  M(rVALUES); M(rCALL_WITH_VALUES);
 }
 
 static void
@@ -542,12 +549,12 @@ gc_mark_phase(pic_state *pic)
   pic_callinfo *ci;
   struct pic_proc **xhandler;
   size_t j;
-  xh_entry *it;
-  struct pic_object *obj;
 
-  /* winder */
-  if (pic->wind) {
-    gc_mark_winder(pic, pic->wind);
+  assert(pic->regs == NULL);
+
+  /* checkpoint */
+  if (pic->cp) {
+    gc_mark_checkpoint(pic, pic->cp);
   }
 
   /* stack */
@@ -557,8 +564,8 @@ gc_mark_phase(pic_state *pic)
 
   /* callinfo */
   for (ci = pic->ci; ci != pic->cibase; --ci) {
-    if (ci->env) {
-      gc_mark_object(pic, (struct pic_object *)ci->env);
+    if (ci->cxt) {
+      gc_mark_object(pic, (struct pic_object *)ci->cxt);
     }
   }
 
@@ -585,6 +592,11 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct pic_object *)pic->macros);
   }
 
+  /* attribute table */
+  if (pic->attrs) {
+    gc_mark_object(pic, (struct pic_object *)pic->attrs);
+  }
+
   /* error object */
   gc_mark(pic, pic->err);
 
@@ -605,18 +617,29 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct pic_object *)pic->xSTDERR);
   }
 
-  /* attributes */
-  do {
-    j = 0;
+  /* parameter table */
+  gc_mark(pic, pic->ptable);
 
-    for (it = xh_begin(&pic->attrs); it != NULL; it = xh_next(it)) {
-      if (gc_obj_is_marked(xh_key(it, struct pic_object *))) {
-        obj = (struct pic_object *)xh_val(it, struct pic_dict *);
-        if (! gc_obj_is_marked(obj)) {
-          gc_mark_object(pic, obj);
+  /* registries */
+  do {
+    struct pic_object *key;
+    pic_value val;
+    xh_entry *it;
+    struct pic_reg *reg;
+
+    j = 0;
+    reg = pic->regs;
+
+    while (reg != NULL) {
+      for (it = xh_begin(&reg->hash); it != NULL; it = xh_next(it)) {
+        key = xh_key(it, struct pic_object *);
+        val = xh_val(it, pic_value);
+        if (gc_obj_is_marked(key) && gc_value_need_mark(val)) {
+          gc_mark(pic, val);
           ++j;
         }
       }
+      reg = reg->prev;
     }
   } while (j > 0);
 }
@@ -634,7 +657,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_PAIR: {
     break;
   }
-  case PIC_TT_ENV: {
+  case PIC_TT_CXT: {
     break;
   }
   case PIC_TT_PROC: {
@@ -649,7 +672,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_STRING: {
-    XROPE_DECREF(((struct pic_string *)obj)->rope);
+    pic_rope_decref(pic, ((struct pic_string *)obj)->rope);
     break;
   }
   case PIC_TT_PORT: {
@@ -658,7 +681,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_ERROR: {
     break;
   }
-  case PIC_TT_SENV: {
+  case PIC_TT_ENV: {
     break;
   }
   case PIC_TT_LIB: {
@@ -689,13 +712,21 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_SYMBOL: {
     break;
   }
+  case PIC_TT_REG: {
+    struct pic_reg *reg = (struct pic_reg *)obj;
+    xh_destroy(&reg->hash);
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
+#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
+#endif
   case PIC_TT_INT:
   case PIC_TT_CHAR:
   case PIC_TT_EOF:
   case PIC_TT_UNDEF:
+  case PIC_TT_INVALID:
     pic_panic(pic, "logic flaw");
   }
 }
@@ -729,9 +760,9 @@ static void
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
 #if GC_DEBUG
-  static union header *NIL = (union header *)0xdeadbeef;
+  static union header * const NIL = (union header *)0xdeadbeef;
 #else
-  static union header *NIL = NULL;
+  static union header * const NIL = NULL;
 #endif
   union header *bp, *p, *s = NIL, *t = NIL;
 
@@ -782,14 +813,16 @@ gc_sweep_phase(pic_state *pic)
   struct heap_page *page = pic->heap->pages;
   xh_entry *it, *next;
 
-  do {
-    for (it = xh_begin(&pic->attrs); it != NULL; it = next) {
+  /* registries */
+  while (pic->regs != NULL) {
+    for (it = xh_begin(&pic->regs->hash); it != NULL; it = next) {
       next = xh_next(it);
       if (! gc_obj_is_marked(xh_key(it, struct pic_object *))) {
-        xh_del_ptr(&pic->attrs, xh_key(it, struct pic_object *));
+        xh_del_ptr(&pic->regs->hash, xh_key(it, struct pic_object *));
       }
     }
-  } while (it != NULL);
+    pic->regs = pic->regs->prev;
+  }
 
   gc_sweep_symbols(pic);
 

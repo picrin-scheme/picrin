@@ -1,13 +1,11 @@
 #include "picrin.h"
-#include "picrin/data.h"
-#include "picrin/proc.h"
-#include "picrin/pair.h"
-#include "picrin/cont.h"
 
-struct pic_cont {
+struct pic_fullcont {
   jmp_buf jmp;
 
-  struct pic_winder *wind;
+  pic_jmpbuf *prev_jmp;
+
+  pic_checkpoint *cp;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;
@@ -23,6 +21,8 @@ struct pic_cont {
 
   pic_code *ip;
 
+  pic_value ptable;
+
   struct pic_object **arena;
   size_t arena_size;
   int arena_idx;
@@ -33,7 +33,7 @@ struct pic_cont {
 static void
 cont_dtor(pic_state *pic, void *data)
 {
-  struct pic_cont *cont = data;
+  struct pic_fullcont *cont = data;
 
   pic_free(pic, cont->stk_ptr);
   pic_free(pic, cont->st_ptr);
@@ -46,20 +46,20 @@ cont_dtor(pic_state *pic, void *data)
 static void
 cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 {
-  struct pic_cont *cont = data;
-  struct pic_winder *wind;
+  struct pic_fullcont *cont = data;
+  pic_checkpoint *cp;
   pic_value *stack;
   pic_callinfo *ci;
   struct pic_proc **xp;
   size_t i;
 
-  /* winder */
-  for (wind = cont->wind; wind != NULL; wind = wind->prev) {
-    if (wind->in) {
-      mark(pic, pic_obj_value(wind->in));
+  /* checkpoint */
+  for (cp = cont->cp; cp != NULL; cp = cp->prev) {
+    if (cp->in) {
+      mark(pic, pic_obj_value(cp->in));
     }
-    if (wind->out) {
-      mark(pic, pic_obj_value(wind->out));
+    if (cp->out) {
+      mark(pic, pic_obj_value(cp->out));
     }
   }
 
@@ -70,8 +70,8 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 
   /* callinfo */
   for (ci = cont->ci_ptr + cont->ci_offset; ci != cont->ci_ptr; --ci) {
-    if (ci->env) {
-      mark(pic, pic_obj_value(ci->env));
+    if (ci->cxt) {
+      mark(pic, pic_obj_value(ci->cxt));
     }
   }
 
@@ -85,14 +85,17 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
     mark(pic, pic_obj_value(cont->arena[i]));
   }
 
+  /* parameter table */
+  mark(pic, cont->ptable);
+
   /* result values */
   mark(pic, cont->results);
 }
 
 static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
 
-static void save_cont(pic_state *, struct pic_cont **);
-static void restore_cont(pic_state *, struct pic_cont *);
+static void save_cont(pic_state *, struct pic_fullcont **);
+static void restore_cont(pic_state *, struct pic_fullcont *);
 
 static ptrdiff_t
 native_stack_length(pic_state *pic, char **pos)
@@ -109,51 +112,55 @@ native_stack_length(pic_state *pic, char **pos)
 }
 
 static void
-save_cont(pic_state *pic, struct pic_cont **c)
+save_cont(pic_state *pic, struct pic_fullcont **c)
 {
   void pic_vm_tear_off(pic_state *);
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
   char *pos;
 
   pic_vm_tear_off(pic);         /* tear off */
 
-  cont = *c = pic_alloc(pic, sizeof(struct pic_cont));
+  cont = *c = pic_malloc(pic, sizeof(struct pic_fullcont));
 
-  cont->wind = pic->wind;
+  cont->prev_jmp = pic->jmp;
+
+  cont->cp = pic->cp;
 
   cont->stk_len = native_stack_length(pic, &pos);
   cont->stk_pos = pos;
   assert(cont->stk_len > 0);
-  cont->stk_ptr = pic_alloc(pic, cont->stk_len);
+  cont->stk_ptr = pic_malloc(pic, cont->stk_len);
   memcpy(cont->stk_ptr, cont->stk_pos, cont->stk_len);
 
   cont->sp_offset = pic->sp - pic->stbase;
   cont->st_len = pic->stend - pic->stbase;
-  cont->st_ptr = pic_alloc(pic, sizeof(pic_value) * cont->st_len);
+  cont->st_ptr = pic_malloc(pic, sizeof(pic_value) * cont->st_len);
   memcpy(cont->st_ptr, pic->stbase, sizeof(pic_value) * cont->st_len);
 
   cont->ci_offset = pic->ci - pic->cibase;
   cont->ci_len = pic->ciend - pic->cibase;
-  cont->ci_ptr = pic_alloc(pic, sizeof(pic_callinfo) * cont->ci_len);
+  cont->ci_ptr = pic_malloc(pic, sizeof(pic_callinfo) * cont->ci_len);
   memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
 
   cont->xp_offset = pic->xp - pic->xpbase;
   cont->xp_len = pic->xpend - pic->xpbase;
-  cont->xp_ptr = pic_alloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
+  cont->xp_ptr = pic_malloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
   memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
 
   cont->ip = pic->ip;
 
+  cont->ptable = pic->ptable;
+
   cont->arena_idx = pic->arena_idx;
   cont->arena_size = pic->arena_size;
-  cont->arena = pic_alloc(pic, sizeof(struct pic_object *) * pic->arena_size);
+  cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
   cont->results = pic_undef_value();
 }
 
 static void
-native_stack_extend(pic_state *pic, struct pic_cont *cont)
+native_stack_extend(pic_state *pic, struct pic_fullcont *cont)
 {
   volatile pic_value v[1024];
 
@@ -162,10 +169,10 @@ native_stack_extend(pic_state *pic, struct pic_cont *cont)
 }
 
 PIC_NORETURN static void
-restore_cont(pic_state *pic, struct pic_cont *cont)
+restore_cont(pic_state *pic, struct pic_fullcont *cont)
 {
   char v;
-  struct pic_cont *tmp = cont;
+  struct pic_fullcont *tmp = cont;
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
@@ -174,7 +181,9 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
-  pic->wind = cont->wind;
+  pic->jmp = cont->prev_jmp;
+
+  pic->cp = cont->cp;
 
   pic->stbase = pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
@@ -193,6 +202,8 @@ restore_cont(pic_state *pic, struct pic_cont *cont)
 
   pic->ip = cont->ip;
 
+  pic->ptable = cont->ptable;
+
   pic->arena = pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * cont->arena_size);
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
   pic->arena_size = cont->arena_size;
@@ -209,24 +220,24 @@ cont_call(pic_state *pic)
   struct pic_proc *proc;
   size_t argc;
   pic_value *argv;
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
 
   proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
 
-  cont = pic_data_ptr(pic_attr_ref(pic, pic_obj_value(proc), "@@cont"))->data;
+  cont = pic_data_ptr(pic_proc_env_ref(pic, proc, "cont"))->data;
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
-  pic_wind(pic, pic->wind, cont->wind);
+  pic_wind(pic, pic->cp, cont->cp);
 
   restore_cont(pic, cont);
 }
 
 pic_value
-pic_callcc(pic_state *pic, struct pic_proc *proc)
+pic_callcc_full(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
@@ -241,16 +252,16 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
     dat = pic_data_alloc(pic, &cont_type, cont);
 
     /* save the continuation object in proc */
-    pic_attr_set(pic, pic_obj_value(c), "@@cont", pic_obj_value(dat));
+    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
 
     return pic_apply1(pic, proc, pic_obj_value(c));
   }
 }
 
 static pic_value
-pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
+pic_callcc_full_trampoline(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_cont *cont;
+  struct pic_fullcont *cont;
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
@@ -265,7 +276,7 @@ pic_callcc_trampoline(pic_state *pic, struct pic_proc *proc)
     dat = pic_data_alloc(pic, &cont_type, cont);
 
     /* save the continuation object in proc */
-    pic_attr_set(pic, pic_obj_value(c), "@@cont", pic_obj_value(dat));
+    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
 
     return pic_apply_trampoline(pic, proc, pic_list1(pic, pic_obj_value(c)));
   }
@@ -278,7 +289,7 @@ pic_callcc_callcc(pic_state *pic)
 
   pic_get_args(pic, "l", &cb);
 
-  return pic_callcc_trampoline(pic, cb);
+  return pic_callcc_full_trampoline(pic, cb);
 }
 
 #define pic_redefun(pic, lib, name, func)       \

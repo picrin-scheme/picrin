@@ -54,23 +54,23 @@
 #define xv_push(type, v, x)                                     \
   do {                                                          \
     if ((v).n == (v).m) {                                       \
-      (v).m = (v).m? (v).m<<1 : 2;                              \
+      (v).m = (v).m? (v).m<<1 : (size_t)2;                      \
       (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m);	\
     }                                                           \
     (v).a[(v).n++] = (x);                                       \
   } while (0)
 
-#define xv_pushp(type, v)                                       \
-  (((v).n == (v).m)?                                            \
-   ((v).m = ((v).m? (v).m<<1 : 2),                              \
+#define xv_pushp(type, v)                                          \
+  (((v).n == (v).m)?                                               \
+   ((v).m = ((v).m? (v).m<<1 : (size_t)2),                         \
     (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m), 0)     \
    : 0), ((v).a + ((v).n++))
 
 #define xv_a(type, v, i)                                        \
   (((v).m <= (size_t)(i)?                                       \
     ((v).m = (v).n = (i) + 1, xv_roundup32((v).m),              \
-     (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m), 0)    \
+     (v).a = (type*)xv_realloc((v).a, sizeof(type) * (v).m), 0) \
     : (v).n <= (size_t)(i)? (v).n = (i) + 1                     \
-    : 0), (v).a[(i)])
+    : (size_t)0), (v).a[(i)])
 
 #endif

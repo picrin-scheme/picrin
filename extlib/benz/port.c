@@ -3,10 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/proc.h"
-#include "picrin/port.h"
-#include "picrin/string.h"
-#include "picrin/blob.h"
 
 pic_value
 pic_eof_object()
@@ -39,6 +35,16 @@ pic_stdout(pic_state *pic)
 }
 
 struct pic_port *
+pic_stderr(pic_state *pic)
+{
+  pic_value obj;
+
+  obj = pic_funcall(pic, pic->PICRIN_BASE, "current-error-port", pic_nil_value());
+
+  return pic_port_ptr(obj);
+}
+
+struct pic_port *
 pic_make_standard_port(pic_state *pic, xFILE *file, short dir)
 {
   struct pic_port *port;
@@ -50,19 +56,107 @@ pic_make_standard_port(pic_state *pic, xFILE *file, short dir)
   return port;
 }
 
+struct strfile {
+  pic_state *pic;
+  char *buf;
+  long pos, end, capa;
+};
+
+static int
+string_read(void *cookie, char *ptr, int size)
+{
+  struct strfile *m = cookie;
+
+  if (size > (int)(m->end - m->pos))
+    size = (int)(m->end - m->pos);
+  memcpy(ptr, m->buf + m->pos, size);
+  m->pos += size;
+  return size;
+}
+
+static int
+string_write(void *cookie, const char *ptr, int size)
+{
+  struct strfile *m = cookie;
+
+  if (m->pos + size >= m->capa) {
+    m->capa = (m->pos + size) * 2;
+    m->buf = pic_realloc(m->pic, m->buf, (size_t)m->capa);
+  }
+  memcpy(m->buf + m->pos, ptr, size);
+  m->pos += size;
+  if (m->end < m->pos)
+    m->end = m->pos;
+  return size;
+}
+
+static long
+string_seek(void *cookie, long pos, int whence)
+{
+  struct strfile *m = cookie;
+
+  switch (whence) {
+  case XSEEK_SET:
+    m->pos = pos;
+    break;
+  case XSEEK_CUR:
+    m->pos += pos;
+    break;
+  case XSEEK_END:
+    m->pos = m->end + pos;
+    break;
+  }
+
+  return m->pos;
+}
+
+static int
+string_close(void *cookie)
+{
+  struct strfile *m = cookie;
+
+  pic_free(m->pic, m->buf);
+  pic_free(m->pic, m);
+  return 0;
+}
+
+static xFILE *
+string_open(pic_state *pic, const char *data, size_t size)
+{
+  struct strfile *m;
+  xFILE *file;
+
+  m = pic_malloc(pic, sizeof(struct strfile));
+  m->pic = pic;
+  m->buf = pic_malloc(pic, size);
+  m->pos = 0;
+  m->end = size;
+  m->capa = size;
+
+
+  if (data != NULL) {
+    memcpy(m->buf, data, size);
+    file = xfunopen(m, string_read, NULL, string_seek, string_close);
+  } else {
+    file = xfunopen(m, NULL, string_write, string_seek, string_close);
+  }
+
+  if (file == NULL) {
+    string_close(m);
+    pic_error(pic, "could not open new output string/bytevector port", pic_nil_value());
+  }
+  return file;
+}
+
 struct pic_port *
 pic_open_input_string(pic_state *pic, const char *str)
 {
   struct pic_port *port;
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = string_open(pic, str, strlen(str));
   port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
-
-  xfputs(str, port->file);
-  xfflush(port->file);
-  xrewind(port->file);
 
   return port;
 }
@@ -73,7 +167,7 @@ pic_open_output_string(pic_state *pic)
   struct pic_port *port;
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_TEXT;
   port->status = PIC_PORT_OPEN;
 
@@ -83,20 +177,17 @@ pic_open_output_string(pic_state *pic)
 struct pic_string *
 pic_get_output_string(pic_state *pic, struct pic_port *port)
 {
-  size_t size;
-  char *buf;
+  struct strfile *s;
 
-  /* get endpos */
+  if (port->file->vtable.write != string_write) {
+    pic_errorf(pic, "get-output-string: port is not made by open-output-string");
+  }
+
   xfflush(port->file);
-  size = (size_t)xftell(port->file);
-  xrewind(port->file);
 
-  /* copy to buf */
-  buf = (char *)pic_alloc(pic, size + 1);
-  buf[size] = 0;
-  xfread(buf, size, 1, port->file);
+  s = port->file->vtable.cookie;
 
-  return pic_make_str(pic, buf, size);
+  return pic_make_str(pic, s->buf, s->end);
 }
 
 void
@@ -236,7 +327,7 @@ pic_port_close_port(pic_state *pic)
 
   pic_close_port(pic, port);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 #define assert_port_profile(port, flgs, stat, caller) do {              \
@@ -312,13 +403,9 @@ pic_port_open_input_blob(pic_state *pic)
   pic_get_args(pic, "b", &blob);
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = string_open(pic, (const char *)blob->data, blob->len);
   port->flags = PIC_PORT_IN | PIC_PORT_BINARY;
   port->status = PIC_PORT_OPEN;
-
-  xfwrite(blob->data, 1, blob->len, port->file);
-  xfflush(port->file);
-  xrewind(port->file);
 
   return pic_obj_value(port);
 }
@@ -331,7 +418,7 @@ pic_port_open_output_bytevector(pic_state *pic)
   pic_get_args(pic, "");
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
-  port->file = xmopen();
+  port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_BINARY;
   port->status = PIC_PORT_OPEN;
 
@@ -343,20 +430,22 @@ pic_port_get_output_bytevector(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
   pic_blob *blob;
-  size_t size;
+  struct strfile *s;
 
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, PIC_PORT_OPEN, "get-output-bytevector");
 
-  /* get endpos */
-  xfflush(port->file);
-  size = (size_t)xftell(port->file);
-  xrewind(port->file);
+  if (port->file->vtable.write != string_write) {
+    pic_errorf(pic, "get-output-bytevector: port is not made by open-output-bytevector");
+  }
 
-  /* copy to buf */
-  blob = pic_make_blob(pic, size);
-  xfread(blob->data, 1, size, port->file);
+  xfflush(port->file);
+
+  s = port->file->vtable.cookie;
+
+  blob = pic_make_blob(pic, s->end);
+  memcpy(blob->data, s->buf, s->end);
 
   return pic_obj_value(blob);
 }
@@ -415,7 +504,7 @@ pic_port_read_line(pic_state *pic)
   }
 
   str = pic_get_output_string(pic, buf);
-  if (pic_strlen(str) == 0 && c == EOF) {
+  if (pic_str_len(str) == 0 && c == EOF) {
     return pic_eof_object();
   }
   else {
@@ -456,7 +545,7 @@ pic_port_read_string(pic_state *pic){
   }
 
   str = pic_get_output_string(pic, buf);
-  if (pic_strlen(str) == 0 && c == EOF) {
+  if (pic_str_len(str) == 0 && c == EOF) {
     return pic_eof_object();
   }
   else {
@@ -586,7 +675,7 @@ pic_port_newline(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "newline");
 
   xfputs("\n", port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -600,7 +689,7 @@ pic_port_write_char(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, PIC_PORT_OPEN, "write-char");
 
   xfputc(c, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -625,7 +714,7 @@ pic_port_write_string(pic_state *pic)
   for (i = start; i < end && str[i] != '\0'; ++i) {
     xfputc(str[i], port->file);
   }
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -639,7 +728,7 @@ pic_port_write_byte(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, PIC_PORT_OPEN, "write-u8");
 
   xfputc(i, port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -665,7 +754,7 @@ pic_port_write_blob(pic_state *pic)
   for (i = start; i < end; ++i) {
     xfputc(blob->data[i], port->file);
   }
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -678,7 +767,7 @@ pic_port_flush(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT, PIC_PORT_OPEN, "flush-output-port");
 
   xfflush(port->file);
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void

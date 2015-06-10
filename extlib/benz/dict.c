@@ -3,11 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/dict.h"
-#include "picrin/cont.h"
-#include "picrin/pair.h"
-#include "picrin/error.h"
-#include "picrin/symbol.h"
 
 struct pic_dict *
 pic_make_dict(pic_state *pic)
@@ -33,26 +28,20 @@ pic_dict_ref(pic_state *pic, struct pic_dict *dict, pic_sym *key)
 }
 
 void
-pic_dict_set(pic_state *pic, struct pic_dict *dict, pic_sym *key, pic_value val)
+pic_dict_set(pic_state PIC_UNUSED(*pic), struct pic_dict *dict, pic_sym *key, pic_value val)
 {
-  PIC_UNUSED(pic);
-
   xh_put_ptr(&dict->hash, key, &val);
 }
 
 size_t
-pic_dict_size(pic_state *pic, struct pic_dict *dict)
+pic_dict_size(pic_state PIC_UNUSED(*pic), struct pic_dict *dict)
 {
-  PIC_UNUSED(pic);
-
   return dict->hash.count;
 }
 
 bool
-pic_dict_has(pic_state *pic, struct pic_dict *dict, pic_sym *key)
+pic_dict_has(pic_state PIC_UNUSED(*pic), struct pic_dict *dict, pic_sym *key)
 {
-  PIC_UNUSED(pic);
-
   return xh_get_ptr(&dict->hash, key) != NULL;
 }
 
@@ -115,11 +104,10 @@ pic_dict_dictionary_ref(pic_state *pic)
 
   pic_get_args(pic, "dm", &dict, &key);
 
-  if (pic_dict_has(pic, dict, key)) {
-    return pic_values2(pic, pic_dict_ref(pic, dict, key), pic_true_value());
-  } else {
-    return pic_values2(pic, pic_none_value(), pic_false_value());
+  if (! pic_dict_has(pic, dict, key)) {
+    return pic_undef_value();
   }
+  return pic_dict_ref(pic, dict, key);
 }
 
 static pic_value
@@ -131,22 +119,15 @@ pic_dict_dictionary_set(pic_state *pic)
 
   pic_get_args(pic, "dmo", &dict, &key, &val);
 
-  pic_dict_set(pic, dict, key, val);
-
-  return pic_none_value();
-}
-
-static pic_value
-pic_dict_dictionary_del(pic_state *pic)
-{
-  struct pic_dict *dict;
-  pic_sym *key;
-
-  pic_get_args(pic, "dm", &dict, &key);
-
-  pic_dict_del(pic, dict, key);
-
-  return pic_none_value();
+  if (pic_undef_p(val)) {
+    if (pic_dict_has(pic, dict, key)) {
+      pic_dict_del(pic, dict, key);
+    }
+  }
+  else {
+    pic_dict_set(pic, dict, key, val);
+  }
+  return pic_undef_value();
 }
 
 static pic_value
@@ -170,7 +151,7 @@ pic_dict_dictionary_map(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
-  it = pic_alloc(pic, argc * sizeof(xh_entry));
+  it = pic_malloc(pic, argc * sizeof(xh_entry));
   for (i = 0; i < argc; ++i) {
     if (! pic_dict_p(args[i])) {
       pic_free(pic, it);
@@ -217,7 +198,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
-  it = pic_alloc(pic, argc * sizeof(xh_entry));
+  it = pic_malloc(pic, argc * sizeof(xh_entry));
   for (i = 0; i < argc; ++i) {
     if (! pic_dict_p(args[i])) {
       pic_free(pic, it);
@@ -249,7 +230,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
 
   pic_free(pic, it);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -330,7 +311,6 @@ pic_init_dict(pic_state *pic)
   pic_defun(pic, "dictionary", pic_dict_dictionary);
   pic_defun(pic, "dictionary-ref", pic_dict_dictionary_ref);
   pic_defun(pic, "dictionary-set!", pic_dict_dictionary_set);
-  pic_defun(pic, "dictionary-delete!", pic_dict_dictionary_del);
   pic_defun(pic, "dictionary-size", pic_dict_dictionary_size);
   pic_defun(pic, "dictionary-map", pic_dict_dictionary_map);
   pic_defun(pic, "dictionary-for-each", pic_dict_dictionary_for_each);

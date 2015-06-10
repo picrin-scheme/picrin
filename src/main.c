@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/pair.h"
-#include "picrin/error.h"
 
 void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);
@@ -55,7 +53,7 @@ main(int argc, char *argv[], char **envp)
   struct pic_lib *PICRIN_MAIN;
   int status = 0;
 
-  pic = pic_open(argc, argv, envp);
+  pic = pic_open(argc, argv, envp, pic_default_allocf);
 
   pic_init_picrin(pic);
 
@@ -65,7 +63,7 @@ main(int argc, char *argv[], char **envp)
     pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
   }
   pic_catch {
-    pic_print_backtrace(pic);
+    pic_print_backtrace(pic, xstderr);
     status = 1;
   }
 

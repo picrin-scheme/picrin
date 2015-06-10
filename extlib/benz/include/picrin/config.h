@@ -8,8 +8,22 @@
 /** switch internal value representation */
 /* #define PIC_NAN_BOXING 1 */
 
-/** treat false value as none */
-/* #define PIC_NONE_IS_FALSE 1 */
+/** enable word boxing  */
+/* #define PIC_WORD_BOXING 0 */
+
+/** enable floating point number support */
+/* #define PIC_ENABLE_FLOAT 1 */
+
+/** no dependency on libc */
+/* #define PIC_ENABLE_LIBC 1 */
+
+/** custom setjmp/longjmp */
+/* #define PIC_JMPBUF jmp_buf */
+/* #define PIC_SETJMP(pic, buf) setjmp(buf) */
+/* #define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val)) */
+
+/** custom abort */
+/* #define PIC_ABORT(pic) abort() */
 
 /** initial memory size (to be dynamically extended if necessary) */
 /* #define PIC_ARENA_SIZE 1000 */
@@ -45,14 +59,57 @@
 # endif
 #endif
 
-#ifndef PIC_NAN_BOXING
-# if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
-#  define PIC_NAN_BOXING 1
+#if PIC_NAN_BOXING && PIC_WORD_BOXING
+# error cannot enable both PIC_NAN_BOXING and PIC_WORD_BOXING simultaneously
+#endif
+
+#if PIC_WORD_BOXING && PIC_ENABLE_FLOAT
+# error cannot enable both PIC_WORD_BOXING and PIC_ENABLE_FLOAT simultaneously
+#endif
+
+#ifndef PIC_WORD_BOXING
+# define PIC_WORD_BOXING 0
+#endif
+
+#if ! PIC_WORD_BOXING
+# ifndef PIC_NAN_BOXING
+#  if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
+#   define PIC_NAN_BOXING 1
+#  endif
 # endif
 #endif
 
-#ifndef PIC_NONE_IS_FALSE
-# define PIC_NONE_IS_FALSE 1
+#ifndef PIC_ENABLE_FLOAT
+# if ! PIC_WORD_BOXING
+#  define PIC_ENABLE_FLOAT 1
+# endif
+#endif
+
+#ifndef PIC_ENABLE_LIBC
+# define PIC_ENABLE_LIBC 1
+#endif
+
+#if PIC_NAN_BOXING && defined(PIC_ENABLE_FLOAT) && ! PIC_ENABLE_FLOAT
+# error cannot disable float support when nan boxing is on
+#endif
+
+#ifndef PIC_JMPBUF
+# include <setjmp.h>
+# define PIC_JMPBUF jmp_buf
+#endif
+
+#ifndef PIC_SETJMP
+# include <setjmp.h>
+# define PIC_SETJMP(pic, buf) setjmp(buf)
+#endif
+
+#ifndef PIC_LONGJMP
+# include <setjmp.h>
+# define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val))
+#endif
+
+#ifndef PIC_ABORT
+# define PIC_ABORT(pic) abort()
 #endif
 
 #ifndef PIC_ARENA_SIZE
@@ -92,6 +149,7 @@
 #endif
 
 #if DEBUG
+# include <stdio.h>
 # define GC_STRESS 0
 # define VM_DEBUG 1
 # define GC_DEBUG 0

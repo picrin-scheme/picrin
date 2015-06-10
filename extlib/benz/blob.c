@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/blob.h"
-#include "picrin/pair.h"
 
 struct pic_blob *
 pic_make_blob(pic_state *pic, size_t len)
@@ -12,7 +10,7 @@ pic_make_blob(pic_state *pic, size_t len)
   struct pic_blob *bv;
 
   bv = (struct pic_blob *)pic_obj_alloc(pic, sizeof(struct pic_blob), PIC_TT_BLOB);
-  bv->data = pic_alloc(pic, len);
+  bv->data = pic_malloc(pic, len);
   bv->len = len;
   return bv;
 }
@@ -107,7 +105,7 @@ pic_blob_bytevector_u8_set(pic_state *pic)
     pic_errorf(pic, "byte out of range");
 
   bv->data[k] = (unsigned char)v;
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -132,14 +130,14 @@ pic_blob_bytevector_copy_i(pic_state *pic)
     while (start < end) {
       to->data[--at] = from->data[--end];
     }
-    return pic_none_value();
+    return pic_undef_value();
   }
 
   while (start < end) {
     to->data[at++] = from->data[start++];
   }
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
