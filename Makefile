@@ -85,4 +85,4 @@ clean:
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
 
-.PHONY: all insall clean run test test-r7rs test-contribs doc $(CONTRIB_TESTS)
+.PHONY: all install clean run test test-r7rs test-contribs doc $(CONTRIB_TESTS)
