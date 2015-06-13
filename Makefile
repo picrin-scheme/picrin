@@ -48,6 +48,10 @@ src/init_contrib.c:
 lib/libbenz.a: $(BENZ_OBJS)
 	$(AR) $(ARFLAGS) $@ $(BENZ_OBJS)
 
+extlib/benz/boot.o: extlib/benz/boot.c
+	cd extlib/benz; perl boot.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 $(BENZ_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): extlib/benz/include/picrin.h extlib/benz/include/picrin/*.h
 
 doc: docs/*.rst docs/contrib.rst
