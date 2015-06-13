@@ -40,18 +40,21 @@
     (map (lambda (s) `(,(car s) . ,(f (cdr s)))) assoc))
 
   ;; TODO
-  ;; - constants
   ;; - literals
   ;; - splicing
   ;; - placeholder
   ;; - vector
 
-  ;; p ::= ()
+  ;; p ::= constant
   ;;     | var
   ;;     | (p . p)
   ;;     | (p ...)
 
   (define (compile ellipsis literals rules)
+
+    (define (constant? obj)
+      (and (not (pair? obj))
+           (not (variable? obj))))
 
     (define (many? pat)
       (and (pair? pat)
@@ -65,8 +68,8 @@
           ((pattern-validator
             (lambda (pat form)
               (cond
-               ((null? pat)
-                #`(null? #,form))
+               ((constant? pat)
+                #`(equal? '#,pat #,form))
                ((variable? pat)
                 #t)
                ((many? pat)
@@ -83,7 +86,7 @@
 
     (define (pattern-variables pat)       ; pattern -> (freevar)
       (cond
-       ((null? pat)
+       ((constant? pat)
         '())
        ((variable? pat)
         `(,pat))
@@ -95,7 +98,7 @@
 
     (define (pattern-levels pat)          ; pattern -> ((var * int))
       (cond
-       ((null? pat)
+       ((constant? pat)
         '())
        ((variable? pat)
         `((,pat . 0)))
@@ -110,7 +113,7 @@
           ((pattern-selectors
             (lambda (pat form)
               (cond
-               ((null? pat)
+               ((constant? pat)
                 '())
                ((variable? pat)
                 `((,pat . ,form)))
@@ -124,8 +127,8 @@
 
     (define (template-representation pat levels selectors)
       (cond
-       ((null? pat)
-        '())
+       ((constant? pat)
+        pat)
        ((variable? pat)
         (let ((it (assq pat levels)))
           (if it
