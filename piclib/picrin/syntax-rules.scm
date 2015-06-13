@@ -34,7 +34,6 @@
   ;; TODO
   ;; - constants
   ;; - literals
-  ;; - custom ellipsis
   ;; - splicing
   ;; - placeholder
   ;; - vector
