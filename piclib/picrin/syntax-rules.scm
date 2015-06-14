@@ -49,6 +49,12 @@
   ;;     | (p . p)
   ;;     | (p ...)
 
+  ;; only template supports (p ... . p) pattern
+  ;; tp := constant
+  ;;     | var
+  ;;     | (p . p)
+  ;;     | (p ... . p)
+
   (define (compile ellipsis literals rules)
 
     (define (constant? obj)
@@ -63,8 +69,7 @@
       (and (pair? pat)
            (pair? (cdr pat))
            (variable? (cadr pat))
-           (variable=? (cadr pat) ellipsis)
-           (eq? (cddr pat) '())))
+           (variable=? (cadr pat) ellipsis)))
 
     (define (pattern-validator pat)      ; pattern -> validator
       (letrec
@@ -166,7 +171,9 @@
              ;; ((a . (x1 x2)) (b . (y1 y2 y3)) (c . z1)) -> ((x1 x2) (y1 y2 y3) (z1))
              (list-of-selectors
               (map (lambda (x) (if (list? x) x (list x))) (map cdr filtered-selectors))))
-          #`(map (lambda #,inner-tmps #,inner-rep) #,@list-of-selectors)))
+          (let ((rep1 #`(map (lambda #,inner-tmps #,inner-rep) #,@list-of-selectors))
+                (rep2 (template-representation (cddr pat) levels selectors)))
+            #`(append #,rep1 #,rep2))))
        ((pair? pat)
         #`(cons #,(template-representation (car pat) levels selectors)
                 #,(template-representation (cdr pat) levels selectors)))))
