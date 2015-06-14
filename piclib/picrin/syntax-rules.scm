@@ -40,7 +40,6 @@
     (map (lambda (s) `(,(car s) . ,(f (cdr s)))) assoc))
 
   ;; TODO
-  ;; - literals
   ;; - splicing
   ;; - placeholder
   ;; - vector
@@ -56,6 +55,10 @@
       (and (not (pair? obj))
            (not (variable? obj))))
 
+    (define (literal? obj)
+      (and (variable? obj)
+           (memq obj literals)))
+
     (define (many? pat)
       (and (pair? pat)
            (pair? (cdr pat))
@@ -70,6 +73,8 @@
               (cond
                ((constant? pat)
                 #`(equal? '#,pat #,form))
+               ((literal? pat)
+                #`(variable=? #'#,pat #,form))
                ((variable? pat)
                 #t)
                ((many? pat)
@@ -88,6 +93,8 @@
       (cond
        ((constant? pat)
         '())
+       ((literal? pat)
+        '())
        ((variable? pat)
         `(,pat))
        ((many? pat)
@@ -99,6 +106,8 @@
     (define (pattern-levels pat)          ; pattern -> ((var * int))
       (cond
        ((constant? pat)
+        '())
+       ((literal? pat)
         '())
        ((variable? pat)
         `((,pat . 0)))
@@ -114,6 +123,8 @@
             (lambda (pat form)
               (cond
                ((constant? pat)
+                '())
+               ((literal? pat)
                 '())
                ((variable? pat)
                 `((,pat . ,form)))
