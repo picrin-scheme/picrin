@@ -5,38 +5,36 @@
 	  (picrin macro))
 
   (define-record-type <promise>
-    (make-promise% done obj)
-    promise?
-    (done promise-done? promise-done!)
-    (obj promise-value promise-value!))
+      (make-promise% done value)
+      promise?
+    (done  promise-done? set-promise-done!)
+    (value promise-value set-promise-value!))
 
   (define-syntax delay-force
-    (ir-macro-transformer
-     (lambda (form rename compare?)
-       (let ((expr (cadr form)))
-	 `(make-promise% #f (lambda () ,expr))))))
+    (syntax-rules ()
+      ((_ expr)
+       (make-promise% #f (lambda () expr)))))
 
   (define-syntax delay
-    (ir-macro-transformer
-     (lambda (form rename compare?)
-       (let ((expr (cadr form)))
-	 `(delay-force (make-promise% #t ,expr))))))
-
-  (define (promise-update! new old)
-    (promise-done! old (promise-done? new))
-    (promise-value! old (promise-value new)))
+    (syntax-rules ()
+      ((_ expr)
+       (delay-force (make-promise% #t expr)))))
 
   (define (force promise)
     (if (promise-done? promise)
 	(promise-value promise)
-	(let ((promise* ((promise-value promise))))
-	  (unless (promise-done? promise)
-		  (promise-update! promise* promise))
-	  (force promise))))
+	(let ((new-promise ((promise-value promise))))
+          (set-promise-done!  promise (promise-done? new-promise))
+          (set-promise-value! promise (promise-value new-promise))
+          (force promise))))
 
   (define (make-promise obj)
     (if (promise? obj)
 	obj
 	(make-promise% #t obj)))
 
-  (export delay-force delay force make-promise promise?))
+  (export delay-force
+          delay
+          force
+          make-promise
+          promise?))
