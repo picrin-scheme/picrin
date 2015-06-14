@@ -151,7 +151,7 @@
               (if (= 0 (cdr it))
                   (cdr (assq pat selectors))
                   (error "unmatched pattern variable level" pat))
-              #`'#,pat)))
+              #`(#,'rename '#,pat))))
        ((many? pat)
         (letrec*
             ((inner-pat
@@ -195,8 +195,18 @@
                   #,(compile-rules (cdr rules))))))
 
     (define (compile rules)
-      #`(lambda #,'it
-          #,(compile-rules rules)))
+      #`(call-with-current-environment
+         (lambda (env)
+           (letrec
+               ((#,'rename (let ((reg (make-register)))
+                             (lambda (x)
+                               (if (undefined? (reg x))
+                                   (let ((id (make-identifier x env)))
+                                     (reg x id)
+                                     id)
+                                   (reg x))))))
+             (lambda #,'it
+               #,(compile-rules rules))))))
 
     (let ((rules (map-keys cdr rules))) ; TODO: check pattern head is a variable
       (compile rules)))
