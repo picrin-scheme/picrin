@@ -80,13 +80,20 @@ resolve(pic_state *pic, pic_value var, struct pic_env *env)
   pic_sym *uid;
 
   assert(pic_var_p(var));
+  assert(env != NULL);
 
   while ((uid = lookup(pic, var, env)) == NULL) {
     if (pic_sym_p(var)) {
-      return NULL;
+      break;
     }
     env = pic_id_ptr(var)->env;
     var = pic_id_ptr(var)->var;
+  }
+  if (uid == NULL) {
+    while (env->up != NULL) {
+      env = env->up;
+    }
+    uid = pic_add_variable(pic, env, var);
   }
   return uid;
 }
@@ -147,12 +154,7 @@ static pic_value macroexpand_lambda(pic_state *, pic_value, struct pic_env *);
 static pic_value
 macroexpand_var(pic_state *pic, pic_value var, struct pic_env *env)
 {
-  pic_sym *uid;
-
-  if ((uid = resolve(pic, var, env)) == NULL) {
-    pic_errorf(pic, "unbound variable found: ~s", var);
-  }
-  return pic_obj_value(uid);
+  return pic_obj_value(resolve(pic, var, env));
 }
 
 static pic_value
@@ -355,9 +357,7 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
     if (pic_var_p(pic_car(pic, expr))) {
       pic_sym *functor;
 
-      if ((functor = resolve(pic, pic_car(pic, expr), env)) == NULL) {
-        goto call;
-      }
+      functor = resolve(pic, pic_car(pic, expr), env);
 
       if (functor == pic->uDEFINE_MACRO) {
         return macroexpand_defmacro(pic, expr, env);
@@ -376,8 +376,6 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
         return macroexpand_node(pic, macroexpand_macro(pic, mac, expr, env), env);
       }
     }
-    call:
-
     return macroexpand_list(pic, expr, env);
   }
   default:
@@ -506,22 +504,21 @@ static pic_value
 pic_macro_variable_eq_p(pic_state *pic)
 {
   pic_value var1, var2;
-  pic_sym *uid1, *uid2;
 
   pic_get_args(pic, "oo", &var1, &var2);
 
   pic_assert_type(pic, var1, var);
   pic_assert_type(pic, var2, var);
 
-  if (pic_eq_p(var1, var2)) {
-    return pic_true_value();
+  if (pic_sym_p(var1) && pic_sym_p(var2)) {
+    return pic_bool_value(pic_eq_p(var1, var2));
   }
+  if (pic_id_p(var1) && pic_id_p(var2)) {
+    struct pic_id *id1, *id2;
 
-  uid1 = resolve(pic, var1, NULL);
-  uid2 = resolve(pic, var2, NULL);
-
-  if (uid1 || uid2) {
-    return pic_bool_value(uid1 == uid2);
+    id1 = pic_id_ptr(var1);
+    id2 = pic_id_ptr(var2);
+    return pic_bool_value(resolve(pic, id1->var, id1->env) == resolve(pic, id2->var, id2->env));
   }
   return pic_false_value();
 }
