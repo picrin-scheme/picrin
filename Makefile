@@ -33,7 +33,7 @@ all: bin/picrin
 
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-debug: CFLAGS += -O0 -g -DDEBUG=1
+debug: CFLAGS += -O0 -g
 debug: bin/picrin
 
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
