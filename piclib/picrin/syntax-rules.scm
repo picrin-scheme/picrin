@@ -79,7 +79,7 @@
                ((constant? pat)
                 #`(equal? '#,pat #,form))
                ((literal? pat)
-                #`(variable=? #'#,pat #,form))
+                #`(and (variable? #,form) (variable=? #'#,pat #,form)))
                ((variable? pat)
                 #t)
                ((many? pat)
