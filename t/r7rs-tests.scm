@@ -460,9 +460,9 @@
   (syntax-rules ()
     ((be-like-begin name)
      (define-syntax name
-       (syntax-rules ()
-         ((name expr (... ...))
-          (begin expr (... ...))))))))
+       (syntax-rules ::: ()
+         ((name expr :::)
+          (begin expr :::)))))))
 (be-like-begin sequence)
 (test 4 (sequence 1 2 3 4))
 
