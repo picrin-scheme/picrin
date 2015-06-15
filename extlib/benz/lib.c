@@ -299,7 +299,7 @@ pic_lib_define_library(pic_state *pic)
     pic->lib = lib;
 
     for (i = 0; i < argc; ++i) {
-      pic_void(pic_eval(pic, argv[i], pic->lib));
+      pic_void(pic_eval(pic, argv[i], pic->lib->env));
     }
 
     pic->lib = prev;

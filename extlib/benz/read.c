@@ -153,7 +153,7 @@ read_eval(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 
   form = read(pic, port, next(port));
 
-  return pic_eval(pic, form, pic->lib);
+  return pic_eval(pic, form, pic->lib->env);
 }
 
 static pic_value

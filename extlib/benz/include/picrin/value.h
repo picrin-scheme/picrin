@@ -184,6 +184,7 @@ struct pic_blob;
 struct pic_proc;
 struct pic_port;
 struct pic_error;
+struct pic_env;
 
 /* set aliases to basic types */
 typedef pic_value pic_list;

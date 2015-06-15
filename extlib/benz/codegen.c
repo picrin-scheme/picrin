@@ -1420,7 +1420,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 }
 
 struct pic_proc *
-pic_compile(pic_state *pic, pic_value obj, struct pic_lib *lib)
+pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
 {
   struct pic_irep *irep;
   size_t ai = pic_gc_arena_preserve(pic);
@@ -1436,7 +1436,7 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_lib *lib)
 #endif
 
   /* macroexpand */
-  obj = pic_macroexpand(pic, obj, lib);
+  obj = pic_macroexpand(pic, obj, env);
 #if DEBUG
   fprintf(stdout, "## macroexpand completed\n");
   pic_debug(pic, obj);

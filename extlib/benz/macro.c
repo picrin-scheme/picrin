@@ -299,7 +299,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
   val = pic_cadr(pic, pic_cdr(pic, expr));
 
   pic_try {
-    val = pic_eval(pic, val, pic->lib);
+    val = pic_eval(pic, val, env);
   } pic_catch {
     pic_errorf(pic, "macroexpand error while definition: %s", pic_errmsg(pic));
   }
@@ -403,9 +403,8 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 pic_value
-pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
+pic_macroexpand(pic_state *pic, pic_value expr, struct pic_env *env)
 {
-  struct pic_lib *prev;
   pic_value v;
 
 #if DEBUG
@@ -414,17 +413,12 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_lib *lib)
   puts("");
 #endif
 
-  /* change library for macro-expansion time processing */
-  prev = pic->lib;
-  pic->lib = lib;
+  /* expansion can fail with non-local exit so env->defer should be cleared every time */
+  env->defer = pic_nil_value();
 
-  lib->env->defer = pic_nil_value(); /* the last expansion could fail and leave defer field old */
+  v = macroexpand(pic, expr, env);
 
-  v = macroexpand(pic, expr, lib->env);
-
-  macroexpand_deferred(pic, lib->env);
-
-  pic->lib = prev;
+  macroexpand_deferred(pic, env);
 
 #if DEBUG
   puts("after expand:");
