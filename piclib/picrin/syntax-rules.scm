@@ -156,21 +156,25 @@
         (letrec*
             ((inner-pat
               (car pat))
-             (inner-vars
-              (filter (lambda (v) (assq v levels)) (pattern-variables inner-pat)))
-             (inner-tmps
-              (map (lambda (v) #'it) inner-vars))
              (inner-levels
               (map (lambda (s) `(,(car s) . ,(pred (cdr s)))) levels))
+             (inner-freevars
+              (filter (lambda (v) (assq v levels)) (pattern-variables inner-pat)))
+             (inner-vars
+              ;; select only vars declared with ellipsis
+              (filter (lambda (v) (> (cdr (assq v levels)) 0)) inner-freevars))
+             (inner-tmps
+              (map (lambda (v) #'it) inner-vars))
              (inner-selectors
-              (map cons inner-vars inner-tmps))
+              ;; first env '(map cons ...)' shadows second env 'selectors'
+              (append (map cons inner-vars inner-tmps) selectors))
              (inner-rep
               (template-representation inner-pat inner-levels inner-selectors))
-             (filtered-selectors
+             (sorted-selectors
               (map (lambda (v) (assq v selectors)) inner-vars))
-             ;; ((a . (x1 x2)) (b . (y1 y2 y3)) (c . z1)) -> ((x1 x2) (y1 y2 y3) (z1))
              (list-of-selectors
-              (map (lambda (x) (if (list? x) x (list x))) (map cdr filtered-selectors))))
+              ;; ((a . xs) (b . ys) (c . zs)) -> (xs ys zs)
+              (map cdr sorted-selectors)))
           (let ((rep1 #`(map (lambda #,inner-tmps #,inner-rep) #,@list-of-selectors))
                 (rep2 (template-representation (cddr pat) levels selectors)))
             #`(append #,rep1 #,rep2))))
