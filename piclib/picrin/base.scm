@@ -254,6 +254,8 @@
 
   (export make-library
           find-library
+          current-library
+          library-name
           library-exports
           library-environment)
 

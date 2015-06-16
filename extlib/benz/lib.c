@@ -337,6 +337,38 @@ pic_lib_find_library(pic_state *pic)
 }
 
 static pic_value
+pic_lib_current_library(pic_state *pic)
+{
+  pic_value lib;
+  size_t n;
+
+  n = pic_get_args(pic, "|o", &lib);
+
+  if (n == 0) {
+    return pic_obj_value(pic->lib);
+  }
+  else {
+    pic_assert_type(pic, lib, lib);
+
+    pic->lib = pic_lib_ptr(lib);
+
+    return pic_undef_value();
+  }
+}
+
+static pic_value
+pic_lib_library_name(pic_state *pic)
+{
+  pic_value lib;
+
+  pic_get_args(pic, "o", &lib);
+
+  pic_assert_type(pic, lib, lib);
+
+  return pic_lib_ptr(lib)->name;
+}
+
+static pic_value
 pic_lib_library_exports(pic_state *pic)
 {
   pic_value lib, exports = pic_nil_value();
@@ -378,6 +410,8 @@ pic_init_lib(pic_state *pic)
 
   pic_defun(pic, "make-library", pic_lib_make_library);
   pic_defun(pic, "find-library", pic_lib_find_library);
+  pic_defun(pic, "current-library", pic_lib_current_library);
+  pic_defun(pic, "library-name", pic_lib_library_name);
   pic_defun(pic, "library-exports", pic_lib_library_exports);
   pic_defun(pic, "library-environment", pic_lib_library_environment);
 }
