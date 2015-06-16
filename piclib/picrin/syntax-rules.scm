@@ -33,6 +33,18 @@
                   (filter f (cdr list)))
             (filter f (cdr list)))))
 
+  (define (take-tail n list)
+    (let drop ((n (- (length list) n)) (list list))
+      (if (= n 0)
+          list
+          (drop (- n 1) (cdr list)))))
+
+  (define (drop-tail n list)
+    (let take ((n (- (length list) n)) (list list))
+      (if (= n 0)
+          '()
+          (cons (car list) (take (- n 1) (cdr list))))))
+
   (define (map-keys f assoc)
     (map (lambda (s) `(,(f (car s)) . ,(cdr s))) assoc))
 
@@ -40,20 +52,14 @@
     (map (lambda (s) `(,(car s) . ,(f (cdr s)))) assoc))
 
   ;; TODO
-  ;; - splicing
   ;; - placeholder
   ;; - vector
+  ;; - (... template) pattern
 
   ;; p ::= constant
   ;;     | var
+  ;;     | (p ... . p)      (in input pattern, tail p should be a proper list)
   ;;     | (p . p)
-  ;;     | (p ...)
-
-  ;; only template supports (p ... . p) pattern
-  ;; tp := constant
-  ;;     | var
-  ;;     | (p . p)
-  ;;     | (p ... . p)
 
   (define (compile ellipsis literals rules)
 
@@ -83,9 +89,12 @@
                ((variable? pat)
                 #t)
                ((many? pat)
-                (let ((validator (pattern-validator (car pat) 'it)))
+                (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
+                      (tail #`(take-tail #,(length (cddr pat)) #,form)))
                   #`(and (list? #,form)
-                         (every? (map (lambda (#,'it) #,validator) #,form)))))
+                         (>= (length #,form) #,(length (cddr pat)))
+                         (every? (map (lambda (#,'it) #,(pattern-validator (car pat) 'it)) #,head))
+                         #,(pattern-validator (cddr pat) tail))))
                ((pair? pat)
                 #`(and (pair? #,form)
                        #,(pattern-validator (car pat) #`(car #,form))
@@ -103,7 +112,8 @@
        ((variable? pat)
         `(,pat))
        ((many? pat)
-        (pattern-variables (car pat)))
+        (append (pattern-variables (car pat))
+                (pattern-variables (cddr pat))))
        ((pair? pat)
         (append (pattern-variables (car pat))
                 (pattern-variables (cdr pat))))))
@@ -117,7 +127,8 @@
        ((variable? pat)
         `((,pat . 0)))
        ((many? pat)
-        (map-values succ (pattern-levels (car pat))))
+        (append (map-values succ (pattern-levels (car pat)))
+                (pattern-levels (cddr pat))))
        ((pair? pat)
         (append (pattern-levels (car pat))
                 (pattern-levels (cdr pat))))))
@@ -134,8 +145,12 @@
                ((variable? pat)
                 `((,pat . ,form)))
                ((many? pat)
-                (let ((envs (pattern-selectors (car pat) 'it)))
-                  (map-values (lambda (s) #`(map (lambda (#,'it) #,s) #,form)) envs)))
+                (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
+                      (tail #`(take-tail #,(length (cddr pat)) #,form)))
+                  (let ((envs (pattern-selectors (car pat) 'it)))
+                    (append
+                     (map-values (lambda (s) #`(map (lambda (#,'it) #,s) #,head)) envs)
+                     (pattern-selectors (cddr pat) tail)))))
                ((pair? pat)
                 (append (pattern-selectors (car pat) #`(car #,form))
                         (pattern-selectors (cdr pat) #`(cdr #,form))))))))
