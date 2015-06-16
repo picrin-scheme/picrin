@@ -51,6 +51,9 @@ resolve(pic_state *pic, pic_value var, struct pic_env *env)
 static void
 define_macro(pic_state *pic, pic_sym *uid, struct pic_proc *mac)
 {
+  if (pic_dict_has(pic, pic->macros, uid)) {
+    pic_warnf(pic, "redefining syntax variable: ~s", pic_obj_value(uid));
+  }
   pic_dict_set(pic, pic->macros, uid, pic_obj_value(mac));
 }
 
@@ -209,8 +212,6 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
   }
   if ((uid = pic_find_variable(pic, env, var)) == NULL) {
     uid = pic_add_variable(pic, env, var);
-  } else {
-    pic_warnf(pic, "redefining syntax variable: ~s", var);
   }
 
   val = pic_cadr(pic, pic_cdr(pic, expr));

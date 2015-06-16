@@ -233,8 +233,7 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
        ((pic->lib = pic->prev_lib),                                     \
         (pic->prev_lib = NULL)))
 
-void pic_import(pic_state *, pic_value);
-void pic_import_library(pic_state *, struct pic_lib *);
+void pic_import(pic_state *, struct pic_lib *);
 void pic_export(pic_state *, pic_sym *);
 
 PIC_NORETURN void pic_panic(pic_state *, const char *);

@@ -254,6 +254,8 @@
 
   (export make-library
           find-library
+          current-library
+          library-name
           library-exports
           library-environment)
 
@@ -284,4 +286,6 @@
           write-shared
           display)
 
-  (export eval))
+  (export eval)
+
+  (export features))
