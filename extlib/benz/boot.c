@@ -492,8 +492,61 @@ my $src = <<'EOL';
                 `(,the-begin ,@(cdar clauses))
                 (loop (cdr clauses))))))))
 
+(define-macro import
+  (lambda (form _)
+    (let ((caddr
+           (lambda (x) (car (cdr (cdr x)))))
+          (prefix
+           (lambda (prefix symbol)
+             (string->symbol
+              (string-append
+               (symbol->string prefix)
+               (symbol->string symbol))))))
+      (letrec
+          ((extract
+            (lambda (spec)
+              (case (car spec)
+                ((only rename prefix except)
+                 (extract (cadr spec)))
+                (else
+                 (or (find-library spec) (error "library not found" spec))))))
+           (collect
+            (lambda (spec)
+              (case (car spec)
+                ((only)
+                 (let ((alist (collect (cadr spec))))
+                   (map (lambda (var) (assq var alist)) (cddr spec))))
+                ((rename)
+                 (let ((alist (collect (cadr spec))))
+                   (map (lambda (s) (or (assq (car s) (cddr spec)) s)) alist)))
+                ((prefix)
+                 (let ((alist (collect (cadr spec))))
+                   (map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))
+                ((except)
+                 (let ((alist (collect (cadr spec))))
+                   (let loop ((alist alist))
+                     (if (null? alist)
+                         '()
+                         (if (memq (caar alist) (cddr spec))
+                             (loop (cdr alist))
+                             (cons (car alist) (loop (cdr alist))))))))
+                (else
+                 (let ((lib (or (find-library spec) (error "library not found" spec))))
+                   (map (lambda (x) (cons x x)) (library-exports lib))))))))
+        (letrec
+            ((import
+               (lambda (spec)
+                 (let ((lib (extract spec))
+                       (alist (collect spec)))
+                   (for-each
+                    (lambda (slot)
+                      (library-import lib (cdr slot) (car slot)))
+                    alist)))))
+          (for-each import (cdr form)))))))
+
 (export define-library
-        cond-expand)
+        cond-expand
+        import)
 
 EOL
 
@@ -757,8 +810,34 @@ const char pic_boot[][80] = {
 "(test (car form)) (loop (cdr form))))))\n                         (else #f)))))))",
 "\n      (let loop ((clauses (cdr form)))\n        (if (null? clauses)\n            ",
 "#undefined\n            (if (test (caar clauses))\n                `(,the-begin ,@",
-"(cdar clauses))\n                (loop (cdr clauses))))))))\n\n(export define-libra",
-"ry\n        cond-expand)\n\n",
+"(cdar clauses))\n                (loop (cdr clauses))))))))\n\n(define-macro import",
+"\n  (lambda (form _)\n    (let ((caddr\n           (lambda (x) (car (cdr (cdr x))))",
+")\n          (prefix\n           (lambda (prefix symbol)\n             (string->sym",
+"bol\n              (string-append\n               (symbol->string prefix)\n        ",
+"       (symbol->string symbol))))))\n      (letrec\n          ((extract\n          ",
+"  (lambda (spec)\n              (case (car spec)\n                ((only rename pr",
+"efix except)\n                 (extract (cadr spec)))\n                (else\n     ",
+"            (or (find-library spec) (error \"library not found\" spec))))))\n      ",
+"     (collect\n            (lambda (spec)\n              (case (car spec)\n        ",
+"        ((only)\n                 (let ((alist (collect (cadr spec))))\n          ",
+"         (map (lambda (var) (assq var alist)) (cddr spec))))\n                ((r",
+"ename)\n                 (let ((alist (collect (cadr spec))))\n                   ",
+"(map (lambda (s) (or (assq (car s) (cddr spec)) s)) alist)))\n                ((p",
+"refix)\n                 (let ((alist (collect (cadr spec))))\n                   ",
+"(map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))\n        ",
+"        ((except)\n                 (let ((alist (collect (cadr spec))))\n        ",
+"           (let loop ((alist alist))\n                     (if (null? alist)\n    ",
+"                     '()\n                         (if (memq (caar alist) (cddr s",
+"pec))\n                             (loop (cdr alist))\n                          ",
+"   (cons (car alist) (loop (cdr alist))))))))\n                (else\n            ",
+"     (let ((lib (or (find-library spec) (error \"library not found\" spec))))\n    ",
+"               (map (lambda (x) (cons x x)) (library-exports lib))))))))\n       ",
+" (letrec\n            ((import\n               (lambda (spec)\n                 (le",
+"t ((lib (extract spec))\n                       (alist (collect spec)))\n         ",
+"          (for-each\n                    (lambda (slot)\n                      (li",
+"brary-import lib (cdr slot) (car slot)))\n                    alist)))))\n        ",
+"  (for-each import (cdr form)))))))\n\n(export define-library\n        cond-expand\n",
+"        import)\n\n",
 "",
 ""
 };

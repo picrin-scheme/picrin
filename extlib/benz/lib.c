@@ -189,21 +189,6 @@ pic_export(pic_state *pic, pic_sym *sym)
 }
 
 static pic_value
-pic_lib_import(pic_state *pic)
-{
-  size_t argc, i;
-  pic_value *argv;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  for (i = 0; i < argc; ++i) {
-    import(pic, argv[i]);
-  }
-
-  return pic_undef_value();
-}
-
-static pic_value
 pic_lib_export(pic_state *pic)
 {
   size_t argc, i;
@@ -263,6 +248,38 @@ pic_lib_current_library(pic_state *pic)
 }
 
 static pic_value
+pic_lib_library_import(pic_state *pic)
+{
+  pic_value lib_opt;
+  pic_sym *name, *realname, *uid, *alias = NULL;
+  struct pic_lib *lib;
+
+  pic_get_args(pic, "om|m", &lib_opt, &name, &alias);
+
+  pic_assert_type(pic, lib_opt, lib);
+
+  if (alias == NULL) {
+    alias = name;
+  }
+
+  lib = pic_lib_ptr(lib_opt);
+
+  if (! pic_dict_has(pic, lib->exports, name)) {
+    pic_errorf(pic, "attempted to import undefined variable '~s'", pic_obj_value(name));
+  } else {
+    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
+  }
+
+  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
+    pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
+  } else {
+    pic_put_variable(pic, pic->lib->env, pic_obj_value(alias), uid);
+  }
+
+  return pic_undef_value();
+}
+
+static pic_value
 pic_lib_library_name(pic_state *pic)
 {
   pic_value lib;
@@ -309,12 +326,12 @@ pic_init_lib(pic_state *pic)
 {
   void pic_defmacro(pic_state *, pic_sym *, pic_sym *, pic_func_t);
 
-  pic_defmacro(pic, pic->sIMPORT, pic->uIMPORT, pic_lib_import);
   pic_defmacro(pic, pic->sEXPORT, pic->uEXPORT, pic_lib_export);
 
   pic_defun(pic, "make-library", pic_lib_make_library);
   pic_defun(pic, "find-library", pic_lib_find_library);
   pic_defun(pic, "current-library", pic_lib_current_library);
+  pic_defun(pic, "library-import", pic_lib_library_import);
   pic_defun(pic, "library-name", pic_lib_library_name);
   pic_defun(pic, "library-exports", pic_lib_library_exports);
   pic_defun(pic, "library-environment", pic_lib_library_environment);
