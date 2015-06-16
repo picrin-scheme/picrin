@@ -499,6 +499,38 @@ pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *co
   pic_define(pic, name, pic_obj_value(pic_make_var(pic, init, conv)));
 }
 
+static pic_value
+defmacro_call(pic_state *pic)
+{
+  struct pic_proc *self = pic_get_proc(pic);
+  pic_value args, tmp, proc;
+
+  pic_get_args(pic, "oo", &args, &tmp);
+
+  proc = pic_attr_ref(pic, pic_obj_value(self), "@@transformer");
+
+  return pic_apply_trampoline(pic, pic_proc_ptr(proc), pic_cdr(pic, args));
+}
+
+void
+pic_defmacro(pic_state *pic, pic_sym *name, pic_sym *id, pic_func_t func)
+{
+  struct pic_proc *proc, *trans;
+
+  trans = pic_make_proc(pic, func, pic_symbol_name(pic, name));
+
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(name), id);
+
+  proc = pic_make_proc(pic, defmacro_call, "defmacro_call");
+  pic_attr_set(pic, pic_obj_value(proc), "@@transformer", pic_obj_value(trans));
+
+  /* symbol registration */
+  pic_dict_set(pic, pic->macros, id, pic_obj_value(proc));
+
+  /* auto export! */
+  pic_export(pic, name);
+}
+
 static void
 vm_push_cxt(pic_state *pic)
 {

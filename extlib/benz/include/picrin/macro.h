@@ -36,6 +36,7 @@ pic_sym *pic_add_variable(pic_state *, struct pic_env *, pic_value);
 void pic_put_variable(pic_state *, struct pic_env *, pic_value, pic_sym *);
 pic_sym *pic_find_variable(pic_state *, struct pic_env *, pic_value);
 
+bool pic_var_p(pic_value);
 pic_sym *pic_var_name(pic_state *, pic_value);
 
 #if defined(__cplusplus)
