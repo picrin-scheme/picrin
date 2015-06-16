@@ -424,7 +424,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (env->up) {
       gc_mark_object(pic, (struct pic_object *)env->up);
     }
-    gc_mark(pic, env->defer);
     for (it = xh_begin(&env->map); it != NULL; it = xh_next(it)) {
       gc_mark_object(pic, xh_key(it, struct pic_object *));
       gc_mark_object(pic, xh_val(it, struct pic_object *));

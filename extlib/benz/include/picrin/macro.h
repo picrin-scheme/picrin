@@ -18,7 +18,6 @@ struct pic_id {
 struct pic_env {
   PIC_OBJECT_HEADER
   xhash map;
-  pic_value defer;
   struct pic_env *up;
 };
 
