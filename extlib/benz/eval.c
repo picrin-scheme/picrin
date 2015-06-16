@@ -5,13 +5,13 @@
 #include "picrin.h"
 
 pic_value
-pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
+pic_eval(pic_state *pic, pic_value program, struct pic_env *env)
 {
   struct pic_proc *proc;
 
-  proc = pic_compile(pic, program, lib);
+  proc = pic_compile(pic, program, env);
 
-  return pic_apply(pic, proc, pic_nil_value());
+  return pic_apply0(pic, proc);
 }
 
 static pic_value
@@ -26,7 +26,7 @@ pic_eval_eval(pic_state *pic)
   if (lib == NULL) {
     pic_errorf(pic, "no library found: ~s", spec);
   }
-  return pic_eval(pic, program, lib);
+  return pic_eval(pic, program, lib->env);
 }
 
 void

@@ -98,7 +98,9 @@ typedef struct {
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sDEFINE_SYNTAX, *sIMPORT, *sEXPORT;
+  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE;
+  pic_sym *sSYNTAX_UNQUOTE_SPLICING;
+  pic_sym *sDEFINE_MACRO, *sIMPORT, *sEXPORT;
   pic_sym *sDEFINE_LIBRARY;
   pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
   pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
@@ -111,15 +113,15 @@ typedef struct {
   pic_sym *sCALL, *sTAILCALL, *sRETURN;
   pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
-  pic_sym *rDEFINE, *rLAMBDA, *rIF, *rBEGIN, *rQUOTE, *rSETBANG;
-  pic_sym *rDEFINE_SYNTAX, *rIMPORT, *rEXPORT;
-  pic_sym *rDEFINE_LIBRARY;
-  pic_sym *rCOND_EXPAND;
-  pic_sym *rCONS, *rCAR, *rCDR, *rNILP;
-  pic_sym *rSYMBOLP, *rPAIRP;
-  pic_sym *rADD, *rSUB, *rMUL, *rDIV;
-  pic_sym *rEQ, *rLT, *rLE, *rGT, *rGE, *rNOT;
-  pic_sym *rVALUES, *rCALL_WITH_VALUES;
+  pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG;
+  pic_sym *uDEFINE_MACRO, *uIMPORT, *uEXPORT;
+  pic_sym *uDEFINE_LIBRARY;
+  pic_sym *uCOND_EXPAND;
+  pic_sym *uCONS, *uCAR, *uCDR, *uNILP;
+  pic_sym *uSYMBOLP, *uPAIRP;
+  pic_sym *uADD, *uSUB, *uMUL, *uDIV;
+  pic_sym *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
+  pic_sym *uVALUES, *uCALL_WITH_VALUES;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
@@ -127,6 +129,7 @@ typedef struct {
   pic_value features;
 
   xhash syms;                   /* name to symbol */
+  int ucnt;
   struct pic_dict *globals;
   struct pic_dict *macros;
   pic_value libs;
@@ -193,8 +196,6 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 pic_sym *pic_intern(pic_state *, pic_str *);
 pic_sym *pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym *);
-pic_sym *pic_gensym(pic_state *, pic_sym *);
-bool pic_interned_p(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
@@ -214,9 +215,9 @@ pic_value pic_apply3(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply4(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, pic_value);
-pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
-struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_lib *);
-pic_value pic_macroexpand(pic_state *, pic_value, struct pic_lib *);
+pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
+pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
+struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
 
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);

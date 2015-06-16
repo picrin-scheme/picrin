@@ -4,6 +4,347 @@
 
 #include "picrin.h"
 
+/**
+ * macro expander
+ */
+
+static pic_sym *
+lookup(pic_state PIC_UNUSED(*pic), pic_value var, struct pic_env *env)
+{
+  xh_entry *e;
+
+  assert(pic_var_p(var));
+
+  while (env != NULL) {
+    if ((e = xh_get_ptr(&env->map, pic_ptr(var))) != NULL) {
+      return xh_val(e, pic_sym *);
+    }
+    env = env->up;
+  }
+  return NULL;
+}
+
+static pic_sym *
+resolve(pic_state *pic, pic_value var, struct pic_env *env)
+{
+  pic_sym *uid;
+
+  assert(pic_var_p(var));
+  assert(env != NULL);
+
+  while ((uid = lookup(pic, var, env)) == NULL) {
+    if (pic_sym_p(var)) {
+      break;
+    }
+    env = pic_id_ptr(var)->env;
+    var = pic_id_ptr(var)->var;
+  }
+  if (uid == NULL) {
+    while (env->up != NULL) {
+      env = env->up;
+    }
+    uid = pic_add_variable(pic, env, var);
+  }
+  return uid;
+}
+
+static void
+define_macro(pic_state *pic, pic_sym *uid, struct pic_proc *mac)
+{
+  pic_dict_set(pic, pic->macros, uid, pic_obj_value(mac));
+}
+
+static struct pic_proc *
+find_macro(pic_state *pic, pic_sym *uid)
+{
+  if (! pic_dict_has(pic, pic->macros, uid)) {
+    return NULL;
+  }
+  return pic_proc_ptr(pic_dict_ref(pic, pic->macros, uid));
+}
+
+static pic_value expand(pic_state *, pic_value, struct pic_env *, pic_value);
+static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
+
+static pic_value
+expand_var(pic_state *pic, pic_value var, struct pic_env *env)
+{
+  return pic_obj_value(resolve(pic, var, env));
+}
+
+static pic_value
+expand_quote(pic_state *pic, pic_value expr)
+{
+  return pic_cons(pic, pic_obj_value(pic->uQUOTE), pic_cdr(pic, expr));
+}
+
+static pic_value
+expand_list(pic_state *pic, pic_value obj, struct pic_env *env, pic_value deferred)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value x, head, tail;
+
+  if (pic_pair_p(obj)) {
+    head = expand(pic, pic_car(pic, obj), env, deferred);
+    tail = expand_list(pic, pic_cdr(pic, obj), env, deferred);
+    x = pic_cons(pic, head, tail);
+  } else {
+    x = expand(pic, obj, env, deferred);
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, x);
+  return x;
+}
+
+static pic_value
+expand_defer(pic_state *pic, pic_value expr, pic_value deferred)
+{
+  pic_value skel = pic_list1(pic, pic_invalid_value()); /* (#<invalid>) */
+
+  pic_set_car(pic, deferred, pic_acons(pic, expr, skel, pic_car(pic, deferred)));
+
+  return skel;
+}
+
+static void
+expand_deferred(pic_state *pic, pic_value deferred, struct pic_env *env)
+{
+  pic_value defer, val, src, dst, it;
+
+  deferred = pic_car(pic, deferred);
+
+  pic_for_each (defer, pic_reverse(pic, deferred), it) {
+    src = pic_car(pic, defer);
+    dst = pic_cdr(pic, defer);
+
+    val = expand_lambda(pic, src, env);
+
+    /* copy */
+    pic_set_car(pic, dst, pic_car(pic, val));
+    pic_set_cdr(pic, dst, pic_cdr(pic, val));
+  }
+}
+
+static pic_value
+expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
+{
+  pic_value formal, body;
+  struct pic_env *in;
+  pic_value a, deferred;
+
+  if (pic_length(pic, expr) < 2) {
+    pic_errorf(pic, "syntax error");
+  }
+
+  in = pic_make_env(pic, env);
+
+  for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
+    pic_value var = pic_car(pic, a);
+
+    if (! pic_var_p(var)) {
+      pic_errorf(pic, "syntax error");
+    }
+    pic_add_variable(pic, in, var);
+  }
+  if (pic_var_p(a)) {
+    pic_add_variable(pic, in, a);
+  }
+  else if (! pic_nil_p(a)) {
+    pic_errorf(pic, "syntax error");
+  }
+
+  deferred = pic_list1(pic, pic_nil_value());
+
+  formal = expand_list(pic, pic_cadr(pic, expr), in, deferred);
+  body = expand_list(pic, pic_cddr(pic, expr), in, deferred);
+
+  expand_deferred(pic, deferred, in);
+
+  return pic_cons(pic, pic_obj_value(pic->uLAMBDA), pic_cons(pic, formal, body));
+}
+
+static pic_value
+expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
+{
+  pic_sym *uid;
+  pic_value var, val;
+
+  while (pic_length(pic, expr) >= 2 && pic_pair_p(pic_cadr(pic, expr))) {
+    var = pic_car(pic, pic_cadr(pic, expr));
+    val = pic_cdr(pic, pic_cadr(pic, expr));
+
+    expr = pic_list3(pic, pic_obj_value(pic->uDEFINE), var, pic_cons(pic, pic_obj_value(pic->sLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
+  }
+
+  if (pic_length(pic, expr) != 3) {
+    pic_errorf(pic, "syntax error");
+  }
+
+  var = pic_cadr(pic, expr);
+  if (! pic_var_p(var)) {
+    pic_errorf(pic, "binding to non-variable object");
+  }
+  if ((uid = pic_find_variable(pic, env, var)) == NULL) {
+    uid = pic_add_variable(pic, env, var);
+  }
+  val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
+
+  return pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_obj_value(uid), val);
+}
+
+static pic_value
+expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
+{
+  pic_value var, val;
+  pic_sym *uid;
+
+  if (pic_length(pic, expr) != 3) {
+    pic_errorf(pic, "syntax error");
+  }
+
+  var = pic_cadr(pic, expr);
+  if (! pic_var_p(var)) {
+    pic_errorf(pic, "binding to non-variable object");
+  }
+  if ((uid = pic_find_variable(pic, env, var)) == NULL) {
+    uid = pic_add_variable(pic, env, var);
+  } else {
+    pic_warnf(pic, "redefining syntax variable: ~s", var);
+  }
+
+  val = pic_cadr(pic, pic_cdr(pic, expr));
+
+  pic_try {
+    val = pic_eval(pic, val, env);
+  } pic_catch {
+    pic_errorf(pic, "expand error while definition: %s", pic_errmsg(pic));
+  }
+
+  if (! pic_proc_p(val)) {
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+  }
+
+  define_macro(pic, uid, pic_proc_ptr(val));
+
+  return pic_undef_value();
+}
+
+static pic_value
+expand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct pic_env *env)
+{
+  pic_value v;
+
+#if DEBUG
+  puts("before expand-1:");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
+  pic_try {
+    v = pic_apply2(pic, mac, expr, pic_obj_value(env));
+  } pic_catch {
+    pic_errorf(pic, "expand error while application: %s", pic_errmsg(pic));
+  }
+
+#if DEBUG
+  puts("after expand-1:");
+  pic_debug(pic, v);
+  puts("");
+#endif
+
+  return v;
+}
+
+static pic_value
+expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
+{
+  switch (pic_type(expr)) {
+  case PIC_TT_ID:
+  case PIC_TT_SYMBOL: {
+    return expand_var(pic, expr, env);
+  }
+  case PIC_TT_PAIR: {
+    struct pic_proc *mac;
+
+    if (! pic_list_p(expr)) {
+      pic_errorf(pic, "cannot expand improper list: ~s", expr);
+    }
+
+    if (pic_var_p(pic_car(pic, expr))) {
+      pic_sym *functor;
+
+      functor = resolve(pic, pic_car(pic, expr), env);
+
+      if (functor == pic->uDEFINE_MACRO) {
+        return expand_defmacro(pic, expr, env);
+      }
+      else if (functor == pic->uLAMBDA) {
+        return expand_defer(pic, expr, deferred);
+      }
+      else if (functor == pic->uDEFINE) {
+        return expand_define(pic, expr, env, deferred);
+      }
+      else if (functor == pic->uQUOTE) {
+        return expand_quote(pic, expr);
+      }
+
+      if ((mac = find_macro(pic, functor)) != NULL) {
+        return expand_node(pic, expand_macro(pic, mac, expr, env), env, deferred);
+      }
+    }
+    return expand_list(pic, expr, env, deferred);
+  }
+  default:
+    return expr;
+  }
+}
+
+static pic_value
+expand(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value v;
+
+#if DEBUG
+  printf("[expand] expanding... ");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
+  v = expand_node(pic, expr, env, deferred);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, v);
+  return v;
+}
+
+pic_value
+pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
+{
+  pic_value v, deferred;
+
+#if DEBUG
+  puts("before expand:");
+  pic_debug(pic, expr);
+  puts("");
+#endif
+
+  deferred = pic_list1(pic, pic_nil_value());
+
+  v = expand(pic, expr, env, deferred);
+
+  expand_deferred(pic, deferred, env);
+
+#if DEBUG
+  puts("after expand:");
+  pic_debug(pic, v);
+  puts("");
+#endif
+
+  return v;
+}
+
 typedef xvect_t(pic_sym *) xvect;
 
 #define xv_push_sym(v, x) xv_push(pic_sym *, (v), (x))
@@ -331,7 +672,7 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
       : pic_false_value();
 
     /* To know what kind of local variables are defined, analyze body at first. */
-    body = analyze(state, pic_cons(pic, pic_obj_value(pic->rBEGIN), body_exprs), true);
+    body = analyze(state, pic_cons(pic, pic_obj_value(pic->uBEGIN), body_exprs), true);
 
     analyze_deferred(state);
 
@@ -399,7 +740,7 @@ analyze_define(analyze_state *state, pic_value obj)
 
   if (pic_pair_p(pic_list_ref(pic, obj, 2))
       && pic_sym_p(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0))
-      && pic_sym_ptr(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->rLAMBDA) {
+      && pic_sym_ptr(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->uLAMBDA) {
     pic_value formals, body_exprs;
 
     formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
@@ -698,88 +1039,88 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
     if (pic_sym_p(proc)) {
       pic_sym *sym = pic_sym_ptr(proc);
 
-      if (sym == pic->rDEFINE) {
+      if (sym == pic->uDEFINE) {
         return analyze_define(state, obj);
       }
-      else if (sym == pic->rLAMBDA) {
+      else if (sym == pic->uLAMBDA) {
         return analyze_lambda(state, obj);
       }
-      else if (sym == pic->rIF) {
+      else if (sym == pic->uIF) {
         return analyze_if(state, obj, tailpos);
       }
-      else if (sym == pic->rBEGIN) {
+      else if (sym == pic->uBEGIN) {
         return analyze_begin(state, obj, tailpos);
       }
-      else if (sym == pic->rSETBANG) {
+      else if (sym == pic->uSETBANG) {
         return analyze_set(state, obj);
       }
-      else if (sym == pic->rQUOTE) {
+      else if (sym == pic->uQUOTE) {
         return analyze_quote(state, obj);
       }
-      else if (sym == pic->rCONS) {
+      else if (sym == pic->uCONS) {
 	ARGC_ASSERT(2, "cons");
         return CONSTRUCT_OP2(pic->sCONS);
       }
-      else if (sym == pic->rCAR) {
+      else if (sym == pic->uCAR) {
 	ARGC_ASSERT(1, "car");
         return CONSTRUCT_OP1(pic->sCAR);
       }
-      else if (sym == pic->rCDR) {
+      else if (sym == pic->uCDR) {
 	ARGC_ASSERT(1, "cdr");
         return CONSTRUCT_OP1(pic->sCDR);
       }
-      else if (sym == pic->rNILP) {
+      else if (sym == pic->uNILP) {
 	ARGC_ASSERT(1, "nil?");
         return CONSTRUCT_OP1(pic->sNILP);
       }
-      else if (sym == pic->rSYMBOLP) {
+      else if (sym == pic->uSYMBOLP) {
         ARGC_ASSERT(1, "symbol?");
         return CONSTRUCT_OP1(pic->sSYMBOLP);
       }
-      else if (sym == pic->rPAIRP) {
+      else if (sym == pic->uPAIRP) {
         ARGC_ASSERT(1, "pair?");
         return CONSTRUCT_OP1(pic->sPAIRP);
       }
-      else if (sym == pic->rADD) {
+      else if (sym == pic->uADD) {
         return analyze_add(state, obj, tailpos);
       }
-      else if (sym == pic->rSUB) {
+      else if (sym == pic->uSUB) {
         return analyze_sub(state, obj);
       }
-      else if (sym == pic->rMUL) {
+      else if (sym == pic->uMUL) {
         return analyze_mul(state, obj, tailpos);
       }
-      else if (sym == pic->rDIV) {
+      else if (sym == pic->uDIV) {
         return analyze_div(state, obj);
       }
-      else if (sym == pic->rEQ) {
+      else if (sym == pic->uEQ) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sEQ);
       }
-      else if (sym == pic->rLT) {
+      else if (sym == pic->uLT) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLT);
       }
-      else if (sym == pic->rLE) {
+      else if (sym == pic->uLE) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sLE);
       }
-      else if (sym == pic->rGT) {
+      else if (sym == pic->uGT) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGT);
       }
-      else if (sym == pic->rGE) {
+      else if (sym == pic->uGE) {
 	ARGC_ASSERT_WITH_FALLBACK(2);
         return CONSTRUCT_OP2(pic->sGE);
       }
-      else if (sym == pic->rNOT) {
+      else if (sym == pic->uNOT) {
         ARGC_ASSERT(1, "not");
         return CONSTRUCT_OP1(pic->sNOT);
       }
-      else if (sym == pic->rVALUES) {
+      else if (sym == pic->uVALUES) {
         return analyze_values(state, obj, tailpos);
       }
-      else if (sym == pic->rCALL_WITH_VALUES) {
+      else if (sym == pic->uCALL_WITH_VALUES) {
         return analyze_call_with_values(state, obj, tailpos);
       }
     }
@@ -1420,7 +1761,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 }
 
 struct pic_proc *
-pic_compile(pic_state *pic, pic_value obj, struct pic_lib *lib)
+pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
 {
   struct pic_irep *irep;
   size_t ai = pic_gc_arena_preserve(pic);
@@ -1435,10 +1776,10 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_lib *lib)
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
-  /* macroexpand */
-  obj = pic_macroexpand(pic, obj, lib);
+  /* expand */
+  obj = pic_expand(pic, obj, env);
 #if DEBUG
-  fprintf(stdout, "## macroexpand completed\n");
+  fprintf(stdout, "## expand completed\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));

@@ -157,6 +157,7 @@ enum pic_tt {
   PIC_TT_PROC,
   PIC_TT_PORT,
   PIC_TT_ERROR,
+  PIC_TT_ID,
   PIC_TT_CXT,
   PIC_TT_ENV,
   PIC_TT_LIB,
@@ -183,6 +184,7 @@ struct pic_blob;
 struct pic_proc;
 struct pic_port;
 struct pic_error;
+struct pic_env;
 
 /* set aliases to basic types */
 typedef pic_value pic_list;
@@ -314,6 +316,8 @@ pic_type_repr(enum pic_tt tt)
     return "port";
   case PIC_TT_ERROR:
     return "error";
+  case PIC_TT_ID:
+    return "id";
   case PIC_TT_CXT:
     return "cxt";
   case PIC_TT_PROC:

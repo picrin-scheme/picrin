@@ -6,11 +6,16 @@
           quote
           set!
           begin
-          define-syntax)
+          define-macro)
 
   (export syntax-error
+          define-syntax
           let-syntax
-          letrec-syntax)
+          letrec-syntax
+          syntax-quote
+          syntax-quasiquote
+          syntax-unquote
+          syntax-unquote-splicing)
 
   (export let
           let*
@@ -239,9 +244,13 @@
   (export make-parameter
           parameterize)
 
-  (export identifier?
-          identifier=?
-          make-identifier)
+  (export make-identifier
+          identifier?
+          identifier-variable
+          identifier-environment
+
+          variable?
+          variable=?)
 
   (export call-with-current-continuation
           call/cc

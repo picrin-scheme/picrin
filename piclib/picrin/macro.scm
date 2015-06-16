@@ -1,141 +1,180 @@
 (define-library (picrin macro)
   (import (picrin base))
 
-  (export identifier?
-          identifier=?
+  ;; macro primitives
+
+  (export define-macro
           make-identifier
+          identifier?
+          identifier-variable
+          identifier-environment
+          variable?
+          variable=?)
+
+  ;; simple macro
+
+  (export define-syntax
+          syntax-quote
+          syntax-quasiquote
+          syntax-unquote
+          syntax-unquote-splicing)
+
+  ;; misc transformers
+
+  (export call-with-current-environment
           make-syntactic-closure
           close-syntax
-          capture-syntactic-environment
+          strip-syntax
           sc-macro-transformer
           rsc-macro-transformer
           er-macro-transformer
-          ir-macro-transformer
-          ;; strip-syntax
-          define-macro)
+          ir-macro-transformer)
 
-  ;; assumes no derived expressions are provided yet
 
-  (define (walk proc expr)
-    "walk on symbols"
-    (if (null? expr)
-        '()
-        (if (pair? expr)
-            (cons (walk proc (car expr))
-                  (walk proc (cdr expr)))
-            (if (vector? expr)
-                (list->vector (walk proc (vector->list expr)))
-                (if (symbol? expr)
-                    (proc expr)
-                    expr)))))
+  (define-macro call-with-current-environment
+    (lambda (form env)
+      `(,(cadr form) ',env)))
 
-  (define (memoize f)
-    "memoize on symbols"
-    (define cache (make-dictionary))
-    (lambda (sym)
-      (define value (dictionary-ref cache sym))
-      (if (not (undefined? value))
-          value
-          (begin
-            (define val (f sym))
-            (dictionary-set! cache sym val)
-            val))))
+
+  ;; syntactic closure
+
 
   (define (make-syntactic-closure env free form)
-
-    (define resolve
-      (memoize
-       (lambda (sym)
-         (make-identifier sym env))))
-
-    (walk
-     (lambda (sym)
-       (if (memq sym free)
-           sym
-           (resolve sym)))
-     form))
+    (letrec
+        ((wrap (let ((register (make-register)))
+                 (lambda (var)
+                   (let ((id (register var)))
+                     (if (undefined? id)
+                         (let ((id (make-identifier var env)))
+                           (register var id)
+                           id)
+                         id)))))
+         (walk (lambda (f form)
+                 (cond
+                  ((variable? form)
+                   (f form))
+                  ((pair? form)
+                   (cons (walk f (car form)) (walk f (cdr form))))
+                  ((vector? form)
+                   (list->vector (walk f (vector->list form))))
+                  (else
+                   form)))))
+      (letrec
+          ((f (lambda (var)
+                (let loop ((free free))
+                  (if (null? free)
+                      (wrap free)
+                      (if (variable=? var (car free))
+                          var
+                          (loop (cdr free))))))))
+        (walk f form))))
 
   (define (close-syntax form env)
     (make-syntactic-closure env '() form))
 
-  (define-syntax capture-syntactic-environment
-    (lambda (mac-env)
-      (lambda (form use-env)
-        (list (cadr form) (list (make-identifier 'quote mac-env) mac-env)))))
+  (define (strip-syntax form)
+    (letrec
+        ((unwrap (lambda (var)
+                   (identifier-variable var)))
+         (walk (lambda (f form)
+                 (cond
+                  ((variable? form)
+                   (f form))
+                  ((pair? form)
+                   (cons (walk f (car form)) (walk f (cdr form))))
+                  ((vector? form)
+                   (list->vector (walk f (vector->list form))))
+                  (else
+                   form)))))
+      (walk unwrap form)))
 
-  (define (sc-macro-transformer f)
-    (lambda (mac-env)
-      (lambda (expr use-env)
-        (make-syntactic-closure mac-env '() (f expr use-env)))))
 
-  (define (rsc-macro-transformer f)
-    (lambda (mac-env)
-      (lambda (expr use-env)
-        (make-syntactic-closure use-env '() (f expr mac-env)))))
+  ;; transformers
 
-  (define (er-macro-transformer f)
-    (lambda (mac-env)
-      (lambda (expr use-env)
 
-        (define rename
-          (memoize
-           (lambda (sym)
-             (make-identifier sym mac-env))))
+  (define (sc-transformer f)
+    (lambda (form use-env mac-env)
+      (make-syntactic-closure mac-env '() (f form use-env))))
 
-        (define (compare x y)
-          (if (not (symbol? x))
-              #f
-              (if (not (symbol? y))
-                  #f
-                  (identifier=? use-env x use-env y))))
+  (define (rsc-transformer f)
+    (lambda (form use-env mac-env)
+      (make-syntactic-closure use-env '() (f form mac-env))))
 
-        (f expr rename compare))))
+  (define (er-transformer f)
+    (lambda (form use-env mac-env)
+      (letrec
+          ((rename (let ((register (make-register)))
+                     (lambda (var)
+                       (let ((id (register var)))
+                         (if (undefined? id)
+                             (let ((id (make-identifier var mac-env)))
+                               (register var id)
+                               id)
+                             id)))))
+           (compare (lambda (x y)
+                      (variable=?
+                       (make-identifier x use-env)
+                       (make-identifier y use-env)))))
+        (f form rename compare))))
 
-  (define (ir-macro-transformer f)
-    (lambda (mac-env)
-      (lambda (expr use-env)
+  (define (ir-transformer f)
+    (lambda (form use-env mac-env)
+      (let ((register1 (make-register))
+            (register2 (make-register)))
+        (letrec
+            ((inject (lambda (var1)
+                       (let ((var2 (register1 var1)))
+                         (if (undefined? var2)
+                             (let ((var2 (make-identifier var1 use-env)))
+                               (register1 var1 var2)
+                               (register2 var2 var1)
+                               var2)
+                             var2))))
+             (rename (let ((register (make-register)))
+                       (lambda (var)
+                         (let ((id (register var)))
+                           (if (undefined? id)
+                               (let ((id (make-identifier var mac-env)))
+                                 (register var id)
+                                 id)
+                               id)))))
+             (flip (lambda (var2) ; unwrap if injected, wrap if not injected
+                     (let ((var1 (register2 var2)))
+                       (if (undefined? var1)
+                           (rename var2)
+                           var1))))
+             (walk (lambda (f form)
+                     (cond
+                      ((variable? form)
+                       (f form))
+                      ((pair? form)
+                       (cons (walk f (car form)) (walk f (cdr form))))
+                      ((vector? form)
+                       (list->vector (walk f (vector->list form))))
+                      (else
+                       form))))
+             (compare (lambda (x y)
+                        (variable=?
+                         (make-identifier x mac-env)
+                         (make-identifier y mac-env)))))
+          (walk flip (f (walk inject form) inject compare))))))
 
-        (define icache* (make-dictionary))
+  (define-macro sc-macro-transformer
+    (lambda (f mac-env)
+      #`(lambda (form use-env)
+          ((sc-transformer #,(cadr f)) form use-env #,mac-env))))
 
-        (define inject
-          (memoize
-           (lambda (sym)
-             (define id (make-identifier sym use-env))
-             (dictionary-set! icache* id sym)
-             id)))
+  (define-macro rsc-macro-transformer
+    (lambda (f mac-env)
+      #`(lambda (form use-env)
+          ((rsc-transformer #,(cadr f)) form use-env #,mac-env))))
 
-        (define rename
-          (memoize
-           (lambda (sym)
-             (make-identifier sym mac-env))))
+  (define-macro er-macro-transformer
+    (lambda (f mac-env)
+      #`(lambda (form use-env)
+          ((er-transformer #,(cadr f)) form use-env #,mac-env))))
 
-        (define (compare x y)
-          (if (not (symbol? x))
-              #f
-              (if (not (symbol? y))
-                  #f
-                  (identifier=? mac-env x mac-env y))))
-
-        (walk (lambda (sym)
-                (let ((value (dictionary-ref icache* sym)))
-                  (if (undefined? value)
-                      (rename sym)
-                      value)))
-              (f (walk inject expr) inject compare)))))
-
-  ;; (define (strip-syntax form)
-  ;;   (walk ungensym form))
-
-  (define-syntax define-macro
-    (er-macro-transformer
-     (lambda (expr r c)
-       (define formal (car (cdr expr)))
-       (define body   (cdr (cdr expr)))
-       (if (symbol? formal)
-           (list (r 'define-syntax) formal
-                 (list (r 'lambda) (list (r 'form) '_ '_)
-                       (list (r 'apply) (car body) (list (r 'cdr) (r 'form)))))
-           (list (r 'define-macro) (car formal)
-                 (cons (r 'lambda)
-                       (cons (cdr formal)
-                             body))))))))
+  (define-macro ir-macro-transformer
+    (lambda (f mac-env)
+      #`(lambda (form use-env)
+          ((ir-transformer #,(cadr f)) form use-env #,mac-env)))))

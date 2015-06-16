@@ -302,6 +302,9 @@ write_core(struct writer_control *p, pic_value obj)
     }
     xfprintf(file, ")");
     break;
+  case PIC_TT_ID:
+    xfprintf(file, "#<identifier %s>", pic_symbol_name(pic, pic_var_name(pic, obj)));
+    break;
   default:
     xfprintf(file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
     break;

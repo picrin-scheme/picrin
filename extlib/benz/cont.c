@@ -288,6 +288,6 @@ pic_init_cont(pic_state *pic)
   pic_defun(pic, "call/cc", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
 
-  pic_defun_vm(pic, "values", pic->rVALUES, pic_cont_values);
-  pic_defun_vm(pic, "call-with-values", pic->rCALL_WITH_VALUES, pic_cont_call_with_values);
+  pic_defun_vm(pic, "values", pic->uVALUES, pic_cont_values);
+  pic_defun_vm(pic, "call-with-values", pic->uCALL_WITH_VALUES, pic_cont_call_with_values);
 }

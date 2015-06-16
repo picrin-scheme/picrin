@@ -103,13 +103,13 @@ pic_init_core(pic_state *pic)
   pic_deflibrary (pic, "(picrin base)") {
     size_t ai = pic_gc_arena_preserve(pic);
 
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->rSETBANG);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->rQUOTE);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sLAMBDA, pic->rLAMBDA);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->rIF);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->rBEGIN);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->uDEFINE);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->uSETBANG);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->uQUOTE);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sLAMBDA, pic->uLAMBDA);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->uIF);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->uBEGIN);
+    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_MACRO, pic->uDEFINE_MACRO);
 
     pic_init_undef(pic); DONE;
     pic_init_bool(pic); DONE;
@@ -222,6 +222,9 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* symbol table */
   xh_init_str(&pic->syms, sizeof(pic_sym *));
 
+  /* unique symbol count */
+  pic->ucnt = 0;
+
   /* global variables */
   pic->globals = NULL;
 
@@ -254,7 +257,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   ai = pic_gc_arena_preserve(pic);
 
-#define S(slot,name) pic->slot = pic_intern_cstr(pic, name);
+#define S(slot,name) pic->slot = pic_intern_cstr(pic, name)
 
   S(sDEFINE, "define");
   S(sLAMBDA, "lambda");
@@ -265,7 +268,11 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   S(sQUASIQUOTE, "quasiquote");
   S(sUNQUOTE, "unquote");
   S(sUNQUOTE_SPLICING, "unquote-splicing");
-  S(sDEFINE_SYNTAX, "define-syntax");
+  S(sSYNTAX_QUOTE, "syntax-quote");
+  S(sSYNTAX_QUASIQUOTE, "syntax-quasiquote");
+  S(sSYNTAX_UNQUOTE, "syntax-unquote");
+  S(sSYNTAX_UNQUOTE_SPLICING, "syntax-unquote-splicing");
+  S(sDEFINE_MACRO, "define-macro");
   S(sIMPORT, "import");
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
@@ -308,37 +315,37 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   pic_gc_arena_restore(pic, ai);
 
-#define R(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));
+#define U(slot,name) pic->slot = pic_uniq(pic, pic_obj_value(pic_intern_cstr(pic, name)))
 
-  R(rDEFINE, "define");
-  R(rLAMBDA, "lambda");
-  R(rIF, "if");
-  R(rBEGIN, "begin");
-  R(rSETBANG, "set!");
-  R(rQUOTE, "quote");
-  R(rDEFINE_SYNTAX, "define-syntax");
-  R(rIMPORT, "import");
-  R(rEXPORT, "export");
-  R(rDEFINE_LIBRARY, "define-library");
-  R(rCOND_EXPAND, "cond-expand");
-  R(rCONS, "cons");
-  R(rCAR, "car");
-  R(rCDR, "cdr");
-  R(rNILP, "null?");
-  R(rSYMBOLP, "symbol?");
-  R(rPAIRP, "pair?");
-  R(rADD, "+");
-  R(rSUB, "-");
-  R(rMUL, "*");
-  R(rDIV, "/");
-  R(rEQ, "=");
-  R(rLT, "<");
-  R(rLE, "<=");
-  R(rGT, ">");
-  R(rGE, ">=");
-  R(rNOT, "not");
-  R(rVALUES, "values");
-  R(rCALL_WITH_VALUES, "call-with-values");
+  U(uDEFINE, "define");
+  U(uLAMBDA, "lambda");
+  U(uIF, "if");
+  U(uBEGIN, "begin");
+  U(uSETBANG, "set!");
+  U(uQUOTE, "quote");
+  U(uDEFINE_MACRO, "define-macro");
+  U(uIMPORT, "import");
+  U(uEXPORT, "export");
+  U(uDEFINE_LIBRARY, "define-library");
+  U(uCOND_EXPAND, "cond-expand");
+  U(uCONS, "cons");
+  U(uCAR, "car");
+  U(uCDR, "cdr");
+  U(uNILP, "null?");
+  U(uSYMBOLP, "symbol?");
+  U(uPAIRP, "pair?");
+  U(uADD, "+");
+  U(uSUB, "-");
+  U(uMUL, "*");
+  U(uDIV, "/");
+  U(uEQ, "=");
+  U(uLT, "<");
+  U(uLE, "<=");
+  U(uGT, ">");
+  U(uGE, ">=");
+  U(uNOT, "not");
+  U(uVALUES, "values");
+  U(uCALL_WITH_VALUES, "call-with-values");
   pic_gc_arena_restore(pic, ai);
 
   /* root tables */

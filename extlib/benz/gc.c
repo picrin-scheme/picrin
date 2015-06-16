@@ -411,14 +411,23 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_BLOB: {
     break;
   }
+  case PIC_TT_ID: {
+    struct pic_id *id = (struct pic_id *)obj;
+    gc_mark(pic, id->var);
+    gc_mark_object(pic, (struct pic_object *)id->env);
+    break;
+  }
   case PIC_TT_ENV: {
     struct pic_env *env = (struct pic_env *)obj;
+    xh_entry *it;
 
     if (env->up) {
       gc_mark_object(pic, (struct pic_object *)env->up);
     }
-    gc_mark(pic, env->defer);
-    gc_mark_object(pic, (struct pic_object *)env->map);
+    for (it = xh_begin(&env->map); it != NULL; it = xh_next(it)) {
+      gc_mark_object(pic, xh_key(it, struct pic_object *));
+      gc_mark_object(pic, xh_val(it, struct pic_object *));
+    }
     break;
   }
   case PIC_TT_LIB: {
@@ -519,7 +528,9 @@ gc_mark_global_symbols(pic_state *pic)
 {
   M(sDEFINE); M(sLAMBDA); M(sIF); M(sBEGIN); M(sQUOTE); M(sSETBANG);
   M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
-  M(sDEFINE_SYNTAX); M(sIMPORT); M(sEXPORT);
+  M(sSYNTAX_QUOTE); M(sSYNTAX_QUASIQUOTE); M(sSYNTAX_UNQUOTE);
+  M(sSYNTAX_UNQUOTE_SPLICING);
+  M(sDEFINE_MACRO); M(sIMPORT); M(sEXPORT);
   M(sDEFINE_LIBRARY);
   M(sCOND_EXPAND); M(sAND); M(sOR); M(sELSE); M(sLIBRARY);
   M(sONLY); M(sRENAME); M(sPREFIX); M(sEXCEPT);
@@ -531,15 +542,15 @@ gc_mark_global_symbols(pic_state *pic)
   M(sCALL); M(sTAILCALL); M(sCALL_WITH_VALUES); M(sTAILCALL_WITH_VALUES);
   M(sGREF); M(sLREF); M(sCREF); M(sRETURN);
 
-  M(rDEFINE); M(rLAMBDA); M(rIF); M(rBEGIN); M(rQUOTE); M(rSETBANG);
-  M(rDEFINE_SYNTAX); M(rIMPORT); M(rEXPORT);
-  M(rDEFINE_LIBRARY);
-  M(rCOND_EXPAND);
-  M(rCONS); M(rCAR); M(rCDR); M(rNILP);
-  M(rSYMBOLP); M(rPAIRP);
-  M(rADD); M(rSUB); M(rMUL); M(rDIV);
-  M(rEQ); M(rLT); M(rLE); M(rGT); M(rGE); M(rNOT);
-  M(rVALUES); M(rCALL_WITH_VALUES);
+  M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG);
+  M(uDEFINE_MACRO); M(uIMPORT); M(uEXPORT);
+  M(uDEFINE_LIBRARY);
+  M(uCOND_EXPAND);
+  M(uCONS); M(uCAR); M(uCDR); M(uNILP);
+  M(uSYMBOLP); M(uPAIRP);
+  M(uADD); M(uSUB); M(uMUL); M(uDIV);
+  M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
+  M(uVALUES); M(uCALL_WITH_VALUES);
 }
 
 static void
@@ -681,7 +692,12 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_ERROR: {
     break;
   }
+  case PIC_TT_ID: {
+    break;
+  }
   case PIC_TT_ENV: {
+    struct pic_env *env = (struct pic_env *)obj;
+    xh_destroy(&env->map);
     break;
   }
   case PIC_TT_LIB: {
