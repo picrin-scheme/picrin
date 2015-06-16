@@ -312,6 +312,60 @@ pic_lib_define_library(pic_state *pic)
   return pic_undef_value();
 }
 
+static pic_value
+pic_lib_make_library(pic_state *pic)
+{
+  pic_value name;
+
+  pic_get_args(pic, "o", &name);
+
+  return pic_obj_value(pic_make_library(pic, name));
+}
+
+static pic_value
+pic_lib_find_library(pic_state *pic)
+{
+  pic_value name;
+  struct pic_lib *lib;
+
+  pic_get_args(pic, "o", &name);
+
+  if ((lib = pic_find_library(pic, name)) == NULL) {
+    return pic_false_value();
+  }
+  return pic_obj_value(lib);
+}
+
+static pic_value
+pic_lib_library_exports(pic_state *pic)
+{
+  pic_value lib, exports = pic_nil_value();
+  pic_sym *sym;
+  xh_entry *it;
+
+  pic_get_args(pic, "o", &lib);
+
+  pic_assert_type(pic, lib, lib);
+
+  pic_dict_for_each (sym, pic_lib_ptr(lib)->exports, it) {
+    pic_push(pic, pic_obj_value(sym), exports);
+  }
+
+  return exports;
+}
+
+static pic_value
+pic_lib_library_environment(pic_state *pic)
+{
+  pic_value lib;
+
+  pic_get_args(pic, "o", &lib);
+
+  pic_assert_type(pic, lib, lib);
+
+  return pic_obj_value(pic_lib_ptr(lib)->env);
+}
+
 void
 pic_init_lib(pic_state *pic)
 {
@@ -321,4 +375,9 @@ pic_init_lib(pic_state *pic)
   pic_defmacro(pic, pic->sIMPORT, pic->uIMPORT, pic_lib_import);
   pic_defmacro(pic, pic->sEXPORT, pic->uEXPORT, pic_lib_export);
   pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->uDEFINE_LIBRARY, pic_lib_define_library);
+
+  pic_defun(pic, "make-library", pic_lib_make_library);
+  pic_defun(pic, "find-library", pic_lib_find_library);
+  pic_defun(pic, "library-exports", pic_lib_library_exports);
+  pic_defun(pic, "library-environment", pic_lib_library_environment);
 }

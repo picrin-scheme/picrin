@@ -252,6 +252,11 @@
           variable?
           variable=?)
 
+  (export make-library
+          find-library
+          library-exports
+          library-environment)
+
   (export call-with-current-continuation
           call/cc
           dynamic-wind
