@@ -104,6 +104,14 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
     }
     return true;
   }
+  case PIC_TT_ID: {
+    struct pic_id *id1, *id2;
+
+    id1 = pic_id_ptr(x);
+    id2 = pic_id_ptr(y);
+
+    return pic_eq_p(pic_expand(pic, id1->var, id1->env), pic_expand(pic, id2->var, id2->env));
+  }
   default:
     return false;
   }

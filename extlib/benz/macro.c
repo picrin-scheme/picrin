@@ -152,24 +152,20 @@ pic_macro_variable_p(pic_state *pic)
 static pic_value
 pic_macro_variable_eq_p(pic_state *pic)
 {
-  pic_value var1, var2;
+  size_t argc, i;
+  pic_value *argv;
 
-  pic_get_args(pic, "oo", &var1, &var2);
+  pic_get_args(pic, "*", &argc, &argv);
 
-  pic_assert_type(pic, var1, var);
-  pic_assert_type(pic, var2, var);
-
-  if (pic_sym_p(var1) && pic_sym_p(var2)) {
-    return pic_bool_value(pic_eq_p(var1, var2));
+  for (i = 0; i < argc; ++i) {
+    if (! pic_var_p(argv[i])) {
+      return pic_false_value();
+    }
+    if (! pic_equal_p(pic, argv[i], argv[0])) {
+      return pic_false_value();
+    }
   }
-  if (pic_id_p(var1) && pic_id_p(var2)) {
-    struct pic_id *id1, *id2;
-
-    id1 = pic_id_ptr(var1);
-    id2 = pic_id_ptr(var2);
-    return pic_bool_value(pic_eq_p(pic_expand(pic, id1->var, id1->env), pic_expand(pic, id2->var, id2->env)));
-  }
-  return pic_false_value();
+  return pic_true_value();
 }
 
 void
