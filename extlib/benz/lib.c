@@ -188,70 +188,6 @@ pic_export(pic_state *pic, pic_sym *sym)
   export(pic, pic_obj_value(sym));
 }
 
-static bool
-condexpand(pic_state *pic, pic_value clause)
-{
-  pic_sym *tag;
-  pic_value c, feature, it;
-
-  if (pic_eq_p(clause, pic_obj_value(pic->sELSE))) {
-    return true;
-  }
-  if (pic_sym_p(clause)) {
-    pic_for_each (feature, pic->features, it) {
-      if(pic_eq_p(feature, clause))
-        return true;
-    }
-    return false;
-  }
-
-  if (! (pic_pair_p(clause) && pic_sym_p(pic_car(pic, clause)))) {
-    pic_errorf(pic, "invalid 'cond-expand' clause ~s", clause);
-  } else {
-    tag = pic_sym_ptr(pic_car(pic, clause));
-  }
-
-  if (tag == pic->sLIBRARY) {
-    return pic_find_library(pic, pic_list_ref(pic, clause, 1)) != NULL;
-  }
-  if (tag == pic->sNOT) {
-    return ! condexpand(pic, pic_list_ref(pic, clause, 1));
-  }
-  if (tag == pic->sAND) {
-    pic_for_each (c, pic_cdr(pic, clause), it) {
-      if (! condexpand(pic, c))
-        return false;
-    }
-    return true;
-  }
-  if (tag == pic->sOR) {
-    pic_for_each (c, pic_cdr(pic, clause), it) {
-      if (condexpand(pic, c))
-        return true;
-    }
-    return false;
-  }
-
-  pic_errorf(pic, "unknown 'cond-expand' directive ~s", clause);
-}
-
-static pic_value
-pic_lib_condexpand(pic_state *pic)
-{
-  pic_value *clauses;
-  size_t argc, i;
-
-  pic_get_args(pic, "*", &argc, &clauses);
-
-  for (i = 0; i < argc; i++) {
-    if (condexpand(pic, pic_car(pic, clauses[i]))) {
-      return pic_cons(pic, pic_obj_value(pic->sBEGIN), pic_cdr(pic, clauses[i]));
-    }
-  }
-
-  return pic_undef_value();
-}
-
 static pic_value
 pic_lib_import(pic_state *pic)
 {
@@ -277,36 +213,6 @@ pic_lib_export(pic_state *pic)
 
   for (i = 0; i < argc; ++i) {
     export(pic, argv[i]);
-  }
-
-  return pic_undef_value();
-}
-
-static pic_value
-pic_lib_define_library(pic_state *pic)
-{
-  struct pic_lib *lib, *prev = pic->lib;
-  size_t argc, i;
-  pic_value spec, *argv;
-
-  pic_get_args(pic, "o*", &spec, &argc, &argv);
-
-  if ((lib = pic_find_library(pic, spec)) == NULL) {
-    lib = pic_make_library(pic, spec);
-  }
-
-  pic_try {
-    pic->lib = lib;
-
-    for (i = 0; i < argc; ++i) {
-      pic_void(pic_eval(pic, argv[i], pic->lib->env));
-    }
-
-    pic->lib = prev;
-  }
-  pic_catch {
-    pic->lib = prev;   /* restores pic->lib even if an error occured */
-    pic_raise(pic, pic->err);
   }
 
   return pic_undef_value();
@@ -403,10 +309,8 @@ pic_init_lib(pic_state *pic)
 {
   void pic_defmacro(pic_state *, pic_sym *, pic_sym *, pic_func_t);
 
-  pic_defmacro(pic, pic->sCOND_EXPAND, pic->uCOND_EXPAND, pic_lib_condexpand);
   pic_defmacro(pic, pic->sIMPORT, pic->uIMPORT, pic_lib_import);
   pic_defmacro(pic, pic->sEXPORT, pic->uEXPORT, pic_lib_export);
-  pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->uDEFINE_LIBRARY, pic_lib_define_library);
 
   pic_defun(pic, "make-library", pic_lib_make_library);
   pic_defun(pic, "find-library", pic_lib_find_library);
