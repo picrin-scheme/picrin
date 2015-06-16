@@ -147,16 +147,6 @@ read_directive(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_eval(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
-{
-  pic_value form;
-
-  form = read(pic, port, next(port));
-
-  return pic_eval(pic, form, pic->lib->env);
-}
-
-static pic_value
 read_quote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 {
   return pic_list2(pic, pic_obj_value(pic->sQUOTE), read(pic, port, next(port)));
@@ -829,7 +819,6 @@ reader_table_init(struct pic_reader *reader)
   reader->dispatch['\\'] = read_char;
   reader->dispatch['('] = read_vector;
   reader->dispatch['u'] = read_undef_or_blob;
-  reader->dispatch['.'] = read_eval;
 
   /* read labels */
   for (c = '0'; c <= '9'; ++c) {
