@@ -54,138 +54,26 @@ pic_find_library(pic_state *pic, pic_value spec)
   return pic_lib_ptr(pic_cdr(pic, v));
 }
 
-static void
-import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
+void
+pic_import(pic_state *pic, struct pic_lib *lib)
 {
-  struct pic_lib *lib;
-  struct pic_dict *table;
-  pic_value val, tmp, prefix, it;
-  pic_sym *sym, *id, *tag, *nick;
-  xh_entry *iter;
+  pic_sym *name, *realname, *uid;
+  xh_entry *it;
 
-  table = pic_make_dict(pic);
-
-  if (pic_pair_p(spec) && pic_sym_p(pic_car(pic, spec))) {
-
-    tag = pic_sym_ptr(pic_car(pic, spec));
-
-    if (tag == pic->sONLY) {
-      import_table(pic, pic_cadr(pic, spec), table);
-
-      pic_for_each (val, pic_cddr(pic, spec), it) {
-        pic_dict_set(pic, imports, pic_sym_ptr(val), pic_dict_ref(pic, table, pic_sym_ptr(val)));
-      }
-      return;
-    }
-    if (tag == pic->sRENAME) {
-      import_table(pic, pic_cadr(pic, spec), imports);
-
-      pic_for_each (val, pic_cddr(pic, spec), it) {
-        tmp = pic_dict_ref(pic, imports, pic_sym_ptr(pic_car(pic, val)));
-        pic_dict_del(pic, imports, pic_sym_ptr(pic_car(pic, val)));
-        pic_dict_set(pic, imports, pic_sym_ptr(pic_cadr(pic, val)), tmp);
-      }
-      return;
-    }
-    if (tag == pic->sPREFIX) {
-      import_table(pic, pic_cadr(pic, spec), table);
-
-      prefix = pic_list_ref(pic, spec, 2);
-      pic_dict_for_each (sym, table, iter) {
-        id = pic_intern(pic, pic_format(pic, "~s~s", prefix, pic_obj_value(sym)));
-        pic_dict_set(pic, imports, id, pic_dict_ref(pic, table, sym));
-      }
-      return;
-    }
-    if (tag == pic->sEXCEPT) {
-      import_table(pic, pic_cadr(pic, spec), imports);
-      pic_for_each (val, pic_cddr(pic, spec), it) {
-        pic_dict_del(pic, imports, pic_sym_ptr(val));
-      }
-      return;
-    }
-  }
-  lib = pic_find_library(pic, spec);
-  if (! lib) {
-    pic_errorf(pic, "library not found: ~a", spec);
-  }
-  pic_dict_for_each (nick, lib->exports, iter) {
-    pic_sym *realname, *uid;
-
-    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, nick));
+  pic_dict_for_each (name, lib->exports, it) {
+    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
 
     if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
       pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
     }
-    pic_dict_set(pic, imports, nick, pic_obj_value(uid));
+    pic_put_variable(pic, pic->lib->env, pic_obj_value(name), uid);
   }
 }
 
-static void
-import(pic_state *pic, pic_value spec)
-{
-  struct pic_dict *imports;
-  pic_sym *sym;
-  xh_entry *it;
-
-  imports = pic_make_dict(pic);
-
-  import_table(pic, spec, imports);
-
-  pic_dict_for_each (sym, imports, it) {
-    pic_put_variable(pic, pic->lib->env, pic_obj_value(sym), pic_sym_ptr(pic_dict_ref(pic, imports, sym)));
-  }
-}
-
-static void
-export(pic_state *pic, pic_value spec)
-{
-  pic_sym *sRENAME = pic_intern_cstr(pic, "rename");
-  pic_value a, b;
-
-  if (pic_sym_p(spec)) {        /* (export a) */
-    a = b = spec;
-  } else {                      /* (export (rename a b)) */
-    if (! pic_list_p(spec))
-      goto fail;
-    if (! (pic_length(pic, spec) == 3))
-      goto fail;
-    if (! pic_eq_p(pic_car(pic, spec), pic_obj_value(sRENAME)))
-      goto fail;
-    if (! pic_sym_p(a = pic_list_ref(pic, spec, 1)))
-      goto fail;
-    if (! pic_sym_p(b = pic_list_ref(pic, spec, 2)))
-      goto fail;
-  }
-
-#if DEBUG
-  printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym_ptr(b)), pic_symbol_name(pic, pic_sym_ptr(a)));
-#endif
-
-  pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), a);
-
-  return;
-
- fail:
-  pic_errorf(pic, "illegal export spec: ~s", spec);
-}
-
 void
-pic_import(pic_state *pic, pic_value spec)
+pic_export(pic_state *pic, pic_sym *name)
 {
-  import(pic, spec);
-}
-
-void
-pic_import_library(pic_state *pic, struct pic_lib *lib)
-{
-  import(pic, lib->name);
-}
-
-void
-pic_export(pic_state *pic, pic_sym *sym)
-{
-  export(pic, pic_obj_value(sym));
+  pic_dict_set(pic, pic->lib->exports, name, pic_obj_value(name));
 }
 
 static pic_value
