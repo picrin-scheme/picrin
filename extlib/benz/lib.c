@@ -189,21 +189,6 @@ pic_export(pic_state *pic, pic_sym *sym)
 }
 
 static pic_value
-pic_lib_export(pic_state *pic)
-{
-  size_t argc, i;
-  pic_value *argv;
-
-  pic_get_args(pic, "*", &argc, &argv);
-
-  for (i = 0; i < argc; ++i) {
-    export(pic, argv[i]);
-  }
-
-  return pic_undef_value();
-}
-
-static pic_value
 pic_lib_make_library(pic_state *pic)
 {
   pic_value name;
@@ -280,6 +265,22 @@ pic_lib_library_import(pic_state *pic)
 }
 
 static pic_value
+pic_lib_library_export(pic_state *pic)
+{
+  pic_sym *name, *alias = NULL;
+
+  pic_get_args(pic, "m|m", &name, &alias);
+
+  if (alias == NULL) {
+    alias = name;
+  }
+
+  pic_dict_set(pic, pic->lib->exports, alias, pic_obj_value(name));
+
+  return pic_undef_value();
+}
+
+static pic_value
 pic_lib_library_name(pic_state *pic)
 {
   pic_value lib;
@@ -324,15 +325,13 @@ pic_lib_library_environment(pic_state *pic)
 void
 pic_init_lib(pic_state *pic)
 {
-  void pic_defmacro(pic_state *, pic_sym *, pic_sym *, pic_func_t);
-
-  pic_defmacro(pic, pic->sEXPORT, pic->uEXPORT, pic_lib_export);
-
   pic_defun(pic, "make-library", pic_lib_make_library);
   pic_defun(pic, "find-library", pic_lib_find_library);
-  pic_defun(pic, "current-library", pic_lib_current_library);
-  pic_defun(pic, "library-import", pic_lib_library_import);
   pic_defun(pic, "library-name", pic_lib_library_name);
   pic_defun(pic, "library-exports", pic_lib_library_exports);
   pic_defun(pic, "library-environment", pic_lib_library_environment);
+
+  pic_defun(pic, "current-library", pic_lib_current_library);
+  pic_defun(pic, "library-import", pic_lib_library_import);
+  pic_defun(pic, "library-export", pic_lib_library_export);
 }
