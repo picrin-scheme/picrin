@@ -8,14 +8,6 @@ void pic_init_contrib(pic_state *);
 void pic_load_piclib(pic_state *);
 
 static pic_value
-pic_features(pic_state *pic)
-{
-  pic_get_args(pic, "");
-
-  return pic->features;
-}
-
-static pic_value
 pic_libraries(pic_state *pic)
 {
   pic_value libs = pic_nil_value(), lib, it;
@@ -36,10 +28,6 @@ pic_init_picrin(pic_state *pic)
 
   pic_deflibrary (pic, "(picrin library)") {
     pic_defun(pic, "libraries", pic_libraries);
-  }
-
-  pic_deflibrary (pic, "(scheme base)") {
-    pic_defun(pic, "features", pic_features);
   }
 
   pic_init_contrib(pic);

@@ -91,6 +91,14 @@ pic_init_features(pic_state *pic)
 #endif
 }
 
+static pic_value
+pic_features(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic->features;
+}
+
 #define DONE pic_gc_arena_restore(pic, ai);
 
 static void
@@ -110,6 +118,8 @@ pic_init_core(pic_state *pic)
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->uIF);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->uBEGIN);
     pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_MACRO, pic->uDEFINE_MACRO);
+
+    pic_defun(pic, "features", pic_features);
 
     pic_init_undef(pic); DONE;
     pic_init_bool(pic); DONE;

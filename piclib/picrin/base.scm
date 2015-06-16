@@ -286,4 +286,6 @@
           write-shared
           display)
 
-  (export eval))
+  (export eval)
+
+  (export features))
