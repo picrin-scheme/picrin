@@ -2,7 +2,8 @@
   (import (scheme base)
           (scheme read)
           (scheme write)
-          (scheme eval))
+          (scheme eval)
+          (picrin base))
 
   (cond-expand
    ((library (picrin readline))
@@ -32,7 +33,7 @@
             (picrin macro)
             (picrin array)
             (picrin library))
-   '(picrin user))
+   (library-environment (find-library '(picrin user))))
 
   (define (repl)
     (let loop ((buf ""))
