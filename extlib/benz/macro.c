@@ -148,33 +148,33 @@ find_macro(pic_state *pic, pic_sym *uid)
   return pic_proc_ptr(pic_dict_ref(pic, pic->macros, uid));
 }
 
-static pic_value macroexpand(pic_state *, pic_value, struct pic_env *);
-static pic_value macroexpand_lambda(pic_state *, pic_value, struct pic_env *);
+static pic_value expand(pic_state *, pic_value, struct pic_env *);
+static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 
 static pic_value
-macroexpand_var(pic_state *pic, pic_value var, struct pic_env *env)
+expand_var(pic_state *pic, pic_value var, struct pic_env *env)
 {
   return pic_obj_value(resolve(pic, var, env));
 }
 
 static pic_value
-macroexpand_quote(pic_state *pic, pic_value expr)
+expand_quote(pic_state *pic, pic_value expr)
 {
   return pic_cons(pic, pic_obj_value(pic->uQUOTE), pic_cdr(pic, expr));
 }
 
 static pic_value
-macroexpand_list(pic_state *pic, pic_value obj, struct pic_env *env)
+expand_list(pic_state *pic, pic_value obj, struct pic_env *env)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value x, head, tail;
 
   if (pic_pair_p(obj)) {
-    head = macroexpand(pic, pic_car(pic, obj), env);
-    tail = macroexpand_list(pic, pic_cdr(pic, obj), env);
+    head = expand(pic, pic_car(pic, obj), env);
+    tail = expand_list(pic, pic_cdr(pic, obj), env);
     x = pic_cons(pic, head, tail);
   } else {
-    x = macroexpand(pic, obj, env);
+    x = expand(pic, obj, env);
   }
 
   pic_gc_arena_restore(pic, ai);
@@ -183,7 +183,7 @@ macroexpand_list(pic_state *pic, pic_value obj, struct pic_env *env)
 }
 
 static pic_value
-macroexpand_defer(pic_state *pic, pic_value expr, struct pic_env *env)
+expand_defer(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_value skel = pic_list1(pic, pic_invalid_value()); /* (#<invalid>) */
 
@@ -193,7 +193,7 @@ macroexpand_defer(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 static void
-macroexpand_deferred(pic_state *pic, struct pic_env *env)
+expand_deferred(pic_state *pic, struct pic_env *env)
 {
   pic_value defer, val, src, dst, it;
 
@@ -201,7 +201,7 @@ macroexpand_deferred(pic_state *pic, struct pic_env *env)
     src = pic_car(pic, defer);
     dst = pic_cdr(pic, defer);
 
-    val = macroexpand_lambda(pic, src, env);
+    val = expand_lambda(pic, src, env);
 
     /* copy */
     pic_pair_ptr(dst)->car = pic_car(pic, val);
@@ -212,7 +212,7 @@ macroexpand_deferred(pic_state *pic, struct pic_env *env)
 }
 
 static pic_value
-macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
+expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_value formal, body;
   struct pic_env *in;
@@ -239,16 +239,16 @@ macroexpand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
     pic_errorf(pic, "syntax error");
   }
 
-  formal = macroexpand_list(pic, pic_cadr(pic, expr), in);
-  body = macroexpand_list(pic, pic_cddr(pic, expr), in);
+  formal = expand_list(pic, pic_cadr(pic, expr), in);
+  body = expand_list(pic, pic_cddr(pic, expr), in);
 
-  macroexpand_deferred(pic, in);
+  expand_deferred(pic, in);
 
   return pic_cons(pic, pic_obj_value(pic->uLAMBDA), pic_cons(pic, formal, body));
 }
 
 static pic_value
-macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
+expand_define(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_sym *uid;
   pic_value var, val;
@@ -271,13 +271,13 @@ macroexpand_define(pic_state *pic, pic_value expr, struct pic_env *env)
   if ((uid = pic_find_variable(pic, env, var)) == NULL) {
     uid = pic_add_variable(pic, env, var);
   }
-  val = macroexpand(pic, pic_list_ref(pic, expr, 2), env);
+  val = expand(pic, pic_list_ref(pic, expr, 2), env);
 
   return pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_obj_value(uid), val);
 }
 
 static pic_value
-macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
+expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_value var, val;
   pic_sym *uid;
@@ -301,7 +301,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
   pic_try {
     val = pic_eval(pic, val, env);
   } pic_catch {
-    pic_errorf(pic, "macroexpand error while definition: %s", pic_errmsg(pic));
+    pic_errorf(pic, "expand error while definition: %s", pic_errmsg(pic));
   }
 
   if (! pic_proc_p(val)) {
@@ -314,7 +314,7 @@ macroexpand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 static pic_value
-macroexpand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct pic_env *env)
+expand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct pic_env *env)
 {
   pic_value v;
 
@@ -327,7 +327,7 @@ macroexpand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct p
   pic_try {
     v = pic_apply2(pic, mac, expr, pic_obj_value(env));
   } pic_catch {
-    pic_errorf(pic, "macroexpand error while application: %s", pic_errmsg(pic));
+    pic_errorf(pic, "expand error while application: %s", pic_errmsg(pic));
   }
 
 #if DEBUG
@@ -340,18 +340,18 @@ macroexpand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct p
 }
 
 static pic_value
-macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
+expand_node(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   switch (pic_type(expr)) {
   case PIC_TT_ID:
   case PIC_TT_SYMBOL: {
-    return macroexpand_var(pic, expr, env);
+    return expand_var(pic, expr, env);
   }
   case PIC_TT_PAIR: {
     struct pic_proc *mac;
 
     if (! pic_list_p(expr)) {
-      pic_errorf(pic, "cannot macroexpand improper list: ~s", expr);
+      pic_errorf(pic, "cannot expand improper list: ~s", expr);
     }
 
     if (pic_var_p(pic_car(pic, expr))) {
@@ -360,23 +360,23 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
       functor = resolve(pic, pic_car(pic, expr), env);
 
       if (functor == pic->uDEFINE_MACRO) {
-        return macroexpand_defmacro(pic, expr, env);
+        return expand_defmacro(pic, expr, env);
       }
       else if (functor == pic->uLAMBDA) {
-        return macroexpand_defer(pic, expr, env);
+        return expand_defer(pic, expr, env);
       }
       else if (functor == pic->uDEFINE) {
-        return macroexpand_define(pic, expr, env);
+        return expand_define(pic, expr, env);
       }
       else if (functor == pic->uQUOTE) {
-        return macroexpand_quote(pic, expr);
+        return expand_quote(pic, expr);
       }
 
       if ((mac = find_macro(pic, functor)) != NULL) {
-        return macroexpand_node(pic, macroexpand_macro(pic, mac, expr, env), env);
+        return expand_node(pic, expand_macro(pic, mac, expr, env), env);
       }
     }
-    return macroexpand_list(pic, expr, env);
+    return expand_list(pic, expr, env);
   }
   default:
     return expr;
@@ -384,18 +384,18 @@ macroexpand_node(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 static pic_value
-macroexpand(pic_state *pic, pic_value expr, struct pic_env *env)
+expand(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value v;
 
 #if DEBUG
-  printf("[macroexpand] expanding... ");
+  printf("[expand] expanding... ");
   pic_debug(pic, expr);
   puts("");
 #endif
 
-  v = macroexpand_node(pic, expr, env);
+  v = expand_node(pic, expr, env);
 
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, v);
@@ -403,7 +403,7 @@ macroexpand(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 pic_value
-pic_macroexpand(pic_state *pic, pic_value expr, struct pic_env *env)
+pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_value v;
 
@@ -416,9 +416,9 @@ pic_macroexpand(pic_state *pic, pic_value expr, struct pic_env *env)
   /* expansion can fail with non-local exit so env->defer should be cleared every time */
   env->defer = pic_nil_value();
 
-  v = macroexpand(pic, expr, env);
+  v = expand(pic, expr, env);
 
-  macroexpand_deferred(pic, env);
+  expand_deferred(pic, env);
 
 #if DEBUG
   puts("after expand:");

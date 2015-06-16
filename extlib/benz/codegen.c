@@ -1435,10 +1435,10 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
-  /* macroexpand */
-  obj = pic_macroexpand(pic, obj, env);
+  /* expand */
+  obj = pic_expand(pic, obj, env);
 #if DEBUG
-  fprintf(stdout, "## macroexpand completed\n");
+  fprintf(stdout, "## expand completed\n");
   pic_debug(pic, obj);
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
