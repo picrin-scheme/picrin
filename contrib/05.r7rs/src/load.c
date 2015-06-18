@@ -8,16 +8,8 @@ void
 pic_load(pic_state *pic, const char *filename)
 {
   struct pic_port *port;
-  xFILE *file;
 
-  file = xfopen(pic, filename, "r");
-  if (file == NULL) {
-    pic_errorf(pic, "could not open file: %s", filename);
-  }
-
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = file;
-  port->flags = PIC_PORT_IN | PIC_PORT_TEXT | PIC_PORT_OPEN;
+  port = pic_open_file(pic, filename, PIC_PORT_IN | PIC_PORT_TEXT);
 
   pic_load_port(pic, port);
 

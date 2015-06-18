@@ -26,6 +26,93 @@ pic_assert_port(pic_state *pic)
 
 /* current-(input|output|error)-port */
 
+static int
+file_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size) {
+  FILE *file = cookie;
+  int r;
+
+  size = 1;                     /* override size */
+
+  r = (int)fread(ptr, 1, (size_t)size, file);
+  if (r < size && ferror(file)) {
+    return -1;
+  }
+  if (r == 0 && feof(file)) {
+    clearerr(file);
+  }
+  return r;
+}
+
+static int
+file_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int size) {
+  FILE *file = cookie;
+  int r;
+
+  r = (int)fwrite(ptr, 1, (size_t)size, file);
+  if (r < size) {
+    return -1;
+  }
+  fflush(cookie);
+  return r;
+}
+
+static long
+file_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence) {
+  switch (whence) {
+  case XSEEK_CUR:
+    whence = SEEK_CUR;
+    break;
+  case XSEEK_SET:
+    whence = SEEK_SET;
+    break;
+  case XSEEK_END:
+    whence = SEEK_END;
+    break;
+  }
+  return fseek(cookie, pos, whence);
+}
+
+static int
+file_close(pic_state PIC_UNUSED(*pic), void *cookie) {
+  return fclose(cookie);
+}
+
+static xFILE *
+file_open(pic_state *pic, const char *name, const char *mode) {
+  FILE *fp;
+
+  if ((fp = fopen(name, mode)) == NULL) {
+    return NULL;
+  }
+
+  switch (*mode) {
+  case 'r':
+    return xfunopen(pic, fp, file_read, NULL, file_seek, file_close);
+  default:
+    return xfunopen(pic, fp, NULL, file_write, file_seek, file_close);
+  }
+}
+
+struct pic_port *
+pic_open_file(pic_state *pic, const char *name, int flags) {
+  struct pic_port *port;
+  xFILE *file;
+  char mode = 'r';
+
+  if ((flags & PIC_PORT_IN) == 0) {
+    mode = 'w';
+  }
+  if ((file = file_open(pic, name, &mode)) == NULL) {
+    pic_errorf(pic, "could not open file '%s'", name);
+  }
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port->file = file;
+  port->flags = flags | PIC_PORT_OPEN;
+
+  return port;
+}
+
 static void
 pic_define_standard_port(pic_state *pic, const char *name, xFILE *file, int dir)
 {
@@ -762,6 +849,22 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
+#define FILE_VTABLE { 0, file_read, file_write, file_seek, file_close }
+
+  static const xFILE skel[3] = {
+    { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_READ },
+    { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_WRITE | X_LNBUF },
+    { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_WRITE | X_UNBUF }
+  };
+
+  pic->files[0] = skel[0];
+  pic->files[1] = skel[1];
+  pic->files[2] = skel[2];
+
+  pic->files[0].vtable.cookie = stdin;
+  pic->files[1].vtable.cookie = stdout;
+  pic->files[2].vtable.cookie = stderr;
+
   pic_define_standard_port(pic, "current-input-port", xstdin, PIC_PORT_IN);
   pic_define_standard_port(pic, "current-output-port", xstdout, PIC_PORT_OUT);
   pic_define_standard_port(pic, "current-error-port", xstderr, PIC_PORT_OUT);

@@ -248,10 +248,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->err = pic_invalid_value();
 
   /* file pool */
-  memcpy(pic->files, x_iob, sizeof pic->files);
-  pic->files[0].vtable.cookie = stdin;
-  pic->files[1].vtable.cookie = stdout;
-  pic->files[2].vtable.cookie = stderr;
+  memset(pic->files, 0, sizeof pic->files);
 
   /* parameter table */
   pic->ptable = pic_nil_value();

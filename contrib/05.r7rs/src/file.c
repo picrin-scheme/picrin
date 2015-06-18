@@ -14,24 +14,6 @@ file_error(pic_state *pic, const char *msg)
   pic_raise(pic, pic_obj_value(e));
 }
 
-static pic_value
-generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
-{
-  struct pic_port *port;
-  xFILE *file;
-
-  file = xfopen(pic, fname, mode);
-  if (! file) {
-    file_error(pic, "could not open file");
-  }
-
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = file;
-  port->flags = flags | PIC_PORT_OPEN;
-
-  return pic_obj_value(port);
-}
-
 pic_value
 pic_file_open_input_file(pic_state *pic)
 {
@@ -40,7 +22,7 @@ pic_file_open_input_file(pic_state *pic)
 
   pic_get_args(pic, "z", &fname);
 
-  return generic_open_file(pic, fname, "r", flags);
+  return pic_obj_value(pic_open_file(pic, fname, flags));
 }
 
 pic_value
@@ -51,7 +33,7 @@ pic_file_open_binary_input_file(pic_state *pic)
 
   pic_get_args(pic, "z", &fname);
 
-  return generic_open_file(pic, fname, "rb", flags);
+  return pic_obj_value(pic_open_file(pic, fname, flags));
 }
 
 pic_value
@@ -62,7 +44,7 @@ pic_file_open_output_file(pic_state *pic)
 
   pic_get_args(pic, "z", &fname);
 
-  return generic_open_file(pic, fname, "w", flags);
+  return pic_obj_value(pic_open_file(pic, fname, flags));
 }
 
 pic_value
@@ -73,7 +55,7 @@ pic_file_open_binary_output_file(pic_state *pic)
 
   pic_get_args(pic, "z", &fname);
 
-  return generic_open_file(pic, fname, "wb", flags);
+  return pic_obj_value(pic_open_file(pic, fname, flags));
 }
 
 pic_value

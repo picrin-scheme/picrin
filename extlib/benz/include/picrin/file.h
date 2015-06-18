@@ -64,7 +64,6 @@ enum _flags {
 
 /* resource aquisition */
 xFILE *xfunopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
-xFILE *xfopen(pic_state *, const char *, const char *);
 int xfclose(pic_state *, xFILE *);
 
 /* buffer management */
