@@ -51,7 +51,7 @@ file_close(pic_state PIC_UNUSED(*pic), void *cookie) {
   return fclose(cookie);
 }
 
-xFILE *xfopen(const char *name, const char *mode) {
+xFILE *xfopen(pic_state *pic, const char *name, const char *mode) {
   FILE *fp;
 
   if ((fp = fopen(name, mode)) == NULL) {
@@ -60,28 +60,28 @@ xFILE *xfopen(const char *name, const char *mode) {
 
   switch (*mode) {
   case 'r':
-    return xfunopen(fp, file_read, NULL, file_seek, file_close);
+    return xfunopen(pic, fp, file_read, NULL, file_seek, file_close);
   default:
-    return xfunopen(fp, NULL, file_write, file_seek, file_close);
+    return xfunopen(pic, fp, NULL, file_write, file_seek, file_close);
   }
 }
 
 #define FILE_VTABLE { 0, file_read, file_write, file_seek, file_close }
 
-xFILE x_iob[XOPEN_MAX] = {
+const xFILE x_iob[XOPEN_MAX] = {
   { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_READ },
   { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_WRITE | X_LNBUF },
   { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_WRITE | X_UNBUF }
 };
 
-xFILE *xfunopen(void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *)) {
+xFILE *xfunopen(pic_state *pic, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *)) {
   xFILE *fp;
 
-  for (fp = x_iob; fp < x_iob + XOPEN_MAX; fp++)
+  for (fp = pic->files; fp < pic->files + XOPEN_MAX; fp++)
     if ((fp->flag & (X_READ | X_WRITE)) == 0)
       break;  /* found free slot */
 
-  if (fp >= x_iob + XOPEN_MAX)  /* no free slots */
+  if (fp >= pic->files + XOPEN_MAX)  /* no free slots */
     return NULL;
 
   fp->cnt = 0;
@@ -198,7 +198,7 @@ int xfflush(pic_state *pic, xFILE *f) {
   if (f == NULL) {
     /* flush all output streams */
     for (i = 0; i < XOPEN_MAX; i++) {
-      if ((x_iob[i].flag & X_WRITE) && (xfflush(pic, &x_iob[i]) == -1))
+      if ((pic->files[i].flag & X_WRITE) && (xfflush(pic, &pic->files[i]) == -1))
         retval = -1;
     }
   } else {

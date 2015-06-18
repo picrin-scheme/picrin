@@ -46,6 +46,9 @@ extern "C" {
 #include "picrin/value.h"
 
 typedef struct pic_code pic_code;
+typedef struct pic_state pic_state;
+
+#include "picrin/file.h"
 
 typedef struct pic_jmpbuf {
   PIC_JMPBUF buf;
@@ -71,9 +74,7 @@ typedef struct {
 
 typedef void *(*pic_allocf)(void *, size_t);
 
-typedef struct xFILE xFILE;
-
-typedef struct {
+struct pic_state {
   int argc;
   char **argv, **envp;
 
@@ -137,6 +138,7 @@ typedef struct {
   struct pic_reg *attrs;
 
   struct pic_reader *reader;
+  xFILE files[XOPEN_MAX];
 
   bool gc_enable;
   struct pic_heap *heap;
@@ -148,7 +150,7 @@ typedef struct {
 
   pic_code *iseq;               /* for pic_apply_trampoline */
   char *native_stack_start;
-} pic_state;
+};
 
 typedef pic_value (*pic_func_t)(pic_state *);
 
@@ -283,7 +285,6 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/read.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
-#include "picrin/file.h"
 
 #if defined(__cplusplus)
 }

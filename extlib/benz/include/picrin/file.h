@@ -14,7 +14,7 @@ extern "C" {
 #define XBUFSIZ 1024
 #define XOPEN_MAX 1024
 
-struct xFILE {
+typedef struct {
   /* buffer */
   char buf[1];                  /* fallback buffer */
   long cnt;                     /* characters left */
@@ -29,13 +29,13 @@ struct xFILE {
     int (*close)(pic_state *, void *);
   } vtable;
   int flag;                     /* mode of the file access */
-};
+} xFILE;
 
-extern xFILE x_iob[XOPEN_MAX];
+#define xstdin  (&pic->files[0])
+#define xstdout (&pic->files[1])
+#define xstderr (&pic->files[2])
 
-#define xstdin  (x_iob[0].vtable.cookie || (x_iob[0].vtable.cookie = stdin ), &x_iob[0])
-#define xstdout (x_iob[1].vtable.cookie || (x_iob[1].vtable.cookie = stdout), &x_iob[1])
-#define xstderr (x_iob[2].vtable.cookie || (x_iob[2].vtable.cookie = stderr), &x_iob[2])
+extern const xFILE x_iob[XOPEN_MAX];
 
 enum _flags {
   X_READ  = 01,
@@ -63,8 +63,8 @@ enum _flags {
 #define xputchar(pic, x)  xputc((pic), (x), xstdout)
 
 /* resource aquisition */
-xFILE *xfunopen(void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
-xFILE *xfopen(const char *, const char *);
+xFILE *xfunopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
+xFILE *xfopen(pic_state *, const char *, const char *);
 int xfclose(pic_state *, xFILE *);
 
 /* buffer management */
