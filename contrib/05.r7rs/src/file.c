@@ -20,7 +20,7 @@ generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
   struct pic_port *port;
   xFILE *file;
 
-  file = xfopen(fname, mode);
+  file = xfopen(pic, fname, mode);
   if (! file) {
     file_error(pic, "could not open file");
   }

@@ -38,7 +38,7 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
   assert(! pic_invalid_p(pic->err));
 
   if (! pic_error_p(pic->err)) {
-    xfprintf(file, "raise: ");
+    xfprintf(pic, file, "raise: ");
     pic_fwrite(pic, pic->err, file);
   } else {
     struct pic_error *e;
@@ -46,14 +46,14 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
     e = pic_error_ptr(pic->err);
     if (e->type != pic_intern_cstr(pic, "")) {
       pic_fwrite(pic, pic_obj_value(e->type), file);
-      xfprintf(file, " ");
+      xfprintf(pic, file, " ");
     }
-    xfprintf(file, "error: ");
+    xfprintf(pic, file, "error: ");
     pic_fwrite(pic, pic_obj_value(e->msg), file);
-    xfprintf(file, "\n");
+    xfprintf(pic, file, "\n");
 
     /* TODO: print error irritants */
 
-    xfputs(pic_str_cstr(pic, e->stack), file);
+    xfputs(pic, pic_str_cstr(pic, e->stack), file);
   }
 }

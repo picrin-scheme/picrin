@@ -216,13 +216,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
     goto EXIT_ARENA;
   }
 
-  /* trampoline iseq */
-  pic->iseq = allocf(NULL, 2 * sizeof(pic_code));
-
-  if (! pic->iseq) {
-    goto EXIT_ISEQ;
-  }
-
   /* memory heap */
   pic->heap = pic_heap_open(pic);
 
@@ -253,6 +246,12 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   /* raised error object */
   pic->err = pic_invalid_value();
+
+  /* file pool */
+  memcpy(pic->files, x_iob, sizeof pic->files);
+  pic->files[0].vtable.cookie = stdin;
+  pic->files[1].vtable.cookie = stdout;
+  pic->files[2].vtable.cookie = stderr;
 
   /* parameter table */
   pic->ptable = pic_nil_value();
@@ -365,7 +364,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->cp->in = pic->cp->out = NULL;
 
   /* reader */
-  pic->reader = pic_reader_open(pic);
+  pic_reader_init(pic);
 
   /* parameter table */
   pic->ptable = pic_cons(pic, pic_obj_value(pic_make_dict(pic)), pic->ptable);
@@ -387,8 +386,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   return pic;
 
- EXIT_ISEQ:
-  allocf(pic->arena, 0);
  EXIT_ARENA:
   allocf(pic->xp, 0);
  EXIT_XP:
@@ -437,21 +434,18 @@ pic_close(pic_state *pic)
   pic_gc_run(pic);
 
   /* flush all xfiles */
-  xfflush(NULL);
+  xfflush(pic, NULL);
 
   /* free heaps */
   pic_heap_close(pic, pic->heap);
 
   /* free reader struct */
-  pic_reader_close(pic, pic->reader);
+  pic_reader_destroy(pic);
 
   /* free runtime context */
   allocf(pic->stbase, 0);
   allocf(pic->cibase, 0);
   allocf(pic->xpbase, 0);
-
-  /* free trampoline iseq */
-  allocf(pic->iseq, 0);
 
   /* free global stacks */
   xh_destroy(&pic->syms);

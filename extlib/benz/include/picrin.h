@@ -33,20 +33,19 @@ extern "C" {
 #include <stdarg.h>
 
 #include "picrin/config.h"
-#include "picrin/util.h"
+
 #include "picrin/compat.h"
-
-#if PIC_ENABLE_FLOAT
-# include <math.h>
-#endif
-
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
-#include "picrin/xfile.h"
 
 #include "picrin/value.h"
 
-typedef struct pic_code pic_code;
+typedef struct pic_state pic_state;
+
+#include "picrin/irep.h"
+#include "picrin/file.h"
+#include "picrin/read.h"
+#include "picrin/gc.h"
 
 typedef struct pic_jmpbuf {
   PIC_JMPBUF buf;
@@ -72,7 +71,7 @@ typedef struct {
 
 typedef void *(*pic_allocf)(void *, size_t);
 
-typedef struct {
+struct pic_state {
   int argc;
   char **argv, **envp;
 
@@ -135,7 +134,9 @@ typedef struct {
   pic_value libs;
   struct pic_reg *attrs;
 
-  struct pic_reader *reader;
+  pic_reader reader;
+  xFILE files[XOPEN_MAX];
+  pic_code iseq[2];             /* for pic_apply_trampoline */
 
   bool gc_enable;
   struct pic_heap *heap;
@@ -145,9 +146,8 @@ typedef struct {
 
   pic_value err;
 
-  pic_code *iseq;               /* for pic_apply_trampoline */
   char *native_stack_start;
-} pic_state;
+};
 
 typedef pic_value (*pic_func_t)(pic_state *);
 
@@ -254,6 +254,7 @@ struct pic_port *pic_stderr(pic_state *);
 pic_value pic_write(pic_state *, pic_value); /* returns given obj */
 pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
 void pic_printf(pic_state *, const char *, ...);
+void pic_fprintf(pic_state *, struct pic_port *, const char *, ...);
 pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
@@ -267,18 +268,14 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/error.h"
-#include "picrin/gc.h"
-#include "picrin/irep.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/pair.h"
 #include "picrin/port.h"
 #include "picrin/proc.h"
-#include "picrin/read.h"
 #include "picrin/record.h"
 #include "picrin/string.h"
 #include "picrin/symbol.h"
-#include "picrin/read.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
 

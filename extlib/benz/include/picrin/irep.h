@@ -49,7 +49,7 @@ enum pic_opcode {
   OP_STOP
 };
 
-struct pic_code {
+typedef struct {
   enum pic_opcode insn;
   union {
     int i;
@@ -59,7 +59,7 @@ struct pic_code {
       int idx;
     } r;
   } u;
-};
+} pic_code;
 
 #define PIC_INIT_CODE_I(code, op, ival) do {    \
     code.insn = op;                             \

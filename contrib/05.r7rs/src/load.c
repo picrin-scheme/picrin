@@ -10,7 +10,7 @@ pic_load(pic_state *pic, const char *filename)
   struct pic_port *port;
   xFILE *file;
 
-  file = xfopen(filename, "r");
+  file = xfopen(pic, filename, "r");
   if (file == NULL) {
     pic_errorf(pic, "could not open file: %s", filename);
   }
