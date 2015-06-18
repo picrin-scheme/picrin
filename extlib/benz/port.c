@@ -773,9 +773,13 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  pic_defvar(pic, "current-input-port", pic_obj_value(pic->xSTDIN), NULL);
-  pic_defvar(pic, "current-output-port", pic_obj_value(pic->xSTDOUT), NULL);
-  pic_defvar(pic, "current-error-port", pic_obj_value(pic->xSTDERR), NULL);
+  struct pic_port *xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
+  struct pic_port *xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
+  struct pic_port *xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
+
+  pic_defvar(pic, "current-input-port", pic_obj_value(xSTDIN), NULL);
+  pic_defvar(pic, "current-output-port", pic_obj_value(xSTDOUT), NULL);
+  pic_defvar(pic, "current-error-port", pic_obj_value(xSTDERR), NULL);
 
   pic_defun(pic, "call-with-port", pic_port_call_with_port);
 

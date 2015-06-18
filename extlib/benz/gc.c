@@ -617,17 +617,6 @@ gc_mark_phase(pic_state *pic)
   /* library table */
   gc_mark(pic, pic->libs);
 
-  /* standard I/O ports */
-  if (pic->xSTDIN) {
-    gc_mark_object(pic, (struct pic_object *)pic->xSTDIN);
-  }
-  if (pic->xSTDOUT) {
-    gc_mark_object(pic, (struct pic_object *)pic->xSTDOUT);
-  }
-  if (pic->xSTDERR) {
-    gc_mark_object(pic, (struct pic_object *)pic->xSTDERR);
-  }
-
   /* parameter table */
   gc_mark(pic, pic->ptable);
 
