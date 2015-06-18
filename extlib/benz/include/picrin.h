@@ -42,7 +42,7 @@ extern "C" {
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
-#include "picrin/xfile.h"
+#include "picrin/file.h"
 
 #include "picrin/value.h"
 
