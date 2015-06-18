@@ -45,6 +45,7 @@ typedef struct pic_state pic_state;
 #include "picrin/irep.h"
 #include "picrin/file.h"
 #include "picrin/read.h"
+#include "picrin/gc.h"
 
 typedef struct pic_jmpbuf {
   PIC_JMPBUF buf;
@@ -267,7 +268,6 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/error.h"
-#include "picrin/gc.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/pair.h"
