@@ -33,13 +33,8 @@ extern "C" {
 #include <stdarg.h>
 
 #include "picrin/config.h"
-#include "picrin/util.h"
+
 #include "picrin/compat.h"
-
-#if PIC_ENABLE_FLOAT
-# include <math.h>
-#endif
-
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
 
