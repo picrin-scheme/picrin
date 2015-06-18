@@ -54,13 +54,12 @@ DEFINE_STANDARD_PORT_ACCESSOR(pic_stdout, "current-output-port")
 DEFINE_STANDARD_PORT_ACCESSOR(pic_stderr, "current-error-port")
 
 struct strfile {
-  pic_state *pic;
   char *buf;
   long pos, end, capa;
 };
 
 static int
-string_read(void *cookie, char *ptr, int size)
+string_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size)
 {
   struct strfile *m = cookie;
 
@@ -72,13 +71,13 @@ string_read(void *cookie, char *ptr, int size)
 }
 
 static int
-string_write(void *cookie, const char *ptr, int size)
+string_write(pic_state *pic, void *cookie, const char *ptr, int size)
 {
   struct strfile *m = cookie;
 
   if (m->pos + size >= m->capa) {
     m->capa = (m->pos + size) * 2;
-    m->buf = pic_realloc(m->pic, m->buf, (size_t)m->capa);
+    m->buf = pic_realloc(pic, m->buf, (size_t)m->capa);
   }
   memcpy(m->buf + m->pos, ptr, size);
   m->pos += size;
@@ -88,7 +87,7 @@ string_write(void *cookie, const char *ptr, int size)
 }
 
 static long
-string_seek(void *cookie, long pos, int whence)
+string_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence)
 {
   struct strfile *m = cookie;
 
@@ -108,12 +107,12 @@ string_seek(void *cookie, long pos, int whence)
 }
 
 static int
-string_close(void *cookie)
+string_close(pic_state *pic, void *cookie)
 {
   struct strfile *m = cookie;
 
-  pic_free(m->pic, m->buf);
-  pic_free(m->pic, m);
+  pic_free(pic, m->buf);
+  pic_free(pic, m);
   return 0;
 }
 
@@ -124,7 +123,6 @@ string_open(pic_state *pic, const char *data, size_t size)
   xFILE *file;
 
   m = pic_malloc(pic, sizeof(struct strfile));
-  m->pic = pic;
   m->buf = pic_malloc(pic, size);
   m->pos = 0;
   m->end = size;
@@ -139,7 +137,7 @@ string_open(pic_state *pic, const char *data, size_t size)
   }
 
   if (file == NULL) {
-    string_close(m);
+    string_close(pic, m);
     pic_error(pic, "could not open new output string/bytevector port", pic_nil_value());
   }
   return file;

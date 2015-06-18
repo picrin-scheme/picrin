@@ -1,6 +1,7 @@
 #include "picrin.h"
 
-static int file_read(void *cookie, char *ptr, int size) {
+static int
+file_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size) {
   FILE *file = cookie;
   int r;
 
@@ -16,7 +17,8 @@ static int file_read(void *cookie, char *ptr, int size) {
   return r;
 }
 
-static int file_write(void *cookie, const char *ptr, int size) {
+static int
+file_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int size) {
   FILE *file = cookie;
   int r;
 
@@ -28,7 +30,8 @@ static int file_write(void *cookie, const char *ptr, int size) {
   return r;
 }
 
-static long file_seek(void *cookie, long pos, int whence) {
+static long
+file_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence) {
   switch (whence) {
   case XSEEK_CUR:
     whence = SEEK_CUR;
@@ -43,7 +46,8 @@ static long file_seek(void *cookie, long pos, int whence) {
   return fseek(cookie, pos, whence);
 }
 
-static int file_close(void *cookie) {
+static int
+file_close(pic_state PIC_UNUSED(*pic), void *cookie) {
   return fclose(cookie);
 }
 
@@ -70,7 +74,7 @@ xFILE x_iob[XOPEN_MAX] = {
   { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_WRITE | X_UNBUF }
 };
 
-xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*close)(void *)) {
+xFILE *xfunopen(void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *)) {
   xFILE *fp;
 
   for (fp = x_iob; fp < x_iob + XOPEN_MAX; fp++)
@@ -98,7 +102,7 @@ int xfclose(pic_state *pic, xFILE *fp) {
   fp->flag = 0;
   if (fp->base != fp->buf)
     pic_free(pic, fp->base);
-  return fp->vtable.close(fp->vtable.cookie);
+  return fp->vtable.close(pic, fp->vtable.cookie);
 }
 
 int x_fillbuf(pic_state *pic, xFILE *fp) {
@@ -121,7 +125,7 @@ int x_fillbuf(pic_state *pic, xFILE *fp) {
   bufsize = (fp->flag & X_UNBUF) ? sizeof(fp->buf) : XBUFSIZ;
 
   fp->ptr = fp->base;
-  fp->cnt = fp->vtable.read(fp->vtable.cookie, fp->ptr, bufsize);
+  fp->cnt = fp->vtable.read(pic, fp->vtable.cookie, fp->ptr, bufsize);
 
   if (--fp->cnt < 0) {
     if (fp->cnt == -1)
@@ -157,7 +161,7 @@ int x_flushbuf(pic_state *pic, int x, xFILE *fp) {
     fp->cnt = 0;
     if (x == EOF)
       return EOF;
-    num_written = fp->vtable.write(fp->vtable.cookie, (const char *) &c, 1);
+    num_written = fp->vtable.write(pic, fp->vtable.cookie, (const char *) &c, 1);
     bufsize = 1;
   } else {
     /* buffered write */
@@ -168,7 +172,7 @@ int x_flushbuf(pic_state *pic, int x, xFILE *fp) {
     bufsize = (int)(fp->ptr - fp->base);
     while(bufsize - num_written > 0) {
       int t;
-      t = fp->vtable.write(fp->vtable.cookie, fp->base + num_written, bufsize - num_written);
+      t = fp->vtable.write(pic, fp->vtable.cookie, fp->base + num_written, bufsize - num_written);
       if (t < 0)
         break;
       num_written += t;
@@ -334,7 +338,7 @@ long xfseek(pic_state *pic, xFILE *fp, long offset, int whence) {
   fp->ptr = fp->base;
   fp->cnt = 0;
 
-  if ((s = fp->vtable.seek(fp->vtable.cookie, offset, whence)) != 0)
+  if ((s = fp->vtable.seek(pic, fp->vtable.cookie, offset, whence)) != 0)
     return s;
   fp->flag &= ~X_EOF;
   return 0;

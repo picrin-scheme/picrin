@@ -23,10 +23,10 @@ struct xFILE {
   /* operators */
   struct {
     void *cookie;
-    int (*read)(void *, char *, int);
-    int (*write)(void *, const char *, int);
-    long (*seek)(void *, long, int);
-    int (*close)(void *);
+    int (*read)(pic_state *, void *, char *, int);
+    int (*write)(pic_state *, void *, const char *, int);
+    long (*seek)(pic_state *, void *, long, int);
+    int (*close)(pic_state *, void *);
   } vtable;
   int flag;                     /* mode of the file access */
 };
@@ -63,7 +63,7 @@ enum _flags {
 #define xputchar(pic, x)  xputc((pic), (x), xstdout)
 
 /* resource aquisition */
-xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*close)(void *));
+xFILE *xfunopen(void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
 xFILE *xfopen(const char *, const char *);
 int xfclose(pic_state *, xFILE *);
 
