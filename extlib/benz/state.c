@@ -216,13 +216,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
     goto EXIT_ARENA;
   }
 
-  /* trampoline iseq */
-  pic->iseq = allocf(NULL, 2 * sizeof(pic_code));
-
-  if (! pic->iseq) {
-    goto EXIT_ISEQ;
-  }
-
   /* memory heap */
   pic->heap = pic_heap_open(pic);
 
@@ -393,8 +386,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   return pic;
 
- EXIT_ISEQ:
-  allocf(pic->arena, 0);
  EXIT_ARENA:
   allocf(pic->xp, 0);
  EXIT_XP:
@@ -455,9 +446,6 @@ pic_close(pic_state *pic)
   allocf(pic->stbase, 0);
   allocf(pic->cibase, 0);
   allocf(pic->xpbase, 0);
-
-  /* free trampoline iseq */
-  allocf(pic->iseq, 0);
 
   /* free global stacks */
   xh_destroy(&pic->syms);
