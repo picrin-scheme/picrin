@@ -254,11 +254,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* raised error object */
   pic->err = pic_invalid_value();
 
-  /* standard ports */
-  pic->xSTDIN = NULL;
-  pic->xSTDOUT = NULL;
-  pic->xSTDERR = NULL;
-
   /* parameter table */
   pic->ptable = pic_nil_value();
 
@@ -371,11 +366,6 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   /* reader */
   pic->reader = pic_reader_open(pic);
-
-  /* standard I/O */
-  pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
-  pic->xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
-  pic->xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
 
   /* parameter table */
   pic->ptable = pic_cons(pic, pic_obj_value(pic_make_dict(pic)), pic->ptable);

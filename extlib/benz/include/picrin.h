@@ -143,12 +143,9 @@ typedef struct {
   size_t arena_size, arena_idx;
   struct pic_reg *regs;
 
-  struct pic_port *xSTDIN, *xSTDOUT, *xSTDERR;
-
   pic_value err;
 
   pic_code *iseq;               /* for pic_apply_trampoline */
-
   char *native_stack_start;
 } pic_state;
 
@@ -204,6 +201,10 @@ void pic_load_port(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
 
 pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);
+pic_value pic_funcall0(pic_state *pic, struct pic_lib *, const char *);
+pic_value pic_funcall1(pic_state *pic, struct pic_lib *, const char *, pic_value);
+pic_value pic_funcall2(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value);
+pic_value pic_funcall3(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value, pic_value);
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
 
@@ -257,7 +258,7 @@ pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
 #if DEBUG
-# define pic_debug(pic,obj) pic_fwrite(pic,obj,pic->xSTDERR->file)
+# define pic_debug(pic,obj) pic_fwrite(pic,obj,xstderr)
 # define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
 #endif
 

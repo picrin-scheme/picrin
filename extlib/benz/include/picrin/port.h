@@ -13,19 +13,14 @@ enum pic_port_flag {
   PIC_PORT_IN = 1,
   PIC_PORT_OUT = 2,
   PIC_PORT_TEXT = 4,
-  PIC_PORT_BINARY = 8
-};
-
-enum pic_port_status {
-  PIC_PORT_OPEN,
-  PIC_PORT_CLOSE
+  PIC_PORT_BINARY = 8,
+  PIC_PORT_OPEN = 16
 };
 
 struct pic_port {
   PIC_OBJECT_HEADER
   xFILE *file;
   int flags;
-  int status;
 };
 
 #define pic_port_p(v) (pic_type(v) == PIC_TT_PORT)
