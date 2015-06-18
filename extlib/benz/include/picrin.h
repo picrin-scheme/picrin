@@ -49,6 +49,7 @@ typedef struct pic_state pic_state;
 
 #include "picrin/irep.h"
 #include "picrin/file.h"
+#include "picrin/read.h"
 
 typedef struct pic_jmpbuf {
   PIC_JMPBUF buf;
@@ -137,7 +138,7 @@ struct pic_state {
   pic_value libs;
   struct pic_reg *attrs;
 
-  struct pic_reader *reader;
+  pic_reader reader;
   xFILE files[XOPEN_MAX];
   pic_code iseq[2];             /* for pic_apply_trampoline */
 
@@ -277,11 +278,9 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/pair.h"
 #include "picrin/port.h"
 #include "picrin/proc.h"
-#include "picrin/read.h"
 #include "picrin/record.h"
 #include "picrin/string.h"
 #include "picrin/symbol.h"
-#include "picrin/read.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
 

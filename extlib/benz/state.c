@@ -364,7 +364,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->cp->in = pic->cp->out = NULL;
 
   /* reader */
-  pic->reader = pic_reader_open(pic);
+  pic_reader_init(pic);
 
   /* parameter table */
   pic->ptable = pic_cons(pic, pic_obj_value(pic_make_dict(pic)), pic->ptable);
@@ -440,7 +440,7 @@ pic_close(pic_state *pic)
   pic_heap_close(pic, pic->heap);
 
   /* free reader struct */
-  pic_reader_close(pic, pic->reader);
+  pic_reader_destroy(pic);
 
   /* free runtime context */
   allocf(pic->stbase, 0);

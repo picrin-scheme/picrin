@@ -79,7 +79,7 @@ strcaseeq(const char *s1, const char *s2)
 static int
 case_fold(pic_state *pic, int c)
 {
-  if (pic->reader->typecase == PIC_CASE_FOLD) {
+  if (pic->reader.typecase == PIC_CASE_FOLD) {
     c = tolower(c);
   }
   return c;
@@ -131,13 +131,13 @@ read_directive(pic_state *pic, struct pic_port *port, int c)
   switch (peek(pic, port)) {
   case 'n':
     if (expect(pic, port, "no-fold-case")) {
-      pic->reader->typecase = PIC_CASE_DEFAULT;
+      pic->reader.typecase = PIC_CASE_DEFAULT;
       return pic_invalid_value();
     }
     break;
   case 'f':
     if (expect(pic, port, "fold-case")) {
-      pic->reader->typecase = PIC_CASE_FOLD;
+      pic->reader.typecase = PIC_CASE_FOLD;
       return pic_invalid_value();
     }
     break;
@@ -649,7 +649,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 
       val = pic_cons(pic, pic_undef_value(), pic_undef_value());
 
-      xh_put_int(&pic->reader->labels, i, &val);
+      xh_put_int(&pic->reader.labels, i, &val);
 
       tmp = read(pic, port, c);
       pic_pair_ptr(val)->car = pic_car(pic, tmp);
@@ -672,7 +672,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 
         val = pic_obj_value(pic_make_vec(pic, 0));
 
-        xh_put_int(&pic->reader->labels, i, &val);
+        xh_put_int(&pic->reader.labels, i, &val);
 
         tmp = pic_vec_ptr(read(pic, port, c));
         PIC_SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
@@ -687,7 +687,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
     {
       val = read(pic, port, c);
 
-      xh_put_int(&pic->reader->labels, i, &val);
+      xh_put_int(&pic->reader.labels, i, &val);
 
       return val;
     }
@@ -699,7 +699,7 @@ read_label_ref(pic_state *pic, struct pic_port PIC_UNUSED(*port), int i)
 {
   xh_entry *e;
 
-  e = xh_get_int(&pic->reader->labels, i);
+  e = xh_get_int(&pic->reader.labels, i);
   if (! e) {
     read_error(pic, "label of given index not defined");
   }
@@ -740,11 +740,11 @@ read_dispatch(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "unexpected EOF");
   }
 
-  if (pic->reader->dispatch[c] == NULL) {
+  if (pic->reader.dispatch[c] == NULL) {
     read_error(pic, "invalid character at the seeker head");
   }
 
-  return pic->reader->dispatch[c](pic, port, c);
+  return pic->reader.dispatch[c](pic, port, c);
 }
 
 static pic_value
@@ -756,11 +756,11 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "unexpected EOF");
   }
 
-  if (pic->reader->table[c] == NULL) {
+  if (pic->reader.table[c] == NULL) {
     read_error(pic, "invalid character at the seeker head");
   }
 
-  return pic->reader->table[c](pic, port, c);
+  return pic->reader.table[c](pic, port, c);
 }
 
 static pic_value
@@ -780,7 +780,7 @@ read(pic_state *pic, struct pic_port *port, int c)
 }
 
 static void
-reader_table_init(struct pic_reader *reader)
+reader_table_init(pic_reader *reader)
 {
   int c;
 
@@ -826,34 +826,29 @@ reader_table_init(struct pic_reader *reader)
   }
 }
 
-struct pic_reader *
-pic_reader_open(pic_state *pic)
+void
+pic_reader_init(pic_state *pic)
 {
-  struct pic_reader *reader;
   int c;
 
-  reader = pic_malloc(pic, sizeof(struct pic_reader));
-  reader->typecase = PIC_CASE_DEFAULT;
-  xh_init_int(&reader->labels, sizeof(pic_value));
+  pic->reader.typecase = PIC_CASE_DEFAULT;
+  xh_init_int(&pic->reader.labels, sizeof(pic_value));
 
   for (c = 0; c < 256; ++c) {
-    reader->table[c] = NULL;
+    pic->reader.table[c] = NULL;
   }
 
   for (c = 0; c < 256; ++c) {
-    reader->dispatch[c] = NULL;
+    pic->reader.dispatch[c] = NULL;
   }
 
-  reader_table_init(reader);
-
-  return reader;
+  reader_table_init(&pic->reader);
 }
 
 void
-pic_reader_close(pic_state *pic, struct pic_reader *reader)
+pic_reader_destroy(pic_state *pic)
 {
-  xh_destroy(&reader->labels);
-  pic_free(pic, reader);
+  xh_destroy(&pic->reader.labels);
 }
 
 pic_value
