@@ -188,6 +188,9 @@ pic_get_output_string(pic_state *pic, struct pic_port *port)
 void
 pic_close_port(pic_state *pic, struct pic_port *port)
 {
+  if ((port->flags & PIC_PORT_OPEN) == 0) {
+    return;
+  }
   if (xfclose(port->file) == EOF) {
     pic_errorf(pic, "close-port: failure");
   }
