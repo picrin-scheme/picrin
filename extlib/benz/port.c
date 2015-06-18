@@ -14,35 +14,20 @@ pic_eof_object()
   return v;
 }
 
-struct pic_port *
-pic_stdin(pic_state *pic)
-{
-  pic_value obj;
+#define DEFINE_STANDARD_PORT_ACCESSOR(name, var)        \
+  struct pic_port *                                     \
+  name(pic_state *pic)                                  \
+  {                                                     \
+    pic_value obj;                                      \
+                                                        \
+    obj = pic_funcall0(pic, pic->PICRIN_BASE, var);     \
+                                                        \
+    return pic_port_ptr(obj);                           \
+  }
 
-  obj = pic_funcall(pic, pic->PICRIN_BASE, "current-input-port", pic_nil_value());
-
-  return pic_port_ptr(obj);
-}
-
-struct pic_port *
-pic_stdout(pic_state *pic)
-{
-  pic_value obj;
-
-  obj = pic_funcall(pic, pic->PICRIN_BASE, "current-output-port", pic_nil_value());
-
-  return pic_port_ptr(obj);
-}
-
-struct pic_port *
-pic_stderr(pic_state *pic)
-{
-  pic_value obj;
-
-  obj = pic_funcall(pic, pic->PICRIN_BASE, "current-error-port", pic_nil_value());
-
-  return pic_port_ptr(obj);
-}
+DEFINE_STANDARD_PORT_ACCESSOR(pic_stdin, "current-input-port")
+DEFINE_STANDARD_PORT_ACCESSOR(pic_stdout, "current-output-port")
+DEFINE_STANDARD_PORT_ACCESSOR(pic_stderr, "current-error-port")
 
 struct pic_port *
 pic_make_standard_port(pic_state *pic, xFILE *file, short dir)

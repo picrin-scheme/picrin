@@ -467,6 +467,12 @@ pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, pic_list args
   return pic_apply(pic, pic_proc_ptr(proc), args);
 }
 
+pic_value
+pic_funcall0(pic_state *pic, struct pic_lib *lib, const char *name)
+{
+  return pic_funcall(pic, lib, name, pic_nil_value());
+}
+
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
