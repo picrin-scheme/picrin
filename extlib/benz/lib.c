@@ -169,18 +169,6 @@ pic_lib_library_export(pic_state *pic)
 }
 
 static pic_value
-pic_lib_library_name(pic_state *pic)
-{
-  pic_value lib;
-
-  pic_get_args(pic, "o", &lib);
-
-  pic_assert_type(pic, lib, lib);
-
-  return pic_lib_ptr(lib)->name;
-}
-
-static pic_value
 pic_lib_library_exports(pic_state *pic)
 {
   pic_value lib, exports = pic_nil_value();
@@ -215,7 +203,6 @@ pic_init_lib(pic_state *pic)
 {
   pic_defun(pic, "make-library", pic_lib_make_library);
   pic_defun(pic, "find-library", pic_lib_find_library);
-  pic_defun(pic, "library-name", pic_lib_library_name);
   pic_defun(pic, "library-exports", pic_lib_library_exports);
   pic_defun(pic, "library-environment", pic_lib_library_environment);
 
