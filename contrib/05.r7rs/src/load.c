@@ -17,8 +17,7 @@ pic_load(pic_state *pic, const char *filename)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = file;
-  port->flags = PIC_PORT_IN | PIC_PORT_TEXT;
-  port->status = PIC_PORT_OPEN;
+  port->flags = PIC_PORT_IN | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
   pic_load_port(pic, port);
 

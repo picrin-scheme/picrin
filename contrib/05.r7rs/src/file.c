@@ -27,8 +27,7 @@ generic_open_file(pic_state *pic, const char *fname, char *mode, short flags)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = file;
-  port->flags = flags;
-  port->status = PIC_PORT_OPEN;
+  port->flags = flags | PIC_PORT_OPEN;
 
   return pic_obj_value(port);
 }
