@@ -42,7 +42,6 @@ extern "C" {
 
 #include "picrin/xvect.h"
 #include "picrin/xhash.h"
-#include "picrin/file.h"
 
 #include "picrin/value.h"
 
@@ -71,6 +70,8 @@ typedef struct {
 } pic_callinfo;
 
 typedef void *(*pic_allocf)(void *, size_t);
+
+typedef struct xFILE xFILE;
 
 typedef struct {
   int argc;
@@ -254,6 +255,7 @@ struct pic_port *pic_stderr(pic_state *);
 pic_value pic_write(pic_state *, pic_value); /* returns given obj */
 pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
 void pic_printf(pic_state *, const char *, ...);
+void pic_fprintf(pic_state *, struct pic_port *, const char *, ...);
 pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
@@ -281,6 +283,7 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/read.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
+#include "picrin/file.h"
 
 #if defined(__cplusplus)
 }

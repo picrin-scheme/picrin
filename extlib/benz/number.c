@@ -574,7 +574,7 @@ pic_number_number_to_string(pic_state *pic)
   else {
     struct pic_port *port = pic_open_output_string(pic);
 
-    xfprintf(port->file, "%f", f);
+    xfprintf(pic, port->file, "%f", f);
 
     str = pic_get_output_string(pic, port);
 

@@ -178,7 +178,7 @@ pic_get_output_string(pic_state *pic, struct pic_port *port)
     pic_errorf(pic, "get-output-string: port is not made by open-output-string");
   }
 
-  xfflush(port->file);
+  xfflush(pic, port->file);
 
   s = port->file->vtable.cookie;
 
@@ -191,7 +191,7 @@ pic_close_port(pic_state *pic, struct pic_port *port)
   if ((port->flags & PIC_PORT_OPEN) == 0) {
     return;
   }
-  if (xfclose(port->file) == EOF) {
+  if (xfclose(pic, port->file) == EOF) {
     pic_errorf(pic, "close-port: failure");
   }
   port->flags &= ~PIC_PORT_OPEN;
@@ -431,7 +431,7 @@ pic_port_get_output_bytevector(pic_state *pic)
     pic_errorf(pic, "get-output-bytevector: port is not made by open-output-bytevector");
   }
 
-  xfflush(port->file);
+  xfflush(pic, port->file);
 
   s = port->file->vtable.cookie;
 
@@ -451,7 +451,7 @@ pic_port_read_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "read-char");
 
-  if ((c = xfgetc(port->file)) == EOF) {
+  if ((c = xfgetc(pic, port->file)) == EOF) {
     return pic_eof_object();
   }
   else {
@@ -469,7 +469,7 @@ pic_port_peek_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "peek-char");
 
-  if ((c = xfgetc(port->file)) == EOF) {
+  if ((c = xfgetc(pic, port->file)) == EOF) {
     return pic_eof_object();
   }
   else {
@@ -490,8 +490,8 @@ pic_port_read_line(pic_state *pic)
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "read-line");
 
   buf = pic_open_output_string(pic);
-  while ((c = xfgetc(port->file)) != EOF && c != '\n') {
-    xfputc(c, buf->file);
+  while ((c = xfgetc(pic, port->file)) != EOF && c != '\n') {
+    xfputc(pic, c, buf->file);
   }
 
   str = pic_get_output_string(pic, buf);
@@ -529,10 +529,10 @@ pic_port_read_string(pic_state *pic){
   c = EOF;
   buf = pic_open_output_string(pic);
   for(i = 0; i < k; ++i) {
-    if((c = xfgetc(port->file)) == EOF){
+    if((c = xfgetc(pic, port->file)) == EOF){
       break;
     }
-    xfputc(c, buf->file);
+    xfputc(pic, c, buf->file);
   }
 
   str = pic_get_output_string(pic, buf);
@@ -552,7 +552,7 @@ pic_port_read_byte(pic_state *pic){
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "read-u8");
-  if ((c = xfgetc(port->file)) == EOF) {
+  if ((c = xfgetc(pic, port->file)) == EOF) {
     return pic_eof_object();
   }
 
@@ -569,7 +569,7 @@ pic_port_peek_byte(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "peek-u8");
 
-  c = xfgetc(port->file);
+  c = xfgetc(pic, port->file);
   if (c == EOF) {
     return pic_eof_object();
   }
@@ -605,7 +605,7 @@ pic_port_read_blob(pic_state *pic)
 
   blob = pic_make_blob(pic, k);
 
-  i = xfread(blob->data, sizeof(char), k, port->file);
+  i = xfread(pic, blob->data, sizeof(char), k, port->file);
   if (i == 0) {
     return pic_eof_object();
   }
@@ -644,7 +644,7 @@ pic_port_read_blob_ip(pic_state *pic)
   len = end - start;
 
   buf = pic_calloc(pic, len, sizeof(char));
-  i = xfread(buf, sizeof(char), len, port->file);
+  i = xfread(pic, buf, sizeof(char), len, port->file);
   memcpy(bv->data + start, buf, i);
   pic_free(pic, buf);
 
@@ -665,7 +665,7 @@ pic_port_newline(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "newline");
 
-  xfputs("\n", port->file);
+  xfputs(pic, "\n", port->file);
   return pic_undef_value();
 }
 
@@ -679,7 +679,7 @@ pic_port_write_char(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "write-char");
 
-  xfputc(c, port->file);
+  xfputc(pic, c, port->file);
   return pic_undef_value();
 }
 
@@ -703,7 +703,7 @@ pic_port_write_string(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "write-string");
 
   for (i = start; i < end && str[i] != '\0'; ++i) {
-    xfputc(str[i], port->file);
+    xfputc(pic, str[i], port->file);
   }
   return pic_undef_value();
 }
@@ -718,7 +718,7 @@ pic_port_write_byte(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, "write-u8");
 
-  xfputc(i, port->file);
+  xfputc(pic, i, port->file);
   return pic_undef_value();
 }
 
@@ -743,7 +743,7 @@ pic_port_write_blob(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, "write-bytevector");
 
   for (i = start; i < end; ++i) {
-    xfputc(blob->data[i], port->file);
+    xfputc(pic, blob->data[i], port->file);
   }
   return pic_undef_value();
 }
@@ -757,7 +757,7 @@ pic_port_flush(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_OUT, "flush-output-port");
 
-  xfflush(port->file);
+  xfflush(pic, port->file);
   return pic_undef_value();
 }
 

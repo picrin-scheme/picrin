@@ -1,15 +1,11 @@
-#ifndef XFILE_H
-#define XFILE_H
+#ifndef PICRIN_FILE_H
+#define PICRIN_FILE_H
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 #include <stdio.h>
-
-#ifndef NULL
-# define NULL 0
-#endif
 
 #ifndef EOF
 # define EOF (-1)
@@ -18,7 +14,7 @@ extern "C" {
 #define XBUFSIZ 1024
 #define XOPEN_MAX 1024
 
-typedef struct {
+struct xFILE {
   /* buffer */
   char buf[1];                  /* fallback buffer */
   long cnt;                     /* characters left */
@@ -33,7 +29,7 @@ typedef struct {
     int (*close)(void *);
   } vtable;
   int flag;                     /* mode of the file access */
-} xFILE;
+};
 
 extern xFILE x_iob[XOPEN_MAX];
 
@@ -55,30 +51,30 @@ enum _flags {
 #define xferror(p)   (((p)->flag & X_ERR) != 0)
 #define xfileno(p)   ((p)->fd)
 
-#define xgetc(p)                                                \
+#define xgetc(pic, p)                                           \
   ((--(p)->cnt >= 0)                                            \
    ? (unsigned char) *(p)->ptr++                                \
-   : x_fillbuf(p))
-#define xputc(x, p)                                             \
+   : x_fillbuf((pic), p))
+#define xputc(pic, x, p)                                        \
   ((--(p)->cnt >= 0 && !(((p)->flag & X_LNBUF) && (x) == '\n')) \
    ? *(p)->ptr++ = (x)                                          \
-   : x_flushbuf(x, (p)))
-#define xgetchar()   xgetc(xstdin)
-#define xputchar(x)  xputc((x), xstdout)
+   : x_flushbuf((pic), (x), (p)))
+#define xgetchar(pic)   xgetc((pic), xstdin)
+#define xputchar(pic, x)  xputc((pic), (x), xstdout)
 
 /* resource aquisition */
 xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(void *, const char *, int), long (*seek)(void *, long, int), int (*close)(void *));
 xFILE *xfopen(const char *, const char *);
-int xfclose(xFILE *);
+int xfclose(pic_state *, xFILE *);
 
 /* buffer management */
-int x_fillbuf(xFILE *);
-int x_flushbuf(int, xFILE *);
-int xfflush(xFILE *);
+int x_fillbuf(pic_state *, xFILE *);
+int x_flushbuf(pic_state *, int, xFILE *);
+int xfflush(pic_state *, xFILE *);
 
 /* direct IO */
-size_t xfread(void *, size_t, size_t, xFILE *);
-size_t xfwrite(const void *, size_t, size_t, xFILE *);
+size_t xfread(pic_state *, void *, size_t, size_t, xFILE *);
+size_t xfwrite(pic_state *, const void *, size_t, size_t, xFILE *);
 
 enum {
   XSEEK_CUR,
@@ -87,22 +83,22 @@ enum {
 };
 
 /* indicator positioning */
-long xfseek(xFILE *, long, int);
-long xftell(xFILE *);
-void xrewind(xFILE *);
+long xfseek(pic_state *, xFILE *, long, int);
+long xftell(pic_state *, xFILE *);
+void xrewind(pic_state *, xFILE *);
 
 /* character IO */
-int xfputc(int, xFILE *);
-int xfgetc(xFILE *);
-int xfputs(const char *, xFILE *);
-char *xfgets(char *, int, xFILE *);
-int xputs(const char *);
+int xfputc(pic_state *, int, xFILE *);
+int xfgetc(pic_state *, xFILE *);
+int xfputs(pic_state *, const char *, xFILE *);
+char *xfgets(pic_state *, char *, int, xFILE *);
+int xputs(pic_state *, const char *);
 int xungetc(int, xFILE *);
 
 /* formatted I/O */
-int xprintf(const char *, ...);
-int xfprintf(xFILE *, const char *, ...);
-int xvfprintf(xFILE *, const char *, va_list);
+int xprintf(pic_state *, const char *, ...);
+int xfprintf(pic_state *, xFILE *, const char *, ...);
+int xvfprintf(pic_state *, xFILE *, const char *, va_list);
 
 #if defined(__cplusplus)
 }

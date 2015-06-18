@@ -93,18 +93,15 @@ xFILE *xfunopen(void *cookie, int (*read)(void *, char *, int), int (*write)(voi
   return fp;
 }
 
-int xfclose(xFILE *fp) {
-  extern void free(void *);     /* FIXME */
-
-  xfflush(fp);
+int xfclose(pic_state *pic, xFILE *fp) {
+  xfflush(pic, fp);
   fp->flag = 0;
   if (fp->base != fp->buf)
-    free(fp->base);
+    pic_free(pic, fp->base);
   return fp->vtable.close(fp->vtable.cookie);
 }
 
-int x_fillbuf(xFILE *fp) {
-  extern void *malloc(size_t);  /* FIXME */
+int x_fillbuf(pic_state *pic, xFILE *fp) {
   int bufsize;
 
   if ((fp->flag & (X_READ|X_EOF|X_ERR)) != X_READ)
@@ -112,7 +109,7 @@ int x_fillbuf(xFILE *fp) {
   if (fp->base == NULL) {
     if ((fp->flag & X_UNBUF) == 0) {
       /* no buffer yet */
-      if ((fp->base = malloc(XBUFSIZ)) == NULL) {
+      if ((fp->base = pic_malloc(pic, XBUFSIZ)) == NULL) {
         /* can't get buffer, try unbuffered */
         fp->flag |= X_UNBUF;
       }
@@ -138,8 +135,7 @@ int x_fillbuf(xFILE *fp) {
   return (unsigned char) *fp->ptr++;
 }
 
-int x_flushbuf(int x, xFILE *fp) {
-  extern void *malloc(size_t);  /* FIXME */
+int x_flushbuf(pic_state *pic, int x, xFILE *fp) {
   int num_written=0, bufsize=0;
   char c = x;
 
@@ -147,7 +143,7 @@ int x_flushbuf(int x, xFILE *fp) {
     return EOF;
   if (fp->base == NULL && ((fp->flag & X_UNBUF) == 0)) {
     /* no buffer yet */
-    if ((fp->base = malloc(XBUFSIZ)) == NULL) {
+    if ((fp->base = pic_malloc(pic, XBUFSIZ)) == NULL) {
       /* couldn't allocate a buffer, so try unbuffered */
       fp->flag |= X_UNBUF;
     } else {
@@ -190,7 +186,7 @@ int x_flushbuf(int x, xFILE *fp) {
   }
 }
 
-int xfflush(xFILE *f) {
+int xfflush(pic_state *pic, xFILE *f) {
   int retval;
   int i;
 
@@ -198,48 +194,48 @@ int xfflush(xFILE *f) {
   if (f == NULL) {
     /* flush all output streams */
     for (i = 0; i < XOPEN_MAX; i++) {
-      if ((x_iob[i].flag & X_WRITE) && (xfflush(&x_iob[i]) == -1))
+      if ((x_iob[i].flag & X_WRITE) && (xfflush(pic, &x_iob[i]) == -1))
         retval = -1;
     }
   } else {
     if ((f->flag & X_WRITE) == 0)
       return -1;
-    x_flushbuf(EOF, f);
+    x_flushbuf(pic, EOF, f);
     if (f->flag & X_ERR)
       retval = -1;
   }
   return retval;
 }
 
-int xfputc(int x, xFILE *fp) {
-  return xputc(x, fp);
+int xfputc(pic_state *pic, int x, xFILE *fp) {
+  return xputc(pic, x, fp);
 }
 
-int xfgetc(xFILE *fp) {
-  return xgetc(fp);
+int xfgetc(pic_state *pic, xFILE *fp) {
+  return xgetc(pic, fp);
 }
 
-int xfputs(const char *s, xFILE *stream) {
+int xfputs(pic_state *pic, const char *s, xFILE *stream) {
   const char *ptr = s;
   while(*ptr != '\0') {
-    if (xputc(*ptr, stream) == EOF)
+    if (xputc(pic, *ptr, stream) == EOF)
       return EOF;
     ++ptr;
   }
   return (int)(ptr - s);
 }
 
-char *xfgets(char *s, int size, xFILE *stream) {
+char *xfgets(pic_state *pic, char *s, int size, xFILE *stream) {
   int c;
   char *buf;
 
-  xfflush(NULL);
+  xfflush(pic, NULL);
 
   if (size == 0) {
     return NULL;
   }
   buf = s;
-  while (--size > 0 && (c = xgetc(stream)) != EOF) {
+  while (--size > 0 && (c = xgetc(pic, stream)) != EOF) {
     if ((*buf++ = c) == '\n')
       break;
   }
@@ -248,28 +244,28 @@ char *xfgets(char *s, int size, xFILE *stream) {
   return (c == EOF && buf == s) ? NULL : s;
 }
 
-int xputs(const char *s) {
+int xputs(pic_state *pic, const char *s) {
   int i = 1;
 
   while(*s != '\0') {
-    if (xputchar(*s++) == EOF)
+    if (xputchar(pic, *s++) == EOF)
       return EOF;
     i++;
   }
-  if (xputchar('\n') == EOF) {
+  if (xputchar(pic, '\n') == EOF) {
     return EOF;
   }
   return i;
 }
 
-char *xgets(char *s) {
+char *xgets(pic_state *pic, char *s) {
   int c;
   char *buf;
 
-  xfflush(NULL);
+  xfflush(pic, NULL);
 
   buf = s;
-  while ((c = xgetchar()) != EOF && c != '\n') {
+  while ((c = xgetchar(pic)) != EOF && c != '\n') {
     *buf++ = c;
   }
   *buf = '\0';
@@ -287,7 +283,7 @@ int xungetc(int c, xFILE *fp) {
   return *--fp->ptr = uc;
 }
 
-size_t xfread(void *ptr, size_t size, size_t count, xFILE *fp) {
+size_t xfread(pic_state *pic, void *ptr, size_t size, size_t count, xFILE *fp) {
   char *bptr = ptr;
   long nbytes;
   int c;
@@ -298,7 +294,7 @@ size_t xfread(void *ptr, size_t size, size_t count, xFILE *fp) {
     fp->ptr += fp->cnt;
     bptr += fp->cnt;
     nbytes -= fp->cnt;
-    if ((c = x_fillbuf(fp)) == EOF) {
+    if ((c = x_fillbuf(pic, fp)) == EOF) {
       return (size * count - nbytes) / size;
     } else {
       xungetc(c, fp);
@@ -310,7 +306,7 @@ size_t xfread(void *ptr, size_t size, size_t count, xFILE *fp) {
   return count;
 }
 
-size_t xfwrite(const void *ptr, size_t size, size_t count, xFILE *fp) {
+size_t xfwrite(pic_state *pic, const void *ptr, size_t size, size_t count, xFILE *fp) {
   const char *bptr = ptr;
   long nbytes;
 
@@ -320,7 +316,7 @@ size_t xfwrite(const void *ptr, size_t size, size_t count, xFILE *fp) {
     fp->ptr += fp->cnt;
     bptr += fp->cnt;
     nbytes -= fp->cnt;
-    if (x_flushbuf(EOF, fp) == EOF) {
+    if (x_flushbuf(pic, EOF, fp) == EOF) {
       return (size * count - nbytes) / size;
     }
   }
@@ -330,10 +326,10 @@ size_t xfwrite(const void *ptr, size_t size, size_t count, xFILE *fp) {
   return count;
 }
 
-long xfseek(xFILE *fp, long offset, int whence) {
+long xfseek(pic_state *pic, xFILE *fp, long offset, int whence) {
   long s;
 
-  xfflush(fp);
+  xfflush(pic, fp);
 
   fp->ptr = fp->base;
   fp->cnt = 0;
@@ -344,36 +340,36 @@ long xfseek(xFILE *fp, long offset, int whence) {
   return 0;
 }
 
-long xftell(xFILE *fp) {
-  return xfseek(fp, 0, XSEEK_CUR);
+long xftell(pic_state *pic, xFILE *fp) {
+  return xfseek(pic, fp, 0, XSEEK_CUR);
 }
 
-void xrewind(xFILE *fp) {
-  xfseek(fp, 0, XSEEK_SET);
+void xrewind(pic_state *pic, xFILE *fp) {
+  xfseek(pic, fp, 0, XSEEK_SET);
   xclearerr(fp);
 }
 
-int xprintf(const char *fmt, ...) {
+int xprintf(pic_state *pic, const char *fmt, ...) {
   va_list ap;
   int n;
 
   va_start(ap, fmt);
-  n = xvfprintf(xstdout, fmt, ap);
+  n = xvfprintf(pic, xstdout, fmt, ap);
   va_end(ap);
   return n;
 }
 
-int xfprintf(xFILE *stream, const char *fmt, ...) {
+int xfprintf(pic_state *pic, xFILE *stream, const char *fmt, ...) {
   va_list ap;
   int n;
 
   va_start(ap, fmt);
-  n = xvfprintf(stream, fmt, ap);
+  n = xvfprintf(pic, stream, fmt, ap);
   va_end(ap);
   return n;
 }
 
-static int print_int(xFILE *stream, long x, int base) {
+static int print_int(pic_state *pic, xFILE *stream, long x, int base) {
   static const char digits[] = "0123456789abcdef";
   char buf[20];
   int i, c, neg;
@@ -395,12 +391,12 @@ static int print_int(xFILE *stream, long x, int base) {
 
   c = i;
   while (i-- > 0) {
-    xputc(buf[i], stream);
+    xputc(pic, buf[i], stream);
   }
   return c;
 }
 
-int xvfprintf(xFILE *stream, const char *fmt, va_list ap) {
+int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
   const char *p;
   char *sval;
   int ival;
@@ -412,7 +408,7 @@ int xvfprintf(xFILE *stream, const char *fmt, va_list ap) {
 
   for (p = fmt; *p; p++) {
     if (*p != '%') {
-      xputc(*p, stream);
+      xputc(pic, *p, stream);
       cnt++;
       continue;
     }
@@ -420,42 +416,42 @@ int xvfprintf(xFILE *stream, const char *fmt, va_list ap) {
     case 'd':
     case 'i':
       ival = va_arg(ap, int);
-      cnt += print_int(stream, ival, 10);
+      cnt += print_int(pic, stream, ival, 10);
       break;
 #if PIC_ENABLE_FLOAT
     case 'f':
       dval = va_arg(ap, double);
-      cnt += print_int(stream, dval, 10);
-      xputc('.', stream);
+      cnt += print_int(pic, stream, dval, 10);
+      xputc(pic, '.', stream);
       cnt++;
       if ((ival = fabs((dval - floor(dval)) * 1e4) + 0.5) == 0) {
-        cnt += xfputs("0000", stream);
+        cnt += xfputs(pic, "0000", stream);
       } else {
         int i;
         for (i = 0; i < 3 - (int)log10(ival); ++i) {
-          xputc('0', stream);
+          xputc(pic, '0', stream);
           cnt++;
         }
-        cnt += print_int(stream, ival, 10);
+        cnt += print_int(pic, stream, ival, 10);
       }
       break;
 #endif
     case 's':
       sval = va_arg(ap, char*);
-      cnt += xfputs(sval, stream);
+      cnt += xfputs(pic, sval, stream);
       break;
     case 'p':
       vp = va_arg(ap, void*);
-      cnt += xfputs("0x", stream);
-      cnt += print_int(stream, (long)vp, 16);
+      cnt += xfputs(pic, "0x", stream);
+      cnt += print_int(pic, stream, (long)vp, 16);
       break;
     case '%':
-      xputc(*(p-1), stream);
+      xputc(pic, *(p-1), stream);
       cnt++;
       break;
     default:
-      xputc('%', stream);
-      xputc(*(p-1), stream);
+      xputc(pic, '%', stream);
+      xputc(pic, *(p-1), stream);
       cnt += 2;
       break;
     }
