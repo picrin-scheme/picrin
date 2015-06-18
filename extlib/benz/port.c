@@ -14,6 +14,30 @@ pic_eof_object()
   return v;
 }
 
+static pic_value
+pic_assert_port(pic_state *pic)
+{
+  struct pic_port *port;
+
+  pic_get_args(pic, "p", &port);
+
+  return pic_obj_value(port);
+}
+
+/* current-(input|output|error)-port */
+
+static void
+pic_define_standard_port(pic_state *pic, const char *name, xFILE *file, int dir)
+{
+  struct pic_port *port;
+
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port->file = file;
+  port->flags = dir | PIC_PORT_TEXT | PIC_PORT_OPEN;
+
+  pic_defvar(pic, name, pic_obj_value(port), pic_make_proc(pic, pic_assert_port, "pic_assert_port"));
+}
+
 #define DEFINE_STANDARD_PORT_ACCESSOR(name, var)        \
   struct pic_port *                                     \
   name(pic_state *pic)                                  \
@@ -28,17 +52,6 @@ pic_eof_object()
 DEFINE_STANDARD_PORT_ACCESSOR(pic_stdin, "current-input-port")
 DEFINE_STANDARD_PORT_ACCESSOR(pic_stdout, "current-output-port")
 DEFINE_STANDARD_PORT_ACCESSOR(pic_stderr, "current-error-port")
-
-struct pic_port *
-pic_make_standard_port(pic_state *pic, xFILE *file, short dir)
-{
-  struct pic_port *port;
-
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = file;
-  port->flags = dir | PIC_PORT_TEXT | PIC_PORT_OPEN;
-  return port;
-}
 
 struct strfile {
   pic_state *pic;
@@ -748,13 +761,9 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  struct pic_port *xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
-  struct pic_port *xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
-  struct pic_port *xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
-
-  pic_defvar(pic, "current-input-port", pic_obj_value(xSTDIN), NULL);
-  pic_defvar(pic, "current-output-port", pic_obj_value(xSTDOUT), NULL);
-  pic_defvar(pic, "current-error-port", pic_obj_value(xSTDERR), NULL);
+  pic_define_standard_port(pic, "current-input-port", xstdin, PIC_PORT_IN);
+  pic_define_standard_port(pic, "current-output-port", xstdout, PIC_PORT_OUT);
+  pic_define_standard_port(pic, "current-error-port", xstderr, PIC_PORT_OUT);
 
   pic_defun(pic, "call-with-port", pic_port_call_with_port);
 
