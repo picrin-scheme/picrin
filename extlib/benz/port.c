@@ -4,6 +4,8 @@
 
 #include "picrin.h"
 
+#include <stdio.h>
+
 pic_value
 pic_eof_object()
 {
@@ -69,7 +71,10 @@ file_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence) {
     whence = SEEK_END;
     break;
   }
-  return fseek(cookie, pos, whence);
+  if (fseek(cookie, pos, whence) == 0) {
+    return ftell(cookie);
+  }
+  return -1;
 }
 
 static int

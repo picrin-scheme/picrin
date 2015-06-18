@@ -105,7 +105,7 @@ int x_flushbuf(pic_state *pic, int x, xFILE *fp) {
     }
 
     fp->ptr = fp->base;
-    fp->cnt = BUFSIZ - 1;
+    fp->cnt = XBUFSIZ - 1;
   }
 
   if (num_written == bufsize) {

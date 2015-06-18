@@ -4,6 +4,8 @@
 
 #include "picrin.h"
 
+#include <stdio.h>
+
 PIC_NORETURN static void
 file_error(pic_state *pic, const char *msg)
 {

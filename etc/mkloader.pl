@@ -50,9 +50,9 @@ foreach my $file (@ARGV) {
   }
   pic_catch {
     /* error! */
-    fputs("fatal error: failure in loading $dirname/$basename\\n", stderr);
-    fputs(pic_errmsg(pic), stderr);
-    abort();
+    xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
+    xfputs(pic, pic_errmsg(pic), xstderr);
+    pic_panic(pic, "load error");
   }
 EOL
 }
