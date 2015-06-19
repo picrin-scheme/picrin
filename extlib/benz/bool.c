@@ -110,7 +110,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
     id1 = pic_id_ptr(x);
     id2 = pic_id_ptr(y);
 
-    return pic_eq_p(pic_expand(pic, id1->var, id1->env), pic_expand(pic, id2->var, id2->env));
+    return pic_resolve(pic, id1->var, id1->env) == pic_resolve(pic, id2->var, id2->env);
   }
   default:
     return false;

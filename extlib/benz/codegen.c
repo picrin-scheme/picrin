@@ -24,8 +24,8 @@ lookup(pic_state PIC_UNUSED(*pic), pic_value var, struct pic_env *env)
   return NULL;
 }
 
-static pic_sym *
-resolve(pic_state *pic, pic_value var, struct pic_env *env)
+pic_sym *
+pic_resolve(pic_state *pic, pic_value var, struct pic_env *env)
 {
   pic_sym *uid;
 
@@ -72,7 +72,7 @@ static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 static pic_value
 expand_var(pic_state *pic, pic_value var, struct pic_env *env)
 {
-  return pic_obj_value(resolve(pic, var, env));
+  return pic_obj_value(pic_resolve(pic, var, env));
 }
 
 static pic_value
@@ -275,7 +275,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
     if (pic_var_p(pic_car(pic, expr))) {
       pic_sym *functor;
 
-      functor = resolve(pic, pic_car(pic, expr), env);
+      functor = pic_resolve(pic, pic_car(pic, expr), env);
 
       if (functor == pic->uDEFINE_MACRO) {
         return expand_defmacro(pic, expr, env);

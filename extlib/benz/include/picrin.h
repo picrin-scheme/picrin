@@ -217,7 +217,6 @@ pic_value pic_apply4(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
-pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
 struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
 
 struct pic_lib *pic_make_library(pic_state *, pic_value);
