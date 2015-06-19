@@ -21,21 +21,22 @@
 
   (define user-env (library-environment (find-library '(picrin user))))
 
-  (eval
-   '(import (scheme base)
-            (scheme load)
-            (scheme process-context)
-            (scheme read)
-            (scheme write)
-            (scheme file)
-            (scheme inexact)
-            (scheme cxr)
-            (scheme lazy)
-            (scheme time)
-            (picrin macro)
-            (picrin array)
-            (picrin library))
-   user-env)
+  (begin
+    (current-library (find-library '(picrin user)))
+    (eval
+     '(import (scheme base)
+              (scheme load)
+              (scheme process-context)
+              (scheme read)
+              (scheme write)
+              (scheme file)
+              (scheme inexact)
+              (scheme cxr)
+              (scheme lazy)
+              (scheme time)
+              (picrin macro))
+     user-env)
+    (current-library (find-library '(picrin repl))))
 
   (define (repl)
     (let loop ((buf ""))
