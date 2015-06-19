@@ -176,13 +176,6 @@ void pic_close(pic_state *);
 
 void pic_add_feature(pic_state *, const char *);
 
-void pic_define(pic_state *, const char *, pic_value);
-void pic_define_noexport(pic_state *, const char *, pic_value);
-void pic_defun(pic_state *, const char *, pic_func_t);
-
-struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
-void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
-
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 
@@ -200,13 +193,17 @@ pic_value pic_read_cstr(pic_state *, const char *);
 void pic_load_port(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
 
+void pic_define(pic_state *, const char *, pic_value);
+void pic_defun(pic_state *, const char *, pic_func_t);
+void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
+
+pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
+void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
 pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);
 pic_value pic_funcall0(pic_state *pic, struct pic_lib *, const char *);
 pic_value pic_funcall1(pic_state *pic, struct pic_lib *, const char *, pic_value);
 pic_value pic_funcall2(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value);
 pic_value pic_funcall3(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value, pic_value);
-pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
-void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
 
 pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply0(pic_state *, struct pic_proc *);
@@ -218,6 +215,8 @@ pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
 struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
+
+struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);

@@ -393,150 +393,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return argc;
 }
 
-void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
-{
-  pic_put_variable(pic, env, pic_obj_value(sym), uid);
-
-  if (pic->lib && pic->lib->env == env) {
-    pic_export(pic, sym);
-  }
-}
-
-void
-pic_define_noexport(pic_state *pic, const char *name, pic_value val)
-{
-  pic_sym *sym, *uid;
-
-  sym = pic_intern_cstr(pic, name);
-
-  if ((uid = pic_find_variable(pic, pic->lib->env, pic_obj_value(sym))) == NULL) {
-    uid = pic_add_variable(pic, pic->lib->env, pic_obj_value(sym));
-  } else {
-    pic_warnf(pic, "redefining global");
-  }
-
-  pic_dict_set(pic, pic->globals, uid, val);
-}
-
-void
-pic_define(pic_state *pic, const char *name, pic_value val)
-{
-  pic_define_noexport(pic, name, val);
-
-  pic_export(pic, pic_intern_cstr(pic, name));
-}
-
-pic_value
-pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
-{
-  pic_sym *sym, *uid;
-
-  sym = pic_intern_cstr(pic, name);
-
-  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
-    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
-  }
-
-  return pic_dict_ref(pic, pic->globals, uid);
-}
-
-void
-pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
-{
-  pic_sym *sym, *uid;
-
-  sym = pic_intern_cstr(pic, name);
-
-  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
-    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
-  }
-
-  pic_dict_set(pic, pic->globals, uid, val);
-}
-
-pic_value
-pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, pic_list args)
-{
-  pic_value proc;
-
-  proc = pic_ref(pic, lib, name);
-
-  pic_assert_type(pic, proc, proc);
-
-  return pic_apply(pic, pic_proc_ptr(proc), args);
-}
-
-pic_value
-pic_funcall0(pic_state *pic, struct pic_lib *lib, const char *name)
-{
-  return pic_funcall(pic, lib, name, pic_nil_value());
-}
-
-void
-pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
-{
-  struct pic_proc *proc;
-
-  proc = pic_make_proc(pic, cfunc, name);
-  pic_define(pic, name, pic_obj_value(proc));
-}
-
-void
-pic_defun_vm(pic_state *pic, const char *name, pic_sym *uid, pic_func_t func)
-{
-  struct pic_proc *proc;
-  pic_sym *sym;
-
-  proc = pic_make_proc(pic, func, name);
-
-  sym = pic_intern_cstr(pic, name);
-
-  pic_put_variable(pic, pic->lib->env, pic_obj_value(sym), uid);
-
-  pic_dict_set(pic, pic->globals, uid, pic_obj_value(proc));
-
-  pic_export(pic, sym);
-}
-
-void
-pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
-{
-  pic_define(pic, name, pic_obj_value(pic_make_var(pic, init, conv)));
-}
-
-static pic_value
-defmacro_call(pic_state *pic)
-{
-  struct pic_proc *self = pic_get_proc(pic);
-  pic_value args, tmp, proc;
-
-  pic_get_args(pic, "oo", &args, &tmp);
-
-  proc = pic_attr_ref(pic, pic_obj_value(self), "@@transformer");
-
-  return pic_apply_trampoline(pic, pic_proc_ptr(proc), pic_cdr(pic, args));
-}
-
-void
-pic_defmacro(pic_state *pic, pic_sym *name, pic_sym *id, pic_func_t func)
-{
-  struct pic_proc *proc, *trans;
-
-  trans = pic_make_proc(pic, func, pic_symbol_name(pic, name));
-
-  pic_put_variable(pic, pic->lib->env, pic_obj_value(name), id);
-
-  proc = pic_make_proc(pic, defmacro_call, "defmacro_call");
-  pic_attr_set(pic, pic_obj_value(proc), "@@transformer", pic_obj_value(trans));
-
-  /* symbol registration */
-  pic_dict_set(pic, pic->macros, id, pic_obj_value(proc));
-
-  /* auto export! */
-  pic_export(pic, name);
-}
-
 static void
 vm_push_cxt(pic_state *pic)
 {
@@ -594,42 +450,6 @@ vm_get_irep(pic_state *pic)
     pic_errorf(pic, "logic flaw");
   }
   return irep;
-}
-
-pic_value
-pic_apply0(pic_state *pic, struct pic_proc *proc)
-{
-  return pic_apply(pic, proc, pic_nil_value());
-}
-
-pic_value
-pic_apply1(pic_state *pic, struct pic_proc *proc, pic_value arg1)
-{
-  return pic_apply(pic, proc, pic_list1(pic, arg1));
-}
-
-pic_value
-pic_apply2(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2)
-{
-  return pic_apply(pic, proc, pic_list2(pic, arg1, arg2));
-}
-
-pic_value
-pic_apply3(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3)
-{
-  return pic_apply(pic, proc, pic_list3(pic, arg1, arg2, arg3));
-}
-
-pic_value
-pic_apply4(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
-{
-  return pic_apply(pic, proc, pic_list4(pic, arg1, arg2, arg3, arg4));
-}
-
-pic_value
-pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
-{
-  return pic_apply(pic, proc, pic_list5(pic, arg1, arg2, arg3, arg4, arg5));
 }
 
 #if VM_DEBUG
@@ -1251,4 +1071,161 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   } else {
     return pic_car(pic, args);
   }
+}
+
+pic_value
+pic_apply0(pic_state *pic, struct pic_proc *proc)
+{
+  return pic_apply(pic, proc, pic_nil_value());
+}
+
+pic_value
+pic_apply1(pic_state *pic, struct pic_proc *proc, pic_value arg1)
+{
+  return pic_apply(pic, proc, pic_list1(pic, arg1));
+}
+
+pic_value
+pic_apply2(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2)
+{
+  return pic_apply(pic, proc, pic_list2(pic, arg1, arg2));
+}
+
+pic_value
+pic_apply3(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3)
+{
+  return pic_apply(pic, proc, pic_list3(pic, arg1, arg2, arg3));
+}
+
+pic_value
+pic_apply4(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
+{
+  return pic_apply(pic, proc, pic_list4(pic, arg1, arg2, arg3, arg4));
+}
+
+pic_value
+pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
+{
+  return pic_apply(pic, proc, pic_list5(pic, arg1, arg2, arg3, arg4, arg5));
+}
+
+void
+pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
+{
+  pic_put_variable(pic, env, pic_obj_value(sym), uid);
+
+  if (pic->lib && pic->lib->env == env) {
+    pic_export(pic, sym);
+  }
+}
+
+void
+pic_defun_vm(pic_state *pic, const char *name, pic_sym *uid, pic_func_t func)
+{
+  struct pic_proc *proc;
+  pic_sym *sym;
+
+  proc = pic_make_proc(pic, func, name);
+
+  sym = pic_intern_cstr(pic, name);
+
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(sym), uid);
+
+  pic_dict_set(pic, pic->globals, uid, pic_obj_value(proc));
+
+  pic_export(pic, sym);
+}
+
+void
+pic_define(pic_state *pic, const char *name, pic_value val)
+{
+  pic_sym *sym, *uid;
+
+  sym = pic_intern_cstr(pic, name);
+
+  if ((uid = pic_find_variable(pic, pic->lib->env, pic_obj_value(sym))) == NULL) {
+    uid = pic_add_variable(pic, pic->lib->env, pic_obj_value(sym));
+  } else {
+    pic_warnf(pic, "redefining global");
+  }
+
+  pic_dict_set(pic, pic->globals, uid, val);
+
+  pic_export(pic, sym);
+}
+
+void
+pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
+{
+  pic_define(pic, name, pic_obj_value(pic_make_proc(pic, cfunc, name)));
+}
+
+void
+pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
+{
+  pic_define(pic, name, pic_obj_value(pic_make_var(pic, init, conv)));
+}
+
+pic_value
+pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
+{
+  pic_sym *sym, *uid;
+
+  sym = pic_intern_cstr(pic, name);
+
+  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
+    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
+  }
+
+  return pic_dict_ref(pic, pic->globals, uid);
+}
+
+void
+pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
+{
+  pic_sym *sym, *uid;
+
+  sym = pic_intern_cstr(pic, name);
+
+  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
+    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
+  }
+
+  pic_dict_set(pic, pic->globals, uid, val);
+}
+
+pic_value
+pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, pic_list args)
+{
+  pic_value proc;
+
+  proc = pic_ref(pic, lib, name);
+
+  pic_assert_type(pic, proc, proc);
+
+  return pic_apply(pic, pic_proc_ptr(proc), args);
+}
+
+pic_value
+pic_funcall0(pic_state *pic, struct pic_lib *lib, const char *name)
+{
+  return pic_funcall(pic, lib, name, pic_nil_value());
+}
+
+pic_value
+pic_funcall1(pic_state *pic, struct pic_lib *lib, const char *name, pic_value arg0)
+{
+  return pic_funcall(pic, lib, name, pic_list1(pic, arg0));
+}
+
+pic_value
+pic_funcall2(pic_state *pic, struct pic_lib *lib, const char *name, pic_value arg0, pic_value arg1)
+{
+  return pic_funcall(pic, lib, name, pic_list2(pic, arg0, arg1));
+}
+
+pic_value
+pic_funcall3(pic_state *pic, struct pic_lib *lib, const char *name, pic_value arg0, pic_value arg1, pic_value arg2)
+{
+  return pic_funcall(pic, lib, name, pic_list3(pic, arg0, arg1, arg2));
 }
