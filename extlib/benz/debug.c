@@ -42,6 +42,7 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
     pic_fwrite(pic, pic->err, file);
   } else {
     struct pic_error *e;
+    pic_value elem, it;
 
     e = pic_error_ptr(pic->err);
     if (e->type != pic_intern_cstr(pic, "")) {
@@ -50,9 +51,12 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
     }
     xfprintf(pic, file, "error: ");
     pic_fwrite(pic, pic_obj_value(e->msg), file);
-    xfprintf(pic, file, "\n");
 
-    /* TODO: print error irritants */
+    pic_for_each (elem, e->irrs, it) { /* print error irritants */
+      xfprintf(pic, file, " ");
+      pic_fwrite(pic, elem, file);
+    }
+    xfprintf(pic, file, "\n");
 
     xfputs(pic, pic_str_cstr(pic, e->stack), file);
   }
