@@ -8,18 +8,12 @@ void
 pic_load_port(pic_state *pic, struct pic_port *port)
 {
   pic_value form;
+  size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_try {
-    size_t ai = pic_gc_arena_preserve(pic);
+  while (! pic_eof_p(form = pic_read(pic, port))) {
+    pic_eval(pic, form, pic->lib->env);
 
-    while (! pic_eof_p(form = pic_read(pic, port))) {
-      pic_eval(pic, form, pic->lib->env);
-
-      pic_gc_arena_restore(pic, ai);
-    }
-  }
-  pic_catch {
-    pic_errorf(pic, "load error: %s", pic_errmsg(pic));
+    pic_gc_arena_restore(pic, ai);
   }
 }
 

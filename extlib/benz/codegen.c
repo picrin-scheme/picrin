@@ -214,13 +214,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
     uid = pic_add_variable(pic, env, var);
   }
 
-  val = pic_cadr(pic, pic_cdr(pic, expr));
-
-  pic_try {
-    val = pic_eval(pic, val, env);
-  } pic_catch {
-    pic_errorf(pic, "expand error while definition: %s", pic_errmsg(pic));
-  }
+  val = pic_eval(pic, pic_list_ref(pic, expr, 2), env);
 
   if (! pic_proc_p(val)) {
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
@@ -234,27 +228,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 static pic_value
 expand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct pic_env *env)
 {
-  pic_value v;
-
-#if DEBUG
-  puts("before expand-1:");
-  pic_debug(pic, expr);
-  puts("");
-#endif
-
-  pic_try {
-    v = pic_apply2(pic, mac, expr, pic_obj_value(env));
-  } pic_catch {
-    pic_errorf(pic, "expand error while application: %s", pic_errmsg(pic));
-  }
-
-#if DEBUG
-  puts("after expand-1:");
-  pic_debug(pic, v);
-  puts("");
-#endif
-
-  return v;
+  return pic_apply2(pic, mac, expr, pic_obj_value(env));
 }
 
 static pic_value
