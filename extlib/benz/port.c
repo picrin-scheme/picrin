@@ -4,8 +4,6 @@
 
 #include "picrin.h"
 
-#include <stdio.h>
-
 pic_value
 pic_eof_object()
 {
@@ -27,6 +25,8 @@ pic_assert_port(pic_state *pic)
 }
 
 /* current-(input|output|error)-port */
+
+#if PIC_ENABLE_STDIO
 
 static int
 file_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size) {
@@ -117,6 +117,32 @@ pic_open_file(pic_state *pic, const char *name, int flags) {
 
   return port;
 }
+
+#else
+
+/* null file */
+
+static int
+null_read(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), char PIC_UNUSED(*ptr), int PIC_UNUSED(size)) {
+  return 0;
+}
+
+static int
+null_write(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), const char PIC_UNUSED(*ptr), int size) {
+  return size;
+}
+
+static long
+null_seek(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence)) {
+  return 0;
+}
+
+static int
+null_close(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie)) {
+  return 0;
+}
+
+#endif
 
 static void
 pic_define_standard_port(pic_state *pic, const char *name, xFILE *file, int dir)
@@ -854,7 +880,11 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-#define FILE_VTABLE { 0, file_read, file_write, file_seek, file_close }
+#if PIC_ENABLE_STDIO
+# define FILE_VTABLE { 0, file_read, file_write, file_seek, file_close }
+#else
+# define FILE_VTABLE { 0, null_read, null_write, null_seek, null_close }
+#endif
 
   static const xFILE skel[3] = {
     { { 0 }, 0, NULL, NULL, FILE_VTABLE, X_READ },
@@ -866,9 +896,11 @@ pic_init_port(pic_state *pic)
   pic->files[1] = skel[1];
   pic->files[2] = skel[2];
 
+#if PIC_ENABLE_STDIO
   pic->files[0].vtable.cookie = stdin;
   pic->files[1].vtable.cookie = stdout;
   pic->files[2].vtable.cookie = stderr;
+#endif
 
   pic_define_standard_port(pic, "current-input-port", xstdin, PIC_PORT_IN);
   pic_define_standard_port(pic, "current-output-port", xstdout, PIC_PORT_OUT);

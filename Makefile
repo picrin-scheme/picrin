@@ -76,7 +76,7 @@ test-r7rs: bin/picrin t/r7rs-tests.scm
 test-contribs: bin/picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
-	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0'-nostdlib -fPIC -shared -std=c89 -ansi -pedantic -Wall -Wextra -o lib/libbenz.so $(BENZ_SRCS)
+	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0' -D'PIC_ENABLE_STDIO=0' -nostdlib -fPIC -shared -std=c89 -ansi -pedantic -Wall -Wextra -o lib/libbenz.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	rm -f lib/libbenz.so
 
 install: all

@@ -209,6 +209,10 @@ strcpy(char *dst, const char *src)
 # include <math.h>
 #endif
 
+#if PIC_ENABLE_STDIO
+# include <stdio.h>
+#endif
+
 #if defined(__cplusplus)
 }
 #endif
