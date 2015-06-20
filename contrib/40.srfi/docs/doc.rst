@@ -36,6 +36,11 @@ SRFI libraries
 
   Sorting and Marging.
 
+- `(srfi 106)
+  <http://srfi.schemers.org/srfi-106/>`_
+
+  Basic socket interface
+
 - `(srfi 111)
   <http://srfi.schemers.org/srfi-111/>`_
 
