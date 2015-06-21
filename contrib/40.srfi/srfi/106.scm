@@ -1,6 +1,7 @@
 (define-library (srfi 106)
   (import (scheme base)
           (srfi 60)
+          (srfi 106 impl)
           (picrin optional))
 
   ; TODO: Define assq-ref anywhere else.
