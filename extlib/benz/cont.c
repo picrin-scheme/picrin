@@ -31,7 +31,7 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   }
 
   here = pic->cp;
-  pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
+  pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TT_CP);
   pic->cp->prev = here;
   pic->cp->depth = here->depth + 1;
   pic->cp->in = in;

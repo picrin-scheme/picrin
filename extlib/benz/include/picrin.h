@@ -53,6 +53,7 @@ typedef struct pic_jmpbuf {
 } pic_jmpbuf;
 
 typedef struct pic_checkpoint {
+  PIC_OBJECT_HEADER
   struct pic_proc *in;
   struct pic_proc *out;
   int depth;

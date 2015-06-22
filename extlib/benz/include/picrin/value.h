@@ -158,14 +158,15 @@ enum pic_tt {
   PIC_TT_PORT,
   PIC_TT_ERROR,
   PIC_TT_ID,
-  PIC_TT_CXT,
   PIC_TT_ENV,
   PIC_TT_LIB,
-  PIC_TT_IREP,
   PIC_TT_DATA,
   PIC_TT_DICT,
   PIC_TT_REG,
-  PIC_TT_RECORD
+  PIC_TT_RECORD,
+  PIC_TT_CXT,
+  PIC_TT_IREP,
+  PIC_TT_CP
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -336,6 +337,8 @@ pic_type_repr(enum pic_tt tt)
     return "reg";
   case PIC_TT_RECORD:
     return "record";
+  case PIC_TT_CP:
+    return "checkpoint";
   }
   PIC_UNREACHABLE();
 }

@@ -355,7 +355,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->attrs = pic_make_reg(pic);
 
   /* root block */
-  pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
+  pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TT_CP);
   pic->cp->prev = NULL;
   pic->cp->depth = 0;
   pic->cp->in = pic->cp->out = NULL;
@@ -400,14 +400,6 @@ pic_close(pic_state *pic)
 {
   xh_entry *it;
   pic_allocf allocf = pic->allocf;
-
-  /* invoke exit handlers */
-  while (pic->cp) {
-    if (pic->cp->out) {
-      pic_apply0(pic, pic->cp->out);
-    }
-    pic->cp = pic->cp->prev;
-  }
 
   /* free symbol names */
   for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {

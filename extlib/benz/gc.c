@@ -330,20 +330,6 @@ gc_unmark(union header *p)
 }
 
 static void
-gc_mark_checkpoint(pic_state *pic, pic_checkpoint *cp)
-{
-  if (cp->prev) {
-    gc_mark_object(pic, (struct pic_object *)cp->prev);
-  }
-  if (cp->in) {
-    gc_mark_object(pic, (struct pic_object *)cp->in);
-  }
-  if (cp->out) {
-    gc_mark_object(pic, (struct pic_object *)cp->out);
-  }
-}
-
-static void
 gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
   union header *p;
@@ -495,6 +481,20 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     pic->regs = reg;
     break;
   }
+  case PIC_TT_CP: {
+    struct pic_checkpoint *cp = (struct pic_checkpoint *)obj;
+
+    if (cp->prev) {
+      gc_mark_object(pic, (struct pic_object *)cp->prev);
+    }
+    if (cp->in) {
+      gc_mark_object(pic, (struct pic_object *)cp->in);
+    }
+    if (cp->out) {
+      gc_mark_object(pic, (struct pic_object *)cp->out);
+    }
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
 #if PIC_ENABLE_FLOAT
@@ -565,7 +565,7 @@ gc_mark_phase(pic_state *pic)
 
   /* checkpoint */
   if (pic->cp) {
-    gc_mark_checkpoint(pic, pic->cp);
+    gc_mark_object(pic, (struct pic_object *)pic->cp);
   }
 
   /* stack */
@@ -720,6 +720,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_REG: {
     struct pic_reg *reg = (struct pic_reg *)obj;
     xh_destroy(&reg->hash);
+    break;
+  }
+  case PIC_TT_CP: {
     break;
   }
   case PIC_TT_NIL:
