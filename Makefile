@@ -68,10 +68,7 @@ docs/contrib.rst: $(CONTRIB_DOCS)
 run: bin/picrin
 	bin/picrin
 
-test: test-r7rs test-contribs test-nostdlib
-
-test-r7rs: bin/picrin t/r7rs-tests.scm
-	bin/picrin t/r7rs-tests.scm
+test: test-contribs test-nostdlib
 
 test-contribs: bin/picrin $(CONTRIB_TESTS)
 
