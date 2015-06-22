@@ -47,11 +47,6 @@ typedef struct pic_state pic_state;
 #include "picrin/read.h"
 #include "picrin/gc.h"
 
-typedef struct pic_jmpbuf {
-  PIC_JMPBUF buf;
-  struct pic_jmpbuf *prev;
-} pic_jmpbuf;
-
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
   struct pic_proc *in;
@@ -78,7 +73,7 @@ struct pic_state {
 
   pic_allocf allocf;
 
-  pic_jmpbuf *jmp;
+  struct pic_cont *cc;
   pic_checkpoint *cp;
 
   pic_value *sp;

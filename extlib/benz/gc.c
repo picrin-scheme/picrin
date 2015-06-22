@@ -702,7 +702,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_DATA: {
     struct pic_data *data = (struct pic_data *)obj;
-    data->type->dtor(pic, data->data);
+    if (data->type->dtor) {
+      data->type->dtor(pic, data->data);
+    }
     xh_destroy(&data->storage);
     break;
   }

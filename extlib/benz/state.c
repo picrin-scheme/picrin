@@ -172,8 +172,8 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* turn off GC */
   pic->gc_enable = false;
 
-  /* jmp */
-  pic->jmp = NULL;
+  /* continuation chain */
+  pic->cc = NULL;
 
   /* root block */
   pic->cp = NULL;

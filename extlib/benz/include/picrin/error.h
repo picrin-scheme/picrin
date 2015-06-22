@@ -30,21 +30,21 @@ struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list)
   pic_catch_(PIC_GENSYM(label))
 #define pic_try_(cont, handler)                                         \
   do {                                                                  \
-    struct pic_cont *cont = pic_malloc(pic, sizeof(struct pic_cont));   \
-    pic_save_point(pic, cont);                                          \
-    if (PIC_SETJMP(pic, cont->jmp.buf) == 0) {                          \
+    struct pic_cont cont;                                               \
+    pic_save_point(pic, &cont);                                         \
+    if (PIC_SETJMP(pic, cont.jmp) == 0) {                               \
       extern pic_value pic_native_exception_handler(pic_state *);       \
       struct pic_proc *handler;                                         \
       handler = pic_make_proc(pic, pic_native_exception_handler, "(native-exception-handler)"); \
-      pic_proc_env_set(pic, handler, "cont", pic_obj_value(pic_make_cont(pic, cont))); \
+      pic_proc_env_set(pic, handler, "cont", pic_obj_value(pic_make_cont(pic, &cont))); \
       do {                                                              \
         pic_push_handler(pic, handler);
 #define pic_catch_(label)                                 \
-        pic_pop_handler(pic);                             \
+  pic_pop_handler(pic);                                   \
       } while (0);                                        \
-      pic->jmp = pic->jmp->prev;                          \
+      pic->cc = pic->cc->prev;                            \
     } else {                                              \
-      pic->jmp = pic->jmp->prev;                          \
+      pic->cc = pic->cc->prev;                            \
       goto label;                                         \
     }                                                     \
   } while (0);                                            \

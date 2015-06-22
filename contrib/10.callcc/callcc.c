@@ -3,7 +3,7 @@
 struct pic_fullcont {
   jmp_buf jmp;
 
-  pic_jmpbuf *prev_jmp;
+  struct pic_cont *prev_jmp;
 
   pic_checkpoint *cp;
 
@@ -122,7 +122,7 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
 
   cont = *c = pic_malloc(pic, sizeof(struct pic_fullcont));
 
-  cont->prev_jmp = pic->jmp;
+  cont->prev_jmp = pic->cc;
 
   cont->cp = pic->cp;
 
@@ -181,8 +181,7 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
     if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
-  pic->jmp = cont->prev_jmp;
-
+  pic->cc = cont->prev_jmp;
   pic->cp = cont->cp;
 
   pic->stbase = pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
