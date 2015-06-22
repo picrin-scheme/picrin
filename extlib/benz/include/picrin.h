@@ -73,8 +73,9 @@ struct pic_state {
 
   pic_allocf allocf;
 
-  struct pic_cont *cc;
   pic_checkpoint *cp;
+  struct pic_cont *cc;
+  int ccnt;
 
   pic_value *sp;
   pic_value *stbase, *stend;

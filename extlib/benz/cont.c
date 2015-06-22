@@ -61,6 +61,7 @@ pic_save_point(pic_state *pic, struct pic_cont *cont)
   cont->ptable = pic->ptable;
   cont->prev = pic->cc;
   cont->results = pic_undef_value();
+  cont->id = pic->ccnt++;
 
   pic->cc = cont;
 }
@@ -68,17 +69,6 @@ pic_save_point(pic_state *pic, struct pic_cont *cont)
 void
 pic_load_point(pic_state *pic, struct pic_cont *cont)
 {
-  struct pic_cont *cc;
-
-  for (cc = pic->cc; cc != NULL; cc = cc->prev) {
-    if (cc == cont) {
-      break;
-    }
-  }
-  if (cc == NULL) {
-    pic_errorf(pic, "calling dead escape continuation");
-  }
-
   pic_wind(pic, pic->cp, cont->cp);
 
   /* load runtime context */
@@ -94,18 +84,32 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
 static pic_value
 cont_call(pic_state *pic)
 {
+  struct pic_proc *self = pic_get_proc(pic);
   size_t argc;
   pic_value *argv;
-  struct pic_data *e;
+  int id;
+  struct pic_cont *cc, *cont;
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  e = pic_data_ptr(pic_proc_env_ref(pic, pic_get_proc(pic), "escape"));
-  ((struct pic_cont *)e->data)->results = pic_list_by_array(pic, argc, argv);
+  id = pic_int(pic_proc_env_ref(pic, self, "id"));
 
-  pic_load_point(pic, e->data);
+  /* check if continuation is alive */
+  for (cc = pic->cc; cc != NULL; cc = cc->prev) {
+    if (cc->id == id) {
+      break;
+    }
+  }
+  if (cc == NULL) {
+    pic_errorf(pic, "calling dead escape continuation");
+  }
 
-  PIC_LONGJMP(pic, ((struct pic_cont *)e->data)->jmp, 1);
+  cont = pic_data_ptr(pic_proc_env_ref(pic, self, "escape"))->data;
+  cont->results = pic_list_by_array(pic, argc, argv);
+
+  pic_load_point(pic, cont);
+
+  PIC_LONGJMP(pic, cont->jmp, 1);
 
   PIC_UNREACHABLE();
 }
@@ -123,6 +127,7 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
 
   /* save the escape continuation in proc */
   pic_proc_env_set(pic, c, "escape", pic_obj_value(e));
+  pic_proc_env_set(pic, c, "id", pic_int_value(cont->id));
 
   return c;
 }

@@ -174,6 +174,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   /* continuation chain */
   pic->cc = NULL;
+  pic->ccnt = 0;
 
   /* root block */
   pic->cp = NULL;

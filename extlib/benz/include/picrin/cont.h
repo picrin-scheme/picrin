@@ -12,14 +12,14 @@ extern "C" {
 struct pic_cont {
   PIC_JMPBUF jmp;
 
-  pic_checkpoint *cp;
+  int id;
 
+  pic_checkpoint *cp;
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
   ptrdiff_t xp_offset;
   size_t arena_idx;
   pic_value ptable;
-
   pic_code *ip;
 
   pic_value results;
