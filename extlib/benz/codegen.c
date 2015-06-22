@@ -66,6 +66,14 @@ find_macro(pic_state *pic, pic_sym *uid)
   return pic_proc_ptr(pic_dict_ref(pic, pic->macros, uid));
 }
 
+static void
+shadow_macro(pic_state *pic, pic_sym *uid)
+{
+  if (pic_dict_has(pic, pic->macros, uid)) {
+    pic_dict_del(pic, pic->macros, uid);
+  }
+}
+
 static pic_value expand(pic_state *, pic_value, struct pic_env *, pic_value);
 static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 
@@ -190,6 +198,8 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
   }
   if ((uid = pic_find_variable(pic, env, var)) == NULL) {
     uid = pic_add_variable(pic, env, var);
+  } else {
+    shadow_macro(pic, uid);
   }
   val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
 
