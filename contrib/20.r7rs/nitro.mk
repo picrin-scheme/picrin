@@ -22,3 +22,10 @@ CONTRIB_LIBS += \
 	contrib/20.r7rs/scheme/process-context.scm\
 	contrib/20.r7rs/scheme/time.scm\
 	contrib/20.r7rs/scheme/r5rs.scm
+
+CONTRIB_TESTS += test-r7rs
+
+test-r7rs: bin/picrin
+	for test in `ls contrib/20.r7rs/t/*.scm`; do \
+	  bin/picrin "$$test"; \
+	done
