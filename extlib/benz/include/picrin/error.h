@@ -40,7 +40,7 @@ struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list)
       do {                                                              \
         pic_push_handler(pic, handler);
 #define pic_catch_(label)                                 \
-  pic_pop_handler(pic);                                   \
+        pic_pop_handler(pic);                             \
       } while (0);                                        \
       pic->cc = pic->cc->prev;                            \
     } else {                                              \
