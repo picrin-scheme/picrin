@@ -1137,7 +1137,7 @@ pic_defun_vm(pic_state *pic, const char *name, pic_sym *uid, pic_func_t func)
 }
 
 void
-pic_define(pic_state *pic, const char *name, pic_value val)
+pic_define_(pic_state *pic, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
 
@@ -1150,20 +1150,39 @@ pic_define(pic_state *pic, const char *name, pic_value val)
   }
 
   pic_dict_set(pic, pic->globals, uid, val);
+}
 
-  pic_export(pic, sym);
+void
+pic_define(pic_state *pic, const char *name, pic_value val)
+{
+  pic_define_(pic, name, val);
+  pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+void
+pic_defun_(pic_state *pic, const char *name, pic_func_t cfunc)
+{
+  pic_define_(pic, name, pic_obj_value(pic_make_proc(pic, cfunc, name)));
 }
 
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
-  pic_define(pic, name, pic_obj_value(pic_make_proc(pic, cfunc, name)));
+  pic_defun_(pic, name, cfunc);
+  pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+void
+pic_defvar_(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
+{
+  pic_define_(pic, name, pic_obj_value(pic_make_var(pic, init, conv)));
 }
 
 void
 pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
 {
-  pic_define(pic, name, pic_obj_value(pic_make_var(pic, init, conv)));
+  pic_defvar_(pic, name, init, conv);
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 pic_value

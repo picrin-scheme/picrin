@@ -193,6 +193,10 @@ void pic_load_cstr(pic_state *, const char *);
 void pic_define(pic_state *, const char *, pic_value);
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
+/* functions suffixed with '_' will not perform automatic export */
+void pic_define_(pic_state *, const char *, pic_value);
+void pic_defun_(pic_state *, const char *, pic_func_t);
+void pic_defvar_(pic_state *, const char *, pic_value, struct pic_proc *);
 
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
