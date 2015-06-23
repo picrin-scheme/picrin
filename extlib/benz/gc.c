@@ -442,11 +442,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_DATA: {
     struct pic_data *data = (struct pic_data *)obj;
-    xh_entry *it;
 
-    for (it = xh_begin(&data->storage); it != NULL; it = xh_next(it)) {
-      gc_mark(pic, xh_val(it, pic_value));
-    }
+    gc_mark_object(pic, (struct pic_object *)data->storage);
     if (data->type->mark) {
       data->type->mark(pic, data->data, gc_mark);
     }
@@ -454,11 +451,12 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
+    pic_sym *sym;
     xh_entry *it;
 
-    for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-      gc_mark_object(pic, (struct pic_object *)xh_key(it, pic_sym *));
-      gc_mark(pic, xh_val(it, pic_value));
+    pic_dict_for_each (sym, dict, it) {
+      gc_mark_object(pic, (struct pic_object *)sym);
+      gc_mark(pic, pic_dict_ref(pic, dict, sym));
     }
     break;
   }
@@ -705,7 +703,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     if (data->type->dtor) {
       data->type->dtor(pic, data->data);
     }
-    xh_destroy(&data->storage);
     break;
   }
   case PIC_TT_DICT: {

@@ -238,12 +238,13 @@ pic_dict_dictionary_to_alist(pic_state *pic)
 {
   struct pic_dict *dict;
   pic_value item, alist = pic_nil_value();
+  pic_sym *sym;
   xh_entry *it;
 
   pic_get_args(pic, "d", &dict);
 
-  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    item = pic_cons(pic, pic_obj_value(xh_key(it, pic_sym *)), xh_val(it, pic_value));
+  pic_dict_for_each (sym, dict, it) {
+    item = pic_cons(pic, pic_obj_value(sym), pic_dict_ref(pic, dict, sym));
     pic_push(pic, item, alist);
   }
 
@@ -273,13 +274,14 @@ pic_dict_dictionary_to_plist(pic_state *pic)
 {
   struct pic_dict *dict;
   pic_value plist = pic_nil_value();
+  pic_sym *sym;
   xh_entry *it;
 
   pic_get_args(pic, "d", &dict);
 
-  for (it = xh_begin(&dict->hash); it != NULL; it = xh_next(it)) {
-    pic_push(pic, pic_obj_value(xh_key(it, pic_sym *)), plist);
-    pic_push(pic, xh_val(it, pic_value), plist);
+  pic_dict_for_each (sym, dict, it) {
+    pic_push(pic, pic_obj_value(sym), plist);
+    pic_push(pic, pic_dict_ref(pic, dict, sym), plist);
   }
 
   return pic_reverse(pic, plist);

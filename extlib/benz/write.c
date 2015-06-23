@@ -169,6 +169,7 @@ write_core(struct writer_control *p, pic_value obj)
   pic_state *pic = p->pic;
   xFILE *file = p->file;
   size_t i;
+  pic_sym *sym;
   xh_entry *e, *it;
   int c;
 #if PIC_ENABLE_FLOAT
@@ -297,9 +298,9 @@ write_core(struct writer_control *p, pic_value obj)
     break;
   case PIC_TT_DICT:
     xfprintf(pic, file, "#.(dictionary");
-    for (it = xh_begin(&pic_dict_ptr(obj)->hash); it != NULL; it = xh_next(it)) {
-      xfprintf(pic, file, " '%s ", pic_symbol_name(pic, xh_key(it, pic_sym *)));
-      write_core(p, xh_val(it, pic_value));
+    pic_dict_for_each (sym, pic_dict_ptr(obj), it) {
+      xfprintf(pic, file, " '%s ", pic_symbol_name(pic, sym));
+      write_core(p, pic_dict_ref(pic, pic_dict_ptr(obj), sym));
     }
     xfprintf(pic, file, ")");
     break;
