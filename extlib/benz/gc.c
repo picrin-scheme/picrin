@@ -745,24 +745,16 @@ static void
 gc_sweep_symbols(pic_state *pic)
 {
   xh_entry *it;
-  xvect_t(xh_entry *) xv;
-  size_t i;
   char *cstr;
-
-  xv_init(xv);
 
   for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
     if (! gc_obj_is_marked((struct pic_object *)xh_val(it, pic_sym *))) {
-      xv_push(xh_entry *, xv, it);
+      cstr = xh_key(it, char *);
+
+      xh_del_str(&pic->syms, cstr);
+
+      pic_free(pic, cstr);
     }
-  }
-
-  for (i = 0; i < xv_size(xv); ++i) {
-    cstr = xh_key(xv_A(xv, i), char *);
-
-    xh_del_str(&pic->syms, cstr);
-
-    pic_free(pic, cstr);
   }
 }
 
