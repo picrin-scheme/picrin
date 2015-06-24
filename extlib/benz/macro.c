@@ -4,6 +4,8 @@
 
 #include "picrin.h"
 
+KHASH_DEFINE(env, void *, pic_sym *, kh_ptr_hash_func, kh_ptr_hash_equal)
+
 bool
 pic_var_p(pic_value obj)
 {
@@ -30,7 +32,7 @@ pic_make_env(pic_state *pic, struct pic_env *up)
 
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
   env->up = up;
-  xh_init_ptr(&env->map, sizeof(pic_sym *));
+  kh_init(env, &env->map);
   return env;
 }
 
@@ -74,22 +76,27 @@ pic_add_variable(pic_state *pic, struct pic_env *env, pic_value var)
 void
 pic_put_variable(pic_state PIC_UNUSED(*pic), struct pic_env *env, pic_value var, pic_sym *uid)
 {
+  khiter_t it;
+  int ret;
+
   assert(pic_var_p(var));
 
-  xh_put_ptr(&env->map, pic_ptr(var), &uid);
+  it = kh_put(env, &env->map, pic_ptr(var), &ret);
+  kh_val(&env->map, it) = uid;
 }
 
 pic_sym *
 pic_find_variable(pic_state PIC_UNUSED(*pic), struct pic_env *env, pic_value var)
 {
-  xh_entry *e;
+  khiter_t it;
 
   assert(pic_var_p(var));
 
-  if ((e = xh_get_ptr(&env->map, pic_ptr(var))) == NULL) {
+  it = kh_get(env, &env->map, pic_ptr(var));
+  if (it == kh_end(&env->map)) {
     return NULL;
   }
-  return xh_val(e, pic_sym *);
+  return kh_val(&env->map, it);
 }
 
 static pic_value

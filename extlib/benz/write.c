@@ -36,12 +36,17 @@ is_quasiquote(pic_state *pic, pic_value pair)
   return is_tagged(pic, pic->sQUASIQUOTE, pair);
 }
 
+KHASH_DECLARE(l, void *, int)
+KHASH_DECLARE(v, void *, int)
+KHASH_DEFINE2(l, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
+KHASH_DEFINE2(v, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
+
 struct writer_control {
   pic_state *pic;
   xFILE *file;
   int mode;
-  xhash labels;                 /* object -> int */
-  xhash visited;                /* object -> int */
+  khash_t(l) labels;            /* object -> int */
+  khash_t(v) visited;           /* object -> int */
   int cnt;
 };
 
@@ -55,35 +60,36 @@ writer_control_init(struct writer_control *p, pic_state *pic, xFILE *file, int m
   p->file = file;
   p->mode = mode;
   p->cnt = 0;
-  xh_init_ptr(&p->labels, sizeof(int));
-  xh_init_ptr(&p->visited, sizeof(int));
+  kh_init(l, &p->labels);
+  kh_init(v, &p->visited);
 }
 
 static void
 writer_control_destroy(struct writer_control *p)
 {
-  xh_destroy(&p->labels);
-  xh_destroy(&p->visited);
+  pic_state *pic = p->pic;
+  kh_destroy(l, &p->labels);
+  kh_destroy(v, &p->visited);
 }
 
 static void
 traverse_shared(struct writer_control *p, pic_value obj)
 {
-  xh_entry *e;
+  pic_state *pic = p->pic;
+  khash_t(l) *h = &p->labels;
+  khiter_t it;
   size_t i;
-  int c;
+  int ret;
 
   switch (pic_type(obj)) {
   case PIC_TT_PAIR:
   case PIC_TT_VECTOR:
-    e = xh_get_ptr(&p->labels, pic_obj_ptr(obj));
-    if (e == NULL) {
-      c = -1;
-      xh_put_ptr(&p->labels, pic_obj_ptr(obj), &c);
+    it = kh_put(l, h, pic_obj_ptr(obj), &ret);
+    if (ret != 0) {
+      kh_val(h, it) = -1;
     }
-    else if (xh_val(e, int) == -1) {
-      c = p->cnt++;
-      xh_put_ptr(&p->labels, pic_obj_ptr(obj), &c);
+    else if (kh_val(h, it) == -1) {
+      kh_val(h, it) = p->cnt++;
       break;
     }
     else {
@@ -112,8 +118,10 @@ static void
 write_pair(struct writer_control *p, struct pic_pair *pair)
 {
   pic_state *pic = p->pic;
-  xh_entry *e;
-  int c;
+  khash_t(l) *lh = &p->labels;
+  khash_t(v) *vh = &p->visited;
+  khiter_t it;
+  int ret;
 
   write_core(p, pair->car);
 
@@ -123,18 +131,15 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
   else if (pic_pair_p(pair->cdr)) {
 
     /* shared objects */
-    if ((e = xh_get_ptr(&p->labels, pic_obj_ptr(pair->cdr))) && xh_val(e, int) != -1) {
+    if ((it = kh_get(l, lh, pic_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
       xfprintf(pic, p->file, " . ");
 
-      if ((xh_get_ptr(&p->visited, pic_obj_ptr(pair->cdr)))) {
-        xfprintf(pic, p->file, "#%d#", xh_val(e, int));
+      kh_put(v, vh, pic_ptr(pair->cdr), &ret);
+      if (ret == 0) {           /* if exists */
+        xfprintf(pic, p->file, "#%d#", kh_val(lh, it));
         return;
       }
-      else {
-        xfprintf(pic, p->file, "#%d=", xh_val(e, int));
-        c = 1;
-        xh_put_ptr(&p->visited, pic_obj_ptr(pair->cdr), &c);
-      }
+      xfprintf(pic, p->file, "#%d=", kh_val(lh, it));
     }
     else {
       xfprintf(pic, p->file, " ");
@@ -167,27 +172,25 @@ static void
 write_core(struct writer_control *p, pic_value obj)
 {
   pic_state *pic = p->pic;
+  khash_t(l) *lh = &p->labels;
+  khash_t(v) *vh = &p->visited;
   xFILE *file = p->file;
   size_t i;
-  xh_entry *e, *it;
-  int c;
+  pic_sym *sym;
+  khiter_t it;
+  int ret;
 #if PIC_ENABLE_FLOAT
   double f;
 #endif
 
   /* shared objects */
-  if (pic_vtype(obj) == PIC_VTYPE_HEAP
-      && (e = xh_get_ptr(&p->labels, pic_obj_ptr(obj)))
-      && xh_val(e, int) != -1) {
-    if ((xh_get_ptr(&p->visited, pic_obj_ptr(obj)))) {
-      xfprintf(pic, file, "#%d#", xh_val(e, int));
+  if (pic_vtype(obj) == PIC_VTYPE_HEAP && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
+    kh_put(v, vh, pic_ptr(obj), &ret);
+    if (ret == 0) {             /* if exists */
+      xfprintf(pic, file, "#%d#", kh_val(lh, it));
       return;
     }
-    else {
-      xfprintf(pic, file, "#%d=", xh_val(e, int));
-      c = 1;
-      xh_put_ptr(&p->visited, pic_obj_ptr(obj), &c);
-    }
+    xfprintf(pic, file, "#%d=", kh_val(lh, it));
   }
 
   switch (pic_type(obj)) {
@@ -297,9 +300,9 @@ write_core(struct writer_control *p, pic_value obj)
     break;
   case PIC_TT_DICT:
     xfprintf(pic, file, "#.(dictionary");
-    for (it = xh_begin(&pic_dict_ptr(obj)->hash); it != NULL; it = xh_next(it)) {
-      xfprintf(pic, file, " '%s ", pic_symbol_name(pic, xh_key(it, pic_sym *)));
-      write_core(p, xh_val(it, pic_value));
+    pic_dict_for_each (sym, pic_dict_ptr(obj), it) {
+      xfprintf(pic, file, " '%s ", pic_symbol_name(pic, sym));
+      write_core(p, pic_dict_ref(pic, pic_dict_ptr(obj), sym));
     }
     xfprintf(pic, file, ")");
     break;

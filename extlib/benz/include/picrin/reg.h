@@ -9,9 +9,11 @@
 extern "C" {
 #endif
 
+KHASH_DECLARE(reg, void *, pic_value)
+
 struct pic_reg {
   PIC_OBJECT_HEADER
-  xhash hash;
+  khash_t(reg) hash;
   struct pic_reg *prev;         /* for GC */
 };
 

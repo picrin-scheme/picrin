@@ -4,6 +4,8 @@
 
 #include "picrin.h"
 
+KHASH_DEFINE(s, const char *, pic_sym *, kh_str_hash_func, kh_str_hash_equal)
+
 static pic_sym *
 pic_make_symbol(pic_state *pic, pic_str *str)
 {
@@ -17,22 +19,26 @@ pic_make_symbol(pic_state *pic, pic_str *str)
 pic_sym *
 pic_intern(pic_state *pic, pic_str *str)
 {
-  xh_entry *e;
+  khash_t(s) *h = &pic->syms;
   pic_sym *sym;
   char *cstr;
+  khiter_t it;
+  int ret;
 
-  e = xh_get_str(&pic->syms, pic_str_cstr(pic, str));
-  if (e) {
-    sym = xh_val(e, pic_sym *);
+  it = kh_put(s, h, pic_str_cstr(pic, str), &ret);
+  if (ret == 0) {               /* if exists */
+    sym = kh_val(h, it);
     pic_gc_protect(pic, pic_obj_value(sym));
     return sym;
   }
 
   cstr = pic_malloc(pic, pic_str_len(str) + 1);
   strcpy(cstr, pic_str_cstr(pic, str));
+  kh_key(h, it) = cstr;
 
   sym = pic_make_symbol(pic, str);
-  xh_put_str(&pic->syms, cstr, &sym);
+  kh_val(h, it) = sym;
+
   return sym;
 }
 

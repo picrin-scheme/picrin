@@ -224,7 +224,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->regs = NULL;
 
   /* symbol table */
-  xh_init_str(&pic->syms, sizeof(pic_sym *));
+  kh_init(s, &pic->syms);
 
   /* unique symbol count */
   pic->ucnt = 0;
@@ -399,13 +399,17 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 void
 pic_close(pic_state *pic)
 {
-  xh_entry *it;
+  khash_t(s) *h = &pic->syms;
+  khiter_t it;
   pic_allocf allocf = pic->allocf;
 
-  /* free symbol names */
-  for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
-    allocf(xh_key(it, char *), 0);
+  /* free all symbols */
+  for (it = kh_begin(h); it != kh_end(h); ++it) {
+    if (kh_exist(h, it)) {
+      allocf((void *)kh_key(h, it), 0);
+    }
   }
+  kh_clear(s, h);
 
   /* clear out root objects */
   pic->sp = pic->stbase;
@@ -416,7 +420,6 @@ pic_close(pic_state *pic)
   pic->globals = NULL;
   pic->macros = NULL;
   pic->attrs = NULL;
-  xh_clear(&pic->syms);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 
@@ -438,7 +441,7 @@ pic_close(pic_state *pic)
   allocf(pic->xpbase, 0);
 
   /* free global stacks */
-  xh_destroy(&pic->syms);
+  kh_destroy(s, h);
 
   /* free GC arena */
   allocf(pic->arena, 0);

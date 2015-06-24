@@ -35,8 +35,8 @@ extern "C" {
 #include "picrin/config.h"
 
 #include "picrin/compat.h"
-#include "picrin/xvect.h"
-#include "picrin/xhash.h"
+#include "picrin/kvec.h"
+#include "picrin/khash.h"
 
 #include "picrin/value.h"
 
@@ -46,6 +46,8 @@ typedef struct pic_state pic_state;
 #include "picrin/file.h"
 #include "picrin/read.h"
 #include "picrin/gc.h"
+
+KHASH_DECLARE(s, const char *, pic_sym *);
 
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
@@ -124,7 +126,7 @@ struct pic_state {
 
   pic_value features;
 
-  xhash syms;                   /* name to symbol */
+  khash_t(s) syms;              /* name to symbol */
   int ucnt;
   struct pic_dict *globals;
   struct pic_dict *macros;

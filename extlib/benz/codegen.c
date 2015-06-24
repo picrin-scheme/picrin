@@ -11,13 +11,14 @@
 static pic_sym *
 lookup(pic_state PIC_UNUSED(*pic), pic_value var, struct pic_env *env)
 {
-  xh_entry *e;
+  khiter_t it;
 
   assert(pic_var_p(var));
 
   while (env != NULL) {
-    if ((e = xh_get_ptr(&env->map, pic_ptr(var))) != NULL) {
-      return xh_val(e, pic_sym *);
+    it = kh_get(env, &env->map, pic_ptr(var));
+    if (it != kh_end(&env->map)) {
+      return kh_val(&env->map, it);
     }
     env = env->up;
   }
@@ -330,9 +331,9 @@ pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
   return v;
 }
 
-typedef xvect_t(pic_sym *) xvect;
+typedef kvec_t(pic_sym *) svec_t;
 
-#define xv_push_sym(v, x) xv_push(pic_sym *, (v), (x))
+#define kv_push_sym(v, x) kv_push(pic_sym *, (v), (x))
 
 /**
  * scope object
@@ -341,7 +342,7 @@ typedef xvect_t(pic_sym *) xvect;
 typedef struct analyze_scope {
   int depth;
   bool varg;
-  xvect args, locals, captures; /* rest args variable is counted as a local */
+  svec_t args, locals, captures; /* rest args variable is counted as a local */
   pic_value defer;
   struct analyze_scope *up;
 } analyze_scope;
@@ -363,7 +364,7 @@ new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
   pic_sym *sym;
-  xh_entry *it;
+  khiter_t it;
 
   state = pic_malloc(pic, sizeof(analyze_state));
   state->pic = pic;
@@ -373,7 +374,7 @@ new_analyze_state(pic_state *pic)
   push_scope(state, pic_nil_value());
 
   pic_dict_for_each (sym, pic->globals, it) {
-    xv_push_sym(state->scope->locals, sym);
+    kv_push_sym(state->scope->locals, sym);
   }
 
   return state;
@@ -387,7 +388,7 @@ destroy_analyze_state(analyze_state *state)
 }
 
 static bool
-analyze_args(pic_state *pic, pic_value formals, bool *varg, xvect *args, xvect *locals)
+analyze_args(pic_state *pic, pic_value formals, bool *varg, svec_t *args, svec_t *locals)
 {
   pic_value v, t;
   pic_sym *sym;
@@ -398,7 +399,7 @@ analyze_args(pic_state *pic, pic_value formals, bool *varg, xvect *args, xvect *
       return false;
     }
     sym = pic_sym_ptr(t);
-    xv_push_sym(*args, sym);
+    kv_push_sym(*args, sym);
   }
   if (pic_nil_p(v)) {
     *varg = false;
@@ -406,7 +407,7 @@ analyze_args(pic_state *pic, pic_value formals, bool *varg, xvect *args, xvect *
   else if (pic_sym_p(v)) {
     *varg = true;
     sym = pic_sym_ptr(v);
-    xv_push_sym(*locals, sym);
+    kv_push_sym(*locals, sym);
   }
   else {
     return false;
@@ -422,9 +423,9 @@ push_scope(analyze_state *state, pic_value formals)
   analyze_scope *scope = pic_malloc(pic, sizeof(analyze_scope));
   bool varg;
 
-  xv_init(scope->args);
-  xv_init(scope->locals);
-  xv_init(scope->captures);
+  kv_init(scope->args);
+  kv_init(scope->locals);
+  kv_init(scope->captures);
 
   if (analyze_args(pic, formals, &varg, &scope->args, &scope->locals)) {
     scope->up = state->scope;
@@ -437,9 +438,9 @@ push_scope(analyze_state *state, pic_value formals)
     return true;
   }
   else {
-    xv_destroy(scope->args);
-    xv_destroy(scope->locals);
-    xv_destroy(scope->captures);
+    kv_destroy(scope->args);
+    kv_destroy(scope->locals);
+    kv_destroy(scope->captures);
     pic_free(pic, scope);
     return false;
   }
@@ -452,9 +453,9 @@ pop_scope(analyze_state *state)
   analyze_scope *scope;
 
   scope = state->scope;
-  xv_destroy(scope->args);
-  xv_destroy(scope->locals);
-  xv_destroy(scope->captures);
+  kv_destroy(scope->args);
+  kv_destroy(scope->locals);
+  kv_destroy(scope->captures);
 
   scope = scope->up;
   pic_free(state->pic, state->scope);
@@ -467,13 +468,13 @@ lookup_scope(analyze_scope *scope, pic_sym *sym)
   size_t i;
 
   /* args */
-  for (i = 0; i < xv_size(scope->args); ++i) {
-    if (xv_A(scope->args, i) == sym)
+  for (i = 0; i < kv_size(scope->args); ++i) {
+    if (kv_A(scope->args, i) == sym)
       return true;
   }
   /* locals */
-  for (i = 0; i < xv_size(scope->locals); ++i) {
-    if (xv_A(scope->locals, i) == sym)
+  for (i = 0; i < kv_size(scope->locals); ++i) {
+    if (kv_A(scope->locals, i) == sym)
       return true;
   }
   return false;
@@ -484,13 +485,13 @@ capture_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
   size_t i;
 
-  for (i = 0; i < xv_size(scope->captures); ++i) {
-    if (xv_A(scope->captures, i) == sym) {
+  for (i = 0; i < kv_size(scope->captures); ++i) {
+    if (kv_A(scope->captures, i) == sym) {
       break;
     }
   }
-  if (i == xv_size(scope->captures)) {
-    xv_push_sym(scope->captures, sym);
+  if (i == kv_size(scope->captures)) {
+    kv_push_sym(scope->captures, sym);
   }
 }
 
@@ -524,7 +525,7 @@ define_var(analyze_state *state, pic_sym *sym)
     return;
   }
 
-  xv_push_sym(scope->locals, sym);
+  kv_push_sym(scope->locals, sym);
 }
 
 static pic_value analyze_node(analyze_state *, pic_value, bool);
@@ -648,8 +649,8 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     size_t i;
 
     args = pic_nil_value();
-    for (i = xv_size(scope->args); i > 0; --i) {
-      pic_push(pic, pic_obj_value(xv_A(scope->args, i - 1)), args);
+    for (i = kv_size(scope->args); i > 0; --i) {
+      pic_push(pic, pic_obj_value(kv_A(scope->args, i - 1)), args);
     }
 
     varg = scope->varg
@@ -662,13 +663,13 @@ analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_v
     analyze_deferred(state);
 
     locals = pic_nil_value();
-    for (i = xv_size(scope->locals); i > 0; --i) {
-      pic_push(pic, pic_obj_value(xv_A(scope->locals, i - 1)), locals);
+    for (i = kv_size(scope->locals); i > 0; --i) {
+      pic_push(pic, pic_obj_value(kv_A(scope->locals, i - 1)), locals);
     }
 
     captures = pic_nil_value();
-    for (i = xv_size(scope->captures); i > 0; --i) {
-      pic_push(pic, pic_obj_value(xv_A(scope->captures, i - 1)), captures);
+    for (i = kv_size(scope->captures); i > 0; --i) {
+      pic_push(pic, pic_obj_value(kv_A(scope->captures, i - 1)), captures);
     }
 
     pop_scope(state);
@@ -1141,7 +1142,7 @@ typedef struct codegen_context {
   pic_sym *name;
   /* rest args variable is counted as a local */
   bool varg;
-  xvect args, locals, captures;
+  svec_t args, locals, captures;
   /* actual bit code sequence */
   pic_code *code;
   size_t clen, ccapa;
@@ -1262,25 +1263,25 @@ create_activation(codegen_state *state)
   pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
   size_t i, n;
-  xhash regs;
   size_t offset;
+  struct pic_reg *regs;
 
-  xh_init_ptr(&regs, sizeof(size_t));
+  regs = pic_make_reg(pic);
 
   offset = 1;
-  for (i = 0; i < xv_size(cxt->args); ++i) {
+  for (i = 0; i < kv_size(cxt->args); ++i) {
     n = i + offset;
-    xh_put_ptr(&regs, xv_A(cxt->args, i), &n);
+    pic_reg_set(pic, regs, kv_A(cxt->args, i), pic_size_value(n));
   }
   offset += i;
-  for (i = 0; i < xv_size(cxt->locals); ++i) {
+  for (i = 0; i < kv_size(cxt->locals); ++i) {
     n = i + offset;
-    xh_put_ptr(&regs, xv_A(cxt->locals, i), &n);
+    pic_reg_set(pic, regs, kv_A(cxt->locals, i), pic_size_value(n));
   }
 
-  for (i = 0; i < xv_size(cxt->captures); ++i) {
-    n = xh_val(xh_get_ptr(&regs, xv_A(cxt->captures, i)), size_t);
-    if (n <= xv_size(cxt->args) || (cxt->varg && n == xv_size(cxt->args) + 1)) {
+  for (i = 0; i < kv_size(cxt->captures); ++i) {
+    n = (size_t)pic_int(pic_reg_ref(pic, regs,  kv_A(cxt->captures, i)));
+    if (n <= kv_size(cxt->args) || (cxt->varg && n == kv_size(cxt->args) + 1)) {
       /* copy arguments to capture variable area */
       emit_i(state, OP_LREF, (int)n);
     } else {
@@ -1288,8 +1289,6 @@ create_activation(codegen_state *state)
       emit_n(state, OP_PUSHUNDEF);
     }
   }
-
-  xh_destroy(&regs);
 }
 
 static void
@@ -1308,18 +1307,18 @@ push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_v
     : pic_sym_ptr(name);
   cxt->varg = varg;
 
-  xv_init(cxt->args);
-  xv_init(cxt->locals);
-  xv_init(cxt->captures);
+  kv_init(cxt->args);
+  kv_init(cxt->locals);
+  kv_init(cxt->captures);
 
   pic_for_each (var, args, it) {
-    xv_push_sym(cxt->args, pic_sym_ptr(var));
+    kv_push_sym(cxt->args, pic_sym_ptr(var));
   }
   pic_for_each (var, locals, it) {
-    xv_push_sym(cxt->locals, pic_sym_ptr(var));
+    kv_push_sym(cxt->locals, pic_sym_ptr(var));
   }
   pic_for_each (var, captures, it) {
-    xv_push_sym(cxt->captures, pic_sym_ptr(var));
+    kv_push_sym(cxt->captures, pic_sym_ptr(var));
   }
 
   cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
@@ -1354,9 +1353,9 @@ pop_codegen_context(codegen_state *state)
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
   irep->name = state->cxt->name;
   irep->varg = state->cxt->varg;
-  irep->argc = (int)xv_size(state->cxt->args) + 1;
-  irep->localc = (int)xv_size(state->cxt->locals);
-  irep->capturec = (int)xv_size(state->cxt->captures);
+  irep->argc = (int)kv_size(state->cxt->args) + 1;
+  irep->localc = (int)kv_size(state->cxt->locals);
+  irep->capturec = (int)kv_size(state->cxt->captures);
   irep->code = pic_realloc(pic, state->cxt->code, sizeof(pic_code) * state->cxt->clen);
   irep->clen = state->cxt->clen;
   irep->irep = pic_realloc(pic, state->cxt->irep, sizeof(struct pic_irep *) * state->cxt->ilen);
@@ -1367,9 +1366,9 @@ pop_codegen_context(codegen_state *state)
   irep->slen = state->cxt->slen;
 
   /* finalize */
-  xv_destroy(cxt->args);
-  xv_destroy(cxt->locals);
-  xv_destroy(cxt->captures);
+  kv_destroy(cxt->args);
+  kv_destroy(cxt->locals);
+  kv_destroy(cxt->captures);
 
   /* destroy context */
   cxt = cxt->up;
@@ -1389,8 +1388,8 @@ index_capture(codegen_state *state, pic_sym *sym, int depth)
     cxt = cxt->up;
   }
 
-  for (i = 0; i < xv_size(cxt->captures); ++i) {
-    if (xv_A(cxt->captures, i) == sym)
+  for (i = 0; i < kv_size(cxt->captures); ++i) {
+    if (kv_A(cxt->captures, i) == sym)
       return (int)i;
   }
   return -1;
@@ -1403,13 +1402,13 @@ index_local(codegen_state *state, pic_sym *sym)
   size_t i, offset;
 
   offset = 1;
-  for (i = 0; i < xv_size(cxt->args); ++i) {
-    if (xv_A(cxt->args, i) == sym)
+  for (i = 0; i < kv_size(cxt->args); ++i) {
+    if (kv_A(cxt->args, i) == sym)
       return (int)(i + offset);
   }
   offset += i;
-  for (i = 0; i < xv_size(cxt->locals); ++i) {
-    if (xv_A(cxt->locals, i) == sym)
+  for (i = 0; i < kv_size(cxt->locals); ++i) {
+    if (kv_A(cxt->locals, i) == sym)
       return (int)(i + offset);
   }
   return -1;
@@ -1462,7 +1461,7 @@ codegen(codegen_state *state, pic_value obj)
 
     name = pic_sym_ptr(pic_list_ref(pic, obj, 1));
     if ((i = index_capture(state, name, 0)) != -1) {
-      emit_i(state, OP_LREF, i + (int)xv_size(cxt->args) + (int)xv_size(cxt->locals) + 1);
+      emit_i(state, OP_LREF, i + (int)kv_size(cxt->args) + (int)kv_size(cxt->locals) + 1);
       return;
     }
     emit_i(state, OP_LREF, index_local(state, name));
@@ -1497,7 +1496,7 @@ codegen(codegen_state *state, pic_value obj)
 
       name = pic_sym_ptr(pic_list_ref(pic, var, 1));
       if ((i = index_capture(state, name, 0)) != -1) {
-        emit_i(state, OP_LSET, i + (int)xv_size(cxt->args) + (int)xv_size(cxt->locals) + 1);
+        emit_i(state, OP_LSET, i + (int)kv_size(cxt->args) + (int)kv_size(cxt->locals) + 1);
         emit_n(state, OP_PUSHUNDEF);
         return;
       }

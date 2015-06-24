@@ -4,6 +4,8 @@
 
 #include "picrin.h"
 
+KHASH_DEFINE(read, int, pic_value, kh_int_hash_func, kh_int_hash_equal)
+
 static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
 
@@ -639,17 +641,19 @@ read_vector(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_label_set(pic_state *pic, struct pic_port *port, int i)
 {
+  khash_t(read) *h = &pic->reader.labels;
   pic_value val;
-  int c;
+  int c, ret;
+  khiter_t it;
+
+  it = kh_put(read, h, i, &ret);
 
   switch ((c = skip(pic, port, ' '))) {
   case '(':
     {
       pic_value tmp;
 
-      val = pic_cons(pic, pic_undef_value(), pic_undef_value());
-
-      xh_put_int(&pic->reader.labels, i, &val);
+      kh_val(h, it) = val = pic_cons(pic, pic_undef_value(), pic_undef_value());
 
       tmp = read(pic, port, c);
       pic_pair_ptr(val)->car = pic_car(pic, tmp);
@@ -670,9 +674,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
       if (vect) {
         pic_vec *tmp;
 
-        val = pic_obj_value(pic_make_vec(pic, 0));
-
-        xh_put_int(&pic->reader.labels, i, &val);
+        kh_val(h, it) = val = pic_obj_value(pic_make_vec(pic, 0));
 
         tmp = pic_vec_ptr(read(pic, port, c));
         PIC_SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
@@ -685,9 +687,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
     }
   default:
     {
-      val = read(pic, port, c);
-
-      xh_put_int(&pic->reader.labels, i, &val);
+      kh_val(h, it) = val = read(pic, port, c);
 
       return val;
     }
@@ -697,13 +697,14 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 static pic_value
 read_label_ref(pic_state *pic, struct pic_port PIC_UNUSED(*port), int i)
 {
-  xh_entry *e;
+  khash_t(read) *h = &pic->reader.labels;
+  khiter_t it;
 
-  e = xh_get_int(&pic->reader.labels, i);
-  if (! e) {
+  it = kh_get(read, h, i);
+  if (it == kh_end(h)) {
     read_error(pic, "label of given index not defined");
   }
-  return xh_val(e, pic_value);
+  return kh_val(h, it);
 }
 
 static pic_value
@@ -832,7 +833,7 @@ pic_reader_init(pic_state *pic)
   int c;
 
   pic->reader.typecase = PIC_CASE_DEFAULT;
-  xh_init_int(&pic->reader.labels, sizeof(pic_value));
+  kh_init(read, &pic->reader.labels);
 
   for (c = 0; c < 256; ++c) {
     pic->reader.table[c] = NULL;
@@ -848,7 +849,7 @@ pic_reader_init(pic_state *pic)
 void
 pic_reader_destroy(pic_state *pic)
 {
-  xh_destroy(&pic->reader.labels);
+  kh_destroy(read, &pic->reader.labels);
 }
 
 pic_value
