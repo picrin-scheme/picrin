@@ -170,7 +170,8 @@ write_core(struct writer_control *p, pic_value obj)
   xFILE *file = p->file;
   size_t i;
   pic_sym *sym;
-  xh_entry *e, *it;
+  xh_entry *e;
+  khiter_t it;
   int c;
 #if PIC_ENABLE_FLOAT
   double f;

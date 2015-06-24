@@ -36,6 +36,7 @@ extern "C" {
 
 #include "picrin/compat.h"
 #include "picrin/kvec.h"
+#include "picrin/khash.h"
 #include "picrin/xhash.h"
 
 #include "picrin/value.h"

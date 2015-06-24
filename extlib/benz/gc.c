@@ -452,7 +452,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
     pic_sym *sym;
-    xh_entry *it;
+    khiter_t it;
 
     pic_dict_for_each (sym, dict, it) {
       gc_mark_object(pic, (struct pic_object *)sym);
@@ -707,7 +707,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_DICT: {
     struct pic_dict *dict = (struct pic_dict *)obj;
-    xh_destroy(&dict->hash);
+    kh_destroy(dict, &dict->hash);
     break;
   }
   case PIC_TT_RECORD: {

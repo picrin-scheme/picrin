@@ -363,7 +363,7 @@ new_analyze_state(pic_state *pic)
 {
   analyze_state *state;
   pic_sym *sym;
-  xh_entry *it;
+  khiter_t it;
 
   state = pic_malloc(pic, sizeof(analyze_state));
   state->pic = pic;

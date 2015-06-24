@@ -58,7 +58,7 @@ void
 pic_import(pic_state *pic, struct pic_lib *lib)
 {
   pic_sym *name, *realname, *uid;
-  xh_entry *it;
+  khiter_t it;
 
   pic_dict_for_each (name, lib->exports, it) {
     realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
@@ -173,7 +173,7 @@ pic_lib_library_exports(pic_state *pic)
 {
   pic_value lib, exports = pic_nil_value();
   pic_sym *sym;
-  xh_entry *it;
+  khiter_t it;
 
   pic_get_args(pic, "o", &lib);
 
