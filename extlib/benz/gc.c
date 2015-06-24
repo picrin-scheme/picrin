@@ -622,16 +622,20 @@ gc_mark_phase(pic_state *pic)
   do {
     struct pic_object *key;
     pic_value val;
-    xh_entry *it;
+    khiter_t it;
+    khash_t(reg) *h;
     struct pic_reg *reg;
 
     j = 0;
     reg = pic->regs;
 
     while (reg != NULL) {
-      for (it = xh_begin(&reg->hash); it != NULL; it = xh_next(it)) {
-        key = xh_key(it, struct pic_object *);
-        val = xh_val(it, pic_value);
+      h = &reg->hash;
+      for (it = kh_begin(h); it != kh_end(h); ++it) {
+        if (! kh_exist(h, it))
+          continue;
+        key = kh_key(h, it);
+        val = kh_val(h, it);
         if (gc_obj_is_marked(key) && gc_value_need_mark(val)) {
           gc_mark(pic, val);
           ++j;
@@ -718,7 +722,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_REG: {
     struct pic_reg *reg = (struct pic_reg *)obj;
-    xh_destroy(&reg->hash);
+    kh_destroy(reg, &reg->hash);
     break;
   }
   case PIC_TT_CP: {
@@ -813,14 +817,17 @@ static void
 gc_sweep_phase(pic_state *pic)
 {
   struct heap_page *page = pic->heap->pages;
-  xh_entry *it, *next;
+  khiter_t it;
+  khash_t(reg) *h;
 
   /* registries */
   while (pic->regs != NULL) {
-    for (it = xh_begin(&pic->regs->hash); it != NULL; it = next) {
-      next = xh_next(it);
-      if (! gc_obj_is_marked(xh_key(it, struct pic_object *))) {
-        xh_del_ptr(&pic->regs->hash, xh_key(it, struct pic_object *));
+    h = &pic->regs->hash;
+    for (it = kh_begin(h); it != kh_end(h); ++it) {
+      if (! kh_exist(h, it))
+        continue;
+      if (! gc_obj_is_marked(kh_key(h, it))) {
+        kh_del(reg, h, it);
       }
     }
     pic->regs = pic->regs->prev;
