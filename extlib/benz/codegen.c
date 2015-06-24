@@ -1262,24 +1262,24 @@ create_activation(codegen_state *state)
   pic_state *pic = state->pic;
   codegen_context *cxt = state->cxt;
   size_t i, n;
-  xhash regs;
   size_t offset;
+  struct pic_reg *regs;
 
-  xh_init_ptr(&regs, sizeof(size_t));
+  regs = pic_make_reg(pic);
 
   offset = 1;
   for (i = 0; i < kv_size(cxt->args); ++i) {
     n = i + offset;
-    xh_put_ptr(&regs, kv_A(cxt->args, i), &n);
+    pic_reg_set(pic, regs, kv_A(cxt->args, i), pic_size_value(n));
   }
   offset += i;
   for (i = 0; i < kv_size(cxt->locals); ++i) {
     n = i + offset;
-    xh_put_ptr(&regs, kv_A(cxt->locals, i), &n);
+    pic_reg_set(pic, regs, kv_A(cxt->locals, i), pic_size_value(n));
   }
 
   for (i = 0; i < kv_size(cxt->captures); ++i) {
-    n = xh_val(xh_get_ptr(&regs, kv_A(cxt->captures, i)), size_t);
+    n = (size_t)pic_int(pic_reg_ref(pic, regs,  kv_A(cxt->captures, i)));
     if (n <= kv_size(cxt->args) || (cxt->varg && n == kv_size(cxt->args) + 1)) {
       /* copy arguments to capture variable area */
       emit_i(state, OP_LREF, (int)n);
@@ -1288,8 +1288,6 @@ create_activation(codegen_state *state)
       emit_n(state, OP_PUSHUNDEF);
     }
   }
-
-  xh_destroy(&regs);
 }
 
 static void
