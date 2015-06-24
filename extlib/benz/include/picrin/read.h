@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+KHASH_DECLARE(read, int, pic_value)
+
 typedef pic_value (*pic_reader_t)(pic_state *, struct pic_port *port, int c);
 
 typedef struct {
@@ -16,7 +18,7 @@ typedef struct {
     PIC_CASE_DEFAULT,
     PIC_CASE_FOLD
   } typecase;
-  xhash labels;
+  khash_t(read) labels;
   pic_reader_t table[256];
   pic_reader_t dispatch[256];
 } pic_reader;
