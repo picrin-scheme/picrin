@@ -108,7 +108,8 @@ pic_open_file(pic_state *pic, const char *name, int flags) {
     mode = 'w';
   }
   if ((file = file_open(pic, name, &mode)) == NULL) {
-    pic_errorf(pic, "could not open file '%s'", name);
+    pic_str *msg = pic_format(pic, "could not open file '%s'", name);
+    pic_raise(pic, pic_obj_value(pic_make_error(pic, pic->sFILE, pic_str_cstr(pic, msg), pic_nil_value())));
   }
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);

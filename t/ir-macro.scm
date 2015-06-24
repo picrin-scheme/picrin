@@ -1,7 +1,10 @@
 (import (scheme base)
-        (picrin macro))
+        (picrin macro)
+        (picrin test))
 
-(define-syntax aif
+(test-begin)
+
+(define-macro aif
   (ir-macro-transformer
    (lambda (form inject cmp)
      (let ((it (inject 'it))
@@ -11,11 +14,12 @@
        `(let ((,it ,expr))
           (if ,it ,then ,else))))))
 
-(aif (member 'b '(a b c)) (car it) #f)
+(test 'b
+      (aif (member 'b '(a b c)) (car it) #f))
 
 ;;; test hygiene begin
 
-(define-syntax mif
+(define-macro mif
   (ir-macro-transformer
    (lambda (form inject cmp)
      (let ((expr (car (cdr form)))
@@ -24,12 +28,14 @@
        `(let ((it ,expr))
           (if it ,then ,else))))))
 
-(let ((if 42))
-  (mif 1 2 3))
+(test 2
+      (let ((if 42))
+        (mif 1 2 3)))
 ; => 2
 
-(let ((it 42))
-  (mif 1 it 2))
+(test 42
+      (let ((it 42))
+        (mif 1 it 2)))
 ; => 42
 
 ;;; end
@@ -38,10 +44,10 @@
 
 ;;; test core syntax begin
 
-(mif 'a 'b 'c)
+(test 'b (mif 'a 'b 'c))
 ; => b
 
-(define-syntax loop
+(define-macro loop
   (ir-macro-transformer
    (lambda (expr inject cmp)
      (let ((body (cdr expr)))
@@ -51,14 +57,16 @@
              ,@body (f))))))))
 
 (define a 1)
-(loop
- (if (= a 2) (exit #f))
- (set! a 2))
+(test #f
+      (loop
+       (if (= a 2) (exit #f))
+       (set! a 2)))
 ; => #f
 
-(loop
- (define a 1)
- (if (= a 1) (exit #f)))
+(test #f
+      (loop
+       (define a 1)
+       (if (= a 1) (exit #f))))
 ; => #f
 
-;;; end
+(test-end)

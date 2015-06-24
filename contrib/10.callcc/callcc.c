@@ -178,7 +178,7 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
   }
   else {
-    if (&v > cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
+    if (&v < cont->stk_pos + cont->stk_len) native_stack_extend(pic, cont);
   }
 
   pic->cc = cont->prev_jmp;
