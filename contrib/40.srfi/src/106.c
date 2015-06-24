@@ -399,7 +399,7 @@ pic_socket_call_with_socket(pic_state *pic)
 void
 pic_init_socket(pic_state *pic)
 {
-  pic_deflibrary (pic, "(srfi 106)") {
+  pic_deflibrary (pic, "(srfi 106 impl)") {
     pic_defun(pic, "socket?", pic_socket_socket_p);
     pic_defun(pic, "make-socket", pic_socket_make_socket);
     pic_defun(pic, "socket-accept", pic_socket_socket_accept);
