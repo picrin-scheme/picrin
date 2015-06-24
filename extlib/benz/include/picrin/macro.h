@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+KHASH_DECLARE(env, void *, pic_sym *)
+
 struct pic_id {
   PIC_OBJECT_HEADER
   pic_value var;
@@ -17,7 +19,7 @@ struct pic_id {
 
 struct pic_env {
   PIC_OBJECT_HEADER
-  xhash map;
+  khash_t(env) map;
   struct pic_env *up;
 };
 

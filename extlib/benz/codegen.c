@@ -11,13 +11,14 @@
 static pic_sym *
 lookup(pic_state PIC_UNUSED(*pic), pic_value var, struct pic_env *env)
 {
-  xh_entry *e;
+  khiter_t it;
 
   assert(pic_var_p(var));
 
   while (env != NULL) {
-    if ((e = xh_get_ptr(&env->map, pic_ptr(var))) != NULL) {
-      return xh_val(e, pic_sym *);
+    it = kh_get(env, &env->map, pic_ptr(var));
+    if (it != kh_end(&env->map)) {
+      return kh_val(&env->map, it);
     }
     env = env->up;
   }
