@@ -365,7 +365,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic_reader_init(pic);
 
   /* parameter table */
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_dict(pic)), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_reg(pic)), pic->ptable);
 
   /* standard libraries */
   pic->PICRIN_BASE = pic_make_library(pic, pic_read_cstr(pic, "(picrin base)"));
