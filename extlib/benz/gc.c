@@ -741,16 +741,19 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
 static void
 gc_sweep_symbols(pic_state *pic)
 {
-  xh_entry *it;
-  char *cstr;
+  khash_t(s) *h = &pic->syms;
+  khiter_t it;
+  pic_sym *sym;
+  const char *cstr;
 
-  for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
-    if (! gc_obj_is_marked((struct pic_object *)xh_val(it, pic_sym *))) {
-      cstr = xh_key(it, char *);
-
-      xh_del_str(&pic->syms, cstr);
-
-      pic_free(pic, cstr);
+  for (it = kh_begin(h); it != kh_end(h); ++it) {
+    if (! kh_exist(h, it))
+      continue;
+    sym = kh_val(h, it);
+    if (! gc_obj_is_marked((struct pic_object *)sym)) {
+      cstr = kh_key(h, it);
+      kh_del(s, h, it);
+      pic_free(pic, (void *)cstr);
     }
   }
 }
