@@ -4,38 +4,6 @@
 
 #include "picrin.h"
 
-static bool
-is_tagged(pic_state *pic, pic_sym *tag, pic_value pair)
-{
-  return pic_pair_p(pic_cdr(pic, pair))
-    && pic_nil_p(pic_cddr(pic, pair))
-    && pic_eq_p(pic_car(pic, pair), pic_obj_value(tag));
-}
-
-static bool
-is_quote(pic_state *pic, pic_value pair)
-{
-  return is_tagged(pic, pic->sQUOTE, pair);
-}
-
-static bool
-is_unquote(pic_state *pic, pic_value pair)
-{
-  return is_tagged(pic, pic->sUNQUOTE, pair);
-}
-
-static bool
-is_unquote_splicing(pic_state *pic, pic_value pair)
-{
-  return is_tagged(pic, pic->sUNQUOTE_SPLICING, pair);
-}
-
-static bool
-is_quasiquote(pic_state *pic, pic_value pair)
-{
-  return is_tagged(pic, pic->sQUASIQUOTE, pair);
-}
-
 KHASH_DECLARE(l, void *, int)
 KHASH_DECLARE(v, void *, int)
 KHASH_DEFINE2(l, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
@@ -176,7 +144,7 @@ write_core(struct writer_control *p, pic_value obj)
   khash_t(v) *vh = &p->visited;
   xFILE *file = p->file;
   size_t i;
-  pic_sym *sym;
+  pic_sym *sym, *tag;
   khiter_t it;
   int ret;
 #if PIC_ENABLE_FLOAT
@@ -207,25 +175,48 @@ write_core(struct writer_control *p, pic_value obj)
       xfprintf(pic, file, "#f");
     break;
   case PIC_TT_PAIR:
-    if (is_quote(pic, obj)) {
-      xfprintf(pic, file, "'");
-      write_core(p, pic_list_ref(pic, obj, 1));
-      break;
-    }
-    else if (is_unquote(pic, obj)) {
-      xfprintf(pic, file, ",");
-      write_core(p, pic_list_ref(pic, obj, 1));
-      break;
-    }
-    else if (is_unquote_splicing(pic, obj)) {
-      xfprintf(pic, file, ",@");
-      write_core(p, pic_list_ref(pic, obj, 1));
-      break;
-    }
-    else if (is_quasiquote(pic, obj)) {
-      xfprintf(pic, file, "`");
-      write_core(p, pic_list_ref(pic, obj, 1));
-      break;
+    if (pic_pair_p(pic_cdr(pic, obj)) && pic_nil_p(pic_cddr(pic, obj)) && pic_sym_p(pic_car(pic, obj))) {
+      tag = pic_sym_ptr(pic_car(pic, obj));
+      if (tag == pic->sQUOTE) {
+        xfprintf(pic, file, "'");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
+      else if (tag == pic->sUNQUOTE) {
+        xfprintf(pic, file, ",");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
+      else if (tag == pic->sUNQUOTE_SPLICING) {
+        xfprintf(pic, file, ",@");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
+      else if (tag == pic->sQUASIQUOTE) {
+        xfprintf(pic, file, "`");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
+      else if (tag == pic->sSYNTAX_QUOTE) {
+        xfprintf(pic, file, "#'");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
+      else if (tag == pic->sSYNTAX_UNQUOTE) {
+        xfprintf(pic, file, "#,");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
+      else if (tag == pic->sSYNTAX_UNQUOTE_SPLICING) {
+        xfprintf(pic, file, "#,@");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
+      else if (tag == pic->sSYNTAX_QUASIQUOTE) {
+        xfprintf(pic, file, "#`");
+        write_core(p, pic_list_ref(pic, obj, 1));
+        break;
+      }
     }
     xfprintf(pic, file, "(");
     write_pair(p, pic_pair_ptr(obj));
