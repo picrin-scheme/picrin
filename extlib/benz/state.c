@@ -411,16 +411,7 @@ void
 pic_close(pic_state *pic)
 {
   khash_t(s) *h = &pic->syms;
-  khiter_t it;
   pic_allocf allocf = pic->allocf;
-
-  /* free all symbols */
-  for (it = kh_begin(h); it != kh_end(h); ++it) {
-    if (kh_exist(h, it)) {
-      allocf((void *)kh_key(h, it), 0);
-    }
-  }
-  kh_clear(s, h);
 
   /* clear out root objects */
   pic->sp = pic->stbase;

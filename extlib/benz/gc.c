@@ -470,9 +470,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
-    struct pic_symbol *sym = (struct pic_symbol *)obj;
-
-    gc_mark_object(pic, (struct pic_object *)sym->str);
     break;
   }
   case PIC_TT_REG: {
@@ -721,6 +718,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
+    pic_sym *sym = (pic_sym *)obj;
+    pic_free(pic, (void *)sym->cstr);
     break;
   }
   case PIC_TT_REG: {
@@ -751,16 +750,13 @@ gc_sweep_symbols(pic_state *pic)
   khash_t(s) *h = &pic->syms;
   khiter_t it;
   pic_sym *sym;
-  const char *cstr;
 
   for (it = kh_begin(h); it != kh_end(h); ++it) {
     if (! kh_exist(h, it))
       continue;
     sym = kh_val(h, it);
     if (! gc_obj_is_marked((struct pic_object *)sym)) {
-      cstr = kh_key(h, it);
       kh_del(s, h, it);
-      pic_free(pic, (void *)cstr);
     }
   }
 }

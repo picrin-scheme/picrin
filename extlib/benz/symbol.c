@@ -6,52 +6,43 @@
 
 KHASH_DEFINE(s, const char *, pic_sym *, kh_str_hash_func, kh_str_hash_equal)
 
-static pic_sym *
-pic_make_symbol(pic_state *pic, pic_str *str)
-{
-  pic_sym *sym;
-
-  sym = (pic_sym *)pic_obj_alloc(pic, sizeof(struct pic_symbol), PIC_TT_SYMBOL);
-  sym->str = str;
-  return sym;
-}
-
 pic_sym *
 pic_intern(pic_state *pic, pic_str *str)
 {
+  return pic_intern_cstr(pic, pic_str_cstr(pic, str));
+}
+
+pic_sym *
+pic_intern_cstr(pic_state *pic, const char *cstr)
+{
   khash_t(s) *h = &pic->syms;
   pic_sym *sym;
-  char *cstr;
   khiter_t it;
   int ret;
+  char *copy;
 
-  it = kh_put(s, h, pic_str_cstr(pic, str), &ret);
+  it = kh_put(s, h, cstr, &ret);
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
     pic_gc_protect(pic, pic_obj_value(sym));
     return sym;
   }
 
-  cstr = pic_malloc(pic, pic_str_len(str) + 1);
-  strcpy(cstr, pic_str_cstr(pic, str));
-  kh_key(h, it) = cstr;
+  copy = pic_malloc(pic, strlen(cstr) + 1);
+  strcpy(copy, cstr);
+  kh_key(h, it) = copy;
 
-  sym = pic_make_symbol(pic, str);
+  sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TT_SYMBOL);
+  sym->cstr = copy;
   kh_val(h, it) = sym;
 
   return sym;
 }
 
-pic_sym *
-pic_intern_cstr(pic_state *pic, const char *str)
-{
-  return pic_intern(pic, pic_make_str(pic, str, strlen(str)));
-}
-
 const char *
-pic_symbol_name(pic_state *pic, pic_sym *sym)
+pic_symbol_name(pic_state PIC_UNUSED(*pic), pic_sym *sym)
 {
-  return pic_str_cstr(pic, sym->str);
+  return sym->cstr;
 }
 
 static pic_value
@@ -90,7 +81,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
 
   pic_get_args(pic, "m", &sym);
 
-  return pic_obj_value(sym->str);
+  return pic_obj_value(pic_make_str_cstr(pic, sym->cstr));
 }
 
 static pic_value
