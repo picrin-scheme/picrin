@@ -47,57 +47,6 @@ writer_control_destroy(struct writer_control *p)
 }
 
 static void
-traverse_shared(struct writer_control *p, pic_value obj)
-{
-  pic_state *pic = p->pic;
-
-  if (p->op == OP_WRITE_SIMPLE) {
-    return;
-  }
-
-  switch (pic_type(obj)) {
-  case PIC_TT_PAIR:
-  case PIC_TT_VECTOR: {
-    khash_t(l) *h = &p->labels;
-    khiter_t it;
-    int ret;
-
-    it = kh_put(l, h, pic_ptr(obj), &ret);
-    if (ret != 0) {
-      /* first time */
-      kh_val(h, it) = -1;
-
-      if (pic_pair_p(obj)) {
-        /* pair */
-        traverse_shared(p, pic_car(pic, obj));
-        traverse_shared(p, pic_cdr(pic, obj));
-      } else {
-        /* vector */
-        size_t i;
-        for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-          traverse_shared(p, pic_vec_ptr(obj)->data[i]);
-        }
-      }
-
-      if (p->op == OP_WRITE) {
-        it = kh_get(l, h, pic_ptr(obj));
-        if (kh_val(h, it) == -1) {
-          kh_del(l, h, it);
-        }
-      }
-    } else if (kh_val(h, it) == -1) {
-      /* second time */
-      kh_val(h, it) = p->cnt++;
-    }
-    break;
-  }
-  default:
-    /* pass */
-    break;
-  }
-}
-
-static void
 write_blob(pic_state *pic, pic_blob *blob, xFILE *file)
 {
   size_t i;
@@ -382,13 +331,63 @@ write_core(struct writer_control *p, pic_value obj)
 }
 
 static void
+traverse(struct writer_control *p, pic_value obj)
+{
+  pic_state *pic = p->pic;
+
+  if (p->op == OP_WRITE_SIMPLE) {
+    return;
+  }
+
+  switch (pic_type(obj)) {
+  case PIC_TT_PAIR:
+  case PIC_TT_VECTOR: {
+    khash_t(l) *h = &p->labels;
+    khiter_t it;
+    int ret;
+
+    it = kh_put(l, h, pic_ptr(obj), &ret);
+    if (ret != 0) {
+      /* first time */
+      kh_val(h, it) = -1;
+
+      if (pic_pair_p(obj)) {
+        /* pair */
+        traverse(p, pic_car(pic, obj));
+        traverse(p, pic_cdr(pic, obj));
+      } else {
+        /* vector */
+        size_t i;
+        for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
+          traverse(p, pic_vec_ptr(obj)->data[i]);
+        }
+      }
+
+      if (p->op == OP_WRITE) {
+        it = kh_get(l, h, pic_ptr(obj));
+        if (kh_val(h, it) == -1) {
+          kh_del(l, h, it);
+        }
+      }
+    } else if (kh_val(h, it) == -1) {
+      /* second time */
+      kh_val(h, it) = p->cnt++;
+    }
+    break;
+  }
+  default:
+    break;
+  }
+}
+
+static void
 write(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
 {
   struct writer_control p;
 
   writer_control_init(&p, pic, file, mode, op);
 
-  traverse_shared(&p, obj);
+  traverse(&p, obj);
 
   write_core(&p, obj);
 
