@@ -44,36 +44,36 @@ static void
 traverse_shared(struct writer_control *p, pic_value obj)
 {
   pic_state *pic = p->pic;
-  khash_t(l) *h = &p->labels;
-  khiter_t it;
-  size_t i;
-  int ret;
 
   switch (pic_type(obj)) {
   case PIC_TT_PAIR:
-  case PIC_TT_VECTOR:
-    it = kh_put(l, h, pic_obj_ptr(obj), &ret);
-    if (ret != 0) {
-      kh_val(h, it) = -1;
-    }
-    else if (kh_val(h, it) == -1) {
-      kh_val(h, it) = p->cnt++;
-      break;
-    }
-    else {
-      break;
-    }
+  case PIC_TT_VECTOR: {
+    khash_t(l) *h = &p->labels;
+    khiter_t it;
+    int ret;
 
-    if (pic_pair_p(obj)) {
-      traverse_shared(p, pic_car(p->pic, obj));
-      traverse_shared(p, pic_cdr(p->pic, obj));
-    }
-    else {
-      for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-        traverse_shared(p, pic_vec_ptr(obj)->data[i]);
+    it = kh_put(l, h, pic_ptr(obj), &ret);
+    if (ret != 0) {
+      /* first time */
+      kh_val(h, it) = -1;
+
+      if (pic_pair_p(obj)) {
+        /* pair */
+        traverse_shared(p, pic_car(pic, obj));
+        traverse_shared(p, pic_cdr(pic, obj));
+      } else {
+        /* vector */
+        size_t i;
+        for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
+          traverse_shared(p, pic_vec_ptr(obj)->data[i]);
+        }
       }
+    } else if (kh_val(h, it) == -1) {
+      /* second time */
+      kh_val(h, it) = p->cnt++;
     }
     break;
+  }
   default:
     /* pass */
     break;
