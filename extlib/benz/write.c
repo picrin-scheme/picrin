@@ -80,10 +80,79 @@ traverse_shared(struct writer_control *p, pic_value obj)
   }
 }
 
+static void
+write_blob(pic_state *pic, pic_blob *blob, xFILE *file)
+{
+  size_t i;
+
+  xfprintf(pic, file, "#u8(");
+  for (i = 0; i < blob->len; ++i) {
+    xfprintf(pic, file, "%d", blob->data[i]);
+    if (i + 1 < blob->len) {
+      xfprintf(pic, file, " ");
+    }
+  }
+  xfprintf(pic, file, ")");
+}
+
+static void
+write_char(pic_state *pic, char c, xFILE *file, int mode)
+{
+  if (mode == DISPLAY_MODE) {
+    xfputc(pic, c, file);
+    return;
+  }
+  switch (c) {
+  default: xfprintf(pic, file, "#\\%c", c); break;
+  case '\a': xfprintf(pic, file, "#\\alarm"); break;
+  case '\b': xfprintf(pic, file, "#\\backspace"); break;
+  case 0x7f: xfprintf(pic, file, "#\\delete"); break;
+  case 0x1b: xfprintf(pic, file, "#\\escape"); break;
+  case '\n': xfprintf(pic, file, "#\\newline"); break;
+  case '\r': xfprintf(pic, file, "#\\return"); break;
+  case ' ': xfprintf(pic, file, "#\\space"); break;
+  case '\t': xfprintf(pic, file, "#\\tab"); break;
+  }
+}
+
+static void
+write_str(pic_state *pic, pic_str *str, xFILE *file, int mode)
+{
+  size_t i;
+  const char *cstr = pic_str_cstr(pic, str);
+
+  if (mode == DISPLAY_MODE) {
+    xfprintf(pic, file, "%s", pic_str_cstr(pic, str));
+    return;
+  }
+  xfprintf(pic, file, "\"");
+  for (i = 0; i < pic_str_len(str); ++i) {
+    if (cstr[i] == '"' || cstr[i] == '\\') {
+      xfputc(pic, '\\', file);
+    }
+    xfputc(pic, cstr[i], file);
+  }
+  xfprintf(pic, file, "\"");
+}
+
+#if PIC_ENABLE_FLOAT
+static void
+write_float(pic_state *pic, double f, xFILE *file)
+{
+  if (isnan(f)) {
+    xfprintf(pic, file, signbit(f) ? "-nan.0" : "+nan.0");
+  } else if (isinf(f)) {
+    xfprintf(pic, file, signbit(f) ? "-inf.0" : "+inf.0");
+  } else {
+    xfprintf(pic, file, "%f", f);
+  }
+}
+#endif
+
 static void write_core(struct writer_control *p, pic_value);
 
 static void
-write_pair(struct writer_control *p, struct pic_pair *pair)
+write_pair_help(struct writer_control *p, struct pic_pair *pair)
 {
   pic_state *pic = p->pic;
   khash_t(l) *lh = &p->labels;
@@ -113,7 +182,7 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
       xfprintf(pic, p->file, " ");
     }
 
-    write_pair(p, pic_pair_ptr(pair->cdr));
+    write_pair_help(p, pic_pair_ptr(pair->cdr));
     return;
   }
   else {
@@ -123,17 +192,91 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
 }
 
 static void
-write_str(pic_state *pic, struct pic_string *str, xFILE *file)
+write_pair(struct writer_control *p, struct pic_pair *pair)
 {
-  size_t i;
-  const char *cstr = pic_str_cstr(pic, str);
+  pic_state *pic = p->pic;
+  xFILE *file = p->file;
+  pic_sym *tag;
 
-  for (i = 0; i < pic_str_len(str); ++i) {
-    if (cstr[i] == '"' || cstr[i] == '\\') {
-      xfputc(pic, '\\', file);
+  if (pic_pair_p(pair->cdr) && pic_nil_p(pic_cdr(pic, pair->cdr)) && pic_sym_p(pair->car)) {
+    tag = pic_sym_ptr(pair->car);
+    if (tag == pic->sQUOTE) {
+      xfprintf(pic, file, "'");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
     }
-    xfputc(pic, cstr[i], file);
+    else if (tag == pic->sUNQUOTE) {
+      xfprintf(pic, file, ",");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
+    }
+    else if (tag == pic->sUNQUOTE_SPLICING) {
+      xfprintf(pic, file, ",@");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
+    }
+    else if (tag == pic->sQUASIQUOTE) {
+      xfprintf(pic, file, "`");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
+    }
+    else if (tag == pic->sSYNTAX_QUOTE) {
+      xfprintf(pic, file, "#'");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
+    }
+    else if (tag == pic->sSYNTAX_UNQUOTE) {
+      xfprintf(pic, file, "#,");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
+    }
+    else if (tag == pic->sSYNTAX_UNQUOTE_SPLICING) {
+      xfprintf(pic, file, "#,@");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
+    }
+    else if (tag == pic->sSYNTAX_QUASIQUOTE) {
+      xfprintf(pic, file, "#`");
+      write_core(p, pic_car(pic, pair->cdr));
+      return;
+    }
   }
+  xfprintf(pic, file, "(");
+  write_pair_help(p, pair);
+  xfprintf(pic, file, ")");
+}
+
+static void
+write_vec(struct writer_control *p, pic_vec *vec)
+{
+  pic_state *pic = p->pic;
+  xFILE *file = p->file;
+  size_t i;
+
+  xfprintf(pic, file, "#(");
+  for (i = 0; i < vec->len; ++i) {
+    write_core(p, vec->data[i]);
+    if (i + 1 < vec->len) {
+      xfprintf(pic, file, " ");
+    }
+  }
+  xfprintf(pic, file, ")");
+}
+
+static void
+write_dict(struct writer_control *p, struct pic_dict *dict)
+{
+  pic_state *pic = p->pic;
+  xFILE *file = p->file;
+  pic_sym *sym;
+  khiter_t it;
+
+  xfprintf(pic, file, "#.(dictionary");
+  pic_dict_for_each (sym, dict, it) {
+    xfprintf(pic, file, " '%s ", pic_symbol_name(pic, sym));
+    write_core(p, pic_dict_ref(pic, dict, sym));
+  }
+  xfprintf(pic, file, ")");
 }
 
 static void
@@ -143,13 +286,8 @@ write_core(struct writer_control *p, pic_value obj)
   khash_t(l) *lh = &p->labels;
   khash_t(v) *vh = &p->visited;
   xFILE *file = p->file;
-  size_t i;
-  pic_sym *sym, *tag;
   khiter_t it;
   int ret;
-#if PIC_ENABLE_FLOAT
-  double f;
-#endif
 
   /* shared objects */
   if (pic_vtype(obj) == PIC_VTYPE_HEAP && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
@@ -169,136 +307,42 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, "()");
     break;
   case PIC_TT_BOOL:
-    if (pic_true_p(obj))
-      xfprintf(pic, file, "#t");
-    else
-      xfprintf(pic, file, "#f");
+    xfprintf(pic, file, pic_true_p(obj) ? "#t" : "#f");
     break;
-  case PIC_TT_PAIR:
-    if (pic_pair_p(pic_cdr(pic, obj)) && pic_nil_p(pic_cddr(pic, obj)) && pic_sym_p(pic_car(pic, obj))) {
-      tag = pic_sym_ptr(pic_car(pic, obj));
-      if (tag == pic->sQUOTE) {
-        xfprintf(pic, file, "'");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-      else if (tag == pic->sUNQUOTE) {
-        xfprintf(pic, file, ",");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-      else if (tag == pic->sUNQUOTE_SPLICING) {
-        xfprintf(pic, file, ",@");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-      else if (tag == pic->sQUASIQUOTE) {
-        xfprintf(pic, file, "`");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-      else if (tag == pic->sSYNTAX_QUOTE) {
-        xfprintf(pic, file, "#'");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-      else if (tag == pic->sSYNTAX_UNQUOTE) {
-        xfprintf(pic, file, "#,");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-      else if (tag == pic->sSYNTAX_UNQUOTE_SPLICING) {
-        xfprintf(pic, file, "#,@");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-      else if (tag == pic->sSYNTAX_QUASIQUOTE) {
-        xfprintf(pic, file, "#`");
-        write_core(p, pic_list_ref(pic, obj, 1));
-        break;
-      }
-    }
-    xfprintf(pic, file, "(");
-    write_pair(p, pic_pair_ptr(obj));
-    xfprintf(pic, file, ")");
-    break;
-  case PIC_TT_SYMBOL:
-    xfprintf(pic, file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
-    break;
-  case PIC_TT_CHAR:
-    if (p->mode == DISPLAY_MODE) {
-      xfputc(pic, pic_char(obj), file);
-      break;
-    }
-    switch (pic_char(obj)) {
-    default: xfprintf(pic, file, "#\\%c", pic_char(obj)); break;
-    case '\a': xfprintf(pic, file, "#\\alarm"); break;
-    case '\b': xfprintf(pic, file, "#\\backspace"); break;
-    case 0x7f: xfprintf(pic, file, "#\\delete"); break;
-    case 0x1b: xfprintf(pic, file, "#\\escape"); break;
-    case '\n': xfprintf(pic, file, "#\\newline"); break;
-    case '\r': xfprintf(pic, file, "#\\return"); break;
-    case ' ': xfprintf(pic, file, "#\\space"); break;
-    case '\t': xfprintf(pic, file, "#\\tab"); break;
-    }
-    break;
-#if PIC_ENABLE_FLOAT
-  case PIC_TT_FLOAT:
-    f = pic_float(obj);
-    if (isnan(f)) {
-      xfprintf(pic, file, signbit(f) ? "-nan.0" : "+nan.0");
-    } else if (isinf(f)) {
-      xfprintf(pic, file, signbit(f) ? "-inf.0" : "+inf.0");
-    } else {
-      xfprintf(pic, file, "%f", pic_float(obj));
-    }
-    break;
-#endif
-  case PIC_TT_INT:
-    xfprintf(pic, file, "%d", pic_int(obj));
+  case PIC_TT_ID:
+    xfprintf(pic, file, "#<identifier %s>", pic_symbol_name(pic, pic_var_name(pic, obj)));
     break;
   case PIC_TT_EOF:
     xfprintf(pic, file, "#.(eof-object)");
     break;
-  case PIC_TT_STRING:
-    if (p->mode == DISPLAY_MODE) {
-      xfprintf(pic, file, "%s", pic_str_cstr(pic, pic_str_ptr(obj)));
-      break;
-    }
-    xfprintf(pic, file, "\"");
-    write_str(pic, pic_str_ptr(obj), file);
-    xfprintf(pic, file, "\"");
+  case PIC_TT_INT:
+    xfprintf(pic, file, "%d", pic_int(obj));
     break;
-  case PIC_TT_VECTOR:
-    xfprintf(pic, file, "#(");
-    for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-      write_core(p, pic_vec_ptr(obj)->data[i]);
-      if (i + 1 < pic_vec_ptr(obj)->len) {
-	xfprintf(pic, file, " ");
-      }
-    }
-    xfprintf(pic, file, ")");
+#if PIC_ENABLE_FLOAT
+  case PIC_TT_FLOAT:
+    write_float(pic, pic_float(obj), file);
+    break;
+#endif
+  case PIC_TT_SYMBOL:
+    xfprintf(pic, file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
     break;
   case PIC_TT_BLOB:
-    xfprintf(pic, file, "#u8(");
-    for (i = 0; i < pic_blob_ptr(obj)->len; ++i) {
-      xfprintf(pic, file, "%d", pic_blob_ptr(obj)->data[i]);
-      if (i + 1 < pic_blob_ptr(obj)->len) {
-	xfprintf(pic, file, " ");
-      }
-    }
-    xfprintf(pic, file, ")");
+    write_blob(pic, pic_blob_ptr(obj), file);
+    break;
+  case PIC_TT_CHAR:
+    write_char(pic, pic_char(obj), file, p->mode);
+    break;
+  case PIC_TT_STRING:
+    write_str(pic, pic_str_ptr(obj), file, p->mode);
+    break;
+  case PIC_TT_PAIR:
+    write_pair(p, pic_pair_ptr(obj));
+    break;
+  case PIC_TT_VECTOR:
+    write_vec(p, pic_vec_ptr(obj));
     break;
   case PIC_TT_DICT:
-    xfprintf(pic, file, "#.(dictionary");
-    pic_dict_for_each (sym, pic_dict_ptr(obj), it) {
-      xfprintf(pic, file, " '%s ", pic_symbol_name(pic, sym));
-      write_core(p, pic_dict_ref(pic, pic_dict_ptr(obj), sym));
-    }
-    xfprintf(pic, file, ")");
-    break;
-  case PIC_TT_ID:
-    xfprintf(pic, file, "#<identifier %s>", pic_symbol_name(pic, pic_var_name(pic, obj)));
+    write_dict(p, pic_dict_ptr(obj));
     break;
   default:
     xfprintf(pic, file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
