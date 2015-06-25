@@ -341,7 +341,8 @@ traverse(struct writer_control *p, pic_value obj)
 
   switch (pic_type(obj)) {
   case PIC_TT_PAIR:
-  case PIC_TT_VECTOR: {
+  case PIC_TT_VECTOR:
+  case PIC_TT_DICT: {
     khash_t(l) *h = &p->labels;
     khiter_t it;
     int ret;
@@ -355,11 +356,17 @@ traverse(struct writer_control *p, pic_value obj)
         /* pair */
         traverse(p, pic_car(pic, obj));
         traverse(p, pic_cdr(pic, obj));
-      } else {
+      } else if (pic_vec_p(obj)) {
         /* vector */
         size_t i;
         for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
           traverse(p, pic_vec_ptr(obj)->data[i]);
+        }
+      } else {
+        /* dictionary */
+        pic_sym *sym;
+        pic_dict_for_each (sym, pic_dict_ptr(obj), it) {
+          traverse(p, pic_dict_ref(pic, pic_dict_ptr(obj), sym));
         }
       }
 
