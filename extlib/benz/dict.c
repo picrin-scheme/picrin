@@ -256,7 +256,7 @@ pic_dict_dictionary_to_alist(pic_state *pic)
     pic_push(pic, item, alist);
   }
 
-  return pic_reverse(pic, alist);
+  return alist;
 }
 
 static pic_value
@@ -288,11 +288,11 @@ pic_dict_dictionary_to_plist(pic_state *pic)
   pic_get_args(pic, "d", &dict);
 
   pic_dict_for_each (sym, dict, it) {
-    pic_push(pic, pic_obj_value(sym), plist);
     pic_push(pic, pic_dict_ref(pic, dict, sym), plist);
+    pic_push(pic, pic_obj_value(sym), plist);
   }
 
-  return pic_reverse(pic, plist);
+  return plist;
 }
 
 static pic_value
