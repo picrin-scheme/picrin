@@ -13,6 +13,7 @@ struct writer_control {
   pic_state *pic;
   xFILE *file;
   int mode;
+  int op;
   khash_t(l) labels;            /* object -> int */
   khash_t(v) visited;           /* object -> int */
   int cnt;
@@ -21,12 +22,17 @@ struct writer_control {
 #define WRITE_MODE 1
 #define DISPLAY_MODE 2
 
+#define OP_WRITE 1
+#define OP_WRITE_SHARED 2
+#define OP_WRITE_SIMPLE 3
+
 static void
-writer_control_init(struct writer_control *p, pic_state *pic, xFILE *file, int mode)
+writer_control_init(struct writer_control *p, pic_state *pic, xFILE *file, int mode, int op)
 {
   p->pic = pic;
   p->file = file;
   p->mode = mode;
+  p->op = op;
   p->cnt = 0;
   kh_init(l, &p->labels);
   kh_init(v, &p->visited);
@@ -44,6 +50,10 @@ static void
 traverse_shared(struct writer_control *p, pic_value obj)
 {
   pic_state *pic = p->pic;
+
+  if (p->op == OP_WRITE_SIMPLE) {
+    return;
+  }
 
   switch (pic_type(obj)) {
   case PIC_TT_PAIR:
@@ -66,6 +76,13 @@ traverse_shared(struct writer_control *p, pic_value obj)
         size_t i;
         for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
           traverse_shared(p, pic_vec_ptr(obj)->data[i]);
+        }
+      }
+
+      if (p->op == OP_WRITE) {
+        it = kh_get(l, h, pic_ptr(obj));
+        if (kh_val(h, it) == -1) {
+          kh_del(l, h, it);
         }
       }
     } else if (kh_val(h, it) == -1) {
@@ -183,6 +200,13 @@ write_pair_help(struct writer_control *p, struct pic_pair *pair)
     }
 
     write_pair_help(p, pic_pair_ptr(pair->cdr));
+
+    if (p->op == OP_WRITE) {
+      if ((it = kh_get(l, lh, pic_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
+        it = kh_get(v, vh, pic_ptr(pair->cdr));
+        kh_del(v, vh, it);
+      }
+    }
     return;
   }
   else {
@@ -348,42 +372,21 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
     break;
   }
+
+  if (p->op == OP_WRITE) {
+    if (pic_obj_p(obj) && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
+      it = kh_get(v, vh, pic_ptr(obj));
+      kh_del(v, vh, it);
+    }
+  }
 }
 
 static void
-write(pic_state *pic, pic_value obj, xFILE *file)
+write(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
 {
   struct writer_control p;
 
-  writer_control_init(&p, pic, file, WRITE_MODE);
-
-  traverse_shared(&p, obj);      /* FIXME */
-
-  write_core(&p, obj);
-
-  writer_control_destroy(&p);
-}
-
-static void
-write_simple(pic_state *pic, pic_value obj, xFILE *file)
-{
-  struct writer_control p;
-
-  writer_control_init(&p, pic, file, WRITE_MODE);
-
-  /* no traverse here! */
-
-  write_core(&p, obj);
-
-  writer_control_destroy(&p);
-}
-
-static void
-write_shared(pic_state *pic, pic_value obj, xFILE *file)
-{
-  struct writer_control p;
-
-  writer_control_init(&p, pic, file, WRITE_MODE);
+  writer_control_init(&p, pic, file, mode, op);
 
   traverse_shared(&p, obj);
 
@@ -392,19 +395,6 @@ write_shared(pic_state *pic, pic_value obj, xFILE *file)
   writer_control_destroy(&p);
 }
 
-static void
-display(pic_state *pic, pic_value obj, xFILE *file)
-{
-  struct writer_control p;
-
-  writer_control_init(&p, pic, file, DISPLAY_MODE);
-
-  traverse_shared(&p, obj);      /* FIXME */
-
-  write_core(&p, obj);
-
-  writer_control_destroy(&p);
-}
 
 pic_value
 pic_write(pic_state *pic, pic_value obj)
@@ -415,7 +405,7 @@ pic_write(pic_state *pic, pic_value obj)
 pic_value
 pic_fwrite(pic_state *pic, pic_value obj, xFILE *file)
 {
-  write(pic, obj, file);
+  write(pic, obj, file, WRITE_MODE, OP_WRITE);
   xfflush(pic, file);
   return obj;
 }
@@ -429,7 +419,7 @@ pic_display(pic_state *pic, pic_value obj)
 pic_value
 pic_fdisplay(pic_state *pic, pic_value obj, xFILE *file)
 {
-  display(pic, obj, file);
+  write(pic, obj, file, DISPLAY_MODE, OP_WRITE);
   xfflush(pic, file);
   return obj;
 }
@@ -458,7 +448,7 @@ pic_write_write(pic_state *pic)
   struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write(pic, v, port->file);
+  write(pic, v, port->file, WRITE_MODE, OP_WRITE);
   return pic_undef_value();
 }
 
@@ -469,7 +459,7 @@ pic_write_write_simple(pic_state *pic)
   struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write_simple(pic, v, port->file);
+  write(pic, v, port->file, WRITE_MODE, OP_WRITE_SIMPLE);
   return pic_undef_value();
 }
 
@@ -480,7 +470,7 @@ pic_write_write_shared(pic_state *pic)
   struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write_shared(pic, v, port->file);
+  write(pic, v, port->file, WRITE_MODE, OP_WRITE_SHARED);
   return pic_undef_value();
 }
 
@@ -491,7 +481,7 @@ pic_write_display(pic_state *pic)
   struct pic_port *port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  display(pic, v, port->file);
+  write(pic, v, port->file, DISPLAY_MODE, OP_WRITE);
   return pic_undef_value();
 }
 
