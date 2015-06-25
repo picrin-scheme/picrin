@@ -5,6 +5,14 @@
 #include "picrin.h"
 
 void
+pic_set_argv(pic_state *pic, int argc, char *argv[], char **envp)
+{
+  pic->argc = argc;
+  pic->argv = argv;
+  pic->envp = envp;
+}
+
+void
 pic_add_feature(pic_state *pic, const char *feature)
 {
   pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
@@ -152,7 +160,7 @@ pic_init_core(pic_state *pic)
 }
 
 pic_state *
-pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
+pic_open(pic_allocf allocf, void *userdata)
 {
   struct pic_port *pic_make_standard_port(pic_state *, xFILE *, short);
   char t;
@@ -169,6 +177,9 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* allocator */
   pic->allocf = allocf;
 
+  /* user data */
+  pic->userdata = userdata;
+
   /* turn off GC */
   pic->gc_enable = false;
 
@@ -180,9 +191,9 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->cp = NULL;
 
   /* command line */
-  pic->argc = argc;
-  pic->argv = argv;
-  pic->envp = envp;
+  pic->argc = 0;
+  pic->argv = NULL;
+  pic->envp = NULL;
 
   /* prepare VM stack */
   pic->stbase = pic->sp = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_value));

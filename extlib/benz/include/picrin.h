@@ -74,6 +74,7 @@ struct pic_state {
   char **argv, **envp;
 
   pic_allocf allocf;
+  void *userdata;
 
   pic_checkpoint *cp;
   struct pic_cont *cc;
@@ -169,9 +170,10 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-pic_state *pic_open(int argc, char *argv[], char **envp, pic_allocf);
 void *pic_default_allocf(void *, size_t);
+pic_state *pic_open(pic_allocf, void *);
 void pic_close(pic_state *);
+void pic_set_argv(pic_state *, int argc, char *argv[], char **envp);
 
 void pic_add_feature(pic_state *, const char *);
 
