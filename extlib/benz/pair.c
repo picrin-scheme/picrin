@@ -2,10 +2,7 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <stdarg.h>
-
 #include "picrin.h"
-#include "picrin/pair.h"
 
 pic_value
 pic_cons(pic_state *pic, pic_value car, pic_value cdr)
@@ -206,10 +203,10 @@ pic_value
 pic_reverse(pic_state *pic, pic_value list)
 {
   size_t ai = pic_gc_arena_preserve(pic);
-  pic_value v, acc;
+  pic_value v, acc, it;
 
   acc = pic_nil_value();
-  pic_for_each(v, list) {
+  pic_for_each(v, list, it) {
     acc = pic_cons(pic, v, acc);
 
     pic_gc_arena_restore(pic, ai);
@@ -222,10 +219,10 @@ pic_value
 pic_append(pic_state *pic, pic_value xs, pic_value ys)
 {
   size_t ai = pic_gc_arena_preserve(pic);
-  pic_value x;
+  pic_value x, it;
 
   xs = pic_reverse(pic, xs);
-  pic_for_each (x, xs) {
+  pic_for_each (x, xs, it) {
     ys = pic_cons(pic, x, ys);
 
     pic_gc_arena_restore(pic, ai);
@@ -495,7 +492,7 @@ pic_pair_set_car(pic_state *pic)
 
   pic_set_car(pic, v, w);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -507,7 +504,7 @@ pic_pair_set_cdr(pic_state *pic)
 
   pic_set_cdr(pic, v, w);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -534,7 +531,7 @@ static pic_value
 pic_pair_make_list(pic_state *pic)
 {
   size_t i;
-  pic_value fill = pic_none_value();
+  pic_value fill = pic_undef_value();
 
   pic_get_args(pic, "k|o", &i, &fill);
 
@@ -624,7 +621,7 @@ pic_pair_list_set(pic_state *pic)
 
   pic_list_set(pic, list, i, obj);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -647,6 +644,9 @@ pic_pair_map(pic_state *pic)
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
+  if (argc == 0)
+    pic_errorf(pic, "map: wrong number of arguments (1 for at least 2)");
+
   ret = pic_nil_value();
   do {
     arg = pic_nil_value();
@@ -657,6 +657,7 @@ pic_pair_map(pic_state *pic)
       pic_push(pic, pic_car(pic, args[i]), arg);
       args[i] = pic_cdr(pic, args[i]);
     }
+
     if (i != argc) {
       break;
     }
@@ -691,7 +692,7 @@ pic_pair_for_each(pic_state *pic)
     pic_apply(pic, proc, pic_reverse(pic, arg));
   } while (1);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -759,13 +760,16 @@ pic_pair_assoc(pic_state *pic)
 void
 pic_init_pair(pic_state *pic)
 {
-  pic_defun(pic, "pair?", pic_pair_pair_p);
-  pic_defun(pic, "cons", pic_pair_cons);
-  pic_defun(pic, "car", pic_pair_car);
-  pic_defun(pic, "cdr", pic_pair_cdr);
+  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
+
+  pic_defun_vm(pic, "pair?", pic->uPAIRP, pic_pair_pair_p);
+  pic_defun_vm(pic, "cons", pic->uCONS, pic_pair_cons);
+  pic_defun_vm(pic, "car", pic->uCAR, pic_pair_car);
+  pic_defun_vm(pic, "cdr", pic->uCDR, pic_pair_cdr);
+  pic_defun_vm(pic, "null?", pic->uNILP, pic_pair_null_p);
+
   pic_defun(pic, "set-car!", pic_pair_set_car);
   pic_defun(pic, "set-cdr!", pic_pair_set_cdr);
-  pic_defun(pic, "null?", pic_pair_null_p);
 
   pic_defun(pic, "caar", pic_pair_caar);
   pic_defun(pic, "cadr", pic_pair_cadr);

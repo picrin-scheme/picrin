@@ -101,9 +101,7 @@ Technically, picrin's array is implemented as a ring-buffer, effective double-en
 (picrin dictionary)
 -------------------
 
-Object-to-object table. Internally it is implemented on hash-table. Equivalence is tested with equal? procedure.
-
-Note that dictionary is not a weak map; if you are going to make a highly memory-consuming program with dictionaries, you should know that dictionaries keep their bound objects and never let them free until you explicitly deletes bindings.
+Symbol-to-object hash table.
 
 - **(make-dictionary)**
 
@@ -119,15 +117,13 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 
 - **(dictionary-ref dict key)**
 
-  Look up dictionary dict for a value associated with key. It returns two values: first is the associated value if exists, and second is a boolean of lookup result.
+  Look up dictionary dict for a value associated with key. If dict has a slot for key `key`, the value stored in the slot is returned. Otherwise `#undefined` is returned.
 
 - **(dictionary-set! dict key obj)**
 
   If there is no value already associated with key, this function newly creates a binding of key with obj. Otherwise, updates the existing binding with given obj.
 
-- **(dictionary-delete dict key)**
-
-  Deletes the binding associated with key from dict. If no binding on dict is associated with key, an error will be raised.
+  If obj is `#undefined`, this procedure behaves like a deleter: it will remove the key/value slot with the name `key` from the dictionary. When no slot is associated with `key`, it will do nothing.
 
 - **(dictionary-size dict)**
 
@@ -135,7 +131,7 @@ Note that dictionary is not a weak map; if you are going to make a highly memory
 
 - **(dicitonary-map proc dict)**
 
-  Perform mapping action onto dictionary object. ``proc`` is called by a sequence ``(proc key val)``.
+  Perform mapping action onto dictionary object. ``proc`` is called by a sequence ``(proc key1 key2 ...)``.
 
 - **(dictionary-for-each proc dict)**
 

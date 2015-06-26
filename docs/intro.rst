@@ -1,20 +1,18 @@
 Introduction
 ============
 
-Picrin is a lightweight scheme implementation intended to comply with full R7RS specification. Its code is written in pure C99 and does not require any special external libraries installed on the platform.
+Picrin is a lightweight R7RS scheme implementation written in pure C89. It contains a reasonably fast VM, an improved hygienic macro system, usuful contribution libraries, and simple but powerful C interface.
 
-- R7RS compatibility
-- reentrant design (all VM states are stored in single global state object)
-- bytecode interpreter (based on stack VM)
-- direct threaded VM
-- internal representation by nan-boxing
-- conservative call/cc implementation (users can freely interleave native stack with VM stack)
-- exact GC (simple mark and sweep, partially reference count is used as well)
-- string representation by rope data structure
-- support full set hygienic macro transformers, including implicit renaming macros
-- extended library syntax
-- advanced REPL support (multi-line input, etc)
-- tiny & portable library (all functions will be in `libpicrin.so`)
+- R7RS compatible
+- Reentrant design (all VM states are stored in single global state object)
+- Bytecode interpreter
+- Direct threaded VM
+- Internal representation by nan-boxing (available only on x64)
+- Conservative call/cc implementation (VM stack and native c stack can interleave)
+- Exact GC (simple mark and sweep, partially reference count)
+- String representation by rope
+- Hygienic macro transformers (syntactic closures, explicit and implicit renaming macros)
+- Extended library syntax
 
 Homepage
 --------

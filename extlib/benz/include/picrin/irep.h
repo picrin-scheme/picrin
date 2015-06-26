@@ -12,6 +12,7 @@ extern "C" {
 enum pic_opcode {
   OP_NOP,
   OP_POP,
+  OP_PUSHUNDEF,
   OP_PUSHNIL,
   OP_PUSHTRUE,
   OP_PUSHFALSE,
@@ -35,6 +36,8 @@ enum pic_opcode {
   OP_CAR,
   OP_CDR,
   OP_NILP,
+  OP_SYMBOLP,
+  OP_PAIRP,
   OP_ADD,
   OP_SUB,
   OP_MUL,
@@ -46,7 +49,7 @@ enum pic_opcode {
   OP_STOP
 };
 
-struct pic_code {
+typedef struct {
   enum pic_opcode insn;
   union {
     int i;
@@ -56,23 +59,33 @@ struct pic_code {
       int idx;
     } r;
   } u;
-};
+} pic_code;
+
+#define PIC_INIT_CODE_I(code, op, ival) do {    \
+    code.insn = op;                             \
+    code.u.i = ival;                            \
+  } while (0)
 
 struct pic_irep {
   PIC_OBJECT_HEADER
-  pic_sym name;
+  pic_sym *name;
   pic_code *code;
   int argc, localc, capturec;
   bool varg;
   struct pic_irep **irep;
   pic_value *pool;
-  size_t clen, ilen, plen;
+  pic_sym **syms;
+  size_t clen, ilen, plen, slen;
 };
 
+pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);
+pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
 
-static inline void
+#if DEBUG
+
+PIC_INLINE void
 pic_dump_code(pic_code c)
 {
   printf("[%2d] ", c.insn);
@@ -82,6 +95,9 @@ pic_dump_code(pic_code c)
     break;
   case OP_POP:
     puts("OP_POP");
+    break;
+  case OP_PUSHUNDEF:
+    puts("OP_PUSHUNDEF");
     break;
   case OP_PUSHNIL:
     puts("OP_PUSHNIL");
@@ -149,6 +165,12 @@ pic_dump_code(pic_code c)
   case OP_NILP:
     puts("OP_NILP");
     break;
+  case OP_SYMBOLP:
+    puts("OP_SYMBOLP");
+    break;
+  case OP_PAIRP:
+    puts("OP_PAIRP");
+    break;
   case OP_CDR:
     puts("OP_CDR");
     break;
@@ -182,7 +204,7 @@ pic_dump_code(pic_code c)
   }
 }
 
-static inline void
+PIC_INLINE void
 pic_dump_irep(struct pic_irep *irep)
 {
   unsigned i;
@@ -198,6 +220,8 @@ pic_dump_irep(struct pic_irep *irep)
     pic_dump_irep(irep->irep[i]);
   }
 }
+
+#endif
 
 #if defined(__cplusplus)
 }

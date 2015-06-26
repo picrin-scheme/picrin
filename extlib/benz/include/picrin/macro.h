@@ -9,37 +9,37 @@
 extern "C" {
 #endif
 
-struct pic_senv {
+KHASH_DECLARE(env, void *, pic_sym *)
+
+struct pic_id {
   PIC_OBJECT_HEADER
-  xhash map;
-  pic_value defer;
-  struct pic_senv *up;
+  pic_value var;
+  struct pic_env *env;
 };
 
-struct pic_macro {
+struct pic_env {
   PIC_OBJECT_HEADER
-  struct pic_proc *proc;
-  struct pic_senv *senv;
+  khash_t(env) map;
+  struct pic_env *up;
 };
 
-#define pic_macro_p(v) (pic_type(v) == PIC_TT_MACRO)
-#define pic_macro_ptr(v) ((struct pic_macro *)pic_ptr(v))
+#define pic_id_p(v) (pic_type(v) == PIC_TT_ID)
+#define pic_id_ptr(v) ((struct pic_id *)pic_ptr(v))
 
-#define pic_senv_p(v) (pic_type(v) == PIC_TT_SENV)
-#define pic_senv_ptr(v) ((struct pic_senv *)pic_ptr(v))
+#define pic_env_p(v) (pic_type(v) == PIC_TT_ENV)
+#define pic_env_ptr(v) ((struct pic_env *)pic_ptr(v))
 
-struct pic_senv *pic_null_syntactic_environment(pic_state *);
+struct pic_id *pic_make_id(pic_state *, pic_value, struct pic_env *);
+struct pic_env *pic_make_env(pic_state *, struct pic_env *);
 
-bool pic_identifier_p(pic_state *pic, pic_value obj);
-bool pic_identifier_eq_p(pic_state *, struct pic_senv *, pic_sym, struct pic_senv *, pic_sym);
+pic_sym *pic_uniq(pic_state *, pic_value);
 
-struct pic_senv *pic_make_senv(pic_state *, struct pic_senv *);
+pic_sym *pic_add_variable(pic_state *, struct pic_env *, pic_value);
+void pic_put_variable(pic_state *, struct pic_env *, pic_value, pic_sym *);
+pic_sym *pic_find_variable(pic_state *, struct pic_env *, pic_value);
 
-pic_sym pic_add_rename(pic_state *, struct pic_senv *, pic_sym);
-bool pic_find_rename(pic_state *, struct pic_senv *, pic_sym, pic_sym * /* = NULL */);
-void pic_put_rename(pic_state *, struct pic_senv *, pic_sym, pic_sym);
-
-void pic_define_syntactic_keyword(pic_state *, struct pic_senv *, pic_sym, pic_sym);
+bool pic_var_p(pic_value);
+pic_sym *pic_var_name(pic_state *, pic_value);
 
 #if defined(__cplusplus)
 }

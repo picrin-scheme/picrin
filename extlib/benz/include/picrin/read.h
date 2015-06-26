@@ -9,28 +9,22 @@
 extern "C" {
 #endif
 
-enum pic_typecase {
-  PIC_CASE_DEFAULT,
-  PIC_CASE_FOLD,
-};
+KHASH_DECLARE(read, int, pic_value)
 
-struct pic_trie {
-  struct pic_trie *table[256];
-  struct pic_proc *proc;
-};
+typedef pic_value (*pic_reader_t)(pic_state *, struct pic_port *port, int c);
 
-struct pic_reader {
-  short typecase;
-  xhash labels;
-  struct pic_trie *trie;
-};
+typedef struct {
+  enum pic_typecase {
+    PIC_CASE_DEFAULT,
+    PIC_CASE_FOLD
+  } typecase;
+  khash_t(read) labels;
+  pic_reader_t table[256];
+  pic_reader_t dispatch[256];
+} pic_reader;
 
-void pic_init_reader(pic_state *);
-
-void pic_define_reader(pic_state *, const char *, pic_func_t);
-
-struct pic_trie *pic_make_trie(pic_state *);
-void pic_trie_delete(pic_state *, struct pic_trie *);
+void pic_reader_init(pic_state *);
+void pic_reader_destroy(pic_state *);
 
 #if defined(__cplusplus)
 }

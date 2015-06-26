@@ -12,24 +12,27 @@ print <<EOL;
  */
 
 #include "picrin.h"
-#include "picrin/error.h"
 
 EOL
 
 foreach my $file (@ARGV) {
     my $var = &escape_v($file);
-    print "static const char *$var =\n";
+    print "static const char ${var}[][80] = {\n";
 
     open IN, $file;
-    while (<IN>) {
-        chomp;
+    local $/ = undef;
+    my $src = <IN>;
+    close IN;
+
+    my @lines = $src =~ /.{0,80}/gs;
+    foreach (@lines) {
         s/\\/\\\\/g;
         s/"/\\"/g;
-        print "\"$_\\n\"\n";
+        s/\n/\\n/g;
+        print "\"$_\",\n";
     }
-    print ";\n\n";
+    print "};\n\n";
 }
-close IN;
 
 print <<EOL;
 void
@@ -38,18 +41,19 @@ pic_load_piclib(pic_state *pic)
 EOL
 
 foreach my $file (@ARGV) {
-    print "  pic_try {\n";
+    print <<EOL;
+  pic_try {
+EOL
     my $var = &escape_v($file);
     my $basename = basename($file);
     my $dirname = basename(dirname($file));
-    print "    pic_load_cstr(pic, $var);\n";
+    print "    pic_load_cstr(pic, &${var}[0][0]);\n";
     print<<EOL
   }
   pic_catch {
     /* error! */
-    fputs("fatal error: failure in loading $dirname/$basename\\n", stderr);
-    fputs(pic_errmsg(pic), stderr);
-    abort();
+    xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
+    pic_raise(pic, pic->err);
   }
 EOL
 }
