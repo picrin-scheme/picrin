@@ -881,7 +881,13 @@ pic_read_cstr(pic_state *pic, const char *str)
   struct pic_port *port = pic_open_input_string(pic, str);
   pic_value form;
 
-  form = pic_read(pic, port);
+  pic_try {
+    form = pic_read(pic, port);
+  }
+  pic_catch {
+    pic_close_port(pic, port);
+    pic_raise(pic, pic->err);
+  }
 
   pic_close_port(pic, port);
 
