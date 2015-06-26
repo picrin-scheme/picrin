@@ -40,6 +40,9 @@ debug: bin/picrin
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a $(LDFLAGS)
 
+bin/picrin.js: $(PICRIN_SRCS) $(CONTRIB_SRCS) $(BENZ_SRCS)
+	emcc $(CFLAGS) -o $@ $(PICRIN_SRCS) $(CONTRIB_SRCS) $(BENZ_SRCS)
+
 src/load_piclib.c: $(PICRIN_LIBS) $(CONTRIB_LIBS)
 	perl etc/mkloader.pl $(PICRIN_LIBS) $(CONTRIB_LIBS) > $@
 
