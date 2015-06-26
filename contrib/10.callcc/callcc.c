@@ -297,8 +297,10 @@ pic_callcc_callcc(pic_state *pic)
 void
 pic_init_callcc(pic_state *pic)
 {
+#if !__EMSCRIPTEN__
   pic_deflibrary (pic, "(scheme base)") {
     pic_redefun(pic, pic->PICRIN_BASE, "call-with-current-continuation", pic_callcc_callcc);
     pic_redefun(pic, pic->PICRIN_BASE, "call/cc", pic_callcc_callcc);
   }
+#endif
 }
