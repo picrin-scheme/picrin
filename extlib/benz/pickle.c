@@ -2,13 +2,7 @@
  * See Copyright Notice in picrin.h
  */
 
-#include <string.h>
-
 #include "picrin.h"
-#include "picrin/blob.h"
-#include "picrin/pair.h"
-#include "picrin/string.h"
-#include "picrin/vector.h"
 
 enum pic_pickle_types {
   PIC_PT_POSITIVE_FIXINT, 	/* 0x00 - 0x7f */
@@ -17,20 +11,20 @@ enum pic_pickle_types {
   PIC_PT_INT16,
   PIC_PT_INT32,
   PIC_PT_INT64,
-  
+
   PIC_PT_FLOAT32 = 0xcau,
   PIC_PT_FLOAT64,
-  
+
   PIC_PT_FIXSTR,		/* 0xa0 - 0xbf */
   PIC_PT_STR8 = 0xd9u,
   PIC_PT_STR16,
   PIC_PT_STR32,
-  
+
   PIC_PT_SYMBOL8 = 0xccu,
   PIC_PT_SYMBOL16,
   PIC_PT_SYMBOL32,
   PIC_PT_SYMBOL64,
-  
+
   PIC_PT_FIXLIST,		/* 0x80 - 0x8f */
   PIC_PT_LIST16 = 0xdeu,
   PIC_PT_LIST32,
@@ -216,7 +210,7 @@ DEFINE_OB_READER(int64_t)
     ob_push(ob, (uint8_t) len);                 \
   }                                             \
   else ob_push_16len(ob, len, base + 1)
-  
+
 
 #define ob_push_len64(ob, len, base)                   \
   ob_push_len(ob, len, base)                           \
@@ -230,8 +224,6 @@ static void pickle(pic_state *, struct octet_buffer *, pic_value);
 static void
 pickle_int(pic_state *pic, struct octet_buffer *ob, int i)
 {
-  PIC_UNUSED(pic);
-
   if ( 0x00 <= i && i <= 0x7f) {
     /* positive fixint 	0xxxxxxx 	0x00 - 0x7f */
     ob_push(ob, (uint8_t) i);
@@ -260,14 +252,12 @@ pickle_int(pic_state *pic, struct octet_buffer *ob, int i)
     ob_push(ob, PIC_PT_INT64);
     ob_push_uint64_t(ob, (uint64_t) i);
   }
-  
+
 }
 
 static void
 pickle_double(pic_state *pic, struct octet_buffer *ob, double d)
 {
-  PIC_UNUSED(pic);
-
   union { uint64_t u; double d;} t;
 
   /* float 32 	11001010 	0xca */
@@ -276,37 +266,33 @@ pickle_double(pic_state *pic, struct octet_buffer *ob, double d)
   t.d = d;
 
   ob_push(ob, 0xcb);
-  ob_push_uint64_t(ob, t.u);  
+  ob_push_uint64_t(ob, t.u);
 }
 
 static void
 pickle_string(pic_state *pic, struct octet_buffer *ob, pic_str *str)
 {
-  PIC_UNUSED(pic);
-
   const char *cstr;
   size_t len;
 
-  cstr = pic_str_cstr(str);
-  len = pic_strlen(str);
+  cstr = pic_str_cstr(pic, str);
+  len = pic_str_len(str);
 
   if (len < 1<<5)
     /* fixstr 	101xxxxx 	0xa0 - 0xbf */
     ob_push(ob, 0xa0 | len);
   else
     /* str 8 	11011001 	0xd9 */
-    /* str 16 	11011010 	0xda */      
-    /* str 32 	11011011 	0xdb */      
+    /* str 16 	11011010 	0xda */
+    /* str 32 	11011011 	0xdb */
     ob_push_len(ob, len, PIC_PT_STR8);
-    
+
   ob_pushn(ob, (const uint8_t *)cstr, len);
 }
 
 static void
-pickle_symbol(pic_state *pic, struct octet_buffer *ob, pic_sym sym)
+pickle_symbol(pic_state *pic, struct octet_buffer *ob, pic_sym *sym)
 {
-  PIC_UNUSED(pic);
-
   /* symbol 8 	11001100 	0xcc */
   /* symbol 16 	11001101 	0xcd */
   /* symbol 32 	11001110 	0xce */
@@ -317,7 +303,7 @@ pickle_symbol(pic_state *pic, struct octet_buffer *ob, pic_sym sym)
 static void
 pickle_list(pic_state *pic, struct octet_buffer *ob, pic_value list)
 {
-  pic_value v;
+  pic_value v, it;
   size_t len;
 
   len = pic_length(pic, list);
@@ -328,25 +314,21 @@ pickle_list(pic_state *pic, struct octet_buffer *ob, pic_value list)
     /* list 16 	11011110 	0xde */
     /* list 32 	11011111 	0xdf */
     ob_push_16len(ob, len, (uint8_t) PIC_PT_LIST16);
-    
-  pic_for_each(v, list){
+
+  pic_for_each (v, list, it) {
     pickle(pic, ob, v);
   }
-  
 }
 
 static void
 pickle_nil(pic_state *pic, struct octet_buffer *ob)
 {
-  PIC_UNUSED(pic);
   ob_push(ob, (uint8_t) PIC_PT_NIL);
 }
 
 static void
 pickle_bool(pic_state *pic, struct octet_buffer *ob, pic_value b)
 {
-  PIC_UNUSED(pic);
-
   /* true 	11000011 	0xc3 */
   /* false 	11000010 	0xc2 */
   ob_push(ob,  pic_true_p(b) ? PIC_PT_TRUE : PIC_PT_FALSE);
@@ -355,8 +337,6 @@ pickle_bool(pic_state *pic, struct octet_buffer *ob, pic_value b)
 static void
 pickle_blob(pic_state *pic, struct octet_buffer *ob, pic_blob *blob)
 {
-  PIC_UNUSED(pic);
-
   size_t len;
 
   len = blob->len;
@@ -365,7 +345,7 @@ pickle_blob(pic_state *pic, struct octet_buffer *ob, pic_blob *blob)
   /* bytevector 32 	11000110 	0xc6 */
   ob_push_len(ob, len, PIC_PT_BYTEVECTOR8);
 
-  ob_pushn(ob, (uint8_t *) blob->data, len);  
+  ob_pushn(ob, (uint8_t *) blob->data, len);
 }
 
 static void
@@ -391,8 +371,6 @@ pickle_vector(pic_state *pic, struct octet_buffer *ob, struct pic_vector *vec)
 static void
 pickle_char(pic_state *pic, struct octet_buffer *ob, pic_value obj)
 {
-  PIC_UNUSED(pic);
-
   /* char 	11000001 	0xc1 */
   /* current picrin supports only ascii chars */
   ob_push(ob, (uint8_t) PIC_PT_CHAR);
@@ -414,7 +392,7 @@ pickle(pic_state *pic, struct octet_buffer *ob, pic_value obj)
     pickle_string(pic, ob, pic_str_ptr(obj));
     break;
   case PIC_TT_SYMBOL:
-    pickle_symbol(pic, ob,  pic_sym(obj));
+    pickle_symbol(pic, ob,  pic_sym_ptr(obj));
     break;
   case PIC_TT_PAIR:
     pickle_list(pic, ob, obj);
@@ -427,7 +405,7 @@ pickle(pic_state *pic, struct octet_buffer *ob, pic_value obj)
     break;
   case PIC_TT_VECTOR:
     pickle_vector(pic, ob, pic_vec_ptr(obj));
-    break;    
+    break;
   case PIC_TT_NIL:
     pickle_nil(pic, ob);
     break;
@@ -460,7 +438,7 @@ unpickle_list(pic_state *pic, struct octet_buffer *ob, size_t len)
 
   while(len --> 0)
     result = pic_cons(pic, unpickle(pic, ob), result);
-    
+
   return pic_reverse(pic, result);
 }
 
@@ -497,8 +475,6 @@ unpickle_string(pic_state *pic, struct octet_buffer *ob, size_t len)
 static pic_value
 unpickle_float(pic_state *pic, struct octet_buffer *ob, size_t len)
 {
-
-  PIC_UNUSED(pic);
   union { uint32_t u; float f;} t32;
   union { uint64_t u; double d;} t64;
 
@@ -515,19 +491,14 @@ unpickle_float(pic_state *pic, struct octet_buffer *ob, size_t len)
 static pic_value
 unpickle_symbol(pic_state *pic, struct octet_buffer *ob, size_t sym)
 {
-  PIC_UNUSED(pic);
-  PIC_UNUSED(ob);
-  PIC_UNUSED(sym);
   /* :FIXME: */
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
 unpickle_char(pic_state *pic, struct octet_buffer *ob)
 {
-  PIC_UNUSED(pic);
-
   /* :TODO: current picrin supports only ascii chars */
   return pic_char_value(ob_read(ob));
 }
@@ -535,15 +506,12 @@ unpickle_char(pic_state *pic, struct octet_buffer *ob)
 static pic_value
 unpickle_ext(pic_state *pic, struct octet_buffer *ob, size_t len)
 {
-  PIC_UNUSED(pic);
-  PIC_UNUSED(ob);
-  PIC_UNUSED(len);
-  PIC_UNUSED(ob_readn(ob, len));
+  ob_readn(ob, len);
   /* :FIXME:  */
 
   pic_errorf(pic, "cannot unpickle ext");
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 static pic_value
@@ -551,7 +519,7 @@ unpickle(pic_state *pic, struct octet_buffer *ob)
 {
   uint8_t octet;
   octet = ob_read(ob);
-  
+
   if (octet >= 0xe0u)
     /* negative fixint 	111xxxxx 	0xe0 - 0xff */
     return pic_int_value((int) (char) octet);
@@ -666,7 +634,7 @@ unpickle(pic_state *pic, struct octet_buffer *ob)
       return unpickle_list(pic, ob, ob_read_uint32_t(ob));
     default:
       pic_errorf(pic, "logic flow");
-    }  
+    }
 }
 
 static pic_value
