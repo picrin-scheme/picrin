@@ -41,7 +41,9 @@ pic_load_piclib(pic_state *pic)
 EOL
 
 foreach my $file (@ARGV) {
-    print "  pic_try {\n";
+    print <<EOL;
+  pic_try {
+EOL
     my $var = &escape_v($file);
     my $basename = basename($file);
     my $dirname = basename(dirname($file));
@@ -51,8 +53,7 @@ foreach my $file (@ARGV) {
   pic_catch {
     /* error! */
     xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
-    xfputs(pic, pic_errmsg(pic), xstderr);
-    pic_panic(pic, "load error");
+    pic_raise(pic, pic->err);
   }
 EOL
 }

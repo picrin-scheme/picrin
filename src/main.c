@@ -44,11 +44,11 @@ main(int argc, char *argv[], char **envp)
   pic = pic_open(pic_default_allocf, NULL);
   pic_set_argv(pic, argc, argv, envp);
 
-  pic_init_picrin(pic);
-
-  PICRIN_MAIN = pic_find_library(pic, pic_read_cstr(pic, "(picrin main)"));
-
   pic_try {
+    pic_init_picrin(pic);
+
+    PICRIN_MAIN = pic_find_library(pic, pic_read_cstr(pic, "(picrin main)"));
+
     pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
   }
   pic_catch {
