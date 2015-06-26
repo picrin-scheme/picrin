@@ -1,6 +1,5 @@
 (define-library (picrin experimental lambda)
-  (import (scheme base)
-          (picrin base)
+  (import (picrin base)
           (picrin macro))
 
   (define-syntax (destructuring-let formal value . body)
