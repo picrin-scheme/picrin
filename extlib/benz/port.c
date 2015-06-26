@@ -601,6 +601,7 @@ pic_port_read_line(pic_state *pic)
   int c;
   struct pic_port *port = pic_stdin(pic), *buf;
   struct pic_string *str;
+  pic_value res = pic_eof_object();
 
   pic_get_args(pic, "|p", &port);
 
@@ -613,11 +614,12 @@ pic_port_read_line(pic_state *pic)
 
   str = pic_get_output_string(pic, buf);
   if (pic_str_len(str) == 0 && c == EOF) {
-    return pic_eof_object();
+    /* EOF */
+  } else {
+    res = pic_obj_value(str);
   }
-  else {
-    return pic_obj_value(str);
-  }
+  pic_close_port(pic, buf);
+  return res;
 }
 
 static pic_value
@@ -638,6 +640,7 @@ pic_port_read_string(pic_state *pic){
   pic_str *str;
   int k, i;
   int c;
+  pic_value res = pic_eof_object();
 
   pic_get_args(pic, "i|p", &k,  &port);
 
@@ -654,12 +657,12 @@ pic_port_read_string(pic_state *pic){
 
   str = pic_get_output_string(pic, buf);
   if (pic_str_len(str) == 0 && c == EOF) {
-    return pic_eof_object();
+    /* EOF */
+  } else {
+    res = pic_obj_value(str);
   }
-  else {
-    return pic_obj_value(str);
-  }
-
+  pic_close_port(pic, buf);
+  return res;
 }
 
 static pic_value
