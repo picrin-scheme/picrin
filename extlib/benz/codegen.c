@@ -933,53 +933,45 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   return irep;
 }
 
-static void
-emit_n(pic_state *pic, codegen_context *cxt, enum pic_opcode insn)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->clen++;
-}
+#define check_size(pic, cxt, x, name, type) do {                        \
+    if (cxt->x##len >= cxt->x##capa) {                                  \
+      cxt->x##capa *= 2;                                                \
+      cxt->name = pic_realloc(pic, cxt->name, sizeof(type) * cxt->x##capa); \
+    }                                                                   \
+  } while (0)
 
-static void
-emit_i(pic_state *pic, codegen_context *cxt, enum pic_opcode insn, int i)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->code[cxt->clen].u.i = i;
-  cxt->clen++;
-}
+#define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
+#define check_syms_size(pic, cxt) check_size(pic, cxt, s, syms, pic_sym *)
+#define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
+#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, pic_value)
 
-static void
-emit_c(pic_state *pic, codegen_context *cxt, enum pic_opcode insn, char c)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->code[cxt->clen].u.c = c;
-  cxt->clen++;
-}
+#define emit_n(pic, cxt, ins) do {              \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->clen++;                                \
+  } while (0)                                   \
 
-static void
-emit_r(pic_state *pic, codegen_context *cxt, enum pic_opcode insn, int d, int i)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->code[cxt->clen].u.r.depth = d;
-  cxt->code[cxt->clen].u.r.idx = i;
-  cxt->clen++;
-}
+#define emit_i(pic, cxt, ins, I) do {           \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->code[cxt->clen].u.i = I;               \
+    cxt->clen++;                                \
+  } while (0)                                   \
+
+#define emit_c(pic, cxt, ins, C) do {           \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->code[cxt->clen].u.c = C;               \
+    cxt->clen++;                                \
+  } while (0)                                   \
+
+#define emit_r(pic, cxt, ins, D, I) do {        \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->code[cxt->clen].u.r.depth = D;         \
+    cxt->code[cxt->clen].u.r.idx = I;           \
+    cxt->clen++;                                \
+  } while (0)                                   \
 
 static void
 create_activation(pic_state *pic, codegen_context *cxt)
@@ -1057,10 +1049,7 @@ index_symbol(pic_state *pic, codegen_context *cxt, pic_sym *sym)
       return i;
     }
   }
-  if (cxt->slen >= cxt->scapa) {
-    cxt->scapa *= 2;
-    cxt->syms = pic_realloc(pic, cxt->syms, sizeof(pic_sym *) * cxt->scapa);
-  }
+  check_syms_size(pic, cxt);
   cxt->syms[cxt->slen++] = sym;
   return i;
 }
@@ -1137,10 +1126,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
   else if (sym == pic->sLAMBDA) {
     int k;
 
-    if (cxt->ilen >= cxt->icapa) {
-      cxt->icapa *= 2;
-      cxt->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->icapa);
-    }
+    check_irep_size(pic, cxt);
     k = (int)cxt->ilen++;
     emit_i(pic, cxt, OP_LAMBDA, k);
 
@@ -1200,10 +1186,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
       emit_c(pic, cxt, OP_PUSHCHAR, pic_char(obj));
       return;
     default:
-      if (cxt->plen >= cxt->pcapa) {
-        cxt->pcapa *= 2;
-        cxt->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->pcapa);
-      }
+      check_pool_size(pic, cxt);
       pidx = (int)cxt->plen++;
       cxt->pool[pidx] = obj;
       emit_i(pic, cxt, OP_PUSHCONST, pidx);
