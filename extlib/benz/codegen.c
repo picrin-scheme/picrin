@@ -929,9 +929,91 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     int len = (int)pic_length(pic, obj);
     pic_value elt, it;
 
-    pic_for_each (elt, pic_cdr(pic, obj), it) {
+    obj = pic_cdr(pic, obj);
+    pic_for_each (elt, obj, it) {
       codegen(pic, cxt, elt, false);
     }
+
+    if (pic_pair_p(pic_car(pic, obj)) && pic_sym_ptr(pic_caar(pic, obj)) == pic->sGREF) {
+      pic_sym *tag = pic_sym_ptr(pic_list_ref(pic, pic_car(pic, obj), 1));
+
+      if (tag == pic->uNOT && len == 3) {
+        emit_n(pic, cxt, OP_NOT);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uCONS && len == 4) {
+        emit_n(pic, cxt, OP_CONS);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uCAR && len == 3) {
+        emit_n(pic, cxt, OP_CAR);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uCDR && len == 3) {
+        emit_n(pic, cxt, OP_CDR);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uNILP && len == 3) {
+        emit_n(pic, cxt, OP_NILP);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uSYMBOLP && len == 3) {
+        emit_n(pic, cxt, OP_SYMBOLP);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uPAIRP && len == 3) {
+        emit_n(pic, cxt, OP_PAIRP);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uSUB && len == 3) { /* unary - */
+        emit_n(pic, cxt, OP_MINUS);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uADD && len == 4) {
+        emit_n(pic, cxt, OP_ADD);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uSUB && len == 4) {
+        emit_n(pic, cxt, OP_SUB);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uMUL && len == 4) {
+        emit_n(pic, cxt, OP_MUL);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uDIV && len == 4) {
+        emit_n(pic, cxt, OP_DIV);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uEQ && len == 4) {
+        emit_n(pic, cxt, OP_EQ);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uLT && len == 4) {
+        emit_n(pic, cxt, OP_LT);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uLE && len == 4) {
+        emit_n(pic, cxt, OP_LE);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+    }
+
     emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);
     return;
   }
