@@ -157,12 +157,12 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 
   deferred = pic_list1(pic, pic_nil_value());
 
-  formal = expand_list(pic, pic_cadr(pic, expr), in, deferred);
-  body = expand_list(pic, pic_cddr(pic, expr), in, deferred);
+  formal = expand_list(pic, pic_list_ref(pic, expr, 1), in, deferred);
+  body = expand(pic, pic_list_ref(pic, expr, 2), in, deferred);
 
   expand_deferred(pic, deferred, in);
 
-  return pic_cons(pic, pic_obj_value(pic->uLAMBDA), pic_cons(pic, formal, body));
+  return pic_list3(pic, pic_obj_value(pic->uLAMBDA), formal, body);
 }
 
 static pic_value
@@ -297,28 +297,30 @@ typedef struct analyze_scope {
   struct analyze_scope *up;
 } analyze_scope;
 
-static bool analyze_args(pic_state *, pic_value, analyze_scope *);
-
-static bool
-analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formals, analyze_scope *up)
+static void
+analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, analyze_scope *up)
 {
+  int ret;
+
   kh_init(a, &scope->args);
   kh_init(a, &scope->locals);
   kh_init(a, &scope->captures);
 
-  if (analyze_args(pic, formals, scope)) {
-    scope->up = up;
-    scope->depth = up ? up->depth + 1 : 0;
-    scope->defer = pic_nil_value();
-
-    return true;
+  /* analyze formal */
+  for (; pic_pair_p(formal); formal = pic_cdr(pic, formal)) {
+    kh_put(a, &scope->args, pic_sym_ptr(pic_car(pic, formal)), &ret);
+  }
+  if (pic_nil_p(formal)) {
+    scope->rest = NULL;
   }
   else {
-    kh_destroy(a, &scope->args);
-    kh_destroy(a, &scope->locals);
-    kh_destroy(a, &scope->captures);
-    return false;
+    scope->rest = pic_sym_ptr(formal);
+    kh_put(a, &scope->locals, pic_sym_ptr(formal), &ret);
   }
+
+  scope->up = up;
+  scope->depth = up ? up->depth + 1 : 0;
+  scope->defer = pic_nil_value();
 }
 
 static void
@@ -327,33 +329,6 @@ analyzer_scope_destroy(pic_state *pic, analyze_scope *scope)
   kh_destroy(a, &scope->args);
   kh_destroy(a, &scope->locals);
   kh_destroy(a, &scope->captures);
-}
-
-static bool
-analyze_args(pic_state *pic, pic_value formals, analyze_scope *scope)
-{
-  pic_value v, t;
-  int ret;
-
-  for (v = formals; pic_pair_p(v); v = pic_cdr(pic, v)) {
-    t = pic_car(pic, v);
-    if (! pic_sym_p(t)) {
-      return false;
-    }
-    kh_put(a, &scope->args, pic_sym_ptr(t), &ret);
-  }
-  if (pic_nil_p(v)) {
-    scope->rest = NULL;
-  }
-  else if (pic_sym_p(v)) {
-    scope->rest = pic_sym_ptr(v);
-    kh_put(a, &scope->locals, pic_sym_ptr(v), &ret);
-  }
-  else {
-    return false;
-  }
-
-  return true;
 }
 
 static bool
@@ -482,49 +457,45 @@ analyze_deferred(pic_state *pic, analyze_scope *scope)
 }
 
 static pic_value
-analyze_procedure(pic_state *pic, analyze_scope *up, pic_value name, pic_value formals, pic_value body_exprs)
+analyze_procedure(pic_state *pic, analyze_scope *up, pic_value name, pic_value formals, pic_value body)
 {
   analyze_scope s, *scope = &s;
-  pic_value rest = pic_undef_value(), body;
+  pic_value rest = pic_undef_value();
   pic_vec *args, *locals, *captures;
+  size_t i, j;
 
   assert(pic_sym_p(name) || pic_false_p(name));
 
-  if (analyzer_scope_init(pic, scope, formals, up)) {
-    size_t i, j;
+  analyzer_scope_init(pic, scope, formals, up);
 
-    /* analyze body */
-    body = analyze(pic, scope, pic_cons(pic, pic_obj_value(pic->uBEGIN), body_exprs), true);
-    analyze_deferred(pic, scope);
+  /* analyze body */
+  body = analyze(pic, scope, body, true);
+  analyze_deferred(pic, scope);
 
-    args = pic_make_vec(pic, kh_size(&scope->args));
-    for (i = 0; pic_pair_p(formals); formals = pic_cdr(pic, formals), i++) {
-      args->data[i] = pic_car(pic, formals);
-    }
-
-    if (scope->rest != NULL) {
-      rest = pic_obj_value(scope->rest);
-    }
-
-    locals = pic_make_vec(pic, kh_size(&scope->locals));
-    for (i = kh_begin(&scope->locals), j = 0; i < kh_end(&scope->locals); ++i) {
-      if (kh_exist(&scope->locals, i)) {
-        locals->data[j++] = pic_obj_value(kh_key(&scope->locals, i));
-      }
-    }
-
-    captures = pic_make_vec(pic, kh_size(&scope->captures));
-    for (i = kh_begin(&scope->captures), j = 0; i < kh_end(&scope->captures); ++i) {
-      if (kh_exist(&scope->captures, i)) {
-        captures->data[j++] = pic_obj_value(kh_key(&scope->captures, i));
-      }
-    }
-
-    analyzer_scope_destroy(pic, scope);
+  args = pic_make_vec(pic, kh_size(&scope->args));
+  for (i = 0; pic_pair_p(formals); formals = pic_cdr(pic, formals), i++) {
+    args->data[i] = pic_car(pic, formals);
   }
-  else {
-    pic_errorf(pic, "invalid formal syntax: ~s", formals);
+
+  if (scope->rest != NULL) {
+    rest = pic_obj_value(scope->rest);
   }
+
+  locals = pic_make_vec(pic, kh_size(&scope->locals));
+  for (i = kh_begin(&scope->locals), j = 0; i < kh_end(&scope->locals); ++i) {
+    if (kh_exist(&scope->locals, i)) {
+      locals->data[j++] = pic_obj_value(kh_key(&scope->locals, i));
+    }
+  }
+
+  captures = pic_make_vec(pic, kh_size(&scope->captures));
+  for (i = kh_begin(&scope->captures), j = 0; i < kh_end(&scope->captures); ++i) {
+    if (kh_exist(&scope->captures, i)) {
+      captures->data[j++] = pic_obj_value(kh_key(&scope->captures, i));
+    }
+  }
+
+  analyzer_scope_destroy(pic, scope);
 
   return pic_list7(pic, pic_obj_value(pic->sLAMBDA), name, rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
 }
@@ -532,16 +503,12 @@ analyze_procedure(pic_state *pic, analyze_scope *up, pic_value name, pic_value f
 static pic_value
 analyze_lambda(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  pic_value formals, body_exprs;
-
-  if (pic_length(pic, obj) < 2) {
-    pic_errorf(pic, "syntax error");
-  }
+  pic_value formals, body;
 
   formals = pic_list_ref(pic, obj, 1);
-  body_exprs = pic_list_tail(pic, obj, 2);
+  body = pic_list_ref(pic, obj, 2);
 
-  return analyze_defer(pic, scope, pic_false_value(), formals, body_exprs);
+  return analyze_defer(pic, scope, pic_false_value(), formals, body);
 }
 
 static pic_value
@@ -558,31 +525,21 @@ analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
   pic_value var, val;
   pic_sym *sym;
 
-  if (pic_length(pic, obj) != 3) {
-    pic_errorf(pic, "syntax error");
-  }
-
-  var = pic_list_ref(pic, obj, 1);
-  if (! pic_sym_p(var)) {
-    pic_errorf(pic, "syntax error");
-  } else {
-    sym = pic_sym_ptr(var);
-  }
+  sym = pic_sym_ptr(pic_list_ref(pic, obj, 1));
   var = analyze_declare(pic, scope, sym);
 
   if (pic_pair_p(pic_list_ref(pic, obj, 2))
       && pic_sym_p(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0))
       && pic_sym_ptr(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->uLAMBDA) {
-    pic_value formals, body_exprs;
+    pic_value formals, body;
+
+    /* restore (define (foo ...) ...) structure */
 
     formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
-    body_exprs = pic_list_tail(pic, pic_list_ref(pic, obj, 2), 2);
+    body = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 2);
 
-    val = analyze_defer(pic, scope, pic_obj_value(sym), formals, body_exprs);
+    val = analyze_defer(pic, scope, pic_obj_value(sym), formals, body);
   } else {
-    if (pic_length(pic, obj) != 3) {
-      pic_errorf(pic, "syntax error");
-    }
     val = analyze(pic, scope, pic_list_ref(pic, obj, 2), false);
   }
 
@@ -594,18 +551,9 @@ analyze_if(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
 {
   pic_value cond, if_true, if_false;
 
-  if_false = pic_undef_value();
-  switch (pic_length(pic, obj)) {
-  default:
-    pic_errorf(pic, "syntax error");
-  case 4:
-    if_false = pic_list_ref(pic, obj, 3);
-    PIC_FALLTHROUGH;
-  case 3:
-    if_true = pic_list_ref(pic, obj, 2);
-  }
+  if_true = pic_list_ref(pic, obj, 2);
+  if_false = pic_list_ref(pic, obj, 3);
 
-  /* analyze in order */
   cond = analyze(pic, scope, pic_list_ref(pic, obj, 1), false);
   if_true = analyze(pic, scope, if_true, tailpos);
   if_false = analyze(pic, scope, if_false, tailpos);
@@ -616,26 +564,15 @@ analyze_if(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
 static pic_value
 analyze_begin(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
 {
-  pic_value seq;
-  bool tail;
+  pic_value beg1, beg2;
 
-  switch (pic_length(pic, obj)) {
-  case 1:
-    return analyze(pic, scope, pic_undef_value(), tailpos);
-  case 2:
-    return analyze(pic, scope, pic_list_ref(pic, obj, 1), tailpos);
-  default:
-    seq = pic_list1(pic, pic_obj_value(pic->sBEGIN));
-    for (obj = pic_cdr(pic, obj); ! pic_nil_p(obj); obj = pic_cdr(pic, obj)) {
-      if (pic_nil_p(pic_cdr(pic, obj))) {
-        tail = tailpos;
-      } else {
-        tail = false;
-      }
-      seq = pic_cons(pic, analyze(pic, scope, pic_car(pic, obj), tail), seq);
-    }
-    return pic_reverse(pic, seq);
-  }
+  beg1 = pic_list_ref(pic, obj, 1);
+  beg2 = pic_list_ref(pic, obj, 2);
+
+  beg1 = analyze(pic, scope, beg1, false);
+  beg2 = analyze(pic, scope, beg2, tailpos);
+
+  return pic_list3(pic, pic_obj_value(pic->sBEGIN), beg1, beg2);
 }
 
 static pic_value
@@ -643,15 +580,7 @@ analyze_set(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
   pic_value var, val;
 
-  if (pic_length(pic, obj) != 3) {
-    pic_errorf(pic, "syntax error");
-  }
-
   var = pic_list_ref(pic, obj, 1);
-  if (! pic_sym_p(var)) {
-    pic_errorf(pic, "syntax error");
-  }
-
   val = pic_list_ref(pic, obj, 2);
 
   var = analyze(pic, scope, var, false);
@@ -663,9 +592,6 @@ analyze_set(pic_state *pic, analyze_scope *scope, pic_value obj)
 static pic_value
 analyze_quote(pic_state *pic, pic_value obj)
 {
-  if (pic_length(pic, obj) != 2) {
-    pic_errorf(pic, "syntax error");
-  }
   return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
