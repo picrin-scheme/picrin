@@ -1360,6 +1360,8 @@ pic_codegen(pic_state *pic, pic_value obj)
   return codegen_context_destroy(pic, cxt);
 }
 
+#define SAVE(pic, ai, obj) pic_gc_arena_restore(pic, ai); pic_gc_protect(pic, obj)
+
 struct pic_proc *
 pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
 {
@@ -1385,6 +1387,8 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
+  SAVE(pic, ai, obj);
+
   /* analyze */
   obj = pic_analyze(pic, obj);
 #if DEBUG
@@ -1393,6 +1397,8 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
+
+  SAVE(pic, ai, obj);
 
   /* codegen */
   irep = pic_codegen(pic, obj);
@@ -1406,8 +1412,7 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   puts("");
 #endif
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, pic_obj_value(irep));
+  SAVE(pic, ai, pic_obj_value(irep));
 
   return pic_make_proc_irep(pic, irep, NULL);
 }
