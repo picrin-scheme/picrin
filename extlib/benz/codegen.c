@@ -1183,15 +1183,9 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
     return;
   }
   else if (sym == pic->sBEGIN) {
-    pic_value elt, it;
-    int i = 0;
-
-    pic_for_each (elt, pic_cdr(pic, obj), it) {
-      if (i++ != 0) {
-        emit_n(pic, cxt, OP_POP);
-      }
-      codegen(pic, cxt, elt);
-    }
+    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
+    emit_n(pic, cxt, OP_POP);
+    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
     return;
   }
   else if (sym == pic->sQUOTE) {
