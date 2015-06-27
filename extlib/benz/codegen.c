@@ -827,7 +827,6 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     type = pic_sym_ptr(pic_list_ref(pic, var, 0));
     if (type == pic->sGREF) {
       emit_i(pic, cxt, OP_GSET, index_symbol(pic, cxt, pic_sym_ptr(pic_list_ref(pic, var, 1))));
-      emit_n(pic, cxt, OP_PUSHUNDEF);
       emit_ret(pic, cxt, tailpos);
       return;
     }
@@ -838,7 +837,6 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
       depth = pic_int(pic_list_ref(pic, var, 1));
       name  = pic_sym_ptr(pic_list_ref(pic, var, 2));
       emit_r(pic, cxt, OP_CSET, depth, index_capture(cxt, name, depth));
-      emit_n(pic, cxt, OP_PUSHUNDEF);
       emit_ret(pic, cxt, tailpos);
       return;
     }
@@ -849,11 +847,10 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
       name = pic_sym_ptr(pic_list_ref(pic, var, 1));
       if ((i = index_capture(cxt, name, 0)) != -1) {
         emit_i(pic, cxt, OP_LSET, i + (int)cxt->args->len + (int)cxt->locals->len + 1);
-        emit_n(pic, cxt, OP_PUSHUNDEF);
+        emit_ret(pic, cxt, tailpos);
         return;
       }
       emit_i(pic, cxt, OP_LSET, index_local(cxt, name));
-      emit_n(pic, cxt, OP_PUSHUNDEF);
       emit_ret(pic, cxt, tailpos);
       return;
     }
