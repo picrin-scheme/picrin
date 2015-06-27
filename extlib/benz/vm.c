@@ -1110,9 +1110,15 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 }
 
 void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
+pic_define_syntactic_keyword_(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
 {
   pic_put_variable(pic, env, pic_obj_value(sym), uid);
+}
+
+void
+pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
+{
+  pic_define_syntactic_keyword_(pic, env, sym, uid);
 
   if (pic->lib && pic->lib->env == env) {
     pic_export(pic, sym);
