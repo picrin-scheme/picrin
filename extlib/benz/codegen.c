@@ -1012,6 +1012,16 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
         emit_ret(pic, cxt, tailpos);
         return;
       }
+      else if (tag == pic->uGT && len == 4) {
+        emit_n(pic, cxt, OP_GT);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+      else if (tag == pic->uGE && len == 4) {
+        emit_n(pic, cxt, OP_GE);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
     }
 
     emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);

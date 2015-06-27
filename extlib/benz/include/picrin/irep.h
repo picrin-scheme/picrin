@@ -46,6 +46,8 @@ enum pic_opcode {
   OP_EQ,
   OP_LT,
   OP_LE,
+  OP_GT,
+  OP_GE,
   OP_STOP
 };
 
@@ -196,6 +198,12 @@ pic_dump_code(pic_code c)
     break;
   case OP_LE:
     puts("OP_LE");
+    break;
+  case OP_LT:
+    puts("OP_GT");
+    break;
+  case OP_LE:
+    puts("OP_GE");
     break;
   case OP_STOP:
     puts("OP_STOP");
