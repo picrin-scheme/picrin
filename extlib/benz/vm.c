@@ -82,11 +82,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
   /* check argc. */
   if (argc < paramc || (paramc + optc < argc && ! rest)) {
-    pic_errorf(pic, "%s: wrong number of arguments (%d for %s%d)",
-               pic_symbol_name(pic, pic_proc_name(pic_proc_ptr(GET_OPERAND(pic, 0)))) ,
-               argc,
-               rest? "at least " : "",
-               paramc);
+    pic_errorf(pic, "pic_get_args: wrong number of arguments (%d for %s%d)", argc, rest? "at least " : "", paramc);
   }
 
   /* start dispatching */
@@ -633,7 +629,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 
       sym = irep->syms[c.u.i];
       if (! pic_dict_has(pic, pic->globals, sym)) {
-        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, sym));
+        pic_errorf(pic, "uninitialized global variable: %s", pic_symbol_name(pic, sym));
       }
       PUSH(pic_dict_ref(pic, pic->globals, sym));
       NEXT;
@@ -1110,9 +1106,15 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 }
 
 void
-pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
+pic_define_syntactic_keyword_(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
 {
   pic_put_variable(pic, env, pic_obj_value(sym), uid);
+}
+
+void
+pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, pic_sym *uid)
+{
+  pic_define_syntactic_keyword_(pic, env, sym, uid);
 
   if (pic->lib && pic->lib->env == env) {
     pic_export(pic, sym);
@@ -1125,7 +1127,7 @@ pic_defun_vm(pic_state *pic, const char *name, pic_sym *uid, pic_func_t func)
   struct pic_proc *proc;
   pic_sym *sym;
 
-  proc = pic_make_proc(pic, func, name);
+  proc = pic_make_proc(pic, func);
 
   sym = pic_intern_cstr(pic, name);
 
@@ -1162,7 +1164,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 void
 pic_defun_(pic_state *pic, const char *name, pic_func_t cfunc)
 {
-  pic_define_(pic, name, pic_obj_value(pic_make_proc(pic, cfunc, name)));
+  pic_define_(pic, name, pic_obj_value(pic_make_proc(pic, cfunc)));
 }
 
 void

@@ -366,7 +366,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
         gc_mark_object(pic, (struct pic_object *)proc->u.i.cxt);
       }
     } else {
-      gc_mark_object(pic, (struct pic_object *)proc->u.f.name);
       if (proc->u.f.env) {
         gc_mark_object(pic, (struct pic_object *)proc->u.f.env);
       }
@@ -429,8 +428,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_IREP: {
     struct pic_irep *irep = (struct pic_irep *)obj;
     size_t i;
-
-    gc_mark_object(pic, (struct pic_object *)irep->name);
 
     for (i = 0; i < irep->ilen; ++i) {
       gc_mark_object(pic, (struct pic_object *)irep->irep[i]);

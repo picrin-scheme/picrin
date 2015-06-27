@@ -109,23 +109,26 @@ pic_features(pic_state *pic)
 
 #define DONE pic_gc_arena_restore(pic, ai);
 
+#define define_builtin_syntax(uid, name)                                \
+  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern_cstr(pic, name), uid)
+
 static void
 pic_init_core(pic_state *pic)
 {
-  void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
+  void pic_define_syntactic_keyword_(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
 
   pic_init_features(pic);
 
   pic_deflibrary (pic, "(picrin base)") {
     size_t ai = pic_gc_arena_preserve(pic);
 
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->uDEFINE);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->uSETBANG);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->uQUOTE);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sLAMBDA, pic->uLAMBDA);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->uIF);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->uBEGIN);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_MACRO, pic->uDEFINE_MACRO);
+    define_builtin_syntax(pic->uDEFINE, "builtin:define");
+    define_builtin_syntax(pic->uSETBANG, "builtin:set!");
+    define_builtin_syntax(pic->uQUOTE, "builtin:quote");
+    define_builtin_syntax(pic->uLAMBDA, "builtin:lambda");
+    define_builtin_syntax(pic->uIF, "builtin:if");
+    define_builtin_syntax(pic->uBEGIN, "builtin:begin");
+    define_builtin_syntax(pic->uDEFINE_MACRO, "builtin:define-macro");
 
     pic_defun(pic, "features", pic_features);
 
