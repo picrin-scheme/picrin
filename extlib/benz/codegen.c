@@ -379,7 +379,7 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 }
 
 static pic_value analyze_node(pic_state *, analyze_scope *, pic_value, bool);
-static pic_value analyze_procedure(pic_state *, analyze_scope *, pic_value, pic_value);
+static pic_value analyze_procedure(pic_state *, analyze_scope *, pic_value);
 
 static pic_value
 analyze(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
@@ -423,14 +423,14 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 }
 
 static pic_value
-analyze_defer(pic_state *pic, analyze_scope *scope, pic_value formal, pic_value body)
+analyze_defer(pic_state *pic, analyze_scope *scope, pic_value form)
 {
   pic_sym *sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
   pic_value skel;
 
   skel = pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sNOWHERE));
 
-  pic_push(pic, pic_list3(pic, formal, body, skel), scope->defer);
+  pic_push(pic, pic_cons(pic, skel, form), scope->defer);
 
   return skel;
 }
@@ -438,30 +438,33 @@ analyze_defer(pic_state *pic, analyze_scope *scope, pic_value formal, pic_value 
 static void
 analyze_deferred(pic_state *pic, analyze_scope *scope)
 {
-  pic_value defer, val, formal, body, dst, it;
+  pic_value defer, it, skel, form, val;
 
   pic_for_each (defer, pic_reverse(pic, scope->defer), it) {
-    formal = pic_list_ref(pic, defer, 0);
-    body = pic_list_ref(pic, defer, 1);
-    dst = pic_list_ref(pic, defer, 2);
+    skel = pic_car(pic, defer);
+    form = pic_cdr(pic, defer);
 
-    val = analyze_procedure(pic, scope, formal, body);
+    val = analyze_procedure(pic, scope, form);
 
     /* copy */
-    pic_pair_ptr(dst)->car = pic_car(pic, val);
-    pic_pair_ptr(dst)->cdr = pic_cdr(pic, val);
+    pic_pair_ptr(skel)->car = pic_car(pic, val);
+    pic_pair_ptr(skel)->cdr = pic_cdr(pic, val);
   }
 
   scope->defer = pic_nil_value();
 }
 
 static pic_value
-analyze_procedure(pic_state *pic, analyze_scope *up, pic_value formals, pic_value body)
+analyze_procedure(pic_state *pic, analyze_scope *up, pic_value form)
 {
   analyze_scope s, *scope = &s;
+  pic_value formals, body;
   pic_value rest = pic_undef_value();
   pic_vec *args, *locals, *captures;
   size_t i, j;
+
+  formals = pic_list_ref(pic, form, 1);
+  body = pic_list_ref(pic, form, 2);
 
   analyzer_scope_init(pic, scope, formals, up);
 
@@ -495,17 +498,6 @@ analyze_procedure(pic_state *pic, analyze_scope *up, pic_value formals, pic_valu
   analyzer_scope_destroy(pic, scope);
 
   return pic_list6(pic, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
-}
-
-static pic_value
-analyze_lambda(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value formals, body;
-
-  formals = pic_list_ref(pic, obj, 1);
-  body = pic_list_ref(pic, obj, 2);
-
-  return analyze_defer(pic, scope, formals, body);
 }
 
 static pic_value
@@ -762,7 +754,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
         return analyze_define(pic, scope, obj);
       }
       else if (sym == pic->uLAMBDA) {
-        return analyze_lambda(pic, scope, obj);
+        return analyze_defer(pic, scope, obj);
       }
       else if (sym == pic->uIF) {
         return analyze_if(pic, scope, obj, tailpos);
