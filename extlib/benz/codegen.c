@@ -345,23 +345,15 @@ search_scope(analyze_scope *scope, pic_sym *sym)
   return kh_get(a, &scope->args, sym) != kh_end(&scope->args) || kh_get(a, &scope->locals, sym) != kh_end(&scope->locals) || scope->depth == 0;
 }
 
-static void
-capture_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
-{
-  int ret;
-
-  kh_put(a, &scope->captures, sym, &ret);
-}
-
 static int
 find_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
-  int depth = 0;
+  int depth = 0, ret;
 
   while (scope) {
     if (search_scope(scope, sym)) {
       if (depth > 0) {
-        capture_var(pic, scope, sym);
+        kh_put(a, &scope->captures, sym, &ret); /* capture! */
       }
       return depth;
     }
