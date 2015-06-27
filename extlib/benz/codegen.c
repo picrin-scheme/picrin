@@ -449,7 +449,19 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 
   analyzer_scope_destroy(pic, scope);
 
-  return pic_list6(pic, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+  return pic_list6(pic, pic_obj_value(pic->uLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+}
+
+static pic_value
+analyze_special(pic_state *pic, analyze_scope *scope, pic_value obj)
+{
+  pic_value seq, elt, it;
+
+  seq = pic_list1(pic, pic_car(pic, obj));
+  pic_for_each (elt, pic_cdr(pic, obj), it) {
+    seq = pic_cons(pic, analyze(pic, scope, elt), seq);
+  }
+  return pic_reverse(pic, seq);
 }
 
 static pic_value
@@ -462,56 +474,7 @@ analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
   var = analyze(pic, scope, pic_list_ref(pic, obj, 1));
   val = analyze(pic, scope, pic_list_ref(pic, obj, 2));
 
-  return pic_list3(pic, pic_obj_value(pic->sSETBANG), var, val);
-}
-
-static pic_value
-analyze_if(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value cond, if_true, if_false;
-
-  if_true = pic_list_ref(pic, obj, 2);
-  if_false = pic_list_ref(pic, obj, 3);
-
-  cond = analyze(pic, scope, pic_list_ref(pic, obj, 1));
-  if_true = analyze(pic, scope, if_true);
-  if_false = analyze(pic, scope, if_false);
-
-  return pic_list4(pic, pic_obj_value(pic->sIF), cond, if_true, if_false);
-}
-
-static pic_value
-analyze_begin(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value beg1, beg2;
-
-  beg1 = pic_list_ref(pic, obj, 1);
-  beg2 = pic_list_ref(pic, obj, 2);
-
-  beg1 = analyze(pic, scope, beg1);
-  beg2 = analyze(pic, scope, beg2);
-
-  return pic_list3(pic, pic_obj_value(pic->sBEGIN), beg1, beg2);
-}
-
-static pic_value
-analyze_set(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value var, val;
-
-  var = pic_list_ref(pic, obj, 1);
-  val = pic_list_ref(pic, obj, 2);
-
-  var = analyze(pic, scope, var);
-  val = analyze(pic, scope, val);
-
-  return pic_list3(pic, pic_obj_value(pic->sSETBANG), var, val);
-}
-
-static pic_value
-analyze_quote(pic_state *pic, pic_value obj)
-{
-  return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
+  return pic_list3(pic, pic_obj_value(pic->uSETBANG), var, val);
 }
 
 static pic_value
@@ -544,30 +507,24 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     if (pic_sym_p(proc)) {
       pic_sym *sym = pic_sym_ptr(proc);
 
-      if (sym == pic->uDEFINE) {
+      if (sym == pic->uQUOTE) {
+        return obj;
+      }
+      else if (sym == pic->uDEFINE) {
         return analyze_define(pic, scope, obj);
       }
       else if (sym == pic->uLAMBDA) {
         return analyze_defer(pic, scope, obj);
       }
-      else if (sym == pic->uIF) {
-        return analyze_if(pic, scope, obj);
-      }
-      else if (sym == pic->uBEGIN) {
-        return analyze_begin(pic, scope, obj);
-      }
-      else if (sym == pic->uSETBANG) {
-        return analyze_set(pic, scope, obj);
-      }
-      else if (sym == pic->uQUOTE) {
-        return analyze_quote(pic, obj);
+      else if (sym == pic->uIF || sym == pic->uBEGIN || sym == pic->uSETBANG) {
+        return analyze_special(pic, scope, obj);
       }
     }
 
     return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list2(pic, pic_obj_value(pic->sQUOTE), obj);
+    return pic_list2(pic, pic_obj_value(pic->uQUOTE), obj);
   }
 }
 
@@ -834,7 +791,8 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_i(pic, cxt, OP_GREF, index_symbol(pic, cxt, pic_sym_ptr(pic_list_ref(pic, obj, 1))));
     emit_ret(pic, cxt, tailpos);
     return;
-  } else if (sym == pic->sCREF) {
+  }
+  else if (sym == pic->sCREF) {
     pic_sym *name;
     int depth;
 
@@ -843,7 +801,8 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_r(pic, cxt, OP_CREF, depth, index_capture(cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
     return;
-  } else if (sym == pic->sLREF) {
+  }
+  else if (sym == pic->sLREF) {
     pic_sym *name;
     int i;
 
@@ -856,7 +815,8 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_i(pic, cxt, OP_LREF, index_local(cxt, name));
     emit_ret(pic, cxt, tailpos);
     return;
-  } else if (sym == pic->sSETBANG) {
+  }
+  else if (sym == pic->uSETBANG) {
     pic_value var, val;
     pic_sym *type;
 
@@ -898,7 +858,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
       return;
     }
   }
-  else if (sym == pic->sLAMBDA) {
+  else if (sym == pic->uLAMBDA) {
     int k;
 
     check_irep_size(pic, cxt);
@@ -909,7 +869,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     cxt->irep[k] = codegen_lambda(pic, cxt, obj);
     return;
   }
-  else if (sym == pic->sIF) {
+  else if (sym == pic->uIF) {
     int s, t;
 
     codegen(pic, cxt, pic_list_ref(pic, obj, 1), false);
@@ -932,13 +892,13 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     cxt->code[t].u.i = (int)cxt->clen - t;
     return;
   }
-  else if (sym == pic->sBEGIN) {
+  else if (sym == pic->uBEGIN) {
     codegen(pic, cxt, pic_list_ref(pic, obj, 1), false);
     emit_n(pic, cxt, OP_POP);
     codegen(pic, cxt, pic_list_ref(pic, obj, 2), tailpos);
     return;
   }
-  else if (sym == pic->sQUOTE) {
+  else if (sym == pic->uQUOTE) {
     int pidx;
 
     obj = pic_list_ref(pic, obj, 1);
