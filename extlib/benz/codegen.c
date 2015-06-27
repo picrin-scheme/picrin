@@ -171,13 +171,6 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
   pic_sym *uid;
   pic_value var, val;
 
-  while (pic_length(pic, expr) >= 2 && pic_pair_p(pic_cadr(pic, expr))) {
-    var = pic_car(pic, pic_cadr(pic, expr));
-    val = pic_cdr(pic, pic_cadr(pic, expr));
-
-    expr = pic_list3(pic, pic_obj_value(pic->uDEFINE), var, pic_cons(pic, pic_obj_value(pic->sLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
-  }
-
   var = pic_cadr(pic, expr);
   if ((uid = pic_find_variable(pic, env, var)) == NULL) {
     uid = pic_add_variable(pic, env, var);
@@ -201,7 +194,6 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
   }
 
   val = pic_eval(pic, pic_list_ref(pic, expr, 2), env);
-
   if (! pic_proc_p(val)) {
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
   }
@@ -209,12 +201,6 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
   define_macro(pic, uid, pic_proc_ptr(val));
 
   return pic_undef_value();
-}
-
-static pic_value
-expand_macro(pic_state *pic, struct pic_proc *mac, pic_value expr, struct pic_env *env)
-{
-  return pic_apply2(pic, mac, expr, pic_obj_value(env));
 }
 
 static pic_value
@@ -251,7 +237,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
       }
 
       if ((mac = find_macro(pic, functor)) != NULL) {
-        return expand_node(pic, expand_macro(pic, mac, expr, env), env, deferred);
+        return expand_node(pic, pic_apply2(pic, mac, expr, pic_obj_value(env)), env, deferred);
       }
     }
     return expand_list(pic, expr, env, deferred);
@@ -266,12 +252,6 @@ expand(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value v;
-
-#if DEBUG
-  printf("[expand] expanding... ");
-  pic_debug(pic, expr);
-  puts("");
-#endif
 
   v = expand_node(pic, expr, env, deferred);
 
