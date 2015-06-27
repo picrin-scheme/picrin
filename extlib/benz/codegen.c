@@ -1547,7 +1547,7 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 
   fprintf(stdout, "# input expression\n");
-  pic_debug(pic, obj);
+  pic_write(pic, obj);
   fprintf(stdout, "\n");
 
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
@@ -1557,7 +1557,7 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   obj = pic_expand(pic, obj, env);
 #if DEBUG
   fprintf(stdout, "## expand completed\n");
-  pic_debug(pic, obj);
+  pic_write(pic, obj);
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
@@ -1566,7 +1566,7 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   obj = pic_analyze(pic, obj);
 #if DEBUG
   fprintf(stdout, "## analyzer completed\n");
-  pic_debug(pic, obj);
+  pic_write(pic, obj);
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif

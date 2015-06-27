@@ -633,7 +633,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 
       sym = irep->syms[c.u.i];
       if (! pic_dict_has(pic, pic->globals, sym)) {
-        pic_errorf(pic, "logic flaw; reference to uninitialized global variable: %s", pic_symbol_name(pic, sym));
+        pic_errorf(pic, "uninitialized global variable: %s", pic_symbol_name(pic, sym));
       }
       PUSH(pic_dict_ref(pic, pic->globals, sym));
       NEXT;
