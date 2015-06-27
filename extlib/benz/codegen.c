@@ -378,33 +378,8 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   kh_put(a, &scope->locals, sym, &ret);
 }
 
-static pic_value analyze_node(pic_state *, analyze_scope *, pic_value, bool);
-static pic_value analyze_procedure(pic_state *, analyze_scope *, pic_value);
-
-static pic_value
-analyze(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value res;
-  pic_sym *tag;
-
-  res = analyze_node(pic, scope, obj, tailpos);
-
-  tag = pic_sym_ptr(pic_car(pic, res));
-  if (tailpos) {
-    if (tag == pic->sIF || tag == pic->sBEGIN || tag == pic->sTAILCALL || tag == pic->sTAILCALL_WITH_VALUES || tag == pic->sRETURN) {
-      /* pass through */
-    }
-    else {
-      res = pic_list2(pic, pic_obj_value(pic->sRETURN), res);
-    }
-  }
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, res);
-  pic_gc_protect(pic, scope->defer);
-  return res;
-}
+static pic_value analyze(pic_state *, analyze_scope *, pic_value, bool);
+static pic_value analyze_lambda(pic_state *, analyze_scope *, pic_value);
 
 static pic_value
 analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
@@ -444,7 +419,7 @@ analyze_deferred(pic_state *pic, analyze_scope *scope)
     skel = pic_car(pic, defer);
     form = pic_cdr(pic, defer);
 
-    val = analyze_procedure(pic, scope, form);
+    val = analyze_lambda(pic, scope, form);
 
     /* copy */
     pic_pair_ptr(skel)->car = pic_car(pic, val);
@@ -455,7 +430,7 @@ analyze_deferred(pic_state *pic, analyze_scope *scope)
 }
 
 static pic_value
-analyze_procedure(pic_state *pic, analyze_scope *up, pic_value form)
+analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 {
   analyze_scope s, *scope = &s;
   pic_value formals, body;
@@ -844,6 +819,31 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
   }
 }
 
+static pic_value
+analyze(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value res;
+  pic_sym *tag;
+
+  res = analyze_node(pic, scope, obj, tailpos);
+
+  tag = pic_sym_ptr(pic_car(pic, res));
+  if (tailpos) {
+    if (tag == pic->sIF || tag == pic->sBEGIN || tag == pic->sTAILCALL || tag == pic->sTAILCALL_WITH_VALUES || tag == pic->sRETURN) {
+      /* pass through */
+    }
+    else {
+      res = pic_list2(pic, pic_obj_value(pic->sRETURN), res);
+    }
+  }
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, res);
+  pic_gc_protect(pic, scope->defer);
+  return res;
+}
+
 pic_value
 pic_analyze(pic_state *pic, pic_value obj)
 {
@@ -1054,7 +1054,33 @@ index_symbol(pic_state *pic, codegen_context *cxt, pic_sym *sym)
   return i;
 }
 
-static struct pic_irep *codegen_lambda(pic_state *, codegen_context *, pic_value);
+static void codegen(pic_state *, codegen_context *, pic_value);
+
+static struct pic_irep *
+codegen_lambda(pic_state *pic, codegen_context *up, pic_value obj)
+{
+  codegen_context c, *cxt = &c;
+  pic_value rest_opt, body;
+  pic_sym *rest = NULL;
+  pic_vec *args, *locals, *captures;
+
+  rest_opt = pic_list_ref(pic, obj, 1);
+  if (pic_sym_p(rest_opt)) {
+    rest = pic_sym_ptr(rest_opt);
+  }
+  args = pic_vec_ptr(pic_list_ref(pic, obj, 2));
+  locals = pic_vec_ptr(pic_list_ref(pic, obj, 3));
+  captures = pic_vec_ptr(pic_list_ref(pic, obj, 4));
+  body = pic_list_ref(pic, obj, 5);
+
+  /* inner environment */
+  codegen_context_init(pic, cxt, up, rest, args, locals, captures);
+  {
+    /* body */
+    codegen(pic, cxt, body);
+  }
+  return codegen_context_destroy(pic, cxt);
+}
 
 static void
 codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
@@ -1319,32 +1345,6 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
     return;
   }
   pic_errorf(pic, "codegen: unknown AST type ~s", obj);
-}
-
-static struct pic_irep *
-codegen_lambda(pic_state *pic, codegen_context *up, pic_value obj)
-{
-  codegen_context c, *cxt = &c;
-  pic_value rest_opt, body;
-  pic_sym *rest = NULL;
-  pic_vec *args, *locals, *captures;
-
-  rest_opt = pic_list_ref(pic, obj, 1);
-  if (pic_sym_p(rest_opt)) {
-    rest = pic_sym_ptr(rest_opt);
-  }
-  args = pic_vec_ptr(pic_list_ref(pic, obj, 2));
-  locals = pic_vec_ptr(pic_list_ref(pic, obj, 3));
-  captures = pic_vec_ptr(pic_list_ref(pic, obj, 4));
-  body = pic_list_ref(pic, obj, 5);
-
-  /* inner environment */
-  codegen_context_init(pic, cxt, up, rest, args, locals, captures);
-  {
-    /* body */
-    codegen(pic, cxt, body);
-  }
-  return codegen_context_destroy(pic, cxt);
 }
 
 struct pic_irep *
