@@ -402,7 +402,7 @@ analyze_args(pic_state *pic, pic_value formals, analyze_scope *scope)
 }
 
 static bool
-lookup_scope(analyze_scope *scope, pic_sym *sym)
+search_scope(analyze_scope *scope, pic_sym *sym)
 {
   return kh_get(a, &scope->args, sym) != kh_end(&scope->args) || kh_get(a, &scope->locals, sym) != kh_end(&scope->locals) || scope->depth == 0;
 }
@@ -421,7 +421,7 @@ find_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   int depth = 0;
 
   while (scope) {
-    if (lookup_scope(scope, sym)) {
+    if (search_scope(scope, sym)) {
       if (depth > 0) {
         capture_var(pic, scope, sym);
       }
@@ -430,7 +430,7 @@ find_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
     depth++;
     scope = scope->up;
   }
-  return -1;
+  PIC_UNREACHABLE();
 }
 
 static void
@@ -438,7 +438,7 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
   int ret;
 
-  if (lookup_scope(scope, sym)) {
+  if (search_scope(scope, sym)) {
     if (scope->depth > 0 || pic_dict_has(pic, pic->globals, sym)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
     }
@@ -481,9 +481,7 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
   int depth;
 
-  if ((depth = find_var(pic, scope, sym)) == -1) {
-    pic_errorf(pic, "unbound variable %s", pic_symbol_name(pic, sym));
-  }
+  depth = find_var(pic, scope, sym);
 
   if (depth == scope->depth) {
     return pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sym));
