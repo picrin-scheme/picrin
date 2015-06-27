@@ -562,98 +562,6 @@ analyze_quote(pic_state *pic, pic_value obj)
   return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
 }
 
-#define ARGC_ASSERT_GE(n, name) do {                                    \
-    if (pic_length(pic, obj) < (n) + 1) {                               \
-      pic_errorf(pic,                                                   \
-        #name ": wrong number of arguments (%d for at least %d)",       \
-                 pic_length(pic, obj) - 1,                              \
-                 n);                                                    \
-    }                                                                   \
-  } while (0)
-
-#define FOLD_ARGS(sym) do {                                     \
-    obj = analyze(pic, scope, pic_car(pic, args), false);       \
-    pic_for_each (arg, pic_cdr(pic, args), it) {                \
-      obj = pic_list3(pic, pic_obj_value(sym), obj,             \
-                      analyze(pic, scope, arg, false));         \
-    }                                                           \
-  } while (0)
-
-static pic_value
-analyze_add(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(0, "+");
-  switch (pic_length(pic, obj)) {
-  case 1:
-    return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_int_value(0));
-  case 2:
-    return analyze(pic, scope, pic_car(pic, pic_cdr(pic, obj)), tailpos);
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sADD);
-    return obj;
-  }
-}
-
-static pic_value
-analyze_sub(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(1, "-");
-  switch (pic_length(pic, obj)) {
-  case 2:
-    return pic_list2(pic, pic_obj_value(pic->sMINUS),
-                     analyze(pic, scope, pic_car(pic, pic_cdr(pic, obj)), false));
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sSUB);
-    return obj;
-  }
-}
-
-static pic_value
-analyze_mul(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(0, "*");
-  switch (pic_length(pic, obj)) {
-  case 1:
-    return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_int_value(1));
-  case 2:
-    return analyze(pic, scope, pic_car(pic, pic_cdr(pic, obj)), tailpos);
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sMUL);
-    return obj;
-  }
-}
-
-static pic_value
-analyze_div(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(1, "/");
-  switch (pic_length(pic, obj)) {
-  case 2:
-    args = pic_cdr(pic, obj);
-#if PIC_ENABLE_FLOAT
-    obj = pic_list3(pic, pic_car(pic, obj), pic_float_value(1), pic_car(pic, args));
-#else
-    obj = pic_list3(pic, pic_car(pic, obj), pic_int_value(1), pic_car(pic, args));
-#endif
-    return analyze(pic, scope, obj, false);
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sDIV);
-    return obj;
-  }
-}
-
 static pic_value
 analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
 {
@@ -671,66 +579,6 @@ analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
   }
   return pic_reverse(pic, seq);
 }
-
-static pic_value
-analyze_values(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value v, seq, it;
-
-  if (! tailpos) {
-    return analyze_call(pic, scope, obj, false);
-  }
-
-  seq = pic_list1(pic, pic_obj_value(pic->sRETURN));
-  pic_for_each (v, pic_cdr(pic, obj), it) {
-    seq = pic_cons(pic, analyze(pic, scope, v, false), seq);
-  }
-  return pic_reverse(pic, seq);
-}
-
-static pic_value
-analyze_call_with_values(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value prod, cnsm;
-  pic_sym *call;
-
-  if (pic_length(pic, obj) != 3) {
-    pic_errorf(pic, "call-with-values: wrong number of arguments (%d for 2)", pic_length(pic, obj) - 1);
-  }
-
-  if (! tailpos) {
-    call = pic->sCALL_WITH_VALUES;
-  } else {
-    call = pic->sTAILCALL_WITH_VALUES;
-  }
-  prod = analyze(pic, scope, pic_list_ref(pic, obj, 1), false);
-  cnsm = analyze(pic, scope, pic_list_ref(pic, obj, 2), false);
-  return pic_list3(pic, pic_obj_value(call), prod, cnsm);
-}
-
-#define ARGC_ASSERT(n, name) do {                                       \
-    if (pic_length(pic, obj) != (n) + 1) {                              \
-      pic_errorf(pic, #name ": wrong number of arguments (%d for %d)",  \
-                 pic_length(pic, obj) - 1, n);                          \
-    }                                                                   \
-  } while (0)
-
-#define ARGC_ASSERT_WITH_FALLBACK(n) do {       \
-    if (pic_length(pic, obj) != (n) + 1) {      \
-      goto fallback;                            \
-    }						\
-  } while (0)
-
-#define CONSTRUCT_OP1(op)                                               \
-  pic_list2(pic,                                                        \
-            pic_obj_value(op),                                          \
-            analyze(pic, scope, pic_list_ref(pic, obj, 1), false))
-
-#define CONSTRUCT_OP2(op)                                               \
-  pic_list3(pic,                                                        \
-            pic_obj_value(op),                                          \
-            analyze(pic, scope, pic_list_ref(pic, obj, 1), false),      \
-            analyze(pic, scope, pic_list_ref(pic, obj, 2), false))
 
 static pic_value
 analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
@@ -768,74 +616,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
       else if (sym == pic->uQUOTE) {
         return analyze_quote(pic, obj);
       }
-      else if (sym == pic->uCONS) {
-	ARGC_ASSERT(2, "cons");
-        return CONSTRUCT_OP2(pic->sCONS);
-      }
-      else if (sym == pic->uCAR) {
-	ARGC_ASSERT(1, "car");
-        return CONSTRUCT_OP1(pic->sCAR);
-      }
-      else if (sym == pic->uCDR) {
-	ARGC_ASSERT(1, "cdr");
-        return CONSTRUCT_OP1(pic->sCDR);
-      }
-      else if (sym == pic->uNILP) {
-	ARGC_ASSERT(1, "nil?");
-        return CONSTRUCT_OP1(pic->sNILP);
-      }
-      else if (sym == pic->uSYMBOLP) {
-        ARGC_ASSERT(1, "symbol?");
-        return CONSTRUCT_OP1(pic->sSYMBOLP);
-      }
-      else if (sym == pic->uPAIRP) {
-        ARGC_ASSERT(1, "pair?");
-        return CONSTRUCT_OP1(pic->sPAIRP);
-      }
-      else if (sym == pic->uADD) {
-        return analyze_add(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uSUB) {
-        return analyze_sub(pic, scope, obj);
-      }
-      else if (sym == pic->uMUL) {
-        return analyze_mul(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uDIV) {
-        return analyze_div(pic, scope, obj);
-      }
-      else if (sym == pic->uEQ) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sEQ);
-      }
-      else if (sym == pic->uLT) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sLT);
-      }
-      else if (sym == pic->uLE) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sLE);
-      }
-      else if (sym == pic->uGT) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sGT);
-      }
-      else if (sym == pic->uGE) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sGE);
-      }
-      else if (sym == pic->uNOT) {
-        ARGC_ASSERT(1, "not");
-        return CONSTRUCT_OP1(pic->sNOT);
-      }
-      else if (sym == pic->uVALUES) {
-        return analyze_values(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uCALL_WITH_VALUES) {
-        return analyze_call_with_values(pic, scope, obj, tailpos);
-      }
     }
-    fallback:
 
     return analyze_call(pic, scope, obj, tailpos);
   }
@@ -1210,101 +991,6 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
       return;
     }
   }
-  else if (sym == pic->sCONS) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_CONS);
-    return;
-  }
-  else if (sym == pic->sCAR) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_CAR);
-    return;
-  }
-  else if (sym == pic->sCDR) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_CDR);
-    return;
-  }
-  else if (sym == pic->sNILP) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_NILP);
-    return;
-  }
-  else if (sym == pic->sSYMBOLP) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_SYMBOLP);
-    return;
-  }
-  else if (sym == pic->sPAIRP) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_PAIRP);
-    return;
-  }
-  else if (sym == pic->sADD) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_ADD);
-    return;
-  }
-  else if (sym == pic->sSUB) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_SUB);
-    return;
-  }
-  else if (sym == pic->sMUL) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_MUL);
-    return;
-  }
-  else if (sym == pic->sDIV) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_DIV);
-    return;
-  }
-  else if (sym == pic->sMINUS) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_MINUS);
-    return;
-  }
-  else if (sym == pic->sEQ) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_EQ);
-    return;
-  }
-  else if (sym == pic->sLT) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_LT);
-    return;
-  }
-  else if (sym == pic->sLE) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_LE);
-    return;
-  }
-  else if (sym == pic->sGT) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_LT);
-    return;
-  }
-  else if (sym == pic->sGE) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_LE);
-    return;
-  }
-  else if (sym == pic->sNOT) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_NOT);
-    return;
-  }
   else if (sym == pic->sCALL || sym == pic->sTAILCALL) {
     int len = (int)pic_length(pic, obj);
     pic_value elt, it;
@@ -1313,16 +999,6 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
       codegen(pic, cxt, elt);
     }
     emit_i(pic, cxt, (sym == pic->sCALL ? OP_CALL : OP_TAILCALL), len - 1);
-    return;
-  }
-  else if (sym == pic->sCALL_WITH_VALUES || sym == pic->sTAILCALL_WITH_VALUES) {
-    /* stack consumer at first */
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    /* call producer */
-    emit_i(pic, cxt, OP_CALL, 1);
-    /* call consumer */
-    emit_i(pic, cxt, (sym == pic->sCALL_WITH_VALUES ? OP_CALL : OP_TAILCALL), -1);
     return;
   }
   else if (sym == pic->sRETURN) {
