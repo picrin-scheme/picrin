@@ -82,11 +82,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
   /* check argc. */
   if (argc < paramc || (paramc + optc < argc && ! rest)) {
-    pic_errorf(pic, "%s: wrong number of arguments (%d for %s%d)",
-               pic_symbol_name(pic, pic_proc_name(pic_proc_ptr(GET_OPERAND(pic, 0)))) ,
-               argc,
-               rest? "at least " : "",
-               paramc);
+    pic_errorf(pic, "pic_get_args: wrong number of arguments (%d for %s%d)", argc, rest? "at least " : "", paramc);
   }
 
   /* start dispatching */
@@ -1131,7 +1127,7 @@ pic_defun_vm(pic_state *pic, const char *name, pic_sym *uid, pic_func_t func)
   struct pic_proc *proc;
   pic_sym *sym;
 
-  proc = pic_make_proc(pic, func, name);
+  proc = pic_make_proc(pic, func);
 
   sym = pic_intern_cstr(pic, name);
 
@@ -1168,7 +1164,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 void
 pic_defun_(pic_state *pic, const char *name, pic_func_t cfunc)
 {
-  pic_define_(pic, name, pic_obj_value(pic_make_proc(pic, cfunc, name)));
+  pic_define_(pic, name, pic_obj_value(pic_make_proc(pic, cfunc)));
 }
 
 void

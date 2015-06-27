@@ -121,7 +121,7 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
   struct pic_proc *c;
   struct pic_data *e;
 
-  c = pic_make_proc(pic, cont_call, "<cont-procedure>");
+  c = pic_make_proc(pic, cont_call);
 
   e = pic_data_alloc(pic, &cont_type, cont);
 

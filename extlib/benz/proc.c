@@ -5,19 +5,13 @@
 #include "picrin.h"
 
 struct pic_proc *
-pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
+pic_make_proc(pic_state *pic, pic_func_t func)
 {
   struct pic_proc *proc;
-  pic_sym *sym;
-
-  assert(name != NULL);
-
-  sym = pic_intern_cstr(pic, name);
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
   proc->tag = PIC_PROC_TAG_FUNC;
   proc->u.f.func = func;
-  proc->u.f.name = sym;
   proc->u.f.env = NULL;
   return proc;
 }
@@ -32,18 +26,6 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
   return proc;
-}
-
-pic_sym *
-pic_proc_name(struct pic_proc *proc)
-{
-  switch (proc->tag) {
-  case PIC_PROC_TAG_FUNC:
-    return proc->u.f.name;
-  case PIC_PROC_TAG_IREP:
-    return proc->u.i.irep->name;
-  }
-  PIC_UNREACHABLE();
 }
 
 struct pic_dict *

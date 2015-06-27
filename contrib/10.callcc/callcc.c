@@ -246,7 +246,7 @@ pic_callcc_full(pic_state *pic, struct pic_proc *proc)
     struct pic_proc *c;
     struct pic_data *dat;
 
-    c = pic_make_proc(pic, cont_call, "<continuation-procedure>");
+    c = pic_make_proc(pic, cont_call);
 
     dat = pic_data_alloc(pic, &cont_type, cont);
 
@@ -270,7 +270,7 @@ pic_callcc_full_trampoline(pic_state *pic, struct pic_proc *proc)
     struct pic_proc *c;
     struct pic_data *dat;
 
-    c = pic_make_proc(pic, cont_call, "<continuation-procedure>");
+    c = pic_make_proc(pic, cont_call);
 
     dat = pic_data_alloc(pic, &cont_type, cont);
 
@@ -292,7 +292,7 @@ pic_callcc_callcc(pic_state *pic)
 }
 
 #define pic_redefun(pic, lib, name, func)       \
-  pic_set(pic, lib, name, pic_obj_value(pic_make_proc(pic, func, name)))
+  pic_set(pic, lib, name, pic_obj_value(pic_make_proc(pic, func)))
 
 void
 pic_init_callcc(pic_state *pic)

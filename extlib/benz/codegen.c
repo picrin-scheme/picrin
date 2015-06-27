@@ -379,7 +379,7 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 }
 
 static pic_value analyze_node(pic_state *, analyze_scope *, pic_value, bool);
-static pic_value analyze_procedure(pic_state *, analyze_scope *, pic_value, pic_value, pic_value);
+static pic_value analyze_procedure(pic_state *, analyze_scope *, pic_value, pic_value);
 
 static pic_value
 analyze(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
@@ -423,14 +423,14 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 }
 
 static pic_value
-analyze_defer(pic_state *pic, analyze_scope *scope, pic_value name, pic_value formal, pic_value body)
+analyze_defer(pic_state *pic, analyze_scope *scope, pic_value formal, pic_value body)
 {
   pic_sym *sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
   pic_value skel;
 
   skel = pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sNOWHERE));
 
-  pic_push(pic, pic_list4(pic, name, formal, body, skel), scope->defer);
+  pic_push(pic, pic_list3(pic, formal, body, skel), scope->defer);
 
   return skel;
 }
@@ -438,15 +438,14 @@ analyze_defer(pic_state *pic, analyze_scope *scope, pic_value name, pic_value fo
 static void
 analyze_deferred(pic_state *pic, analyze_scope *scope)
 {
-  pic_value defer, val, name, formal, body, dst, it;
+  pic_value defer, val, formal, body, dst, it;
 
   pic_for_each (defer, pic_reverse(pic, scope->defer), it) {
-    name = pic_list_ref(pic, defer, 0);
-    formal = pic_list_ref(pic, defer, 1);
-    body = pic_list_ref(pic, defer, 2);
-    dst = pic_list_ref(pic, defer, 3);
+    formal = pic_list_ref(pic, defer, 0);
+    body = pic_list_ref(pic, defer, 1);
+    dst = pic_list_ref(pic, defer, 2);
 
-    val = analyze_procedure(pic, scope, name, formal, body);
+    val = analyze_procedure(pic, scope, formal, body);
 
     /* copy */
     pic_pair_ptr(dst)->car = pic_car(pic, val);
@@ -457,14 +456,12 @@ analyze_deferred(pic_state *pic, analyze_scope *scope)
 }
 
 static pic_value
-analyze_procedure(pic_state *pic, analyze_scope *up, pic_value name, pic_value formals, pic_value body)
+analyze_procedure(pic_state *pic, analyze_scope *up, pic_value formals, pic_value body)
 {
   analyze_scope s, *scope = &s;
   pic_value rest = pic_undef_value();
   pic_vec *args, *locals, *captures;
   size_t i, j;
-
-  assert(pic_sym_p(name) || pic_false_p(name));
 
   analyzer_scope_init(pic, scope, formals, up);
 
@@ -497,7 +494,7 @@ analyze_procedure(pic_state *pic, analyze_scope *up, pic_value name, pic_value f
 
   analyzer_scope_destroy(pic, scope);
 
-  return pic_list7(pic, pic_obj_value(pic->sLAMBDA), name, rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+  return pic_list6(pic, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
 }
 
 static pic_value
@@ -508,7 +505,7 @@ analyze_lambda(pic_state *pic, analyze_scope *scope, pic_value obj)
   formals = pic_list_ref(pic, obj, 1);
   body = pic_list_ref(pic, obj, 2);
 
-  return analyze_defer(pic, scope, pic_false_value(), formals, body);
+  return analyze_defer(pic, scope, formals, body);
 }
 
 static pic_value
@@ -523,25 +520,9 @@ static pic_value
 analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
   pic_value var, val;
-  pic_sym *sym;
 
-  sym = pic_sym_ptr(pic_list_ref(pic, obj, 1));
-  var = analyze_declare(pic, scope, sym);
-
-  if (pic_pair_p(pic_list_ref(pic, obj, 2))
-      && pic_sym_p(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0))
-      && pic_sym_ptr(pic_list_ref(pic, pic_list_ref(pic, obj, 2), 0)) == pic->uLAMBDA) {
-    pic_value formals, body;
-
-    /* restore (define (foo ...) ...) structure */
-
-    formals = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 1);
-    body = pic_list_ref(pic, pic_list_ref(pic, obj, 2), 2);
-
-    val = analyze_defer(pic, scope, pic_obj_value(sym), formals, body);
-  } else {
-    val = analyze(pic, scope, pic_list_ref(pic, obj, 2), false);
-  }
+  var = analyze_declare(pic, scope, pic_sym_ptr(pic_list_ref(pic, obj, 1)));
+  val = analyze(pic, scope, pic_list_ref(pic, obj, 2), false);
 
   return pic_list3(pic, pic_obj_value(pic->sSETBANG), var, val);
 }
@@ -893,7 +874,6 @@ pic_analyze(pic_state *pic, pic_value obj)
 }
 
 typedef struct codegen_context {
-  pic_sym *name;
   /* rest args variable is counted as a local */
   pic_sym *rest;
   pic_vec *args, *locals, *captures;
@@ -916,14 +896,9 @@ typedef struct codegen_context {
 static void create_activation(pic_state *, codegen_context *);
 
 static void
-codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, pic_value name, pic_sym *rest, pic_vec *args, pic_vec *locals, pic_vec *captures)
+codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, pic_sym *rest, pic_vec *args, pic_vec *locals, pic_vec *captures)
 {
-  assert(pic_sym_p(name) || pic_false_p(name));
-
   cxt->up = up;
-  cxt->name = pic_false_p(name)
-    ? pic_intern_cstr(pic, "(anonymous lambda)")
-    : pic_sym_ptr(name);
   cxt->rest = rest;
 
   cxt->args = args;
@@ -956,7 +931,6 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 
   /* create irep */
   irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
-  irep->name = cxt->name;
   irep->varg = cxt->rest != NULL;
   irep->argc = (int)cxt->args->len + 1;
   irep->localc = (int)cxt->locals->len;
@@ -1382,22 +1356,21 @@ static struct pic_irep *
 codegen_lambda(pic_state *pic, codegen_context *up, pic_value obj)
 {
   codegen_context c, *cxt = &c;
-  pic_value name, rest_opt, body;
+  pic_value rest_opt, body;
   pic_sym *rest = NULL;
   pic_vec *args, *locals, *captures;
 
-  name = pic_list_ref(pic, obj, 1);
-  rest_opt = pic_list_ref(pic, obj, 2);
+  rest_opt = pic_list_ref(pic, obj, 1);
   if (pic_sym_p(rest_opt)) {
     rest = pic_sym_ptr(rest_opt);
   }
-  args = pic_vec_ptr(pic_list_ref(pic, obj, 3));
-  locals = pic_vec_ptr(pic_list_ref(pic, obj, 4));
-  captures = pic_vec_ptr(pic_list_ref(pic, obj, 5));
-  body = pic_list_ref(pic, obj, 6);
+  args = pic_vec_ptr(pic_list_ref(pic, obj, 2));
+  locals = pic_vec_ptr(pic_list_ref(pic, obj, 3));
+  captures = pic_vec_ptr(pic_list_ref(pic, obj, 4));
+  body = pic_list_ref(pic, obj, 5);
 
   /* inner environment */
-  codegen_context_init(pic, cxt, up, name, rest, args, locals, captures);
+  codegen_context_init(pic, cxt, up, rest, args, locals, captures);
   {
     /* body */
     codegen(pic, cxt, body);
@@ -1411,7 +1384,7 @@ pic_codegen(pic_state *pic, pic_value obj)
   pic_vec *empty = pic_make_vec(pic, 0);
   codegen_context c, *cxt = &c;
 
-  codegen_context_init(pic, cxt, NULL, pic_false_value(), NULL, empty, empty, empty);
+  codegen_context_init(pic, cxt, NULL, NULL, empty, empty, empty);
 
   codegen(pic, cxt, obj);
 

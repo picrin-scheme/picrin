@@ -17,7 +17,7 @@ pic_get_backtrace(pic_state *pic)
     struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
 
     trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "  at "));
-    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, pic_symbol_name(pic, pic_proc_name(proc))));
+    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "(anonymous lambda)"));
 
     if (pic_proc_func_p(proc)) {
       trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));

@@ -118,7 +118,7 @@ pic_reg_make_register(pic_state *pic)
 
   reg = pic_make_reg(pic);
 
-  proc = pic_make_proc(pic, reg_call, "<reg-call>");
+  proc = pic_make_proc(pic, reg_call);
 
   pic_proc_env_set(pic, proc, "reg", pic_obj_value(reg));
 
