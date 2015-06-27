@@ -13,7 +13,7 @@ lookup(pic_state PIC_UNUSED(*pic), pic_value var, struct pic_env *env)
 {
   khiter_t it;
 
-  assert(pic_var_p(var));
+  pic_assert_type(pic, var, var);
 
   while (env != NULL) {
     it = kh_get(env, &env->map, pic_ptr(var));
@@ -30,8 +30,9 @@ pic_resolve(pic_state *pic, pic_value var, struct pic_env *env)
 {
   pic_sym *uid;
 
-  assert(pic_var_p(var));
   assert(env != NULL);
+
+  pic_assert_type(pic, var, var);
 
   while ((uid = lookup(pic, var, env)) == NULL) {
     if (pic_sym_p(var)) {
@@ -145,25 +146,13 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
   struct pic_env *in;
   pic_value a, deferred;
 
-  if (pic_length(pic, expr) < 2) {
-    pic_errorf(pic, "syntax error");
-  }
-
   in = pic_make_env(pic, env);
 
   for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
-    pic_value var = pic_car(pic, a);
-
-    if (! pic_var_p(var)) {
-      pic_errorf(pic, "syntax error");
-    }
-    pic_add_variable(pic, in, var);
+    pic_add_variable(pic, in, pic_car(pic, a));
   }
   if (pic_var_p(a)) {
     pic_add_variable(pic, in, a);
-  }
-  else if (! pic_nil_p(a)) {
-    pic_errorf(pic, "syntax error");
   }
 
   deferred = pic_list1(pic, pic_nil_value());
@@ -189,14 +178,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
     expr = pic_list3(pic, pic_obj_value(pic->uDEFINE), var, pic_cons(pic, pic_obj_value(pic->sLAMBDA), pic_cons(pic, val, pic_cddr(pic, expr))));
   }
 
-  if (pic_length(pic, expr) != 3) {
-    pic_errorf(pic, "syntax error");
-  }
-
   var = pic_cadr(pic, expr);
-  if (! pic_var_p(var)) {
-    pic_errorf(pic, "binding to non-variable object");
-  }
   if ((uid = pic_find_variable(pic, env, var)) == NULL) {
     uid = pic_add_variable(pic, env, var);
   } else {
@@ -213,14 +195,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
   pic_value var, val;
   pic_sym *uid;
 
-  if (pic_length(pic, expr) != 3) {
-    pic_errorf(pic, "syntax error");
-  }
-
   var = pic_cadr(pic, expr);
-  if (! pic_var_p(var)) {
-    pic_errorf(pic, "binding to non-variable object");
-  }
   if ((uid = pic_find_variable(pic, env, var)) == NULL) {
     uid = pic_add_variable(pic, env, var);
   }
