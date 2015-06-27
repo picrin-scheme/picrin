@@ -361,19 +361,11 @@ static void pop_scope(analyze_state *);
 static void
 analyze_state_init(analyze_state *state, pic_state *pic)
 {
-  pic_sym *sym;
-  khiter_t it;
-  int ret;
-
   state->pic = pic;
   state->scope = NULL;
 
   /* push initial scope */
   push_scope(state, &state->s, pic_nil_value());
-
-  pic_dict_for_each (sym, pic->globals, it) {
-    kh_put(a, &state->scope->locals, sym, &ret);
-  }
 }
 
 static void
@@ -453,7 +445,7 @@ pop_scope(analyze_state *state)
 static bool
 lookup_scope(analyze_scope *scope, pic_sym *sym)
 {
-  return kh_get(a, &scope->args, sym) != kh_end(&scope->args) || kh_get(a, &scope->locals, sym) != kh_end(&scope->locals);
+  return kh_get(a, &scope->args, sym) != kh_end(&scope->args) || kh_get(a, &scope->locals, sym) != kh_end(&scope->locals) || scope->depth == 0;
 }
 
 static void
@@ -491,7 +483,9 @@ define_var(analyze_state *state, pic_sym *sym)
   int ret;
 
   if (lookup_scope(scope, sym)) {
-    pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
+    if (scope->depth > 0 || pic_dict_has(pic, pic->globals, sym)) {
+      pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
+    }
     return;
   }
 
