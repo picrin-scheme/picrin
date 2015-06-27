@@ -353,38 +353,33 @@ typedef struct analyze_scope {
 
 typedef struct analyze_state {
   pic_state *pic;
-  analyze_scope *scope;
+  analyze_scope s, *scope;
 } analyze_state;
 
-static bool push_scope(analyze_state *, pic_value);
+static bool push_scope(analyze_state *, analyze_scope *scope, pic_value);
 static void pop_scope(analyze_state *);
 
-static analyze_state *
-new_analyze_state(pic_state *pic)
+static void
+analyze_state_init(analyze_state *state, pic_state *pic)
 {
-  analyze_state *state;
   pic_sym *sym;
   khiter_t it;
 
-  state = pic_malloc(pic, sizeof(analyze_state));
   state->pic = pic;
   state->scope = NULL;
 
   /* push initial scope */
-  push_scope(state, pic_nil_value());
+  push_scope(state, &state->s, pic_nil_value());
 
   pic_dict_for_each (sym, pic->globals, it) {
     kv_push_sym(state->scope->locals, sym);
   }
-
-  return state;
 }
 
 static void
-destroy_analyze_state(analyze_state *state)
+analyze_state_destroy(analyze_state *state)
 {
   pop_scope(state);
-  pic_free(state->pic, state);
 }
 
 static bool
@@ -417,10 +412,9 @@ analyze_args(pic_state *pic, pic_value formals, bool *varg, svec_t *args, svec_t
 }
 
 static bool
-push_scope(analyze_state *state, pic_value formals)
+push_scope(analyze_state *state, analyze_scope *scope, pic_value formals)
 {
   pic_state *pic = state->pic;
-  analyze_scope *scope = pic_malloc(pic, sizeof(analyze_scope));
   bool varg;
 
   kv_init(scope->args);
@@ -441,7 +435,6 @@ push_scope(analyze_state *state, pic_value formals)
     kv_destroy(scope->args);
     kv_destroy(scope->locals);
     kv_destroy(scope->captures);
-    pic_free(pic, scope);
     return false;
   }
 }
@@ -458,7 +451,6 @@ pop_scope(analyze_state *state)
   kv_destroy(scope->captures);
 
   scope = scope->up;
-  pic_free(state->pic, state->scope);
   state->scope = scope;
 }
 
@@ -640,11 +632,12 @@ static pic_value
 analyze_procedure(analyze_state *state, pic_value name, pic_value formals, pic_value body_exprs)
 {
   pic_state *pic = state->pic;
+  analyze_scope scope;
   pic_value args, locals, varg, captures, body;
 
   assert(pic_sym_p(name) || pic_false_p(name));
 
-  if (push_scope(state, formals)) {
+  if (push_scope(state, &scope, formals)) {
     analyze_scope *scope = state->scope;
     size_t i;
 
@@ -1122,15 +1115,15 @@ analyze_node(analyze_state *state, pic_value obj, bool tailpos)
 pic_value
 pic_analyze(pic_state *pic, pic_value obj)
 {
-  analyze_state *state;
+  analyze_state state;
 
-  state = new_analyze_state(pic);
+  analyze_state_init(&state, pic);
 
-  obj = analyze(state, obj, true);
+  obj = analyze(&state, obj, true);
 
-  analyze_deferred(state);
+  analyze_deferred(&state);
 
-  destroy_analyze_state(state);
+  analyze_state_destroy(&state);
   return obj;
 }
 
@@ -1165,34 +1158,27 @@ typedef struct codegen_context {
 
 typedef struct codegen_state {
   pic_state *pic;
-  codegen_context *cxt;
+  codegen_context c, *cxt;
 } codegen_state;
 
-static void push_codegen_context(codegen_state *, pic_value, pic_value, pic_value, bool, pic_value);
+static void push_codegen_context(codegen_state *, codegen_context *, pic_value, pic_value, pic_value, bool, pic_value);
 static struct pic_irep *pop_codegen_context(codegen_state *);
 
-static codegen_state *
-new_codegen_state(pic_state *pic)
+static void
+codegen_state_init(codegen_state *state, pic_state *pic)
 {
-  codegen_state *state;
-
-  state = pic_malloc(pic, sizeof(codegen_state));
   state->pic = pic;
   state->cxt = NULL;
 
-  push_codegen_context(state, pic_false_value(), pic_nil_value(), pic_nil_value(), false, pic_nil_value());
-
-  return state;
+  push_codegen_context(state, &state->c, pic_false_value(), pic_nil_value(), pic_nil_value(), false, pic_nil_value());
 }
 
 static struct pic_irep *
-destroy_codegen_state(codegen_state *state)
+codegen_state_destroy(codegen_state *state)
 {
-  pic_state *pic = state->pic;
   struct pic_irep *irep;
 
   irep = pop_codegen_context(state);
-  pic_free(pic, state);
 
   return irep;
 }
@@ -1292,15 +1278,13 @@ create_activation(codegen_state *state)
 }
 
 static void
-push_codegen_context(codegen_state *state, pic_value name, pic_value args, pic_value locals, bool varg, pic_value captures)
+push_codegen_context(codegen_state *state, codegen_context *cxt, pic_value name, pic_value args, pic_value locals, bool varg, pic_value captures)
 {
   pic_state *pic = state->pic;
-  codegen_context *cxt;
   pic_value var, it;
 
   assert(pic_sym_p(name) || pic_false_p(name));
 
-  cxt = pic_malloc(pic, sizeof(codegen_context));
   cxt->up = state->cxt;
   cxt->name = pic_false_p(name)
     ? pic_intern_cstr(pic, "(anonymous lambda)")
@@ -1372,7 +1356,6 @@ pop_codegen_context(codegen_state *state)
 
   /* destroy context */
   cxt = cxt->up;
-  pic_free(pic, state->cxt);
   state->cxt = cxt;
 
   return irep;
@@ -1713,6 +1696,7 @@ static struct pic_irep *
 codegen_lambda(codegen_state *state, pic_value obj)
 {
   pic_state *pic = state->pic;
+  codegen_context cxt;
   pic_value name, args, locals, closes, body;
   bool varg;
 
@@ -1724,7 +1708,7 @@ codegen_lambda(codegen_state *state, pic_value obj)
   body = pic_list_ref(pic, obj, 6);
 
   /* inner environment */
-  push_codegen_context(state, name, args, locals, varg, closes);
+  push_codegen_context(state, &cxt, name, args, locals, varg, closes);
   {
     /* body */
     codegen(state, body);
@@ -1735,13 +1719,13 @@ codegen_lambda(codegen_state *state, pic_value obj)
 struct pic_irep *
 pic_codegen(pic_state *pic, pic_value obj)
 {
-  codegen_state *state;
+  codegen_state state;
 
-  state = new_codegen_state(pic);
+  codegen_state_init(&state, pic);
 
-  codegen(state, obj);
+  codegen(&state, obj);
 
-  return destroy_codegen_state(state);
+  return codegen_state_destroy(&state);
 }
 
 struct pic_proc *
