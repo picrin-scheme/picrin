@@ -857,21 +857,18 @@ pic_read(pic_state *pic, struct pic_port *port)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value val;
-  int c = next(pic, port);
+  int c;
 
- retry:
-  c = skip(pic, port, c);
+  while ((c = skip(pic, port, next(pic, port))) != EOF) {
+    val = read_nullable(pic, port, c);
 
+    if (! pic_invalid_p(val)) {
+      break;
+    }
+    pic_gc_arena_restore(pic, ai);
+  }
   if (c == EOF) {
     return pic_eof_object();
-  }
-
-  val = read_nullable(pic, port, c);
-
-  if (pic_invalid_p(val)) {
-    c = next(pic, port);
-    pic_gc_arena_restore(pic, ai);
-    goto retry;
   }
 
   pic_gc_arena_restore(pic, ai);
