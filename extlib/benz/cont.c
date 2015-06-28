@@ -31,7 +31,7 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   }
 
   here = pic->cp;
-  pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
+  pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TT_CP);
   pic->cp->prev = here;
   pic->cp->depth = here->depth + 1;
   pic->cp->in = in;
@@ -51,9 +51,6 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
 void
 pic_save_point(pic_state *pic, struct pic_cont *cont)
 {
-  cont->jmp.prev = pic->jmp;
-  pic->jmp = &cont->jmp;
-
   /* save runtime context */
   cont->cp = pic->cp;
   cont->sp_offset = pic->sp - pic->stbase;
@@ -62,24 +59,16 @@ pic_save_point(pic_state *pic, struct pic_cont *cont)
   cont->arena_idx = pic->arena_idx;
   cont->ip = pic->ip;
   cont->ptable = pic->ptable;
-
+  cont->prev = pic->cc;
   cont->results = pic_undef_value();
+  cont->id = pic->ccnt++;
+
+  pic->cc = cont;
 }
 
 void
 pic_load_point(pic_state *pic, struct pic_cont *cont)
 {
-  pic_jmpbuf *jmp;
-
-  for (jmp = pic->jmp; jmp != NULL; jmp = jmp->prev) {
-    if (jmp == &cont->jmp) {
-      break;
-    }
-  }
-  if (jmp == NULL) {
-    pic_errorf(pic, "calling dead escape continuation");
-  }
-
   pic_wind(pic, pic->cp, cont->cp);
 
   /* load runtime context */
@@ -95,18 +84,32 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
 static pic_value
 cont_call(pic_state *pic)
 {
+  struct pic_proc *self = pic_get_proc(pic);
   size_t argc;
   pic_value *argv;
-  struct pic_data *e;
+  int id;
+  struct pic_cont *cc, *cont;
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  e = pic_data_ptr(pic_proc_env_ref(pic, pic_get_proc(pic), "escape"));
-  ((struct pic_cont *)e->data)->results = pic_list_by_array(pic, argc, argv);
+  id = pic_int(pic_proc_env_ref(pic, self, "id"));
 
-  pic_load_point(pic, e->data);
+  /* check if continuation is alive */
+  for (cc = pic->cc; cc != NULL; cc = cc->prev) {
+    if (cc->id == id) {
+      break;
+    }
+  }
+  if (cc == NULL) {
+    pic_errorf(pic, "calling dead escape continuation");
+  }
 
-  PIC_LONGJMP(pic, ((struct pic_cont *)e->data)->jmp.buf, 1);
+  cont = pic_data_ptr(pic_proc_env_ref(pic, self, "escape"))->data;
+  cont->results = pic_list_by_array(pic, argc, argv);
+
+  pic_load_point(pic, cont);
+
+  PIC_LONGJMP(pic, cont->jmp, 1);
 
   PIC_UNREACHABLE();
 }
@@ -114,16 +117,17 @@ cont_call(pic_state *pic)
 struct pic_proc *
 pic_make_cont(pic_state *pic, struct pic_cont *cont)
 {
-  static const pic_data_type cont_type = { "cont", pic_free, NULL };
+  static const pic_data_type cont_type = { "cont", NULL, NULL };
   struct pic_proc *c;
   struct pic_data *e;
 
-  c = pic_make_proc(pic, cont_call, "<cont-procedure>");
+  c = pic_make_proc(pic, cont_call);
 
   e = pic_data_alloc(pic, &cont_type, cont);
 
   /* save the escape continuation in proc */
   pic_proc_env_set(pic, c, "escape", pic_obj_value(e));
+  pic_proc_env_set(pic, c, "id", pic_int_value(cont->id));
 
   return c;
 }
@@ -131,21 +135,21 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
 pic_value
 pic_callcc(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_cont *cont = pic_malloc(pic, sizeof(struct pic_cont));
+  struct pic_cont cont;
 
-  pic_save_point(pic, cont);
+  pic_save_point(pic, &cont);
 
-  if (PIC_SETJMP(pic, cont->jmp.buf)) {
-    pic->jmp = pic->jmp->prev;
+  if (PIC_SETJMP(pic, cont.jmp)) {
+    pic->cc = pic->cc->prev;
 
-    return pic_values_by_list(pic, cont->results);
+    return pic_values_by_list(pic, cont.results);
   }
   else {
     pic_value val;
 
-    val = pic_apply1(pic, proc, pic_obj_value(pic_make_cont(pic, cont)));
+    val = pic_apply1(pic, proc, pic_obj_value(pic_make_cont(pic, &cont)));
 
-    pic->jmp = pic->jmp->prev;
+    pic->cc = pic->cc->prev;
 
     return val;
   }
@@ -288,6 +292,6 @@ pic_init_cont(pic_state *pic)
   pic_defun(pic, "call/cc", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
 
-  pic_defun_vm(pic, "values", pic->rVALUES, pic_cont_values);
-  pic_defun_vm(pic, "call-with-values", pic->rCALL_WITH_VALUES, pic_cont_call_with_values);
+  pic_defun_vm(pic, "values", pic->uVALUES, pic_cont_values);
+  pic_defun_vm(pic, "call-with-values", pic->uCALL_WITH_VALUES, pic_cont_call_with_values);
 }

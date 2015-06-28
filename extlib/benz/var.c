@@ -61,7 +61,7 @@ pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
 {
   struct pic_proc *var;
 
-  var = pic_make_proc(pic, var_call, "<var-call>");
+  var = pic_make_proc(pic, var_call);
 
   if (conv != NULL) {
     pic_proc_env_set(pic, var, "conv", pic_obj_value(conv));

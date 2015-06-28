@@ -1,348 +1,243 @@
 (define-library (picrin syntax-rules)
   (import (picrin base)
-          (picrin control)
           (picrin macro))
 
-  (define-syntax define-auxiliary-syntax
-    (er-macro-transformer
-     (lambda (expr r c)
-       (list (r 'define-syntax) (cadr expr)
-             (list (r 'lambda) '_
-                   (list (r 'lambda) '_
-                         (list (r 'error) (list (r 'string-append) "invalid use of auxiliary syntax: '" (symbol->string (cadr expr)) "'"))))))))
+  (define-syntax (define-auxiliary-syntax var)
+    #`(define-macro #,var
+        (lambda _
+          (error "invalid use of auxiliary syntax" '#,var))))
 
   (define-auxiliary-syntax _)
   (define-auxiliary-syntax ...)
 
-  (define (walk proc expr)
-    (cond
-     ((null? expr)
-      '())
-     ((pair? expr)
-      (cons (walk proc (car expr))
-            (walk proc (cdr expr))))
-     ((vector? expr)
-      (list->vector (map proc (vector->list expr))))
-     (else
-      (proc expr))))
+  (define (succ n)
+    (+ n 1))
 
-  (define (flatten expr)
-    (let ((list '()))
-      (walk
-       (lambda (x)
-         (set! list (cons x list)))
-       expr)
-      (reverse list)))
+  (define (pred n)
+    (if (= n 0)
+        0
+        (- n 1)))
 
-  (define (reverse* l)
-    ;; (reverse* '(a b c d . e)) => (e d c b a)
-    (let loop ((a '())
-               (d l))
-      (if (pair? d)
-          (loop (cons (car d) a) (cdr d))
-          (cons d a))))
-
-  (define (every? pred l)
-    (if (null? l)
+  (define (every? args)
+    (if (null? args)
         #t
-        (and (pred (car l)) (every? pred (cdr l)))))
+        (if (car args)
+            (every? (cdr args))
+            #f)))
 
-  (define-syntax syntax-rules
-    (er-macro-transformer
-     (lambda (form r compare)
-       (define _define (r 'define))
-       (define _let (r 'let))
-       (define _if (r 'if))
-       (define _begin (r 'begin))
-       (define _lambda (r 'lambda))
-       (define _set! (r 'set!))
-       (define _not (r 'not))
-       (define _and (r 'and))
-       (define _car (r 'car))
-       (define _cdr (r 'cdr))
-       (define _cons (r 'cons))
-       (define _pair? (r 'pair?))
-       (define _null? (r 'null?))
-       (define _symbol? (r 'symbol?))
-       (define _vector? (r 'vector?))
-       (define _eqv? (r 'eqv?))
-       (define _string=? (r 'string=?))
-       (define _map (r 'map))
-       (define _vector->list (r 'vector->list))
-       (define _list->vector (r 'list->vector))
-       (define _quote (r 'quote))
-       (define _quasiquote (r 'quasiquote))
-       (define _unquote (r 'unquote))
-       (define _unquote-splicing (r 'unquote-splicing))
-       (define _syntax-error (r 'syntax-error))
-       (define _escape (r 'escape))
-       (define _er-macro-transformer (r 'er-macro-transformer))
+  (define (filter f list)
+    (if (null? list)
+        '()
+        (if (f (car list))
+            (cons (car list)
+                  (filter f (cdr list)))
+            (filter f (cdr list)))))
 
-       (define (var->sym v)
-         (let loop ((cnt 0)
-                    (v v))
-           (if (symbol? v)
-               (string->symbol
-                (string-append (symbol->string v) "/" (number->string cnt)))
-               (loop (+ 1 cnt) (car v)))))
+  (define (take-tail n list)
+    (let drop ((n (- (length list) n)) (list list))
+      (if (= n 0)
+          list
+          (drop (- n 1) (cdr list)))))
 
-       (define push-var list)
+  (define (drop-tail n list)
+    (let take ((n (- (length list) n)) (list list))
+      (if (= n 0)
+          '()
+          (cons (car list) (take (- n 1) (cdr list))))))
 
-       (define (compile-match ellipsis literals pattern)
-	 (letrec ((compile-match-base
-		   (lambda (pattern)
-		     (cond ((member pattern literals compare)
-			    (values
-                              `(,_if (,_and (,_symbol? expr) (cmp expr (rename ',pattern)))
-                                     #f
-                                     (exit #f))
-                              '()))
-			   ((compare pattern (r '_)) (values #f '()))
-			   ((and ellipsis (compare pattern ellipsis))
-			    (values `(,_syntax-error "invalid pattern") '()))
-			   ((symbol? pattern)
-			    (values `(,_set! ,(var->sym pattern) expr) (list pattern)))
-			   ((pair? pattern)
-			    (compile-match-list pattern))
-			   ((vector? pattern)
-			    (compile-match-vector pattern))
-			   ((string? pattern)
-			    (values
-                              `(,_if (,_not (,_string=? ',pattern expr))
-                                     (exit #f))
-                              '()))
-			   (else
-			    (values
-                              `(,_if (,_not (,_eqv? ',pattern expr))
-                                     (exit #f))
-                              '())))))
+  (define (map-keys f assoc)
+    (map (lambda (s) `(,(f (car s)) . ,(cdr s))) assoc))
 
-		  (compile-match-list
-		   (lambda (pattern)
-		     (let loop ((pattern pattern)
-				(matches '())
-				(vars '())
-				(accessor 'expr))
-		       (cond ;; (hoge)
-			((not (pair? (cdr pattern)))
-			 (let*-values (((match1 vars1) (compile-match-base (car pattern)))
-				       ((match2 vars2) (compile-match-base (cdr pattern))))
-			   (values
-                             `(,_begin ,@(reverse matches)
-                                       (,_if (,_pair? ,accessor)
-                                             (,_begin
-                                              (,_let ((expr (,_car ,accessor)))
-                                                     ,match1)
-                                              (,_let ((expr (,_cdr ,accessor)))
-                                                     ,match2))
-                                             (exit #f)))
-                             (append vars (append vars1 vars2)))))
-			;; (hoge ... rest args)
-			((and ellipsis (compare (cadr pattern) ellipsis))
-			 (let-values (((match-r vars-r) (compile-match-list-reverse pattern)))
-			   (values
-                             `(,_begin ,@(reverse matches)
-                                       (,_let ((expr (,_let loop ((a ())
-                                                                  (d ,accessor))
-                                                            (,_if (,_pair? d)
-                                                                  (loop (,_cons (,_car d) a) (,_cdr d))
-                                                                  (,_cons d a)))))
-                                              ,match-r))
-                             (append vars vars-r))))
-			(else
-			 (let-values (((match1 vars1) (compile-match-base (car pattern))))
-			   (loop (cdr pattern)
-				 (cons `(,_if (,_pair? ,accessor)
-					      (,_let ((expr (,_car ,accessor)))
-						     ,match1)
-					      (exit #f))
-				       matches)
-				 (append vars vars1)
-				 `(,_cdr ,accessor))))))))
+  (define (map-values f assoc)
+    (map (lambda (s) `(,(car s) . ,(f (cdr s)))) assoc))
 
-		  (compile-match-list-reverse
-		   (lambda (pattern)
-		     (let loop ((pattern (reverse* pattern))
-				(matches '())
-				(vars '())
-				(accessor 'expr))
-		       (cond ((and ellipsis (compare (car pattern) ellipsis))
-			      (let-values (((match1 vars1) (compile-match-ellipsis (cadr pattern))))
-				(values
-                                  `(,_begin ,@(reverse matches)
-                                            (,_let ((expr ,accessor))
-                                                   ,match1))
-                                  (append vars vars1))))
-			     (else
-			      (let-values (((match1 vars1) (compile-match-base (car pattern))))
-				(loop (cdr pattern)
-				      (cons `(,_let ((expr (,_car ,accessor))) ,match1) matches)
-				      (append vars vars1)
-				      `(,_cdr ,accessor))))))))
+  ;; TODO
+  ;; - placeholder
+  ;; - vector
+  ;; - (... template) pattern
 
-		  (compile-match-ellipsis
-		   (lambda (pattern)
-		     (let-values (((match vars) (compile-match-base pattern)))
-		       (values
-                         `(,_let loop ((expr expr))
-                                 (,_if (,_not (,_null? expr))
-                                       (,_let ,(map (lambda (var) `(,(var->sym var) '())) vars)
-                                              (,_let ((expr (,_car expr)))
-                                                     ,match)
-                                              ,@(map
-                                                 (lambda (var)
-                                                   `(,_set! ,(var->sym (push-var var))
-                                                            (,_cons ,(var->sym var) ,(var->sym (push-var var)))))
-                                                 vars)
-                                              (loop (,_cdr expr)))))
-                         (map push-var vars)))))
+  ;; p ::= constant
+  ;;     | var
+  ;;     | (p ... . p)      (in input pattern, tail p should be a proper list)
+  ;;     | (p . p)
 
-		  (compile-match-vector
-		   (lambda (pattern)
-		     (let-values (((match vars) (compile-match-base (vector->list pattern))))
-		       (values
-                         `(,_if (,_vector? expr)
-                                (,_let ((expr (,_vector->list expr)))
-                                       ,match)
-                                (exit #f))
-                         vars)))))
+  (define (compile ellipsis literals rules)
 
-	   (let-values (((match vars) (compile-match-base (cdr pattern))))
-	     (values `(,_let ((expr (,_cdr expr)))
-			     ,match
-			     #t)
-		     vars))))
+    (define (constant? obj)
+      (and (not (pair? obj))
+           (not (variable? obj))))
 
-;;; compile expand
-       (define (compile-expand ellipsis reserved template)
-	 (letrec ((compile-expand-base
-		   (lambda (template ellipsis-valid)
-		     (cond ((member template reserved eq?)
-			    (values (var->sym template) (list template)))
-			   ((symbol? template)
-			    (values `(rename ',template) '()))
-			   ((pair? template)
-			    (compile-expand-list template ellipsis-valid))
-			   ((vector? template)
-			    (compile-expand-vector template ellipsis-valid))
-			   (else
-			    (values `',template '())))))
+    (define (literal? obj)
+      (and (variable? obj)
+           (memq obj literals)))
 
-		  (compile-expand-list
-		   (lambda (template ellipsis-valid)
-		     (let loop ((template template)
-				(expands '())
-				(vars '()))
-		       (cond ;; (... hoge)
-			((and ellipsis-valid
-			      (pair? template)
-			      (compare (car template) ellipsis))
-			 (if (and (pair? (cdr template)) (null? (cddr template)))
-			     (compile-expand-base (cadr template) #f)
-			     (values '(,_syntax-error "invalid template") '())))
-			;; hoge
-			((not (pair? template))
-			 (let-values (((expand1 vars1)
-				       (compile-expand-base template ellipsis-valid)))
-			   (values
-                             `(,_quasiquote (,@(reverse expands) . (,_unquote ,expand1)))
-                             (append vars vars1))))
-			;; (a ... rest syms)
-			((and ellipsis-valid
-			      (pair? (cdr template))
-			      (compare (cadr template) ellipsis))
-			 (let-values (((expand1 vars1)
-				       (compile-expand-base (car template) ellipsis-valid)))
-			   (loop (cddr template)
-				 (cons
-				  `(,_unquote-splicing
-				    (,_map (,_lambda ,(map var->sym vars1) ,expand1)
-					   ,@(map (lambda (v) (var->sym (push-var v))) vars1)))
-				  expands)
-				 (append vars (map push-var vars1)))))
-			(else
-			 (let-values (((expand1 vars1)
-				       (compile-expand-base (car template) ellipsis-valid)))
-			   (loop (cdr template)
-				 (cons
-				  `(,_unquote ,expand1)
-				  expands)
-				 (append vars vars1))))))))
+    (define (many? pat)
+      (and (pair? pat)
+           (pair? (cdr pat))
+           (variable? (cadr pat))
+           (variable=? (cadr pat) ellipsis)))
 
-		  (compile-expand-vector
-		   (lambda (template ellipsis-valid)
-		     (let-values (((expand1 vars1)
-				   (compile-expand-base (vector->list template) ellipsis-valid)))
-		       (values
-                         `(,_list->vector ,expand1)
-                         vars1)))))
+    (define (pattern-validator pat)      ; pattern -> validator
+      (letrec
+          ((pattern-validator
+            (lambda (pat form)
+              (cond
+               ((constant? pat)
+                #`(equal? '#,pat #,form))
+               ((literal? pat)
+                #`(and (variable? #,form) (variable=? #'#,pat #,form)))
+               ((variable? pat)
+                #t)
+               ((many? pat)
+                (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
+                      (tail #`(take-tail #,(length (cddr pat)) #,form)))
+                  #`(and (list? #,form)
+                         (>= (length #,form) #,(length (cddr pat)))
+                         (every? (map (lambda (#,'it) #,(pattern-validator (car pat) 'it)) #,head))
+                         #,(pattern-validator (cddr pat) tail))))
+               ((pair? pat)
+                #`(and (pair? #,form)
+                       #,(pattern-validator (car pat) #`(car #,form))
+                       #,(pattern-validator (cdr pat) #`(cdr #,form))))
+               (else
+                #f)))))
+        (pattern-validator pat 'it)))
 
-	   (compile-expand-base template ellipsis)))
+    (define (pattern-variables pat)       ; pattern -> (freevar)
+      (cond
+       ((constant? pat)
+        '())
+       ((literal? pat)
+        '())
+       ((variable? pat)
+        `(,pat))
+       ((many? pat)
+        (append (pattern-variables (car pat))
+                (pattern-variables (cddr pat))))
+       ((pair? pat)
+        (append (pattern-variables (car pat))
+                (pattern-variables (cdr pat))))))
 
-       (define (check-vars vars-pattern vars-template)
-	 ;;fixme
-	 #t)
+    (define (pattern-levels pat)          ; pattern -> ((var * int))
+      (cond
+       ((constant? pat)
+        '())
+       ((literal? pat)
+        '())
+       ((variable? pat)
+        `((,pat . 0)))
+       ((many? pat)
+        (append (map-values succ (pattern-levels (car pat)))
+                (pattern-levels (cddr pat))))
+       ((pair? pat)
+        (append (pattern-levels (car pat))
+                (pattern-levels (cdr pat))))))
 
-       (define (compile-rule ellipsis literals rule)
-	 (let ((pattern (car rule))
-	       (template (cadr rule)))
-	   (let*-values (((match vars-match)
-			  (compile-match ellipsis literals pattern))
-			 ((expand vars-expand)
-			  (compile-expand ellipsis (flatten vars-match) template)))
-	     (if (check-vars vars-match vars-expand)
-		 (list vars-match match expand)
-		 'mismatch))))
+    (define (pattern-selectors pat)       ; pattern -> ((var * selector))
+      (letrec
+          ((pattern-selectors
+            (lambda (pat form)
+              (cond
+               ((constant? pat)
+                '())
+               ((literal? pat)
+                '())
+               ((variable? pat)
+                `((,pat . ,form)))
+               ((many? pat)
+                (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
+                      (tail #`(take-tail #,(length (cddr pat)) #,form)))
+                  (let ((envs (pattern-selectors (car pat) 'it)))
+                    (append
+                     (map-values (lambda (s) #`(map (lambda (#,'it) #,s) #,head)) envs)
+                     (pattern-selectors (cddr pat) tail)))))
+               ((pair? pat)
+                (append (pattern-selectors (car pat) #`(car #,form))
+                        (pattern-selectors (cdr pat) #`(cdr #,form))))))))
+        (pattern-selectors pat 'it)))
 
-       (define (expand-clauses clauses rename)
-	 (cond ((null? clauses)
-		`(,_quote (syntax-error "no matching pattern")))
-	       ((compare (car clauses) 'mismatch)
-		`(,_syntax-error "invalid rule"))
-	       (else
-		(let ((vars (list-ref (car clauses) 0))
-		      (match (list-ref (car clauses) 1))
-		      (expand (list-ref (car clauses) 2)))
-		  `(,_let ,(map (lambda (v) (list (var->sym v) '())) vars)
-			  (,_let ((result (,_escape (,_lambda (exit) ,match))))
-				 (,_if result
-				       ,expand
-				       ,(expand-clauses (cdr clauses) rename))))))))
+    (define (template-representation pat levels selectors)
+      (cond
+       ((constant? pat)
+        pat)
+       ((variable? pat)
+        (let ((it (assq pat levels)))
+          (if it
+              (if (= 0 (cdr it))
+                  (cdr (assq pat selectors))
+                  (error "unmatched pattern variable level" pat))
+              #`(#,'rename '#,pat))))
+       ((many? pat)
+        (letrec*
+            ((inner-pat
+              (car pat))
+             (inner-levels
+              (map (lambda (s) `(,(car s) . ,(pred (cdr s)))) levels))
+             (inner-freevars
+              (filter (lambda (v) (assq v levels)) (pattern-variables inner-pat)))
+             (inner-vars
+              ;; select only vars declared with ellipsis
+              (filter (lambda (v) (> (cdr (assq v levels)) 0)) inner-freevars))
+             (inner-tmps
+              (map (lambda (v) #'it) inner-vars))
+             (inner-selectors
+              ;; first env '(map cons ...)' shadows second env 'selectors'
+              (append (map cons inner-vars inner-tmps) selectors))
+             (inner-rep
+              (template-representation inner-pat inner-levels inner-selectors))
+             (sorted-selectors
+              (map (lambda (v) (assq v selectors)) inner-vars))
+             (list-of-selectors
+              ;; ((a . xs) (b . ys) (c . zs)) -> (xs ys zs)
+              (map cdr sorted-selectors)))
+          (let ((rep1 #`(map (lambda #,inner-tmps #,inner-rep) #,@list-of-selectors))
+                (rep2 (template-representation (cddr pat) levels selectors)))
+            #`(append #,rep1 #,rep2))))
+       ((pair? pat)
+        #`(cons #,(template-representation (car pat) levels selectors)
+                #,(template-representation (cdr pat) levels selectors)))))
 
-       (define (normalize-form form)
-	 (if (and (list? form) (>= (length form) 2))
-	     (let ((ellipsis '...)
-		   (literals (cadr form))
-		   (rules (cddr form)))
+    (define (compile-rule pattern template)
+      (let ((levels
+             (pattern-levels pattern))
+            (selectors
+             (pattern-selectors pattern)))
+        (template-representation template levels selectors)))
 
-	       (when (symbol? literals)
-                 (set! ellipsis literals)
-                 (set! literals (car rules))
-                 (set! rules (cdr rules)))
+    (define (compile-rules rules)
+      (if (null? rules)
+          #`(error "unmatch")
+          (let ((pattern (car (car rules)))
+                (template (cadr (car rules))))
+            #`(if #,(pattern-validator pattern)
+                  #,(compile-rule pattern template)
+                  #,(compile-rules (cdr rules))))))
 
-	       (if (and (symbol? ellipsis)
-			(list? literals)
-			(every? symbol? literals)
-			(list? rules)
-			(every? (lambda (l) (and (list? l) (= (length l) 2))) rules))
-		   (if (member ellipsis literals compare)
-		       `(syntax-rules #f ,literals ,@rules)
-		       `(syntax-rules ,ellipsis ,literals ,@rules))
-		   #f))
-	     #f))
+    (define (compile rules)
+      #`(call-with-current-environment
+         (lambda (env)
+           (letrec
+               ((#,'rename (let ((reg (make-register)))
+                             (lambda (x)
+                               (if (undefined? (reg x))
+                                   (let ((id (make-identifier x env)))
+                                     (reg x id)
+                                     id)
+                                   (reg x))))))
+             (lambda #,'it
+               #,(compile-rules rules))))))
 
-       (let ((form (normalize-form form)))
-	 (if form
-	     (let ((ellipsis (list-ref form 1))
-		   (literals (list-ref form 2))
-		   (rules (list-tail form 3)))
-	       (let ((clauses (map (lambda (rule) (compile-rule ellipsis literals rule))
-				   rules)))
-		 `(,_er-macro-transformer
-		   (,_lambda (expr rename cmp)
-			     ,(expand-clauses clauses r)))))
+    (let ((rules (map-keys cdr rules))) ; TODO: check pattern head is a variable
+      (compile rules)))
 
-	     `(,_syntax-error "malformed syntax-rules"))))))
+  (define-syntax (syntax-rules . args)
+    (if (list? (car args))
+        #`(syntax-rules ... #,@args)
+        (let ((ellipsis (car args))
+              (literals (car (cdr args)))
+              (rules    (cdr (cdr args))))
+          (compile ellipsis literals rules))))
+
 
   (export syntax-rules
           _

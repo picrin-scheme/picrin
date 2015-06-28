@@ -12,6 +12,7 @@ PICRIN_LIBS = \
 	piclib/picrin/macro.scm\
 	piclib/picrin/record.scm\
 	piclib/picrin/array.scm\
+	piclib/picrin/control.scm\
 	piclib/picrin/experimental/lambda.scm\
 	piclib/picrin/syntax-rules.scm\
 	piclib/picrin/test.scm
@@ -33,7 +34,7 @@ all: bin/picrin
 
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-debug: CFLAGS += -O0 -g -DDEBUG=1
+debug: CFLAGS += -O0 -g
 debug: bin/picrin
 
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
@@ -47,6 +48,10 @@ src/init_contrib.c:
 
 lib/libbenz.a: $(BENZ_OBJS)
 	$(AR) $(ARFLAGS) $@ $(BENZ_OBJS)
+
+extlib/benz/boot.o: extlib/benz/boot.c
+	cd extlib/benz; perl boot.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(BENZ_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): extlib/benz/include/picrin.h extlib/benz/include/picrin/*.h
 
@@ -64,15 +69,12 @@ docs/contrib.rst: $(CONTRIB_DOCS)
 run: bin/picrin
 	bin/picrin
 
-test: test-r7rs test-contribs test-nostdlib
-
-test-r7rs: bin/picrin t/r7rs-tests.scm
-	bin/picrin t/r7rs-tests.scm
+test: test-contribs test-nostdlib
 
 test-contribs: bin/picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
-	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0'-nostdlib -fPIC -shared -std=c89 -ansi -pedantic -Wall -Wextra -o lib/libbenz.so $(BENZ_SRCS)
+	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0' -D'PIC_ENABLE_STDIO=0' -nostdlib -fPIC -shared -std=c89 -ansi -pedantic -Wall -Wextra -o lib/libbenz.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	rm -f lib/libbenz.so
 
 install: all
@@ -85,4 +87,4 @@ clean:
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
 
-.PHONY: all insall clean run test test-r7rs test-contribs doc $(CONTRIB_TESTS)
+.PHONY: all install clean run test test-r7rs test-contribs doc $(CONTRIB_TESTS)

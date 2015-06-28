@@ -33,27 +33,24 @@ extern "C" {
 #include <stdarg.h>
 
 #include "picrin/config.h"
-#include "picrin/util.h"
+
 #include "picrin/compat.h"
-
-#if PIC_ENABLE_FLOAT
-# include <math.h>
-#endif
-
-#include "picrin/xvect.h"
-#include "picrin/xhash.h"
-#include "picrin/xfile.h"
+#include "picrin/kvec.h"
+#include "picrin/khash.h"
 
 #include "picrin/value.h"
 
-typedef struct pic_code pic_code;
+typedef struct pic_state pic_state;
 
-typedef struct pic_jmpbuf {
-  PIC_JMPBUF buf;
-  struct pic_jmpbuf *prev;
-} pic_jmpbuf;
+#include "picrin/irep.h"
+#include "picrin/file.h"
+#include "picrin/read.h"
+#include "picrin/gc.h"
+
+KHASH_DECLARE(s, const char *, pic_sym *);
 
 typedef struct pic_checkpoint {
+  PIC_OBJECT_HEADER
   struct pic_proc *in;
   struct pic_proc *out;
   int depth;
@@ -72,14 +69,16 @@ typedef struct {
 
 typedef void *(*pic_allocf)(void *, size_t);
 
-typedef struct {
+struct pic_state {
   int argc;
   char **argv, **envp;
 
   pic_allocf allocf;
+  void *userdata;
 
-  pic_jmpbuf *jmp;
   pic_checkpoint *cp;
+  struct pic_cont *cc;
+  int ccnt;
 
   pic_value *sp;
   pic_value *stbase, *stend;
@@ -98,7 +97,9 @@ typedef struct {
 
   pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
   pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sDEFINE_SYNTAX, *sIMPORT, *sEXPORT;
+  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE;
+  pic_sym *sSYNTAX_UNQUOTE_SPLICING;
+  pic_sym *sDEFINE_MACRO, *sIMPORT, *sEXPORT;
   pic_sym *sDEFINE_LIBRARY;
   pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
   pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
@@ -111,28 +112,31 @@ typedef struct {
   pic_sym *sCALL, *sTAILCALL, *sRETURN;
   pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
-  pic_sym *rDEFINE, *rLAMBDA, *rIF, *rBEGIN, *rQUOTE, *rSETBANG;
-  pic_sym *rDEFINE_SYNTAX, *rIMPORT, *rEXPORT;
-  pic_sym *rDEFINE_LIBRARY;
-  pic_sym *rCOND_EXPAND;
-  pic_sym *rCONS, *rCAR, *rCDR, *rNILP;
-  pic_sym *rSYMBOLP, *rPAIRP;
-  pic_sym *rADD, *rSUB, *rMUL, *rDIV;
-  pic_sym *rEQ, *rLT, *rLE, *rGT, *rGE, *rNOT;
-  pic_sym *rVALUES, *rCALL_WITH_VALUES;
+  pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG;
+  pic_sym *uDEFINE_MACRO, *uIMPORT, *uEXPORT;
+  pic_sym *uDEFINE_LIBRARY;
+  pic_sym *uCOND_EXPAND;
+  pic_sym *uCONS, *uCAR, *uCDR, *uNILP;
+  pic_sym *uSYMBOLP, *uPAIRP;
+  pic_sym *uADD, *uSUB, *uMUL, *uDIV;
+  pic_sym *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
+  pic_sym *uVALUES, *uCALL_WITH_VALUES;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
 
   pic_value features;
 
-  xhash syms;                   /* name to symbol */
+  khash_t(s) syms;              /* name to symbol */
+  int ucnt;
   struct pic_dict *globals;
   struct pic_dict *macros;
   pic_value libs;
   struct pic_reg *attrs;
 
-  struct pic_reader *reader;
+  pic_reader reader;
+  xFILE files[XOPEN_MAX];
+  pic_code iseq[2];             /* for pic_apply_trampoline */
 
   bool gc_enable;
   struct pic_heap *heap;
@@ -140,14 +144,10 @@ typedef struct {
   size_t arena_size, arena_idx;
   struct pic_reg *regs;
 
-  struct pic_port *xSTDIN, *xSTDOUT, *xSTDERR;
-
   pic_value err;
 
-  pic_code *iseq;               /* for pic_apply_trampoline */
-
   char *native_stack_start;
-} pic_state;
+};
 
 typedef pic_value (*pic_func_t)(pic_state *);
 
@@ -170,18 +170,12 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-pic_state *pic_open(int argc, char *argv[], char **envp, pic_allocf);
 void *pic_default_allocf(void *, size_t);
+pic_state *pic_open(pic_allocf, void *);
 void pic_close(pic_state *);
+void pic_set_argv(pic_state *, int argc, char *argv[], char **envp);
 
 void pic_add_feature(pic_state *, const char *);
-
-void pic_define(pic_state *, const char *, pic_value);
-void pic_define_noexport(pic_state *, const char *, pic_value);
-void pic_defun(pic_state *, const char *, pic_func_t);
-
-struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
-void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
 
 struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
@@ -193,8 +187,6 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 pic_sym *pic_intern(pic_state *, pic_str *);
 pic_sym *pic_intern_cstr(pic_state *, const char *);
 const char *pic_symbol_name(pic_state *, pic_sym *);
-pic_sym *pic_gensym(pic_state *, pic_sym *);
-bool pic_interned_p(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
@@ -202,9 +194,21 @@ pic_value pic_read_cstr(pic_state *, const char *);
 void pic_load_port(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
 
-pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);
+void pic_define(pic_state *, const char *, pic_value);
+void pic_defun(pic_state *, const char *, pic_func_t);
+void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
+/* functions suffixed with '_' will not perform automatic export */
+void pic_define_(pic_state *, const char *, pic_value);
+void pic_defun_(pic_state *, const char *, pic_func_t);
+void pic_defvar_(pic_state *, const char *, pic_value, struct pic_proc *);
+
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
+pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);
+pic_value pic_funcall0(pic_state *pic, struct pic_lib *, const char *);
+pic_value pic_funcall1(pic_state *pic, struct pic_lib *, const char *, pic_value);
+pic_value pic_funcall2(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value);
+pic_value pic_funcall3(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value, pic_value);
 
 pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply0(pic_state *, struct pic_proc *);
@@ -214,9 +218,10 @@ pic_value pic_apply3(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply4(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, pic_value);
-pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
-struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_lib *);
-pic_value pic_macroexpand(pic_state *, pic_value, struct pic_lib *);
+pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
+struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
+
+struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
 struct pic_lib *pic_make_library(pic_state *, pic_value);
 struct pic_lib *pic_find_library(pic_state *, pic_value);
@@ -232,8 +237,7 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
        ((pic->lib = pic->prev_lib),                                     \
         (pic->prev_lib = NULL)))
 
-void pic_import(pic_state *, pic_value);
-void pic_import_library(pic_state *, struct pic_lib *);
+void pic_import(pic_state *, struct pic_lib *);
 void pic_export(pic_state *, pic_sym *);
 
 PIC_NORETURN void pic_panic(pic_state *, const char *);
@@ -253,11 +257,12 @@ struct pic_port *pic_stderr(pic_state *);
 pic_value pic_write(pic_state *, pic_value); /* returns given obj */
 pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
 void pic_printf(pic_state *, const char *, ...);
+void pic_fprintf(pic_state *, struct pic_port *, const char *, ...);
 pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
 #if DEBUG
-# define pic_debug(pic,obj) pic_fwrite(pic,obj,pic->xSTDERR->file)
+# define pic_debug(pic,obj) pic_fwrite(pic,obj,xstderr)
 # define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
 #endif
 
@@ -266,18 +271,14 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/error.h"
-#include "picrin/gc.h"
-#include "picrin/irep.h"
 #include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/pair.h"
 #include "picrin/port.h"
 #include "picrin/proc.h"
-#include "picrin/read.h"
 #include "picrin/record.h"
 #include "picrin/string.h"
 #include "picrin/symbol.h"
-#include "picrin/read.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
 

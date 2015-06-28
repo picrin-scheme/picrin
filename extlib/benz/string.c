@@ -310,7 +310,7 @@ pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
   while ((c = *fmt++)) {
     switch (c) {
     default:
-      xfputc(c, file);
+      xfputc(pic, c, file);
       break;
     case '%':
       c = *fmt++;
@@ -318,26 +318,26 @@ pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
         goto exit;
       switch (c) {
       default:
-        xfputc(c, file);
+        xfputc(pic, c, file);
         break;
       case '%':
-        xfputc('%', file);
+        xfputc(pic, '%', file);
         break;
       case 'c':
-        xfprintf(file, "%c", va_arg(ap, int));
+        xfprintf(pic, file, "%c", va_arg(ap, int));
         break;
       case 's':
-        xfprintf(file, "%s", va_arg(ap, const char *));
+        xfprintf(pic, file, "%s", va_arg(ap, const char *));
         break;
       case 'd':
-        xfprintf(file, "%d", va_arg(ap, int));
+        xfprintf(pic, file, "%d", va_arg(ap, int));
         break;
       case 'p':
-        xfprintf(file, "%p", va_arg(ap, void *));
+        xfprintf(pic, file, "%p", va_arg(ap, void *));
         break;
 #if PIC_ENABLE_FLOAT
       case 'f':
-        xfprintf(file, "%f", va_arg(ap, double));
+        xfprintf(pic, file, "%f", va_arg(ap, double));
         break;
 #endif
       }
@@ -348,13 +348,13 @@ pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
         goto exit;
       switch (c) {
       default:
-        xfputc(c, file);
+        xfputc(pic, c, file);
         break;
       case '~':
-        xfputc('~', file);
+        xfputc(pic, '~', file);
         break;
       case '%':
-        xfputc('\n', file);
+        xfputc(pic, '\n', file);
         break;
       case 'a':
         irrs = pic_cons(pic, pic_fdisplay(pic, va_arg(ap, pic_value), file), irrs);

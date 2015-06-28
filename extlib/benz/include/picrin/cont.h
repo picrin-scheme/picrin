@@ -10,20 +10,21 @@ extern "C" {
 #endif
 
 struct pic_cont {
-  pic_jmpbuf jmp;
+  PIC_JMPBUF jmp;
+
+  int id;
 
   pic_checkpoint *cp;
-
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
   ptrdiff_t xp_offset;
   size_t arena_idx;
-
+  pic_value ptable;
   pic_code *ip;
 
-  pic_value ptable;
-
   pic_value results;
+
+  struct pic_cont *prev;
 };
 
 void pic_save_point(pic_state *, struct pic_cont *);
