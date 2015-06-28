@@ -80,9 +80,17 @@ static pic_value expand(pic_state *, pic_value, struct pic_env *, pic_value);
 static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 
 static pic_value
-expand_var(pic_state *pic, pic_value var, struct pic_env *env)
+expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferred)
 {
-  return pic_obj_value(pic_resolve(pic, var, env));
+  struct pic_proc *mac;
+  pic_sym *functor;
+
+  functor = pic_resolve(pic, var, env);
+
+  if ((mac = find_macro(pic, functor)) != NULL) {
+    return expand(pic, pic_apply2(pic, mac, var, pic_obj_value(env)), env, deferred);
+  }
+  return pic_obj_value(functor);
 }
 
 static pic_value
@@ -209,7 +217,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
   switch (pic_type(expr)) {
   case PIC_TT_ID:
   case PIC_TT_SYMBOL: {
-    return expand_var(pic, expr, env);
+    return expand_var(pic, expr, env, deferred);
   }
   case PIC_TT_PAIR: {
     struct pic_proc *mac;
@@ -237,7 +245,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
       }
 
       if ((mac = find_macro(pic, functor)) != NULL) {
-        return expand_node(pic, pic_apply2(pic, mac, expr, pic_obj_value(env)), env, deferred);
+        return expand(pic, pic_apply2(pic, mac, expr, pic_obj_value(env)), env, deferred);
       }
     }
     return expand_list(pic, expr, env, deferred);
