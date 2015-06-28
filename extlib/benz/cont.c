@@ -155,44 +155,62 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   }
 }
 
+static pic_value
+pic_va_values(pic_state *pic, size_t n, ...)
+{
+  pic_value args[n];
+  va_list ap;
+  size_t i = 0;
+
+  va_start(ap, n);
+
+  while (i < n) {
+    args[i++] = va_arg(ap, pic_value);
+  }
+
+  va_end(ap);
+
+  return pic_values(pic, n, args);
+}
+
 pic_value
 pic_values0(pic_state *pic)
 {
-  return pic_values_by_list(pic, pic_nil_value());
+  return pic_va_values(pic, 0);
 }
 
 pic_value
 pic_values1(pic_state *pic, pic_value arg1)
 {
-  return pic_values_by_list(pic, pic_list1(pic, arg1));
+  return pic_va_values(pic, 1, arg1);
 }
 
 pic_value
 pic_values2(pic_state *pic, pic_value arg1, pic_value arg2)
 {
-  return pic_values_by_list(pic, pic_list2(pic, arg1, arg2));
+  return pic_va_values(pic, 2, arg1, arg2);
 }
 
 pic_value
 pic_values3(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3)
 {
-  return pic_values_by_list(pic, pic_list3(pic, arg1, arg2, arg3));
+  return pic_va_values(pic, 3, arg1, arg2, arg3);
 }
 
 pic_value
 pic_values4(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
 {
-  return pic_values_by_list(pic, pic_list4(pic, arg1, arg2, arg3, arg4));
+  return pic_va_values(pic, 4, arg1, arg2, arg3, arg4);
 }
 
 pic_value
 pic_values5(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
 {
-  return pic_values_by_list(pic, pic_list5(pic, arg1, arg2, arg3, arg4, arg5));
+  return pic_va_values(pic, 5, arg1, arg2, arg3, arg4, arg5);
 }
 
 pic_value
-pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
+pic_values(pic_state *pic, size_t argc, pic_value *argv)
 {
   size_t i;
 
@@ -264,7 +282,7 @@ pic_cont_values(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  return pic_values_by_array(pic, argc, argv);
+  return pic_values(pic, argc, argv);
 }
 
 static pic_value

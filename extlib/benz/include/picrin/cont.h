@@ -41,7 +41,7 @@ pic_value pic_values2(pic_state *, pic_value, pic_value);
 pic_value pic_values3(pic_state *, pic_value, pic_value, pic_value);
 pic_value pic_values4(pic_state *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_values5(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value);
-pic_value pic_values_by_array(pic_state *, size_t, pic_value *);
+pic_value pic_values(pic_state *, size_t, pic_value *);
 pic_value pic_values_by_list(pic_state *, pic_value);
 size_t pic_receive(pic_state *, size_t, pic_value *);
 
