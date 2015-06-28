@@ -524,7 +524,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
       else if (sym == pic->uLAMBDA) {
         return analyze_defer(pic, scope, obj);
       }
-      else if (sym == pic->uIF || sym == pic->uBEGIN || sym == pic->uSETBANG) {
+      else if (sym == pic->uIF || sym == pic->uBEGIN || sym == pic->uSETBANG || sym == pic->uVALUES || sym == pic->uCALL_WITH_VALUES) {
         return analyze_special(pic, scope, obj);
       }
     }
@@ -932,6 +932,24 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
       emit_ret(pic, cxt, tailpos);
       return;
     }
+  }
+  else if (sym == pic->uVALUES) {
+    int len = (int)pic_length(pic, obj);
+    pic_value elt, it;
+
+    obj = pic_cdr(pic, obj);
+    pic_for_each (elt, obj, it) {
+      codegen(pic, cxt, elt, false);
+    }
+
+    emit_i(pic, cxt, OP_RET, len - 1);
+    return;
+  }
+  else if (sym == pic->uCALL_WITH_VALUES) {
+    codegen(pic, cxt, pic_list_ref(pic, obj, 2), false); /* push consumer first */
+    codegen(pic, cxt, pic_list_ref(pic, obj, 1), false);
+    emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), -1);
+    return;
   }
   else if (sym == pic->sCALL) {
     int len = (int)pic_length(pic, obj);

@@ -130,6 +130,9 @@ pic_init_core(pic_state *pic)
     define_builtin_syntax(pic->uBEGIN, "builtin:begin");
     define_builtin_syntax(pic->uDEFINE_MACRO, "builtin:define-macro");
 
+    define_builtin_syntax(pic->uVALUES, "builtin:values");
+    define_builtin_syntax(pic->uCALL_WITH_VALUES, "builtin:call-with-values");
+
     pic_defun(pic, "features", pic_features);
 
     pic_init_undef(pic); DONE;
