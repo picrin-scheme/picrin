@@ -8,12 +8,12 @@ Extension Library
 
 If you want to create a contribution library with C, the only thing you need to do is make a directory under contrib/. Below is a sample code of extension library.
 
-* contrib/add/CMakeLists.txt
+* contrib/add/nitro.mk
 
 .. sourcecode:: cmake
 
-  list(APPEND PICRIN_CONTRIB_INITS add)
-  list(APPEND PICRIN_CONTRIB_SOURCES ${PROJECT_SOURCE_DIR}/contrib/add/add.c)
+  CONTRIB_INITS += add
+  CONTRIB_SRCS  += contrib/add/add.c
 
 * contrib/add/add.c
 

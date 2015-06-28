@@ -157,14 +157,16 @@ enum pic_tt {
   PIC_TT_PROC,
   PIC_TT_PORT,
   PIC_TT_ERROR,
-  PIC_TT_CXT,
+  PIC_TT_ID,
   PIC_TT_ENV,
   PIC_TT_LIB,
-  PIC_TT_IREP,
   PIC_TT_DATA,
   PIC_TT_DICT,
   PIC_TT_REG,
-  PIC_TT_RECORD
+  PIC_TT_RECORD,
+  PIC_TT_CXT,
+  PIC_TT_IREP,
+  PIC_TT_CP
 };
 
 #define PIC_OBJECT_HEADER			\
@@ -183,6 +185,7 @@ struct pic_blob;
 struct pic_proc;
 struct pic_port;
 struct pic_error;
+struct pic_env;
 
 /* set aliases to basic types */
 typedef pic_value pic_list;
@@ -314,6 +317,8 @@ pic_type_repr(enum pic_tt tt)
     return "port";
   case PIC_TT_ERROR:
     return "error";
+  case PIC_TT_ID:
+    return "id";
   case PIC_TT_CXT:
     return "cxt";
   case PIC_TT_PROC:
@@ -332,6 +337,8 @@ pic_type_repr(enum pic_tt tt)
     return "reg";
   case PIC_TT_RECORD:
     return "record";
+  case PIC_TT_CP:
+    return "checkpoint";
   }
   PIC_UNREACHABLE();
 }

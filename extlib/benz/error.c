@@ -27,7 +27,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   err_line = pic_xvformat(pic, fmt, ap);
   va_end(ap);
 
-  xfprintf(pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line))));
+  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line))));
 }
 
 void

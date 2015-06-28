@@ -49,7 +49,7 @@ enum pic_opcode {
   OP_STOP
 };
 
-struct pic_code {
+typedef struct {
   enum pic_opcode insn;
   union {
     int i;
@@ -59,7 +59,7 @@ struct pic_code {
       int idx;
     } r;
   } u;
-};
+} pic_code;
 
 #define PIC_INIT_CODE_I(code, op, ival) do {    \
     code.insn = op;                             \
@@ -68,7 +68,6 @@ struct pic_code {
 
 struct pic_irep {
   PIC_OBJECT_HEADER
-  pic_sym *name;
   pic_code *code;
   int argc, localc, capturec;
   bool varg;
@@ -78,6 +77,8 @@ struct pic_irep {
   size_t clen, ilen, plen, slen;
 };
 
+pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);
+pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
 
