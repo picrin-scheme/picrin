@@ -461,28 +461,28 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 }
 
 static pic_value
-analyze_special(pic_state *pic, analyze_scope *scope, pic_value obj)
+analyze_list(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  pic_value seq, elt, it;
+  pic_value seq = pic_nil_value(), elt, it;
 
-  seq = pic_list1(pic, pic_car(pic, obj));
-  pic_for_each (elt, pic_cdr(pic, obj), it) {
+  pic_for_each (elt, obj, it) {
     seq = pic_cons(pic, analyze(pic, scope, elt), seq);
   }
   return pic_reverse(pic, seq);
 }
 
 static pic_value
+analyze_misc(pic_state *pic, analyze_scope *scope, pic_value obj)
+{
+  return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
+}
+
+static pic_value
 analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  pic_value var, val;
-
   define_var(pic, scope, pic_sym_ptr(pic_list_ref(pic, obj, 1)));
 
-  var = analyze(pic, scope, pic_list_ref(pic, obj, 1));
-  val = analyze(pic, scope, pic_list_ref(pic, obj, 2));
-
-  return pic_list3(pic, pic_obj_value(pic->uSETBANG), var, val);
+  return analyze_misc(pic, scope, obj);
 }
 
 static pic_value
@@ -525,7 +525,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
         return analyze_defer(pic, scope, obj);
       }
       else if (sym == pic->uIF || sym == pic->uBEGIN || sym == pic->uSETBANG || sym == pic->uVALUES || sym == pic->uCALL_WITH_VALUES) {
-        return analyze_special(pic, scope, obj);
+        return analyze_misc(pic, scope, obj);
       }
     }
 
@@ -824,7 +824,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_ret(pic, cxt, tailpos);
     return;
   }
-  else if (sym == pic->uSETBANG) {
+  else if (sym == pic->uSETBANG || sym == pic->uDEFINE) {
     pic_value var, val;
     pic_sym *type;
 
