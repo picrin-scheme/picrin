@@ -1,5 +1,6 @@
-CONTRIB_INITS += socket
+CONTRIB_INITS += features socket
 CONTRIB_LIBS += \
+	contrib/40.srfi/srfi/0.scm\
 	contrib/40.srfi/srfi/1.scm\
 	contrib/40.srfi/srfi/8.scm\
 	contrib/40.srfi/srfi/17.scm\
@@ -9,7 +10,9 @@ CONTRIB_LIBS += \
 	contrib/40.srfi/srfi/95.scm\
 	contrib/40.srfi/srfi/106.scm\
 	contrib/40.srfi/srfi/111.scm
-CONTRIB_SRCS += contrib/40.srfi/src/106.c
+CONTRIB_SRCS += \
+	contrib/40.srfi/src/0.c\
+	contrib/40.srfi/src/106.c
 CONTRIB_TESTS += test-srfi
 
 test-srfi: bin/picrin
