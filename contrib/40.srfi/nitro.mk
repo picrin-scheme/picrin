@@ -1,4 +1,6 @@
-CONTRIB_INITS += features socket
+CONTRIB_INITS += \
+	srfi_0 \
+	srfi_106
 CONTRIB_LIBS += \
 	contrib/40.srfi/srfi/0.scm\
 	contrib/40.srfi/srfi/1.scm\
