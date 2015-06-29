@@ -1,7 +1,7 @@
 #include "picrin.h"
 
 void
-pic_init_features(pic_state *pic)
+pic_init_srfi_0(pic_state *pic)
 {
     pic_add_feature(pic, "srfi-0");
     pic_add_feature(pic, "srfi-1");
