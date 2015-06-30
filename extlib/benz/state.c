@@ -48,7 +48,10 @@ static void
 pic_init_features(pic_state *pic)
 {
   pic_add_feature(pic, "picrin");
+
+#if PIC_ENABLE_FLOAT
   pic_add_feature(pic, "ieee-float");
+#endif
 
 #if _POSIX_SOURCE
   pic_add_feature(pic, "posix");
