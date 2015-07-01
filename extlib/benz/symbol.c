@@ -99,9 +99,7 @@ pic_symbol_string_to_symbol(pic_state *pic)
 void
 pic_init_symbol(pic_state *pic)
 {
-  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
-
-  pic_defun_vm(pic, "symbol?", pic->uSYMBOLP, pic_symbol_symbol_p);
+  pic_defun(pic, "symbol?", pic_symbol_symbol_p);
 
   pic_defun(pic, "symbol->string", pic_symbol_symbol_to_string);
   pic_defun(pic, "string->symbol", pic_symbol_string_to_symbol);

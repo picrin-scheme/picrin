@@ -115,6 +115,9 @@ pic_features(pic_state *pic)
 #define define_builtin_syntax(uid, name)                                \
   pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern_cstr(pic, name), uid)
 
+#define VM(uid, name)                                                   \
+  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern_cstr(pic, name), uid)
+
 static void
 pic_init_core(pic_state *pic)
 {
@@ -134,6 +137,21 @@ pic_init_core(pic_state *pic)
     define_builtin_syntax(pic->uDEFINE_MACRO, "builtin:define-macro");
 
     pic_defun(pic, "features", pic_features);
+
+    VM(pic->uCONS, "cons");
+    VM(pic->uCAR, "car");
+    VM(pic->uCDR, "cdr");
+    VM(pic->uNILP, "null?");
+    VM(pic->uSYMBOLP, "symbol?");
+    VM(pic->uPAIRP, "pair?");
+    VM(pic->uNOT, "not");
+    VM(pic->uADD, "+");
+    VM(pic->uSUB, "-");
+    VM(pic->uMUL, "*");
+    VM(pic->uDIV, "/");
+    VM(pic->uEQ, "=");
+    VM(pic->uLT, "<");
+    VM(pic->uLE, "<=");
 
     pic_init_undef(pic); DONE;
     pic_init_bool(pic); DONE;

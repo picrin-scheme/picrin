@@ -1135,23 +1135,6 @@ pic_define_syntactic_keyword(pic_state *pic, struct pic_env *env, pic_sym *sym, 
 }
 
 void
-pic_defun_vm(pic_state *pic, const char *name, pic_sym *uid, pic_func_t func)
-{
-  struct pic_proc *proc;
-  pic_sym *sym;
-
-  proc = pic_make_proc(pic, func);
-
-  sym = pic_intern_cstr(pic, name);
-
-  pic_put_variable(pic, pic->lib->env, pic_obj_value(sym), uid);
-
-  pic_dict_set(pic, pic->globals, uid, pic_obj_value(proc));
-
-  pic_export(pic, sym);
-}
-
-void
 pic_define_(pic_state *pic, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
@@ -1161,7 +1144,9 @@ pic_define_(pic_state *pic, const char *name, pic_value val)
   if ((uid = pic_find_variable(pic, pic->lib->env, pic_obj_value(sym))) == NULL) {
     uid = pic_add_variable(pic, pic->lib->env, pic_obj_value(sym));
   } else {
-    pic_warnf(pic, "redefining global");
+    if (pic_dict_has(pic, pic->globals, uid)) {
+      pic_warnf(pic, "redefining variable: ~s", pic_obj_value(uid));
+    }
   }
 
   pic_dict_set(pic, pic->globals, uid, val);
