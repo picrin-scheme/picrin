@@ -2,6 +2,8 @@
         (srfi 106)
         (picrin test))
 
+(test-begin)
+
 ; The number 9600 has no meaning. I just borrowed from Rust.
 (define *test-port* 9600)
 (define (next-test-port)
@@ -70,3 +72,5 @@
 (test *shut-wr* (shutdown-method write))
 (test *shut-rdwr* (shutdown-method read write))
 (test *shut-rdwr* (shutdown-method write read))
+
+(test-end)
