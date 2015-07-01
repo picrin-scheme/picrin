@@ -284,11 +284,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
 #define S(slot,name) pic->slot = pic_intern_cstr(pic, name)
 
-  S(sDEFINE, "define");
-  S(sLAMBDA, "lambda");
-  S(sIF, "if");
-  S(sBEGIN, "begin");
-  S(sSETBANG, "set!");
   S(sQUOTE, "quote");
   S(sQUASIQUOTE, "quasiquote");
   S(sUNQUOTE, "unquote");
@@ -297,46 +292,16 @@ pic_open(pic_allocf allocf, void *userdata)
   S(sSYNTAX_QUASIQUOTE, "syntax-quasiquote");
   S(sSYNTAX_UNQUOTE, "syntax-unquote");
   S(sSYNTAX_UNQUOTE_SPLICING, "syntax-unquote-splicing");
-  S(sDEFINE_MACRO, "define-macro");
   S(sIMPORT, "import");
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
   S(sCOND_EXPAND, "cond-expand");
-  S(sAND, "and");
-  S(sOR, "or");
-  S(sELSE, "else");
-  S(sLIBRARY, "library");
-  S(sONLY, "only");
-  S(sRENAME, "rename");
-  S(sPREFIX, "prefix");
-  S(sEXCEPT, "except");
-  S(sCONS, "cons");
-  S(sCAR, "car");
-  S(sCDR, "cdr");
-  S(sNILP, "null?");
-  S(sSYMBOLP, "symbol?");
-  S(sPAIRP, "pair?");
-  S(sADD, "+");
-  S(sSUB, "-");
-  S(sMUL, "*");
-  S(sDIV, "/");
-  S(sMINUS, "minus");
-  S(sEQ, "=");
-  S(sLT, "<");
-  S(sLE, "<=");
-  S(sGT, ">");
-  S(sGE, ">=");
-  S(sNOT, "not");
   S(sREAD, "read");
   S(sFILE, "file");
   S(sCALL, "call");
-  S(sTAILCALL, "tail-call");
   S(sGREF, "gref");
   S(sLREF, "lref");
   S(sCREF, "cref");
-  S(sRETURN, "return");
-  S(sCALL_WITH_VALUES, "call-with-values");
-  S(sTAILCALL_WITH_VALUES, "tailcall-with-values");
 
   pic_gc_arena_restore(pic, ai);
 

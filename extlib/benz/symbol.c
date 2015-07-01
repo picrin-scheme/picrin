@@ -32,7 +32,7 @@ pic_intern_cstr(pic_state *pic, const char *cstr)
   strcpy(copy, cstr);
   kh_key(h, it) = copy;
 
-  kh_val(h, it) = pic->sDEFINE; /* insert dummy */
+  kh_val(h, it) = pic->sQUOTE; /* insert dummy */
 
   sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TT_SYMBOL);
   sym->cstr = copy;
