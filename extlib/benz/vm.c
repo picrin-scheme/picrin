@@ -713,6 +713,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value v;
 
       v = pic_false_p(POP()) ? pic_true_value() : pic_false_value();
+      (void)POP();
       PUSH(v);
       NEXT;
     }
@@ -876,6 +877,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value a, b;
       pic_gc_protect(pic, b = POP());
       pic_gc_protect(pic, a = POP());
+      (void)POP();
       PUSH(pic_cons(pic, a, b));
       pic_gc_arena_restore(pic, ai);
       NEXT;
@@ -883,32 +885,35 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     CASE(OP_CAR) {
       pic_value p;
       p = POP();
+      (void)POP();
       PUSH(pic_car(pic, p));
       NEXT;
     }
     CASE(OP_CDR) {
       pic_value p;
       p = POP();
+      (void)POP();
       PUSH(pic_cdr(pic, p));
       NEXT;
     }
     CASE(OP_NILP) {
       pic_value p;
       p = POP();
+      (void)POP();
       PUSH(pic_bool_value(pic_nil_p(p)));
       NEXT;
     }
-
     CASE(OP_SYMBOLP) {
       pic_value p;
       p = POP();
+      (void)POP();
       PUSH(pic_bool_value(pic_sym_p(p)));
       NEXT;
     }
-
     CASE(OP_PAIRP) {
       pic_value p;
       p = POP();
+      (void)POP();
       PUSH(pic_bool_value(pic_pair_p(p)));
       NEXT;
     }
@@ -918,6 +923,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value a, b;						\
       b = POP();						\
       a = POP();						\
+      (void)POP();                                              \
       if (pic_int_p(a) && pic_int_p(b)) {			\
 	double f = (double)pic_int(a) op (double)pic_int(b);	\
 	if (INT_MIN <= f && f <= INT_MAX && (guard)) {		\
@@ -947,6 +953,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value a, b;						\
       b = POP();						\
       a = POP();						\
+      (void)POP();                                              \
       if (pic_int_p(a) && pic_int_p(b)) {			\
         PUSH(pic_int_value(pic_int(a) op pic_int(b)));          \
       }								\
@@ -971,6 +978,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     CASE(OP_MINUS) {
       pic_value n;
       n = POP();
+      (void)POP();
       if (pic_int_p(n)) {
 	PUSH(pic_int_value(-pic_int(n)));
       }
@@ -990,6 +998,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value a, b;						\
       b = POP();						\
       a = POP();						\
+      (void)POP();                                              \
       if (pic_int_p(a) && pic_int_p(b)) {			\
 	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
       }								\
@@ -1013,6 +1022,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value a, b;						\
       b = POP();						\
       a = POP();						\
+      (void)POP();                                              \
       if (pic_int_p(a) && pic_int_p(b)) {			\
 	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
       }								\

@@ -128,7 +128,7 @@
 #endif
 
 #ifndef PIC_STACK_SIZE
-# define PIC_STACK_SIZE 1024
+# define PIC_STACK_SIZE 2048
 #endif
 
 #ifndef PIC_RESCUE_SIZE
