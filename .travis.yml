@@ -7,7 +7,7 @@ env:
   - CFLAGS="-m64"
 before_script:
   - sudo apt-get update -qq
-  - sudo apt-get install -y libc6:i386 libgcc1:i386 gcc-4.6-base:i386 gcc-multilib
+  - sudo apt-get install -y gcc-multilib
 script:
   - perl --version
   - make test
