@@ -121,7 +121,7 @@ expand_list(pic_state *pic, pic_value obj, struct pic_env *env, pic_value deferr
 static pic_value
 expand_defer(pic_state *pic, pic_value expr, pic_value deferred)
 {
-  pic_value skel = pic_list1(pic, pic_invalid_value()); /* (#<invalid>) */
+  pic_value skel = pic_cons(pic, pic_invalid_value(), pic_invalid_value());
 
   pic_set_car(pic, deferred, pic_acons(pic, expr, skel, pic_car(pic, deferred)));
 
@@ -328,7 +328,7 @@ analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, anal
 
   scope->up = up;
   scope->depth = up ? up->depth + 1 : 0;
-  scope->defer = pic_nil_value();
+  scope->defer = pic_list1(pic, pic_nil_value());
 }
 
 static void
@@ -400,12 +400,9 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 static pic_value
 analyze_defer(pic_state *pic, analyze_scope *scope, pic_value form)
 {
-  pic_sym *sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
-  pic_value skel;
+  pic_value skel = pic_cons(pic, pic_invalid_value(), pic_invalid_value());
 
-  skel = pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sNOWHERE));
-
-  pic_push(pic, pic_cons(pic, skel, form), scope->defer);
+  pic_set_car(pic, scope->defer, pic_acons(pic, form, skel, pic_car(pic, scope->defer)));
 
   return skel;
 }
@@ -413,20 +410,20 @@ analyze_defer(pic_state *pic, analyze_scope *scope, pic_value form)
 static void
 analyze_deferred(pic_state *pic, analyze_scope *scope)
 {
-  pic_value defer, it, skel, form, val;
+  pic_value defer, val, src, dst, it;
+
+  scope->defer = pic_car(pic, scope->defer);
 
   pic_for_each (defer, pic_reverse(pic, scope->defer), it) {
-    skel = pic_car(pic, defer);
-    form = pic_cdr(pic, defer);
+    src = pic_car(pic, defer);
+    dst = pic_cdr(pic, defer);
 
-    val = analyze_lambda(pic, scope, form);
+    val = analyze_lambda(pic, scope, src);
 
     /* copy */
-    pic_pair_ptr(skel)->car = pic_car(pic, val);
-    pic_pair_ptr(skel)->cdr = pic_cdr(pic, val);
+    pic_set_car(pic, dst, pic_car(pic, val));
+    pic_set_cdr(pic, dst, pic_cdr(pic, val));
   }
-
-  scope->defer = pic_nil_value();
 }
 
 static pic_value
@@ -550,7 +547,6 @@ analyze(pic_state *pic, analyze_scope *scope, pic_value obj)
 
   pic_gc_arena_restore(pic, ai);
   pic_gc_protect(pic, res);
-  pic_gc_protect(pic, scope->defer);
   return res;
 }
 
