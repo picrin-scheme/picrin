@@ -643,6 +643,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 
       val = POP();
       pic_dict_set(pic, pic->globals, sym, val);
+      PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_LREF) {
@@ -671,6 +672,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
         }
       }
       pic->ci->fp[c.u.i] = POP();
+      PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_CREF) {
@@ -693,6 +695,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 	cxt = cxt->up;
       }
       cxt->regs[c.u.r.idx] = POP();
+      PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_JMP) {
