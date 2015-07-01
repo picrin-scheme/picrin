@@ -1091,7 +1091,8 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
   if (sym == pic->sGREF) {
     emit_i(pic, cxt, OP_GREF, index_symbol(pic, cxt, pic_sym_ptr(pic_list_ref(pic, obj, 1))));
     return;
-  } else if (sym == pic->sCREF) {
+  }
+  else if (sym == pic->sCREF) {
     pic_sym *name;
     int depth;
 
@@ -1099,7 +1100,8 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
     name  = pic_sym_ptr(pic_list_ref(pic, obj, 2));
     emit_r(pic, cxt, OP_CREF, depth, index_capture(cxt, name, depth));
     return;
-  } else if (sym == pic->sLREF) {
+  }
+  else if (sym == pic->sLREF) {
     pic_sym *name;
     int i;
 
@@ -1110,7 +1112,8 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
     }
     emit_i(pic, cxt, OP_LREF, index_local(cxt, name));
     return;
-  } else if (sym == pic->sSETBANG) {
+  }
+  else if (sym == pic->sSETBANG) {
     pic_value var, val;
     pic_sym *type;
 
