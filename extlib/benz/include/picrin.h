@@ -95,31 +95,16 @@ struct pic_state {
 
   struct pic_lib *lib, *prev_lib;
 
-  pic_sym *sDEFINE, *sLAMBDA, *sIF, *sBEGIN, *sQUOTE, *sSETBANG;
-  pic_sym *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE;
-  pic_sym *sSYNTAX_UNQUOTE_SPLICING;
-  pic_sym *sDEFINE_MACRO, *sIMPORT, *sEXPORT;
-  pic_sym *sDEFINE_LIBRARY;
-  pic_sym *sCOND_EXPAND, *sAND, *sOR, *sELSE, *sLIBRARY;
-  pic_sym *sONLY, *sRENAME, *sPREFIX, *sEXCEPT;
-  pic_sym *sCONS, *sCAR, *sCDR, *sNILP;
-  pic_sym *sSYMBOLP, *sPAIRP;
-  pic_sym *sADD, *sSUB, *sMUL, *sDIV, *sMINUS;
-  pic_sym *sEQ, *sLT, *sLE, *sGT, *sGE, *sNOT;
+  pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
+  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
+  pic_sym *sDEFINE_LIBRARY, *sIMPORT, *sEXPORT, *sCOND_EXPAND;
+  pic_sym *sGREF, *sCREF, *sLREF, *sCALL;
   pic_sym *sREAD, *sFILE;
-  pic_sym *sGREF, *sCREF, *sLREF;
-  pic_sym *sCALL, *sTAILCALL, *sRETURN;
-  pic_sym *sCALL_WITH_VALUES, *sTAILCALL_WITH_VALUES;
 
-  pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG;
-  pic_sym *uDEFINE_MACRO, *uIMPORT, *uEXPORT;
-  pic_sym *uDEFINE_LIBRARY;
-  pic_sym *uCOND_EXPAND;
-  pic_sym *uCONS, *uCAR, *uCDR, *uNILP;
-  pic_sym *uSYMBOLP, *uPAIRP;
-  pic_sym *uADD, *uSUB, *uMUL, *uDIV;
-  pic_sym *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
+  pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG, *uDEFINE_MACRO;
+  pic_sym *uDEFINE_LIBRARY, *uIMPORT, *uEXPORT, *uCOND_EXPAND;
+  pic_sym *uCONS, *uCAR, *uCDR, *uNILP, *uSYMBOLP, *uPAIRP;
+  pic_sym *uADD, *uSUB, *uMUL, *uDIV, *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
   pic_sym *uVALUES, *uCALL_WITH_VALUES;
 
   struct pic_lib *PICRIN_BASE;
