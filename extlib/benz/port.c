@@ -98,6 +98,16 @@ file_open(pic_state *pic, const char *name, const char *mode) {
   }
 }
 
+PIC_NORETURN static void
+file_error(pic_state *pic, const char *msg)
+{
+  struct pic_error *e;
+
+  e = pic_make_error(pic, pic_intern_cstr(pic, "file"), msg, pic_nil_value());
+
+  pic_raise(pic, pic_obj_value(e));
+}
+
 struct pic_port *
 pic_open_file(pic_state *pic, const char *name, int flags) {
   struct pic_port *port;
@@ -108,8 +118,7 @@ pic_open_file(pic_state *pic, const char *name, int flags) {
     mode = 'w';
   }
   if ((file = file_open(pic, name, &mode)) == NULL) {
-    pic_str *msg = pic_format(pic, "could not open file '%s'", name);
-    pic_raise(pic, pic_obj_value(pic_make_error(pic, pic->sFILE, pic_str_cstr(pic, msg), pic_nil_value())));
+    file_error(pic, pic_str_cstr(pic, pic_format(pic, "could not open file '%s'", name)));
   }
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);

@@ -314,8 +314,6 @@ pic_open(pic_allocf allocf, void *userdata)
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
   S(sCOND_EXPAND, "cond-expand");
-  S(sREAD, "read");
-  S(sFILE, "file");
   S(sCALL, "call");
   S(sGREF, "gref");
   S(sLREF, "lref");
