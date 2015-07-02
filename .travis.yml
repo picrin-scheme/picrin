@@ -1,13 +1,15 @@
+sudo: false
 language: c
 compiler:
   - gcc
   - clang
+addons:
+  apt:
+    packages:
+      - gcc-multilib
 env:
   - CFLAGS="-m32"
   - CFLAGS="-m64"
-before_script:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y gcc-multilib
 script:
   - perl --version
   - make test
