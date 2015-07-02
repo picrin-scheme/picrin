@@ -650,7 +650,8 @@ my $src = <<'EOL';
         import
         export)
 
-(export let let* letrec letrec*
+(export define lambda quote set! if begin define-macro
+        let let* letrec letrec*
         let-values let*-values define-values
         quasiquote unquote unquote-splicing
         and or
@@ -999,11 +1000,12 @@ const char pic_boot[][80] = {
 "\")))))\n         (export\n           (lambda (spec)\n             (let ((slot (coll",
 "ect spec)))\n               (library-export (car slot) (cdr slot))))))\n      (for",
 "-each export (cdr form)))))\n\n(export define-library\n        cond-expand\n        ",
-"import\n        export)\n\n(export let let* letrec letrec*\n        let-values let*-",
-"values define-values\n        quasiquote unquote unquote-splicing\n        and or\n",
-"        cond case else =>\n        do when unless\n        parameterize\n        de",
-"fine-syntax\n        syntax-quote syntax-unquote\n        syntax-quasiquote syntax",
-"-unquote-splicing\n        let-syntax letrec-syntax\n        syntax-error)\n\n\n",
+"import\n        export)\n\n(export define lambda quote set! if begin define-macro\n ",
+"       let let* letrec letrec*\n        let-values let*-values define-values\n    ",
+"    quasiquote unquote unquote-splicing\n        and or\n        cond case else =>",
+"\n        do when unless\n        parameterize\n        define-syntax\n        synta",
+"x-quote syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n       ",
+" let-syntax letrec-syntax\n        syntax-error)\n\n\n",
 "",
 ""
 };
