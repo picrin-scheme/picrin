@@ -712,14 +712,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       }
       NEXT;
     }
-    CASE(OP_NOT) {
-      pic_value v;
-
-      v = pic_false_p(POP()) ? pic_true_value() : pic_false_value();
-      (void)POP();
-      PUSH(v);
-      NEXT;
-    }
     CASE(OP_CALL) {
       pic_value x, v;
       pic_callinfo *ci;
@@ -876,6 +868,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_gc_arena_restore(pic, ai);
       NEXT;
     }
+
     CASE(OP_CONS) {
       pic_value a, b;
       pic_gc_protect(pic, b = POP());
@@ -918,6 +911,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       p = POP();
       (void)POP();
       PUSH(pic_bool_value(pic_pair_p(p)));
+      NEXT;
+    }
+    CASE(OP_NOT) {
+      pic_value v;
+      v = pic_false_p(POP()) ? pic_true_value() : pic_false_value();
+      (void)POP();
+      PUSH(v);
       NEXT;
     }
 
