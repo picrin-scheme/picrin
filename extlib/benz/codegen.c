@@ -929,7 +929,7 @@ codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len
 
 #define VM(uid, op)                             \
     if (sym == uid) {                           \
-      emit_n(pic, cxt, op);                     \
+      emit_i(pic, cxt, op, len);                \
       emit_ret(pic, cxt, tailpos);              \
       return true;                              \
     }
@@ -937,29 +937,24 @@ codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len
     /*
       TODO:
       - call-with-values, values, >, >=
-      - more than 2 arguments for add, sub, mul, ...
     */
 
     sym = pic_sym_ptr(pic_list_ref(pic, proc, 1));
 
-    if (len == 3) {             /* binary operator */
-      VM(pic->uCONS, OP_CONS)
-      VM(pic->uADD, OP_ADD)
-      VM(pic->uSUB, OP_SUB)
-      VM(pic->uMUL, OP_MUL)
-      VM(pic->uDIV, OP_DIV)
-      VM(pic->uEQ, OP_EQ)
-      VM(pic->uLT, OP_LT)
-      VM(pic->uLE, OP_LE)
-    }
-    if (len == 2) {             /* unary operator */
-      VM(pic->uCAR, OP_CAR)
-      VM(pic->uCDR, OP_CDR)
-      VM(pic->uNILP, OP_NILP)
-      VM(pic->uSYMBOLP, OP_SYMBOLP)
-      VM(pic->uPAIRP, OP_PAIRP)
-      VM(pic->uNOT, OP_NOT)
-    }
+    VM(pic->uCONS, OP_CONS)
+    VM(pic->uCAR, OP_CAR)
+    VM(pic->uCDR, OP_CDR)
+    VM(pic->uNILP, OP_NILP)
+    VM(pic->uSYMBOLP, OP_SYMBOLP)
+    VM(pic->uPAIRP, OP_PAIRP)
+    VM(pic->uNOT, OP_NOT)
+    VM(pic->uEQ, OP_EQ)
+    VM(pic->uLT, OP_LT)
+    VM(pic->uLE, OP_LE)
+    VM(pic->uADD, OP_ADD)
+    VM(pic->uSUB, OP_SUB)
+    VM(pic->uMUL, OP_MUL)
+    VM(pic->uDIV, OP_DIV)
   }
   return false;
 }
