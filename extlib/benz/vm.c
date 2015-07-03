@@ -552,7 +552,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
     &&L_OP_SYMBOLP, &&L_OP_PAIRP,
-    &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV, &&L_OP_MINUS,
+    &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV,
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
   };
 #endif
@@ -977,24 +977,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     DEFINE_ARITH_OP2(OP_MUL, *);
     DEFINE_ARITH_OP2(OP_DIV, /);
 #endif
-
-    CASE(OP_MINUS) {
-      pic_value n;
-      n = POP();
-      (void)POP();
-      if (pic_int_p(n)) {
-	PUSH(pic_int_value(-pic_int(n)));
-      }
-#if PIC_ENABLE_FLOAT
-      else if (pic_float_p(n)) {
-	PUSH(pic_float_value(-pic_float(n)));
-      }
-#endif
-      else {
-	pic_errorf(pic, "unary - got a non-number operand");
-      }
-      NEXT;
-    }
 
 #define DEFINE_COMP_OP(opcode, op)				\
     CASE(opcode) {						\

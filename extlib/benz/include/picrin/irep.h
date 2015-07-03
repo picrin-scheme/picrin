@@ -42,7 +42,6 @@ enum pic_opcode {
   OP_SUB,
   OP_MUL,
   OP_DIV,
-  OP_MINUS,
   OP_EQ,
   OP_LT,
   OP_LE,
@@ -184,9 +183,6 @@ pic_dump_code(pic_code c)
     break;
   case OP_DIV:
     puts("OP_DIV");
-    break;
-  case OP_MINUS:
-    puts("OP_MINUS");
     break;
   case OP_EQ:
     puts("OP_EQ");

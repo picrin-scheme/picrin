@@ -971,7 +971,6 @@ codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len
       VM(pic->uNILP, OP_NILP)
       VM(pic->uSYMBOLP, OP_SYMBOLP)
       VM(pic->uPAIRP, OP_PAIRP)
-      VM(pic->uSUB, OP_MINUS)
       VM(pic->uNOT, OP_NOT)
     }
   }
