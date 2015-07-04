@@ -921,111 +921,62 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
 
-#define DEFINE_ARITH_OP(opcode, op, guard)			\
-    CASE(opcode) {						\
-      pic_value a, b;						\
-      b = POP();						\
-      a = POP();						\
-      (void)POP();                                              \
-      if (pic_int_p(a) && pic_int_p(b)) {			\
-	double f = (double)pic_int(a) op (double)pic_int(b);	\
-	if (INT_MIN <= f && f <= INT_MAX && (guard)) {		\
-	  PUSH(pic_int_value((int)f));				\
-	}							\
-	else {							\
-	  PUSH(pic_float_value(f));				\
-	}							\
-      }								\
-      else if (pic_float_p(a) && pic_float_p(b)) {		\
-	PUSH(pic_float_value(pic_float(a) op pic_float(b)));	\
-      }								\
-      else if (pic_int_p(a) && pic_float_p(b)) {		\
-	PUSH(pic_float_value(pic_int(a) op pic_float(b)));	\
-      }								\
-      else if (pic_float_p(a) && pic_int_p(b)) {		\
-	PUSH(pic_float_value(pic_float(a) op pic_int(b)));	\
-      }								\
-      else {							\
-	pic_errorf(pic, #op " got non-number operands");        \
-      }								\
-      NEXT;							\
+    CASE(OP_ADD) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_add(pic, a, b));
+      NEXT;
     }
-
-#define DEFINE_ARITH_OP2(opcode, op)                            \
-    CASE(opcode) {						\
-      pic_value a, b;						\
-      b = POP();						\
-      a = POP();						\
-      (void)POP();                                              \
-      if (pic_int_p(a) && pic_int_p(b)) {			\
-        PUSH(pic_int_value(pic_int(a) op pic_int(b)));          \
-      }								\
-      else {							\
-	pic_errorf(pic, #op " got non-number operands");        \
-      }								\
-      NEXT;							\
+    CASE(OP_SUB) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_sub(pic, a, b));
+      NEXT;
     }
-
-#if PIC_ENABLE_FLOAT
-    DEFINE_ARITH_OP(OP_ADD, +, true);
-    DEFINE_ARITH_OP(OP_SUB, -, true);
-    DEFINE_ARITH_OP(OP_MUL, *, true);
-    DEFINE_ARITH_OP(OP_DIV, /, f == round(f));
-#else
-    DEFINE_ARITH_OP2(OP_ADD, +);
-    DEFINE_ARITH_OP2(OP_SUB, -);
-    DEFINE_ARITH_OP2(OP_MUL, *);
-    DEFINE_ARITH_OP2(OP_DIV, /);
-#endif
-
-#define DEFINE_COMP_OP(opcode, op)				\
-    CASE(opcode) {						\
-      pic_value a, b;						\
-      b = POP();						\
-      a = POP();						\
-      (void)POP();                                              \
-      if (pic_int_p(a) && pic_int_p(b)) {			\
-	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
-      }								\
-      else if (pic_float_p(a) && pic_float_p(b)) {		\
-	PUSH(pic_bool_value(pic_float(a) op pic_float(b)));	\
-      }								\
-      else if (pic_int_p(a) && pic_float_p(b)) {		\
-	PUSH(pic_bool_value(pic_int(a) op pic_float(b)));	\
-      }								\
-      else if (pic_float_p(a) && pic_int_p(b)) {		\
-	PUSH(pic_bool_value(pic_float(a) op pic_int(b)));	\
-      }								\
-      else {							\
-	pic_errorf(pic, #op " got non-number operands");        \
-      }								\
-      NEXT;							\
+    CASE(OP_MUL) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_mul(pic, a, b));
+      NEXT;
     }
-
-#define DEFINE_COMP_OP2(opcode, op)				\
-    CASE(opcode) {						\
-      pic_value a, b;						\
-      b = POP();						\
-      a = POP();						\
-      (void)POP();                                              \
-      if (pic_int_p(a) && pic_int_p(b)) {			\
-	PUSH(pic_bool_value(pic_int(a) op pic_int(b)));		\
-      }								\
-      else {							\
-	pic_errorf(pic, #op " got non-number operands");        \
-      }								\
-      NEXT;							\
+    CASE(OP_DIV) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_div(pic, a, b));
+      NEXT;
     }
-
-#if PIC_ENABLE_FLOAT
-    DEFINE_COMP_OP(OP_EQ, ==);
-    DEFINE_COMP_OP(OP_LT, <);
-    DEFINE_COMP_OP(OP_LE, <=);
-#else
-    DEFINE_COMP_OP2(OP_EQ, ==);
-    DEFINE_COMP_OP2(OP_LT, <);
-    DEFINE_COMP_OP2(OP_LE, <=);
-#endif
+    CASE(OP_EQ) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_bool_value(pic_eq(pic, a, b)));
+      NEXT;
+    }
+    CASE(OP_LE) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_bool_value(pic_le(pic, a, b)));
+      NEXT;
+    }
+    CASE(OP_LT) {
+      pic_value a, b;
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_bool_value(pic_lt(pic, a, b)));
+      NEXT;
+    }
 
     CASE(OP_STOP) {
 

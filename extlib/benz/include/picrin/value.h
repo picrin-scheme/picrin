@@ -582,6 +582,45 @@ pic_eqv_p(pic_value x, pic_value y)
 
 #endif
 
+#if PIC_ENABLE_FLOAT
+# define pic_aop(pic, a, b, op, name, guard)                            \
+    ((pic_int_p(a) && pic_int_p(b)) ?                                   \
+     ((INT_MIN <= (double)pic_int(a) op (double)pic_int(b) && (double)pic_int(a) op (double)pic_int(b) <= INT_MAX && guard) \
+      ? pic_int_value((int)((double)pic_int(a) op (double)pic_int(b)))  \
+      : pic_float_value((double)pic_int(a) op (double)pic_int(b)))      \
+     : (pic_float_p(a) && pic_float_p(b)) ? pic_float_value(pic_float(a) op pic_float(b)) \
+     : (pic_int_p(a) && pic_float_p(b)) ? pic_float_value(pic_int(a) op pic_float(b)) \
+     : (pic_float_p(a) && pic_int_p(b)) ? pic_float_value(pic_float(a) op pic_int(b)) \
+     : (pic_errorf(pic, name ": non-number operand given"), 0))
+#else
+# define pic_aop(pic, a, b, op, name)                                   \
+    ((pic_int_p(a) && pic_int_p(b))                                     \
+     ? pic_int_value(pic_int(a) op pic_int(b))                          \
+     : (pic_errorf(pic, name ": non-number operand given"), 0))
+#endif
+
+#define pic_add(pic, a, b) pic_aop(pic, a, b, +, "+", true)
+#define pic_sub(pic, a, b) pic_aop(pic, a, b, -, "-", true)
+#define pic_mul(pic, a, b) pic_aop(pic, a, b, *, "*", true)
+#define pic_div(pic, a, b) pic_aop(pic, a, b, /, "/", (double)pic_int(a) / (double)pic_int(b) == round((double)pic_int(a) / (double)pic_int(b)))
+
+#if PIC_ENABLE_FLOAT
+# define pic_cmp(pic, a, b, op, name)                                   \
+    ((pic_int_p(a) && pic_int_p(b)) ? pic_int(a) op pic_int(b)          \
+     : (pic_float_p(a) && pic_float_p(b)) ? pic_float(a) op pic_float(b) \
+     : (pic_int_p(a) && pic_float_p(b)) ? pic_int(a) op pic_float(b)    \
+     : (pic_float_p(a) && pic_int_p(b)) ? pic_float(a) op pic_int(b)    \
+     : (pic_errorf(pic, name ": non-number operand given"), 0))
+#else
+# define pic_cmp(pic, a, b, op, name)                                   \
+    ((pic_int_p(a) && pic_int_p(b)) ? pic_int(a) op pic_int(b)          \
+     : (pic_errorf(pic, name ": non-number operand given"), 0))
+#endif
+
+#define pic_eq(pic, a, b) pic_cmp(pic, a, b, ==, "=")
+#define pic_le(pic, a, b) pic_cmp(pic, a, b, <=, "<=")
+#define pic_lt(pic, a, b) pic_cmp(pic, a, b, <, "<")
+
 #if defined(__cplusplus)
 }
 #endif
