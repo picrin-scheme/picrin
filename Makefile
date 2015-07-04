@@ -29,7 +29,7 @@ LDFLAGS += -lm
 
 prefix = /usr/local
 
-all: CFLAGS += -O2
+all: CFLAGS += -O2 -DNDEBUG=1
 all: bin/picrin
 
 include $(sort $(wildcard contrib/*/nitro.mk))
