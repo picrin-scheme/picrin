@@ -647,6 +647,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
         irep = pic_get_proc(pic)->u.i.irep;
         if (c.u.i >= irep->argc + irep->localc) {
           ci->cxt->regs[c.u.i - (ci->regs - ci->fp)] = POP();
+          PUSH(pic_undef_value());
           NEXT;
         }
       }
