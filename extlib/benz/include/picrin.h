@@ -38,10 +38,9 @@ extern "C" {
 #include "picrin/kvec.h"
 #include "picrin/khash.h"
 
-#include "picrin/value.h"
-
 typedef struct pic_state pic_state;
 
+#include "picrin/value.h"
 #include "picrin/irep.h"
 #include "picrin/file.h"
 #include "picrin/read.h"

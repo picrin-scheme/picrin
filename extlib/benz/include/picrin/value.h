@@ -583,43 +583,86 @@ pic_eqv_p(pic_value x, pic_value y)
 #endif
 
 #if PIC_ENABLE_FLOAT
-# define pic_aop(pic, a, b, op, name, guard)                            \
-    ((pic_int_p(a) && pic_int_p(b)) ?                                   \
-     ((INT_MIN <= (double)pic_int(a) op (double)pic_int(b) && (double)pic_int(a) op (double)pic_int(b) <= INT_MAX && guard) \
-      ? pic_int_value((int)((double)pic_int(a) op (double)pic_int(b)))  \
-      : pic_float_value((double)pic_int(a) op (double)pic_int(b)))      \
-     : (pic_float_p(a) && pic_float_p(b)) ? pic_float_value(pic_float(a) op pic_float(b)) \
-     : (pic_int_p(a) && pic_float_p(b)) ? pic_float_value(pic_int(a) op pic_float(b)) \
-     : (pic_float_p(a) && pic_int_p(b)) ? pic_float_value(pic_float(a) op pic_int(b)) \
-     : (pic_errorf(pic, name ": non-number operand given"), 0))
+# define pic_define_aop(name, op, guard)                        \
+  PIC_INLINE pic_value                                          \
+  name(pic_state *pic, pic_value a, pic_value b)                \
+  {                                                             \
+    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
+    double f;                                                   \
+    if (pic_int_p(a) && pic_int_p(b)) {                         \
+      f = (double)pic_int(a) op (double)pic_int(b);             \
+      return (INT_MIN <= f && f <= INT_MAX && guard)            \
+        ? pic_int_value((int)f)                                 \
+        : pic_float_value(f);                                   \
+    } else if (pic_float_p(a) && pic_float_p(b)) {              \
+      return pic_float_value(pic_float(a) op pic_float(b));     \
+    } else if (pic_int_p(a) && pic_float_p(b)) {                \
+      return pic_float_value(pic_int(a) op pic_float(b));       \
+    } else if (pic_float_p(a) && pic_int_p(b)) {                \
+      return pic_float_value(pic_float(a) op pic_int(b));       \
+    } else {                                                    \
+      pic_errorf(pic, #name ": non-number operand given");      \
+    }                                                           \
+    PIC_UNREACHABLE();                                          \
+  }
 #else
-# define pic_aop(pic, a, b, op, name)                                   \
-    ((pic_int_p(a) && pic_int_p(b))                                     \
-     ? pic_int_value(pic_int(a) op pic_int(b))                          \
-     : (pic_errorf(pic, name ": non-number operand given"), 0))
+# define pic_define_aop(name, op)                               \
+  PIC_INLINE pic_value                                          \
+  name(pic_state *pic, pic_value a, pic_value b)                \
+  {                                                             \
+    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
+    double f;                                                   \
+    if (pic_int_p(a) && pic_int_p(b)) {                         \
+      return pic_int_value(pic_int(a) op pic_int(b));           \
+    } else {                                                    \
+      pic_errorf(pic, #name ": non-number operand given");      \
+    }                                                           \
+    PIC_UNREACHABLE();                                          \
+  }
 #endif
 
-#define pic_add(pic, a, b) pic_aop(pic, a, b, +, "+", true)
-#define pic_sub(pic, a, b) pic_aop(pic, a, b, -, "-", true)
-#define pic_mul(pic, a, b) pic_aop(pic, a, b, *, "*", true)
-#define pic_div(pic, a, b) pic_aop(pic, a, b, /, "/", (double)pic_int(a) / (double)pic_int(b) == round((double)pic_int(a) / (double)pic_int(b)))
+pic_define_aop(pic_add, +, true)
+pic_define_aop(pic_sub, -, true)
+pic_define_aop(pic_mul, *, true)
+pic_define_aop(pic_div, /, f == round(f))
 
 #if PIC_ENABLE_FLOAT
-# define pic_cmp(pic, a, b, op, name)                                   \
-    ((pic_int_p(a) && pic_int_p(b)) ? pic_int(a) op pic_int(b)          \
-     : (pic_float_p(a) && pic_float_p(b)) ? pic_float(a) op pic_float(b) \
-     : (pic_int_p(a) && pic_float_p(b)) ? pic_int(a) op pic_float(b)    \
-     : (pic_float_p(a) && pic_int_p(b)) ? pic_float(a) op pic_int(b)    \
-     : (pic_errorf(pic, name ": non-number operand given"), 0))
+# define pic_define_cmp(name, op)                               \
+  PIC_INLINE bool                                               \
+  name(pic_state *pic, pic_value a, pic_value b)                \
+  {                                                             \
+    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
+    if (pic_int_p(a) && pic_int_p(b)) {                         \
+      return pic_int(a) op pic_int(b);                          \
+    } else if (pic_float_p(a) && pic_float_p(b)) {              \
+      return pic_float(a) op pic_float(b);                      \
+    } else if (pic_int_p(a) && pic_float_p(b)) {                \
+      return pic_int(a) op pic_float(b);                        \
+    } else if (pic_float_p(a) && pic_int_p(b)) {                \
+      return pic_float(a) op pic_int(b);                        \
+    } else {                                                    \
+      pic_errorf(pic, #name ": non-number operand given");      \
+    }                                                           \
+    PIC_UNREACHABLE();                                          \
+  }
 #else
-# define pic_cmp(pic, a, b, op, name)                                   \
-    ((pic_int_p(a) && pic_int_p(b)) ? pic_int(a) op pic_int(b)          \
-     : (pic_errorf(pic, name ": non-number operand given"), 0))
+# define pic_define_cmp(name, op)                               \
+  PIC_INLINE bool                                               \
+  name(pic_state *pic, pic_value a, pic_value b)                \
+  {                                                             \
+    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
+    if (pic_int_p(a) && pic_int_p(b)) {                         \
+      return pic_int(a) op pic_int(b);                          \
+    } else {                                                    \
+      pic_errorf(pic, #name ": non-number operand given");      \
+    }                                                           \
+    PIC_UNREACHABLE();                                          \
+  }
 #endif
 
-#define pic_eq(pic, a, b) pic_cmp(pic, a, b, ==, "=")
-#define pic_le(pic, a, b) pic_cmp(pic, a, b, <=, "<=")
-#define pic_lt(pic, a, b) pic_cmp(pic, a, b, <, "<")
+pic_define_cmp(pic_eq, ==)
+pic_define_cmp(pic_lt, <)
+pic_define_cmp(pic_le, <=)
 
 #if defined(__cplusplus)
 }
