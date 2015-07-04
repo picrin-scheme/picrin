@@ -149,7 +149,7 @@ pic_dump_code(pic_code c)
     printf("OP_TAILCALL\t%d\n", c.u.i);
     break;
   case OP_RET:
-    printf("OP_RET\t%d\n", c.u.i);
+    puts("OP_RET");
     break;
   case OP_LAMBDA:
     printf("OP_LAMBDA\t%d\n", c.u.i);

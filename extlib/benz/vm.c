@@ -809,7 +809,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
         vm_tear_off(pic->ci);
       }
 
-      pic->ci->retc = c.u.i;
+      assert(pic->ci->retc == 1);
 
     L_RET:
       retc = pic->ci->retc;

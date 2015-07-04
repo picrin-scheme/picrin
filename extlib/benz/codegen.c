@@ -679,7 +679,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
     cxt->clen++;                                \
   } while (0)                                   \
 
-#define emit_ret(pic, cxt, tailpos) if (tailpos) emit_i(pic, cxt, OP_RET, 1)
+#define emit_ret(pic, cxt, tailpos) if (tailpos) emit_n(pic, cxt, OP_RET)
 
 static void
 create_activation(pic_state *pic, codegen_context *cxt)
