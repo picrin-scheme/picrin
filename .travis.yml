@@ -15,4 +15,4 @@ script:
   - make test
   - make clean
   - make debug
-  - make test 2> /dev/null >/dev/null
+  - make test
