@@ -431,21 +431,21 @@ pic_vm_tear_off(pic_state *pic)
   }
 }
 
-static struct pic_irep *
+PIC_INLINE struct pic_irep *
 vm_get_irep(pic_state *pic)
 {
   pic_value self;
-  struct pic_irep *irep;
+  struct pic_proc *proc;
 
   self = pic->ci->fp[0];
-  if (! pic_proc_p(self)) {
-    pic_errorf(pic, "logic flaw");
-  }
-  irep = pic_proc_ptr(self)->u.i.irep;
-  if (! pic_proc_irep_p(pic_proc_ptr(self))) {
-    pic_errorf(pic, "logic flaw");
-  }
-  return irep;
+
+  assert(pic_proc_p(self));
+
+  proc = pic_proc_ptr(self);
+
+  assert(pic_proc_irep_p(proc));
+
+  return proc->u.i.irep;
 }
 
 #if VM_DEBUG
@@ -827,17 +827,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_LAMBDA) {
-      pic_value self;
-      struct pic_irep *irep;
-
-      self = pic->ci->fp[0];
-      if (! pic_proc_p(self)) {
-        pic_errorf(pic, "logic flaw");
-      }
-      irep = pic_proc_ptr(self)->u.i.irep;
-      if (! pic_proc_irep_p(pic_proc_ptr(self))) {
-        pic_errorf(pic, "logic flaw");
-      }
+      struct pic_irep *irep = vm_get_irep(pic);
 
       if (pic->ci->cxt == NULL) {
         vm_push_cxt(pic);
