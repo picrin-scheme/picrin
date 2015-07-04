@@ -681,38 +681,6 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 
 #define emit_ret(pic, cxt, tailpos) if (tailpos) emit_n(pic, cxt, OP_RET)
 
-static void
-create_activation(pic_state *pic, codegen_context *cxt)
-{
-  size_t i, n;
-  size_t offset;
-  struct pic_reg *regs;
-
-  regs = pic_make_reg(pic);
-
-  offset = 1;
-  for (i = 0; i < cxt->args->len; ++i) {
-    n = i + offset;
-    pic_reg_set(pic, regs, pic_sym_ptr(cxt->args->data[i]), pic_size_value(n));
-  }
-  offset += i;
-  for (i = 0; i < cxt->locals->len; ++i) {
-    n = i + offset;
-    pic_reg_set(pic, regs, pic_sym_ptr(cxt->locals->data[i]), pic_size_value(n));
-  }
-
-  for (i = 0; i < cxt->captures->len; ++i) {
-    n = (size_t)pic_int(pic_reg_ref(pic, regs, pic_sym_ptr(cxt->captures->data[i])));
-    if (n <= cxt->args->len || cxt->rest == pic_sym_ptr(cxt->captures->data[i])) {
-      /* copy arguments to capture variable area */
-      emit_i(pic, cxt, OP_LREF, (int)n);
-    } else {
-      /* otherwise, just extend the stack */
-      emit_n(pic, cxt, OP_PUSHUNDEF);
-    }
-  }
-}
-
 static int
 index_capture(codegen_context *cxt, pic_sym *sym, int depth)
 {
@@ -760,6 +728,25 @@ index_symbol(pic_state *pic, codegen_context *cxt, pic_sym *sym)
   check_syms_size(pic, cxt);
   cxt->syms[cxt->slen++] = sym;
   return i;
+}
+
+static void
+create_activation(pic_state *pic, codegen_context *cxt)
+{
+  size_t i;
+  int n;
+
+  for (i = 0; i < cxt->captures->len; ++i) {
+    n = index_local(cxt, pic_sym_ptr(cxt->captures->data[i]));
+    assert(n != -1);
+    if (n <= (int)cxt->args->len || cxt->rest == pic_sym_ptr(cxt->captures->data[i])) {
+      /* copy arguments to capture variable area */
+      emit_i(pic, cxt, OP_LREF, n);
+    } else {
+      /* otherwise, just extend the stack */
+      emit_n(pic, cxt, OP_PUSHUNDEF);
+    }
+  }
 }
 
 static void codegen(pic_state *, codegen_context *, pic_value, bool);
