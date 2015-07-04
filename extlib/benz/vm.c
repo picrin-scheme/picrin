@@ -431,23 +431,6 @@ pic_vm_tear_off(pic_state *pic)
   }
 }
 
-PIC_INLINE struct pic_irep *
-vm_get_irep(pic_state *pic)
-{
-  pic_value self;
-  struct pic_proc *proc;
-
-  self = pic->ci->fp[0];
-
-  assert(pic_proc_p(self));
-
-  proc = pic_proc_ptr(self);
-
-  assert(pic_proc_irep_p(proc));
-
-  return proc->u.i.irep;
-}
-
 #if VM_DEBUG
 # define OPCODE_EXEC_HOOK pic_dump_code(c)
 #else
@@ -618,16 +601,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      struct pic_irep *irep = vm_get_irep(pic);
-
-      PUSH(irep->pool[c.u.i]);
+      PUSH(pic->ci->irep->pool[c.u.i]);
       NEXT;
     }
     CASE(OP_GREF) {
-      struct pic_irep *irep = vm_get_irep(pic);
       pic_sym *sym;
 
-      sym = irep->syms[c.u.i];
+      sym = pic->ci->irep->syms[c.u.i];
       if (! pic_dict_has(pic, pic->globals, sym)) {
         pic_errorf(pic, "uninitialized global variable: %s", pic_symbol_name(pic, sym));
       }
@@ -635,11 +615,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_GSET) {
-      struct pic_irep *irep = vm_get_irep(pic);
       pic_sym *sym;
       pic_value val;
 
-      sym = irep->syms[c.u.i];
+      sym = pic->ci->irep->syms[c.u.i];
 
       val = POP();
       pic_dict_set(pic, pic->globals, sym, val);
@@ -719,6 +698,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       ci->retc = 1;
       ci->ip = pic->ip;
       ci->fp = pic->sp - c.u.i;
+      ci->irep = NULL;
       ci->cxt = NULL;
       if (pic_proc_func_p(pic_proc_ptr(x))) {
 
@@ -735,6 +715,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 	int i;
 	pic_value rest;
 
+        ci->irep = irep;
 	if (ci->argc != irep->argc) {
 	  if (! (irep->varg && ci->argc >= irep->argc)) {
             pic_errorf(pic, "wrong number of arguments (%d for %s%d)", ci->argc - 1, (irep->varg ? "at least " : ""), irep->argc - 1);
@@ -827,13 +808,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_LAMBDA) {
-      struct pic_irep *irep = vm_get_irep(pic);
-
       if (pic->ci->cxt == NULL) {
         vm_push_cxt(pic);
       }
 
-      proc = pic_make_proc_irep(pic, irep->irep[c.u.i], pic->ci->cxt);
+      proc = pic_make_proc_irep(pic, pic->ci->irep->irep[c.u.i], pic->ci->cxt);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;

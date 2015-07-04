@@ -61,6 +61,7 @@ typedef struct {
   int argc, retc;
   pic_code *ip;
   pic_value *fp;
+  struct pic_irep *irep;
   struct pic_context *cxt;
   int regc;
   pic_value *regs;
