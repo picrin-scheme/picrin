@@ -118,6 +118,9 @@ pic_features(pic_state *pic)
 #define VM(uid, name)                                                   \
   pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern_cstr(pic, name), uid)
 
+#define VM2(proc, name)                         \
+  proc = pic_ref(pic, pic->lib, name)
+
 static void
 pic_init_core(pic_state *pic)
 {
@@ -176,6 +179,21 @@ pic_init_core(pic_state *pic)
     pic_init_lib(pic); DONE;
     pic_init_attr(pic); DONE;
     pic_init_reg(pic); DONE;
+
+    VM2(pic->pCONS, "cons");
+    VM2(pic->pCAR, "car");
+    VM2(pic->pCDR, "cdr");
+    VM2(pic->pNILP, "null?");
+    VM2(pic->pSYMBOLP, "symbol?");
+    VM2(pic->pPAIRP, "pair?");
+    VM2(pic->pNOT, "not");
+    VM2(pic->pADD, "+");
+    VM2(pic->pSUB, "-");
+    VM2(pic->pMUL, "*");
+    VM2(pic->pDIV, "/");
+    VM2(pic->pEQ, "=");
+    VM2(pic->pLT, "<");
+    VM2(pic->pLE, "<=");
 
     pic_try {
       pic_load_cstr(pic, &pic_boot[0][0]);
@@ -353,6 +371,22 @@ pic_open(pic_allocf allocf, void *userdata)
   U(uVALUES, "values");
   U(uCALL_WITH_VALUES, "call-with-values");
   pic_gc_arena_restore(pic, ai);
+
+  /* system procedures */
+  pic->pCONS = pic_invalid_value();
+  pic->pCAR = pic_invalid_value();
+  pic->pCDR = pic_invalid_value();
+  pic->pNILP = pic_invalid_value();
+  pic->pSYMBOLP = pic_invalid_value();
+  pic->pPAIRP = pic_invalid_value();
+  pic->pNOT = pic_invalid_value();
+  pic->pADD = pic_invalid_value();
+  pic->pSUB = pic_invalid_value();
+  pic->pMUL = pic_invalid_value();
+  pic->pDIV = pic_invalid_value();
+  pic->pEQ = pic_invalid_value();
+  pic->pLT = pic_invalid_value();
+  pic->pLE = pic_invalid_value();
 
   /* root tables */
   pic->globals = pic_make_dict(pic);

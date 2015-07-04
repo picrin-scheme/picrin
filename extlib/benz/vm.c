@@ -839,15 +839,16 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
 
-#define check_args(name, n) do {                \
-      if (c.u.i != n + 1) {                     \
-        goto L_CALL;                            \
-      }                                         \
+#define check_condition(name, n) do {                                   \
+      if (! pic_eq_p(pic->p##name, pic_dict_ref(pic, pic->globals, pic->u##name))) \
+        goto L_CALL;                                                    \
+      if (c.u.i != n + 1)                                               \
+        goto L_CALL;                                                    \
     } while (0)
 
     CASE(OP_CONS) {
       pic_value a, b;
-      check_args("cons", 2);
+      check_condition(CONS, 2);
       pic_gc_protect(pic, b = POP());
       pic_gc_protect(pic, a = POP());
       (void)POP();
@@ -857,7 +858,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_CAR) {
       pic_value p;
-      check_args("car", 1);
+      check_condition(CAR, 1);
       p = POP();
       (void)POP();
       PUSH(pic_car(pic, p));
@@ -865,7 +866,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_CDR) {
       pic_value p;
-      check_args("cdr", 1);
+      check_condition(CDR, 1);
       p = POP();
       (void)POP();
       PUSH(pic_cdr(pic, p));
@@ -873,7 +874,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_NILP) {
       pic_value p;
-      check_args("null?", 1);
+      check_condition(NILP, 1);
       p = POP();
       (void)POP();
       PUSH(pic_bool_value(pic_nil_p(p)));
@@ -881,7 +882,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_SYMBOLP) {
       pic_value p;
-      check_args("symbol?", 1);
+      check_condition(SYMBOLP, 1);
       p = POP();
       (void)POP();
       PUSH(pic_bool_value(pic_sym_p(p)));
@@ -889,7 +890,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_PAIRP) {
       pic_value p;
-      check_args("pair?", 1);
+      check_condition(PAIRP, 1);
       p = POP();
       (void)POP();
       PUSH(pic_bool_value(pic_pair_p(p)));
@@ -897,7 +898,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_NOT) {
       pic_value v;
-      check_args("not", 1);
+      check_condition(NOT, 1);
       v = pic_false_p(POP()) ? pic_true_value() : pic_false_value();
       (void)POP();
       PUSH(v);
@@ -906,7 +907,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 
     CASE(OP_ADD) {
       pic_value a, b;
-      check_args("+", 2);
+      check_condition(ADD, 2);
       b = POP();
       a = POP();
       (void)POP();
@@ -915,7 +916,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_SUB) {
       pic_value a, b;
-      check_args("-", 2);
+      check_condition(SUB, 2);
       b = POP();
       a = POP();
       (void)POP();
@@ -924,7 +925,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_MUL) {
       pic_value a, b;
-      check_args("*", 2);
+      check_condition(MUL, 2);
       b = POP();
       a = POP();
       (void)POP();
@@ -933,7 +934,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_DIV) {
       pic_value a, b;
-      check_args("/", 2);
+      check_condition(DIV, 2);
       b = POP();
       a = POP();
       (void)POP();
@@ -942,7 +943,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_EQ) {
       pic_value a, b;
-      check_args("=", 2);
+      check_condition(EQ, 2);
       b = POP();
       a = POP();
       (void)POP();
@@ -951,7 +952,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_LE) {
       pic_value a, b;
-      check_args("<", 2);
+      check_condition(LT, 2);
       b = POP();
       a = POP();
       (void)POP();
@@ -960,7 +961,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_LT) {
       pic_value a, b;
-      check_args("<=", 2);
+      check_condition(LE, 2);
       b = POP();
       a = POP();
       (void)POP();

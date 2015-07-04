@@ -533,6 +533,27 @@ gc_mark_global_symbols(pic_state *pic)
   M(uVALUES); M(uCALL_WITH_VALUES);
 }
 
+#define P(x) gc_mark(pic, pic->x)
+
+static void
+gc_mark_system_procedures(pic_state *pic)
+{
+  P(pCONS);
+  P(pCAR);
+  P(pCDR);
+  P(pNILP);
+  P(pSYMBOLP);
+  P(pPAIRP);
+  P(pNOT);
+  P(pADD);
+  P(pSUB);
+  P(pMUL);
+  P(pDIV);
+  P(pEQ);
+  P(pLT);
+  P(pLE);
+}
+
 static void
 gc_mark_phase(pic_state *pic)
 {
@@ -572,6 +593,9 @@ gc_mark_phase(pic_state *pic)
 
   /* mark reserved symbols */
   gc_mark_global_symbols(pic);
+
+  /* mark system procedures */
+  gc_mark_system_procedures(pic);
 
   /* global variables */
   if (pic->globals) {
