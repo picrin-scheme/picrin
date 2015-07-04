@@ -606,7 +606,7 @@ pic_eqv_p(pic_value x, pic_value y)
     PIC_UNREACHABLE();                                          \
   }
 #else
-# define pic_define_aop(name, op)                               \
+# define pic_define_aop(name, op, guard)                        \
   PIC_INLINE pic_value                                          \
   name(pic_state *pic, pic_value a, pic_value b)                \
   {                                                             \
