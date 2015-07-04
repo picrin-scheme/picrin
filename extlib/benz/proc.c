@@ -86,7 +86,7 @@ pic_proc_apply(pic_state *pic)
     arg_list = pic_cons(pic, args[argc], arg_list);
   }
 
-  return pic_apply_trampoline(pic, proc, arg_list);
+  return pic_apply_trampoline_list(pic, proc, arg_list);
 }
 
 void

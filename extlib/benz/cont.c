@@ -289,16 +289,19 @@ static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
   struct pic_proc *producer, *consumer;
-  size_t argc;
-  pic_value args[256];
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
   pic_apply(pic, producer, pic_nil_value());
 
-  argc = pic_receive(pic, 256, args);
+  do {
+    size_t argc = pic_receive(pic, 0, NULL);
+    pic_value args[argc];
 
-  return pic_apply_trampoline(pic, consumer, pic_list_by_array(pic, argc, args));
+    pic_receive(pic, argc, args);
+
+    return pic_apply_trampoline(pic, consumer, argc, args);
+  } while (0);
 }
 
 void

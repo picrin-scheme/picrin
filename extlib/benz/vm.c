@@ -957,10 +957,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 }
 
 pic_value
-pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
+pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, size_t argc, pic_value *args)
 {
-  pic_value v, it, *sp;
+  pic_value *sp;
   pic_callinfo *ci;
+  size_t i;
 
   PIC_INIT_CODE_I(pic->iseq[0], OP_NOP, 0);
   PIC_INIT_CODE_I(pic->iseq[1], OP_TAILCALL, -1);
@@ -968,20 +969,34 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, pic_value args)
   *pic->sp++ = pic_obj_value(proc);
 
   sp = pic->sp;
-  pic_for_each (v, args, it) {
-    *sp++ = v;
+  for (i = 0; i < argc; ++i) {
+    *sp++ = args[i];
   }
 
   ci = PUSHCI();
   ci->ip = pic->iseq;
   ci->fp = pic->sp;
-  ci->retc = (int)pic_length(pic, args);
+  ci->retc = (int)argc;
 
   if (ci->retc == 0) {
     return pic_undef_value();
   } else {
-    return pic_car(pic, args);
+    return args[0];
   }
+}
+
+pic_value
+pic_apply_trampoline_list(pic_state *pic, struct pic_proc *proc, pic_value args)
+{
+  size_t i, argc = pic_length(pic, args);
+  pic_value val, it, argv[argc];
+
+  i = 0;
+  pic_for_each (val, args, it) {
+    argv[i++] = val;
+  }
+
+  return pic_apply_trampoline(pic, proc, argc, argv);
 }
 
 pic_value
