@@ -600,8 +600,9 @@ my $src = <<'EOL';
                  (let ((alist (collect (cadr spec))))
                    (map (lambda (var) (assq var alist)) (cddr spec))))
                 ((rename)
-                 (let ((alist (collect (cadr spec))))
-                   (map (lambda (s) (or (assq (car s) (cddr spec)) s)) alist)))
+                 (let ((alist (collect (cadr spec)))
+                       (renames (map (lambda (x) `((car x) . (cadr x))) (cddr spec))))
+                   (map (lambda (s) (or (assq (car s) renames) s)) alist)))
                 ((prefix)
                  (let ((alist (collect (cadr spec))))
                    (map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))
@@ -977,35 +978,36 @@ const char pic_boot[][80] = {
 " (collect\n            (lambda (spec)\n              (case (car spec)\n            ",
 "    ((only)\n                 (let ((alist (collect (cadr spec))))\n              ",
 "     (map (lambda (var) (assq var alist)) (cddr spec))))\n                ((renam",
-"e)\n                 (let ((alist (collect (cadr spec))))\n                   (map",
-" (lambda (s) (or (assq (car s) (cddr spec)) s)) alist)))\n                ((prefi",
-"x)\n                 (let ((alist (collect (cadr spec))))\n                   (map",
-" (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))\n            ",
-"    ((except)\n                 (let ((alist (collect (cadr spec))))\n            ",
-"       (let loop ((alist alist))\n                     (if (null? alist)\n        ",
-"                 '()\n                         (if (memq (caar alist) (cddr spec)",
-")\n                             (loop (cdr alist))\n                             (",
-"cons (car alist) (loop (cdr alist))))))))\n                (else\n                ",
-" (let ((lib (or (find-library spec) (error \"library not found\" spec))))\n        ",
-"           (map (lambda (x) (cons x x)) (library-exports lib))))))))\n        (le",
-"trec\n            ((import\n               (lambda (spec)\n                 (let ((",
-"lib (extract spec))\n                       (alist (collect spec)))\n             ",
-"      (for-each\n                    (lambda (slot)\n                      (librar",
-"y-import lib (cdr slot) (car slot)))\n                    alist)))))\n          (f",
-"or-each import (cdr form)))))))\n\n(define-macro export\n  (lambda (form _)\n    (le",
-"trec\n        ((collect\n          (lambda (spec)\n            (cond\n             (",
-"(symbol? spec)\n              `(,spec . ,spec))\n             ((and (list? spec) (",
-"= (length spec) 3) (eq? (car spec) 'rename))\n              `(,(list-ref spec 1) ",
-". ,(list-ref spec 2)))\n             (else\n              (error \"malformed export",
-"\")))))\n         (export\n           (lambda (spec)\n             (let ((slot (coll",
-"ect spec)))\n               (library-export (car slot) (cdr slot))))))\n      (for",
-"-each export (cdr form)))))\n\n(export define-library\n        cond-expand\n        ",
-"import\n        export)\n\n(export define lambda quote set! if begin define-macro\n ",
-"       let let* letrec letrec*\n        let-values let*-values define-values\n    ",
-"    quasiquote unquote unquote-splicing\n        and or\n        cond case else =>",
-"\n        do when unless\n        parameterize\n        define-syntax\n        synta",
-"x-quote syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n       ",
-" let-syntax letrec-syntax\n        syntax-error)\n\n\n",
+"e)\n                 (let ((alist (collect (cadr spec)))\n                       (",
+"renames (map (lambda (x) `((car x) . (cadr x))) (cddr spec))))\n                 ",
+"  (map (lambda (s) (or (assq (car s) renames) s)) alist)))\n                ((pre",
+"fix)\n                 (let ((alist (collect (cadr spec))))\n                   (m",
+"ap (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))\n          ",
+"      ((except)\n                 (let ((alist (collect (cadr spec))))\n          ",
+"         (let loop ((alist alist))\n                     (if (null? alist)\n      ",
+"                   '()\n                         (if (memq (caar alist) (cddr spe",
+"c))\n                             (loop (cdr alist))\n                            ",
+" (cons (car alist) (loop (cdr alist))))))))\n                (else\n              ",
+"   (let ((lib (or (find-library spec) (error \"library not found\" spec))))\n      ",
+"             (map (lambda (x) (cons x x)) (library-exports lib))))))))\n        (",
+"letrec\n            ((import\n               (lambda (spec)\n                 (let ",
+"((lib (extract spec))\n                       (alist (collect spec)))\n           ",
+"        (for-each\n                    (lambda (slot)\n                      (libr",
+"ary-import lib (cdr slot) (car slot)))\n                    alist)))))\n          ",
+"(for-each import (cdr form)))))))\n\n(define-macro export\n  (lambda (form _)\n    (",
+"letrec\n        ((collect\n          (lambda (spec)\n            (cond\n            ",
+" ((symbol? spec)\n              `(,spec . ,spec))\n             ((and (list? spec)",
+" (= (length spec) 3) (eq? (car spec) 'rename))\n              `(,(list-ref spec 1",
+") . ,(list-ref spec 2)))\n             (else\n              (error \"malformed expo",
+"rt\")))))\n         (export\n           (lambda (spec)\n             (let ((slot (co",
+"llect spec)))\n               (library-export (car slot) (cdr slot))))))\n      (f",
+"or-each export (cdr form)))))\n\n(export define-library\n        cond-expand\n      ",
+"  import\n        export)\n\n(export define lambda quote set! if begin define-macro",
+"\n        let let* letrec letrec*\n        let-values let*-values define-values\n  ",
+"      quasiquote unquote unquote-splicing\n        and or\n        cond case else ",
+"=>\n        do when unless\n        parameterize\n        define-syntax\n        syn",
+"tax-quote syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n     ",
+"   let-syntax letrec-syntax\n        syntax-error)\n\n\n",
 "",
 ""
 };
