@@ -923,9 +923,10 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 static bool
 codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len, bool tailpos)
 {
-  pic_sym *sym;
-
   if (pic_sym_ptr(pic_list_ref(pic, proc, 0)) == pic->sGREF) {
+    pic_sym *sym;
+
+    sym = pic_sym_ptr(pic_list_ref(pic, proc, 1));
 
 #define VM(uid, op)                             \
     if (sym == uid) {                           \
@@ -933,13 +934,6 @@ codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len
       emit_ret(pic, cxt, tailpos);              \
       return true;                              \
     }
-
-    /*
-      TODO:
-      - call-with-values, values, >, >=
-    */
-
-    sym = pic_sym_ptr(pic_list_ref(pic, proc, 1));
 
     VM(pic->uCONS, OP_CONS)
     VM(pic->uCAR, OP_CAR)
