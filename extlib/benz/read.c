@@ -267,15 +267,25 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
 {
   unsigned u;
   int exp, s, i, e;
-#if PIC_ENABLE_FLOAT
-  double f, g;
-#endif
 
   u = read_uinteger(pic, port, c);
 
   switch (peek(pic, port)) {
 #if PIC_ENABLE_FLOAT
-  case '.':
+# if PIC_ENABLE_LIBC
+  case '.': {
+    char buf[256];
+    i = sprintf(buf, "%d", u);
+    buf[i++] = next(pic, port);
+    while (isdigit(c = peek(pic, port))) {
+      buf[i++] = next(pic, port);
+    }
+    sprintf(buf + i, "e%d", read_suffix(pic, port));
+    return pic_float_value(atof(buf));
+  }
+# else
+  case '.': {
+    double f, g;
     next(pic, port);
     g = 0, e = 0;
     while (isdigit(c = peek(pic, port))) {
@@ -301,6 +311,8 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
       exp >>= 1;
     }
     return pic_float_value(f);
+  }
+# endif
 #endif
 
   default:
