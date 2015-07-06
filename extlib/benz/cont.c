@@ -308,6 +308,7 @@ pic_init_cont(pic_state *pic)
 {
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
+  pic_defun(pic, "escape", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
 
   pic_defun(pic, "values", pic_cont_values);

@@ -260,6 +260,7 @@
 
   (export call-with-current-continuation
           call/cc
+          escape
           dynamic-wind
           values
           call-with-values)
