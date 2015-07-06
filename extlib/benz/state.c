@@ -372,8 +372,6 @@ pic_open(pic_allocf allocf, void *userdata)
   U(uGT, ">");
   U(uGE, ">=");
   U(uNOT, "not");
-  U(uVALUES, "values");
-  U(uCALL_WITH_VALUES, "call-with-values");
   pic_gc_arena_restore(pic, ai);
 
   /* system procedures */

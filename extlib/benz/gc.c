@@ -530,7 +530,6 @@ gc_mark_global_symbols(pic_state *pic)
   M(uDEFINE_LIBRARY); M(uIMPORT); M(uEXPORT); M(uCOND_EXPAND);
   M(uCONS); M(uCAR); M(uCDR); M(uNILP); M(uSYMBOLP); M(uPAIRP);
   M(uADD); M(uSUB); M(uMUL); M(uDIV); M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
-  M(uVALUES); M(uCALL_WITH_VALUES);
 }
 
 #define P(x) gc_mark(pic, pic->x)

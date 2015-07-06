@@ -104,7 +104,6 @@ struct pic_state {
   pic_sym *uDEFINE_LIBRARY, *uIMPORT, *uEXPORT, *uCOND_EXPAND;
   pic_sym *uCONS, *uCAR, *uCDR, *uNILP, *uSYMBOLP, *uPAIRP;
   pic_sym *uADD, *uSUB, *uMUL, *uDIV, *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
-  pic_sym *uVALUES, *uCALL_WITH_VALUES;
 
   pic_value pCONS, pCAR, pCDR, pNILP, pPAIRP, pSYMBOLP, pNOT;
   pic_value pADD, pSUB, pMUL, pDIV, pEQ, pLT, pLE, pGT, pGE;
