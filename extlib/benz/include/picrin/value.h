@@ -663,6 +663,8 @@ pic_define_aop(pic_div, /, f == round(f))
 pic_define_cmp(pic_eq, ==)
 pic_define_cmp(pic_lt, <)
 pic_define_cmp(pic_le, <=)
+pic_define_cmp(pic_gt, >)
+pic_define_cmp(pic_ge, >=)
 
 #if defined(__cplusplus)
 }

@@ -155,6 +155,8 @@ pic_init_core(pic_state *pic)
     VM(pic->uEQ, "=");
     VM(pic->uLT, "<");
     VM(pic->uLE, "<=");
+    VM(pic->uGT, ">");
+    VM(pic->uGE, ">=");
 
     pic_init_undef(pic); DONE;
     pic_init_bool(pic); DONE;
@@ -194,6 +196,8 @@ pic_init_core(pic_state *pic)
     VM2(pic->pEQ, "=");
     VM2(pic->pLT, "<");
     VM2(pic->pLE, "<=");
+    VM2(pic->pGT, ">");
+    VM2(pic->pGE, ">=");
 
     pic_try {
       pic_load_cstr(pic, &pic_boot[0][0]);
@@ -387,6 +391,8 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->pEQ = pic_invalid_value();
   pic->pLT = pic_invalid_value();
   pic->pLE = pic_invalid_value();
+  pic->pGT = pic_invalid_value();
+  pic->pGE = pic_invalid_value();
 
   /* root tables */
   pic->globals = pic_make_dict(pic);

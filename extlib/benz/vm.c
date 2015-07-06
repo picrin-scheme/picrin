@@ -536,7 +536,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
     &&L_OP_SYMBOLP, &&L_OP_PAIRP,
     &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV,
-    &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_STOP
+    &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_GT, &&L_OP_GE, &&L_OP_STOP
   };
 #endif
 
@@ -966,6 +966,24 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       a = POP();
       (void)POP();
       PUSH(pic_bool_value(pic_lt(pic, a, b)));
+      NEXT;
+    }
+    CASE(OP_GE) {
+      pic_value a, b;
+      check_condition(LT, 2);
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_bool_value(pic_ge(pic, a, b)));
+      NEXT;
+    }
+    CASE(OP_GT) {
+      pic_value a, b;
+      check_condition(LE, 2);
+      b = POP();
+      a = POP();
+      (void)POP();
+      PUSH(pic_bool_value(pic_gt(pic, a, b)));
       NEXT;
     }
 

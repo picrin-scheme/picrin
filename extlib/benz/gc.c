@@ -552,6 +552,8 @@ gc_mark_system_procedures(pic_state *pic)
   P(pEQ);
   P(pLT);
   P(pLE);
+  P(pGT);
+  P(pGE);
 }
 
 static void

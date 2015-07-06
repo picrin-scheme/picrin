@@ -945,6 +945,8 @@ codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len
     VM(pic->uEQ, OP_EQ)
     VM(pic->uLT, OP_LT)
     VM(pic->uLE, OP_LE)
+    VM(pic->uGT, OP_GT)
+    VM(pic->uGE, OP_GE)
     VM(pic->uADD, OP_ADD)
     VM(pic->uSUB, OP_SUB)
     VM(pic->uMUL, OP_MUL)
