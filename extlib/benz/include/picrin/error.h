@@ -44,7 +44,6 @@ struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list)
       } while (0);                                        \
       pic->cc = pic->cc->prev;                            \
     } else {                                              \
-      pic->cc = pic->cc->prev;                            \
       goto label;                                         \
     }                                                     \
   } while (0);                                            \

@@ -79,6 +79,7 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
   pic->arena_idx = cont->arena_idx;
   pic->ip = cont->ip;
   pic->ptable = cont->ptable;
+  pic->cc = cont->prev;
 }
 
 static pic_value
@@ -140,8 +141,6 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   pic_save_point(pic, &cont);
 
   if (PIC_SETJMP(pic, cont.jmp)) {
-    pic->cc = pic->cc->prev;
-
     return pic_values_by_list(pic, cont.results);
   }
   else {
