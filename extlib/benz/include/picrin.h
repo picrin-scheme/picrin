@@ -268,6 +268,7 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
+#include "picrin/box.h"
 
 #if defined(__cplusplus)
 }

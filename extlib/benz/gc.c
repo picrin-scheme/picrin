@@ -490,6 +490,12 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
+  case PIC_TT_BOX: {
+    struct pic_box *box = (struct pic_box *)obj;
+
+    gc_mark(pic, box->value);
+    break;
+  }
   case PIC_TT_NIL:
   case PIC_TT_BOOL:
 #if PIC_ENABLE_FLOAT
@@ -735,6 +741,9 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_CP: {
+    break;
+  }
+  case PIC_TT_BOX: {
     break;
   }
   case PIC_TT_NIL:
