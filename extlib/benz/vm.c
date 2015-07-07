@@ -856,7 +856,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
 
 #define check_condition(name, n) do {                                   \
-      if (! pic_eq_p(pic->p##name, vm_gref(pic, pic_vm_gref_slot(pic, pic->u##name)))) \
+      if (! pic_eq_p(pic->p##name, pic_cdr(pic, pic->c##name)))         \
         goto L_CALL;                                                    \
       if (c.u.i != n + 1)                                               \
         goto L_CALL;                                                    \
