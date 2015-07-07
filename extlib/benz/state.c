@@ -118,6 +118,9 @@ pic_features(pic_state *pic)
 #define VM(uid, name)                                                   \
   pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern_cstr(pic, name), uid)
 
+#define VM3(name)                                       \
+  pic->c##name = pic_vm_gref_slot(pic, pic->u##name);
+
 #define VM2(proc, name)                         \
   proc = pic_ref(pic, pic->lib, name)
 
@@ -125,6 +128,7 @@ static void
 pic_init_core(pic_state *pic)
 {
   void pic_define_syntactic_keyword_(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
+  pic_value pic_vm_gref_slot(pic_state *, pic_sym *);
 
   pic_init_features(pic);
 
@@ -181,6 +185,23 @@ pic_init_core(pic_state *pic)
     pic_init_lib(pic); DONE;
     pic_init_attr(pic); DONE;
     pic_init_reg(pic); DONE;
+
+    VM3(CONS);
+    VM3(CAR);
+    VM3(CDR);
+    VM3(NILP);
+    VM3(SYMBOLP);
+    VM3(PAIRP);
+    VM3(NOT);
+    VM3(ADD);
+    VM3(SUB);
+    VM3(MUL);
+    VM3(DIV);
+    VM3(EQ);
+    VM3(LT);
+    VM3(LE);
+    VM3(GT);
+    VM3(GE);
 
     VM2(pic->pCONS, "cons");
     VM2(pic->pCAR, "car");
@@ -419,6 +440,23 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* turn on GC */
   pic->gc_enable = true;
+
+  pic->cCONS = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cCAR = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cCDR = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cNILP = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cSYMBOLP = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cPAIRP = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cNOT = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cADD = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cSUB = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cMUL = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cDIV = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cEQ = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cLT = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cLE = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cGT = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cGE = pic_cons(pic, pic_false_value(), pic_invalid_value());
 
   pic_init_core(pic);
 

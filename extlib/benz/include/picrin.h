@@ -108,6 +108,9 @@ struct pic_state {
   pic_value pCONS, pCAR, pCDR, pNILP, pPAIRP, pSYMBOLP, pNOT;
   pic_value pADD, pSUB, pMUL, pDIV, pEQ, pLT, pLE, pGT, pGE;
 
+  pic_value cCONS, cCAR, cCDR, cNILP, cPAIRP, cSYMBOLP, cNOT;
+  pic_value cADD, cSUB, cMUL, cDIV, cEQ, cLT, cLE, cGT, cGE;
+
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
 
@@ -268,6 +271,7 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
+#include "picrin/box.h"
 
 #if defined(__cplusplus)
 }
