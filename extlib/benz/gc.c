@@ -435,9 +435,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     for (i = 0; i < irep->plen; ++i) {
       gc_mark(pic, irep->pool[i]);
     }
-    for (i = 0; i < irep->slen; ++i) {
-      gc_mark_object(pic, (struct pic_object *)irep->syms[i]);
-    }
     break;
   }
   case PIC_TT_DATA: {
@@ -712,7 +709,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, irep->code);
     pic_free(pic, irep->irep);
     pic_free(pic, irep->pool);
-    pic_free(pic, irep->syms);
     break;
   }
   case PIC_TT_DATA: {

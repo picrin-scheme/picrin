@@ -74,7 +74,6 @@ struct pic_irep {
   bool varg;
   struct pic_irep **irep;
   pic_value *pool;
-  pic_sym **syms;
   size_t clen, ilen, plen, slen;
 };
 

@@ -578,9 +578,6 @@ typedef struct codegen_context {
   /* constant object pool */
   pic_value *pool;
   size_t plen, pcapa;
-  /* symbol pool */
-  pic_sym **syms;
-  size_t slen, scapa;
 
   struct codegen_context *up;
 } codegen_context;
@@ -609,10 +606,6 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
-  cxt->syms = pic_calloc(pic, PIC_SYMS_SIZE, sizeof(pic_sym *));
-  cxt->slen = 0;
-  cxt->scapa = PIC_SYMS_SIZE;
-
   create_activation(pic, cxt);
 }
 
@@ -633,8 +626,6 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->ilen = cxt->ilen;
   irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
   irep->plen = cxt->plen;
-  irep->syms = pic_realloc(pic, cxt->syms, sizeof(pic_sym *) * cxt->slen);
-  irep->slen = cxt->slen;
 
   return irep;
 }
@@ -647,7 +638,6 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   } while (0)
 
 #define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
-#define check_syms_size(pic, cxt) check_size(pic, cxt, s, syms, pic_sym *)
 #define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
 #define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, pic_value)
 
@@ -716,18 +706,19 @@ index_local(codegen_context *cxt, pic_sym *sym)
 }
 
 static int
-index_symbol(pic_state *pic, codegen_context *cxt, pic_sym *sym)
+index_global(pic_state *pic, codegen_context *cxt, pic_sym *name)
 {
-  size_t i;
+  extern pic_value pic_vm_gref_slot(pic_state *, pic_sym *);
+  int pidx;
+  pic_value slot;
 
-  for (i = 0; i < cxt->slen; ++i) {
-    if (cxt->syms[i] == sym) {
-      return i;
-    }
-  }
-  check_syms_size(pic, cxt);
-  cxt->syms[cxt->slen++] = sym;
-  return i;
+  slot = pic_vm_gref_slot(pic, name);
+
+  check_pool_size(pic, cxt);
+  pidx = (int)cxt->plen++;
+  cxt->pool[pidx] = slot;
+
+  return pidx;
 }
 
 static void
@@ -758,7 +749,10 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   sym = pic_sym_ptr(pic_car(pic, obj));
   if (sym == pic->sGREF) {
-    emit_i(pic, cxt, OP_GREF, index_symbol(pic, cxt, pic_sym_ptr(pic_list_ref(pic, obj, 1))));
+    pic_sym *name;
+
+    name = pic_sym_ptr(pic_list_ref(pic, obj, 1));
+    emit_i(pic, cxt, OP_GREF, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
   else if (sym == pic->sCREF) {
@@ -797,7 +791,10 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   var = pic_list_ref(pic, obj, 1);
   type = pic_sym_ptr(pic_list_ref(pic, var, 0));
   if (type == pic->sGREF) {
-    emit_i(pic, cxt, OP_GSET, index_symbol(pic, cxt, pic_sym_ptr(pic_list_ref(pic, var, 1))));
+    pic_sym *name;
+
+    name = pic_sym_ptr(pic_list_ref(pic, var, 1));
+    emit_i(pic, cxt, OP_GSET, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
   else if (type == pic->sCREF) {
