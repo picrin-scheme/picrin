@@ -8,8 +8,7 @@ PICRIN_SRCS = \
 PICRIN_OBJS = \
 	$(PICRIN_SRCS:.c=.o)
 PICRIN_LIBS = \
-	piclib/picrin/macro.scm\
-	piclib/picrin/syntax-rules.scm
+	piclib/picrin/macro.scm
 
 CONTRIB_SRCS =
 CONTRIB_OBJS = $(CONTRIB_SRCS:.c=.o)

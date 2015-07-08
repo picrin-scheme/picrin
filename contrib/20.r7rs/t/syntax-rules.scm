@@ -1,8 +1,7 @@
-(import (picrin base)
-        (picrin syntax-rules)
+(import (scheme base)
         (picrin test))
 
-(test-begin)
+(test-begin "syntax-rules")
 
 (define-syntax extract?
   (syntax-rules ()
