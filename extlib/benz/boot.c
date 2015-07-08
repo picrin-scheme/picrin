@@ -646,11 +646,6 @@ my $src = <<'EOL';
                (library-export (car slot) (cdr slot))))))
       (for-each export (cdr form)))))
 
-(export define-library
-        cond-expand
-        import
-        export)
-
 (export define lambda quote set! if begin define-macro
         let let* letrec letrec*
         let-values let*-values define-values
