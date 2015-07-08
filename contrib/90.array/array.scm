@@ -9,11 +9,6 @@
     (head array-head set-array-head!)
     (tail array-tail set-array-tail!))
 
-  (define (floor-remainder i j)
-    (call-with-values (lambda () (floor/ i j))
-      (lambda (q r)
-        r)))
-
   (define (translate ary i)
     (floor-remainder i (array-size ary)))
 
