@@ -75,63 +75,54 @@
 
   ;; 4.2.7. Exception handling
 
-  (define-syntax guard-aux
-    (syntax-rules (else =>)
-      ((guard-aux reraise (else result1 result2 ...))
-       (begin result1 result2 ...))
-      ((guard-aux reraise (test => result))
-       (let ((temp test))
-         (if temp
-             (result temp)
-             reraise)))
-      ((guard-aux reraise (test => result)
-                  clause1 clause2 ...)
-       (let ((temp test))
-         (if temp
-             (result temp)
-             (guard-aux reraise clause1 clause2 ...))))
-      ((guard-aux reraise (test))
-       (or test reraise))
-      ((guard-aux reraise (test) clause1 clause2 ...)
-       (let ((temp test))
-         (if temp
-             temp
-             (guard-aux reraise clause1 clause2 ...))))
-      ((guard-aux reraise (test result1 result2 ...))
-       (if test
-           (begin result1 result2 ...)
-           reraise))
-      ((guard-aux reraise
-                  (test result1 result2 ...)
-                  clause1 clause2 ...)
-       (if test
-           (begin result1 result2 ...)
-           (guard-aux reraise clause1 clause2 ...)))))
+  (define-syntax (guard-aux reraise . clauses)
+    (letrec
+        ((else?
+          (lambda (clause)
+            (and (list? clause) (equal? #'else (car clause)))))
+         (=>?
+          (lambda (clause)
+            (and (list? clause) (= (length clause) 3) (equal? #'=> (list-ref clause 1))))))
+      (if (null? clauses)
+          reraise
+          (let ((clause (car clauses)))
+            (cond
+             ((else? clause)
+              #`(begin #,@(cdr clause)))
+             ((=>? clause)
+              #`(let ((tmp #,(list-ref clause 0)))
+                  (if tmp
+                      (#,(list-ref clause 2) tmp)
+                      (guard-aux #,reraise #,@(cdr clauses)))))
+             (else
+              #`(if #,(car clause)
+                    (begin #,@(cdr clause))
+                    (guard-aux #,reraise #,@(cdr clauses)))))))))
 
-  (define-syntax guard
-    (syntax-rules ()
-      ((guard (var clause ...) e1 e2 ...)
-       ((call/cc
-         (lambda (guard-k)
-           (with-exception-handler
-            (lambda (condition)
-              ((call/cc
-                (lambda (handler-k)
-                  (guard-k
-                   (lambda ()
-                     (let ((var condition))
-                       (guard-aux
-                        (handler-k
-                         (lambda ()
-                           (raise-continuable condition)))
-                        clause ...))))))))
-            (lambda ()
-              (call-with-values
-                  (lambda () e1 e2 ...)
-                (lambda args
-                  (guard-k
-                   (lambda ()
-                     (apply values args)))))))))))))
+  (define-syntax (guard formal . body)
+    (let ((var (car formal))
+          (clauses (cdr formal)))
+      #`((call/cc
+          (lambda (guard-k)
+            (with-exception-handler
+             (lambda (condition)
+               ((call/cc
+                 (lambda (handler-k)
+                   (guard-k
+                    (lambda ()
+                      (let ((#,var condition))
+                        (guard-aux
+                         (handler-k
+                          (lambda ()
+                            (raise-continuable condition)))
+                         #,@clauses))))))))
+             (lambda ()
+               (call-with-values
+                   (lambda () #,@body)
+                 (lambda args
+                   (guard-k
+                    (lambda ()
+                      (apply values args))))))))))))
 
   (export guard)
 
