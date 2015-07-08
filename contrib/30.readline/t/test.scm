@@ -2,7 +2,7 @@
         (picrin readline history)
         (picrin test))
   
-(define testfile "picrin_readline_test_file")
+(define testfile "/tmp/picrin_readline_test_file")
 (test-begin)
 
 (test 0 (history-length))
