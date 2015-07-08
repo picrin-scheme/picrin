@@ -1,6 +1,6 @@
 (define-library (picrin test)
-  (import (picrin base)
-          (picrin syntax-rules))
+  (import (scheme base)
+          (scheme write))
 
   (define test-counter 0)
   (define counter 0)
