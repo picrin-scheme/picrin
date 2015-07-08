@@ -1,6 +1,5 @@
 (define-library (picrin array)
-  (import (picrin base)
-          (picrin record))
+  (import (scheme base))
 
   (define-record-type <array>
     (create-array data size head tail)
