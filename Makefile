@@ -8,7 +8,6 @@ PICRIN_SRCS = \
 PICRIN_OBJS = \
 	$(PICRIN_SRCS:.c=.o)
 PICRIN_LIBS = \
-	piclib/picrin/base.scm\
 	piclib/picrin/macro.scm\
 	piclib/picrin/experimental/lambda.scm\
 	piclib/picrin/syntax-rules.scm\
