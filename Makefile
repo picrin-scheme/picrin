@@ -7,15 +7,6 @@ PICRIN_SRCS = \
 	src/init_contrib.c
 PICRIN_OBJS = \
 	$(PICRIN_SRCS:.c=.o)
-PICRIN_LIBS = \
-	piclib/picrin/base.scm\
-	piclib/picrin/macro.scm\
-	piclib/picrin/record.scm\
-	piclib/picrin/array.scm\
-	piclib/picrin/control.scm\
-	piclib/picrin/experimental/lambda.scm\
-	piclib/picrin/syntax-rules.scm\
-	piclib/picrin/test.scm
 
 CONTRIB_SRCS =
 CONTRIB_OBJS = $(CONTRIB_SRCS:.c=.o)
@@ -40,8 +31,8 @@ debug: bin/picrin
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a $(LDFLAGS)
 
-src/load_piclib.c: $(PICRIN_LIBS) $(CONTRIB_LIBS)
-	perl etc/mkloader.pl $(PICRIN_LIBS) $(CONTRIB_LIBS) > $@
+src/load_piclib.c: $(CONTRIB_LIBS)
+	perl etc/mkloader.pl $(CONTRIB_LIBS) > $@
 
 src/init_contrib.c:
 	perl etc/mkinit.pl $(CONTRIB_INITS) > $@

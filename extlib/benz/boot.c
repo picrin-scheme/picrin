@@ -646,11 +646,6 @@ my $src = <<'EOL';
                (library-export (car slot) (cdr slot))))))
       (for-each export (cdr form)))))
 
-(export define-library
-        cond-expand
-        import
-        export)
-
 (export define lambda quote set! if begin define-macro
         let let* letrec letrec*
         let-values let*-values define-values
@@ -1001,13 +996,12 @@ const char pic_boot[][80] = {
 ") . ,(list-ref spec 2)))\n             (else\n              (error \"malformed expo",
 "rt\")))))\n         (export\n           (lambda (spec)\n             (let ((slot (co",
 "llect spec)))\n               (library-export (car slot) (cdr slot))))))\n      (f",
-"or-each export (cdr form)))))\n\n(export define-library\n        cond-expand\n      ",
-"  import\n        export)\n\n(export define lambda quote set! if begin define-macro",
-"\n        let let* letrec letrec*\n        let-values let*-values define-values\n  ",
-"      quasiquote unquote unquote-splicing\n        and or\n        cond case else ",
-"=>\n        do when unless\n        parameterize\n        define-syntax\n        syn",
-"tax-quote syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n     ",
-"   let-syntax letrec-syntax\n        syntax-error)\n\n\n",
+"or-each export (cdr form)))))\n\n(export define lambda quote set! if begin define-",
+"macro\n        let let* letrec letrec*\n        let-values let*-values define-valu",
+"es\n        quasiquote unquote unquote-splicing\n        and or\n        cond case ",
+"else =>\n        do when unless\n        parameterize\n        define-syntax\n      ",
+"  syntax-quote syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n",
+"        let-syntax letrec-syntax\n        syntax-error)\n\n\n",
 "",
 ""
 };

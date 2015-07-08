@@ -1,6 +1,5 @@
 (define-library (picrin array)
-  (import (picrin base)
-          (picrin record))
+  (import (scheme base))
 
   (define-record-type <array>
     (create-array data size head tail)
@@ -9,11 +8,6 @@
     (size array-size set-array-size!)
     (head array-head set-array-head!)
     (tail array-tail set-array-tail!))
-
-  (define (floor-remainder i j)
-    (call-with-values (lambda () (floor/ i j))
-      (lambda (q r)
-        r)))
 
   (define (translate ary i)
     (floor-remainder i (array-size ary)))
