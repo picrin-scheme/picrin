@@ -84,7 +84,8 @@
             (and (list? clause) (= (length clause) 3) (equal? #'=> (list-ref clause 1))))))
       (if (null? clauses)
           reraise
-          (let ((clause (car clauses)))
+          (let ((clause (car clauses))
+                (rest (cdr clauses)))
             (cond
              ((else? clause)
               #`(begin #,@(cdr clause)))
@@ -92,11 +93,13 @@
               #`(let ((tmp #,(list-ref clause 0)))
                   (if tmp
                       (#,(list-ref clause 2) tmp)
-                      (guard-aux #,reraise #,@(cdr clauses)))))
+                      (guard-aux #,reraise #,@rest))))
+             ((= (length clause) 1)
+              #`(or #,(car clause) (guard-aux #,reraise #,@rest)))
              (else
               #`(if #,(car clause)
                     (begin #,@(cdr clause))
-                    (guard-aux #,reraise #,@(cdr clauses)))))))))
+                    (guard-aux #,reraise #,@rest))))))))
 
   (define-syntax (guard formal . body)
     (let ((var (car formal))
