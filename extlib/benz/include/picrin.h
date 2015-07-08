@@ -40,7 +40,7 @@ extern "C" {
 
 typedef struct pic_state pic_state;
 
-#include "picrin/value.h"
+#include "picrin/type.h"
 #include "picrin/irep.h"
 #include "picrin/file.h"
 #include "picrin/read.h"
