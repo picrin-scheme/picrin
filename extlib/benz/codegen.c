@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/opcode.h"
 
 /**
  * macro expander

@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/opcode.h"
 
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
