@@ -10,7 +10,6 @@ PICRIN_OBJS = \
 PICRIN_LIBS = \
 	piclib/picrin/base.scm\
 	piclib/picrin/macro.scm\
-	piclib/picrin/control.scm\
 	piclib/picrin/experimental/lambda.scm\
 	piclib/picrin/syntax-rules.scm\
 	piclib/picrin/test.scm
