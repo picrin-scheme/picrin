@@ -213,22 +213,6 @@ pic_error_error(pic_state *pic)
 }
 
 static pic_value
-pic_error_make_error_object(pic_state *pic)
-{
-  struct pic_error *e;
-  pic_sym *type;
-  pic_str *msg;
-  size_t argc;
-  pic_value *argv;
-
-  pic_get_args(pic, "ms*", &type, &msg, &argc, &argv);
-
-  e = pic_make_error(pic, type, pic_str_cstr(pic, msg), pic_list_by_array(pic, argc, argv));
-
-  return pic_obj_value(e);
-}
-
-static pic_value
 pic_error_error_object_p(pic_state *pic)
 {
   pic_value v;
@@ -275,7 +259,6 @@ pic_init_error(pic_state *pic)
   pic_defun(pic, "raise", pic_error_raise);
   pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
   pic_defun(pic, "error", pic_error_error);
-  pic_defun(pic, "make-error-object", pic_error_make_error_object);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);
   pic_defun(pic, "error-object-irritants", pic_error_error_object_irritants);
