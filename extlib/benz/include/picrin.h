@@ -144,7 +144,6 @@ void *pic_malloc(pic_state *, size_t);
 void *pic_realloc(pic_state *, void *, size_t);
 void *pic_calloc(pic_state *, size_t, size_t);
 struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
-struct pic_object *pic_obj_alloc_unsafe(pic_state *, size_t, enum pic_tt);
 void pic_free(pic_state *, void *);
 
 void pic_gc_run(pic_state *);
