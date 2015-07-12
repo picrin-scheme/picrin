@@ -35,6 +35,7 @@ pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);
 pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
+struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
 
 #if defined(__cplusplus)
 }

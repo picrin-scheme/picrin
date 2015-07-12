@@ -208,7 +208,6 @@ pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, size_t, pic_value *);
 pic_value pic_apply_trampoline_list(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
-struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
@@ -232,9 +231,9 @@ void pic_export(pic_state *, pic_sym *);
 PIC_NORETURN void pic_panic(pic_state *, const char *);
 PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
-const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
+
 struct pic_dict *pic_attr(pic_state *, pic_value);
 pic_value pic_attr_ref(pic_state *, pic_value, const char *);
 void pic_attr_set(pic_state *, pic_value, const char *, pic_value);

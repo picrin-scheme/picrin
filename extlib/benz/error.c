@@ -47,22 +47,6 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   pic_error(pic, msg, irrs);
 }
 
-const char *
-pic_errmsg(pic_state *pic)
-{
-  pic_str *str;
-
-  assert(! pic_invalid_p(pic->err));
-
-  if (! pic_error_p(pic->err)) {
-    str = pic_format(pic, "~s", pic->err);
-  } else {
-    str = pic_error_ptr(pic->err)->msg;
-  }
-
-  return pic_str_cstr(pic, str);
-}
-
 pic_value
 pic_native_exception_handler(pic_state *pic)
 {
