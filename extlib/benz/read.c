@@ -643,11 +643,19 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_vector(pic_state *pic, struct pic_port *port, int c)
 {
-  pic_value list;
+  pic_value list, it, elem;
+  pic_vec *vec;
+  size_t i = 0;
 
   list = read(pic, port, c);
 
-  return pic_obj_value(pic_make_vec_from_list(pic, list));
+  vec = pic_make_vec(pic, pic_length(pic, list));
+
+  pic_for_each (elem, list, it) {
+    vec->data[i++] = elem;
+  }
+
+  return pic_obj_value(vec);
 }
 
 static pic_value

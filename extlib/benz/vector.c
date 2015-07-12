@@ -19,22 +19,6 @@ pic_make_vec(pic_state *pic, size_t len)
   return vec;
 }
 
-struct pic_vector *
-pic_make_vec_from_list(pic_state *pic, pic_value data)
-{
-  struct pic_vector *vec;
-  size_t len, i;
-
-  len = pic_length(pic, data);
-
-  vec = pic_make_vec(pic, len);
-  for (i = 0; i < len; ++i) {
-    vec->data[i] = pic_car(pic, data);
-    data = pic_cdr(pic, data);
-  }
-  return vec;
-}
-
 static pic_value
 pic_vec_vector_p(pic_state *pic)
 {
