@@ -1113,7 +1113,7 @@ pic_define_(pic_state *pic, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
 
-  sym = pic_intern_cstr(pic, name);
+  sym = pic_intern(pic, name);
 
   if ((uid = pic_find_variable(pic, pic->lib->env, pic_obj_value(sym))) == NULL) {
     uid = pic_add_variable(pic, pic->lib->env, pic_obj_value(sym));
@@ -1130,7 +1130,7 @@ void
 pic_define(pic_state *pic, const char *name, pic_value val)
 {
   pic_define_(pic, name, val);
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_export(pic, pic_intern(pic, name));
 }
 
 void
@@ -1143,7 +1143,7 @@ void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
   pic_defun_(pic, name, cfunc);
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_export(pic, pic_intern(pic, name));
 }
 
 void
@@ -1156,7 +1156,7 @@ void
 pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
 {
   pic_defvar_(pic, name, init, conv);
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_export(pic, pic_intern(pic, name));
 }
 
 pic_value
@@ -1164,7 +1164,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
   pic_sym *sym, *uid;
 
-  sym = pic_intern_cstr(pic, name);
+  sym = pic_intern(pic, name);
 
   if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
@@ -1178,7 +1178,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
 
-  sym = pic_intern_cstr(pic, name);
+  sym = pic_intern(pic, name);
 
   if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);

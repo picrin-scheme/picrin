@@ -15,7 +15,7 @@ pic_make_record(pic_state *pic, pic_value rectype)
   rec = (struct pic_record *)pic_obj_alloc(pic, sizeof(struct pic_record), PIC_TT_RECORD);
   rec->data = data;
 
-  pic_record_set(pic, rec, pic_intern_cstr(pic, "@@type"), rectype);
+  pic_record_set(pic, rec, pic_intern(pic, "@@type"), rectype);
 
   return rec;
 }
@@ -23,7 +23,7 @@ pic_make_record(pic_state *pic, pic_value rectype)
 pic_value
 pic_record_type(pic_state *pic, struct pic_record *rec)
 {
-  return pic_record_ref(pic, rec, pic_intern_cstr(pic, "@@type"));
+  return pic_record_ref(pic, rec, pic_intern(pic, "@@type"));
 }
 
 pic_value

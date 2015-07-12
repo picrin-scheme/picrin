@@ -14,7 +14,7 @@ read_error(pic_state *pic, const char *msg)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_cstr(pic, "read"), msg, pic_nil_value());
+  e = pic_make_error(pic, pic_intern(pic, "read"), msg, pic_nil_value());
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -216,7 +216,7 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
     buf[len] = 0;
   }
 
-  sym = pic_intern_cstr(pic, buf);
+  sym = pic_intern(pic, buf);
   pic_free(pic, buf);
 
   return pic_obj_value(sym);
@@ -537,7 +537,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
   }
   buf[cnt] = '\0';
 
-  sym = pic_intern_cstr(pic, buf);
+  sym = pic_intern(pic, buf);
   pic_free(pic, buf);
 
   return pic_obj_value(sym);

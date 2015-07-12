@@ -172,8 +172,8 @@ bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
-pic_sym *pic_intern(pic_state *, pic_str *);
-pic_sym *pic_intern_cstr(pic_state *, const char *);
+pic_sym *pic_intern(pic_state *, const char *);
+pic_sym *pic_intern_str(pic_state *, pic_str *);
 const char *pic_symbol_name(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
