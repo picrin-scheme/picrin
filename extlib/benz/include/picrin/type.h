@@ -167,7 +167,7 @@ enum pic_tt {
   PIC_TT_RECORD,
   PIC_TT_CXT,
   PIC_TT_IREP,
-  PIC_TT_CP,
+  PIC_TT_CP
 };
 
 #define PIC_OBJECT_HEADER			\
