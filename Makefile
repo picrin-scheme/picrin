@@ -25,7 +25,7 @@ all: bin/picrin
 
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-debug: CFLAGS += -O0 -g -std=c89 -pedantic -Werror
+debug: CFLAGS += -O0 -g
 debug: bin/picrin
 
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
@@ -65,7 +65,7 @@ test: test-contribs test-nostdlib
 test-contribs: bin/picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
-	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0' -D'PIC_ENABLE_STDIO=0' -nostdlib -fPIC -shared -std=c89 -ansi -pedantic -Wall -Wextra -o lib/libbenz.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
+	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0' -D'PIC_ENABLE_STDIO=0' -nostdlib -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libbenz.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	rm -f lib/libbenz.so
 
 install: all
