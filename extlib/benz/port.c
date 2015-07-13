@@ -103,7 +103,7 @@ file_error(pic_state *pic, const char *msg)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_cstr(pic, "file"), msg, pic_nil_value());
+  e = pic_make_error(pic, pic_intern(pic, "file"), msg, pic_nil_value());
 
   pic_raise(pic, pic_obj_value(e));
 }

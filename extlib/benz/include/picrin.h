@@ -144,7 +144,6 @@ void *pic_malloc(pic_state *, size_t);
 void *pic_realloc(pic_state *, void *, size_t);
 void *pic_calloc(pic_state *, size_t, size_t);
 struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
-struct pic_object *pic_obj_alloc_unsafe(pic_state *, size_t, enum pic_tt);
 void pic_free(pic_state *, void *);
 
 void pic_gc_run(pic_state *);
@@ -173,14 +172,14 @@ bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
-pic_sym *pic_intern(pic_state *, pic_str *);
-pic_sym *pic_intern_cstr(pic_state *, const char *);
+pic_sym *pic_intern(pic_state *, const char *);
+pic_sym *pic_intern_str(pic_state *, pic_str *);
 const char *pic_symbol_name(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
 
-void pic_load_port(pic_state *, struct pic_port *);
+void pic_load(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
 
 void pic_define(pic_state *, const char *, pic_value);
@@ -209,7 +208,6 @@ pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, size_t, pic_value *);
 pic_value pic_apply_trampoline_list(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
-struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
@@ -233,9 +231,9 @@ void pic_export(pic_state *, pic_sym *);
 PIC_NORETURN void pic_panic(pic_state *, const char *);
 PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
-const char *pic_errmsg(pic_state *);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
+
 struct pic_dict *pic_attr(pic_state *, pic_value);
 pic_value pic_attr_ref(pic_state *, pic_value, const char *);
 void pic_attr_set(pic_state *, pic_value, const char *, pic_value);
@@ -271,7 +269,6 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
-#include "picrin/box.h"
 
 #if defined(__cplusplus)
 }

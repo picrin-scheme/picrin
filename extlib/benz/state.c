@@ -15,7 +15,7 @@ pic_set_argv(pic_state *pic, int argc, char *argv[], char **envp)
 void
 pic_add_feature(pic_state *pic, const char *feature)
 {
-  pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
+  pic_push(pic, pic_obj_value(pic_intern(pic, feature)), pic->features);
 }
 
 void pic_init_undef(pic_state *);
@@ -113,10 +113,10 @@ pic_features(pic_state *pic)
 #define DONE pic_gc_arena_restore(pic, ai);
 
 #define define_builtin_syntax(uid, name)                                \
-  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern_cstr(pic, name), uid)
+  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern(pic, name), uid)
 
 #define VM(uid, name)                                                   \
-  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern_cstr(pic, name), uid)
+  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern(pic, name), uid)
 
 #define VM3(name)                                       \
   pic->c##name = pic_vm_gref_slot(pic, pic->u##name);
@@ -343,7 +343,7 @@ pic_open(pic_allocf allocf, void *userdata)
 
   ai = pic_gc_arena_preserve(pic);
 
-#define S(slot,name) pic->slot = pic_intern_cstr(pic, name)
+#define S(slot,name) pic->slot = pic_intern(pic, name)
 
   S(sQUOTE, "quote");
   S(sQUASIQUOTE, "quasiquote");
@@ -364,7 +364,7 @@ pic_open(pic_allocf allocf, void *userdata)
 
   pic_gc_arena_restore(pic, ai);
 
-#define U(slot,name) pic->slot = pic_uniq(pic, pic_obj_value(pic_intern_cstr(pic, name)))
+#define U(slot,name) pic->slot = pic_uniq(pic, pic_obj_value(pic_intern(pic, name)))
 
   U(uDEFINE, "define");
   U(uLAMBDA, "lambda");

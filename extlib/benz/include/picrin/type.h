@@ -2,8 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
-#ifndef PICRIN_VALUE_H
-#define PICRIN_VALUE_H
+#ifndef PICRIN_TYPE_H
+#define PICRIN_TYPE_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -163,7 +163,6 @@ enum pic_tt {
   PIC_TT_DATA,
   PIC_TT_DICT,
   PIC_TT_REG,
-  PIC_TT_BOX,
   PIC_TT_RECORD,
   PIC_TT_CXT,
   PIC_TT_IREP,
@@ -338,8 +337,6 @@ pic_type_repr(enum pic_tt tt)
     return "reg";
   case PIC_TT_RECORD:
     return "record";
-  case PIC_TT_BOX:
-    return "box";
   case PIC_TT_CP:
     return "checkpoint";
   }

@@ -14,7 +14,7 @@ read_error(pic_state *pic, const char *msg)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_cstr(pic, "read"), msg, pic_nil_value());
+  e = pic_make_error(pic, pic_intern(pic, "read"), msg, pic_nil_value());
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -216,7 +216,7 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
     buf[len] = 0;
   }
 
-  sym = pic_intern_cstr(pic, buf);
+  sym = pic_intern(pic, buf);
   pic_free(pic, buf);
 
   return pic_obj_value(sym);
@@ -537,7 +537,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
   }
   buf[cnt] = '\0';
 
-  sym = pic_intern_cstr(pic, buf);
+  sym = pic_intern(pic, buf);
   pic_free(pic, buf);
 
   return pic_obj_value(sym);
@@ -643,11 +643,19 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_vector(pic_state *pic, struct pic_port *port, int c)
 {
-  pic_value list;
+  pic_value list, it, elem;
+  pic_vec *vec;
+  size_t i = 0;
 
   list = read(pic, port, c);
 
-  return pic_obj_value(pic_make_vec_from_list(pic, list));
+  vec = pic_make_vec(pic, pic_length(pic, list));
+
+  pic_for_each (elem, list, it) {
+    vec->data[i++] = elem;
+  }
+
+  return pic_obj_value(vec);
 }
 
 static pic_value

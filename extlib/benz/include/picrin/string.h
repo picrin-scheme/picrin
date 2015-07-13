@@ -22,7 +22,6 @@ void pic_rope_decref(pic_state *, struct pic_rope *);
 
 pic_str *pic_make_str(pic_state *, const char * /* nullable */, size_t);
 pic_str *pic_make_str_cstr(pic_state *, const char *);
-pic_str *pic_make_str_fill(pic_state *, size_t, char);
 
 char pic_str_ref(pic_state *, pic_str *, size_t);
 size_t pic_str_len(pic_str *);
