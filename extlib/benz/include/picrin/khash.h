@@ -27,21 +27,7 @@
 #ifndef AC_KHASH_H
 #define AC_KHASH_H
 
-#include <limits.h>
-
-#if UINT_MAX == 0xffffffffu
-typedef unsigned int khint32_t;
-#elif ULONG_MAX == 0xffffffffu
-typedef unsigned long khint32_t;
-#endif
-
-#if ULONG_MAX == ULLONG_MAX
-typedef unsigned long khint64_t;
-#else
-typedef unsigned long long khint64_t;
-#endif
-
-typedef khint32_t khint_t;
+typedef int khint_t;
 typedef khint_t khiter_t;
 
 #define ac_isempty(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&2)
@@ -78,7 +64,7 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
 #define KHASH_DECLARE(name, khkey_t, khval_t)                           \
   typedef struct {                                                      \
     khint_t n_buckets, size, n_occupied, upper_bound;                   \
-    khint32_t *flags;                                                   \
+    int *flags;                                                         \
     khkey_t *keys;                                                      \
     khval_t *vals;                                                      \
   } kh_##name##_t;                                                      \
@@ -105,7 +91,7 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
   void kh_clear_##name(kh_##name##_t *h)                                \
   {                                                                     \
     if (h->flags) {                                                     \
-      memset(h->flags, 0xaa, ac_fsize(h->n_buckets) * sizeof(khint32_t)); \
+      memset(h->flags, 0xaa, ac_fsize(h->n_buckets) * sizeof(int));     \
       h->size = h->n_occupied = 0;                                      \
     }                                                                   \
   }                                                                     \
@@ -125,15 +111,15 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
   }                                                                     \
   void kh_resize_##name(pic_state *pic, kh_##name##_t *h, khint_t new_n_buckets) \
   { /* This function uses 0.25*n_buckets bytes of working space instead of [sizeof(key_t+val_t)+.25]*n_buckets. */ \
-    khint32_t *new_flags = 0;                                           \
+    int *new_flags = 0;                                                 \
     khint_t j = 1;                                                      \
     {                                                                   \
       ac_roundup32(new_n_buckets);                                      \
       if (new_n_buckets < 4) new_n_buckets = 4;                         \
       if (h->size >= ac_hash_upper(new_n_buckets)) j = 0; /* requested size is too small */ \
       else { /* hash table size to be changed (shrink or expand); rehash */ \
-        new_flags = pic_malloc(pic, ac_fsize(new_n_buckets) * sizeof(khint32_t)); \
-        memset(new_flags, 0xaa, ac_fsize(new_n_buckets) * sizeof(khint32_t)); \
+        new_flags = pic_malloc(pic, ac_fsize(new_n_buckets) * sizeof(int)); \
+        memset(new_flags, 0xaa, ac_fsize(new_n_buckets) * sizeof(int)); \
         if (h->n_buckets < new_n_buckets) {	/* expand */		\
           h->keys = pic_realloc(pic, (void *)h->keys, new_n_buckets * sizeof(khkey_t)); \
           if (kh_is_map) {                                              \
@@ -230,12 +216,10 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
 
 /* --- BEGIN OF HASH FUNCTIONS --- */
 
-#define kh_ptr_hash_func(key) (khint32_t)(long)(key)
+#define kh_ptr_hash_func(key) (int)(long)(key)
 #define kh_ptr_hash_equal(a, b) ((a) == (b))
-#define kh_int_hash_func(key) (khint32_t)(key)
+#define kh_int_hash_func(key) (int)(key)
 #define kh_int_hash_equal(a, b) ((a) == (b))
-#define kh_int64_hash_func(key) (khint32_t)((key)>>33^(key)^(key)<<11)
-#define kh_int64_hash_equal(a, b) ((a) == (b))
 #define kh_str_hash_func(key) ac_X31_hash_string(key)
 #define kh_str_hash_equal(a, b) (strcmp(a, b) == 0)
 #define kh_int_hash_func2(k) ac_Wang_hash((khint_t)key)
