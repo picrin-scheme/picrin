@@ -626,7 +626,7 @@ pic_eqv_p(pic_value x, pic_value y)
 pic_define_aop(pic_add, +, true)
 pic_define_aop(pic_sub, -, true)
 pic_define_aop(pic_mul, *, true)
-pic_define_aop(pic_div, /, false)
+pic_define_aop(pic_div, /, f == round(f))
 
 #if PIC_ENABLE_FLOAT
 # define pic_define_cmp(name, op)                               \
