@@ -4,13 +4,16 @@ void
 pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
 {
   pic_str *x, *y, *z, *tmp;
+  char buf[1];
 
   if (pic_str_len(str) <= i) {
     pic_errorf(pic, "index out of range %d", i);
   }
 
+  buf[0] = c;
+
   x = pic_str_sub(pic, str, 0, i);
-  y = pic_make_str_fill(pic, 1, c);
+  y = pic_make_str(pic, buf, 1);
   z = pic_str_sub(pic, str, i + 1, pic_str_len(str));
 
   tmp = pic_str_cat(pic, x, pic_str_cat(pic, y, z));
