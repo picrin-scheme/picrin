@@ -611,7 +611,6 @@ pic_eqv_p(pic_value x, pic_value y)
   name(pic_state *pic, pic_value a, pic_value b)                \
   {                                                             \
     extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
-    double f;                                                   \
     if (pic_int_p(a) && pic_int_p(b)) {                         \
       return pic_int_value(pic_int(a) op pic_int(b));           \
     } else {                                                    \

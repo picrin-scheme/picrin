@@ -157,19 +157,19 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
 static pic_value
 pic_va_values(pic_state *pic, size_t n, ...)
 {
-  pic_value args[n];
+  pic_vec *args = pic_make_vec(pic, n);
   va_list ap;
   size_t i = 0;
 
   va_start(ap, n);
 
   while (i < n) {
-    args[i++] = va_arg(ap, pic_value);
+    args->data[i++] = va_arg(ap, pic_value);
   }
 
   va_end(ap);
 
-  return pic_values(pic, n, args);
+  return pic_values(pic, n, args->data);
 }
 
 pic_value
@@ -288,19 +288,19 @@ static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
   struct pic_proc *producer, *consumer;
+  size_t argc;
+  pic_vec *args;
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
   pic_apply(pic, producer, pic_nil_value());
 
-  do {
-    size_t argc = pic_receive(pic, 0, NULL);
-    pic_value args[argc];
+  argc = pic_receive(pic, 0, NULL);
+  args = pic_make_vec(pic, argc);
 
-    pic_receive(pic, argc, args);
+  pic_receive(pic, argc, args->data);
 
-    return pic_apply_trampoline(pic, consumer, argc, args);
-  } while (0);
+  return pic_apply_trampoline(pic, consumer, argc, args->data);
 }
 
 void

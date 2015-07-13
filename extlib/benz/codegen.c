@@ -435,6 +435,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
   pic_value rest = pic_undef_value();
   pic_vec *args, *locals, *captures;
   size_t i, j;
+  khiter_t it;
 
   formals = pic_list_ref(pic, form, 1);
   body = pic_list_ref(pic, form, 2);
@@ -455,16 +456,16 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
   }
 
   locals = pic_make_vec(pic, kh_size(&scope->locals));
-  for (i = kh_begin(&scope->locals), j = 0; i < kh_end(&scope->locals); ++i) {
-    if (kh_exist(&scope->locals, i)) {
-      locals->data[j++] = pic_obj_value(kh_key(&scope->locals, i));
+  for (it = kh_begin(&scope->locals), j = 0; it < kh_end(&scope->locals); ++it) {
+    if (kh_exist(&scope->locals, it)) {
+      locals->data[j++] = pic_obj_value(kh_key(&scope->locals, it));
     }
   }
 
   captures = pic_make_vec(pic, kh_size(&scope->captures));
-  for (i = kh_begin(&scope->captures), j = 0; i < kh_end(&scope->captures); ++i) {
-    if (kh_exist(&scope->captures, i)) {
-      captures->data[j++] = pic_obj_value(kh_key(&scope->captures, i));
+  for (it = kh_begin(&scope->captures), j = 0; it < kh_end(&scope->captures); ++it) {
+    if (kh_exist(&scope->captures, it)) {
+      captures->data[j++] = pic_obj_value(kh_key(&scope->captures, it));
     }
   }
 

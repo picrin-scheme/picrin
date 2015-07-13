@@ -89,7 +89,7 @@ extern "C" {
 
 #else
 
-# define assert(v) 0
+# define assert(v) (void)0
 
 PIC_INLINE int
 isspace(int c)

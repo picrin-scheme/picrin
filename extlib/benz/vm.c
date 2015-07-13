@@ -1046,14 +1046,15 @@ pic_value
 pic_apply_trampoline_list(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
   size_t i, argc = pic_length(pic, args);
-  pic_value val, it, argv[argc];
+  pic_value val, it;
+  pic_vec *argv = pic_make_vec(pic, argc);
 
   i = 0;
   pic_for_each (val, args, it) {
-    argv[i++] = val;
+    argv->data[i++] = val;
   }
 
-  return pic_apply_trampoline(pic, proc, argc, argv);
+  return pic_apply_trampoline(pic, proc, argc, argv->data);
 }
 
 pic_value
