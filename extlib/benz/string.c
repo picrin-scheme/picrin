@@ -452,19 +452,18 @@ pic_str_make_string(pic_state *pic)
 {
   size_t len;
   char c = ' ';
+  char *buf;
+  pic_value ret;
 
   pic_get_args(pic, "k|c", &len, &c);
 
-  {
-    size_t i;
-    char buf[len];
+  buf = pic_malloc(pic, len);
+  memset(buf, c, len);
 
-    for (i = 0; i < len; ++i) {
-      buf[i] = c;
-    }
+  ret = pic_obj_value(pic_make_str(pic, buf, len));
 
-    return pic_obj_value(pic_make_str(pic, buf, len));
-  }
+  pic_free(pic, buf);
+  return ret;
 }
 
 static pic_value
