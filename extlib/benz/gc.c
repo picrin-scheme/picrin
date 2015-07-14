@@ -704,16 +704,7 @@ gc_sweep_symbols(pic_state *pic)
 static void
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
-#if GC_DEBUG
-  static union header * const NIL = (union header *)0xdeadbeef;
-#else
-  static union header * const NIL = NULL;
-#endif
-  union header *bp, *p, *s = NIL, *t = NIL;
-
-#if GC_DEBUG
-  int c = 0;
-#endif
+  union header *bp, *p, *chain = NULL;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
     for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
@@ -721,14 +712,8 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
 	goto escape;
       }
       if (! gc_is_marked(p)) {
-	if (s == NIL) {
-	  s = p;
-	}
-	else {
-	  t->s.ptr = p;
-	}
-	t = p;
-	t->s.ptr = NIL; /* For dead objects we can safely reuse ptr field */
+	p->s.ptr = chain; /* For dead objects we can safely reuse ptr field */
+        chain = NULL;
       }
       gc_unmark(p);
     }
@@ -736,20 +721,11 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
  escape:
 
   /* free! */
-  while (s != NIL) {
-    t = s->s.ptr;
-    gc_finalize_object(pic, (struct pic_object *)(s + 1));
-    gc_free(pic, s + 1);
-    s = t;
-
-#if GC_DEBUG
-    c++;
-#endif
+  while (chain != NULL) {
+    gc_finalize_object(pic, (struct pic_object *)(chain + 1));
+    gc_free(pic, chain + 1);
+    chain = chain->s.ptr; /* here s.ptr is alive because gc_free does not touch it */
   }
-
-#if GC_DEBUG
-  printf("freed objects count: %d\n", c);
-#endif
 }
 
 static void
