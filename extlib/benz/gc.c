@@ -23,9 +23,13 @@ struct pic_heap {
 };
 
 
-static void
-heap_init(struct pic_heap *heap)
+struct pic_heap *
+pic_heap_open(pic_state *pic)
 {
+  struct pic_heap *heap;
+
+  heap = pic_malloc(pic, sizeof(struct pic_heap));
+
   heap->base.s.ptr = &heap->base;
   heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
   heap->base.s.mark = PIC_GC_UNMARK;
@@ -33,18 +37,6 @@ heap_init(struct pic_heap *heap)
   heap->freep = &heap->base;
   heap->pages = NULL;
 
-#if GC_DEBUG
-  printf("freep = %p\n", (void *)heap->freep);
-#endif
-}
-
-struct pic_heap *
-pic_heap_open(pic_state *pic)
-{
-  struct pic_heap *heap;
-
-  heap = pic_calloc(pic, 1, sizeof(struct pic_heap));
-  heap_init(heap);
   return heap;
 }
 
