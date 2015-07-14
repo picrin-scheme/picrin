@@ -712,11 +712,12 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       if (p == page->endp) {
 	goto escape;
       }
-      if (! gc_is_marked(p)) {
+      if (gc_is_marked(p)) {
+        gc_unmark(p);
+      } else {
 	p->s.ptr = chain; /* we can safely reuse ptr field of dead objects */
         chain = NULL;
       }
-      gc_unmark(p);
     }
   }
  escape:
