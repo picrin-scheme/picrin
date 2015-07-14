@@ -32,7 +32,6 @@ pic_heap_open(pic_state *pic)
 
   heap->base.s.ptr = &heap->base;
   heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
-  heap->base.s.mark = PIC_GC_UNMARK;
 
   heap->freep = &heap->base;
   heap->pages = NULL;
@@ -220,7 +219,6 @@ gc_morepage(pic_state *pic)
 
   up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
   up->s.size = nu + 1;
-  up->s.mark = PIC_GC_UNMARK;
   gc_free(pic, up + 1);
 
   np = up + 1;
