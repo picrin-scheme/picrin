@@ -10,7 +10,6 @@ union header {
     size_t size;
     char mark;
   } s;
-  long alignment[2];
 };
 
 struct heap_page {
