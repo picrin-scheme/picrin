@@ -169,7 +169,7 @@ gc_alloc(pic_state *pic, size_t size)
         p->s.size = nunits;
       }
       pic->heap->freep = prevp;
-      p->s.mark = PIC_GC_UNMARK;
+      p->s.mark = PIC_GC_UNMARK; /* TODO: don't touch s.mark in gc_alloc/gc_free */
       return (void *)(p + 1);
     }
     if (p == pic->heap->freep) {
@@ -212,7 +212,8 @@ gc_morepage(pic_state *pic)
   size_t nu;
 
 #if GC_DEBUG
-  puts("adding heap page!");
+  static int c = 0;
+  printf("adding heap page!: %d\n", c++);
 #endif
 
   nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
@@ -712,7 +713,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
 	goto escape;
       }
       if (! gc_is_marked(p)) {
-	p->s.ptr = chain; /* For dead objects we can safely reuse ptr field */
+	p->s.ptr = chain; /* we can safely reuse ptr field of dead objects */
         chain = NULL;
       }
       gc_unmark(p);
