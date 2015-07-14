@@ -124,7 +124,7 @@
 #endif
 
 #ifndef PIC_HEAP_PAGE_SIZE
-# define PIC_HEAP_PAGE_SIZE (4 * 1024 * 1024)
+# define PIC_HEAP_PAGE_SIZE (2 * 1024 * 1024)
 #endif
 
 #ifndef PIC_STACK_SIZE
