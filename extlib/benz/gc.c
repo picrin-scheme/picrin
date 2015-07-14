@@ -187,62 +187,29 @@ pic_gc_arena_restore(pic_state *pic, size_t state)
 static void *
 gc_alloc(pic_state *pic, size_t size)
 {
-  union header *freep, *p, *prevp;
+  union header *p, *prevp;
   size_t nunits;
-
-#if GC_DEBUG
-  assert(size > 0);
-#endif
 
   nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
 
-  prevp = freep = pic->heap->freep;
+  prevp = pic->heap->freep;
   for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
-    if (p->s.size >= nunits)
-      break;
-    if (p == freep) {
+    if (p->s.size >= nunits) {
+      if (p->s.size == nunits) {
+        prevp->s.ptr = p->s.ptr;
+      } else {
+        p->s.size -= nunits;
+        p += p->s.size;
+        p->s.size = nunits;
+      }
+      pic->heap->freep = prevp;
+      p->s.mark = PIC_GC_UNMARK;
+      return (void *)(p + 1);
+    }
+    if (p == pic->heap->freep) {
       return NULL;
     }
   }
-
-#if GC_DEBUG
-  {
-    unsigned char *c;
-    size_t s, i, j;
-    if (p->s.size == nunits) {
-      c = (unsigned char *)(p + p->s.size - nunits + 1);
-      s = nunits - 1;
-    } else {
-      c = (unsigned char *)(p + p->s.size - nunits);
-      s = nunits;
-    }
-
-    for (i = 0; i < s; ++i) {
-      for (j = 0; j < sizeof(union header); ++j) {
-	assert(c[i * sizeof(union header) + j] == 0xAA);
-      }
-    }
-  }
-#endif
-
-  if (p->s.size == nunits) {
-    prevp->s.ptr = p->s.ptr;
-  }
-  else {
-    p->s.size -= nunits;
-    p += p->s.size;
-    p->s.size = nunits;
-  }
-  pic->heap->freep = prevp;
-
-  p->s.mark = PIC_GC_UNMARK;
-
-#if GC_DEBUG
-  memset(p+1, 0, sizeof(union header) * (nunits - 1));
-  p->s.ptr = (union header *)0xcafebabe;
-#endif
-
-  return (void *)(p + 1);
 }
 
 static void
