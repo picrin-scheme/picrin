@@ -759,57 +759,18 @@ gc_sweep_phase(pic_state *pic)
 void
 pic_gc_run(pic_state *pic)
 {
-#if GC_DEBUG
-  struct heap_page *page;
-#endif
-
   if (! pic->gc_enable) {
     return;
   }
 
-#if DEBUG
-  puts("gc run!");
-#endif
-
   gc_mark_phase(pic);
   gc_sweep_phase(pic);
-
-#if GC_DEBUG
-  for (page = pic->heap->pages; page; page = page->next) {
-    union header *bp, *p;
-    unsigned char *c;
-
-    for (bp = page->basep; ; bp = bp->s.ptr) {
-      for (c = (unsigned char *)(bp+1); c != (unsigned char *)(bp + bp->s.size); ++c) {
-	assert(*c == 0xAA);
-      }
-      for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
-	if (p == page->endp) {
-	  /* if (page->next) */
-	  /*   assert(bp->s.ptr == page->next->basep); */
-	  /* else */
-	  /*   assert(bp->s.ptr == &pic->heap->base); */
-	  goto escape;
-	}
-	assert(! gc_is_marked(p));
-      }
-    }
-  escape:
-    ((void)0);
-  }
-
-  puts("not error on heap found! gc successfully finished");
-#endif
 }
 
 struct pic_object *
 pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
 {
   struct pic_object *obj;
-
-#if GC_DEBUG
-  printf("*allocating: %s\n", pic_type_repr(tt));
-#endif
 
 #if GC_STRESS
   pic_gc_run(pic);
