@@ -53,40 +53,6 @@ pic_heap_close(pic_state *pic, struct pic_heap *heap)
   pic_free(pic, heap);
 }
 
-static void gc_free(pic_state *, union header *);
-
-static void
-add_heap_page(pic_state *pic)
-{
-  union header *up, *np;
-  struct heap_page *page;
-  size_t nu;
-
-#if GC_DEBUG
-  puts("adding heap page!");
-#endif
-
-  nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
-
-  up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
-  up->s.size = nu + 1;
-  up->s.mark = PIC_GC_UNMARK;
-  gc_free(pic, up);
-
-  np = up + 1;
-  np->s.size = nu;
-  np->s.ptr = up->s.ptr;
-  up->s.size = 1;
-  up->s.ptr = np;
-
-  page = pic_malloc(pic, sizeof(struct heap_page));
-  page->basep = up;
-  page->endp = up + nu + 1;
-  page->next = pic->heap->pages;
-
-  pic->heap->pages = page;
-}
-
 #if PIC_ENABLE_LIBC
 void *
 pic_default_allocf(void *ptr, size_t size)
@@ -213,10 +179,11 @@ gc_alloc(pic_state *pic, size_t size)
 }
 
 static void
-gc_free(pic_state *pic, union header *bp)
+gc_free(pic_state *pic, void *ap)
 {
-  union header *p;
+  union header *bp, *p;
 
+  bp = (union header *)ap - 1;
   for (p = pic->heap->freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
     if (p >= p->s.ptr && (bp > p || bp < p->s.ptr)) {
       break;
@@ -235,6 +202,38 @@ gc_free(pic_state *pic, union header *bp)
     p->s.ptr = bp;
   }
   pic->heap->freep = p;
+}
+
+static void
+gc_morepage(pic_state *pic)
+{
+  union header *up, *np;
+  struct heap_page *page;
+  size_t nu;
+
+#if GC_DEBUG
+  puts("adding heap page!");
+#endif
+
+  nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
+
+  up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
+  up->s.size = nu + 1;
+  up->s.mark = PIC_GC_UNMARK;
+  gc_free(pic, up + 1);
+
+  np = up + 1;
+  np->s.size = nu;
+  np->s.ptr = up->s.ptr;
+  up->s.size = 1;
+  up->s.ptr = np;
+
+  page = pic_malloc(pic, sizeof(struct heap_page));
+  page->basep = up;
+  page->endp = up + nu + 1;
+  page->next = pic->heap->pages;
+
+  pic->heap->pages = page;
 }
 
 static void gc_mark(pic_state *, pic_value);
@@ -741,7 +740,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   while (s != NIL) {
     t = s->s.ptr;
     gc_finalize_object(pic, (struct pic_object *)(s + 1));
-    gc_free(pic, s);
+    gc_free(pic, s + 1);
     s = t;
 
 #if GC_DEBUG
@@ -846,7 +845,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
     pic_gc_run(pic);
     obj = (struct pic_object *)gc_alloc(pic, size);
     if (obj == NULL) {
-      add_heap_page(pic);
+      gc_morepage(pic);
       obj = (struct pic_object *)gc_alloc(pic, size);
       if (obj == NULL)
 	pic_panic(pic, "GC memory exhausted");
