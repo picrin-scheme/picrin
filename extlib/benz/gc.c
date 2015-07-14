@@ -215,19 +215,9 @@ gc_alloc(pic_state *pic, size_t size)
 static void
 gc_free(pic_state *pic, union header *bp)
 {
-  union header *freep, *p;
+  union header *p;
 
-#if GC_DEBUG
-  assert(bp != NULL);
-  assert(bp->s.size > 1);
-#endif
-
-#if GC_DEBUG
-  memset(bp + 1, 0xAA, (bp->s.size - 1) * sizeof(union header));
-#endif
-
-  freep = pic->heap->freep;
-  for (p = freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
+  for (p = pic->heap->freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
     if (p >= p->s.ptr && (bp > p || bp < p->s.ptr)) {
       break;
     }
@@ -235,23 +225,13 @@ gc_free(pic_state *pic, union header *bp)
   if (bp + bp->s.size == p->s.ptr) {
     bp->s.size += p->s.ptr->s.size;
     bp->s.ptr = p->s.ptr->s.ptr;
-
-#if GC_DEBUG
-    memset(p->s.ptr, 0xAA, sizeof(union header));
-#endif
-  }
-  else {
+  } else {
     bp->s.ptr = p->s.ptr;
   }
   if (p + p->s.size == bp && p->s.size > 1) {
     p->s.size += bp->s.size;
     p->s.ptr = bp->s.ptr;
-
-#if GC_DEBUG
-    memset(bp, 0xAA, sizeof(union header));
-#endif
-  }
-  else {
+  } else {
     p->s.ptr = bp;
   }
   pic->heap->freep = p;
