@@ -191,7 +191,7 @@ gc_free(pic_state *pic, void *ap)
       break;
     }
   }
-  if (bp + bp->s.size == p->s.ptr) {
+  if (bp + bp->s.size == p->s.ptr && p->s.ptr->s.size > 0) { /* don't melt base header */
     bp->s.size += p->s.ptr->s.size;
     bp->s.ptr = p->s.ptr->s.ptr;
   } else {
