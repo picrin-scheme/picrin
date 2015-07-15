@@ -727,9 +727,10 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
 
   /* free! */
   while (chain != NULL) {
-    gc_finalize_object(pic, (struct pic_object *)(chain + 1));
-    gc_free(pic, chain + 1);
-    chain = chain->s.ptr; /* here s.ptr is alive because gc_free does not touch it */
+    p = chain;
+    chain = chain->s.ptr;
+    gc_finalize_object(pic, (struct pic_object *)(p + 1));
+    gc_free(pic, p + 1);
   }
 }
 
