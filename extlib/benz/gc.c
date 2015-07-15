@@ -24,23 +24,19 @@ struct pic_heap {
 };
 
 
-static void
-heap_init(struct pic_heap *heap)
-{
-  heap->base.s.ptr = &heap->base;
-  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
-
-  heap->freep = &heap->base;
-  heap->pages = NULL;
-}
-
 struct pic_heap *
 pic_heap_open(pic_state *pic)
 {
   struct pic_heap *heap;
 
   heap = pic_calloc(pic, 1, sizeof(struct pic_heap));
-  heap_init(heap);
+
+  heap->base.s.ptr = &heap->base;
+  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
+
+  heap->freep = &heap->base;
+  heap->pages = NULL;
+
   return heap;
 }
 
