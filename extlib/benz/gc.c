@@ -224,7 +224,6 @@ gc_free(pic_state *pic, union header *bp)
   union header *freep, *p;
 
   assert(bp != NULL);
-  assert(bp->s.size > 1);
 
   freep = pic->heap->freep;
   for (p = freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
@@ -239,7 +238,7 @@ gc_free(pic_state *pic, union header *bp)
   else {
     bp->s.ptr = p->s.ptr;
   }
-  if (p + p->s.size == bp && p->s.size > 1) {
+  if (p + p->s.size == bp) {
     p->s.size += bp->s.size;
     p->s.ptr = bp->s.ptr;
   }
