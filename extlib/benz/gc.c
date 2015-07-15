@@ -707,7 +707,7 @@ gc_sweep_symbols(pic_state *pic)
 static void
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
-  union header *bp, *p, *chain = NULL;
+  union header *bp, *p, *head = NULL, *tail = NULL;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
     p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advance */
@@ -718,17 +718,22 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       if (gc_is_marked(p)) {
         gc_unmark(p);
       } else {
-	p->s.ptr = chain; /* we can safely reuse ptr field of dead objects */
-        chain = p;
+        if (head == NULL) {
+          head = p;
+        } else {
+          tail->s.ptr = p;
+        }
+        tail = p;
+        tail->s.ptr = NULL; /* we can safely reuse ptr field of dead objects */
       }
     }
   }
  escape:
 
   /* free! */
-  while (chain != NULL) {
-    p = chain;
-    chain = chain->s.ptr;
+  while (head != NULL) {
+    p = head;
+    head = head->s.ptr;
     gc_finalize_object(pic, (struct pic_object *)(p + 1));
     gc_free(pic, p + 1);
   }
