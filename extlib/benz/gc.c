@@ -29,7 +29,6 @@ heap_init(struct pic_heap *heap)
 {
   heap->base.s.ptr = &heap->base;
   heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
-  heap->base.s.mark = PIC_GC_UNMARK;
 
   heap->freep = &heap->base;
   heap->pages = NULL;
@@ -70,7 +69,6 @@ add_heap_page(pic_state *pic)
 
   up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
   up->s.size = nu + 1;
-  up->s.mark = PIC_GC_UNMARK;
   gc_free(pic, up);
 
   np = up + 1;
