@@ -196,7 +196,7 @@ gc_free(pic_state *pic, void *ap)
   } else {
     bp->s.ptr = p->s.ptr;
   }
-  if (p + p->s.size == bp && p->s.size > 1) {
+  if (p + p->s.size == bp) {
     p->s.size += bp->s.size;
     p->s.ptr = bp->s.ptr;
   } else {
