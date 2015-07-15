@@ -155,6 +155,8 @@ gc_alloc(pic_state *pic, size_t size)
   union header *p, *prevp;
   size_t nunits;
 
+  assert(size > 0);
+
   nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
 
   prevp = pic->heap->freep;
