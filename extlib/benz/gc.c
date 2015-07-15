@@ -218,21 +218,22 @@ gc_morepage(pic_state *pic)
   printf("adding heap page!: %d\n", c++);
 #endif
 
-  nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
+  nu = PIC_HEAP_PAGE_SIZE / sizeof(union header);
 
-  up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
-  up->s.size = nu + 1;
+  assert(nu >= 2);
+
+  up = pic_malloc(pic, PIC_HEAP_PAGE_SIZE);
+  np = up + 1;
+
+  up->s.size = 0;               /* up is never used for allocation */
   gc_free(pic, up + 1);
 
-  np = up + 1;
-  np->s.size = nu;
-  np->s.ptr = up->s.ptr;
-  up->s.size = 1;
-  up->s.ptr = np;
+  np->s.size = nu - 1;
+  gc_free(pic, np + 1);
 
   page = pic_malloc(pic, sizeof(struct heap_page));
   page->basep = up;
-  page->endp = up + nu + 1;
+  page->endp = up + nu;
   page->next = pic->heap->pages;
 
   pic->heap->pages = page;
@@ -709,8 +710,9 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   union header *bp, *p, *chain = NULL;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
-    for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
-      if (p == page->endp) {
+    p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advance */
+    for (; p != bp->s.ptr; p += p->s.size) {
+      if (p < page->basep || page->endp <= p) {
 	goto escape;
       }
       if (gc_is_marked(p)) {
