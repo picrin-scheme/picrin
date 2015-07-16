@@ -4,5 +4,5 @@ CONTRIB_TESTS += test-random
 
 test-random: bin/picrin
 	for test in `ls contrib/30.random/t/*.scm`; do \
-	  bin/picrin $$test; \
+	  $(TEST_RUNNER) $$test; \
 	done

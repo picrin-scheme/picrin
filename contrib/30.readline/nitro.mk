@@ -12,5 +12,5 @@ contrib/src/readline.o: contrib/src/readline.c
 
 test-readline: bin/picrin
 	for test in `ls contrib/30.readline/t/*.scm`; do \
-	  bin/picrin $$test; \
+	  $(TEST_RUNNER) $$test; \
 	done
