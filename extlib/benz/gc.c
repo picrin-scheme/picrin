@@ -203,7 +203,7 @@ heap_free(pic_state *pic, void *ap)
   } else {
     bp->s.ptr = p->s.ptr;
   }
-  if (p + p->s.size == bp) {
+  if (p + p->s.size == bp && bp->s.size > 0) { /* don't melt base header */
     p->s.size += bp->s.size;
     p->s.ptr = bp->s.ptr;
   } else {
