@@ -215,25 +215,25 @@ heap_free(pic_state *pic, void *ap)
 static void
 heap_morecore(pic_state *pic)
 {
-  union header *up, *np;
+  union header *bp, *np;
   struct heap_page *page;
-  size_t nu;
+  size_t nunits;
 
-  nu = PIC_HEAP_PAGE_SIZE / sizeof(union header);
+  nunits = PIC_HEAP_PAGE_SIZE / sizeof(union header);
 
-  assert(nu >= 2);
+  assert(nunits >= 2);
 
-  up = pic_malloc(pic, PIC_HEAP_PAGE_SIZE);
-  up->s.size = 0;               /* up is never used for allocation */
-  heap_free(pic, up + 1);
+  bp = pic_malloc(pic, PIC_HEAP_PAGE_SIZE);
+  bp->s.size = 0;               /* bp is never used for allocation */
+  heap_free(pic, bp + 1);
 
-  np = up + 1;
-  np->s.size = nu - 1;
+  np = bp + 1;
+  np->s.size = nunits - 1;
   heap_free(pic, np + 1);
 
   page = pic_malloc(pic, sizeof(struct heap_page));
-  page->basep = up;
-  page->endp = up + nu;
+  page->basep = bp;
+  page->endp = bp + nunits;
   page->next = pic->heap->pages;
 
   pic->heap->pages = page;
