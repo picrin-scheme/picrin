@@ -8,7 +8,6 @@ union header {
   struct {
     union header *ptr;
     size_t size;
-    char mark;
   } s;
 };
 
@@ -262,21 +261,13 @@ static void gc_mark_object(pic_state *, union object *);
 static bool
 gc_obj_is_marked(struct pic_object *obj)
 {
-  union header *p;
-
-  p = ((union header *)obj) - 1;
-
-  return p->s.mark == PIC_GC_MARK;
+  return obj->gc_mark == PIC_GC_MARK;
 }
 
 static void
 gc_unmark_object(struct pic_object *obj)
 {
-  union header *p;
-
-  p = ((union header *)obj) - 1;
-
-  p->s.mark = PIC_GC_UNMARK;
+  obj->gc_mark = PIC_GC_UNMARK;
 }
 
 static void
@@ -291,15 +282,11 @@ gc_mark(pic_state *pic, pic_value v)
 static void
 gc_mark_object(pic_state *pic, union object *obj)
 {
-  union header *p;
-
  loop:
 
-  p = ((union header *)obj) - 1;
-
-  if (p->s.mark == PIC_GC_MARK)
+  if (obj->obj.gc_mark == PIC_GC_MARK)
     return;
-  p->s.mark = PIC_GC_MARK;
+  obj->obj.gc_mark = PIC_GC_MARK;
 
 #define LOOP(o) obj = (union object *)(o); goto loop
 
@@ -638,6 +625,7 @@ static size_t
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
   union header *bp, *p, *head = NULL, *tail = NULL;
+  union object *obj;
   size_t alive = 0;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
@@ -646,8 +634,9 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       if (p < page->basep || page->endp <= p) {
         goto escape;
       }
-      if (p->s.mark == PIC_GC_MARK) {
-        p->s.mark = PIC_GC_UNMARK;
+      obj = (union object *)(p + 1);
+      if (obj->obj.gc_mark == PIC_GC_MARK) {
+        obj->obj.gc_mark = PIC_GC_UNMARK;
         alive += p->s.size;
       } else {
         if (head == NULL) {
