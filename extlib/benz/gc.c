@@ -154,18 +154,18 @@ pic_gc_arena_restore(pic_state *pic, size_t state)
 static void *
 heap_alloc(pic_state *pic, size_t size)
 {
-  union header *freep, *p, *prevp;
+  union header *p, *prevp;
   size_t nunits;
 
   assert(size > 0);
 
   nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
 
-  prevp = freep = pic->heap->freep;
+  prevp = pic->heap->freep;
   for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
     if (p->s.size >= nunits)
       break;
-    if (p == freep) {
+    if (p == pic->heap->freep) {
       return NULL;
     }
   }
@@ -186,7 +186,7 @@ heap_alloc(pic_state *pic, size_t size)
 static void
 heap_free(pic_state *pic, void *ap)
 {
-  union header *freep, *bp, *p;
+  union header *bp, *p;
 
   assert(ap != NULL);
 
@@ -194,8 +194,7 @@ heap_free(pic_state *pic, void *ap)
 
   assert(bp->s.size > 1);
 
-  freep = pic->heap->freep;
-  for (p = freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
+  for (p = pic->heap->freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
     if (p >= p->s.ptr && (bp > p || bp < p->s.ptr)) {
       break;
     }
