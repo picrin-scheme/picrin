@@ -8,7 +8,6 @@ union header {
   struct {
     union header *ptr;
     size_t size;
-    char mark;
   } s;
   long alignment[2];
 };
@@ -244,7 +243,11 @@ static void gc_mark(pic_state *, pic_value);
 static bool
 gc_is_marked(union header *p)
 {
-  return p->s.mark == PIC_GC_MARK;
+  struct pic_object *obj;
+
+  obj = (struct pic_object *)(p + 1);
+
+  return obj->gc_mark == PIC_GC_MARK;
 }
 
 static bool
@@ -266,17 +269,17 @@ gc_value_need_mark(pic_value value)
 static void
 gc_unmark(union header *p)
 {
-  p->s.mark = PIC_GC_UNMARK;
+  struct pic_object *obj;
+
+  obj = (struct pic_object *)(p + 1);
+
+  obj->gc_mark = PIC_GC_UNMARK;
 }
 
 static void
 gc_unmark_object(struct pic_object *obj)
 {
-  union header *p;
-
-  p = ((union header *)obj) - 1;
-
-  p->s.mark = PIC_GC_UNMARK;
+  obj->gc_mark = PIC_GC_UNMARK;
 }
 
 static void
@@ -288,7 +291,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
   if (gc_is_marked(p))
     return;
-  p->s.mark = PIC_GC_MARK;
+  obj->gc_mark = PIC_GC_MARK;
 
   switch (obj->tt) {
   case PIC_TT_PAIR: {
