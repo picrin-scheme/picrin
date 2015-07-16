@@ -15,6 +15,8 @@ CONTRIB_INITS =
 CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
 
+TEST_RUNNER = bin/picrin
+
 CFLAGS += -I./extlib/benz/include -Wall -Wextra
 LDFLAGS += -lm
 

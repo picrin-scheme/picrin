@@ -3,5 +3,5 @@ CONTRIB_TESTS += test-optional
 
 test-optional: bin/picrin
 	for test in `ls contrib/30.optional/t/*.scm`; do \
-	  bin/picrin $$test; \
+	  $(TEST_RUNNER) $$test; \
 	done
