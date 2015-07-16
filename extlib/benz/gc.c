@@ -244,7 +244,6 @@ heap_morecore(pic_state *pic)
 }
 
 static void gc_mark(pic_state *, pic_value);
-static void gc_mark_object(pic_state *pic, struct pic_object *obj);
 
 static bool
 gc_is_marked(union header *p)
