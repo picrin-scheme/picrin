@@ -15,6 +15,8 @@ CONTRIB_INITS =
 CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
 
+TEST_RUNNER = bin/picrin
+
 CFLAGS += -I./extlib/benz/include -Wall -Wextra
 LDFLAGS += -lm
 
@@ -23,10 +25,10 @@ prefix = /usr/local
 all: CFLAGS += -O2 -DNDEBUG=1
 all: bin/picrin
 
-include $(sort $(wildcard contrib/*/nitro.mk))
-
 debug: CFLAGS += -O0 -g
 debug: bin/picrin
+
+include $(sort $(wildcard contrib/*/nitro.mk))
 
 bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a $(LDFLAGS)
