@@ -184,11 +184,14 @@ heap_alloc(pic_state *pic, size_t size)
 }
 
 static void
-heap_free(pic_state *pic, union header *bp)
+heap_free(pic_state *pic, void *ap)
 {
-  union header *freep, *p;
+  union header *freep, *bp, *p;
 
-  assert(bp != NULL);
+  assert(ap != NULL);
+
+  bp = (union header *)ap - 1;
+
   assert(bp->s.size > 1);
 
   freep = pic->heap->freep;
@@ -225,7 +228,7 @@ heap_morecore(pic_state *pic)
 
   up = pic_malloc(pic, (1 + nu + 1) * sizeof(union header));
   up->s.size = nu + 1;
-  heap_free(pic, up);
+  heap_free(pic, up + 1);
 
   np = up + 1;
   np->s.size = nu;
@@ -740,7 +743,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   while (s != NULL) {
     t = s->s.ptr;
     gc_finalize_object(pic, (struct pic_object *)(s + 1));
-    heap_free(pic, s);
+    heap_free(pic, s + 1);
     s = t;
   }
 }
