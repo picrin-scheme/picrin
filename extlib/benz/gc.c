@@ -54,35 +54,6 @@ pic_heap_close(pic_state *pic, struct pic_heap *heap)
   pic_free(pic, heap);
 }
 
-static void gc_free(pic_state *, union header *);
-
-static void
-add_heap_page(pic_state *pic)
-{
-  union header *up, *np;
-  struct heap_page *page;
-  size_t nu;
-
-  nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
-
-  up = pic_malloc(pic, (1 + nu + 1) * sizeof(union header));
-  up->s.size = nu + 1;
-  gc_free(pic, up);
-
-  np = up + 1;
-  np->s.size = nu;
-  np->s.ptr = up->s.ptr;
-  up->s.size = 1;
-  up->s.ptr = np;
-
-  page = pic_malloc(pic, sizeof(struct heap_page));
-  page->basep = up;
-  page->endp = up + nu + 1;
-  page->next = pic->heap->pages;
-
-  pic->heap->pages = page;
-}
-
 #if PIC_ENABLE_LIBC
 void *
 pic_default_allocf(void *ptr, size_t size)
@@ -243,6 +214,33 @@ gc_free(pic_state *pic, union header *bp)
     p->s.ptr = bp;
   }
   pic->heap->freep = p;
+}
+
+static void
+add_heap_page(pic_state *pic)
+{
+  union header *up, *np;
+  struct heap_page *page;
+  size_t nu;
+
+  nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
+
+  up = pic_malloc(pic, (1 + nu + 1) * sizeof(union header));
+  up->s.size = nu + 1;
+  gc_free(pic, up);
+
+  np = up + 1;
+  np->s.size = nu;
+  np->s.ptr = up->s.ptr;
+  up->s.size = 1;
+  up->s.ptr = np;
+
+  page = pic_malloc(pic, sizeof(struct heap_page));
+  page->basep = up;
+  page->endp = up + nu + 1;
+  page->next = pic->heap->pages;
+
+  pic->heap->pages = page;
 }
 
 static void gc_mark(pic_state *, pic_value);
