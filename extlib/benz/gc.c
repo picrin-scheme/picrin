@@ -202,15 +202,13 @@ heap_free(pic_state *pic, void *ap)
   if (bp + bp->s.size == p->s.ptr) {
     bp->s.size += p->s.ptr->s.size;
     bp->s.ptr = p->s.ptr->s.ptr;
-  }
-  else {
+  } else {
     bp->s.ptr = p->s.ptr;
   }
   if (p + p->s.size == bp && p->s.size > 1) {
     p->s.size += bp->s.size;
     p->s.ptr = bp->s.ptr;
-  }
-  else {
+  } else {
     p->s.ptr = bp;
   }
   pic->heap->freep = p;
@@ -715,34 +713,34 @@ gc_sweep_symbols(pic_state *pic)
 static void
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
-  union header *bp, *p, *s = NULL, *t = NULL;
+  union header *bp, *p, *head = NULL, *tail = NULL;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
     for (p = bp + bp->s.size; p != bp->s.ptr; p += p->s.size) {
       if (p == page->endp) {
-	goto escape;
+        goto escape;
       }
-      if (! gc_is_marked(p)) {
-	if (s == NULL) {
-	  s = p;
-	}
-	else {
-	  t->s.ptr = p;
-	}
-	t = p;
-	t->s.ptr = NULL; /* For dead objects we can safely reuse ptr field */
+      if (gc_is_marked(p)) {
+        gc_unmark(p);
+      } else {
+        if (head == NULL) {
+          head = p;
+        } else {
+          tail->s.ptr = p;
+        }
+        tail = p;
+        tail->s.ptr = NULL; /* We can safely reuse ptr field of dead object */
       }
-      gc_unmark(p);
     }
   }
  escape:
 
   /* free! */
-  while (s != NULL) {
-    t = s->s.ptr;
-    gc_finalize_object(pic, (struct pic_object *)(s + 1));
-    heap_free(pic, s + 1);
-    s = t;
+  while (head != NULL) {
+    p = head;
+    head = head->s.ptr;
+    gc_finalize_object(pic, (struct pic_object *)(p + 1));
+    heap_free(pic, p + 1);
   }
 }
 
