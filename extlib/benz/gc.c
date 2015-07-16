@@ -48,8 +48,10 @@ pic_heap_close(pic_state *pic, struct pic_heap *heap)
   while (heap->pages) {
     page = heap->pages;
     heap->pages = heap->pages->next;
+    pic_free(pic, page->basep);
     pic_free(pic, page);
   }
+  pic_free(pic, heap);
 }
 
 static void gc_free(pic_state *, union header *);
