@@ -152,7 +152,7 @@ pic_gc_arena_restore(pic_state *pic, size_t state)
 }
 
 static void *
-gc_alloc(pic_state *pic, size_t size)
+heap_alloc(pic_state *pic, size_t size)
 {
   union header *freep, *p, *prevp;
   size_t nunits;
@@ -180,13 +180,11 @@ gc_alloc(pic_state *pic, size_t size)
   }
   pic->heap->freep = prevp;
 
-  p->s.mark = PIC_GC_UNMARK;
-
   return (void *)(p + 1);
 }
 
 static void
-gc_free(pic_state *pic, union header *bp)
+heap_free(pic_state *pic, union header *bp)
 {
   union header *freep, *p;
 
@@ -217,7 +215,7 @@ gc_free(pic_state *pic, union header *bp)
 }
 
 static void
-add_heap_page(pic_state *pic)
+heap_morecore(pic_state *pic)
 {
   union header *up, *np;
   struct heap_page *page;
@@ -227,7 +225,7 @@ add_heap_page(pic_state *pic)
 
   up = pic_malloc(pic, (1 + nu + 1) * sizeof(union header));
   up->s.size = nu + 1;
-  gc_free(pic, up);
+  heap_free(pic, up);
 
   np = up + 1;
   np->s.size = nu;
@@ -271,6 +269,16 @@ gc_value_need_mark(pic_value value)
 static void
 gc_unmark(union header *p)
 {
+  p->s.mark = PIC_GC_UNMARK;
+}
+
+static void
+gc_unmark_object(struct pic_object *obj)
+{
+  union header *p;
+
+  p = ((union header *)obj) - 1;
+
   p->s.mark = PIC_GC_UNMARK;
 }
 
@@ -732,7 +740,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   while (s != NULL) {
     t = s->s.ptr;
     gc_finalize_object(pic, (struct pic_object *)(s + 1));
-    gc_free(pic, s);
+    heap_free(pic, s);
     s = t;
   }
 }
@@ -785,17 +793,18 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
   pic_gc_run(pic);
 #endif
 
-  obj = (struct pic_object *)gc_alloc(pic, size);
+  obj = (struct pic_object *)heap_alloc(pic, size);
   if (obj == NULL) {
     pic_gc_run(pic);
-    obj = (struct pic_object *)gc_alloc(pic, size);
+    obj = (struct pic_object *)heap_alloc(pic, size);
     if (obj == NULL) {
-      add_heap_page(pic);
-      obj = (struct pic_object *)gc_alloc(pic, size);
+      heap_morecore(pic);
+      obj = (struct pic_object *)heap_alloc(pic, size);
       if (obj == NULL)
 	pic_panic(pic, "GC memory exhausted");
     }
   }
+  gc_unmark_object(obj);
   obj->tt = tt;
 
   return obj;
