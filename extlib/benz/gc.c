@@ -29,7 +29,7 @@ pic_heap_open(pic_state *pic)
 {
   struct pic_heap *heap;
 
-  heap = pic_calloc(pic, 1, sizeof(struct pic_heap));
+  heap = pic_malloc(pic, sizeof(struct pic_heap));
 
   heap->base.s.ptr = &heap->base;
   heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
@@ -65,7 +65,7 @@ add_heap_page(pic_state *pic)
 
   nu = (PIC_HEAP_PAGE_SIZE + sizeof(union header) - 1) / sizeof(union header) + 1;
 
-  up = pic_calloc(pic, 1 + nu + 1, sizeof(union header));
+  up = pic_malloc(pic, (1 + nu + 1) * sizeof(union header));
   up->s.size = nu + 1;
   gc_free(pic, up);
 
