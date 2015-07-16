@@ -240,57 +240,12 @@ heap_morecore(pic_state *pic)
 
 static void gc_mark(pic_state *, pic_value);
 
-static bool
-gc_is_marked(union header *p)
-{
-  struct pic_object *obj;
-
-  obj = (struct pic_object *)(p + 1);
-
-  return obj->gc_mark == PIC_GC_MARK;
-}
-
-static bool
-gc_obj_is_marked(struct pic_object *obj)
-{
-  union header *p;
-
-  p = ((union header *)obj) - 1;
-
-  return gc_is_marked(p);
-}
-
-static bool
-gc_value_need_mark(pic_value value)
-{
-  return pic_obj_p(value) && (! gc_obj_is_marked(pic_obj_ptr(value)));
-}
-
-static void
-gc_unmark(union header *p)
-{
-  struct pic_object *obj;
-
-  obj = (struct pic_object *)(p + 1);
-
-  obj->gc_mark = PIC_GC_UNMARK;
-}
-
-static void
-gc_unmark_object(struct pic_object *obj)
-{
-  obj->gc_mark = PIC_GC_UNMARK;
-}
-
 static void
 gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
-  union header *p;
-
-  p = ((union header *)obj) - 1;
-
-  if (gc_is_marked(p))
+  if (obj->gc_mark == PIC_GC_MARK)
     return;
+
   obj->gc_mark = PIC_GC_MARK;
 
   switch (obj->tt) {
@@ -593,9 +548,11 @@ gc_mark_phase(pic_state *pic)
           continue;
         key = kh_key(h, it);
         val = kh_val(h, it);
-        if (gc_obj_is_marked(key) && gc_value_need_mark(val)) {
-          gc_mark(pic, val);
-          ++j;
+        if (key->gc_mark == PIC_GC_MARK) {
+          if (pic_obj_p(val) && pic_obj_ptr(val)->gc_mark == PIC_GC_UNMARK) {
+            gc_mark(pic, val);
+            ++j;
+          }
         }
       }
       reg = reg->prev;
@@ -705,7 +662,7 @@ gc_sweep_symbols(pic_state *pic)
     if (! kh_exist(h, it))
       continue;
     sym = kh_val(h, it);
-    if (! gc_obj_is_marked((struct pic_object *)sym)) {
+    if (sym->gc_mark == PIC_GC_UNMARK) {
       kh_del(s, h, it);
     }
   }
@@ -715,6 +672,7 @@ static size_t
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
   union header *bp, *p, *head = NULL, *tail = NULL;
+  struct pic_object *obj;
   size_t alive = 0;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
@@ -723,8 +681,9 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       if (p < page->basep || page->endp <= p) {
         goto escape;
       }
-      if (gc_is_marked(p)) {
-        gc_unmark(p);
+      obj = (struct pic_object *)(p + 1);
+      if (obj->gc_mark == PIC_GC_MARK) {
+        obj->gc_mark = PIC_GC_UNMARK;
         alive += p->s.size;
       } else {
         if (head == NULL) {
@@ -756,6 +715,7 @@ gc_sweep_phase(pic_state *pic)
   struct heap_page *page;
   khiter_t it;
   khash_t(reg) *h;
+  struct pic_object *obj;
   size_t total = 0, inuse = 0;
 
   /* registries */
@@ -764,7 +724,8 @@ gc_sweep_phase(pic_state *pic)
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (! kh_exist(h, it))
         continue;
-      if (! gc_obj_is_marked(kh_key(h, it))) {
+      obj = kh_key(h, it);
+      if (obj->gc_mark == PIC_GC_UNMARK) {
         kh_del(reg, h, it);
       }
     }
@@ -816,7 +777,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
 	pic_panic(pic, "GC memory exhausted");
     }
   }
-  gc_unmark_object(obj);
+  obj->gc_mark = PIC_GC_UNMARK;
   obj->tt = tt;
 
   return obj;
