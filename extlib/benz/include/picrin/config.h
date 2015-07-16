@@ -33,6 +33,8 @@
 
 /* #define PIC_HEAP_PAGE_SIZE 10000 */
 
+/* #define PIC_PAGE_REQUEST_THRESHOLD(total) ((total) * 77 / 100) */
+
 /* #define PIC_STACK_SIZE 1024 */
 
 /* #define PIC_RESCUE_SIZE 30 */
@@ -125,6 +127,10 @@
 
 #ifndef PIC_HEAP_PAGE_SIZE
 # define PIC_HEAP_PAGE_SIZE (2 * 1024 * 1024)
+#endif
+
+#ifndef PIC_PAGE_REQUEST_THRESHOLD
+# define PIC_PAGE_REQUEST_THRESHOLD(total) ((total) * 77 / 100)
 #endif
 
 #ifndef PIC_STACK_SIZE

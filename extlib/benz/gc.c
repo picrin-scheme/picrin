@@ -708,10 +708,11 @@ gc_sweep_symbols(pic_state *pic)
   }
 }
 
-static void
+static size_t
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
   union header *bp, *p, *head = NULL, *tail = NULL;
+  size_t alive = 0;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
     p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advnce */
@@ -721,6 +722,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       }
       if (gc_is_marked(p)) {
         gc_unmark(p);
+        alive += p->s.size;
       } else {
         if (head == NULL) {
           head = p;
@@ -741,14 +743,17 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
     gc_finalize_object(pic, (struct pic_object *)(p + 1));
     heap_free(pic, p + 1);
   }
+
+  return alive;
 }
 
 static void
 gc_sweep_phase(pic_state *pic)
 {
-  struct heap_page *page = pic->heap->pages;
+  struct heap_page *page;
   khiter_t it;
   khash_t(reg) *h;
+  size_t total = 0, inuse = 0;
 
   /* registries */
   while (pic->regs != NULL) {
@@ -765,9 +770,15 @@ gc_sweep_phase(pic_state *pic)
 
   gc_sweep_symbols(pic);
 
+  page = pic->heap->pages;
   while (page) {
-    gc_sweep_page(pic, page);
+    inuse += gc_sweep_page(pic, page);
+    total += page->endp - page->basep;
     page = page->next;
+  }
+
+  if (PIC_PAGE_REQUEST_THRESHOLD(total) <= inuse) {
+    heap_morecore(pic);
   }
 }
 
