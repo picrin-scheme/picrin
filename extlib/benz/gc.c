@@ -258,18 +258,6 @@ heap_morecore(pic_state *pic)
 
 static void gc_mark_object(pic_state *, union object *);
 
-static bool
-gc_obj_is_marked(struct pic_object *obj)
-{
-  return obj->gc_mark == PIC_GC_MARK;
-}
-
-static void
-gc_unmark_object(struct pic_object *obj)
-{
-  obj->gc_mark = PIC_GC_UNMARK;
-}
-
 static void
 gc_mark(pic_state *pic, pic_value v)
 {
@@ -286,6 +274,7 @@ gc_mark_object(pic_state *pic, union object *obj)
 
   if (obj->obj.gc_mark == PIC_GC_MARK)
     return;
+
   obj->obj.gc_mark = PIC_GC_MARK;
 
 #define LOOP(o) obj = (union object *)(o); goto loop
@@ -539,8 +528,8 @@ gc_mark_phase(pic_state *pic)
           continue;
         key = kh_key(h, it);
         val = kh_val(h, it);
-        if (gc_obj_is_marked(key)) {
-          if (pic_obj_p(val) && ! gc_obj_is_marked(pic_obj_ptr(val))) {
+        if (key->gc_mark == PIC_GC_MARK) {
+          if (pic_obj_p(val) && pic_obj_ptr(val)->gc_mark == PIC_GC_UNMARK) {
             gc_mark(pic, val);
             ++j;
           }
@@ -671,6 +660,7 @@ gc_sweep_phase(pic_state *pic)
   khash_t(reg) *h;
   khash_t(s) *s = &pic->syms;
   pic_sym *sym;
+  struct pic_object *obj;
   size_t total = 0, inuse = 0;
 
   /* registries */
@@ -679,7 +669,8 @@ gc_sweep_phase(pic_state *pic)
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (! kh_exist(h, it))
         continue;
-      if (! gc_obj_is_marked(kh_key(h, it))) {
+      obj = kh_key(h, it);
+      if (obj->gc_mark == PIC_GC_UNMARK) {
         kh_del(reg, h, it);
       }
     }
@@ -691,7 +682,7 @@ gc_sweep_phase(pic_state *pic)
     if (! kh_exist(s, it))
       continue;
     sym = kh_val(s, it);
-    if (! gc_obj_is_marked((struct pic_object *)sym)) {
+    if (sym->gc_mark == PIC_GC_UNMARK) {
       kh_del(s, s, it);
     }
   }
@@ -739,7 +730,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
 	pic_panic(pic, "GC memory exhausted");
     }
   }
-  gc_unmark_object(obj);
+  obj->gc_mark = PIC_GC_UNMARK;
   obj->tt = tt;
 
   return obj;
