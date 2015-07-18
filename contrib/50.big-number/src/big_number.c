@@ -227,6 +227,23 @@ pic_big_number_bigint_add(pic_state *pic)
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, bigint_add(pic, bi1, bi2)));
 }
 
+static pic_value
+pic_big_number_bigint_sub(pic_state *pic)
+{
+  pic_value value1, value2;
+  struct pic_bigint_t *bi1, *bi2, *result;
+
+  pic_get_args(pic, "oo", &value1, &value2);
+  bi1 = pic_bigint_data_ptr(value1);
+  bi2 = pic_bigint_data_ptr(value2);
+
+  bi2->signum = 1 - bi2->signum;
+  result = bigint_add(pic, bi1, bi2);
+  bi2->signum = 1 - bi2->signum;
+
+  return pic_obj_value(pic_data_alloc(pic, &bigint_type, result));
+}
+
 /*
  * Returns underlying vector of given biginteger.
  */
@@ -261,6 +278,7 @@ pic_init_big_number(pic_state *pic)
   pic_deflibrary (pic, "(picrin big-number)") {
     pic_defun(pic, "make-bigint", pic_big_number_make_bigint);
     pic_defun(pic, "bigint-add", pic_big_number_bigint_add);
+    pic_defun(pic, "bigint-sub", pic_big_number_bigint_sub);
     pic_defun(pic, "bigint-underlying", pic_big_number_bigint_underlying);
     pic_defun(pic, "bigint-equal?", pic_big_number_bigint_equal_p);
   }
