@@ -44,11 +44,11 @@
         ((wrap (let ((register (make-register)))
                  (lambda (var)
                    (let ((id (register var)))
-                     (if (undefined? id)
+                     (if id
+                         (cdr id)
                          (let ((id (make-identifier var env)))
                            (register var id)
-                           id)
-                         id)))))
+                           id))))))
          (walk (lambda (f form)
                  (cond
                   ((variable? form)
@@ -106,11 +106,11 @@
           ((rename (let ((register (make-register)))
                      (lambda (var)
                        (let ((id (register var)))
-                         (if (undefined? id)
+                         (if id
+                             (cdr id)
                              (let ((id (make-identifier var mac-env)))
                                (register var id)
-                               id)
-                             id)))))
+                               id))))))
            (compare (lambda (x y)
                       (variable=?
                        (make-identifier x use-env)
@@ -124,25 +124,25 @@
         (letrec
             ((inject (lambda (var1)
                        (let ((var2 (register1 var1)))
-                         (if (undefined? var2)
+                         (if var2
+                             (cdr var2)
                              (let ((var2 (make-identifier var1 use-env)))
                                (register1 var1 var2)
                                (register2 var2 var1)
-                               var2)
-                             var2))))
+                               var2)))))
              (rename (let ((register (make-register)))
                        (lambda (var)
                          (let ((id (register var)))
-                           (if (undefined? id)
+                           (if id
+                               (cdr id)
                                (let ((id (make-identifier var mac-env)))
                                  (register var id)
-                                 id)
-                               id)))))
+                                 id))))))
              (flip (lambda (var2) ; unwrap if injected, wrap if not injected
                      (let ((var1 (register2 var2)))
-                       (if (undefined? var1)
-                           (rename var2)
-                           var1))))
+                       (if var1
+                           (cdr var1)
+                           (rename var2)))))
              (walk (lambda (f form)
                      (cond
                       ((variable? form)

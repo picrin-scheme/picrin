@@ -116,9 +116,9 @@ pic_dict_dictionary_ref(pic_state *pic)
   pic_get_args(pic, "dm", &dict, &key);
 
   if (! pic_dict_has(pic, dict, key)) {
-    return pic_undef_value();
+    return pic_false_value();
   }
-  return pic_dict_ref(pic, dict, key);
+  return pic_cons(pic, pic_obj_value(key), pic_dict_ref(pic, dict, key));
 }
 
 static pic_value

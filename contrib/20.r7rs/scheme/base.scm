@@ -350,11 +350,12 @@
            (letrec
                ((#,'rename (let ((reg (make-register)))
                              (lambda (x)
-                               (if (undefined? (reg x))
-                                   (let ((id (make-identifier x env)))
-                                     (reg x id)
-                                     id)
-                                   (reg x))))))
+                               (let ((y (reg x)))
+                                 (if y
+                                     (cdr y)
+                                     (let ((id (make-identifier x env)))
+                                       (reg x id)
+                                       id)))))))
              (lambda #,'it
                #,(compile-rules rules))))))
 
