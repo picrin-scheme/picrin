@@ -106,11 +106,27 @@ pic_big_number_big_integer_add(pic_state *pic)
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, big_integer_add(pic, bi1, bi2)));
 }
 
+/*
+ * Returns underlying vector of given biginteger.
+ */
+static pic_value
+pic_big_number_big_integer_underlying(pic_state *pic)
+{
+  pic_value value;
+  struct pic_bigint_t *bi;
+
+  pic_get_args(pic, "o", &value);
+  bi = pic_bigint_data_ptr(value);
+
+  return pic_obj_value(bi->digits);
+}
+
 void
 pic_init_big_number(pic_state *pic)
 {
   pic_deflibrary (pic, "(picrin big-number)") {
     pic_defun(pic, "make-big-integer", pic_big_number_make_big_integer);
     pic_defun(pic, "big-integer-add", pic_big_number_big_integer_add);
+    pic_defun(pic, "big-integer-underlying", pic_big_number_big_integer_underlying);
   }
 }
