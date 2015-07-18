@@ -242,6 +242,19 @@ pic_big_number_big_integer_underlying(pic_state *pic)
   return pic_obj_value(bi->digits);
 }
 
+static pic_value
+pic_big_number_big_integer_equal_p(pic_state *pic)
+{
+  pic_value v1, v2;
+  struct pic_bigint_t *bi1, *bi2;
+
+  pic_get_args(pic, "oo", &v1, &v2);
+  bi1 = pic_bigint_data_ptr(v1);
+  bi2 = pic_bigint_data_ptr(v2);
+
+  return pic_bool_value(bi1->signum == bi2->signum && big_integer_vec_eq(bi1->digits, bi2->digits));
+}
+
 void
 pic_init_big_number(pic_state *pic)
 {
@@ -249,5 +262,6 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "make-big-integer", pic_big_number_make_big_integer);
     pic_defun(pic, "big-integer-add", pic_big_number_big_integer_add);
     pic_defun(pic, "big-integer-underlying", pic_big_number_big_integer_underlying);
+    pic_defun(pic, "big-integer-equal?", pic_big_number_big_integer_equal_p);
   }
 }
