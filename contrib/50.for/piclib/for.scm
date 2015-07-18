@@ -4,12 +4,11 @@
 
   (define-syntax for
     (syntax-rules ()
-      ((_ expr)
-       (reset (lambda () expr)))))
+      ((_ expr ...)
+       (reset expr ...))))
 
   (define (in m)
-    (shift (lambda (k)
-             (apply append (map k m)))))
+    (shift k (apply append (map k m))))
 
   (define (yield x)
     (list x))
