@@ -133,6 +133,26 @@ pic_number_inexact_p(pic_state *pic)
 #endif
 }
 
+static pic_value
+pic_number_inexact(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_float_value(f);
+}
+
+static pic_value
+pic_number_exact(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_int_value((int)(round(f)));
+}
+
 #define DEFINE_ARITH_CMP(op, name)			\
   static pic_value					\
   pic_number_##name(pic_state *pic)			\
@@ -392,159 +412,6 @@ pic_number_expt(pic_state *pic)
 }
 
 static pic_value
-pic_number_floor2(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  int i, j;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  if (e1 && e2) {
-    int k;
-
-    k = (i < 0 && j < 0) || (0 <= i && 0 <= j)
-      ? i / j
-      : (i / j) - 1;
-
-    return pic_values2(pic, pic_int_value(k), pic_int_value(i - k * j));
-  }
-  else {
-    double q, r;
-
-    q = floor((double)i/j);
-    r = i - j * q;
-    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
-  }
-#else
-  int i, j, k;
-
-  pic_get_args(pic, "ii", &i, &j);
-
-  k = (i < 0 && j < 0) || (0 <= i && 0 <= j)
-    ? i / j
-    : (i / j) - 1;
-
-  return pic_values2(pic, pic_int_value(k), pic_int_value(i - k * j));
-#endif
-}
-
-static pic_value
-pic_number_trunc2(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  int i, j;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  if (e1 && e2) {
-    return pic_values2(pic, pic_int_value(i/j), pic_int_value(i - (i/j) * j));
-  }
-  else {
-    double q, r;
-
-    q = trunc((double)i/j);
-    r = i - j * q;
-
-    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
-  }
-#else
-  int i, j;
-
-  pic_get_args(pic, "ii", &i, &j);
-
-  return pic_values2(pic, pic_int_value(i/j), pic_int_value(i - (i/j) * j));
-#endif
-}
-
-#if PIC_ENABLE_FLOAT
-static pic_value
-pic_number_floor(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(floor(f));
-  }
-}
-
-static pic_value
-pic_number_ceil(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(ceil(f));
-  }
-}
-
-static pic_value
-pic_number_trunc(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(trunc(f));
-  }
-}
-
-static pic_value
-pic_number_round(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(round(f));
-  }
-}
-
-static pic_value
-pic_number_inexact(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_float_value(f);
-}
-
-static pic_value
-pic_number_exact(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_int_value((int)(round(f)));
-}
-#endif
-
-static pic_value
 pic_number_number_to_string(pic_state *pic)
 {
 #if PIC_ENABLE_FLOAT
@@ -671,6 +538,10 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "inexact?", pic_number_inexact_p);
   pic_gc_arena_restore(pic, ai);
 
+  pic_defun(pic, "inexact", pic_number_inexact);
+  pic_defun(pic, "exact", pic_number_exact);
+  pic_gc_arena_restore(pic, ai);
+
   pic_defun(pic, "=", pic_number_eq);
   pic_defun(pic, "<", pic_number_lt);
   pic_defun(pic, ">", pic_number_gt);
@@ -687,28 +558,6 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "abs", pic_number_abs);
   pic_defun(pic, "expt", pic_number_expt);
   pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "floor/", pic_number_floor2);
-  pic_defun(pic, "truncate/", pic_number_trunc2);
-  pic_gc_arena_restore(pic, ai);
-
-#if PIC_ENABLE_FLOAT
-  pic_defun(pic, "floor", pic_number_floor);
-  pic_defun(pic, "ceiling", pic_number_ceil);
-  pic_defun(pic, "truncate", pic_number_trunc);
-  pic_defun(pic, "round", pic_number_round);
-  pic_defun(pic, "inexact", pic_number_inexact);
-  pic_defun(pic, "exact", pic_number_exact);
-  pic_gc_arena_restore(pic, ai);
-#else
-  pic_defun(pic, "floor", pic_number_id);
-  pic_defun(pic, "ceiling", pic_number_id);
-  pic_defun(pic, "truncate", pic_number_id);
-  pic_defun(pic, "round", pic_number_id);
-  pic_defun(pic, "inexact", pic_number_id);
-  pic_defun(pic, "exact", pic_number_id);
-  pic_gc_arena_restore(pic, ai);
-#endif
 
   pic_defun(pic, "number->string", pic_number_number_to_string);
   pic_defun(pic, "string->number", pic_number_string_to_number);

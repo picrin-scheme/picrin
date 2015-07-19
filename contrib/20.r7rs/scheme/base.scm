@@ -1,6 +1,13 @@
 (define-library (scheme base)
   (import (picrin base)
-          (only (picrin math) sqrt)
+          (only (picrin math)
+                floor/
+                truncate/
+                floor
+                ceiling
+                truncate
+                round
+                sqrt)
           (picrin macro)
           (picrin string)
           (scheme file))
