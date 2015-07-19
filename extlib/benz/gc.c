@@ -722,7 +722,8 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       } else {
         if (head == NULL) {
           head = p;
-        } else {
+        }
+        if (tail != NULL) {
           tail->s.ptr = p;
         }
         tail = p;
