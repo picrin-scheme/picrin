@@ -2,18 +2,29 @@
   (import (scheme base)
           (picrin control))
 
-  (define-syntax for
+  (define unit list)
+
+  (define (bind m f)
+    (apply append (map f m)))
+
+  (define-syntax reify
     (syntax-rules ()
-      ((_ expr ...)
-       (reset expr ...))))
+      ((_ expr)
+       (reset (unit expr)))))
 
-  (define (in m)
-    (shift k (apply append (map k m))))
+  (define (reflect m)
+    (shift k (bind m k)))
 
-  (define (yield x)
-    (list x))
+  (define zero '())
 
-  (define (null . x)
-    '())
+  (define plus append)
 
-  (export for in yield null))
+  (export unit
+          bind
+          zero
+          plus
+          reify
+          reflect
+          (rename reify for)
+          (rename reflect in)
+          (rename unit yield)))
