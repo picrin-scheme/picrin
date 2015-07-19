@@ -203,6 +203,42 @@ bigint_add(pic_state *pic, struct pic_bigint_t *bn1, struct pic_bigint_t *bn2)
   return retbi;
 }
 
+static struct pic_bigint_t *
+bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
+{
+  struct pic_bigint_t *retbi;
+  pic_vec *ret;
+  int bitsh, bytesh, carry;
+  int i, len;
+
+  ret = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  if (sh <= 0) {
+    retbi->signum = val->signum;
+    retbi->digits = val->digits; // copy
+    return retbi;
+  }
+  bitsh = sh % 8;
+  bytesh = sh / 8;
+  carry = 0;
+
+  len = val->digits->len;
+  ret = pic_make_vec(pic, len + bytesh + 1);
+  for (i = 0; i < bytesh; ++i) {
+    ret->data[i] = pic_int_value(0);
+  }
+  for (i = 0; i < len; ++i) {
+    carry |= pic_int(val->digits->data[i]) << bitsh;
+    ret->data[i + bytesh] = pic_int_value(carry & 0xff);
+    carry >>= 8;
+  }
+  ret->data[bytesh + len] = pic_int_value(carry);
+
+  retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  retbi->signum = val->signum;
+  retbi->digits = bigint_vec_compact(pic, ret);
+  return retbi;
+}
+
 
 static pic_value
 pic_big_number_make_bigint(pic_state *pic)
@@ -272,6 +308,19 @@ pic_big_number_bigint_equal_p(pic_state *pic)
   return pic_bool_value(bi1->signum == bi2->signum && bigint_vec_eq(bi1->digits, bi2->digits));
 }
 
+static pic_value
+pic_big_number_bigint_asl(pic_state *pic)
+{
+  pic_value val;
+  int sh;
+  struct pic_bigint_t *result;
+
+  pic_get_args(pic, "oi", &val, &sh);
+  result = bigint_asl(pic, pic_bigint_data_ptr(val), sh);
+
+  return pic_obj_value(pic_data_alloc(pic, &bigint_type, result));
+}
+
 void
 pic_init_big_number(pic_state *pic)
 {
@@ -281,5 +330,6 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "bigint-sub", pic_big_number_bigint_sub);
     pic_defun(pic, "bigint-underlying", pic_big_number_bigint_underlying);
     pic_defun(pic, "bigint-equal?", pic_big_number_bigint_equal_p);
+    pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
   }
 }
