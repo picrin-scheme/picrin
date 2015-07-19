@@ -7,7 +7,7 @@
 void
 pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)
 {
-  extern void abort();
+  extern PIC_NORETURN void abort();
 
 #if DEBUG
   fprintf(stderr, "abort: %s\n", msg);

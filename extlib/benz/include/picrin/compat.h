@@ -205,10 +205,6 @@ strcpy(char *dst, const char *src)
 
 #endif
 
-#if PIC_ENABLE_FLOAT
-# include <math.h>
-#endif
-
 #if PIC_ENABLE_STDIO
 # include <stdio.h>
 #endif
