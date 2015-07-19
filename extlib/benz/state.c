@@ -48,7 +48,7 @@ pic_init_features(pic_state *pic)
 {
   pic_add_feature(pic, "picrin");
 
-#if PIC_ENABLE_FLOAT
+#if __STDC_IEC_559__
   pic_add_feature(pic, "ieee-float");
 #endif
 

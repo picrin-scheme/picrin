@@ -345,15 +345,14 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
       ival = va_arg(ap, int);
       cnt += print_int(pic, stream, ival, 10);
       break;
-#if PIC_ENABLE_FLOAT
-# if PIC_ENABLE_LIBC
+#if PIC_ENABLE_LIBC
     case 'f': {
       char buf[100];
       sprintf(buf, "%g", va_arg(ap, double));
       xfputs(pic, buf, stream);
       break;
     }
-# else
+#else
     case 'f': {
       double dval, dint;
       dval = modf(va_arg(ap, double), &dint);
@@ -376,7 +375,6 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
       }
       break;
     }
-# endif
 #endif
     case 's':
       sval = va_arg(ap, char*);

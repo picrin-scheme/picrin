@@ -1,5 +1,7 @@
 #include "picrin.h"
 
+#include <math.h>
+
 static pic_value
 pic_number_floor2(pic_state *pic)
 {

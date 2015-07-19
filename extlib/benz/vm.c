@@ -103,7 +103,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
       *p = GET_OPERAND(pic,i);
       break;
     }
-#if PIC_ENABLE_FLOAT
     case 'f': {
       double *f;
       pic_value v;
@@ -169,7 +168,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
-#endif
     case 'i': {
       int *k;
       pic_value v;
@@ -178,11 +176,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
-#if PIC_ENABLE_FLOAT
       case PIC_TT_FLOAT:
         *k = (int)pic_float(v);
         break;
-#endif
       case PIC_TT_INT:
         *k = pic_int(v);
         break;

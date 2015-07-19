@@ -11,11 +11,7 @@ pic_number_number_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-#if PIC_ENABLE_FLOAT
   return pic_bool_value(pic_float_p(v) || pic_int_p(v));
-#else
-  return pic_bool_value(pic_int_p(v));
-#endif
 }
 
 static pic_value
@@ -35,11 +31,7 @@ pic_number_inexact_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-#if PIC_ENABLE_FLOAT
   return pic_bool_value(pic_float_p(v));
-#else
-  return pic_false_value();
-#endif
 }
 
 static pic_value
@@ -59,7 +51,7 @@ pic_number_exact(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
 
-  return pic_int_value((int)(round(f)));
+  return pic_int_value((int)f);
 }
 
 #define DEFINE_CMP(op)                                  \
@@ -181,7 +173,6 @@ number_string(int val, int radix, int length, char *buffer) {
 static pic_value
 pic_number_number_to_string(pic_state *pic)
 {
-#if PIC_ENABLE_FLOAT
   double f;
   bool e;
   int radix = 10;
@@ -216,41 +207,11 @@ pic_number_number_to_string(pic_state *pic)
   }
 
   return pic_obj_value(str);
-#else
-  int f;
-  bool e;
-  int radix = 10;
-  pic_str *str;
-  size_t s;
-  char *buf;
-  int ival, ilen;
-
-  pic_get_args(pic, "i|i", &f, &e, &radix);
-
-  if (radix < 2 || radix > 36) {
-    pic_errorf(pic, "number->string: invalid radix %d (between 2 and 36, inclusive)", radix);
-  }
-
-  ival = f;
-  ilen = number_string_length(ival, radix);
-  s = ilen + 1;
-
-  buf = pic_malloc(pic, s);
-
-  number_string(ival, radix, ilen, buf);
-
-  str = pic_make_str(pic, buf, s - 1);
-
-  pic_free(pic, buf);
-
-  return pic_obj_value(str);
-#endif
 }
 
 static pic_value
 pic_number_string_to_number(pic_state *pic)
 {
-#if PIC_ENABLE_FLOAT
   const char *str;
   int radix = 10;
   long num;
@@ -272,21 +233,6 @@ pic_number_string_to_number(pic_state *pic)
   }
 
   pic_errorf(pic, "invalid string given: %s", str);
-#else
-  const char *str;
-  int radix = 10;
-  long num;
-  char *eptr;
-
-  pic_get_args(pic, "z|i", &str, &radix);
-
-  num = strtol(str, &eptr, radix);
-  if (*eptr == '\0') {
-    return pic_int_value(num);
-  }
-
-  pic_errorf(pic, "invalid string given: %s", str);
-#endif
 }
 
 void

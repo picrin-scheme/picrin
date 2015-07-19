@@ -64,7 +64,6 @@ isdelim(int c)
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
-#if PIC_ENABLE_FLOAT
 static bool
 strcaseeq(const char *s1, const char *s2)
 {
@@ -76,7 +75,6 @@ strcaseeq(const char *s1, const char *s2)
   }
   return a == b;
 }
-#endif
 
 static int
 case_fold(pic_state *pic, int c)
@@ -271,8 +269,7 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
   u = read_uinteger(pic, port, c);
 
   switch (peek(pic, port)) {
-#if PIC_ENABLE_FLOAT
-# if PIC_ENABLE_LIBC
+#if PIC_ENABLE_LIBC
   case '.': {
     char buf[256];
     i = sprintf(buf, "%d", u);
@@ -283,7 +280,7 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
     sprintf(buf + i, "e%d", read_suffix(pic, port));
     return pic_float_value(atof(buf));
   }
-# else
+#else
   case '.': {
     double f, g;
     next(pic, port);
@@ -312,7 +309,6 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
     }
     return pic_float_value(f);
   }
-# endif
 #endif
 
   default:
@@ -346,15 +342,11 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 negate(pic_value n)
 {
-#if PIC_ENABLE_FLOAT
   if (pic_int_p(n)) {
     return pic_int_value(-pic_int(n));
   } else {
     return pic_float_value(-pic_float(n));
   }
-#else
-  return pic_int_value(-pic_int(n));
-#endif
 }
 
 static pic_value
@@ -367,14 +359,12 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
-#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-inf.0")) {
-      return pic_float_value(-INFINITY);
+      return pic_float_value(-(1.0 / 0.0));
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-nan.0")) {
-      return pic_float_value(-NAN);
+      return pic_float_value(-(0.0 / 0.0));
     }
-#endif
     return sym;
   }
 }
@@ -389,14 +379,12 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
-#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+inf.0")) {
-      return pic_float_value(INFINITY);
+      return pic_float_value(1.0 / 0.0);
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+nan.0")) {
-      return pic_float_value(NAN);
+      return pic_float_value(0.0 / 0.0);
     }
-#endif
     return sym;
   }
 }

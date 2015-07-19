@@ -20,9 +20,7 @@ enum pic_vtype {
   PIC_VTYPE_FALSE,
   PIC_VTYPE_UNDEF,
   PIC_VTYPE_INVALID,
-#if PIC_ENABLE_FLOAT
   PIC_VTYPE_FLOAT,
-#endif
   PIC_VTYPE_INT,
   PIC_VTYPE_CHAR,
   PIC_VTYPE_EOF,
@@ -116,9 +114,7 @@ typedef struct {
   enum pic_vtype type;
   union {
     void *data;
-#if PIC_ENABLE_FLOAT
     double f;
-#endif
     int i;
     char c;
   } u;
@@ -128,9 +124,7 @@ typedef struct {
 #define pic_vtype(v) ((v).type)
 #define pic_init_value(v,vtype) ((v).type = (vtype), (v).u.data = NULL)
 
-#if PIC_ENABLE_FLOAT
-# define pic_float(v) ((v).u.f)
-#endif
+#define pic_float(v) ((v).u.f)
 #define pic_int(v) ((v).u.i)
 #define pic_char(v) ((v).u.c)
 
@@ -140,9 +134,7 @@ enum pic_tt {
   /* immediate */
   PIC_TT_NIL,
   PIC_TT_BOOL,
-#if PIC_ENABLE_FLOAT
   PIC_TT_FLOAT,
-#endif
   PIC_TT_INT,
   PIC_TT_CHAR,
   PIC_TT_EOF,
@@ -218,20 +210,11 @@ PIC_INLINE const char *pic_type_repr(enum pic_tt);
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-#if PIC_ENABLE_FLOAT
 PIC_INLINE bool
 pic_valid_int(double v)
 {
   return INT_MIN <= v && v <= INT_MAX;
 }
-
-#else
-PIC_INLINE bool
-pic_valid_int(int PIC_UNUSED(v))
-{
-  return true;
-}
-#endif
 
 PIC_INLINE pic_value pic_nil_value();
 PIC_INLINE pic_value pic_true_value();
@@ -240,9 +223,7 @@ PIC_INLINE pic_value pic_bool_value(bool);
 PIC_INLINE pic_value pic_undef_value();
 PIC_INLINE pic_value pic_invalid_value();
 PIC_INLINE pic_value pic_obj_value(void *);
-#if PIC_ENABLE_FLOAT
 PIC_INLINE pic_value pic_float_value(double);
-#endif
 PIC_INLINE pic_value pic_int_value(int);
 PIC_INLINE pic_value pic_size_value(size_t);
 PIC_INLINE pic_value pic_char_value(char c);
@@ -264,10 +245,8 @@ pic_type(pic_value v)
     return PIC_TT_UNDEF;
   case PIC_VTYPE_INVALID:
     return PIC_TT_INVALID;
-#if PIC_ENABLE_FLOAT
   case PIC_VTYPE_FLOAT:
     return PIC_TT_FLOAT;
-#endif
   case PIC_VTYPE_INT:
     return PIC_TT_INT;
   case PIC_VTYPE_CHAR:
@@ -289,10 +268,8 @@ pic_type_repr(enum pic_tt tt)
     return "nil";
   case PIC_TT_BOOL:
     return "boolean";
-#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     return "float";
-#endif
   case PIC_TT_INT:
     return "int";
   case PIC_TT_SYMBOL:
@@ -382,13 +359,11 @@ pic_bool_value(bool b)
 PIC_INLINE pic_value
 pic_size_value(size_t s)
 {
-#if PIC_ENABLE_FLOAT
   if (sizeof(unsigned) < sizeof(size_t)) {
     if (s > (size_t)INT_MAX) {
       return pic_float_value(s);
     }
   }
-#endif
   return pic_int_value((int)s);
 }
 
@@ -472,8 +447,6 @@ pic_obj_value(void *ptr)
   return v;
 }
 
-#if PIC_ENABLE_FLOAT
-
 PIC_INLINE pic_value
 pic_float_value(double f)
 {
@@ -483,8 +456,6 @@ pic_float_value(double f)
   v.u.f = f;
   return v;
 }
-
-#endif
 
 PIC_INLINE pic_value
 pic_int_value(int i)
@@ -569,10 +540,8 @@ pic_eqv_p(pic_value x, pic_value y)
     return true;
   case PIC_TT_BOOL:
     return pic_vtype(x) == pic_vtype(y);
-#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     return pic_float(x) == pic_float(y);
-#endif
   case PIC_TT_INT:
     return pic_int(x) == pic_int(y);
   default:
@@ -582,82 +551,52 @@ pic_eqv_p(pic_value x, pic_value y)
 
 #endif
 
-#if PIC_ENABLE_FLOAT
-# define pic_define_aop(name, op, guard)                        \
-  PIC_INLINE pic_value                                          \
-  name(pic_state *pic, pic_value a, pic_value b)                \
-  {                                                             \
-    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
-    double f;                                                   \
-    if (pic_int_p(a) && pic_int_p(b)) {                         \
-      f = (double)pic_int(a) op (double)pic_int(b);             \
-      return (INT_MIN <= f && f <= INT_MAX && guard)            \
-        ? pic_int_value((int)f)                                 \
-        : pic_float_value(f);                                   \
-    } else if (pic_float_p(a) && pic_float_p(b)) {              \
-      return pic_float_value(pic_float(a) op pic_float(b));     \
-    } else if (pic_int_p(a) && pic_float_p(b)) {                \
-      return pic_float_value(pic_int(a) op pic_float(b));       \
-    } else if (pic_float_p(a) && pic_int_p(b)) {                \
-      return pic_float_value(pic_float(a) op pic_int(b));       \
-    } else {                                                    \
-      pic_errorf(pic, #name ": non-number operand given");      \
-    }                                                           \
-    PIC_UNREACHABLE();                                          \
+#define pic_define_aop(name, op, guard)                                 \
+  PIC_INLINE pic_value                                                  \
+  name(pic_state *pic, pic_value a, pic_value b)                        \
+  {                                                                     \
+    PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);       \
+    double f;                                                           \
+    if (pic_int_p(a) && pic_int_p(b)) {                                 \
+      f = (double)pic_int(a) op (double)pic_int(b);                     \
+      return (INT_MIN <= f && f <= INT_MAX && guard)                    \
+        ? pic_int_value((int)f)                                         \
+        : pic_float_value(f);                                           \
+    } else if (pic_float_p(a) && pic_float_p(b)) {                      \
+      return pic_float_value(pic_float(a) op pic_float(b));             \
+    } else if (pic_int_p(a) && pic_float_p(b)) {                        \
+      return pic_float_value(pic_int(a) op pic_float(b));               \
+    } else if (pic_float_p(a) && pic_int_p(b)) {                        \
+      return pic_float_value(pic_float(a) op pic_int(b));               \
+    } else {                                                            \
+      pic_errorf(pic, #name ": non-number operand given");              \
+    }                                                                   \
+    PIC_UNREACHABLE();                                                  \
   }
-#else
-# define pic_define_aop(name, op, guard)                        \
-  PIC_INLINE pic_value                                          \
-  name(pic_state *pic, pic_value a, pic_value b)                \
-  {                                                             \
-    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
-    if (pic_int_p(a) && pic_int_p(b)) {                         \
-      return pic_int_value(pic_int(a) op pic_int(b));           \
-    } else {                                                    \
-      pic_errorf(pic, #name ": non-number operand given");      \
-    }                                                           \
-    PIC_UNREACHABLE();                                          \
-  }
-#endif
 
 pic_define_aop(pic_add, +, true)
 pic_define_aop(pic_sub, -, true)
 pic_define_aop(pic_mul, *, true)
-pic_define_aop(pic_div, /, f == round(f))
+pic_define_aop(pic_div, /, f == (int)f)
 
-#if PIC_ENABLE_FLOAT
-# define pic_define_cmp(name, op)                               \
-  PIC_INLINE bool                                               \
-  name(pic_state *pic, pic_value a, pic_value b)                \
-  {                                                             \
-    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
-    if (pic_int_p(a) && pic_int_p(b)) {                         \
-      return pic_int(a) op pic_int(b);                          \
-    } else if (pic_float_p(a) && pic_float_p(b)) {              \
-      return pic_float(a) op pic_float(b);                      \
-    } else if (pic_int_p(a) && pic_float_p(b)) {                \
-      return pic_int(a) op pic_float(b);                        \
-    } else if (pic_float_p(a) && pic_int_p(b)) {                \
-      return pic_float(a) op pic_int(b);                        \
-    } else {                                                    \
-      pic_errorf(pic, #name ": non-number operand given");      \
-    }                                                           \
-    PIC_UNREACHABLE();                                          \
+#define pic_define_cmp(name, op)                                        \
+  PIC_INLINE bool                                                       \
+  name(pic_state *pic, pic_value a, pic_value b)                        \
+  {                                                                     \
+    PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);       \
+    if (pic_int_p(a) && pic_int_p(b)) {                                 \
+      return pic_int(a) op pic_int(b);                                  \
+    } else if (pic_float_p(a) && pic_float_p(b)) {                      \
+      return pic_float(a) op pic_float(b);                              \
+    } else if (pic_int_p(a) && pic_float_p(b)) {                        \
+      return pic_int(a) op pic_float(b);                                \
+    } else if (pic_float_p(a) && pic_int_p(b)) {                        \
+      return pic_float(a) op pic_int(b);                                \
+    } else {                                                            \
+      pic_errorf(pic, #name ": non-number operand given");              \
+    }                                                                   \
+    PIC_UNREACHABLE();                                                  \
   }
-#else
-# define pic_define_cmp(name, op)                               \
-  PIC_INLINE bool                                               \
-  name(pic_state *pic, pic_value a, pic_value b)                \
-  {                                                             \
-    extern PIC_NORETURN void pic_errorf(pic_state *, const char *, ...); \
-    if (pic_int_p(a) && pic_int_p(b)) {                         \
-      return pic_int(a) op pic_int(b);                          \
-    } else {                                                    \
-      pic_errorf(pic, #name ": non-number operand given");      \
-    }                                                           \
-    PIC_UNREACHABLE();                                          \
-  }
-#endif
 
 pic_define_cmp(pic_eq, ==)
 pic_define_cmp(pic_lt, <)
