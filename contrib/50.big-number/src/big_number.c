@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include <math.h>
 
 /**
  * Big integer is represented as a vector of digits.
@@ -212,6 +213,7 @@ bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
   int i, len;
 
   ret = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
   if (sh <= 0) {
     retbi->signum = val->signum;
     retbi->digits = val->digits; // copy
@@ -233,10 +235,36 @@ bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
   }
   ret->data[bytesh + len] = pic_int_value(carry);
 
-  retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
   retbi->signum = val->signum;
   retbi->digits = bigint_vec_compact(pic, ret);
   return retbi;
+}
+
+static double
+bigint_to_double(struct pic_bigint_t *bi)
+{
+  double ret = 0, p = 1.0;
+  int i;
+  int len, lim;
+
+  if (bi->digits->len >= 129) { // max double value < 2^1024
+    return bi->signum ? -1.0 / 0.0 : 1.0 / 0.0;
+  }
+
+  len = bi->digits->len;
+  lim = 8;
+  if (lim > len) {
+    lim = len;
+  }
+  for (i = 0; i < lim; ++i) {
+    ret += pic_int(bi->digits->data[len - i - 1]) * p;
+    p /= 256;
+  }
+  if (bi->signum) {
+    ret = -ret;
+  }
+
+  return ret * pow(256.0, len - 1);
 }
 
 
@@ -320,6 +348,19 @@ pic_big_number_bigint_asl(pic_state *pic)
 
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, result));
 }
+static pic_value
+pic_big_number_bigint_to_number(pic_state *pic)
+{
+  pic_value val;
+  struct pic_bigint_t *bi;
+  double result;
+
+  pic_get_args(pic, "o", &val);
+  bi = pic_bigint_data_ptr(val);
+  result = bigint_to_double(bi);
+
+  return pic_float_value(result);
+}
 
 void
 pic_init_big_number(pic_state *pic)
@@ -331,5 +372,6 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "bigint-underlying", pic_big_number_bigint_underlying);
     pic_defun(pic, "bigint-equal?", pic_big_number_bigint_equal_p);
     pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
+    pic_defun(pic, "bigint->number", pic_big_number_bigint_to_number);
   }
 }
