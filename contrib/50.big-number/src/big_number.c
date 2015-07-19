@@ -14,6 +14,8 @@ struct pic_bigint_t {
 static void
 bigint_dtor(pic_state *pic, void *data)
 {
+  (void) pic;
+  (void) data;
   // TODO empty, memory-leaking
 }
 
@@ -28,14 +30,14 @@ static const pic_data_type bigint_type = { "bigint", bigint_dtor, NULL };
  * Eliminates all leading zeroes.
  */
 static pic_vec *
-bigint_vec_compact(pic_state *pic, pic_vec *v)
+bigint_vec_compact(pic_state *pic, const pic_vec *v)
 {
   int i;
   int l = v->len - 1;
   pic_vec *ret;
 
   if (pic_int(v->data[l]) != 0) {
-    return v;
+    return (pic_vec *)v;
   }
   --l;
   while (l >= 0 && pic_int(v->data[l]) == 0) {
@@ -53,7 +55,7 @@ bigint_vec_compact(pic_state *pic, pic_vec *v)
  * Checks whether v1 and v2 represents the same value.
  */
 static bool
-bigint_vec_eq(pic_vec *v1, pic_vec *v2)
+bigint_vec_eq(const pic_vec *v1, const pic_vec *v2)
 {
   int i;
   if (v1->len != v2->len) {
@@ -69,7 +71,7 @@ bigint_vec_eq(pic_vec *v1, pic_vec *v2)
 }
 
 static bool
-bigint_vec_lt(pic_vec *v1, pic_vec *v2)
+bigint_vec_lt(const pic_vec *v1, const pic_vec *v2)
 {
   int i;
   if (v1->len != v2->len) {
@@ -87,17 +89,17 @@ bigint_vec_lt(pic_vec *v1, pic_vec *v2)
 }
 
 static pic_vec *
-bigint_vec_add(pic_state *pic, pic_vec *v1, pic_vec *v2)
+bigint_vec_add(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
 {
   int carry, msb1, msb2;
   size_t i, len;
   pic_vec *ret;
 
   if (v1->len == 0) {
-    return v2;
+    return (pic_vec *)v2;
   }
   if (v2->len == 0) {
-    return v1;
+    return (pic_vec *)v1;
   }
   // v1 > 0, v2 > 0
   len = v1->len;
@@ -131,7 +133,7 @@ bigint_vec_add(pic_state *pic, pic_vec *v1, pic_vec *v2)
  * Precondition: v1 >= v2
  */
 static pic_vec *
-bigint_vec_sub(pic_state *pic, pic_vec *v1, pic_vec *v2)
+bigint_vec_sub(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
 {
   int carry;
   size_t i, len;
@@ -148,6 +150,61 @@ bigint_vec_sub(pic_state *pic, pic_vec *v1, pic_vec *v2)
     ret->data[i] = pic_int_value(carry & 0xff);
     carry >>= 8;
   }
+
+  return bigint_vec_compact(pic, ret);
+}
+
+static pic_vec *
+bigint_vec_asl(pic_state *pic, const pic_vec *val, int sh);
+
+
+/*
+ * Classical algorithm. O(n^2)
+ */
+static pic_vec *
+bigint_vec_mul(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
+{
+  int len1, len2, i, j;
+  pic_vec *ret;
+
+  len1 = v1->len;
+  len2 = v2->len;
+  ret = pic_make_vec(pic, 0);
+
+  for (i = 0; i < len1; ++i) {
+    int d1 = pic_int(v1->data[i]);
+    for (j = 0; j < 8; ++j) {
+      if (d1 & (1 << j)) {
+	ret = bigint_vec_add(pic, ret, bigint_vec_asl(pic, v2, i * 8 + j));
+      }
+    }
+  }
+
+  return ret;
+}
+
+static pic_vec *
+bigint_vec_asl(pic_state *pic, const pic_vec *val, int sh)
+{
+  pic_vec *ret;
+  int bitsh, bytesh, carry;
+  int i, len;
+
+  bitsh = sh % 8;
+  bytesh = sh / 8;
+  carry = 0;
+
+  len = val->len;
+  ret = pic_make_vec(pic, len + bytesh + 1);
+  for (i = 0; i < bytesh; ++i) {
+    ret->data[i] = pic_int_value(0);
+  }
+  for (i = 0; i < len; ++i) {
+    carry |= pic_int(val->data[i]) << bitsh;
+    ret->data[i + bytesh] = pic_int_value(carry & 0xff);
+    carry >>= 8;
+  }
+  ret->data[bytesh + len] = pic_int_value(carry);
 
   return bigint_vec_compact(pic, ret);
 }
@@ -201,6 +258,23 @@ bigint_add(pic_state *pic, struct pic_bigint_t *bn1, struct pic_bigint_t *bn2)
   retbi->signum = bn1->signum;
   retbi->digits = bigint_vec_add(pic, bn1->digits, bn2->digits);
 
+  return retbi;
+}
+
+static struct pic_bigint_t *
+bigint_mul(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
+{
+  struct pic_bigint_t *retbi;
+  pic_vec *ret;
+
+  retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  ret = bigint_vec_mul(pic, v1->digits, v2->digits);
+
+  retbi->signum = v1->signum ^ v2->signum;
+  if (ret->len == 0) {
+    retbi->signum = 0;
+  }
+  retbi->digits = ret;
   return retbi;
 }
 
@@ -308,6 +382,19 @@ pic_big_number_bigint_sub(pic_state *pic)
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, result));
 }
 
+static pic_value
+pic_big_number_bigint_mul(pic_state *pic)
+{
+  pic_value value1, value2;
+  struct pic_bigint_t *bi1, *bi2;
+
+  pic_get_args(pic, "oo", &value1, &value2);
+  bi1 = pic_bigint_data_ptr(value1);
+  bi2 = pic_bigint_data_ptr(value2);
+
+  return pic_obj_value(pic_data_alloc(pic, &bigint_type, bigint_mul(pic, bi1, bi2)));
+}
+
 /*
  * Returns underlying vector of given biginteger.
  */
@@ -369,6 +456,7 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "make-bigint", pic_big_number_make_bigint);
     pic_defun(pic, "bigint-add", pic_big_number_bigint_add);
     pic_defun(pic, "bigint-sub", pic_big_number_bigint_sub);
+    pic_defun(pic, "bigint-mul", pic_big_number_bigint_mul);
     pic_defun(pic, "bigint-underlying", pic_big_number_bigint_underlying);
     pic_defun(pic, "bigint-equal?", pic_big_number_bigint_equal_p);
     pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
