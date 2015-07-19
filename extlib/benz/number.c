@@ -58,7 +58,7 @@ number_string(int val, int radix, int length, char *buffer) {
 }
 
 static pic_value
-pic_number_real_p(pic_state *pic)
+pic_number_number_p(pic_state *pic)
 {
   pic_value v;
 
@@ -69,32 +69,6 @@ pic_number_real_p(pic_state *pic)
 #else
   return pic_bool_value(pic_int_p(v));
 #endif
-}
-
-static pic_value
-pic_number_integer_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  if (pic_int_p(v)) {
-    return pic_true_value();
-  }
-#if PIC_ENABLE_FLOAT
-  if (pic_float_p(v)) {
-    double f = pic_float(v);
-
-    if (isinf(f)) {
-      return pic_false_value();
-    }
-
-    if (f == round(f)) {
-      return pic_true_value();
-    }
-  }
-#endif
-  return pic_false_value();
 }
 
 static pic_value
@@ -451,11 +425,7 @@ pic_init_number(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_defun(pic, "number?", pic_number_real_p);
-  pic_defun(pic, "complex?", pic_number_real_p);
-  pic_defun(pic, "real?", pic_number_real_p);
-  pic_defun(pic, "rational?", pic_number_real_p);
-  pic_defun(pic, "integer?", pic_number_integer_p);
+  pic_defun(pic, "number?", pic_number_number_p);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "exact?", pic_number_exact_p);

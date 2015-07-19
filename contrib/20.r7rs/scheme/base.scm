@@ -9,7 +9,9 @@
                 ceiling
                 truncate
                 round
-                sqrt)
+                sqrt
+                nan?
+                infinite?)
           (picrin macro)
           (picrin string)
           (scheme file))
@@ -469,6 +471,16 @@
           equal?)
 
   ;; 6.2. Numbers
+
+  (define complex? number?)
+  (define real? number?)
+  (define rational? number?)
+  (define (integer? o)
+    (or (exact? o)
+        (and (inexact? o)
+             (not (nan? o))
+             (not (infinite? o))
+             (= o (floor o)))))
 
   (define (exact-integer? x)
     (and (exact? x)
