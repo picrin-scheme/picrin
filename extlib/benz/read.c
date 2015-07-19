@@ -282,14 +282,18 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
   }
 #else
   case '.': {
-    double f, g;
+    double f, g, h;
     next(pic, port);
     g = 0, e = 0;
     while (isdigit(c = peek(pic, port))) {
       g = g * 10 + (next(pic, port) - '0');
       e++;
     }
-    f = u + g * pow(10, -e);
+    h = 1.0;
+    while (e-- > 0) {
+      h /= 10;
+    }
+    f = u + g * h;
 
     exp = read_suffix(pic, port);
     if (exp >= 0) {

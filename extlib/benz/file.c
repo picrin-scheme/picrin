@@ -353,24 +353,26 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
       break;
     }
 #else
+# define fabs(x) ((x) >= 0 ? (x) : -(x))
     case 'f': {
-      double dval, dint;
-      dval = modf(va_arg(ap, double), &dint);
-      if (dint < 0 || dval < 0) { /* either may be zero */
+      double dval = va_arg(ap, double);
+      long lval;
+      if (dval < 0) {
+        dval = -dval;
         xputc(pic, '-', stream);
         cnt++;
       }
-      cnt += print_int(pic, stream, (long)fabs(dint), 10);
+      lval = (long)dval;
+      cnt += print_int(pic, stream, lval, 10);
       xputc(pic, '.', stream);
       cnt++;
-      if ((ival = fabs(fabs(dval) * 1e4) + 0.5) == 0) {
+      dval -= lval;
+      if ((ival = fabs(dval) * 1e4 + 0.5) == 0) {
         cnt += xfputs(pic, "0000", stream);
       } else {
-        int i;
-        for (i = 0; i < 3 - (int)log10(ival); ++i) {
-          xputc(pic, '0', stream);
-          cnt++;
-        }
+        if (ival < 1000) xputc(pic, '0', stream); cnt++;
+        if (ival <  100) xputc(pic, '0', stream); cnt++;
+        if (ival <   10) xputc(pic, '0', stream); cnt++;
         cnt += print_int(pic, stream, ival, 10);
       }
       break;

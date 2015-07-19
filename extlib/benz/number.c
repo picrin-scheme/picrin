@@ -117,11 +117,6 @@ DEFINE_AOP(div, pic_div(pic, pic_int_value(1), argv[0]), do {
     pic_errorf(pic, "/: at least one argument required");
   } while (0))
 
-/**
- * Returns the length of string representing val.
- * radix is between 2 and 36 (inclusive).
- * No error checks are performed in this function.
- */
 static int
 number_string_length(int val, int radix)
 {
@@ -141,12 +136,6 @@ number_string_length(int val, int radix)
   return count;
 }
 
-/**
- * Returns the string representing val.
- * radix is between 2 and 36 (inclusive).
- * This function overwrites buffer and stores the result.
- * No error checks are performed in this function. It is caller's responsibility to avoid buffer-overrun.
- */
 static void
 number_string(int val, int radix, int length, char *buffer) {
   const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -216,7 +205,7 @@ pic_number_string_to_number(pic_state *pic)
   int radix = 10;
   long num;
   char *eptr;
-  double flo;
+  pic_value flo;
 
   pic_get_args(pic, "z|i", &str, &radix);
 
@@ -227,9 +216,9 @@ pic_number_string_to_number(pic_state *pic)
       : pic_float_value(num);
   }
 
-  flo = strtod(str, &eptr);
-  if (*eptr == '\0') {
-    return pic_float_value(flo);
+  flo = pic_read_cstr(pic, str);
+  if (pic_int_p(flo) || pic_float_p(flo)) {
+    return flo;
   }
 
   pic_errorf(pic, "invalid string given: %s", str);
