@@ -115,199 +115,68 @@ pic_number_exact(pic_state *pic)
   return pic_int_value((int)(round(f)));
 }
 
-#define DEFINE_ARITH_CMP(op, name)			\
-  static pic_value					\
-  pic_number_##name(pic_state *pic)			\
-  {							\
+#define DEFINE_CMP(op)                                  \
+  static pic_value                                      \
+  pic_number_##op(pic_state *pic)                       \
+  {                                                     \
     size_t argc, i;                                     \
-    pic_value *argv;					\
-    double f,g;						\
-    							\
-    pic_get_args(pic, "ff*", &f, &g, &argc, &argv);	\
-    							\
-    if (! (f op g))					\
-      return pic_false_value();				\
-    							\
-    for (i = 0; i < argc; ++i) {			\
-      f = g;                                            \
-      if (pic_float_p(argv[i]))				\
-	g = pic_float(argv[i]);				\
-      else if (pic_int_p(argv[i]))			\
-	g = pic_int(argv[i]);				\
-      else						\
-	pic_errorf(pic, #op ": number required");	\
-      							\
-      if (! (f op g))					\
-	return pic_false_value();			\
-    }							\
-    							\
-    return pic_true_value();				\
+    pic_value *argv;                                    \
+                                                        \
+    pic_get_args(pic, "*", &argc, &argv);               \
+                                                        \
+    if (argc < 2) {                                     \
+      return pic_true_value();                          \
+    }                                                   \
+                                                        \
+    for (i = 1; i < argc; ++i) {                        \
+      if (! pic_##op(pic, argv[i - 1], argv[i])) {      \
+        return pic_false_value();                       \
+      }                                                 \
+    }                                                   \
+    return pic_true_value();                            \
   }
 
-#define DEFINE_ARITH_CMP2(op, name)			\
-  static pic_value					\
-  pic_number_##name(pic_state *pic)			\
-  {							\
-    size_t argc, i;                                     \
-    pic_value *argv;					\
-    int f,g;						\
-    							\
-    pic_get_args(pic, "ii*", &f, &g, &argc, &argv);	\
-    							\
-    if (! (f op g))					\
-      return pic_false_value();				\
-    							\
-    for (i = 0; i < argc; ++i) {			\
-      f = g;                                            \
-      if (pic_int_p(argv[i]))                           \
-	g = pic_int(argv[i]);				\
-      else						\
-	pic_errorf(pic, #op ": number required");	\
-      							\
-      if (! (f op g))					\
-	return pic_false_value();			\
-    }							\
-    							\
-    return pic_true_value();				\
+DEFINE_CMP(eq)
+DEFINE_CMP(lt)
+DEFINE_CMP(le)
+DEFINE_CMP(gt)
+DEFINE_CMP(ge)
+
+#define DEFINE_AOP(op, v1, c0)                  \
+  static pic_value                              \
+  pic_number_##op(pic_state *pic)               \
+  {                                             \
+    size_t argc, i;                             \
+    pic_value *argv, tmp;                       \
+                                                \
+    pic_get_args(pic, "*", &argc, &argv);       \
+                                                \
+    if (argc == 0) {                            \
+      c0;                                       \
+    }                                           \
+    else if (argc == 1) {                       \
+      return v1;                                \
+    }                                           \
+                                                \
+    tmp = argv[0];                              \
+    for (i = 1; i < argc; ++i) {                \
+      tmp = pic_##op(pic, tmp, argv[i]);        \
+    }                                           \
+    return tmp;                                 \
   }
 
-#if PIC_ENABLE_FLOAT
-DEFINE_ARITH_CMP(==, eq)
-DEFINE_ARITH_CMP(<, lt)
-DEFINE_ARITH_CMP(>, gt)
-DEFINE_ARITH_CMP(<=, le)
-DEFINE_ARITH_CMP(>=, ge)
-#else
-DEFINE_ARITH_CMP2(==, eq)
-DEFINE_ARITH_CMP2(<, lt)
-DEFINE_ARITH_CMP2(>, gt)
-DEFINE_ARITH_CMP2(<=, le)
-DEFINE_ARITH_CMP2(>=, ge)
-#endif
-
-#define DEFINE_ARITH_OP(op, name, unit)                         \
-  static pic_value                                              \
-  pic_number_##name(pic_state *pic)                             \
-  {                                                             \
-    size_t argc, i;                                             \
-    pic_value *argv;                                            \
-    double f;                                                   \
-    bool e = true;                                              \
-                                                                \
-    pic_get_args(pic, "*", &argc, &argv);                       \
-                                                                \
-    f = unit;                                                   \
-    for (i = 0; i < argc; ++i) {                                \
-      if (pic_int_p(argv[i])) {                                 \
-        f op##= pic_int(argv[i]);                               \
-      }                                                         \
-      else if (pic_float_p(argv[i])) {                          \
-        e = false;                                              \
-        f op##= pic_float(argv[i]);                             \
-      }                                                         \
-      else {                                                    \
-        pic_errorf(pic, #op ": number required");               \
-      }                                                         \
-    }                                                           \
-                                                                \
-    return e ? pic_int_value((int)f) : pic_float_value(f);      \
-  }
-
-#define DEFINE_ARITH_OP2(op, name, unit)                        \
-  static pic_value                                              \
-  pic_number_##name(pic_state *pic)                             \
-  {                                                             \
-    size_t argc, i;                                             \
-    pic_value *argv;                                            \
-    int f;                                                      \
-                                                                \
-    pic_get_args(pic, "*", &argc, &argv);                       \
-                                                                \
-    f = unit;                                                   \
-    for (i = 0; i < argc; ++i) {                                \
-      if (pic_int_p(argv[i])) {                                 \
-        f op##= pic_int(argv[i]);                               \
-      }                                                         \
-      else {                                                    \
-        pic_errorf(pic, #op ": number required");               \
-      }                                                         \
-    }                                                           \
-                                                                \
-    return pic_int_value(f);                                    \
-  }
-
-#if PIC_ENABLE_FLOAT
-DEFINE_ARITH_OP(+, add, 0)
-DEFINE_ARITH_OP(*, mul, 1)
-#else
-DEFINE_ARITH_OP2(+, add, 0)
-DEFINE_ARITH_OP2(*, mul, 1)
-#endif
-
-#define DEFINE_ARITH_INV_OP(op, name, unit, exact)                      \
-  static pic_value                                                      \
-  pic_number_##name(pic_state *pic)                                     \
-  {                                                                     \
-    size_t argc, i;                                                     \
-    pic_value *argv;                                                    \
-    double f;                                                           \
-    bool e = true;                                                      \
-                                                                        \
-    pic_get_args(pic, "F*", &f, &e, &argc, &argv);                      \
-                                                                        \
-    e = e && exact;                                                     \
-                                                                        \
-    if (argc == 0) {                                                    \
-      f = unit op f;                                                    \
-    }                                                                   \
-    for (i = 0; i < argc; ++i) {                                        \
-      if (pic_int_p(argv[i])) {                                         \
-        f op##= pic_int(argv[i]);                                       \
-      }                                                                 \
-      else if (pic_float_p(argv[i])) {                                  \
-        e = false;                                                      \
-        f op##= pic_float(argv[i]);                                     \
-      }                                                                 \
-      else {                                                            \
-        pic_errorf(pic, #op ": number required");                       \
-      }                                                                 \
-    }                                                                   \
-                                                                        \
-    return e ? pic_int_value((int)f) : pic_float_value(f);              \
-  }
-
-#define DEFINE_ARITH_INV_OP2(op, name, unit)                            \
-  static pic_value                                                      \
-  pic_number_##name(pic_state *pic)                                     \
-  {                                                                     \
-    size_t argc, i;                                                     \
-    pic_value *argv;                                                    \
-    int f;                                                              \
-                                                                        \
-    pic_get_args(pic, "i*", &f, &argc, &argv);                          \
-                                                                        \
-    if (argc == 0) {                                                    \
-      f = unit op f;                                                    \
-    }                                                                   \
-    for (i = 0; i < argc; ++i) {                                        \
-      if (pic_int_p(argv[i])) {                                         \
-        f op##= pic_int(argv[i]);                                       \
-      }                                                                 \
-      else {                                                            \
-        pic_errorf(pic, #op ": number required");                       \
-      }                                                                 \
-    }                                                                   \
-                                                                        \
-    return pic_int_value(f);                                            \
-  }
-
-#if PIC_ENABLE_FLOAT
-DEFINE_ARITH_INV_OP(-, sub, 0, true)
-DEFINE_ARITH_INV_OP(/, div, 1, false)
-#else
-DEFINE_ARITH_INV_OP2(-, sub, 0)
-DEFINE_ARITH_INV_OP2(/, div, 1)
-#endif
+DEFINE_AOP(add, argv[0], do {
+    return pic_int_value(0);
+  } while (0))
+DEFINE_AOP(mul, argv[0], do {
+    return pic_int_value(1);
+  } while (0))
+DEFINE_AOP(sub, pic_sub(pic, pic_int_value(0), argv[0]), do {
+    pic_errorf(pic, "-: at least one argument required");
+  } while (0))
+DEFINE_AOP(div, pic_div(pic, pic_int_value(1), argv[0]), do {
+    pic_errorf(pic, "/: at least one argument required");
+  } while (0))
 
 static pic_value
 pic_number_number_to_string(pic_state *pic)
