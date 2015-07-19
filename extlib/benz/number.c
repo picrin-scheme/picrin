@@ -4,18 +4,6 @@
 
 #include "picrin.h"
 
-#if ! PIC_ENABLE_FLOAT
-static pic_value
-pic_number_id(pic_state *pic)
-{
-  int i;
-
-  pic_get_args(pic, "i", &i);
-
-  return pic_int_value(i);
-}
-#endif
-
 /**
  * Returns the length of string representing val.
  * radix is between 2 and 36 (inclusive).
