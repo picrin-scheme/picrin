@@ -246,13 +246,45 @@ pic_number_sqrt(pic_state *pic)
   return pic_float_value(sqrt(f));
 }
 
+static pic_value
+pic_number_abs(pic_state *pic)
+{
+  double f;
+  bool e;
+
+  pic_get_args(pic, "F", &f, &e);
+
+  if (e) {
+    return pic_int_value(f < 0 ? -f : f);
+  }
+  else {
+    return pic_float_value(fabs(f));
+  }
+}
+
+static pic_value
+pic_number_expt(pic_state *pic)
+{
+  double f, g, h;
+  bool e1, e2;
+
+  pic_get_args(pic, "FF", &f, &e1, &g, &e2);
+
+  h = pow(f, g);
+  if (e1 && e2) {
+    if (h <= INT_MAX) {
+      return pic_int_value((int)h);
+    }
+  }
+  return pic_float_value(h);
+}
+
 void
 pic_init_math(pic_state *pic)
 {
   pic_deflibrary (pic, "(picrin math)") {
     pic_defun(pic, "floor/", pic_number_floor2);
     pic_defun(pic, "truncate/", pic_number_trunc2);
-
     pic_defun(pic, "floor", pic_number_floor);
     pic_defun(pic, "ceiling", pic_number_ceil);
     pic_defun(pic, "truncate", pic_number_trunc);
@@ -270,5 +302,7 @@ pic_init_math(pic_state *pic)
     pic_defun(pic, "acos", pic_number_acos);
     pic_defun(pic, "asin", pic_number_asin);
     pic_defun(pic, "atan", pic_number_atan);
+    pic_defun(pic, "abs", pic_number_abs);
+    pic_defun(pic, "expt", pic_number_expt);
   }
 }

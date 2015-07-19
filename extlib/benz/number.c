@@ -348,70 +348,6 @@ DEFINE_ARITH_INV_OP2(/, div, 1)
 #endif
 
 static pic_value
-pic_number_abs(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value(f < 0 ? -f : f);
-  }
-  else {
-    return pic_float_value(fabs(f));
-  }
-#else
-  int i;
-
-  pic_get_args(pic, "i", &i);
-
-  return pic_int_value(i < 0 ? -i : i);
-#endif
-}
-
-static pic_value
-pic_number_expt(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  double f, g, h;
-  bool e1, e2;
-
-  pic_get_args(pic, "FF", &f, &e1, &g, &e2);
-
-  h = pow(f, g);
-  if (e1 && e2) {
-    if (h <= INT_MAX) {
-      return pic_int_value((int)h);
-    }
-  }
-  return pic_float_value(h);
-#else
-  int x, y, i, e = 1, r = 1, s = 0;
-
-  pic_get_args(pic, "ii", &x, &y);
-
-  if (y < 0) {
-    s = 1;
-    y = -y;
-  }
-  e = x;
-  for (i = 0; y; ++i) {
-    if ((y & 1) != 0) {
-      r *= e;
-    }
-    e *= e;
-    y >>= 1;
-  }
-  if (s != 0) {
-    r = 1 / r;
-  }
-  return pic_int_value(r);
-#endif
-}
-
-static pic_value
 pic_number_number_to_string(pic_state *pic)
 {
 #if PIC_ENABLE_FLOAT
@@ -553,10 +489,6 @@ pic_init_number(pic_state *pic)
   pic_defun(pic, "-", pic_number_sub);
   pic_defun(pic, "*", pic_number_mul);
   pic_defun(pic, "/", pic_number_div);
-  pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "abs", pic_number_abs);
-  pic_defun(pic, "expt", pic_number_expt);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "number->string", pic_number_number_to_string);

@@ -1,6 +1,8 @@
 (define-library (scheme base)
   (import (picrin base)
           (only (picrin math)
+                abs
+                expt
                 floor/
                 truncate/
                 floor
