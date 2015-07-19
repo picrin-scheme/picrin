@@ -1,6 +1,6 @@
 (define-library (scheme inexact)
   (import (picrin base)
-          (picrin number))
+          (picrin math))
 
   (export acos
           asin

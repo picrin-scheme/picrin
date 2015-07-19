@@ -144,7 +144,7 @@ pic_number_sqrt(pic_state *pic)
 void
 pic_init_math(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin number)") {
+  pic_deflibrary (pic, "(picrin math)") {
     pic_defun(pic, "finite?", pic_number_finite_p);
     pic_defun(pic, "infinite?", pic_number_infinite_p);
     pic_defun(pic, "nan?", pic_number_nan_p);

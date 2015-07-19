@@ -1,6 +1,6 @@
 (define-library (scheme base)
   (import (picrin base)
-          (only (picrin number) sqrt)
+          (only (picrin math) sqrt)
           (picrin macro)
           (picrin string)
           (scheme file))
