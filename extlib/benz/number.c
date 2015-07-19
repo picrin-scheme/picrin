@@ -4,59 +4,6 @@
 
 #include "picrin.h"
 
-/**
- * Returns the length of string representing val.
- * radix is between 2 and 36 (inclusive).
- * No error checks are performed in this function.
- */
-static int
-number_string_length(int val, int radix)
-{
-  unsigned long v = val; /* in case val == INT_MIN */
-  int count = 0;
-  if (val == 0) {
-    return 1;
-  }
-  if (val < 0) {
-    v = -val;
-    count = 1;
-  }
-  while (v > 0) {
-    ++count;
-    v /= radix;
-  }
-  return count;
-}
-
-/**
- * Returns the string representing val.
- * radix is between 2 and 36 (inclusive).
- * This function overwrites buffer and stores the result.
- * No error checks are performed in this function. It is caller's responsibility to avoid buffer-overrun.
- */
-static void
-number_string(int val, int radix, int length, char *buffer) {
-  const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
-  unsigned long v = val;
-  int i;
-  if (val == 0) {
-    buffer[0] = '0';
-    buffer[1] = '\0';
-    return;
-  }
-  if (val < 0) {
-    buffer[0] = '-';
-    v = -val;
-  }
-
-  for(i = length - 1; v > 0; --i) {
-    buffer[i] = digits[v % radix];
-    v /= radix;
-  }
-  buffer[length] = '\0';
-  return;
-}
-
 static pic_value
 pic_number_number_p(pic_state *pic)
 {
@@ -177,6 +124,59 @@ DEFINE_AOP(sub, pic_sub(pic, pic_int_value(0), argv[0]), do {
 DEFINE_AOP(div, pic_div(pic, pic_int_value(1), argv[0]), do {
     pic_errorf(pic, "/: at least one argument required");
   } while (0))
+
+/**
+ * Returns the length of string representing val.
+ * radix is between 2 and 36 (inclusive).
+ * No error checks are performed in this function.
+ */
+static int
+number_string_length(int val, int radix)
+{
+  unsigned long v = val; /* in case val == INT_MIN */
+  int count = 0;
+  if (val == 0) {
+    return 1;
+  }
+  if (val < 0) {
+    v = -val;
+    count = 1;
+  }
+  while (v > 0) {
+    ++count;
+    v /= radix;
+  }
+  return count;
+}
+
+/**
+ * Returns the string representing val.
+ * radix is between 2 and 36 (inclusive).
+ * This function overwrites buffer and stores the result.
+ * No error checks are performed in this function. It is caller's responsibility to avoid buffer-overrun.
+ */
+static void
+number_string(int val, int radix, int length, char *buffer) {
+  const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
+  unsigned long v = val;
+  int i;
+  if (val == 0) {
+    buffer[0] = '0';
+    buffer[1] = '\0';
+    return;
+  }
+  if (val < 0) {
+    buffer[0] = '-';
+    v = -val;
+  }
+
+  for(i = length - 1; v > 0; --i) {
+    buffer[i] = digits[v % radix];
+    v /= radix;
+  }
+  buffer[length] = '\0';
+  return;
+}
 
 static pic_value
 pic_number_number_to_string(pic_state *pic)
