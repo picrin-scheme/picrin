@@ -51,3 +51,5 @@
 (test-random test-bigint->number 5)
 (test-random test-mul 5)
 
+
+(test #(22 10) (bigint-underlying (make-bigint "2582")))

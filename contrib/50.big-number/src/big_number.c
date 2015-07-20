@@ -235,6 +235,52 @@ bigint_init_int(pic_state *pic, int value)
 }
 
 static struct pic_bigint_t *
+bigint_init_str(pic_state *pic, pic_str *str)
+{
+  const char *cstr;
+  size_t pos, len;
+  pic_vec *ret, *digit, *base;
+  struct pic_bigint_t *retbi;
+
+  cstr = pic_str_cstr(pic, str);
+  pos = 0;
+  len = pic_str_len(str);
+  ret = pic_make_vec(pic, 0);
+  base = pic_make_vec(pic, 1);
+  base->data[0] = pic_int_value(10);
+  retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  retbi->signum = 0;
+
+  if (cstr[0] == '-') {
+    retbi->signum = 1;
+    pos = 1;
+  }
+  if (pos == len) { // no digits
+    pic_errorf(pic, "bigint-make: there are no digits");
+  }
+  for (; pos < len; ++pos) {
+    char ch = cstr[pos];
+    if (ch >= '0' && ch <= '9') {
+      ret = bigint_vec_mul(pic, ret, base);
+      digit = pic_make_vec(pic, 1);
+      digit->data[0] = pic_int_value(ch - '0');
+      if (ch != '0') {
+	ret = bigint_vec_add(pic, ret, digit);
+      }
+    } else {
+      //error
+      pic_errorf(pic, "bigint-make: not a digit: %c", ch);
+    }
+  }
+
+  if (ret->len == 0) {
+    retbi->signum = 0;
+  }
+  retbi->digits = ret;
+  return retbi;
+}
+
+static struct pic_bigint_t *
 bigint_add(pic_state *pic, struct pic_bigint_t *bn1, struct pic_bigint_t *bn2)
 {
   struct pic_bigint_t *retbi;
@@ -342,14 +388,28 @@ bigint_to_double(struct pic_bigint_t *bi)
 }
 
 
+/*
+ * make-bigint can take int or string as its argument.
+ */
 static pic_value
 pic_big_number_make_bigint(pic_state *pic)
 {
-  int value;
+  pic_value value;
+  struct pic_bigint_t *bi;
 
-  pic_get_args(pic, "i", &value);
+  pic_get_args(pic, "o", &value);
 
-  return pic_obj_value(pic_data_alloc(pic, &bigint_type, bigint_init_int(pic, value)));
+  if (pic_int_p(value)) {
+    bi = bigint_init_int(pic, pic_int(value));
+  } else if (pic_float_p(value)) {
+    bi = bigint_init_int(pic, pic_float(value));
+  } else if (pic_str_p(value)) {
+    bi = bigint_init_str(pic, pic_str_ptr(value));
+  } else {
+    //error
+    pic_errorf(pic, "make-bigint can take only int/string as its argument, but got: ~s", value);
+  }
+  return pic_obj_value(pic_data_alloc(pic, &bigint_type, bi));
 }
 
 static pic_value
