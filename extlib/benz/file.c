@@ -349,7 +349,7 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
     case 'f': {
       char buf[100];
       sprintf(buf, "%g", va_arg(ap, double));
-      xfputs(pic, buf, stream);
+      cnt += xfputs(pic, buf, stream);
       break;
     }
 #else
@@ -378,6 +378,10 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
       break;
     }
 #endif
+    case 'c':
+      ival = va_arg(ap, int);
+      cnt += xfputc(pic, ival, stream);
+      break;
     case 's':
       sval = va_arg(ap, char*);
       cnt += xfputs(pic, sval, stream);
