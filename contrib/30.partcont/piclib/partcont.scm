@@ -27,6 +27,16 @@
                (reset (lambda ()
                         (k v))))))))))
 
-  (export shift
-          reset))
+  (define-syntax reset*
+    (syntax-rules ()
+      ((_ expr ...)
+       (reset (lambda () expr ...)))))
+
+  (define-syntax shift*
+    (syntax-rules ()
+      ((_ k expr ...)
+       (shift (lambda (k) expr ...)))))
+
+  (export (rename shift* shift)
+          (rename reset* reset)))
 

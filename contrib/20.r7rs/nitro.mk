@@ -27,5 +27,5 @@ CONTRIB_TESTS += test-r7rs
 
 test-r7rs: bin/picrin
 	for test in `ls contrib/20.r7rs/t/*.scm`; do \
-	  bin/picrin "$$test"; \
+	  $(TEST_RUNNER) "$$test"; \
 	done

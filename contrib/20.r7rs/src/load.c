@@ -4,27 +4,20 @@
 
 #include "picrin.h"
 
-void
-pic_load(pic_state *pic, const char *filename)
-{
-  struct pic_port *port;
-
-  port = pic_open_file(pic, filename, PIC_PORT_IN | PIC_PORT_TEXT);
-
-  pic_load_port(pic, port);
-
-  pic_close_port(pic, port);
-}
-
 static pic_value
 pic_load_load(pic_state *pic)
 {
   pic_value envid;
   char *fn;
+  struct pic_port *port;
 
   pic_get_args(pic, "z|o", &fn, &envid);
 
-  pic_load(pic, fn);
+  port = pic_open_file(pic, fn, PIC_PORT_IN | PIC_PORT_TEXT);
+
+  pic_load(pic, port);
+
+  pic_close_port(pic, port);
 
   return pic_undef_value();
 }

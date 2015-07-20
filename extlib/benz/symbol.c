@@ -7,13 +7,13 @@
 KHASH_DEFINE(s, const char *, pic_sym *, kh_str_hash_func, kh_str_hash_equal)
 
 pic_sym *
-pic_intern(pic_state *pic, pic_str *str)
+pic_intern_str(pic_state *pic, pic_str *str)
 {
-  return pic_intern_cstr(pic, pic_str_cstr(pic, str));
+  return pic_intern(pic, pic_str_cstr(pic, str));
 }
 
 pic_sym *
-pic_intern_cstr(pic_state *pic, const char *cstr)
+pic_intern(pic_state *pic, const char *cstr)
 {
   khash_t(s) *h = &pic->syms;
   pic_sym *sym;
@@ -31,6 +31,8 @@ pic_intern_cstr(pic_state *pic, const char *cstr)
   copy = pic_malloc(pic, strlen(cstr) + 1);
   strcpy(copy, cstr);
   kh_key(h, it) = copy;
+
+  kh_val(h, it) = pic->sQUOTE; /* insert dummy */
 
   sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TT_SYMBOL);
   sym->cstr = copy;
@@ -91,15 +93,13 @@ pic_symbol_string_to_symbol(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_obj_value(pic_intern(pic, str));
+  return pic_obj_value(pic_intern_str(pic, str));
 }
 
 void
 pic_init_symbol(pic_state *pic)
 {
-  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
-
-  pic_defun_vm(pic, "symbol?", pic->uSYMBOLP, pic_symbol_symbol_p);
+  pic_defun(pic, "symbol?", pic_symbol_symbol_p);
 
   pic_defun(pic, "symbol->string", pic_symbol_symbol_to_string);
   pic_defun(pic, "string->symbol", pic_symbol_string_to_symbol);

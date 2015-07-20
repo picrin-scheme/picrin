@@ -5,8 +5,9 @@
 (define (time f)
   (let ((start (current-jiffy)))
     (f)
-    (/ (- (current-jiffy) start)
-       (jiffies-per-second))))
+    (inexact
+     (/ (- (current-jiffy) start)
+        (jiffies-per-second)))))
 
 (define (tak x y z)
   (if (> x y)

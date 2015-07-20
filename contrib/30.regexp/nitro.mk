@@ -4,5 +4,5 @@ CONTRIB_TESTS += test-regexp
 
 test-regexp: bin/picrin
 	for test in `ls contrib/30.regexp/t/*.scm`; do \
-	  bin/picrin $$test; \
+	  $(TEST_RUNNER) $$test; \
 	done

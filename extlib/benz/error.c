@@ -7,7 +7,7 @@
 void
 pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)
 {
-  extern void abort();
+  extern PIC_NORETURN void abort();
 
 #if DEBUG
   fprintf(stderr, "abort: %s\n", msg);
@@ -45,22 +45,6 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   irrs = pic_cdr(pic, err_line);
 
   pic_error(pic, msg, irrs);
-}
-
-const char *
-pic_errmsg(pic_state *pic)
-{
-  pic_str *str;
-
-  assert(! pic_invalid_p(pic->err));
-
-  if (! pic_error_p(pic->err)) {
-    str = pic_format(pic, "~s", pic->err);
-  } else {
-    str = pic_error_ptr(pic->err)->msg;
-  }
-
-  return pic_str_cstr(pic, str);
 }
 
 pic_value
@@ -158,7 +142,7 @@ pic_error(pic_state *pic, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_cstr(pic, ""), msg, irrs);
+  e = pic_make_error(pic, pic_intern(pic, ""), msg, irrs);
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -213,22 +197,6 @@ pic_error_error(pic_state *pic)
 }
 
 static pic_value
-pic_error_make_error_object(pic_state *pic)
-{
-  struct pic_error *e;
-  pic_sym *type;
-  pic_str *msg;
-  size_t argc;
-  pic_value *argv;
-
-  pic_get_args(pic, "ms*", &type, &msg, &argc, &argv);
-
-  e = pic_make_error(pic, type, pic_str_cstr(pic, msg), pic_list_by_array(pic, argc, argv));
-
-  return pic_obj_value(e);
-}
-
-static pic_value
 pic_error_error_object_p(pic_state *pic)
 {
   pic_value v;
@@ -275,7 +243,6 @@ pic_init_error(pic_state *pic)
   pic_defun(pic, "raise", pic_error_raise);
   pic_defun(pic, "raise-continuable", pic_error_raise_continuable);
   pic_defun(pic, "error", pic_error_error);
-  pic_defun(pic, "make-error-object", pic_error_make_error_object);
   pic_defun(pic, "error-object?", pic_error_error_object_p);
   pic_defun(pic, "error-object-message", pic_error_error_object_message);
   pic_defun(pic, "error-object-irritants", pic_error_error_object_irritants);
