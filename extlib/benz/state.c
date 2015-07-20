@@ -18,7 +18,6 @@ pic_add_feature(pic_state *pic, const char *feature)
   pic_push(pic, pic_obj_value(pic_intern(pic, feature)), pic->features);
 }
 
-void pic_init_undef(pic_state *);
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -49,7 +48,7 @@ pic_init_features(pic_state *pic)
 {
   pic_add_feature(pic, "picrin");
 
-#if PIC_ENABLE_FLOAT
+#if __STDC_IEC_559__
   pic_add_feature(pic, "ieee-float");
 #endif
 
@@ -162,7 +161,6 @@ pic_init_core(pic_state *pic)
     VM(pic->uGT, ">");
     VM(pic->uGE, ">=");
 
-    pic_init_undef(pic); DONE;
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
     pic_init_port(pic); DONE;

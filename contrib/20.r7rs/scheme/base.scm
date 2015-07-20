@@ -1,5 +1,17 @@
 (define-library (scheme base)
   (import (picrin base)
+          (only (picrin math)
+                abs
+                expt
+                floor/
+                truncate/
+                floor
+                ceiling
+                truncate
+                round
+                sqrt
+                nan?
+                infinite?)
           (picrin macro)
           (picrin string)
           (scheme file))
@@ -350,11 +362,12 @@
            (letrec
                ((#,'rename (let ((reg (make-register)))
                              (lambda (x)
-                               (if (undefined? (reg x))
-                                   (let ((id (make-identifier x env)))
-                                     (reg x id)
-                                     id)
-                                   (reg x))))))
+                               (let ((y (reg x)))
+                                 (if y
+                                     (cdr y)
+                                     (let ((id (make-identifier x env)))
+                                       (reg x id)
+                                       id)))))))
              (lambda #,'it
                #,(compile-rules rules))))))
 
@@ -458,6 +471,16 @@
           equal?)
 
   ;; 6.2. Numbers
+
+  (define complex? number?)
+  (define real? number?)
+  (define rational? number?)
+  (define (integer? o)
+    (or (exact? o)
+        (and (inexact? o)
+             (not (nan? o))
+             (not (infinite? o))
+             (= o (floor o)))))
 
   (define (exact-integer? x)
     (and (exact? x)

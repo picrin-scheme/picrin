@@ -66,9 +66,9 @@ static pic_value
 reg_get(pic_state *pic, struct pic_reg *reg, void *key)
 {
   if (! pic_reg_has(pic, reg, key)) {
-    return pic_undef_value();
+    return pic_false_value();
   }
-  return pic_reg_ref(pic, reg, key);
+  return pic_cons(pic, pic_obj_value(key), pic_reg_ref(pic, reg, key));
 }
 
 static pic_value
