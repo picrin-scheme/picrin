@@ -3,7 +3,7 @@
 	  (picrin macro)
 	  (srfi 1))
 
-  (define-syntax cut%
+  (define-macro cut%
     (ir-macro-transformer
      (lambda (form inject compare?)
        (let ((slots (second form))
@@ -19,7 +19,7 @@
 		`(cut% (,@slots x) (,@combi x) ,@(cdr se)))
 	       (else `(cut% ,slots (,@combi ,(car se)) ,@(cdr se))))))))
 
-  (define-syntax cute%
+  (define-macro cute%
     (ir-macro-transformer
      (lambda (form inject compare?)
        (let ((slots (second form))
@@ -40,12 +40,12 @@
 		`(cute% ,slots ((x ,(car se)) ,@binds)
 			(,@combi x) ,@(cdr se))))))))
   
-  (define-syntax cut
+  (define-macro cut
     (ir-macro-transformer
      (lambda (form inject compare?)
        `(cut% () () ,@(cdr form)))))
 
-  (define-syntax cute
+  (define-macro cute
     (ir-macro-transformer
      (lambda (form inject compare?)
        `(cute% () () () ,@(cdr form)))))
