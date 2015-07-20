@@ -34,7 +34,7 @@
 
   ;; 4.1.7. Inclusion
 
-  (define-syntax include
+  (define-macro include
     (letrec ((read-file
               (lambda (filename)
                 (call-with-port (open-input-file filename)
