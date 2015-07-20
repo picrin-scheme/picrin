@@ -276,16 +276,23 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
   union header *p;
 
+ loop:
+
   p = ((union header *)obj) - 1;
 
   if (gc_is_marked(p))
     return;
   p->s.mark = PIC_GC_MARK;
 
+#define LOOP(o) obj = (o); goto loop
+
   switch (obj->tt) {
   case PIC_TT_PAIR: {
-    gc_mark(pic, ((struct pic_pair *)obj)->car);
-    gc_mark(pic, ((struct pic_pair *)obj)->cdr);
+    struct pic_pair *pair = (struct pic_pair *)obj;
+    gc_mark(pic, pair->car);
+    if (pic_obj_p(pair->cdr)) {
+      LOOP(pic_obj_ptr(pair->cdr));
+    }
     break;
   }
   case PIC_TT_CXT: {
@@ -296,7 +303,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       gc_mark(pic, cxt->regs[i]);
     }
     if (cxt->up) {
-      gc_mark_object(pic, (struct pic_object *)cxt->up);
+      LOOP((struct pic_object *)cxt->up);
     }
     break;
   }
@@ -305,11 +312,11 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (pic_proc_irep_p(proc)) {
       gc_mark_object(pic, (struct pic_object *)proc->u.i.irep);
       if (proc->u.i.cxt) {
-        gc_mark_object(pic, (struct pic_object *)proc->u.i.cxt);
+        LOOP((struct pic_object *)proc->u.i.cxt);
       }
     } else {
       if (proc->u.f.env) {
-        gc_mark_object(pic, (struct pic_object *)proc->u.f.env);
+        LOOP((struct pic_object *)proc->u.f.env);
       }
     }
     break;
@@ -322,7 +329,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark_object(pic, (struct pic_object *)err->type);
     gc_mark_object(pic, (struct pic_object *)err->msg);
     gc_mark(pic, err->irrs);
-    gc_mark_object(pic, (struct pic_object *)err->stack);
+    LOOP((struct pic_object *)err->stack);
     break;
   }
   case PIC_TT_STRING: {
@@ -341,7 +348,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_ID: {
     struct pic_id *id = (struct pic_id *)obj;
     gc_mark(pic, id->var);
-    gc_mark_object(pic, (struct pic_object *)id->env);
+    LOOP((struct pic_object *)id->env);
     break;
   }
   case PIC_TT_ENV: {
@@ -349,14 +356,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     khash_t(env) *h = &env->map;
     khiter_t it;
 
-    if (env->up) {
-      gc_mark_object(pic, (struct pic_object *)env->up);
-    }
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (kh_exist(h, it)) {
         gc_mark_object(pic, kh_key(h, it));
         gc_mark_object(pic, (struct pic_object *)kh_val(h, it));
       }
+    }
+    if (env->up) {
+      LOOP((struct pic_object *)env->up);
     }
     break;
   }
@@ -364,7 +371,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     struct pic_lib *lib = (struct pic_lib *)obj;
     gc_mark(pic, lib->name);
     gc_mark_object(pic, (struct pic_object *)lib->env);
-    gc_mark_object(pic, (struct pic_object *)lib->exports);
+    LOOP((struct pic_object *)lib->exports);
     break;
   }
   case PIC_TT_IREP: {
@@ -382,10 +389,10 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_DATA: {
     struct pic_data *data = (struct pic_data *)obj;
 
-    gc_mark_object(pic, (struct pic_object *)data->storage);
     if (data->type->mark) {
       data->type->mark(pic, data->data, gc_mark);
     }
+    LOOP((struct pic_object *)data->storage);
     break;
   }
   case PIC_TT_DICT: {
@@ -402,7 +409,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_RECORD: {
     struct pic_record *rec = (struct pic_record *)obj;
 
-    gc_mark_object(pic, (struct pic_object *)rec->data);
+    LOOP((struct pic_object *)rec->data);
     break;
   }
   case PIC_TT_SYMBOL: {
@@ -425,7 +432,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
       gc_mark_object(pic, (struct pic_object *)cp->in);
     }
     if (cp->out) {
-      gc_mark_object(pic, (struct pic_object *)cp->out);
+      LOOP((struct pic_object *)cp->out);
     }
     break;
   }
