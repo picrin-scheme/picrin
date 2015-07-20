@@ -21,7 +21,7 @@
 
   (define user-env (library-environment (find-library '(picrin user))))
 
-  (begin
+  (define (init-env)
     (current-library (find-library '(picrin user)))
     (eval
      '(import (scheme base)
@@ -39,6 +39,7 @@
     (current-library (find-library '(picrin repl))))
 
   (define (repl)
+    (init-env)
     (let loop ((buf ""))
       (let ((line (readline (if (equal? buf "") "> " ""))))
         (if (eof-object? line)

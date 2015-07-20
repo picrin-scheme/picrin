@@ -226,8 +226,6 @@ pic_init_core(pic_state *pic)
       pic_panic(pic, "");
     }
   }
-
-  pic_import(pic, pic->PICRIN_BASE);
 }
 
 pic_state *

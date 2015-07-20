@@ -23,7 +23,8 @@
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;; IN THE SOFTWARE. 
 
-(import (srfi 1)
+(import (scheme base)
+        (srfi 1)
         (picrin test))
 
 (test-begin)
