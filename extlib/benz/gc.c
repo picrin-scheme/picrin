@@ -255,13 +255,9 @@ heap_morecore(pic_state *pic)
   pic->heap->pages = page;
 }
 
-static void gc_mark_object(pic_state *, union object *);
+/* MARK */
 
-static bool
-gc_is_marked(union header *p)
-{
-  return p->s.mark == PIC_GC_MARK;
-}
+static void gc_mark_object(pic_state *, union object *);
 
 static bool
 gc_obj_is_marked(struct pic_object *obj)
@@ -270,7 +266,7 @@ gc_obj_is_marked(struct pic_object *obj)
 
   p = ((union header *)obj) - 1;
 
-  return gc_is_marked(p);
+  return p->s.mark == PIC_GC_MARK;
 }
 
 static void
@@ -301,7 +297,7 @@ gc_mark_object(pic_state *pic, union object *obj)
 
   p = ((union header *)obj) - 1;
 
-  if (gc_is_marked(p))
+  if (p->s.mark == PIC_GC_MARK)
     return;
   p->s.mark = PIC_GC_MARK;
 
@@ -457,43 +453,7 @@ gc_mark_object(pic_state *pic, union object *obj)
 }
 
 #define M(x) gc_mark_object(pic, (union object *)pic->x)
-
-static void
-gc_mark_global_symbols(pic_state *pic)
-{
-  M(sQUOTE); M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
-  M(sSYNTAX_QUOTE); M(sSYNTAX_QUASIQUOTE); M(sSYNTAX_UNQUOTE); M(sSYNTAX_UNQUOTE_SPLICING);
-  M(sDEFINE_LIBRARY); M(sIMPORT); M(sEXPORT); M(sCOND_EXPAND);
-  M(sCALL); M(sGREF); M(sLREF); M(sCREF);
-
-  M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG); M(uDEFINE_MACRO);
-  M(uDEFINE_LIBRARY); M(uIMPORT); M(uEXPORT); M(uCOND_EXPAND);
-  M(uCONS); M(uCAR); M(uCDR); M(uNILP); M(uSYMBOLP); M(uPAIRP);
-  M(uADD); M(uSUB); M(uMUL); M(uDIV); M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
-}
-
 #define P(x) gc_mark(pic, pic->x)
-
-static void
-gc_mark_system_procedures(pic_state *pic)
-{
-  P(pCONS);
-  P(pCAR);
-  P(pCDR);
-  P(pNILP);
-  P(pSYMBOLP);
-  P(pPAIRP);
-  P(pNOT);
-  P(pADD);
-  P(pSUB);
-  P(pMUL);
-  P(pDIV);
-  P(pEQ);
-  P(pLT);
-  P(pLE);
-  P(pGT);
-  P(pGE);
-}
 
 static void
 gc_mark_phase(pic_state *pic)
@@ -533,10 +493,19 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* mark reserved symbols */
-  gc_mark_global_symbols(pic);
+  M(sQUOTE); M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
+  M(sSYNTAX_QUOTE); M(sSYNTAX_QUASIQUOTE); M(sSYNTAX_UNQUOTE); M(sSYNTAX_UNQUOTE_SPLICING);
+  M(sDEFINE_LIBRARY); M(sIMPORT); M(sEXPORT); M(sCOND_EXPAND);
+  M(sCALL); M(sGREF); M(sLREF); M(sCREF);
+
+  M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG); M(uDEFINE_MACRO);
+  M(uDEFINE_LIBRARY); M(uIMPORT); M(uEXPORT); M(uCOND_EXPAND);
+  M(uCONS); M(uCAR); M(uCDR); M(uNILP); M(uSYMBOLP); M(uPAIRP);
+  M(uADD); M(uSUB); M(uMUL); M(uDIV); M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
 
   /* mark system procedures */
-  gc_mark_system_procedures(pic);
+  P(pCONS); P(pCAR); P(pCDR); P(pNILP); P(pSYMBOLP); P(pPAIRP); P(pNOT);
+  P(pADD); P(pSUB); P(pMUL); P(pDIV); P(pEQ); P(pLT); P(pLE); P(pGT); P(pGE);
 
   /* global variables */
   if (pic->globals) {
@@ -594,6 +563,8 @@ gc_mark_phase(pic_state *pic)
     }
   } while (j > 0);
 }
+
+/* SWEEP */
 
 static void
 gc_finalize_object(pic_state *pic, union object *obj)
@@ -663,23 +634,6 @@ gc_finalize_object(pic_state *pic, union object *obj)
   }
 }
 
-static void
-gc_sweep_symbols(pic_state *pic)
-{
-  khash_t(s) *h = &pic->syms;
-  khiter_t it;
-  pic_sym *sym;
-
-  for (it = kh_begin(h); it != kh_end(h); ++it) {
-    if (! kh_exist(h, it))
-      continue;
-    sym = kh_val(h, it);
-    if (! gc_obj_is_marked((struct pic_object *)sym)) {
-      kh_del(s, h, it);
-    }
-  }
-}
-
 static size_t
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
@@ -692,7 +646,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       if (p < page->basep || page->endp <= p) {
         goto escape;
       }
-      if (gc_is_marked(p)) {
+      if (p->s.mark == PIC_GC_MARK) {
         p->s.mark = PIC_GC_UNMARK;
         alive += p->s.size;
       } else {
@@ -726,6 +680,8 @@ gc_sweep_phase(pic_state *pic)
   struct heap_page *page;
   khiter_t it;
   khash_t(reg) *h;
+  khash_t(s) *s = &pic->syms;
+  pic_sym *sym;
   size_t total = 0, inuse = 0;
 
   /* registries */
@@ -741,7 +697,15 @@ gc_sweep_phase(pic_state *pic)
     pic->regs = pic->regs->prev;
   }
 
-  gc_sweep_symbols(pic);
+  /* symbol table */
+  for (it = kh_begin(s); it != kh_end(s); ++it) {
+    if (! kh_exist(s, it))
+      continue;
+    sym = kh_val(s, it);
+    if (! gc_obj_is_marked((struct pic_object *)sym)) {
+      kh_del(s, s, it);
+    }
+  }
 
   page = pic->heap->pages;
   while (page) {
