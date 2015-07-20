@@ -638,31 +638,16 @@ static pic_value
 pic_pair_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i;
-  pic_value *args;
-  pic_value arg, ret;
+  pic_value list;
+  pic_value val, it, ret = pic_nil_value();
 
-  pic_get_args(pic, "l*", &proc, &argc, &args);
+  pic_get_args(pic, "lo", &proc, &list);
 
-  if (argc == 0)
-    pic_errorf(pic, "map: wrong number of arguments (1 for at least 2)");
+  pic_assert_type(pic, list, list);
 
-  ret = pic_nil_value();
-  do {
-    arg = pic_nil_value();
-    for (i = 0; i < argc; ++i) {
-      if (! pic_pair_p(args[i])) {
-        break;
-      }
-      pic_push(pic, pic_car(pic, args[i]), arg);
-      args[i] = pic_cdr(pic, args[i]);
-    }
-
-    if (i != argc) {
-      break;
-    }
-    pic_push(pic, pic_apply(pic, proc, pic_reverse(pic, arg)), ret);
-  } while (1);
+  pic_for_each (val, list, it) {
+    pic_push(pic, pic_apply1(pic, proc, val), ret);
+  }
 
   return pic_reverse(pic, ret);
 }
@@ -671,26 +656,16 @@ static pic_value
 pic_pair_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i;
-  pic_value *args;
-  pic_value arg;
+  pic_value list;
+  pic_value val, it;
 
-  pic_get_args(pic, "l*", &proc, &argc, &args);
+  pic_get_args(pic, "lo", &proc, &list);
 
-  do {
-    arg = pic_nil_value();
-    for (i = 0; i < argc; ++i) {
-      if (! pic_pair_p(args[i])) {
-        break;
-      }
-      pic_push(pic, pic_car(pic, args[i]), arg);
-      args[i] = pic_cdr(pic, args[i]);
-    }
-    if (i != argc) {
-      break;
-    }
-    pic_apply(pic, proc, pic_reverse(pic, arg));
-  } while (1);
+  pic_assert_type(pic, list, list);
+
+  pic_for_each (val, list, it) {
+    pic_apply1(pic, proc, val);
+  }
 
   return pic_undef_value();
 }

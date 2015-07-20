@@ -1,5 +1,7 @@
 (define-library (scheme base)
-  (import (picrin base)
+  (import (rename (picrin base)
+                  (map map')
+                  (for-each for-each'))
           (only (picrin math)
                 abs
                 expt
@@ -15,6 +17,32 @@
           (picrin macro)
           (picrin string)
           (scheme file))
+
+  ;; fix up map/for-eachs
+
+  (define (cars/cdrs lists)
+    (let loop ((lists lists) (cars '()) (cdrs '()))
+      (if (null? lists)
+          (cons (reverse cars) (reverse cdrs))
+          (if (null? (car lists))
+              #f
+              (loop (cdr lists) (cons (caar lists) cars) (cons (cdar lists) cdrs))))))
+
+  (define (zip . lists)
+    (let ((tmp (cars/cdrs lists)))
+      (if tmp
+          (cons (car tmp) (apply zip (cdr tmp)))
+          '())))
+
+  (define (map proc list . lists)
+    (if (null? lists)
+        (map' proc list)                ; fast path
+        (map' (lambda (args) (apply proc args)) (apply zip (cons list lists)))))
+
+  (define (for-each proc list . lists)
+    (if (null? lists)
+        (for-each' proc list)           ; fast path
+        (for-each' (lambda (args) (apply proc args)) (apply zip (cons list lists)))))
 
   ;; 4.1.2. Literal expressions
 

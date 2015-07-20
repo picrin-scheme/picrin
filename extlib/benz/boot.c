@@ -601,8 +601,14 @@ my $src = <<'EOL';
                    (map (lambda (var) (assq var alist)) (cddr spec))))
                 ((rename)
                  (let ((alist (collect (cadr spec)))
-                       (renames (map (lambda (x) `((car x) . (cadr x))) (cddr spec))))
-                   (map (lambda (s) (or (assq (car s) renames) s)) alist)))
+                       (renames (map (lambda (x) `(,(car x) . ,(cadr x))) (cddr spec))))
+                   (letrec
+                       ((rename (lambda (s)
+                                  (let ((x (assq (car s) renames)))
+                                    (if x
+                                        `(,(cdr x) . ,(cdr s))
+                                        s)))))
+                     (map rename alist))))
                 ((prefix)
                  (let ((alist (collect (cadr spec))))
                    (map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))
@@ -974,34 +980,37 @@ const char pic_boot[][80] = {
 "               (let ((alist (collect (cadr spec))))\n                   (map (lam",
 "bda (var) (assq var alist)) (cddr spec))))\n                ((rename)\n           ",
 "      (let ((alist (collect (cadr spec)))\n                       (renames (map (",
-"lambda (x) `((car x) . (cadr x))) (cddr spec))))\n                   (map (lambda",
-" (s) (or (assq (car s) renames) s)) alist)))\n                ((prefix)\n         ",
-"        (let ((alist (collect (cadr spec))))\n                   (map (lambda (s)",
-" (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))\n                ((except",
-")\n                 (let ((alist (collect (cadr spec))))\n                   (let ",
-"loop ((alist alist))\n                     (if (null? alist)\n                    ",
-"     '()\n                         (if (memq (caar alist) (cddr spec))\n          ",
-"                   (loop (cdr alist))\n                             (cons (car al",
-"ist) (loop (cdr alist))))))))\n                (else\n                 (let ((lib ",
-"(or (find-library spec) (error \"library not found\" spec))))\n                   (",
-"map (lambda (x) (cons x x)) (library-exports lib))))))))\n        (letrec\n       ",
-"     ((import\n               (lambda (spec)\n                 (let ((lib (extract",
-" spec))\n                       (alist (collect spec)))\n                   (for-e",
-"ach\n                    (lambda (slot)\n                      (library-import lib",
-" (cdr slot) (car slot)))\n                    alist)))))\n          (for-each impo",
-"rt (cdr form)))))))\n\n(define-macro export\n  (lambda (form _)\n    (letrec\n       ",
-" ((collect\n          (lambda (spec)\n            (cond\n             ((symbol? spe",
-"c)\n              `(,spec . ,spec))\n             ((and (list? spec) (= (length sp",
-"ec) 3) (eq? (car spec) 'rename))\n              `(,(list-ref spec 1) . ,(list-ref",
-" spec 2)))\n             (else\n              (error \"malformed export\")))))\n     ",
-"    (export\n           (lambda (spec)\n             (let ((slot (collect spec)))\n",
-"               (library-export (car slot) (cdr slot))))))\n      (for-each export",
-" (cdr form)))))\n\n(export define lambda quote set! if begin define-macro\n        ",
-"let let* letrec letrec*\n        let-values let*-values define-values\n        qua",
-"siquote unquote unquote-splicing\n        and or\n        cond case else =>\n      ",
-"  do when unless\n        parameterize\n        define-syntax\n        syntax-quote",
-" syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n        let-sy",
-"ntax letrec-syntax\n        syntax-error)\n\n\n",
+"lambda (x) `(,(car x) . ,(cadr x))) (cddr spec))))\n                   (letrec\n  ",
+"                     ((rename (lambda (s)\n                                  (let",
+" ((x (assq (car s) renames)))\n                                    (if x\n        ",
+"                                `(,(cdr x) . ,(cdr s))\n                         ",
+"               s)))))\n                     (map rename alist))))\n               ",
+" ((prefix)\n                 (let ((alist (collect (cadr spec))))\n               ",
+"    (map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))\n    ",
+"            ((except)\n                 (let ((alist (collect (cadr spec))))\n    ",
+"               (let loop ((alist alist))\n                     (if (null? alist)\n",
+"                         '()\n                         (if (memq (caar alist) (cd",
+"dr spec))\n                             (loop (cdr alist))\n                      ",
+"       (cons (car alist) (loop (cdr alist))))))))\n                (else\n        ",
+"         (let ((lib (or (find-library spec) (error \"library not found\" spec))))\n",
+"                   (map (lambda (x) (cons x x)) (library-exports lib))))))))\n   ",
+"     (letrec\n            ((import\n               (lambda (spec)\n                ",
+" (let ((lib (extract spec))\n                       (alist (collect spec)))\n     ",
+"              (for-each\n                    (lambda (slot)\n                     ",
+" (library-import lib (cdr slot) (car slot)))\n                    alist)))))\n    ",
+"      (for-each import (cdr form)))))))\n\n(define-macro export\n  (lambda (form _)",
+"\n    (letrec\n        ((collect\n          (lambda (spec)\n            (cond\n      ",
+"       ((symbol? spec)\n              `(,spec . ,spec))\n             ((and (list?",
+" spec) (= (length spec) 3) (eq? (car spec) 'rename))\n              `(,(list-ref ",
+"spec 1) . ,(list-ref spec 2)))\n             (else\n              (error \"malforme",
+"d export\")))))\n         (export\n           (lambda (spec)\n             (let ((sl",
+"ot (collect spec)))\n               (library-export (car slot) (cdr slot))))))\n  ",
+"    (for-each export (cdr form)))))\n\n(export define lambda quote set! if begin d",
+"efine-macro\n        let let* letrec letrec*\n        let-values let*-values defin",
+"e-values\n        quasiquote unquote unquote-splicing\n        and or\n        cond",
+" case else =>\n        do when unless\n        parameterize\n        define-syntax\n",
+"        syntax-quote syntax-unquote\n        syntax-quasiquote syntax-unquote-spl",
+"icing\n        let-syntax letrec-syntax\n        syntax-error)\n\n\n",
 "",
 ""
 };
