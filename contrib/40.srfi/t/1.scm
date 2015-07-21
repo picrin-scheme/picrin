@@ -262,23 +262,23 @@
 (test #t (lset= eq?))
 (test #t (lset= eq? '(a)))
 
-(test '(u o i a b c d c e) (lset-adjoin eq? '(a b c d c e) 'a 'e 'i 'o 'u))
+(test '(u o i a b c d c e) (lset-adjoin eq? '(a b c d c e) 'a 'e 'i 'o 'u) lset=)
 
-(test '(u o i a b c d e) (lset-union eq? '(a b c d e) '(a e i o u)))
-(test '(x a a c) (lset-union eq? '(a a c) '(x a x)))
-(test '() (lset-union eq?))
-(test '(a b c) (lset-union eq? '(a b c)))
+(test '(u o i a b c d e) (lset-union eq? '(a b c d e) '(a e i o u)) lset=)
+(test '(x a a c) (lset-union eq? '(a a c) '(x a x)) lset=)
+(test '() (lset-union eq?) lset=)
+(test '(a b c) (lset-union eq? '(a b c)) lset=)
 
-(test '(a e) (lset-intersection eq? '(a b c d e) '(a e i o u)))
-(test '(a x a) (lset-intersection eq? '(a x y a) '(x a x z)))
-(test '(a b c) (lset-intersection eq? '(a b c)))
+(test '(a e) (lset-intersection eq? '(a b c d e) '(a e i o u)) lset=)
+(test '(a x a) (lset-intersection eq? '(a x y a) '(x a x z)) lset=)
+(test '(a b c) (lset-intersection eq? '(a b c)) lset=)
 
-(test '(b c d) (lset-difference eq? '(a b c d e) '(a e i o u)))
-(test '(a b c) (lset-difference eq? '(a b c)))
+(test '(b c d) (lset-difference eq? '(a b c d e) '(a e i o u)) lset=)
+(test '(a b c) (lset-difference eq? '(a b c)) lset=)
 
-(test '(d c b i o u) (lset-xor eq? '(a b c d e) '(a e i o u)))
-(test '() (lset-xor eq?))
-(test '(a b c d e) (lset-xor eq? '(a b c d e)))
+(test '(d c b i o u) (lset-xor eq? '(a b c d e) '(a e i o u)) lset=)
+(test '() (lset-xor eq?) lset=)
+(test '(a b c d e) (lset-xor eq? '(a b c d e)) lset=)
 
 ; TODO: Test lset-diff+intersection
 ; TODO: Test lset-union!
