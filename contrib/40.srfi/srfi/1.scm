@@ -42,7 +42,7 @@
             (rec (- count 1)
                  (cons (+ start (* count step)) acc))))))
 
-  (export cons list xcons make-list list-tabulate list-copy circular-list iota)
+  (export cons list xcons cons* make-list list-tabulate list-copy circular-list iota)
 
   ;; # Predicates
   ;; pair? null?
