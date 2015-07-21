@@ -36,10 +36,12 @@
   (define-syntax test
     (syntax-rules ()
       ((test expected expr)
+       (test expected expr equal?))
+      ((test expected expr =)
        (let ((res expr))
          (display "case ")
          (write counter)
-         (if (equal? res expected)
+         (if (= res expected)
            (begin
              (display "[0;32m PASS: ")
              (write 'expr)
