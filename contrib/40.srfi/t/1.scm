@@ -40,8 +40,8 @@
 
 (test '(a b c) (xcons '(b c) 'a))
 
-; (test '(1 2 3 . 4) (cons* 1 2 3 4))
-; (test 1 (cons* 1))
+(test '(1 2 3 . 4) (cons* 1 2 3 4))
+(test 1 (cons* 1))
 
 (test '(c c c c) (make-list 4 'c))
 
