@@ -295,6 +295,68 @@ pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
   return v;
 }
 
+static pic_value
+optimize_beta(pic_state *pic, pic_value expr)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value functor, formals, args, tmp, val, it, defs;
+
+  if (! pic_list_p(expr))
+    return expr;
+
+  if (pic_nil_p(expr))
+    return expr;
+
+  if (pic_sym_p(pic_list_ref(pic, expr, 0))) {
+    pic_sym *sym = pic_sym_ptr(pic_list_ref(pic, expr, 0));
+
+    if (sym == pic->uQUOTE) {
+      return expr;
+    } else if (sym == pic->uLAMBDA) {
+      return pic_list3(pic, pic_list_ref(pic, expr, 0), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
+    }
+  }
+
+  tmp = pic_nil_value();
+  pic_for_each (val, expr, it) {
+    pic_push(pic, optimize_beta(pic, val), tmp);
+  }
+  expr = pic_reverse(pic, tmp);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, expr);
+
+  functor = pic_list_ref(pic, expr, 0);
+  if (pic_pair_p(functor) && pic_eq_p(pic_car(pic, functor), pic_obj_value(pic->uLAMBDA))) {
+    formals = pic_list_ref(pic, functor, 1);
+    if (! pic_list_p(formals))
+      goto exit;              /* TODO: support ((lambda args x) 1 2) */
+    args = pic_cdr(pic, expr);
+    if (pic_length(pic, formals) != pic_length(pic, args))
+      goto exit;
+    defs = pic_nil_value();
+    pic_for_each (val, args, it) {
+      pic_push(pic, pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_car(pic, formals), val), defs);
+      formals = pic_cdr(pic, formals);
+    }
+    expr = pic_list_ref(pic, functor, 2);
+    pic_for_each (val, defs, it) {
+      expr = pic_list3(pic, pic_obj_value(pic->uBEGIN), val, expr);
+    }
+  }
+ exit:
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, expr);
+  return expr;
+}
+
+pic_value
+pic_optimize(pic_state *pic, pic_value expr)
+{
+  return optimize_beta(pic, expr);
+}
+
 KHASH_DECLARE(a, pic_sym *, int)
 KHASH_DEFINE2(a, pic_sym *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 
@@ -1048,6 +1110,17 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   obj = pic_expand(pic, obj, env);
 #if DEBUG
   fprintf(stdout, "## expand completed\n");
+  pic_write(pic, obj);
+  fprintf(stdout, "\n");
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
+#endif
+
+  SAVE(pic, ai, obj);
+
+  /* optimize */
+  obj = pic_optimize(pic, obj);
+#if DEBUG
+  fprintf(stdout, "## optimize completed\n");
   pic_write(pic, obj);
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
