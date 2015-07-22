@@ -3,8 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/record.h"
-#include "picrin/dict.h"
 
 struct pic_record *
 pic_make_record(pic_state *pic, pic_value rectype)
@@ -17,7 +15,7 @@ pic_make_record(pic_state *pic, pic_value rectype)
   rec = (struct pic_record *)pic_obj_alloc(pic, sizeof(struct pic_record), PIC_TT_RECORD);
   rec->data = data;
 
-  pic_record_set(pic, rec, pic_intern_cstr(pic, "@@type"), rectype);
+  pic_record_set(pic, rec, pic_intern(pic, "@@type"), rectype);
 
   return rec;
 }
@@ -25,14 +23,14 @@ pic_make_record(pic_state *pic, pic_value rectype)
 pic_value
 pic_record_type(pic_state *pic, struct pic_record *rec)
 {
-  return pic_record_ref(pic, rec, pic_intern_cstr(pic, "@@type"));
+  return pic_record_ref(pic, rec, pic_intern(pic, "@@type"));
 }
 
 pic_value
 pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym *slot)
 {
   if (! pic_dict_has(pic, rec->data, slot)) {
-    pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_obj_value(slot), rec);
+    pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_obj_value(slot), pic_obj_value(rec));
   }
   return pic_dict_ref(pic, rec->data, slot);
 }
@@ -98,7 +96,7 @@ pic_record_record_set(pic_state *pic)
 
   pic_record_set(pic, rec, slot, val);
 
-  return pic_none_value();
+  return pic_undef_value();
 }
 
 void

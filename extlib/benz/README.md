@@ -19,7 +19,7 @@ main(int argc, char *argv[])
   pic_state *pic;
   pic_value expr;
 
-  pic = pic_open(argc, argv, NULL);
+  pic = pic_open(pic_default_allocf, NULL);
 
   while (1) {
     printf("> ");
@@ -61,7 +61,7 @@ pic_value factorial(pic_state *pic) {
 int
 main(int argc, char *argv[])
 {
-  pic_state *pic = pic_open(argc, argv, NULL);
+  pic_state *pic = pic_open(pic_default_allocf, NULL);
 
   pic_defun(pic, "fact", factorial); /* define fact procedure */
 

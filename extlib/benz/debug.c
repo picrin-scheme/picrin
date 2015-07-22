@@ -3,9 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/string.h"
-#include "picrin/error.h"
-#include "picrin/proc.h"
 
 pic_str *
 pic_get_backtrace(pic_state *pic)
@@ -19,13 +16,13 @@ pic_get_backtrace(pic_state *pic)
   for (ci = pic->ci; ci != pic->cibase; --ci) {
     struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
 
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, "  at "));
-    trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, pic_symbol_name(pic, pic_proc_name(proc))));
+    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "  at "));
+    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "(anonymous lambda)"));
 
     if (pic_proc_func_p(proc)) {
-      trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));
+      trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));
     } else if (pic_proc_irep_p(proc)) {
-      trace = pic_strcat(pic, trace, pic_make_str_cstr(pic, " (unknown location)\n")); /* TODO */
+      trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (unknown location)\n")); /* TODO */
     }
   }
 
@@ -36,34 +33,31 @@ pic_get_backtrace(pic_state *pic)
 }
 
 void
-pic_print_backtrace(pic_state *pic)
+pic_print_backtrace(pic_state *pic, xFILE *file)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_str *trace;
-
-  assert(! pic_undef_p(pic->err));
+  assert(! pic_invalid_p(pic->err));
 
   if (! pic_error_p(pic->err)) {
-    trace = pic_format(pic, "raised: ~s", pic->err);
+    xfprintf(pic, file, "raise: ");
+    pic_fwrite(pic, pic->err, file);
   } else {
     struct pic_error *e;
+    pic_value elem, it;
 
     e = pic_error_ptr(pic->err);
-    if (e->type != pic_intern_cstr(pic, "")) {
-      trace = pic_format(pic, "~s ", pic_obj_value(e->type));
-    } else {
-      trace = pic_make_str(pic, NULL, 0);
+    if (e->type != pic_intern(pic, "")) {
+      pic_fwrite(pic, pic_obj_value(e->type), file);
+      xfprintf(pic, file, " ");
     }
-    trace = pic_strcat(pic, trace, pic_format(pic, "error: ~s", pic_obj_value(e->msg)));
+    xfprintf(pic, file, "error: ");
+    pic_fwrite(pic, pic_obj_value(e->msg), file);
 
-    /* TODO: print error irritants */
+    pic_for_each (elem, e->irrs, it) { /* print error irritants */
+      xfprintf(pic, file, " ");
+      pic_fwrite(pic, elem, file);
+    }
+    xfprintf(pic, file, "\n");
 
-    trace = pic_strcat(pic, trace, pic_make_str(pic, "\n", 1));
-    trace = pic_strcat(pic, trace, e->stack);
+    xfputs(pic, pic_str_cstr(pic, e->stack), file);
   }
-
-  /* print! */
-  xfprintf(xstderr, "%s", pic_str_cstr(trace));
-
-  pic_gc_arena_restore(pic, ai);
 }

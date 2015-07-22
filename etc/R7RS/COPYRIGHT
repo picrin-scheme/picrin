@@ -1,0 +1,501 @@
+Copyright 1991, 1994, 1998 William D Clinger
+Copyright 1998             Lars T Hansen
+Copyright 1984 - 1993      Lightship Software, Incorporated
+
+Permission to copy this software, in whole or in part, to use this
+software for any lawful purpose, and to redistribute this software
+is granted subject to the following restriction:  Any publication
+or redistribution of this software, whether on its own or
+incorporated into other software, must bear the above copyright
+notices and the following legend:
+
+    The Twobit compiler and the Larceny runtime system were
+    developed by William Clinger and Lars Hansen with the
+    assistance of Lightship Software and the College of Computer
+    Science of Northeastern University.  This acknowledges that
+    Clinger et al remain the sole copyright holders to Twobit
+    and Larceny and that no rights pursuant to that status are
+    waived or conveyed.
+
+Twobit and Larceny are provided as is.  The user specifically
+acknowledges that Northeastern University, William Clinger, Lars
+Hansen, and Lightship Software have not made any representations
+or warranty with regard to performance of Twobit and Larceny,
+their merchantability, or fitness for a particular purpose.  Users
+further acknowledge that they have had the opportunity to inspect
+Twobit and Larceny and will hold harmless Northeastern University,
+William Clinger, Lars Hansen, and Lightship Software from any cost,
+liability, or expense arising from, or in any way related to the
+use of this software.
+
+Bug reports, comments, and suggestions can be sent to the authors
+of Twobit and Larceny at larceny@ccs.neu.edu.
+
+----------------------------------------------------------------
+
+The implementors of Larceny include:
+
+    William D Clinger
+    Lars T Hansen
+    Lightship Software, Incorporated
+    Felix S Klock II
+    Jesse Tov
+
+Files that contain Twobit and/or Larceny source code and are
+copyrighted by these people are governed by Larceny's main
+permission notice above.
+
+----------------------------------------------------------------
+
+In addition to Twobit and Larceny's main copyright and permission
+notices above, the following copyright and permission notices
+pertain to software that is part of Twobit and/or Larceny or
+may be distributed together with Twobit and Larceny.
+
+In source distributions of Larceny, the following copyright and
+permission notices also appear within the copyrighted code.  We
+reproduce them here for reference, and to ensure that they are
+distributed with binary distributions of Larceny.
+
+We emphasize that all copyrighted software used in Twobit and
+Larceny is used by the kind permission of the copyright holders.
+
+----------------------------------------------------------------
+
+lib/Base/pp.sch and lib/Standard/pretty.sch include the following:
+
+; Copyright (c) 1991, Marc Feeley.
+; 
+; Permission to copy this software, in whole or in part, to use this
+; software for any lawful purpose, and to redistribute this software
+; is hereby granted.
+
+----------------------------------------------------------------
+
+lib/Base/shivers-syntax.sch includes the following:
+
+;;; Copyright (c) 1993-1999 Richard Kelsey and Jonathan Rees
+;;; Copyright (c) 1994-1999 by Olin Shivers and Brian D. Carlstrom.
+;;; All rights reserved.
+;;; 
+;;; Redistribution and use in source and binary forms, with or without
+;;; modification, are permitted provided that the following conditions
+;;; are met:
+;;; 1. Redistributions of source code must retain the above copyright
+;;;    notice, this list of conditions and the following disclaimer.
+;;; 2. Redistributions in binary form must reproduce the above copyright
+;;;    notice, this list of conditions and the following disclaimer in the
+;;;    documentation and/or other materials provided with the distribution.
+;;; 3. The name of the authors may not be used to endorse or promote products
+;;;    derived from this software without specific prior written permission.
+;;; 
+;;; THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+;;; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+;;; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+;;; IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+;;; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+;;; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+;;; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+;;; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+;;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+;;; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+----------------------------------------------------------------
+
+lib/MzScheme/class.sch,
+lib/MzScheme/generic.sch, and
+lib/MzScheme/instance.sch
+include the following:
+
+;;; Copyright (c) 1992 Xerox Corporation.  All Rights Reserved.
+;;;
+;;; Use, reproduction, and preparation of derivative works are permitted.  Any
+;;; copy of this software or of any derivative work must include the above
+;;; copyright notice of Xerox Corporation, this paragraph and the one after it.
+;;; Any distribution of this software or derivative works must comply with all
+;;; applicable United States export control laws.
+;;; This software is made available AS IS, and XEROX CORPORATION DISCLAIMS ALL
+;;; WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED
+;;; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, AND
+;;; NOTWITHSTANDING ANY OTHER PROVISION CONTAINED HEREIN, ANY LIABILITY FOR
+;;; DAMAGES RESULTING FROM THE SOFTWARE OR ITS USE IS EXPRESSLY DISCLAIMED,
+;;; WHETHER ARISING IN CONTRACT, TORT (INCLUDING NEGLIGENCE) OR STRICT
+;;; LIABILITY, EVEN IF XEROX CORPORATION IS ADVISED OF THE POSSIBILITY OF SUCH
+;;; DAMAGES.
+
+----------------------------------------------------------------
+
+lib/MzScheme/compress.sch,
+lib/MzScheme/identifier,
+lib/MzScheme/simple-macros/simple-macros.sch, and
+src/Lib/Common/SimpleMacros/simple-macros.scm
+include the following:
+
+ Simple Hygienic Macros and Simple Modules:
+
+   Copyright (c) 2005 André van Tonder
+
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files (the ``Software''),
+   to deal in the Software without restriction, including without limitation
+   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+   and/or sell copies of the Software, and to permit persons to whom the
+   Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+----------------------------------------------------------------
+
+lib/MzScheme/simple-macros/simple-syntax-case.sch includes the
+following:
+
+;; Copyright (c) 1993-2004 Richard Kelsey and Jonathan Rees
+;; All rights reserved.
+;;
+;; Redistribution and use in source and binary forms, with or without
+;; modification, are permitted provided that the following conditions
+;; are met:
+;; 1. Redistributions of source code must retain the above copyright
+;;    notice, this list of conditions and the following disclaimer.
+;; 2. Redistributions in binary form must reproduce the above copyright
+;;    notice, this list of conditions and the following disclaimer in the
+;;    documentation and/or other materials provided with the distribution.
+;; 3. The name of the authors may not be used to endorse or promote products
+;;    derived from this software without specific prior written permission.
+;;
+;; THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+;; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+;; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+;; IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+;; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+;; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+;; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+;; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+;; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+----------------------------------------------------------------
+
+In lib/R6RS, most files include the following:
+
+;;;   Copyright (c) 2006 Andre van Tonder
+;;;
+;;;   Copyright statement at http://srfi.schemers.org/srfi-process.html
+
+----------------------------------------------------------------
+
+lib/R6RS/r6rs-standard-libraries.sch and src/Compiler/usual.sch
+include the following:
+
+; Copyright (C) Richard Kelsey, Michael Sperber (2002). All Rights Reserved.
+;
+; Permission is hereby granted, free of charge, to any
+; person obtaining a copy of this software and associated
+; documentation files (the "Software"), to deal in the
+; Software without restriction, including without
+; limitation the rights to use, copy, modify, merge,
+; publish, distribute, sublicense, and/or sell copies of
+; the Software, and to permit persons to whom the Software
+; is furnished to do so, subject to the following conditions:
+; 
+; The above copyright notice and this permission notice
+; shall be included in all copies or substantial portions
+; of the Software. 
+
+----------------------------------------------------------------
+
+In lib/SRFI, most files include a variation of the standard SRFI
+copyright notice.  Regardless of the specific wording of copyright
+notices that may appear in that directory, all authors of the
+source code in that directory have agreed to the permission notice
+that is part of the standard SRFI copyright statement, which is
+found in http://srfi.schemers.org/srfi-process.html:
+
+    Copyright (C) AUTHOR (YEAR). All Rights Reserved.
+
+    Permission is hereby granted, free of charge, to any
+    person obtaining a copy of this software and associated
+    documentation files (the "Software"), to deal in the
+    Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute,
+    sublicense, and/or sell copies of the Software, and to permit
+    persons to whom the Software is furnished to do so, subject
+    to the following conditions:
+
+    The above copyright notice and this permission notice shall
+    be included in all copies or substantial portions of the
+    Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+    KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+    WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+    PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+    OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+    OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+----------------------------------------------------------------
+
+lib/SRFI/test/srfi-13-test.sch, which is not used by Twobit or
+Larceny but is distributed with Larceny for the convenience of
+our users, includes both of the following:
+
+;;;; Copyright (C) 2001 Free Software Foundation, Inc.
+;;;;
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2, or (at your option)
+;;;; any later version.
+;;;;
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+;;;;
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this software; see the file COPYING.  If not, write to
+;;;; the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
+;;;; Boston, MA 02111-1307 USA
+
+
+;;   Copyright (c) 2000-2003 Shiro Kawai, All rights reserved.
+;;
+;;   Redistribution and use in source and binary forms, with or without
+;;   modification, are permitted provided that the following conditions
+;;   are met:
+;;
+;;    1. Redistributions of source code must retain the above copyright
+;;       notice, this list of conditions and the following disclaimer.
+;;
+;;    2. Redistributions in binary form must reproduce the above copyright
+;;       notice, this list of conditions and the following disclaimer in the
+;;       documentation and/or other materials provided with the distribution.
+;;
+;;    3. Neither the name of the authors nor the names of its contributors
+;;       may be used to endorse or promote products derived from this
+;;       software without specific prior written permission.
+;;
+;;   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+;;   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+;;   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+;;   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+;;   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+;;   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+;;   TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+;;   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+;;   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+;;   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+;;   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+----------------------------------------------------------------
+
+lib/Standard/array.sch, which is not used by Twobit or Larceny
+but is distributed with Larceny for the convenience of our users,
+includes the following:
+
+; Copyright (C) 1993 Alan Bawden
+;
+; Permission to copy this software, to redistribute it, and to use it
+; for any purpose is granted, subject to the following restrictions and
+; understandings.
+;
+; 1.  Any copy made of this software must include this copyright notice
+; in full.
+;
+; 2.  Users of this software agree to make their best efforts (a) to
+; return to me any improvements or extensions that they make, so that
+; these may be included in future releases; and (b) to inform me of
+; noteworthy uses of this software.
+;
+; 3.  I have made no warrantee or representation that the operation of
+; this software will be error-free, and I am under no obligation to
+; provide any services, by way of maintenance, update, or otherwise.
+;
+; 4.  In conjunction with products arising from the use of this material,
+; there shall be no use of my name in any advertising, promotional, or
+; sales literature without prior written consent in each case.
+
+----------------------------------------------------------------
+
+lib/Standard/md5.sch and src/Asm/Standard-C/md5.sch
+include the following:
+
+;;; Copyright (c) 2002, Jens Axel Søgaard
+;;; 
+;;; Permission to copy this software, in whole or in part, to use this
+;;; software for any lawful purpose, and to redistribute this software
+;;; is hereby granted.
+
+----------------------------------------------------------------
+
+lib/Standard/unify.sch, which is not used by Twobit or Larceny
+but is distributed with Larceny for the convenience of our users,
+includes the following:
+
+; Copyright 1999 Lars T Hansen
+;
+; Permission to use this code for any purpose whatsoever is hereby
+; granted, provided that the above copyright notice and this legend
+; are preserved in any work using this code.
+
+----------------------------------------------------------------
+
+src/Lib/Common/raise.sch includes the following:
+
+; Copyright (C) Richard Kelsey, Michael Sperber (2002). All Rights Reserved.
+;
+; Permission is hereby granted, free of charge, to any
+; person obtaining a copy of this software and associated
+; documentation files (the "Software"), to deal in the
+; Software without restriction, including without
+; limitation the rights to use, copy, modify, merge,
+; publish, distribute, sublicense, and/or sell copies of
+; the Software, and to permit persons to whom the Software
+; is furnished to do so, subject to the following conditions:
+; 
+; The above copyright notice and this permission notice
+; shall be included in all copies or substantial portions
+; of the Software. 
+
+----------------------------------------------------------------
+
+src/Lib/Common/ratnums.sch and src/Lib/Common/rectnums.sch
+include the following:
+
+; Copyright 1992 Rémy Evard.
+;
+; Permission to copy this software, in whole or in part, to use this
+; software for any lawful purpose, and to redistribute this software
+; is granted.
+
+----------------------------------------------------------------
+
+src/Lib/Common/unicode4.sch includes the following:
+
+; Copyright (c) 2006 Michael Sperber
+; All rights reserved.
+; 
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+; 3. The name of the authors may not be used to endorse or promote products
+;    derived from this software without specific prior written permission.
+; 
+; THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+----------------------------------------------------------------
+
+The files in the src/Lib/Sassy directory are used only by the
+IAssassin variety of native Larceny, which runs on Intel x86
+architectures.  Most of the files in that directory are
+copyrighted by Jonathan Kraut and used by IAssassin varieties
+of Larceny under the GNU LESSER GENERAL PUBLIC LICENSE; a typical
+copyright notice reads as follows:
+
+; Copyright (C) 2005 Jonathan Kraut
+
+; This library is free software; you can redistribute it and/or
+; modify it under the terms of the GNU Lesser General Public
+; License as published by the Free Software Foundation; either
+; version 2.1 of the License, or (at your option) any later version.
+
+; This library is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+; Lesser General Public License for more details.
+
+; You should have received a copy of the GNU Lesser General Public
+; License along with this library; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+A copy of the LGPL license is contained within src/Lib/Sassy,
+and our obligations under section 6d of that license are met by
+offering the source code for Larceny on the same web page that
+offers a binary distribution of IAssassin Larceny.  For the
+specific copyright notices on files that are contained within
+the src/Lib/Sassy directory, please view the files in that
+directory or obtain those files from Sassy's main web site:
+http://home.earthlink.net/~krautj/sassy/sassy.html
+
+----------------------------------------------------------------
+
+src/Lib/Sassy/other/srfi-56-pieces.scm includes the following:
+
+;;; Copyright (c) 2004-2005 by Alex Shinn. All rights reserved.
+;;; 
+;;; Permission is hereby granted, free of charge, to any person
+;;; obtaining a copy of this software and associated documentation files
+;;; (the "Software"), to deal in the Software without restriction,
+;;; including without limitation the rights to use, copy, modify, merge,
+;;; publish, distribute, sublicense, and/or sell copies of the Software,
+;;; and to permit persons to whom the Software is furnished to do so,
+;;; subject to the following conditions:
+
+;;; The above copyright notice and this permission notice shall be
+;;; included in all copies or substantial portions of the Software.
+
+;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+;;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;;; NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+;;; BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+;;; ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+;;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;;; SOFTWARE.
+
+----------------------------------------------------------------
+
+src/Lib/Sassy/other/srfi-60-pieces.scm includes the following:
+
+;;; Copyright (C) 1991, 1993, 2001, 2003, 2005 Aubrey Jaffer
+;
+;Permission to copy this software, to modify it, to redistribute it,
+;to distribute modified versions, and to use it for any purpose is
+;granted, subject to the following restrictions and understandings.
+;
+;1.  Any copy made of this software must include this copyright notice
+;in full.
+;
+;2.  I have made no warranty or representation that the operation of
+;this software will be error-free, and I am under no obligation to
+;provide any services, by way of maintenance, update, or otherwise.
+;
+;3.  In conjunction with products arising from the use of this
+;material, there shall be no use of my name in any advertising,
+;promotional, or sales literature without prior written consent in
+;each case.
+
+----------------------------------------------------------------
+
+The test directory contains programs that are not part of Twobit
+or Larceny but are distributed in source form with the Larceny
+source code for the convenience of programmers who need to test
+or to benchmark Larceny.  All of those programs are distributed
+by permission of the copyright holders; for specific copyright
+notices, please consult the files themselves.
+
+----------------------------------------------------------------

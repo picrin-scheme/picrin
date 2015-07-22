@@ -1,0 +1,41 @@
+This directory contains a set of R6RS benchmarks.  Some were
+originally collected by Richard Gabriel, while others were
+collected or written by Marc Feeley and Will Clinger.
+Abdulaziz Ghuloum converted about 50 of these benchmarks to
+R6RS libraries.  R6RS libraries are non-portable by design,
+however, so Clinger rewrote the benchmarks as R6RS top-level
+programs and added a script for running the benchmarks on
+Unix systems.  Clinger also added new benchmarks for R6RS.
+
+Files and directories:
+
+  * bench   : a shell script for running benchmarks
+  * src     : contains R6RS code for the benchmarks
+  * inputs  : contains inputs for the benchmarks
+  * outputs : will hold the outputs of some benchmarks
+
+For succinct instructions on running benchmarks, run the
+bench script without any arguments:
+
+  % ./bench
+
+The bench script creates a /tmp/larcenous directory to hold
+the source code constructed for the benchmarks.
+
+The bench script appends its results to files with names
+like results.Ikarus, results.Larceny, and so forth.
+
+Will
+
+================================================================
+
+NOTE:
+The nbody, trav1, and trav2 benchmarks have been dropped because
+the depend upon a non-portable order of evaluation.  The sumloop
+benchmark has been dropped because it was essentially the same
+as the sum benchmark.  The boyer benchmark has been replaced by
+the nboyer and sboyer benchmarks, which are fundamentally better
+benchmarks, with fewer bugs, and scalable.  The gcold benchmark
+has been dropped temporarily because its initialization phase is
+so long compared to the benchmark phase, and the R6RS provides
+no portable way to time those phases separately.

@@ -1,0 +1,5 @@
+25       ; number of iterations
+100000   ; number of items added to stress the eq? hashtable
+100000   ; number of items added to stress the eqv? hashtable
+102005   ; number of items in table at end of benchmark
+         ; (always 2005 plus number of items added to stress the table)

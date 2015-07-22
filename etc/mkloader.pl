@@ -12,7 +12,6 @@ print <<EOL;
  */
 
 #include "picrin.h"
-#include "picrin/error.h"
 
 EOL
 
@@ -42,7 +41,9 @@ pic_load_piclib(pic_state *pic)
 EOL
 
 foreach my $file (@ARGV) {
-    print "  pic_try {\n";
+    print <<EOL;
+  pic_try {
+EOL
     my $var = &escape_v($file);
     my $basename = basename($file);
     my $dirname = basename(dirname($file));
@@ -51,9 +52,8 @@ foreach my $file (@ARGV) {
   }
   pic_catch {
     /* error! */
-    fputs("fatal error: failure in loading $dirname/$basename\\n", stderr);
-    fputs(pic_errmsg(pic), stderr);
-    abort();
+    xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
+    pic_raise(pic, pic->err);
   }
 EOL
 }
