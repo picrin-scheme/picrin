@@ -298,6 +298,10 @@ pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
 KHASH_DECLARE(a, pic_sym *, int)
 KHASH_DEFINE2(a, pic_sym *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 
+/**
+ * TODO: don't use khash_t, use kvec_t instead
+ */
+
 typedef struct analyze_scope {
   int depth;
   pic_sym *rest;                     /* Nullable */
@@ -456,8 +460,14 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
   }
 
   locals = pic_make_vec(pic, kh_size(&scope->locals));
-  for (it = kh_begin(&scope->locals), j = 0; it < kh_end(&scope->locals); ++it) {
+  j = 0;
+  if (scope->rest != NULL) {
+    locals->data[j++] = pic_obj_value(scope->rest);
+  }
+  for (it = kh_begin(&scope->locals); it < kh_end(&scope->locals); ++it) {
     if (kh_exist(&scope->locals, it)) {
+      if (scope->rest != NULL && kh_key(&scope->locals, it) == scope->rest)
+        continue;
       locals->data[j++] = pic_obj_value(kh_key(&scope->locals, it));
     }
   }
