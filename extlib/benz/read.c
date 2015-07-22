@@ -421,6 +421,25 @@ read_false(pic_state *pic, struct pic_port *port, int c)
   return pic_false_value();
 }
 
+static int
+read_hex_scalar_value(pic_state *pic, struct pic_port *port, int c)
+{
+  /* TODO: Support Unicode scalar value */
+  char hex_buf[3];
+  size_t i, len;
+
+  for (i = 0, len = sizeof(hex_buf); i < len; ++i) {
+    if((char)peek(pic, port) == ';') break;
+
+    if (!isxdigit((hex_buf[i] = (char)next(pic, port))))
+      read_error(pic, "expected a hexadecimal number");
+  }
+  hex_buf[i < sizeof(hex_buf) ? i : sizeof(hex_buf) - 1] = '\0';
+
+  c = strtol(hex_buf, NULL, 16);
+  return c;
+}
+
 static pic_value
 read_char(pic_state *pic, struct pic_port *port, int c)
 {
@@ -447,6 +466,7 @@ read_char(pic_state *pic, struct pic_port *port, int c)
     case 'r': c = '\r'; if (! expect(pic, port, "eturn")) goto fail; break;
     case 's': c = ' '; if (! expect(pic, port, "pace")) goto fail; break;
     case 't': c = '\t'; if (! expect(pic, port, "ab")) goto fail; break;
+    case 'x': c = read_hex_scalar_value(pic, port, c); break;
     }
   }
 
@@ -477,6 +497,11 @@ read_string(pic_state *pic, struct pic_port *port, int c)
       case 't': c = '\t'; break;
       case 'n': c = '\n'; break;
       case 'r': c = '\r'; break;
+      case 'x':
+        c = read_hex_scalar_value(pic, port, c);
+        if (next(pic, port) != ';')
+          read_error(pic, "expected ';'");
+        break;
       }
     }
     buf[cnt++] = (char)c;
@@ -497,9 +522,6 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
   char *buf;
   size_t size, cnt;
   pic_sym *sym;
-  /* Currently supports only ascii chars */
-  char HEX_BUF[3];
-  size_t i = 0;
 
   size = 256;
   buf = pic_malloc(pic, size);
@@ -513,12 +535,9 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
       case 'n': c = '\n'; break;
       case 'r': c = '\r'; break;
       case 'x':
-        i = 0;
-        while ((HEX_BUF[i++] = (char)next(pic, port)) != ';') {
-          if (i >= sizeof HEX_BUF)
-            read_error(pic, "expected ';'");
-        }
-        c = (char)strtol(HEX_BUF, NULL, 16);
+        c = read_hex_scalar_value(pic, port, c);
+        if (next(pic, port) != ';')
+          read_error(pic, "expected ';'");
         break;
       }
     }
