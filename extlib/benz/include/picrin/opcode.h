@@ -60,7 +60,6 @@ enum pic_opcode {
 PIC_INLINE void
 pic_dump_code(pic_code c)
 {
-  printf("[%2d] ", c.insn);
   switch (c.insn) {
   case OP_NOP:
     puts("OP_NOP");
@@ -187,7 +186,7 @@ pic_dump_irep(struct pic_irep *irep)
   printf("## irep %p\n", (void *)irep);
   printf("[clen = %zd, argc = %d, localc = %d, capturec = %d]\n", irep->clen, irep->argc, irep->localc, irep->capturec);
   for (i = 0; i < irep->clen; ++i) {
-    printf("%02x ", i);
+    printf("%02x: ", i);
     pic_dump_code(irep->code[i]);
   }
 
