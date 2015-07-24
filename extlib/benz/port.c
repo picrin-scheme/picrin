@@ -276,7 +276,7 @@ pic_open_input_string(pic_state *pic, const char *str)
 {
   struct pic_port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, str, strlen(str));
   port->flags = PIC_PORT_IN | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
@@ -288,7 +288,7 @@ pic_open_output_string(pic_state *pic)
 {
   struct pic_port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
@@ -521,7 +521,7 @@ pic_port_open_input_blob(pic_state *pic)
 
   pic_get_args(pic, "b", &blob);
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, (const char *)blob->data, blob->len);
   port->flags = PIC_PORT_IN | PIC_PORT_BINARY | PIC_PORT_OPEN;
 
@@ -535,7 +535,7 @@ pic_port_open_output_bytevector(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_BINARY | PIC_PORT_OPEN;
 

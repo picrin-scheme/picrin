@@ -429,7 +429,7 @@ read_char(pic_state *pic, struct pic_port *port, int c)
   if (! isdelim(peek(pic, port))) {
     switch (c) {
     default: read_error(pic, "unexpected character after char literal");
-    case 'a': c = '\a'; if (! expect(pic, port, "lerm")) goto fail; break;
+    case 'a': c = '\a'; if (! expect(pic, port, "larm")) goto fail; break;
     case 'b': c = '\b'; if (! expect(pic, port, "ackspace")) goto fail; break;
     case 'd': c = 0x7F; if (! expect(pic, port, "elete")) goto fail; break;
     case 'e': c = 0x1B; if (! expect(pic, port, "scape")) goto fail; break;
