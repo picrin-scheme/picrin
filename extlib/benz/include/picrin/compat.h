@@ -23,6 +23,20 @@ extern "C" {
 # define offsetof(s,m) ((size_t)&(((s *)NULL)->m))
 #endif
 
+#if __STDC_VERSION__ >= 199901L
+# include <stdint.h>
+#else
+# if INT_MAX > 2147483640L      /* borrowed from luaconf.h */
+typedef int int32_t;
+typedef unsigned int uint32_t;
+# elif LONG_MAX > 2147483640L
+typedef long int32_t;
+typedef unsigned long uint32_t;
+# else
+#  error you must define int32_t and uint32_t
+# endif
+#endif
+
 #if __STDC_VERSION__ >= 201112L
 # include <stdnoreturn.h>
 # define PIC_NORETURN noreturn
