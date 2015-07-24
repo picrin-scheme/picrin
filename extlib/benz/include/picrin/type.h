@@ -162,8 +162,7 @@ enum pic_tt {
 };
 
 #define PIC_OBJECT_HEADER			\
-  enum pic_tt tt;                               \
-  char gc_mark;
+  enum pic_tt tt;
 
 struct pic_object {
   PIC_OBJECT_HEADER
