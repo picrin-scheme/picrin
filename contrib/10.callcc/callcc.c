@@ -27,8 +27,7 @@ struct pic_fullcont {
   pic_value ptable;
 
   struct pic_object **arena;
-  size_t arena_size;
-  int arena_idx;
+  size_t arena_size, arena_idx;
 
   pic_value results;
 };
@@ -84,7 +83,7 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
   }
 
   /* arena */
-  for (i = 0; i < (size_t)cont->arena_idx; ++i) {
+  for (i = 0; i < cont->arena_idx; ++i) {
     mark(pic, pic_obj_value(cont->arena[i]));
   }
 
