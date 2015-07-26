@@ -41,6 +41,7 @@ union object {
 struct pic_heap {
   union header base, *freep;
   struct heap_page *pages;
+  struct pic_reg *regs;         /* weak map chain */
 };
 
 struct pic_heap *
@@ -55,6 +56,8 @@ pic_heap_open(pic_state *pic)
 
   heap->freep = &heap->base;
   heap->pages = NULL;
+
+  heap->regs = NULL;
 
   return heap;
 }
@@ -400,8 +403,8 @@ gc_mark_object(pic_state *pic, union object *obj)
   case PIC_TT_REG: {
     struct pic_reg *reg = (struct pic_reg *)obj;
 
-    reg->prev = pic->regs;
-    pic->regs = reg;
+    reg->prev = pic->heap->regs;
+    pic->heap->regs = reg;
     break;
   }
   case PIC_TT_CP: {
@@ -439,7 +442,7 @@ gc_mark_phase(pic_state *pic)
   struct pic_proc **xhandler;
   size_t j;
 
-  assert(pic->regs == NULL);
+  assert(pic->heap->regs == NULL);
 
   /* checkpoint */
   if (pic->cp) {
@@ -519,7 +522,7 @@ gc_mark_phase(pic_state *pic)
     struct pic_reg *reg;
 
     j = 0;
-    reg = pic->regs;
+    reg = pic->heap->regs;
 
     while (reg != NULL) {
       h = &reg->hash;
@@ -664,8 +667,8 @@ gc_sweep_phase(pic_state *pic)
   size_t total = 0, inuse = 0;
 
   /* registries */
-  while (pic->regs != NULL) {
-    h = &pic->regs->hash;
+  while (pic->heap->regs != NULL) {
+    h = &pic->heap->regs->hash;
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (! kh_exist(h, it))
         continue;
@@ -674,7 +677,7 @@ gc_sweep_phase(pic_state *pic)
         kh_del(reg, h, it);
       }
     }
-    pic->regs = pic->regs->prev;
+    pic->heap->regs = pic->heap->regs->prev;
   }
 
   /* symbol table */

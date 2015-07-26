@@ -131,7 +131,6 @@ struct pic_state {
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
-  struct pic_reg *regs;
 
   pic_value err;
 
