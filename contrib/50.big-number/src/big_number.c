@@ -324,6 +324,14 @@ bigint_mul(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
   return retbi;
 }
 
+static bool
+bigint_less(struct pic_bigint_t *val1, struct pic_bigint_t *val2) {
+  if (val1->signum != val2->signum) { // signums differ
+    return val2->signum;
+  }
+  return val1->signum ^ bigint_vec_lt(val1->digits, val2->digits);
+}
+
 static struct pic_bigint_t *
 bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
 {
@@ -484,6 +492,19 @@ pic_big_number_bigint_equal_p(pic_state *pic)
 }
 
 static pic_value
+pic_big_number_bigint_less_p(pic_state *pic)
+{
+  pic_value v1, v2;
+  struct pic_bigint_t *bi1, *bi2;
+
+  pic_get_args(pic, "oo", &v1, &v2);
+  bi1 = pic_bigint_data_ptr(v1);
+  bi2 = pic_bigint_data_ptr(v2);
+
+  return pic_bool_value(bigint_less(bi1, bi2));
+}
+
+static pic_value
 pic_big_number_bigint_asl(pic_state *pic)
 {
   pic_value val;
@@ -519,6 +540,7 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "bigint-mul", pic_big_number_bigint_mul);
     pic_defun(pic, "bigint-underlying", pic_big_number_bigint_underlying);
     pic_defun(pic, "bigint-equal?", pic_big_number_bigint_equal_p);
+    pic_defun(pic, "bigint-less?", pic_big_number_bigint_less_p);
     pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
     pic_defun(pic, "bigint->number", pic_big_number_bigint_to_number);
   }

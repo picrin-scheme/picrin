@@ -52,4 +52,13 @@
 (test-random test-mul 5)
 
 
+(test 192 (bigint->number (bigint-asl (make-bigint "12") 4)))
+(test 384 (bigint->number (bigint-asl (make-bigint "3") 7)))
+
+
 (test #(22 10) (bigint-underlying (make-bigint "2582")))
+(test #f (bigint-less? (make-bigint "12") (make-bigint "11")))
+(test #t (bigint-less? (make-bigint "-12") (make-bigint "-11")))
+(test #f (bigint-less? (make-bigint "-0") (make-bigint "0")))
+
+
