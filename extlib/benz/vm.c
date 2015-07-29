@@ -640,10 +640,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_LREF) {
       pic_callinfo *ci = pic->ci;
-      struct pic_irep *irep;
+      struct pic_irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        irep = pic_get_proc(pic)->u.i.irep;
         if (c.u.i >= irep->argc + irep->localc) {
           PUSH(ci->cxt->regs[c.u.i - (ci->regs - ci->fp)]);
           NEXT;
@@ -654,10 +653,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
     CASE(OP_LSET) {
       pic_callinfo *ci = pic->ci;
-      struct pic_irep *irep;
+      struct pic_irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        irep = pic_get_proc(pic)->u.i.irep;
         if (c.u.i >= irep->argc + irep->localc) {
           ci->cxt->regs[c.u.i - (ci->regs - ci->fp)] = POP();
           PUSH(pic_undef_value());
@@ -734,7 +732,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       ci->fp = pic->sp - c.u.i;
       ci->irep = NULL;
       ci->cxt = NULL;
-      if (pic_proc_func_p(pic_proc_ptr(x))) {
+      if (pic_proc_func_p(proc)) {
 
         /* invoke! */
         v = proc->u.f.func(pic);
@@ -776,11 +774,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 	}
 
 	/* prepare cxt */
-        if (pic_proc_irep_p(proc)) {
-          ci->up = proc->u.i.cxt;
-        } else {
-          ci->up = NULL;
-        }
+        ci->up = proc->u.i.cxt;
         ci->regc = irep->capturec;
         ci->regs = ci->fp + irep->argc + irep->localc;
 
