@@ -300,9 +300,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* memory heap */
   pic->heap = pic_heap_open(pic);
 
-  /* registries */
-  pic->regs = NULL;
-
   /* symbol table */
   kh_init(s, &pic->syms);
 
