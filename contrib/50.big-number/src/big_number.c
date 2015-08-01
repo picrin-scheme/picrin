@@ -23,8 +23,11 @@ static const pic_data_type bigint_type = { "bigint", bigint_dtor, NULL };
 #define pic_bigint_p(o) (pic_data_type_p((o), &bigint_type))
 #define pic_bigint_data_ptr(o) ((struct pic_bigint_t *)pic_data_ptr(o)->data)
 
-#define BIG_NUMBER_MAX 255
-
+typedef unsigned bigint_digit;
+typedef unsigned long long bigint_2digits;
+typedef long long bigint_diff;
+#define bigint_shift 8
+#define bigint_digit_max 255ULL // : bigint_2digits
 
 /*
  * Eliminates all leading zeroes.
@@ -78,8 +81,8 @@ bigint_vec_lt(const pic_vec *v1, const pic_vec *v2)
     return v1->len < v2->len;
   }
   for (i = v1->len - 1; i >= 0; --i) {
-    int d1 = pic_int(v1->data[i]);
-    int d2 = pic_int(v2->data[i]);
+    bigint_digit d1 = pic_int(v1->data[i]);
+    bigint_digit d2 = pic_int(v2->data[i]);
     if (d1 != d2) {
       return d1 < d2;
     }
@@ -91,7 +94,8 @@ bigint_vec_lt(const pic_vec *v1, const pic_vec *v2)
 static pic_vec *
 bigint_vec_add(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
 {
-  int carry, msb1, msb2;
+  bigint_2digits carry;
+  bigint_digit msb1, msb2;
   size_t i, len;
   pic_vec *ret;
 
@@ -108,21 +112,21 @@ bigint_vec_add(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
   }
   msb1 = pic_int(v1->data[v1->len - 1]);
   msb2 = pic_int(v2->data[v2->len - 1]);
-  if (msb1 + msb2 >= 255) {
+  if ((bigint_2digits)msb1 + msb2 >= bigint_digit_max) {
     ++len;
   }
   carry = 0;
   ret = pic_make_vec(pic, len);
 
   for (i = 0; i < len; ++i) {
-    int d1 = i >= v1->len ? 0 : pic_int(v1->data[i]);
-    int d2 = i >= v2->len ? 0 : pic_int(v2->data[i]);
+    bigint_digit d1 = i >= v1->len ? 0 : pic_int(v1->data[i]);
+    bigint_digit d2 = i >= v2->len ? 0 : pic_int(v2->data[i]);
     carry += d1 + d2;
     if (i == len - 1) {
       ret->data[i] = pic_int_value(carry);
     } else {
-      ret->data[i] = pic_int_value(carry & 0xff);
-      carry >>= 8;
+      ret->data[i] = pic_int_value(carry & bigint_digit_max);
+      carry >>= bigint_shift;
     }
   }
 
@@ -135,7 +139,7 @@ bigint_vec_add(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
 static pic_vec *
 bigint_vec_sub(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
 {
-  int carry;
+  bigint_diff carry;
   size_t i, len;
   pic_vec *ret;
 
@@ -144,11 +148,12 @@ bigint_vec_sub(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
   ret = pic_make_vec(pic, len);
 
   for (i = 0; i < len; ++i) {
-    int d1 = pic_int(v1->data[i]);
-    int d2 = i >= v2->len ? 0 : pic_int(v2->data[i]);
-    carry += d1 - d2;
-    ret->data[i] = pic_int_value(carry & 0xff);
-    carry >>= 8;
+    bigint_digit d1 = pic_int(v1->data[i]);
+    bigint_digit d2 = i >= v2->len ? 0 : pic_int(v2->data[i]);
+    carry += d1;
+    carry -= d2;
+    ret->data[i] = pic_int_value(carry & bigint_digit_max);
+    carry >>= bigint_shift;
   }
 
   return bigint_vec_compact(pic, ret);
@@ -172,10 +177,10 @@ bigint_vec_mul(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
   ret = pic_make_vec(pic, 0);
 
   for (i = 0; i < len1; ++i) {
-    int d1 = pic_int(v1->data[i]);
-    for (j = 0; j < 8; ++j) {
+    bigint_digit d1 = pic_int(v1->data[i]);
+    for (j = 0; j < bigint_shift; ++j) {
       if (d1 & (1 << j)) {
-	ret = bigint_vec_add(pic, ret, bigint_vec_asl(pic, v2, i * 8 + j));
+	ret = bigint_vec_add(pic, ret, bigint_vec_asl(pic, v2, i * bigint_shift + j));
       }
     }
   }
@@ -187,11 +192,12 @@ static pic_vec *
 bigint_vec_asl(pic_state *pic, const pic_vec *val, int sh)
 {
   pic_vec *ret;
-  int bitsh, bytesh, carry;
+  int bitsh, bytesh;
+  bigint_2digits carry;
   int i, len;
 
-  bitsh = sh % 8;
-  bytesh = sh / 8;
+  bitsh = sh % bigint_shift;
+  bytesh = sh / bigint_shift;
   carry = 0;
 
   len = val->len;
@@ -200,9 +206,9 @@ bigint_vec_asl(pic_state *pic, const pic_vec *val, int sh)
     ret->data[i] = pic_int_value(0);
   }
   for (i = 0; i < len; ++i) {
-    carry |= pic_int(val->data[i]) << bitsh;
-    ret->data[i + bytesh] = pic_int_value(carry & 0xff);
-    carry >>= 8;
+    carry |= (bigint_2digits) pic_int(val->data[i]) << bitsh;
+    ret->data[i + bytesh] = pic_int_value(carry & bigint_digit_max);
+    carry >>= bigint_shift;
   }
   ret->data[bytesh + len] = pic_int_value(carry);
 
@@ -217,7 +223,8 @@ static struct pic_bigint_t *
 bigint_init_int(pic_state *pic, int value)
 {
   int i;
-  pic_vec *bn = pic_make_vec(pic, 4);
+  int s = 32 / bigint_shift; // if bigint_shift == 8, s == 4
+  pic_vec *bn = pic_make_vec(pic, s);
   struct pic_bigint_t *bi;
 
   bi = pic_malloc(pic, sizeof(struct pic_bigint_t));
@@ -226,8 +233,8 @@ bigint_init_int(pic_state *pic, int value)
     value = -value;
   }
 
-  for (i = 0; i < 4; ++i) {
-    bn->data[i] = pic_int_value((value >> (8 * i)) & 0xff);
+  for (i = 0; i < s; ++i) {
+    bn->data[i] = pic_int_value((value >> (bigint_shift * i)) & bigint_digit_max);
   }
   bi->digits = bigint_vec_compact(pic, bn);
 
@@ -336,35 +343,17 @@ static struct pic_bigint_t *
 bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
 {
   struct pic_bigint_t *retbi;
-  pic_vec *ret;
-  int bitsh, bytesh, carry;
   int i, len;
 
-  ret = pic_malloc(pic, sizeof(struct pic_bigint_t));
   retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
   if (sh <= 0) {
     retbi->signum = val->signum;
     retbi->digits = val->digits; // copy
     return retbi;
   }
-  bitsh = sh % 8;
-  bytesh = sh / 8;
-  carry = 0;
-
-  len = val->digits->len;
-  ret = pic_make_vec(pic, len + bytesh + 1);
-  for (i = 0; i < bytesh; ++i) {
-    ret->data[i] = pic_int_value(0);
-  }
-  for (i = 0; i < len; ++i) {
-    carry |= pic_int(val->digits->data[i]) << bitsh;
-    ret->data[i + bytesh] = pic_int_value(carry & 0xff);
-    carry >>= 8;
-  }
-  ret->data[bytesh + len] = pic_int_value(carry);
 
   retbi->signum = val->signum;
-  retbi->digits = bigint_vec_compact(pic, ret);
+  retbi->digits = bigint_vec_asl(pic, val->digits, sh);
   return retbi;
 }
 
@@ -374,25 +363,26 @@ bigint_to_double(struct pic_bigint_t *bi)
   double ret = 0, p = 1.0;
   int i;
   int len, lim;
+  double base = (bigint_2digits) 1 << bigint_shift;
 
-  if (bi->digits->len >= 129) { // max double value < 2^1024
+  if (bi->digits->len >= 1024 / bigint_shift + 1) { // max double value < 2^1024
     return bi->signum ? -1.0 / 0.0 : 1.0 / 0.0;
   }
 
   len = bi->digits->len;
-  lim = 8;
+  lim = 53 / bigint_shift + 1;
   if (lim > len) {
     lim = len;
   }
   for (i = 0; i < lim; ++i) {
-    ret += pic_int(bi->digits->data[len - i - 1]) * p;
-    p /= 256;
+    ret += (bigint_digit)pic_int(bi->digits->data[len - i - 1]) * p;
+    p /= base;
   }
   if (bi->signum) {
     ret = -ret;
   }
 
-  return ret * pow(256.0, len - 1);
+  return ret * pow(base, len - 1);
 }
 
 

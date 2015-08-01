@@ -52,8 +52,8 @@
 (test-random test-mul 5)
 
 
-(test 192 (bigint->number (bigint-asl (make-bigint "12") 4)))
-(test 384 (bigint->number (bigint-asl (make-bigint "3") 7)))
+(test 192.0 (bigint->number (bigint-asl (make-bigint "12") 4)))
+(test 384.0 (bigint->number (bigint-asl (make-bigint "3") 7)))
 
 
 (test #(22 10) (bigint-underlying (make-bigint "2582")))
