@@ -62,3 +62,10 @@
 (test #f (bigint-less? (make-bigint "-0") (make-bigint "0")))
 
 
+; multiplication
+
+(test #t (bigint-equal? (make-bigint "632756082") (bigint-mul (make-bigint "15267") (make-bigint "41446"))))
+(test #t
+  (bigint-equal? (make-bigint "1271491372671417140039272289555")
+    (bigint-mul (make-bigint "17568913159") (make-bigint "72371657891659178645"))))
+
