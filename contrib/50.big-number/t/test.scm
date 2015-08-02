@@ -83,4 +83,16 @@
     (let ((ff32 (make-bigint "4294967295")))
     (bigint-mul ff32 ff32))))
 
+; factorial
 
+(define (fact-big n)
+  (let loop ((acc (make-bigint 1)) (m n))
+    (if (= m 0) acc
+      (loop (bigint-mul acc m) (- m 1)))))
+
+(test #t
+  (bigint-equal? 3628800 (fact-big 10)))
+
+(test #t
+  (bigint-equal? (make-bigint "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000")
+  (fact-big 100)))
