@@ -374,7 +374,6 @@ static struct pic_bigint_t *
 bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
 {
   struct pic_bigint_t *retbi;
-  int i, len;
 
   retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
   if (sh <= 0) {
@@ -416,6 +415,23 @@ bigint_to_double(struct pic_bigint_t *bi)
   return ret * pow(base, len - 1);
 }
 
+/*
+ * Take a value that contains a bigint or an int, and convert it to a bigint.
+ */
+static struct pic_bigint_t *
+take_bigint_or_int(pic_state *pic, pic_value val)
+{
+  struct pic_bigint_t *bi;
+
+  if (pic_int_p(val)) {
+    int v = pic_int(val);
+    bi = bigint_init_int(pic, v);
+  } else {
+    bi = pic_bigint_data_ptr(val);
+  }
+
+  return bi;
+}
 
 /*
  * make-bigint can take int or string as its argument.
@@ -448,8 +464,9 @@ pic_big_number_bigint_add(pic_state *pic)
   struct pic_bigint_t *bi1, *bi2;
 
   pic_get_args(pic, "oo", &value1, &value2);
-  bi1 = pic_bigint_data_ptr(value1);
-  bi2 = pic_bigint_data_ptr(value2);
+
+  bi1 = take_bigint_or_int(pic, value1);
+  bi2 = take_bigint_or_int(pic, value2);
 
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, bigint_add(pic, bi1, bi2)));
 }
@@ -461,8 +478,8 @@ pic_big_number_bigint_sub(pic_state *pic)
   struct pic_bigint_t *bi1, *bi2, *result;
 
   pic_get_args(pic, "oo", &value1, &value2);
-  bi1 = pic_bigint_data_ptr(value1);
-  bi2 = pic_bigint_data_ptr(value2);
+  bi1 = take_bigint_or_int(pic, value1);
+  bi2 = take_bigint_or_int(pic, value2);
 
   bi2->signum = 1 - bi2->signum;
   result = bigint_add(pic, bi1, bi2);
@@ -478,8 +495,8 @@ pic_big_number_bigint_mul(pic_state *pic)
   struct pic_bigint_t *bi1, *bi2;
 
   pic_get_args(pic, "oo", &value1, &value2);
-  bi1 = pic_bigint_data_ptr(value1);
-  bi2 = pic_bigint_data_ptr(value2);
+  bi1 = take_bigint_or_int(pic, value1);
+  bi2 = take_bigint_or_int(pic, value2);
 
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, bigint_mul(pic, bi1, bi2)));
 }
@@ -494,7 +511,7 @@ pic_big_number_bigint_underlying(pic_state *pic)
   struct pic_bigint_t *bi;
 
   pic_get_args(pic, "o", &value);
-  bi = pic_bigint_data_ptr(value);
+  bi = take_bigint_or_int(pic, value);
 
   return pic_obj_value(bi->digits);
 }
@@ -506,8 +523,8 @@ pic_big_number_bigint_equal_p(pic_state *pic)
   struct pic_bigint_t *bi1, *bi2;
 
   pic_get_args(pic, "oo", &v1, &v2);
-  bi1 = pic_bigint_data_ptr(v1);
-  bi2 = pic_bigint_data_ptr(v2);
+  bi1 = take_bigint_or_int(pic, v1);
+  bi2 = take_bigint_or_int(pic, v2);
 
   return pic_bool_value(bi1->signum == bi2->signum && bigint_vec_eq(bi1->digits, bi2->digits));
 }
@@ -519,8 +536,8 @@ pic_big_number_bigint_less_p(pic_state *pic)
   struct pic_bigint_t *bi1, *bi2;
 
   pic_get_args(pic, "oo", &v1, &v2);
-  bi1 = pic_bigint_data_ptr(v1);
-  bi2 = pic_bigint_data_ptr(v2);
+  bi1 = take_bigint_or_int(pic, v1);
+  bi2 = take_bigint_or_int(pic, v2);
 
   return pic_bool_value(bigint_less(bi1, bi2));
 }
@@ -533,7 +550,7 @@ pic_big_number_bigint_asl(pic_state *pic)
   struct pic_bigint_t *result;
 
   pic_get_args(pic, "oi", &val, &sh);
-  result = bigint_asl(pic, pic_bigint_data_ptr(val), sh);
+  result = bigint_asl(pic, take_bigint_or_int(pic, val), sh);
 
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, result));
 }
@@ -545,7 +562,7 @@ pic_big_number_bigint_to_number(pic_state *pic)
   double result;
 
   pic_get_args(pic, "o", &val);
-  bi = pic_bigint_data_ptr(val);
+  bi = take_bigint_or_int(pic, val);
   result = bigint_to_double(bi);
 
   return pic_float_value(result);
