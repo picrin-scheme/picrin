@@ -502,7 +502,7 @@ pic_big_number_bigint_mul(pic_state *pic)
 }
 
 /*
- * Returns underlying vector of given biginteger.
+ * Returns a copy of underlying vector of given biginteger.
  */
 static pic_value
 pic_big_number_bigint_underlying(pic_state *pic)
@@ -513,7 +513,7 @@ pic_big_number_bigint_underlying(pic_state *pic)
   pic_get_args(pic, "o", &value);
   bi = take_bigint_or_int(pic, value);
 
-  return pic_obj_value(bi->digits);
+  return pic_obj_value(bigint_vec_clone(pic, bi->digits));
 }
 
 static pic_value
