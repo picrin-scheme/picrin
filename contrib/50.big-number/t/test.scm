@@ -46,20 +46,29 @@
     (let ((x (rand-int 32535)) (y (rand-int 32535)))
       (func x y))))
 
-(test-random test-add 5)
-(test-random test-equal 5)
-(test-random test-bigint->number 5)
-(test-random test-mul 5)
+(test-random test-add 3)
+(test-random test-equal 3)
+(test-random test-bigint->number 3)
+(test-random test-mul 3)
 
 
 (test 192.0 (bigint->number (bigint-asl (make-bigint "12") 4)))
 (test 384.0 (bigint->number (bigint-asl (make-bigint "3") 7)))
 
 
-(test #(22 10) (bigint-underlying (make-bigint "2582")))
+(test #(2582) (bigint-underlying (make-bigint "2582")))
 (test #f (bigint-less? (make-bigint "12") (make-bigint "11")))
 (test #t (bigint-less? (make-bigint "-12") (make-bigint "-11")))
 (test #f (bigint-less? (make-bigint "-0") (make-bigint "0")))
+
+
+; addition
+(test #t
+  (bigint-equal? (make-bigint "2600363440")
+    (bigint-add (make-bigint "215127315") (make-bigint "2385236125"))))
+(test (bigint-underlying (make-bigint "6902703869434847155238669212227261023932199886824539729901626742813527050006482753964415641898340566"))
+    (bigint-underlying (bigint-add (make-bigint "6749346968279885792917645501676082665015680331686594141390629938583418409197715730606872803686797073")
+      (make-bigint "153356901154961362321023710551178358916519555137945588510996804230108640808767023357542838211543493"))))
 
 
 ; multiplication
@@ -68,4 +77,10 @@
 (test #t
   (bigint-equal? (make-bigint "1271491372671417140039272289555")
     (bigint-mul (make-bigint "17568913159") (make-bigint "72371657891659178645"))))
+
+(test #t
+  (bigint-equal? (make-bigint "18446744065119617025")
+    (let ((ff32 (make-bigint "4294967295")))
+    (bigint-mul ff32 ff32))))
+
 

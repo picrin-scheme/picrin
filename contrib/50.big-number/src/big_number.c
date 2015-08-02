@@ -26,8 +26,8 @@ static const pic_data_type bigint_type = { "bigint", bigint_dtor, NULL };
 typedef unsigned bigint_digit;
 typedef unsigned long long bigint_2digits;
 typedef long long bigint_diff;
-#define bigint_shift 8
-#define bigint_digit_max 255ULL // : bigint_2digits
+#define bigint_shift 32
+#define bigint_digit_max 0xffffffffULL // : bigint_2digits
 
 /*
  * Eliminates all leading zeroes.
@@ -48,6 +48,19 @@ bigint_vec_compact(pic_state *pic, const pic_vec *v)
   }
   ret = pic_make_vec(pic, l + 1);
   for (i = 0; i <= l; ++i) {
+    ret->data[i] = v->data[i];
+  }
+
+  return ret;
+}
+
+static pic_vec *
+bigint_vec_clone(pic_state *pic, const pic_vec *v) {
+  size_t i;
+  size_t len = v->len;
+  pic_vec *ret = pic_make_vec(pic, len);
+
+  for (i = 0; i < len; ++i) {
     ret->data[i] = v->data[i];
   }
 
@@ -100,10 +113,10 @@ bigint_vec_add(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
   pic_vec *ret;
 
   if (v1->len == 0) {
-    return (pic_vec *)v2;
+    return bigint_vec_clone(pic, v2);
   }
   if (v2->len == 0) {
-    return (pic_vec *)v1;
+    return bigint_vec_clone(pic, v1);
   }
   // v1 > 0, v2 > 0
   len = v1->len;
@@ -121,7 +134,8 @@ bigint_vec_add(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
   for (i = 0; i < len; ++i) {
     bigint_digit d1 = i >= v1->len ? 0 : pic_int(v1->data[i]);
     bigint_digit d2 = i >= v2->len ? 0 : pic_int(v2->data[i]);
-    carry += d1 + d2;
+    carry += d1;
+    carry += d2;
     if (i == len - 1) {
       ret->data[i] = pic_int_value(carry);
     } else {
@@ -171,21 +185,38 @@ bigint_vec_mul(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
 {
   int len1, len2, i, j;
   pic_vec *ret;
+  bigint_digit *tmp;
+  bigint_2digits carry;
 
   len1 = v1->len;
   len2 = v2->len;
-  ret = pic_make_vec(pic, 0);
+  tmp = (bigint_digit *) malloc((len1 + len2) * sizeof(bigint_digit));
+  carry = 0;
+
+  for (i = 0; i < len1 + len2; ++i) {
+    tmp[i] = 0;
+  }
 
   for (i = 0; i < len1; ++i) {
     bigint_digit d1 = pic_int(v1->data[i]);
-    for (j = 0; j < bigint_shift; ++j) {
-      if (d1 & (1 << j)) {
-	ret = bigint_vec_add(pic, ret, bigint_vec_asl(pic, v2, i * bigint_shift + j));
-      }
+    carry = 0;
+    for (j = 0; j < len2; ++j) {
+      carry += tmp[i + j];
+      bigint_digit d2 = pic_int(v2->data[j]);
+      carry += (bigint_2digits) d1 * d2;
+      tmp[i + j] = carry & bigint_digit_max;
+      carry >>= bigint_shift;
     }
+    tmp[i + len2] = carry;
   }
 
-  return ret;
+  ret = pic_make_vec(pic, len1 + len2);
+  for (i = 0; i < len1 + len2; ++i) {
+    ret->data[i] = pic_int_value(tmp[i]);
+  }
+
+  free(tmp);
+  return bigint_vec_compact(pic, ret);
 }
 
 static pic_vec *
