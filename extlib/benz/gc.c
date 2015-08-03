@@ -35,6 +35,7 @@ union object {
   struct pic_port port;
   struct pic_error err;
   struct pic_lib lib;
+  struct pic_box box;
   struct pic_checkpoint cp;
 };
 
@@ -405,6 +406,12 @@ gc_mark_object(pic_state *pic, union object *obj)
     pic->heap->regs = reg;
     break;
   }
+  case PIC_TT_BOX: {
+    if (pic_obj_p(obj->box.value)) {
+      LOOP(pic_obj_ptr(obj->box.value));
+    }
+    break;
+  }
   case PIC_TT_CP: {
     if (obj->cp.prev) {
       gc_mark_object(pic, (union object *)obj->cp.prev);
@@ -597,6 +604,7 @@ gc_finalize_object(pic_state *pic, union object *obj)
   case PIC_TT_LIB:
   case PIC_TT_RECORD:
   case PIC_TT_CP:
+  case PIC_TT_BOX:
     break;
 
   case PIC_TT_NIL:
