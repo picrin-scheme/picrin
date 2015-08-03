@@ -102,14 +102,15 @@ struct pic_state {
 
   pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG, *uDEFINE_MACRO;
   pic_sym *uDEFINE_LIBRARY, *uIMPORT, *uEXPORT, *uCOND_EXPAND;
+
   pic_sym *uCONS, *uCAR, *uCDR, *uNILP, *uSYMBOLP, *uPAIRP;
   pic_sym *uADD, *uSUB, *uMUL, *uDIV, *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
 
   pic_value pCONS, pCAR, pCDR, pNILP, pPAIRP, pSYMBOLP, pNOT;
   pic_value pADD, pSUB, pMUL, pDIV, pEQ, pLT, pLE, pGT, pGE;
 
-  pic_value cCONS, cCAR, cCDR, cNILP, cPAIRP, cSYMBOLP, cNOT;
-  pic_value cADD, cSUB, cMUL, cDIV, cEQ, cLT, cLE, cGT, cGE;
+  struct pic_box *cCONS, *cCAR, *cCDR, *cNILP, *cPAIRP, *cSYMBOLP, *cNOT;
+  struct pic_box *cADD, *cSUB, *cMUL, *cDIV, *cEQ, *cLT, *cLE, *cGT, *cGE;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;

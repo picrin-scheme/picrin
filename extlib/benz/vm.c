@@ -386,32 +386,32 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return argc;
 }
 
-pic_value
+struct pic_box *
 pic_vm_gref_slot(pic_state *pic, pic_sym *uid)
 {
-  pic_value slot;
+  struct pic_box *box;
 
   if (pic_dict_has(pic, pic->globals, uid)) {
-    return pic_dict_ref(pic, pic->globals, uid);
+    return pic_box_ptr(pic_dict_ref(pic, pic->globals, uid));
   }
-  slot = pic_cons(pic, pic_obj_value(uid), pic_invalid_value());
-  pic_dict_set(pic, pic->globals, uid, slot);
-  return slot;
+  box = pic_box(pic, pic_invalid_value());
+  pic_dict_set(pic, pic->globals, uid, pic_obj_value(box));
+  return box;
 }
 
 static pic_value
-vm_gref(pic_state *pic, pic_value slot)
+vm_gref(pic_state *pic, struct pic_box *slot, pic_sym *uid)
 {
-  if (pic_invalid_p(pic_cdr(pic, slot))) {
-    pic_errorf(pic, "uninitialized global variable: ~a", pic_car(pic, slot));
+  if (pic_invalid_p(slot->value)) {
+    pic_errorf(pic, "uninitialized global variable: ~a", uid);
   }
-  return pic_cdr(pic, slot);
+  return slot->value;
 }
 
 static void
-vm_gset(pic_state *pic, pic_value slot, pic_value value)
+vm_gset(struct pic_box *slot, pic_value value)
 {
-  pic_set_cdr(pic, slot, value);
+  slot->value = value;
 }
 
 static void
@@ -630,11 +630,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(vm_gref(pic, pic->ci->irep->pool[c.u.i]));
+      PUSH(vm_gref(pic, pic_box_ptr(pic->ci->irep->pool[c.u.i]), pic_intern(pic, "unknown"))); /* FIXME */
       NEXT;
     }
     CASE(OP_GSET) {
-      vm_gset(pic, pic->ci->irep->pool[c.u.i], POP());
+      vm_gset(pic_box_ptr(pic->ci->irep->pool[c.u.i]), POP());
       PUSH(pic_undef_value());
       NEXT;
     }
@@ -847,7 +847,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
     }
 
 #define check_condition(name, n) do {                                   \
-      if (! pic_eq_p(pic->p##name, pic_cdr(pic, pic->c##name)))         \
+      if (! pic_eq_p(pic->p##name, pic->c##name->value))                \
         goto L_CALL;                                                    \
       if (c.u.i != n + 1)                                               \
         goto L_CALL;                                                    \
@@ -1161,7 +1161,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  return vm_gref(pic, pic_vm_gref_slot(pic, uid));
+  return vm_gref(pic, pic_vm_gref_slot(pic, uid), uid);
 }
 
 void
@@ -1175,7 +1175,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  vm_gset(pic, pic_vm_gref_slot(pic, uid), val);
+  vm_gset(pic_vm_gref_slot(pic, uid), val);
 }
 
 pic_value
