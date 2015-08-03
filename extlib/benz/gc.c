@@ -392,9 +392,7 @@ gc_mark_object(pic_state *pic, union object *obj)
     break;
   }
   case PIC_TT_RECORD: {
-    struct pic_record *rec = (struct pic_record *)obj;
-
-    LOOP((struct pic_object *)rec->data);
+    LOOP(obj->rec.data);
     break;
   }
   case PIC_TT_SYMBOL: {

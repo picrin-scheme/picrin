@@ -91,7 +91,7 @@ struct pic_state {
 
   pic_code *ip;
 
-  pic_value ptable;
+  pic_value ptable;             /* list of registers */
 
   struct pic_lib *lib, *prev_lib;
 
