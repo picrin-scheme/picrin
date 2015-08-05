@@ -157,7 +157,6 @@ enum pic_tt {
   PIC_TT_REG,
   PIC_TT_RECORD,
   PIC_TT_BOX,
-  PIC_TT_CXT,
   PIC_TT_IREP,
   PIC_TT_CP
 };
@@ -298,8 +297,6 @@ pic_type_repr(enum pic_tt tt)
     return "error";
   case PIC_TT_ID:
     return "id";
-  case PIC_TT_CXT:
-    return "cxt";
   case PIC_TT_PROC:
     return "proc";
   case PIC_TT_ENV:

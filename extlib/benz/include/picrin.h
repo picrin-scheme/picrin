@@ -62,9 +62,6 @@ typedef struct {
   pic_value *fp;
   struct pic_irep *irep;
   struct pic_context *cxt;
-  int regc;
-  pic_value *regs;
-  struct pic_context *up;
 } pic_callinfo;
 
 typedef void *(*pic_allocf)(void *, size_t);
@@ -98,7 +95,6 @@ struct pic_state {
   pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
   pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
   pic_sym *sDEFINE_LIBRARY, *sIMPORT, *sEXPORT, *sCOND_EXPAND;
-  pic_sym *sGREF, *sCREF, *sLREF, *sCALL;
 
   pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG, *uDEFINE_MACRO;
   pic_sym *uDEFINE_LIBRARY, *uIMPORT, *uEXPORT, *uCOND_EXPAND;

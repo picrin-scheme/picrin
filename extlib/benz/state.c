@@ -350,10 +350,6 @@ pic_open(pic_allocf allocf, void *userdata)
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
   S(sCOND_EXPAND, "cond-expand");
-  S(sCALL, "call");
-  S(sGREF, "gref");
-  S(sLREF, "lref");
-  S(sCREF, "cref");
 
   pic_gc_arena_restore(pic, ai);
 

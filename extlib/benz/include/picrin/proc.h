@@ -10,11 +10,7 @@ extern "C" {
 #endif
 
 struct pic_context {
-  PIC_OBJECT_HEADER
-  pic_value *regs;
-  int regc;
-  struct pic_context *up;
-  pic_value storage[1];
+  struct pic_box *boxes[1];
 };
 
 struct pic_proc {

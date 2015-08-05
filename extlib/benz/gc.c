@@ -31,7 +31,6 @@ struct pic_object {
     struct pic_id id;
     struct pic_env env;
     struct pic_proc proc;
-    struct pic_context cxt;
     struct pic_irep irep;
     struct pic_port port;
     struct pic_error err;
@@ -293,22 +292,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_CXT: {
-    int i;
-
-    for (i = 0; i < obj->u.cxt.regc; ++i) {
-      gc_mark(pic, obj->u.cxt.regs[i]);
-    }
-    if (obj->u.cxt.up) {
-      LOOP(obj->u.cxt.up);
-    }
-    break;
-  }
   case PIC_TT_PROC: {
+    size_t i;
     if (pic_proc_irep_p(&obj->u.proc)) {
       gc_mark_object(pic, (struct pic_object *)obj->u.proc.u.i.irep);
       if (obj->u.proc.u.i.cxt) {
-        LOOP(obj->u.proc.u.i.cxt);
+        for (i = 0; i < obj->u.proc.u.i.irep->nlbc; ++i) {
+          gc_mark_object(pic, (struct pic_object *)obj->u.proc.u.i.cxt->boxes[i]);
+        }
       }
     } else {
       if (obj->u.proc.u.f.env) {
@@ -445,7 +436,6 @@ static void
 gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
-  pic_callinfo *ci;
   struct pic_proc **xhandler;
   size_t j;
 
@@ -459,13 +449,6 @@ gc_mark_phase(pic_state *pic)
   /* stack */
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
     gc_mark(pic, *stack);
-  }
-
-  /* callinfo */
-  for (ci = pic->ci; ci != pic->cibase; --ci) {
-    if (ci->cxt) {
-      gc_mark_object(pic, (struct pic_object *)ci->cxt);
-    }
   }
 
   /* exception handlers */
@@ -482,7 +465,6 @@ gc_mark_phase(pic_state *pic)
   M(sQUOTE); M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
   M(sSYNTAX_QUOTE); M(sSYNTAX_QUASIQUOTE); M(sSYNTAX_UNQUOTE); M(sSYNTAX_UNQUOTE_SPLICING);
   M(sDEFINE_LIBRARY); M(sIMPORT); M(sEXPORT); M(sCOND_EXPAND);
-  M(sCALL); M(sGREF); M(sLREF); M(sCREF);
 
   M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG); M(uDEFINE_MACRO);
   M(uDEFINE_LIBRARY); M(uIMPORT); M(uEXPORT); M(uCOND_EXPAND);
@@ -580,6 +562,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     pic_free(pic, obj->u.irep.code);
     pic_free(pic, obj->u.irep.irep);
     pic_free(pic, obj->u.irep.pool);
+    pic_free(pic, obj->u.irep.lboxes);
+    pic_free(pic, obj->u.irep.nlboxes);
     break;
   }
   case PIC_TT_DATA: {
@@ -600,10 +584,14 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     kh_destroy(reg, &obj->u.reg.hash);
     break;
   }
+  case PIC_TT_PROC: {
+    if (pic_proc_irep_p(&obj->u.proc)) {
+      pic_free(pic, obj->u.proc.u.i.cxt);
+    }
+    break;
+  }
 
   case PIC_TT_PAIR:
-  case PIC_TT_CXT:
-  case PIC_TT_PROC:
   case PIC_TT_PORT:
   case PIC_TT_ERROR:
   case PIC_TT_ID:

@@ -417,48 +417,6 @@ vm_gset(struct pic_box *slot, pic_value value)
   slot->value = value;
 }
 
-static void
-vm_push_cxt(pic_state *pic)
-{
-  pic_callinfo *ci = pic->ci;
-
-  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, sizeof(struct pic_context) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_CXT);
-  ci->cxt->up = ci->up;
-  ci->cxt->regc = ci->regc;
-  ci->cxt->regs = ci->regs;
-}
-
-static void
-vm_tear_off(pic_callinfo *ci)
-{
-  struct pic_context *cxt;
-  int i;
-
-  assert(ci->cxt != NULL);
-
-  cxt = ci->cxt;
-
-  if (cxt->regs == cxt->storage) {
-    return;                     /* is torn off */
-  }
-  for (i = 0; i < cxt->regc; ++i) {
-    cxt->storage[i] = cxt->regs[i];
-  }
-  cxt->regs = cxt->storage;
-}
-
-void
-pic_vm_tear_off(pic_state *pic)
-{
-  pic_callinfo *ci;
-
-  for (ci = pic->ci; ci > pic->cibase; ci--) {
-    if (ci->cxt != NULL) {
-      vm_tear_off(ci);
-    }
-  }
-}
-
 #if VM_DEBUG
 # define OPCODE_EXEC_HOOK pic_dump_code(c)
 #else
@@ -642,53 +600,20 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_LREF) {
-      pic_callinfo *ci = pic->ci;
-      struct pic_irep *irep = ci->irep;
-
-      if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.u.i >= irep->argc + irep->localc) {
-          PUSH(ci->cxt->regs[c.u.i - (ci->regs - ci->fp)]);
-          NEXT;
-        }
-      }
       PUSH(pic->ci->fp[c.u.i]);
       NEXT;
     }
     CASE(OP_LSET) {
-      pic_callinfo *ci = pic->ci;
-      struct pic_irep *irep = ci->irep;
-
-      if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.u.i >= irep->argc + irep->localc) {
-          ci->cxt->regs[c.u.i - (ci->regs - ci->fp)] = POP();
-          PUSH(pic_undef_value());
-          NEXT;
-        }
-      }
       pic->ci->fp[c.u.i] = POP();
       PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_CREF) {
-      int depth = c.u.r.depth;
-      struct pic_context *cxt;
-
-      cxt = pic->ci->up;
-      while (--depth) {
-	cxt = cxt->up;
-      }
-      PUSH(cxt->regs[c.u.r.idx]);
+      PUSH(pic->ci->cxt->boxes[c.u.i]->value);
       NEXT;
     }
     CASE(OP_CSET) {
-      int depth = c.u.r.depth;
-      struct pic_context *cxt;
-
-      cxt = pic->ci->up;
-      while (--depth) {
-	cxt = cxt->up;
-      }
-      cxt->regs[c.u.r.idx] = POP();
+      pic->ci->cxt->boxes[c.u.i]->value = POP();
       PUSH(pic_undef_value());
       NEXT;
     }
@@ -749,8 +674,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
         struct pic_irep *irep = proc->u.i.irep;
 	int i;
 	pic_value rest;
+        size_t j;
 
-        ci->irep = irep;
+        ci->irep = proc->u.i.irep;
+        ci->cxt = proc->u.i.cxt;
 	if (ci->argc != irep->argc) {
 	  if (! (irep->varg && ci->argc >= irep->argc)) {
             pic_errorf(pic, "wrong number of arguments (%d for %s%d)", ci->argc - 1, (irep->varg ? "at least " : ""), irep->argc - 1);
@@ -777,9 +704,9 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 	}
 
 	/* prepare cxt */
-        ci->up = proc->u.i.cxt;
-        ci->regc = irep->capturec;
-        ci->regs = ci->fp + irep->argc + irep->localc;
+        for (j = 0; j < irep->lbc; ++j) {
+          ci->fp[irep->lboxes[j]] = pic_obj_value(pic_box(pic, ci->fp[irep->lboxes[j]]));
+        }
 
 	pic->ip = irep->code;
 	pic_gc_arena_restore(pic, ai);
@@ -790,10 +717,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       int i, argc;
       pic_value *argv;
       pic_callinfo *ci;
-
-      if (pic->ci->cxt != NULL) {
-        vm_tear_off(pic->ci);
-      }
 
       if (c.u.i == -1) {
         pic->sp += pic->ci[1].retc - 1;
@@ -817,10 +740,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       pic_value *retv;
       pic_callinfo *ci;
 
-      if (pic->ci->cxt != NULL) {
-        vm_tear_off(pic->ci);
-      }
-
       assert(pic->ci->retc == 1);
 
     L_RET:
@@ -839,12 +758,18 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_LAMBDA) {
-      if (pic->ci->cxt == NULL) {
-        vm_push_cxt(pic);
+      struct pic_context *cxt = NULL;
+      struct pic_irep *irep = pic->ci->irep->irep[c.u.i];
+      size_t j;
+
+      if (irep->nlbc > 0) {
+        cxt = pic_malloc(pic, sizeof(struct pic_box *) * irep->nlbc);
+        for (j = 0; j < irep->nlbc; ++j) {
+          cxt->boxes[j] = pic->ci->cxt->boxes[irep->nlboxes[j]];
+        }
       }
 
-      proc = pic_make_proc_irep(pic, pic->ci->irep->irep[c.u.i], pic->ci->cxt);
-      PUSH(pic_obj_value(proc));
+      PUSH(pic_obj_value(pic_make_proc_irep(pic, irep, cxt)));
       pic_gc_arena_restore(pic, ai);
       NEXT;
     }

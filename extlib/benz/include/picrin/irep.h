@@ -14,18 +14,16 @@ typedef struct {
   union {
     int i;
     char c;
-    struct {
-      int depth;
-      int idx;
-    } r;
   } u;
 } pic_code;
 
 struct pic_irep {
   PIC_OBJECT_HEADER
   pic_code *code;
-  int argc, localc, capturec;
+  int argc, localc;
   bool varg;
+  int *lboxes, *nlboxes;        /* local boxes and non-local boxes */
+  size_t lbc, nlbc;
   struct pic_irep **irep;
   pic_value *pool;
   size_t ilen, plen;
@@ -33,7 +31,6 @@ struct pic_irep {
 
 pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);
 pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
-pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);
 struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
 
