@@ -28,7 +28,7 @@ struct pic_irep {
   bool varg;
   struct pic_irep **irep;
   pic_value *pool;
-  size_t clen, ilen, plen, slen;
+  size_t ilen, plen;
 };
 
 pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);

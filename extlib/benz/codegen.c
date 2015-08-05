@@ -695,7 +695,6 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->localc = (int)cxt->locals->len;
   irep->capturec = (int)cxt->captures->len;
   irep->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->clen);
-  irep->clen = cxt->clen;
   irep->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->ilen);
   irep->ilen = cxt->ilen;
   irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
