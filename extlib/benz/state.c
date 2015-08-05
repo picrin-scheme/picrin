@@ -407,7 +407,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->pGE = pic_invalid_value();
 
   /* root tables */
-  pic->globals = pic_make_dict(pic);
+  pic->globals = pic_make_reg(pic);
   pic->macros = pic_make_dict(pic);
   pic->attrs = pic_make_reg(pic);
 

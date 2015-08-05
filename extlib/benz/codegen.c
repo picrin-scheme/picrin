@@ -436,7 +436,7 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   int ret;
 
   if (search_scope(scope, sym)) {
-    if (scope->depth > 0 || (pic_dict_has(pic, pic->globals, sym) && ! pic_invalid_p(pic_box_ptr(pic_dict_ref(pic, pic->globals, sym))->value))) {
+    if (scope->depth > 0 || (pic_reg_has(pic, pic->globals, sym) && ! pic_invalid_p(pic_box_ptr(pic_reg_ref(pic, pic->globals, sym))->value))) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
     }
     return;

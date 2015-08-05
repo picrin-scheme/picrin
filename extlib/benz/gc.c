@@ -484,12 +484,16 @@ gc_mark_phase(pic_state *pic)
 
   M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG); M(uDEFINE_MACRO);
   M(uDEFINE_LIBRARY); M(uIMPORT); M(uEXPORT); M(uCOND_EXPAND);
+
   M(uCONS); M(uCAR); M(uCDR); M(uNILP); M(uSYMBOLP); M(uPAIRP);
   M(uADD); M(uSUB); M(uMUL); M(uDIV); M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
 
   /* mark system procedures */
   P(pCONS); P(pCAR); P(pCDR); P(pNILP); P(pSYMBOLP); P(pPAIRP); P(pNOT);
   P(pADD); P(pSUB); P(pMUL); P(pDIV); P(pEQ); P(pLT); P(pLE); P(pGT); P(pGE);
+
+  M(cCONS); M(cCAR); M(cCDR); M(cNILP); M(cSYMBOLP); M(cPAIRP); M(cNOT);
+  M(cADD); M(cSUB); M(cMUL); M(cDIV); M(cEQ); M(cLT); M(cLE); M(cGT); M(cGE);
 
   /* global variables */
   if (pic->globals) {

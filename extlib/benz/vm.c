@@ -387,15 +387,15 @@ pic_get_args(pic_state *pic, const char *format, ...)
 }
 
 struct pic_box *
-pic_vm_gref_slot(pic_state *pic, pic_sym *uid)
+pic_vm_gref_slot(pic_state *pic, pic_sym *uid) /* TODO: make this static */
 {
   struct pic_box *box;
 
-  if (pic_dict_has(pic, pic->globals, uid)) {
-    return pic_box_ptr(pic_dict_ref(pic, pic->globals, uid));
+  if (pic_reg_has(pic, pic->globals, uid)) {
+    return pic_box_ptr(pic_reg_ref(pic, pic->globals, uid));
   }
   box = pic_box(pic, pic_invalid_value());
-  pic_dict_set(pic, pic->globals, uid, pic_obj_value(box));
+  pic_reg_set(pic, pic->globals, uid, pic_obj_value(box));
   return box;
 }
 
@@ -1112,7 +1112,7 @@ pic_define_(pic_state *pic, const char *name, pic_value val)
   if ((uid = pic_find_variable(pic, pic->lib->env, pic_obj_value(sym))) == NULL) {
     uid = pic_add_variable(pic, pic->lib->env, pic_obj_value(sym));
   } else {
-    if (pic_dict_has(pic, pic->globals, uid)) {
+    if (pic_reg_has(pic, pic->globals, uid)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(uid));
     }
   }
