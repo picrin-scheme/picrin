@@ -403,6 +403,9 @@ static pic_value
 vm_gref(pic_state *pic, struct pic_box *slot, pic_sym *uid)
 {
   if (pic_invalid_p(slot->value)) {
+    if (uid == NULL) {
+      uid = pic_intern(pic, "unknown"); /* FIXME */
+    }
     pic_errorf(pic, "uninitialized global variable: ~a", uid);
   }
   return slot->value;
@@ -630,7 +633,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(vm_gref(pic, pic_box_ptr(pic->ci->irep->pool[c.u.i]), pic_intern(pic, "unknown"))); /* FIXME */
+      PUSH(vm_gref(pic, pic_box_ptr(pic->ci->irep->pool[c.u.i]), NULL)); /* FIXME */
       NEXT;
     }
     CASE(OP_GSET) {
