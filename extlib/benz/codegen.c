@@ -10,7 +10,7 @@
  */
 
 static pic_sym *
-lookup(pic_state PIC_UNUSED(*pic), pic_value var, struct pic_env *env)
+lookup(pic_state *pic, pic_value var, struct pic_env *env)
 {
   khiter_t it;
 
