@@ -1182,7 +1182,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 }
 
 pic_value
-pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, pic_list args)
+pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, pic_value args)
 {
   pic_value proc;
 

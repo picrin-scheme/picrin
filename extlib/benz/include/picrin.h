@@ -192,7 +192,7 @@ void pic_defvar_(pic_state *, const char *, pic_value, struct pic_proc *);
 
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
-pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);
+pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_value);
 pic_value pic_funcall0(pic_state *pic, struct pic_lib *, const char *);
 pic_value pic_funcall1(pic_state *pic, struct pic_lib *, const char *, pic_value);
 pic_value pic_funcall2(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value);

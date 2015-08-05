@@ -182,7 +182,6 @@ struct pic_error;
 struct pic_env;
 
 /* set aliases to basic types */
-typedef pic_value pic_list;
 typedef struct pic_symbol pic_sym;
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
