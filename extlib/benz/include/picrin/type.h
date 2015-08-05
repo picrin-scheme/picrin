@@ -166,10 +166,11 @@ enum pic_tt {
   enum pic_tt tt;                               \
   char gc_mark;
 
-struct pic_object {
+struct pic_basic {
   PIC_OBJECT_HEADER
 };
 
+struct pic_object;
 struct pic_symbol;
 struct pic_pair;
 struct pic_string;
@@ -255,7 +256,7 @@ pic_type(pic_value v)
   case PIC_VTYPE_EOF:
     return PIC_TT_EOF;
   case PIC_VTYPE_HEAP:
-    return ((struct pic_object *)pic_ptr(v))->tt;
+    return ((struct pic_basic *)pic_ptr(v))->tt;
   }
 
   PIC_UNREACHABLE();
