@@ -54,26 +54,26 @@ pic_resolve(pic_state *pic, pic_value var, struct pic_env *env)
 static void
 define_macro(pic_state *pic, pic_sym *uid, struct pic_proc *mac)
 {
-  if (pic_dict_has(pic, pic->macros, uid)) {
+  if (pic_reg_has(pic, pic->macros, uid)) {
     pic_warnf(pic, "redefining syntax variable: ~s", pic_obj_value(uid));
   }
-  pic_dict_set(pic, pic->macros, uid, pic_obj_value(mac));
+  pic_reg_set(pic, pic->macros, uid, pic_obj_value(mac));
 }
 
 static struct pic_proc *
 find_macro(pic_state *pic, pic_sym *uid)
 {
-  if (! pic_dict_has(pic, pic->macros, uid)) {
+  if (! pic_reg_has(pic, pic->macros, uid)) {
     return NULL;
   }
-  return pic_proc_ptr(pic_dict_ref(pic, pic->macros, uid));
+  return pic_proc_ptr(pic_reg_ref(pic, pic->macros, uid));
 }
 
 static void
 shadow_macro(pic_state *pic, pic_sym *uid)
 {
-  if (pic_dict_has(pic, pic->macros, uid)) {
-    pic_dict_del(pic, pic->macros, uid);
+  if (pic_reg_has(pic, pic->macros, uid)) {
+    pic_reg_del(pic, pic->macros, uid);
   }
 }
 

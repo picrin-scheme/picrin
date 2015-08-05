@@ -120,7 +120,7 @@ struct pic_state {
   khash_t(s) syms;              /* name to symbol */
   int ucnt;
   struct pic_reg *globals;
-  struct pic_dict *macros;
+  struct pic_reg *macros;
   pic_value libs;
   struct pic_reg *attrs;
 

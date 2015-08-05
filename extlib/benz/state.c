@@ -408,7 +408,7 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* root tables */
   pic->globals = pic_make_reg(pic);
-  pic->macros = pic_make_dict(pic);
+  pic->macros = pic_make_reg(pic);
   pic->attrs = pic_make_reg(pic);
 
   /* root block */
