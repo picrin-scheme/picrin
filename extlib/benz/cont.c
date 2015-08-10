@@ -293,7 +293,7 @@ pic_cont_call_with_values(pic_state *pic)
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
-  pic_apply(pic, producer, pic_nil_value());
+  pic_apply0(pic, producer);
 
   argc = pic_receive(pic, 0, NULL);
   args = pic_make_vec(pic, argc);
