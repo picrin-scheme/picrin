@@ -69,9 +69,7 @@ typedef unsigned long uint32_t;
 #endif
 
 #if __GNUC__
-# define GCC_VERSION (__GNUC__ * 10000          \
-   + __GNUC_MINOR__ * 100                       \
-   + __GNUC_PATCHLEVEL__)
+# define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #endif
 #if GCC_VERSION >= 40500 || __clang__
 # define PIC_UNREACHABLE() (__builtin_unreachable())
