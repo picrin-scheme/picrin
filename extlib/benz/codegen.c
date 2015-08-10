@@ -990,20 +990,28 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   }
 }
 
-static bool
-codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len, bool tailpos)
-{
-  if (pic_sym_ptr(pic_list_ref(pic, proc, 0)) == pic->sGREF) {
-    pic_sym *sym;
-
-    sym = pic_sym_ptr(pic_list_ref(pic, proc, 1));
-
 #define VM(uid, op)                             \
     if (sym == uid) {                           \
-      emit_i(pic, cxt, op, len);                \
+      emit_i(pic, cxt, op, len - 1);            \
       emit_ret(pic, cxt, tailpos);              \
-      return true;                              \
+      return;                                   \
     }
+
+static void
+codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+{
+  int len = (int)pic_length(pic, obj);
+  pic_value elt, it, functor;
+
+  pic_for_each (elt, pic_cdr(pic, obj), it) {
+    codegen(pic, cxt, elt, false);
+  }
+
+  functor = pic_list_ref(pic, obj, 1);
+  if (pic_sym_ptr(pic_list_ref(pic, functor, 0)) == pic->sGREF) {
+    pic_sym *sym;
+
+    sym = pic_sym_ptr(pic_list_ref(pic, functor, 1));
 
     VM(pic->uCONS, OP_CONS)
     VM(pic->uCAR, OP_CAR)
@@ -1021,22 +1029,6 @@ codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len
     VM(pic->uSUB, OP_SUB)
     VM(pic->uMUL, OP_MUL)
     VM(pic->uDIV, OP_DIV)
-  }
-  return false;
-}
-
-static void
-codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
-{
-  int len = (int)pic_length(pic, obj);
-  pic_value elt, it;
-
-  pic_for_each (elt, pic_cdr(pic, obj), it) {
-    codegen(pic, cxt, elt, false);
-  }
-
-  if (codegen_call_vm(pic, cxt, pic_list_ref(pic, obj, 1), len - 1, tailpos)) {
-    return;
   }
 
   emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);
