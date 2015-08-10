@@ -143,9 +143,9 @@ typedef pic_value (*pic_func_t)(pic_state *);
 void *pic_malloc(pic_state *, size_t);
 void *pic_realloc(pic_state *, void *, size_t);
 void *pic_calloc(pic_state *, size_t, size_t);
-struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
 void pic_free(pic_state *, void *);
 
+struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
 void pic_gc_run(pic_state *);
 pic_value pic_gc_protect(pic_state *, pic_value);
 size_t pic_gc_arena_preserve(pic_state *);
@@ -185,7 +185,7 @@ void pic_load_cstr(pic_state *, const char *);
 void pic_define(pic_state *, const char *, pic_value);
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
-/* functions suffixed with '_' will not perform automatic export */
+/* functions suffixed with '_' do not involve automatic export */
 void pic_define_(pic_state *, const char *, pic_value);
 void pic_defun_(pic_state *, const char *, pic_func_t);
 void pic_defvar_(pic_state *, const char *, pic_value, struct pic_proc *);
