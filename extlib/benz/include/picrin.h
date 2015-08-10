@@ -67,7 +67,7 @@ typedef struct {
   struct pic_context *up;
 } pic_callinfo;
 
-typedef void *(*pic_allocf)(void *, size_t);
+typedef void *(*pic_allocf)(void *, void *, size_t);
 
 struct pic_state {
   int argc;
@@ -158,7 +158,7 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-void *pic_default_allocf(void *, size_t);
+void *pic_default_allocf(void *, void *, size_t);
 pic_state *pic_open(pic_allocf, void *);
 void pic_close(pic_state *);
 void pic_set_argv(pic_state *, int argc, char *argv[], char **envp);

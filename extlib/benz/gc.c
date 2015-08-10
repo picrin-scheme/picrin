@@ -81,7 +81,7 @@ pic_heap_close(pic_state *pic, struct pic_heap *heap)
 
 #if PIC_ENABLE_LIBC
 void *
-pic_default_allocf(void *ptr, size_t size)
+pic_default_allocf(void PIC_UNUSED(*userdata), void *ptr, size_t size)
 {
   if (size == 0) {
     if (ptr) {
@@ -102,7 +102,7 @@ pic_malloc(pic_state *pic, size_t size)
 {
   void *ptr;
 
-  ptr = pic->allocf(NULL, size);
+  ptr = pic->allocf(pic->userdata, NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -112,7 +112,7 @@ pic_malloc(pic_state *pic, size_t size)
 void *
 pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
-  ptr = pic->allocf(ptr, size);
+  ptr = pic->allocf(pic->userdata, ptr, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -125,7 +125,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
   void *ptr;
 
   size *= count;
-  ptr = pic->allocf(NULL, size);
+  ptr = pic->allocf(pic->userdata, NULL, size);
   if (ptr == NULL && size > 0) {
     pic_panic(pic, "memory exhausted");
   }
@@ -136,7 +136,7 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
 void
 pic_free(pic_state *pic, void *ptr)
 {
-  pic->allocf(ptr, 0);
+  pic->allocf(pic->userdata, ptr, 0);
 }
 
 static void

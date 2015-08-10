@@ -237,7 +237,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic_state *pic;
   size_t ai;
 
-  pic = allocf(NULL, sizeof(pic_state));
+  pic = allocf(userdata, NULL, sizeof(pic_state));
 
   if (! pic) {
     goto EXIT_PIC;
@@ -265,7 +265,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->envp = NULL;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_value));
+  pic->stbase = pic->sp = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   if (! pic->sp) {
@@ -273,7 +273,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* callinfo */
-  pic->cibase = pic->ci = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
+  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   if (! pic->ci) {
@@ -281,7 +281,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* exception handler */
-  pic->xpbase = pic->xp = allocf(NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
+  pic->xpbase = pic->xp = allocf(userdata, NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   if (! pic->xp) {
@@ -289,7 +289,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* GC arena */
-  pic->arena = allocf(NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
+  pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
@@ -458,13 +458,13 @@ pic_open(pic_allocf allocf, void *userdata)
   return pic;
 
  EXIT_ARENA:
-  allocf(pic->xp, 0);
+  allocf(userdata, pic->xp, 0);
  EXIT_XP:
-  allocf(pic->ci, 0);
+  allocf(userdata, pic->ci, 0);
  EXIT_CI:
-  allocf(pic->sp, 0);
+  allocf(userdata, pic->sp, 0);
  EXIT_SP:
-  allocf(pic, 0);
+  allocf(userdata, pic, 0);
  EXIT_PIC:
   return NULL;
 }
@@ -500,15 +500,15 @@ pic_close(pic_state *pic)
   pic_reader_destroy(pic);
 
   /* free runtime context */
-  allocf(pic->stbase, 0);
-  allocf(pic->cibase, 0);
-  allocf(pic->xpbase, 0);
+  allocf(pic->userdata, pic->stbase, 0);
+  allocf(pic->userdata, pic->cibase, 0);
+  allocf(pic->userdata, pic->xpbase, 0);
 
   /* free global stacks */
   kh_destroy(s, h);
 
   /* free GC arena */
-  allocf(pic->arena, 0);
+  allocf(pic->userdata, pic->arena, 0);
 
-  allocf(pic, 0);
+  allocf(pic->userdata, pic, 0);
 }
