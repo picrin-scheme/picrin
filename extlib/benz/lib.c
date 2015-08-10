@@ -7,12 +7,10 @@
 static void
 setup_default_env(pic_state *pic, struct pic_env *env)
 {
-  void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
-
-  pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->uDEFINE_LIBRARY);
-  pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->uIMPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->uEXPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->uCOND_EXPAND);
+  pic_put_variable(pic, env, pic_obj_value(pic->sDEFINE_LIBRARY), pic->uDEFINE_LIBRARY);
+  pic_put_variable(pic, env, pic_obj_value(pic->sIMPORT), pic->uIMPORT);
+  pic_put_variable(pic, env, pic_obj_value(pic->sEXPORT), pic->uEXPORT);
+  pic_put_variable(pic, env, pic_obj_value(pic->sCOND_EXPAND), pic->uCOND_EXPAND);
 }
 
 struct pic_lib *

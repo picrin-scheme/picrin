@@ -112,10 +112,10 @@ pic_features(pic_state *pic)
 #define DONE pic_gc_arena_restore(pic, ai);
 
 #define define_builtin_syntax(uid, name)                                \
-  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern(pic, name), uid)
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
 
 #define VM(uid, name)                                                   \
-  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern(pic, name), uid)
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
 
 #define VM3(name)                                       \
   pic->c##name = pic_vm_gref_slot(pic, pic->u##name);
@@ -126,7 +126,6 @@ pic_features(pic_state *pic)
 static void
 pic_init_core(pic_state *pic)
 {
-  void pic_define_syntactic_keyword_(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
   struct pic_box *pic_vm_gref_slot(pic_state *, pic_sym *);
 
   pic_init_features(pic);
