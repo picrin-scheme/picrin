@@ -29,11 +29,9 @@ extern "C" {
 # if INT_MAX > 2147483640L      /* borrowed from luaconf.h */
 typedef int int32_t;
 typedef unsigned int uint32_t;
-# elif LONG_MAX > 2147483640L
+# else
 typedef long int32_t;
 typedef unsigned long uint32_t;
-# else
-#  error you must define int32_t and uint32_t
 # endif
 #endif
 
