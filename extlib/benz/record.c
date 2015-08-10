@@ -5,25 +5,26 @@
 #include "picrin.h"
 
 struct pic_record *
-pic_make_record(pic_state *pic, pic_value rectype)
+pic_make_record(pic_state *pic, struct pic_record *type)
 {
   struct pic_record *rec;
-  struct pic_dict *data;
-
-  data = pic_make_dict(pic);
+  struct pic_dict *data = pic_make_dict(pic);
 
   rec = (struct pic_record *)pic_obj_alloc(pic, sizeof(struct pic_record), PIC_TT_RECORD);
   rec->data = data;
+  rec->type = type;
 
-  pic_record_set(pic, rec, pic_intern(pic, "@@type"), rectype);
+  if (rec->type == NULL) {
+    rec->type = rec;
+  }
 
   return rec;
 }
 
-pic_value
-pic_record_type(pic_state *pic, struct pic_record *rec)
+struct pic_record *
+pic_record_type(pic_state PIC_UNUSED(*pic), struct pic_record *rec)
 {
-  return pic_record_ref(pic, rec, pic_intern(pic, "@@type"));
+  return rec->type;
 }
 
 pic_value
@@ -49,7 +50,9 @@ pic_record_make_record(pic_state *pic)
 
   pic_get_args(pic, "o", &rectype);
 
-  rec = pic_make_record(pic, rectype);
+  pic_assert_type(pic, rectype, record);
+
+  rec = pic_make_record(pic, pic_record_ptr(rectype));
 
   return pic_obj_value(rec);
 }
@@ -71,7 +74,7 @@ pic_record_record_type(pic_state *pic)
 
   pic_get_args(pic, "r", &rec);
 
-  return pic_record_type(pic, rec);
+  return pic_obj_value(pic_record_type(pic, rec));
 }
 
 static pic_value
@@ -107,4 +110,5 @@ pic_init_record(pic_state *pic)
   pic_defun(pic, "record-type", pic_record_record_type);
   pic_defun(pic, "record-ref", pic_record_record_ref);
   pic_defun(pic, "record-set!", pic_record_record_set);
+  pic_define(pic, "<record-type>", pic_obj_value(pic_make_record(pic, NULL)));
 }

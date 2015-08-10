@@ -389,6 +389,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_RECORD: {
+    gc_mark_object(pic, (struct pic_object *)obj->u.rec.type);
     LOOP(obj->u.rec.data);
     break;
   }

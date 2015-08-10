@@ -412,18 +412,6 @@
 
   ;; 5.5 Recored-type definitions
 
-  (define ((boot-make-record-type <meta-type>) name)
-    (let ((rectype (make-record <meta-type>)))
-      (record-set! rectype 'name name)
-      rectype))
-
-  (define <record-type>
-    (let ((<record-type> ((boot-make-record-type #t) 'record-type)))
-      (record-set! <record-type> '@@type <record-type>)
-      <record-type>))
-
-  (define make-record-type (boot-make-record-type <record-type>))
-
   (define-syntax (define-record-constructor type name . fields)
     (let ((record #'record))
       #`(define (#,name . #,fields)
@@ -457,7 +445,7 @@
 
   (define-syntax (define-record-type name ctor pred . fields)
     #`(begin
-        (define #,name (make-record-type '#,name))
+        (define #,name (make-record <record-type>))
         (define-record-constructor #,name #,@ctor)
         (define-record-predicate #,name #,pred)
         #,@(map (lambda (field) #`(define-record-field #,pred #,@field)) fields)))
