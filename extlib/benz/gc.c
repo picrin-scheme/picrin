@@ -83,17 +83,11 @@ pic_heap_close(pic_state *pic, struct pic_heap *heap)
 void *
 pic_default_allocf(void PIC_UNUSED(*userdata), void *ptr, size_t size)
 {
-  if (size == 0) {
-    if (ptr) {
-      free(ptr);
-    }
-    return NULL;
-  }
-  if (ptr) {
+  if (size != 0) {
     return realloc(ptr, size);
-  } else {
-    return malloc(size);
   }
+  free(ptr);
+  return NULL;
 }
 #endif
 
