@@ -29,31 +29,6 @@ typedef long long bigint_diff;
 #define bigint_shift 32
 #define bigint_digit_max 0xffffffffULL // : bigint_2digits
 
-/*
- * Eliminates all leading zeroes.
- */
-static pic_vec *
-bigint_vec_compact(pic_state *pic, const pic_vec *v)
-{
-  int i;
-  int l = v->len - 1;
-  pic_vec *ret;
-
-  if (pic_int(v->data[l]) != 0) {
-    return (pic_vec *)v;
-  }
-  --l;
-  while (l >= 0 && pic_int(v->data[l]) == 0) {
-    --l;
-  }
-  ret = pic_make_vec(pic, l + 1);
-  for (i = 0; i <= l; ++i) {
-    ret->data[i] = v->data[i];
-  }
-
-  return ret;
-}
-
 static pic_vec *
 bigint_vec_clone(pic_state *pic, const pic_vec *v) {
   size_t i;
@@ -66,6 +41,28 @@ bigint_vec_clone(pic_state *pic, const pic_vec *v) {
 
   return ret;
 }
+
+/*
+ * Eliminates all leading zeroes.
+ */
+static pic_vec *
+bigint_vec_compact(pic_state *pic, const pic_vec *v)
+{
+  int i;
+  int l = v->len - 1;
+  pic_vec *ret;
+
+  while (l >= 0 && pic_int(v->data[l]) == 0) {
+    --l;
+  }
+  ret = pic_make_vec(pic, l + 1);
+  for (i = 0; i <= l; ++i) {
+    ret->data[i] = v->data[i];
+  }
+
+  return ret;
+}
+
 
 /*
  * Checks whether v1 and v2 represents the same value.
@@ -362,6 +359,53 @@ bigint_mul(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
   return retbi;
 }
 
+/*
+ * assign bn1 + bn2 to bn1.
+ */
+static struct pic_bigint_t *
+bigint_add_i(pic_state *pic, struct pic_bigint_t *bn1, struct pic_bigint_t *bn2)
+{
+  struct pic_bigint_t *retbi;
+
+  retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+
+  if (bn1->signum != bn2->signum) {
+    if (bigint_vec_lt(bn1->digits, bn2->digits)) { // bn2 wins
+      retbi->signum = bn2->signum;
+      retbi->digits = bigint_vec_sub(pic, bn2->digits, bn1->digits);
+      goto end;
+    }
+    retbi->signum = bn1->signum;
+    retbi->digits = bigint_vec_sub(pic, bn1->digits, bn2->digits);
+    if (retbi->digits->len == 0) { // bn1 + bn2 == 0
+      retbi->signum = 0;
+    }
+    goto end;
+  }
+  // two signums are equal
+  retbi->signum = bn1->signum;
+  retbi->digits = bigint_vec_add(pic, bn1->digits, bn2->digits);
+  
+ end:
+  bn1->signum = retbi->signum;
+  bn1->digits = retbi->digits;
+  return bn1;
+}
+static struct pic_bigint_t *
+bigint_mul_i(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
+{
+  pic_vec *ret;
+
+  ret = bigint_vec_mul(pic, v1->digits, v2->digits);
+
+  v1->signum ^= v2->signum;
+  if (ret->len == 0) {
+    v1->signum = 0;
+  }
+  v1->digits = ret;
+  return v1;
+}
+
 static bool
 bigint_less(struct pic_bigint_t *val1, struct pic_bigint_t *val2) {
   if (val1->signum != val2->signum) { // signums differ
@@ -501,6 +545,68 @@ pic_big_number_bigint_mul(pic_state *pic)
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, bigint_mul(pic, bi1, bi2)));
 }
 
+static pic_value
+pic_big_number_bigint_add_i(pic_state *pic)
+{
+  pic_value value1, value2;
+  struct pic_bigint_t *bi1, *bi2;
+
+  pic_get_args(pic, "oo", &value1, &value2);
+
+  // Since bigint-add! modifies the first argument, it must be a bigint.
+  if (! pic_bigint_p(value1)) {
+    pic_errorf(pic, "The first argument of bigint-add! must be a bigint.");
+  }
+  bi1 = pic_bigint_data_ptr(value1);
+  bi2 = take_bigint_or_int(pic, value2);
+
+  bigint_add_i(pic, bi1, bi2);
+
+  return value1;
+}
+
+static pic_value
+pic_big_number_bigint_sub_i(pic_state *pic)
+{
+  pic_value value1, value2;
+  struct pic_bigint_t *bi1, *bi2;
+
+  pic_get_args(pic, "oo", &value1, &value2);
+
+  // Since bigint-sub! modifies the first argument, it must be a bigint.
+  if (! pic_bigint_p(value1)) {
+    pic_errorf(pic, "The first argument of bigint-sub! must be a bigint.");
+  }
+  bi1 = pic_bigint_data_ptr(value1);
+  bi2 = take_bigint_or_int(pic, value2);
+
+  bi2->signum = 1 - bi2->signum;
+  bigint_add_i(pic, bi1, bi2);
+  bi2->signum = 1 - bi2->signum;
+
+  return value1;
+}
+
+static pic_value
+pic_big_number_bigint_mul_i(pic_state *pic)
+{
+  pic_value value1, value2;
+  struct pic_bigint_t *bi1, *bi2;
+
+  pic_get_args(pic, "oo", &value1, &value2);
+
+  // Since bigint-mul! modifies the first argument, it must be a bigint.
+  if (! pic_bigint_p(value1)) {
+    pic_errorf(pic, "The first argument of bigint-mul! must be a bigint.");
+  }
+  bi1 = pic_bigint_data_ptr(value1);
+  bi2 = take_bigint_or_int(pic, value2);
+
+  bigint_mul_i(pic, bi1, bi2);
+
+  return value1;
+}
+
 /*
  * Returns a copy of underlying vector of given biginteger.
  */
@@ -576,6 +682,9 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "bigint-add", pic_big_number_bigint_add);
     pic_defun(pic, "bigint-sub", pic_big_number_bigint_sub);
     pic_defun(pic, "bigint-mul", pic_big_number_bigint_mul);
+    pic_defun(pic, "bigint-add!", pic_big_number_bigint_add_i);
+    pic_defun(pic, "bigint-sub!", pic_big_number_bigint_sub_i);
+    pic_defun(pic, "bigint-mul!", pic_big_number_bigint_mul_i);
     pic_defun(pic, "bigint-underlying", pic_big_number_bigint_underlying);
     pic_defun(pic, "bigint-equal?", pic_big_number_bigint_equal_p);
     pic_defun(pic, "bigint-less?", pic_big_number_bigint_less_p);
