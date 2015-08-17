@@ -91,7 +91,24 @@
 (test-mul! "15267" "41446" "632756082")
 (test-mul! "17568913159" "72371657891659178645" "1271491372671417140039272289555")
 
+; division
+(define-syntax test-div
+  (syntax-rules ()
+    ((_ a b ab)
+      (test #t (bigint-equal? (make-bigint ab) (bigint-div (make-bigint a) (make-bigint b)))))))
+(define-syntax test-rem
+  (syntax-rules ()
+    ((_ a b ab)
+      (test #t (bigint-equal? (make-bigint ab) (bigint-rem (make-bigint a) (make-bigint b)))))))
 
+
+(test-div "2" "4" "0")
+(test-div "11" "-5" "-2")
+(test-div "632756082" "41446" "15267")
+(test-div "1271491372671417140039272289555" "17568913159" "72371657891659178645")
+
+(test-rem "11" "-5" "1")
+(test-rem "-11" "-5" "-1")
 
 ; equality
 (define-syntax test-equal?

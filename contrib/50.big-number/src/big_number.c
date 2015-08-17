@@ -216,6 +216,32 @@ bigint_vec_mul(pic_state *pic, const pic_vec *v1, const pic_vec *v2)
   return bigint_vec_compact(pic, ret);
 }
 
+static void
+bigint_vec_div(pic_state *pic, const pic_vec *v1, const pic_vec *v2,
+	       pic_vec **quo, pic_vec **rem)
+{
+  pic_vec *quov, *remv, *one;
+  int i;
+  assert (v2->len >= 1);
+ 
+  // Very slow, but still in polynomial time. :)
+  quov = pic_make_vec(pic, 0);
+  remv = bigint_vec_clone(pic, v1);
+  one = pic_make_vec(pic, 1);
+  one->data[0] = pic_int_value(1);
+
+  for (i = bigint_shift * (v1->len - v2->len + 1) - 1; i >= 0; --i) {
+    pic_vec *sh = bigint_vec_asl(pic, v2, i);
+    if (! bigint_vec_lt(remv, sh)) { // 2^i * v2 <= rem
+      remv = bigint_vec_sub(pic, remv, sh);
+      quov = bigint_vec_add(pic, quov, bigint_vec_asl(pic, one, i));
+    }
+  }
+
+  *quo = quov;
+  *rem = remv;
+}
+
 static pic_vec *
 bigint_vec_asl(pic_state *pic, const pic_vec *val, int sh)
 {
@@ -357,6 +383,38 @@ bigint_mul(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
   }
   retbi->digits = ret;
   return retbi;
+}
+
+/*
+ * Calculates the quotient and the remainder and assign them to quo and rem.
+ * If some error occurred, returned value is 0.
+ * Otherwise, returned value is positive.
+ * The sign of remainder is the same as that of v1 (the numerator).
+ */
+static int
+bigint_div(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2,
+	   struct pic_bigint_t **quo, struct pic_bigint_t **rem)
+{
+  struct pic_bigint_t *quobi, *rembi;
+  pic_vec *qv, *rv;
+
+  if (v2->digits->len == 0) { // Division by zero
+    pic_errorf(pic, "bigint_div: Division by zero");
+  }
+
+  bigint_vec_div(pic, v1->digits, v2->digits, &qv, &rv);
+
+  quobi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  rembi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  
+  quobi->signum = qv->len == 0 ? 0 : v1->signum ^ v2->signum;
+  quobi->digits = qv;
+  rembi->signum = rv->len == 0 ? 0 : v1->signum;
+  rembi->digits = rv;
+
+  *quo = quobi;
+  *rem = rembi;
+  return 0;
 }
 
 /*
@@ -546,6 +604,38 @@ pic_big_number_bigint_mul(pic_state *pic)
 }
 
 static pic_value
+pic_big_number_bigint_div(pic_state *pic)
+{
+  pic_value value1, value2;
+  struct pic_bigint_t *bi1, *bi2, *rem, *quo;
+
+  pic_get_args(pic, "oo", &value1, &value2);
+  bi1 = take_bigint_or_int(pic, value1);
+  bi2 = take_bigint_or_int(pic, value2);
+
+  bigint_div(pic, bi1, bi2, &quo, &rem);
+
+  return pic_obj_value(pic_data_alloc(pic, &bigint_type, quo));
+}
+/*
+ * The sign of remainder is the same as that of value1.
+ */
+static pic_value
+pic_big_number_bigint_rem(pic_state *pic)
+{
+  pic_value value1, value2;
+  struct pic_bigint_t *bi1, *bi2, *rem, *quo;
+
+  pic_get_args(pic, "oo", &value1, &value2);
+  bi1 = take_bigint_or_int(pic, value1);
+  bi2 = take_bigint_or_int(pic, value2);
+
+  bigint_div(pic, bi1, bi2, &quo, &rem);
+
+  return pic_obj_value(pic_data_alloc(pic, &bigint_type, rem));
+}
+
+static pic_value
 pic_big_number_bigint_add_i(pic_state *pic)
 {
   pic_value value1, value2;
@@ -682,6 +772,8 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "bigint-add", pic_big_number_bigint_add);
     pic_defun(pic, "bigint-sub", pic_big_number_bigint_sub);
     pic_defun(pic, "bigint-mul", pic_big_number_bigint_mul);
+    pic_defun(pic, "bigint-div", pic_big_number_bigint_div);
+    pic_defun(pic, "bigint-rem", pic_big_number_bigint_rem);
     pic_defun(pic, "bigint-add!", pic_big_number_bigint_add_i);
     pic_defun(pic, "bigint-sub!", pic_big_number_bigint_sub_i);
     pic_defun(pic, "bigint-mul!", pic_big_number_bigint_mul_i);
