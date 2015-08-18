@@ -132,6 +132,20 @@
 (test-less? "1" "4294967297" #t)
 
 
+; bigint->string
+(define-syntax test-string
+  (syntax-rules ()
+    ((_ a)
+      (test a
+        (bigint->string (make-bigint a))))))
+
+(test-string "0")
+(test-string "23525")
+(test-string "4294967296")
+(test-string "-4294967296")
+(test-string "314159265358979323846264338327950288419716939937510582097494459230781640628620899")
+
+
 ; factorial
 
 (define (fact-big n)

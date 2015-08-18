@@ -517,6 +517,64 @@ bigint_to_double(struct pic_bigint_t *bi)
   return ret * pow(base, len - 1);
 }
 
+static pic_str *
+bigint_to_string(pic_state *pic, struct pic_bigint_t *value, int radix)
+{
+  const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
+  char *buf;
+  int len;
+  int i, dstart, j;
+  pic_vec *cur, *rad;
+  pic_str *result;
+
+  if (value->digits->len == 0) { // value == 0.
+    buf = pic_malloc(pic, 1);
+    buf[0] = '0';
+    result = pic_make_str(pic, buf, 1);
+    pic_free(pic, buf);
+    return result;
+  }
+
+  len = ceil(bigint_shift * log(2) / log(radix)) * value->digits->len + 1;
+  dstart = 0;
+  buf = pic_malloc(pic, len);
+
+  if (value->signum) {
+    buf[0] = '-';
+    dstart = 1;
+  }
+
+  cur = value->digits;
+  rad = pic_make_vec(pic, 1);
+  rad->data[0] = pic_int_value(radix); // radix is 10 .. 36
+
+  i = dstart;
+  while (cur->len > 0) { // put digits in the reverse order
+    pic_vec *quo, *rem;
+    int d;
+    bigint_vec_div(pic, cur, rad, &quo, &rem);
+    if (rem->len == 0) {
+      d = 0;
+    } else {
+      d = pic_int(rem->data[0]);
+    }
+    buf[i++] = digits[d];
+    cur = quo;
+  }
+
+  // reverse digits
+  for (j = 0; j < (i - dstart) / 2; ++j) {
+    char tmp = buf[dstart + j];
+    buf[dstart + j] = buf[i - 1 - j];
+    buf[i - 1 - j] = tmp;
+  }
+
+  result = pic_make_str(pic, buf, i);
+  pic_free(pic, buf);
+
+  return result;
+}
+
 /*
  * Take a value that contains a bigint or an int, and convert it to a bigint.
  */
@@ -763,6 +821,19 @@ pic_big_number_bigint_to_number(pic_state *pic)
 
   return pic_float_value(result);
 }
+static pic_value
+pic_big_number_bigint_to_string(pic_state *pic)
+{
+  pic_value val;
+  struct pic_bigint_t *bi;
+  pic_str *result;
+
+  pic_get_args(pic, "o", &val);
+  bi = take_bigint_or_int(pic, val);
+  result = bigint_to_string(pic, bi, 10);
+
+  return pic_obj_value(result);
+}
 
 void
 pic_init_big_number(pic_state *pic)
@@ -782,5 +853,6 @@ pic_init_big_number(pic_state *pic)
     pic_defun(pic, "bigint-less?", pic_big_number_bigint_less_p);
     pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
     pic_defun(pic, "bigint->number", pic_big_number_bigint_to_number);
+    pic_defun(pic, "bigint->string", pic_big_number_bigint_to_string);
   }
 }
