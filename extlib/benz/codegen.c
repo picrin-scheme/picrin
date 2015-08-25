@@ -448,6 +448,11 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 static pic_value analyze(pic_state *, analyze_scope *, pic_value);
 static pic_value analyze_lambda(pic_state *, analyze_scope *, pic_value);
 
+#define GREF pic_intern(pic, "gref")
+#define LREF pic_intern(pic, "lref")
+#define CREF pic_intern(pic, "cref")
+#define CALL pic_intern(pic, "call")
+
 static pic_value
 analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
@@ -456,11 +461,11 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   depth = find_var(pic, scope, sym);
 
   if (depth == scope->depth) {
-    return pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sym));
+    return pic_list2(pic, pic_obj_value(GREF), pic_obj_value(sym));
   } else if (depth == 0) {
-    return pic_list2(pic, pic_obj_value(pic->sLREF), pic_obj_value(sym));
+    return pic_list2(pic, pic_obj_value(LREF), pic_obj_value(sym));
   } else {
-    return pic_list3(pic, pic_obj_value(pic->sCREF), pic_int_value(depth), pic_obj_value(sym));
+    return pic_list3(pic, pic_obj_value(CREF), pic_int_value(depth), pic_obj_value(sym));
   }
 }
 
@@ -569,7 +574,7 @@ analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
 static pic_value
 analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  return pic_cons(pic, pic_obj_value(pic->sCALL), analyze_list(pic, scope, obj));
+  return pic_cons(pic, pic_obj_value(CALL), analyze_list(pic, scope, obj));
 }
 
 static pic_value
@@ -821,14 +826,14 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   pic_sym *sym;
 
   sym = pic_sym_ptr(pic_car(pic, obj));
-  if (sym == pic->sGREF) {
+  if (sym == GREF) {
     pic_sym *name;
 
     name = pic_sym_ptr(pic_list_ref(pic, obj, 1));
     emit_i(pic, cxt, OP_GREF, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (sym == pic->sCREF) {
+  else if (sym == CREF) {
     pic_sym *name;
     int depth;
 
@@ -837,7 +842,7 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_r(pic, cxt, OP_CREF, depth, index_capture(cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (sym == pic->sLREF) {
+  else if (sym == LREF) {
     pic_sym *name;
     int i;
 
@@ -863,14 +868,14 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   var = pic_list_ref(pic, obj, 1);
   type = pic_sym_ptr(pic_list_ref(pic, var, 0));
-  if (type == pic->sGREF) {
+  if (type == GREF) {
     pic_sym *name;
 
     name = pic_sym_ptr(pic_list_ref(pic, var, 1));
     emit_i(pic, cxt, OP_GSET, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (type == pic->sCREF) {
+  else if (type == CREF) {
     pic_sym *name;
     int depth;
 
@@ -879,7 +884,7 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_r(pic, cxt, OP_CSET, depth, index_capture(cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (type == pic->sLREF) {
+  else if (type == LREF) {
     pic_sym *name;
     int i;
 
@@ -1008,7 +1013,7 @@ codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   }
 
   functor = pic_list_ref(pic, obj, 1);
-  if (pic_sym_ptr(pic_list_ref(pic, functor, 0)) == pic->sGREF) {
+  if (pic_sym_ptr(pic_list_ref(pic, functor, 0)) == GREF) {
     pic_sym *sym;
 
     sym = pic_sym_ptr(pic_list_ref(pic, functor, 1));
@@ -1040,7 +1045,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   pic_sym *sym;
 
   sym = pic_sym_ptr(pic_car(pic, obj));
-  if (sym == pic->sGREF || sym == pic->sCREF || sym == pic->sLREF) {
+  if (sym == GREF || sym == CREF || sym == LREF) {
     codegen_ref(pic, cxt, obj, tailpos);
   }
   else if (sym == pic->uSETBANG || sym == pic->uDEFINE) {
@@ -1058,7 +1063,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   else if (sym == pic->uQUOTE) {
     codegen_quote(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->sCALL) {
+  else if (sym == CALL) {
     codegen_call(pic, cxt, obj, tailpos);
   }
   else {

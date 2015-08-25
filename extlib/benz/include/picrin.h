@@ -96,9 +96,9 @@ struct pic_state {
   struct pic_lib *lib, *prev_lib;
 
   pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
+  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE;
+  pic_sym *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
   pic_sym *sDEFINE_LIBRARY, *sIMPORT, *sEXPORT, *sCOND_EXPAND;
-  pic_sym *sGREF, *sCREF, *sLREF, *sCALL;
 
   pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG, *uDEFINE_MACRO;
   pic_sym *uDEFINE_LIBRARY, *uIMPORT, *uEXPORT, *uCOND_EXPAND;
