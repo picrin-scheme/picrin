@@ -102,82 +102,36 @@ pic_get_args(pic_state *pic, const char *format, ...)
       *p = GET_OPERAND(pic,i);
       break;
     }
-    case 'f': case 'F': {
-      double *f;
-      bool *e, dummy;
-      pic_value v;
 
-      f = va_arg(ap, double *);
-      e = (c == 'F' ? va_arg(ap, bool *) : &dummy);
-
-      v = GET_OPERAND(pic, i);
-      switch (pic_type(v)) {
-      case PIC_TT_FLOAT:
-        *f = pic_float(v);
-        *e = false;
-        break;
-      case PIC_TT_INT:
-        *f = pic_int(v);
-        *e = true;
-        break;
-      default:
-        pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
+#define NUM_CASE(c1, c2, ctype)                                         \
+      case c1: case c2: {                                               \
+        ctype *n;                                                       \
+        bool *e, dummy;                                                 \
+        pic_value v;                                                    \
+                                                                        \
+        n = va_arg(ap, ctype *);                                        \
+        e = (c == c2 ? va_arg(ap, bool *) : &dummy);                    \
+                                                                        \
+        v = GET_OPERAND(pic, i);                                        \
+        switch (pic_type(v)) {                                          \
+        case PIC_TT_FLOAT:                                              \
+          *n = pic_float(v);                                            \
+          *e = false;                                                   \
+          break;                                                        \
+        case PIC_TT_INT:                                                \
+          *n = pic_int(v);                                              \
+          *e = true;                                                    \
+          break;                                                        \
+        default:                                                        \
+          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v); \
+        }                                                               \
+        break;                                                          \
       }
-      break;
-    }
-    case 'i': case 'I': {
-      int *k;
-      bool *e, dummy;
-      pic_value v;
 
-      k = va_arg(ap, int *);
-      e = (c == 'I' ? va_arg(ap, bool *) : &dummy);
+    NUM_CASE('i', 'I', int)
+    NUM_CASE('f', 'F', double)
 
-      v = GET_OPERAND(pic, i);
-      switch (pic_type(v)) {
-      case PIC_TT_FLOAT:
-        *k = pic_float(v);
-        *e = false;
-        break;
-      case PIC_TT_INT:
-        *k = pic_int(v);
-        *e = true;
-        break;
-      default:
-        pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
-      }
-      break;
-    }
-    case 'c': {
-      char *k;
-      pic_value v;
-
-      k = va_arg(ap, char *);
-      v = GET_OPERAND(pic,i);
-      if (pic_char_p(v)) {
-        *k = pic_char(v);
-      }
-      else {
-        pic_errorf(pic, "pic_get_args: expected char, but got ~s", v);
-      }
-      break;
-    }
-    case 'z': {
-      const char **cstr;
-      pic_value v;
-
-      cstr = va_arg(ap, const char **);
-      v = GET_OPERAND(pic,i);
-      if (pic_str_p(v)) {
-        *cstr = pic_str_cstr(pic, pic_str_ptr(v));
-      }
-      else {
-        pic_errorf(pic, "pic_get_args: expected string, but got ~s", v);
-      }
-      break;
-    }
-
-#define PTR_CASE(c, type, ctype)                                        \
+#define VAL_CASE(c, type, ctype, conv)                                  \
       case c: {                                                         \
         ctype *ptr;                                                     \
         pic_value v;                                                    \
@@ -185,13 +139,19 @@ pic_get_args(pic_state *pic, const char *format, ...)
         ptr = va_arg(ap, ctype *);                                      \
         v = GET_OPERAND(pic, i);                                        \
         if (pic_## type ##_p(v)) {                                      \
-          *ptr = pic_## type ##_ptr(v);                                 \
+          *ptr = conv;                                                  \
         }                                                               \
         else {                                                          \
           pic_errorf(pic, "pic_get_args: expected " #type ", but got ~s", v); \
         }                                                               \
         break;                                                          \
       }
+
+    VAL_CASE('c', char, char, pic_char(v))
+    VAL_CASE('z', str, const char *, pic_str_cstr(pic, pic_str_ptr(v)))
+
+#define PTR_CASE(c, type, ctype)                        \
+      VAL_CASE(c, type, ctype, pic_## type ##_ptr(v))
 
     PTR_CASE('s', str, pic_str *)
     PTR_CASE('m', sym, pic_sym *)
