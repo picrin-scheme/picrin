@@ -102,32 +102,13 @@ pic_get_args(pic_state *pic, const char *format, ...)
       *p = GET_OPERAND(pic,i);
       break;
     }
-    case 'f': {
+    case 'f': case 'F': {
       double *f;
+      bool *e, dummy;
       pic_value v;
 
       f = va_arg(ap, double *);
-
-      v = GET_OPERAND(pic, i);
-      switch (pic_type(v)) {
-      case PIC_TT_FLOAT:
-        *f = pic_float(v);
-        break;
-      case PIC_TT_INT:
-        *f = pic_int(v);
-        break;
-      default:
-        pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
-      }
-      break;
-    }
-    case 'F': {
-      double *f;
-      bool *e;
-      pic_value v;
-
-      f = va_arg(ap, double *);
-      e = va_arg(ap, bool *);
+      e = (c == 'F' ? va_arg(ap, bool *) : &dummy);
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
@@ -144,18 +125,18 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       break;
     }
-    case 'I': {
+    case 'i': case 'I': {
       int *k;
-      bool *e;
+      bool *e, dummy;
       pic_value v;
 
       k = va_arg(ap, int *);
-      e = va_arg(ap, bool *);
+      e = (c == 'I' ? va_arg(ap, bool *) : &dummy);
 
       v = GET_OPERAND(pic, i);
       switch (pic_type(v)) {
       case PIC_TT_FLOAT:
-        *k = (int)pic_float(v);
+        *k = pic_float(v);
         *e = false;
         break;
       case PIC_TT_INT:
@@ -164,25 +145,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
         break;
       default:
         pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v);
-      }
-      break;
-    }
-    case 'i': {
-      int *k;
-      pic_value v;
-
-      k = va_arg(ap, int *);
-
-      v = GET_OPERAND(pic, i);
-      switch (pic_type(v)) {
-      case PIC_TT_FLOAT:
-        *k = (int)pic_float(v);
-        break;
-      case PIC_TT_INT:
-        *k = pic_int(v);
-        break;
-      default:
-        pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
       }
       break;
     }
