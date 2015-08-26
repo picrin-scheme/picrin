@@ -24,7 +24,6 @@ pic_get_proc(pic_state *pic)
  *  o   pic_value *             object
  *  i   int *                   int
  *  I   int *, bool *           int with exactness
- *  k   size_t *                size_t implicitly converted from int
  *  f   double *                float
  *  F   double *, bool *        float with exactness
  *  s   pic_str **              string object
@@ -39,15 +38,15 @@ pic_get_proc(pic_state *pic)
  *  e   struct pic_error **     error object
  *
  *  |                           optional operator
- *  *   size_t *, pic_value **  variable length operator
+ *  *   int *, pic_value **  variable length operator
  */
 
 int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  size_t paramc, optc, min;
-  size_t i , argc = pic->ci->argc - 1;
+  int paramc, optc, min;
+  int i, argc = pic->ci->argc - 1;
   va_list ap;
   bool rest = false, opt = false;
 
@@ -181,34 +180,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
         break;
       case PIC_TT_INT:
         *k = pic_int(v);
-        break;
-      default:
-        pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
-      }
-      break;
-    }
-    case 'k': {
-      size_t *k;
-      pic_value v;
-      int x;
-      size_t s;
-
-      k = va_arg(ap, size_t *);
-
-      v = GET_OPERAND(pic, i);
-      switch (pic_type(v)) {
-      case PIC_TT_INT:
-        x = pic_int(v);
-        if (x < 0) {
-          pic_errorf(pic, "pic_get_args: expected non-negative int, but got ~s", v);
-        }
-        s = (size_t)x;
-        if (sizeof(unsigned) > sizeof(size_t)) {
-          if (x != (int)s) {
-            pic_errorf(pic, "pic_get_args: int unrepresentable with size_t ~s", v);
-          }
-        }
-        *k = (size_t)x;
         break;
       default:
         pic_errorf(pic, "pic_get_args: expected int, but got ~s", v);
@@ -374,12 +345,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
     }
   }
   if (rest) {
-      size_t *n;
+      int *n;
       pic_value **argv;
 
-      n = va_arg(ap, size_t *);
+      n = va_arg(ap, int *);
       argv = va_arg(ap, pic_value **);
-      *n = (size_t)(argc - (i - 1));
+      *n = argc - (i - 1);
       *argv = &GET_OPERAND(pic, i);
   }
   va_end(ap);
@@ -422,7 +393,7 @@ vm_push_cxt(pic_state *pic)
 {
   pic_callinfo *ci = pic->ci;
 
-  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, sizeof(struct pic_context) + sizeof(pic_value) * (size_t)(ci->regc), PIC_TT_CXT);
+  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, sizeof(struct pic_context) + sizeof(pic_value) * ci->regc, PIC_TT_CXT);
   ci->cxt->up = ci->up;
   ci->cxt->regc = ci->regc;
   ci->cxt->regs = ci->regs;
@@ -1007,11 +978,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, pic_value args)
 }
 
 pic_value
-pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, size_t argc, pic_value *args)
+pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, int argc, pic_value *args)
 {
   pic_value *sp;
   pic_callinfo *ci;
-  size_t i;
+  int i;
 
   PIC_INIT_CODE_I(pic->iseq[0], OP_NOP, 0);
   PIC_INIT_CODE_I(pic->iseq[1], OP_TAILCALL, -1);
@@ -1038,7 +1009,7 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, size_t argc, pic_val
 pic_value
 pic_apply_trampoline_list(pic_state *pic, struct pic_proc *proc, pic_value args)
 {
-  size_t i, argc = pic_length(pic, args);
+  int i, argc = pic_length(pic, args);
   pic_value val, it;
   pic_vec *argv = pic_make_vec(pic, argc);
 

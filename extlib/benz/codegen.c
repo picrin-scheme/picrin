@@ -505,7 +505,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
   pic_value formals, body;
   pic_value rest = pic_undef_value();
   pic_vec *args, *locals, *captures;
-  size_t i, j;
+  int i, j;
   khiter_t it;
 
   formals = pic_list_ref(pic, form, 1);
@@ -752,7 +752,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 static int
 index_capture(codegen_context *cxt, pic_sym *sym, int depth)
 {
-  size_t i;
+  int i;
 
   while (depth-- > 0) {
     cxt = cxt->up;
@@ -760,7 +760,7 @@ index_capture(codegen_context *cxt, pic_sym *sym, int depth)
 
   for (i = 0; i < cxt->captures->len; ++i) {
     if (pic_sym_ptr(cxt->captures->data[i]) == sym)
-      return (int)i;
+      return i;
   }
   return -1;
 }
@@ -768,17 +768,17 @@ index_capture(codegen_context *cxt, pic_sym *sym, int depth)
 static int
 index_local(codegen_context *cxt, pic_sym *sym)
 {
-  size_t i, offset;
+  int i, offset;
 
   offset = 1;
   for (i = 0; i < cxt->args->len; ++i) {
     if (pic_sym_ptr(cxt->args->data[i]) == sym)
-      return (int)(i + offset);
+      return i + offset;
   }
   offset += i;
   for (i = 0; i < cxt->locals->len; ++i) {
     if (pic_sym_ptr(cxt->locals->data[i]) == sym)
-      return (int)(i + offset);
+      return i + offset;
   }
   return -1;
 }
@@ -802,13 +802,12 @@ index_global(pic_state *pic, codegen_context *cxt, pic_sym *name)
 static void
 create_activation(pic_state *pic, codegen_context *cxt)
 {
-  size_t i;
-  int n;
+  int i, n;
 
   for (i = 0; i < cxt->captures->len; ++i) {
     n = index_local(cxt, pic_sym_ptr(cxt->captures->data[i]));
     assert(n != -1);
-    if (n <= (int)cxt->args->len || cxt->rest == pic_sym_ptr(cxt->captures->data[i])) {
+    if (n <= cxt->args->len || cxt->rest == pic_sym_ptr(cxt->captures->data[i])) {
       /* copy arguments to capture variable area */
       emit_i(pic, cxt, OP_LREF, n);
     } else {

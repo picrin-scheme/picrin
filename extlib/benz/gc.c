@@ -325,7 +325,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_VECTOR: {
-    size_t i;
+    int i;
     for (i = 0; i < obj->u.vec.len; ++i) {
       gc_mark(pic, obj->u.vec.data[i]);
     }

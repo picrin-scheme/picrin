@@ -56,8 +56,8 @@ pic_value pic_list4(pic_state *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_list5(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_list6(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_list7(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value, pic_value, pic_value);
-pic_value pic_list_by_array(pic_state *, size_t, pic_value *);
-pic_value pic_make_list(pic_state *, size_t, pic_value);
+pic_value pic_list_by_array(pic_state *, int, pic_value *);
+pic_value pic_make_list(pic_state *, int, pic_value);
 
 #define pic_for_each(var, list, it)                             \
   for (it = (list); ! pic_nil_p(it); it = pic_cdr(pic, it))     \
@@ -85,9 +85,9 @@ pic_value pic_cadr(pic_state *, pic_value);
 pic_value pic_cdar(pic_state *, pic_value);
 pic_value pic_cddr(pic_state *, pic_value);
 
-pic_value pic_list_tail(pic_state *, pic_value, size_t);
-pic_value pic_list_ref(pic_state *, pic_value, size_t);
-void pic_list_set(pic_state *, pic_value, size_t, pic_value);
+pic_value pic_list_tail(pic_state *, pic_value, int);
+pic_value pic_list_ref(pic_state *, pic_value, int);
+void pic_list_set(pic_state *, pic_value, int, pic_value);
 pic_value pic_list_copy(pic_state *, pic_value);
 
 #if defined(__cplusplus)

@@ -157,7 +157,7 @@ pic_list7(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_va
 }
 
 pic_value
-pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
+pic_list_by_array(pic_state *pic, int c, pic_value *vs)
 {
   pic_value v;
 
@@ -169,10 +169,10 @@ pic_list_by_array(pic_state *pic, size_t c, pic_value *vs)
 }
 
 pic_value
-pic_make_list(pic_state *pic, size_t k, pic_value fill)
+pic_make_list(pic_state *pic, int k, pic_value fill)
 {
   pic_value list;
-  size_t i;
+  int i;
 
   list = pic_nil_value();
   for (i = 0; i < k; ++i) {
@@ -372,7 +372,7 @@ pic_cddr(pic_state *pic, pic_value v)
 }
 
 pic_value
-pic_list_tail(pic_state *pic, pic_value list, size_t i)
+pic_list_tail(pic_state *pic, pic_value list, int i)
 {
   while (i-- > 0) {
     list = pic_cdr(pic, list);
@@ -381,13 +381,13 @@ pic_list_tail(pic_state *pic, pic_value list, size_t i)
 }
 
 pic_value
-pic_list_ref(pic_state *pic, pic_value list, size_t i)
+pic_list_ref(pic_state *pic, pic_value list, int i)
 {
   return pic_car(pic, pic_list_tail(pic, list, i));
 }
 
 void
-pic_list_set(pic_state *pic, pic_value list, size_t i, pic_value obj)
+pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
 {
   pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
 }
@@ -530,10 +530,10 @@ pic_pair_list_p(pic_state *pic)
 static pic_value
 pic_pair_make_list(pic_state *pic)
 {
-  size_t i;
+  int i;
   pic_value fill = pic_undef_value();
 
-  pic_get_args(pic, "k|o", &i, &fill);
+  pic_get_args(pic, "i|o", &i, &fill);
 
   return pic_make_list(pic, i, fill);
 }
@@ -541,7 +541,7 @@ pic_pair_make_list(pic_state *pic)
 static pic_value
 pic_pair_list(pic_state *pic)
 {
-  size_t argc;
+  int argc;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -556,13 +556,13 @@ pic_pair_length(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  return pic_size_value(pic_length(pic, list));
+  return pic_int_value(pic_length(pic, list));
 }
 
 static pic_value
 pic_pair_append(pic_state *pic)
 {
-  size_t argc;
+  int argc;
   pic_value *args, list;
 
   pic_get_args(pic, "*", &argc, &args);
@@ -593,9 +593,9 @@ static pic_value
 pic_pair_list_tail(pic_state *pic)
 {
   pic_value list;
-  size_t i;
+  int i;
 
-  pic_get_args(pic, "ok", &list, &i);
+  pic_get_args(pic, "oi", &list, &i);
 
   return pic_list_tail(pic, list, i);
 }
@@ -604,9 +604,9 @@ static pic_value
 pic_pair_list_ref(pic_state *pic)
 {
   pic_value list;
-  size_t i;
+  int i;
 
-  pic_get_args(pic, "ok", &list, &i);
+  pic_get_args(pic, "oi", &list, &i);
 
   return pic_list_ref(pic, list, i);
 }
@@ -615,9 +615,9 @@ static pic_value
 pic_pair_list_set(pic_state *pic)
 {
   pic_value list, obj;
-  size_t i;
+  int i;
 
-  pic_get_args(pic, "oko", &list, &i, &obj);
+  pic_get_args(pic, "oio", &list, &i, &obj);
 
   pic_list_set(pic, list, i, obj);
 
@@ -638,7 +638,7 @@ static pic_value
 pic_pair_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i;
+  int argc, i;
   pic_value *args;
   pic_value arg, ret;
 
@@ -671,7 +671,7 @@ static pic_value
 pic_pair_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i;
+  int argc, i;
   pic_value *args;
   pic_value arg;
 

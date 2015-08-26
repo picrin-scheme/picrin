@@ -227,7 +227,6 @@ PIC_INLINE pic_value pic_invalid_value();
 PIC_INLINE pic_value pic_obj_value(void *);
 PIC_INLINE pic_value pic_float_value(double);
 PIC_INLINE pic_value pic_int_value(int);
-PIC_INLINE pic_value pic_size_value(size_t);
 PIC_INLINE pic_value pic_char_value(char c);
 
 PIC_INLINE bool pic_eq_p(pic_value, pic_value);
@@ -358,17 +357,6 @@ pic_bool_value(bool b)
 
   pic_init_value(v, b ? PIC_VTYPE_TRUE : PIC_VTYPE_FALSE);
   return v;
-}
-
-PIC_INLINE pic_value
-pic_size_value(size_t s)
-{
-  if (sizeof(unsigned) < sizeof(size_t)) {
-    if (s > (size_t)INT_MAX) {
-      return pic_float_value(s);
-    }
-  }
-  return pic_int_value((int)s);
 }
 
 #if PIC_NAN_BOXING

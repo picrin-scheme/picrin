@@ -60,7 +60,7 @@ pic_symbol_symbol_p(pic_state *pic)
 static pic_value
 pic_symbol_symbol_eq_p(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);

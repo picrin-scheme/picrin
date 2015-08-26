@@ -219,7 +219,7 @@ PIC_NORETURN static pic_value
 cont_call(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc;
+  int argc;
   pic_value *argv;
   struct pic_fullcont *cont;
 

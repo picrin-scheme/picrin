@@ -86,7 +86,7 @@ static pic_value
 cont_call(pic_state *pic)
 {
   struct pic_proc *self = pic_get_proc(pic);
-  size_t argc;
+  int argc;
   pic_value *argv;
   int id;
   struct pic_cont *cc, *cont;
@@ -155,11 +155,11 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
 }
 
 static pic_value
-pic_va_values(pic_state *pic, size_t n, ...)
+pic_va_values(pic_state *pic, int n, ...)
 {
   pic_vec *args = pic_make_vec(pic, n);
   va_list ap;
-  size_t i = 0;
+  int i = 0;
 
   va_start(ap, n);
 
@@ -209,9 +209,9 @@ pic_values5(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_
 }
 
 pic_value
-pic_values(pic_state *pic, size_t argc, pic_value *argv)
+pic_values(pic_state *pic, int argc, pic_value *argv)
 {
-  size_t i;
+  int i;
 
   for (i = 0; i < argc; ++i) {
     pic->sp[i] = argv[i];
@@ -236,15 +236,15 @@ pic_values_by_list(pic_state *pic, pic_value list)
   return pic_nil_p(list) ? pic_undef_value() : pic->sp[0];
 }
 
-size_t
-pic_receive(pic_state *pic, size_t n, pic_value *argv)
+int
+pic_receive(pic_state *pic, int n, pic_value *argv)
 {
   pic_callinfo *ci;
-  size_t i, retc;
+  int i, retc;
 
   /* take info from discarded frame */
   ci = pic->ci + 1;
-  retc = (size_t)ci->retc;
+  retc = ci->retc;
 
   for (i = 0; i < retc && i < n; ++i) {
     argv[i] = ci->fp[i];
@@ -276,7 +276,7 @@ pic_cont_dynamic_wind(pic_state *pic)
 static pic_value
 pic_cont_values(pic_state *pic)
 {
-  size_t argc;
+  int argc;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -288,7 +288,7 @@ static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
   struct pic_proc *producer, *consumer;
-  size_t argc;
+  int argc;
   pic_vec *args;
 
   pic_get_args(pic, "ll", &producer, &consumer);

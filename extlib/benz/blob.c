@@ -5,7 +5,7 @@
 #include "picrin.h"
 
 struct pic_blob *
-pic_make_blob(pic_state *pic, size_t len)
+pic_make_blob(pic_state *pic, int len)
 {
   struct pic_blob *bv;
 
@@ -29,7 +29,7 @@ static pic_value
 pic_blob_bytevector(pic_state *pic)
 {
   pic_value *argv;
-  size_t argc, i;
+  int argc, i;
   pic_blob *blob;
   unsigned char *data;
 
@@ -56,10 +56,9 @@ static pic_value
 pic_blob_make_bytevector(pic_state *pic)
 {
   pic_blob *blob;
-  size_t k, i;
-  int b = 0;
+  int k, i, b = 0;
 
-  pic_get_args(pic, "k|i", &k, &b);
+  pic_get_args(pic, "i|i", &k, &b);
 
   if (b < 0 || b > 255)
     pic_errorf(pic, "byte out of range");
@@ -79,7 +78,7 @@ pic_blob_bytevector_length(pic_state *pic)
 
   pic_get_args(pic, "b", &bv);
 
-  return pic_size_value(bv->len);
+  return pic_int_value(bv->len);
 }
 
 static pic_value
@@ -112,10 +111,9 @@ static pic_value
 pic_blob_bytevector_copy_i(pic_state *pic)
 {
   pic_blob *to, *from;
-  int n;
-  size_t at, start, end;
+  int n, at, start, end;
 
-  n = pic_get_args(pic, "bkb|kk", &to, &at, &from, &start, &end);
+  n = pic_get_args(pic, "bib|ii", &to, &at, &from, &start, &end);
 
   switch (n) {
   case 3:
@@ -144,10 +142,9 @@ static pic_value
 pic_blob_bytevector_copy(pic_state *pic)
 {
   pic_blob *from, *to;
-  int n;
-  size_t start, end, i = 0;
+  int n, start, end, i = 0;
 
-  n = pic_get_args(pic, "b|kk", &from, &start, &end);
+  n = pic_get_args(pic, "b|ii", &from, &start, &end);
 
   switch (n) {
   case 1:
@@ -171,7 +168,7 @@ pic_blob_bytevector_copy(pic_state *pic)
 static pic_value
 pic_blob_bytevector_append(pic_state *pic)
 {
-  size_t argc, i, j, len;
+  int argc, i, j, len;
   pic_value *argv;
   pic_blob *blob;
 
@@ -225,10 +222,9 @@ pic_blob_bytevector_to_list(pic_state *pic)
 {
   pic_blob *blob;
   pic_value list;
-  int n;
-  size_t start, end, i;
+  int n, start, end, i;
 
-  n = pic_get_args(pic, "b|kk", &blob, &start, &end);
+  n = pic_get_args(pic, "b|ii", &blob, &start, &end);
 
   switch (n) {
   case 1:

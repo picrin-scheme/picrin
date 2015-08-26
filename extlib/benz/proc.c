@@ -72,7 +72,7 @@ pic_proc_apply(pic_state *pic)
 {
   struct pic_proc *proc;
   pic_value *args;
-  size_t argc;
+  int argc;
   pic_value arg_list;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
