@@ -205,7 +205,7 @@ pic_value pic_apply2(pic_state *, struct pic_proc *, pic_value, pic_value);
 pic_value pic_apply3(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value);
 pic_value pic_apply4(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value, pic_value);
-pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, size_t, pic_value *);
+pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, int, pic_value *);
 pic_value pic_apply_trampoline_list(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
 

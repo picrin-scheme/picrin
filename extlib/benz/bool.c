@@ -8,10 +8,10 @@ KHASH_DECLARE(m, void *, int)
 KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 static bool
-internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, khash_t(m) *h)
+internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m) *h)
 {
   pic_value local = pic_nil_value();
-  size_t c = 0;
+  int c = 0;
 
   if (depth > 10) {
     if (depth > 200) {
@@ -49,7 +49,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, khash_t
   }
   case PIC_TT_BLOB: {
     pic_blob *blob1, *blob2;
-    size_t i;
+    int i;
 
     blob1 = pic_blob_ptr(x);
     blob2 = pic_blob_ptr(y);
@@ -84,7 +84,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, khash_t
     goto LOOP;                  /* tail-call optimization */
   }
   case PIC_TT_VECTOR: {
-    size_t i;
+    int i;
     struct pic_vector *u, *v;
 
     u = pic_vec_ptr(x);
@@ -167,7 +167,7 @@ pic_bool_boolean_p(pic_state *pic)
 static pic_value
 pic_bool_boolean_eq_p(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);

@@ -205,7 +205,7 @@ string_write(pic_state *pic, void *cookie, const char *ptr, int size)
 
   if (m->pos + size >= m->capa) {
     m->capa = (m->pos + size) * 2;
-    m->buf = pic_realloc(pic, m->buf, (size_t)m->capa);
+    m->buf = pic_realloc(pic, m->buf, m->capa);
   }
   memcpy(m->buf + m->pos, ptr, size);
   m->pos += size;
@@ -726,9 +726,9 @@ pic_port_read_blob(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
   pic_blob *blob;
-  size_t k, i;
+  int k, i;
 
-  pic_get_args(pic, "k|p", &k, &port);
+  pic_get_args(pic, "i|p", &k, &port);
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "read-bytevector");
 
@@ -750,11 +750,10 @@ pic_port_read_blob_ip(pic_state *pic)
 {
   struct pic_port *port;
   struct pic_blob *bv;
-  int n;
   char *buf;
-  size_t start, end, i, len;
+  int n, start, end, i, len;
 
-  n = pic_get_args(pic, "b|pkk", &bv, &port, &start, &end);
+  n = pic_get_args(pic, "b|pii", &bv, &port, &start, &end);
   switch (n) {
   case 1:
     port = pic_stdin(pic);
@@ -781,7 +780,7 @@ pic_port_read_blob_ip(pic_state *pic)
     return pic_eof_object();
   }
   else {
-    return pic_size_value(i);
+    return pic_int_value(i);
   }
 }
 
@@ -856,10 +855,9 @@ pic_port_write_blob(pic_state *pic)
 {
   struct pic_blob *blob;
   struct pic_port *port;
-  int n;
-  size_t start, end, i;
+  int n, start, end, i;
 
-  n = pic_get_args(pic, "b|pkk", &blob, &port, &start, &end);
+  n = pic_get_args(pic, "b|pii", &blob, &port, &start, &end);
   switch (n) {
   case 1:
     port = pic_stdout(pic);

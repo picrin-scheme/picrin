@@ -102,7 +102,7 @@ static pic_value
 pic_lib_current_library(pic_state *pic)
 {
   pic_value lib;
-  size_t n;
+  int n;
 
   n = pic_get_args(pic, "|o", &lib);
 

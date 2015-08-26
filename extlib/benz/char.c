@@ -34,7 +34,7 @@ pic_char_integer_to_char(pic_state *pic)
   if (i < 0 || i > 127) {
     pic_errorf(pic, "integer->char: integer out of char range: %d", i);
   }
-
+  
   return pic_char_value((char)i);
 }
 
@@ -42,7 +42,7 @@ pic_char_integer_to_char(pic_state *pic)
   static pic_value					\
   pic_char_##name##_p(pic_state *pic)			\
   {							\
-    size_t argc, i;                                     \
+    int argc, i;                                        \
     pic_value *argv;					\
     char c, d;						\
     							\

@@ -41,7 +41,7 @@ pic_dict_set(pic_state PIC_UNUSED(*pic), struct pic_dict *dict, pic_sym *key, pi
   kh_val(h, it) = val;
 }
 
-size_t
+int
 pic_dict_size(pic_state PIC_UNUSED(*pic), struct pic_dict *dict)
 {
   return kh_size(&dict->hash);
@@ -83,7 +83,7 @@ pic_dict_dictionary(pic_state *pic)
 {
   struct pic_dict *dict;
   pic_value *argv;
-  size_t argc, i;
+  int argc, i;
 
   pic_get_args(pic, "*", &argc, &argv);
 

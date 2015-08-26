@@ -1,7 +1,7 @@
 #include "picrin.h"
 
 void
-pic_str_set(pic_state *pic, pic_str *str, size_t i, char c)
+pic_str_set(pic_state *pic, pic_str *str, int i, char c)
 {
   pic_str *x, *y, *z, *tmp;
   char buf[1];

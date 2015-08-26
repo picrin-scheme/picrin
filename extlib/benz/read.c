@@ -197,7 +197,7 @@ read_syntax_unquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
 static pic_value
 read_symbol(pic_state *pic, struct pic_port *port, int c)
 {
-  size_t len;
+  int len;
   char *buf;
   pic_sym *sym;
 
@@ -460,7 +460,7 @@ static pic_value
 read_string(pic_state *pic, struct pic_port *port, int c)
 {
   char *buf;
-  size_t size, cnt;
+  int size, cnt;
   pic_str *str;
 
   size = 256;
@@ -495,7 +495,7 @@ static pic_value
 read_pipe(pic_state *pic, struct pic_port *port, int c)
 {
   char *buf;
-  size_t size, cnt;
+  int size, cnt;
   pic_sym *sym;
   /* Currently supports only ascii chars */
   char HEX_BUF[3];
@@ -539,7 +539,7 @@ static pic_value
 read_blob(pic_state *pic, struct pic_port *port, int c)
 {
   int nbits, n;
-  size_t len, i;
+  int len, i;
   unsigned char *dat;
   pic_blob *blob;
 
@@ -637,7 +637,7 @@ read_vector(pic_state *pic, struct pic_port *port, int c)
 {
   pic_value list, it, elem;
   pic_vec *vec;
-  size_t i = 0;
+  int i = 0;
 
   list = read(pic, port, c);
 
@@ -690,7 +690,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 
         tmp = pic_vec_ptr(read(pic, port, c));
         PIC_SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
-        PIC_SWAP(size_t, tmp->len, pic_vec_ptr(val)->len);
+        PIC_SWAP(int, tmp->len, pic_vec_ptr(val)->len);
 
         return val;
       }

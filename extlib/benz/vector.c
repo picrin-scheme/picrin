@@ -5,10 +5,10 @@
 #include "picrin.h"
 
 struct pic_vector *
-pic_make_vec(pic_state *pic, size_t len)
+pic_make_vec(pic_state *pic, int len)
 {
   struct pic_vector *vec;
-  size_t i;
+  int i;
 
   vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TT_VECTOR);
   vec->len = len;
@@ -32,13 +32,13 @@ pic_vec_vector_p(pic_state *pic)
 static pic_value
 pic_vec_vector(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
   pic_vec *vec;
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  vec = pic_make_vec(pic, (size_t)argc);
+  vec = pic_make_vec(pic, argc);
 
   for (i = 0; i < argc; ++i) {
     vec->data[i] = argv[i];
@@ -51,11 +51,10 @@ static pic_value
 pic_vec_make_vector(pic_state *pic)
 {
   pic_value v;
-  int n;
-  size_t k, i;
+  int n, k, i;
   struct pic_vector *vec;
 
-  n = pic_get_args(pic, "k|o", &k, &v);
+  n = pic_get_args(pic, "i|o", &k, &v);
 
   vec = pic_make_vec(pic, k);
   if (n == 2) {
@@ -73,16 +72,16 @@ pic_vec_vector_length(pic_state *pic)
 
   pic_get_args(pic, "v", &v);
 
-  return pic_size_value(v->len);
+  return pic_int_value(v->len);
 }
 
 static pic_value
 pic_vec_vector_ref(pic_state *pic)
 {
   struct pic_vector *v;
-  size_t k;
+  int k;
 
-  pic_get_args(pic, "vk", &v, &k);
+  pic_get_args(pic, "vi", &v, &k);
 
   if (v->len <= k) {
     pic_errorf(pic, "vector-ref: index out of range");
@@ -94,10 +93,10 @@ static pic_value
 pic_vec_vector_set(pic_state *pic)
 {
   struct pic_vector *v;
-  size_t k;
+  int k;
   pic_value o;
 
-  pic_get_args(pic, "vko", &v, &k, &o);
+  pic_get_args(pic, "vio", &v, &k, &o);
 
   if (v->len <= k) {
     pic_errorf(pic, "vector-set!: index out of range");
@@ -110,10 +109,9 @@ static pic_value
 pic_vec_vector_copy_i(pic_state *pic)
 {
   pic_vec *to, *from;
-  int n;
-  size_t at, start, end;
+  int n, at, start, end;
 
-  n = pic_get_args(pic, "vkv|kk", &to, &at, &from, &start, &end);
+  n = pic_get_args(pic, "viv|ii", &to, &at, &from, &start, &end);
 
   switch (n) {
   case 3:
@@ -142,10 +140,9 @@ static pic_value
 pic_vec_vector_copy(pic_state *pic)
 {
   pic_vec *vec, *to;
-  int n;
-  size_t start, end, i = 0;
+  int n, start, end, i = 0;
 
-  n = pic_get_args(pic, "v|kk", &vec, &start, &end);
+  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
 
   switch (n) {
   case 1:
@@ -170,7 +167,7 @@ static pic_value
 pic_vec_vector_append(pic_state *pic)
 {
   pic_value *argv;
-  size_t argc, i, j, len;
+  int argc, i, j, len;
   pic_vec *vec;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -199,10 +196,9 @@ pic_vec_vector_fill_i(pic_state *pic)
 {
   pic_vec *vec;
   pic_value obj;
-  int n;
-  size_t start, end;
+  int n, start, end;
 
-  n = pic_get_args(pic, "vo|kk", &vec, &obj, &start, &end);
+  n = pic_get_args(pic, "vo|ii", &vec, &obj, &start, &end);
 
   switch (n) {
   case 2:
@@ -222,7 +218,7 @@ static pic_value
 pic_vec_vector_map(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i, len, j;
+  int argc, i, len, j;
   pic_value *argv, vals;
   pic_vec *vec;
 
@@ -254,7 +250,7 @@ static pic_value
 pic_vec_vector_for_each(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc, i, len, j;
+  int argc, i, len, j;
   pic_value *argv, vals;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
@@ -302,10 +298,9 @@ pic_vec_vector_to_list(pic_state *pic)
 {
   struct pic_vector *vec;
   pic_value list;
-  int n;
-  size_t start, end, i;
+  int n, start, end, i;
 
-  n = pic_get_args(pic, "v|kk", &vec, &start, &end);
+  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
 
   switch (n) {
   case 1:
@@ -327,11 +322,10 @@ pic_vec_vector_to_string(pic_state *pic)
 {
   pic_vec *vec;
   char *buf;
-  int n;
-  size_t start, end, i;
+  int n, start, end, i;
   pic_str *str;
 
-  n = pic_get_args(pic, "v|kk", &vec, &start, &end);
+  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
 
   switch (n) {
   case 1:
@@ -362,12 +356,10 @@ static pic_value
 pic_vec_string_to_vector(pic_state *pic)
 {
   pic_str *str;
-  int n;
-  size_t start, end;
-  size_t i;
+  int n, start, end, i;
   pic_vec *vec;
 
-  n = pic_get_args(pic, "s|kk", &str, &start, &end);
+  n = pic_get_args(pic, "s|ii", &str, &start, &end);
 
   switch (n) {
   case 1:
