@@ -182,10 +182,10 @@ pic_make_list(pic_state *pic, size_t k, pic_value fill)
   return list;
 }
 
-size_t
+int
 pic_length(pic_state *pic, pic_value obj)
 {
-  size_t c = 0;
+  int c = 0;
 
   if (! pic_list_p(obj)) {
     pic_errorf(pic, "length: expected list, but got ~s", obj);
