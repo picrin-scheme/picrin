@@ -584,7 +584,7 @@ pic_str_string_map(pic_state *pic)
       for (j = 0; j < argc; ++j) {
         pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
       }
-      val = pic_apply(pic, proc, vals);
+      val = pic_apply_list(pic, proc, vals);
 
       pic_assert_type(pic, val, char);
       buf[i] = pic_char(val);
@@ -629,7 +629,7 @@ pic_str_string_for_each(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
     }
-    pic_apply(pic, proc, vals);
+    pic_apply_list(pic, proc, vals);
   }
 
   return pic_undef_value();

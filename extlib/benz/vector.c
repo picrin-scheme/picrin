@@ -240,7 +240,7 @@ pic_vec_vector_map(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
-    vec->data[i] = pic_apply(pic, proc, vals);
+    vec->data[i] = pic_apply_list(pic, proc, vals);
   }
 
   return pic_obj_value(vec);
@@ -269,7 +269,7 @@ pic_vec_vector_for_each(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
-    pic_apply(pic, proc, vals);
+    pic_apply_list(pic, proc, vals);
   }
 
   return pic_undef_value();

@@ -661,7 +661,7 @@ pic_pair_map(pic_state *pic)
     if (i != argc) {
       break;
     }
-    pic_push(pic, pic_apply(pic, proc, pic_reverse(pic, arg)), ret);
+    pic_push(pic, pic_apply_list(pic, proc, pic_reverse(pic, arg)), ret);
   } while (1);
 
   return pic_reverse(pic, ret);
@@ -689,7 +689,7 @@ pic_pair_for_each(pic_state *pic)
     if (i != argc) {
       break;
     }
-    pic_apply(pic, proc, pic_reverse(pic, arg));
+    pic_apply_list(pic, proc, pic_reverse(pic, arg));
   } while (1);
 
   return pic_undef_value();
