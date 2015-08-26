@@ -641,7 +641,7 @@ pic_str_list_to_string(pic_state *pic)
 {
   pic_str *str;
   pic_value list, e, it;
-  size_t i = 0;
+  size_t i;
   char *buf;
 
   pic_get_args(pic, "o", &list);
@@ -653,6 +653,7 @@ pic_str_list_to_string(pic_state *pic)
   buf = pic_malloc(pic, pic_length(pic, list));
 
   pic_try {
+    i = 0;
     pic_for_each (e, list, it) {
       pic_assert_type(pic, e, char);
 
