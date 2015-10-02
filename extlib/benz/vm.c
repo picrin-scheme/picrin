@@ -200,7 +200,7 @@ vm_gref(pic_state *pic, struct pic_box *slot, pic_sym *uid)
     if (uid == NULL) {
       uid = pic_intern(pic, "unknown"); /* FIXME */
     }
-    pic_errorf(pic, "uninitialized global variable: ~a", uid);
+    pic_errorf(pic, "uninitialized global variable: ~a", pic_obj_value(uid));
   }
   return slot->value;
 }
