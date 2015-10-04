@@ -22,7 +22,7 @@ TEST_RUNNER = bin/picrin
 CFLAGS += -I./extlib/benz/include -Wall -Wextra
 LDFLAGS += -lm
 
-prefix = /usr/local
+prefix ?= /usr/local
 
 all: CFLAGS += -O2 -DNDEBUG=1
 all: bin/picrin
