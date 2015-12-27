@@ -26,6 +26,7 @@ pic_value pic_reg_ref(pic_state *, struct pic_reg *, void *);
 void pic_reg_set(pic_state *, struct pic_reg *, void *, pic_value);
 void pic_reg_del(pic_state *, struct pic_reg *, void *);
 bool pic_reg_has(pic_state *, struct pic_reg *, void *);
+void *pic_reg_rev_ref(pic_state *, struct pic_reg *, pic_value);
 
 #if defined(__cplusplus)
 }
