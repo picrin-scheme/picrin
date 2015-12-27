@@ -72,6 +72,7 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
   void kh_destroy_##name(pic_state *, kh_##name##_t *h);                 \
   void kh_clear_##name(kh_##name##_t *h);                               \
   khint_t kh_get_##name(const kh_##name##_t *h, khkey_t key);           \
+  khint_t kh_reverse_get_##name(const kh_##name##_t *h, khval_t val);   \
   void kh_resize_##name(pic_state *, kh_##name##_t *h, khint_t new_n_buckets); \
   khint_t kh_put_##name(pic_state *, kh_##name##_t *h, khkey_t key, int *ret); \
   void kh_del_##name(kh_##name##_t *h, khint_t x);
@@ -108,6 +109,17 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
       }                                                                 \
       return ac_iseither(h->flags, i)? h->n_buckets : i;		\
     } else return 0;                                                    \
+  }                                                                     \
+  khint_t kh_reverse_get_##name(const kh_##name##_t *h, khval_t val)    \
+  {                                                                     \
+    if (h->n_buckets) {                                                 \
+      khint_t i = 0;                                                    \
+      while (ac_iseither(h->flags, i) || (h->vals[i] != val)) {         \
+        i += 1;                                                         \
+        if (i == h->n_buckets) return -1;                               \
+      }                                                                 \
+      return i;                                                         \
+    } else return -1;                                                   \
   }                                                                     \
   void kh_resize_##name(pic_state *pic, kh_##name##_t *h, khint_t new_n_buckets) \
   { /* This function uses 0.25*n_buckets bytes of working space instead of [sizeof(key_t+val_t)+.25]*n_buckets. */ \
@@ -233,6 +245,7 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
 #define kh_resize(name, h, s) kh_resize_##name(pic, h, s)
 #define kh_put(name, h, k, r) kh_put_##name(pic, h, k, r)
 #define kh_get(name, h, k) kh_get_##name(h, k)
+#define kh_reverse_get(name, h, v) kh_reverse_get_##name(h, v)
 #define kh_del(name, h, k) kh_del_##name(h, k)
 
 #define kh_exist(h, x) (!ac_iseither((h)->flags, (x)))
