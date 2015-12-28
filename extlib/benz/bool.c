@@ -10,8 +10,10 @@ KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 static bool
 internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m) *h)
 {
-  pic_value local = pic_nil_value();
-  int c = 0;
+  pic_value localx = pic_nil_value();
+  pic_value localy = pic_nil_value();
+  int cx = 0;
+  int cy = 0;
 
   if (depth > 10) {
     if (depth > 200) {
@@ -68,17 +70,30 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
       return false;
 
     /* Floyd's cycle-finding algorithm */
-    if (pic_nil_p(local)) {
-      local = x;
+    if (pic_nil_p(localx)) {
+      localx = x;
     }
     x = pic_cdr(pic, x);
+    cx++;
+    if (pic_nil_p(localy)) {
+      localy = y;
+    }
     y = pic_cdr(pic, y);
-    c++;
-    if (c == 2) {
-      c = 0;
-      local = pic_cdr(pic, local);
-      if (pic_eq_p(local, x)) {
-        return true;
+    cy++;
+    if (cx == 2) {
+      cx = 0;
+      localx = pic_cdr(pic, localx);
+      if (pic_eq_p(localx, x)) {
+        if (cy < 0 ) return true; /* both lists circular */
+        cx = INT_MIN; /* found a cycle on x */
+      }
+    }
+    if (cy == 2) {
+      cy = 0;
+      localy = pic_cdr(pic, localy);
+      if (pic_eq_p(localy, y)) {
+        if (cx < 0 ) return true; /* both lists circular */
+        cy = INT_MIN; /* found a cycle on y */
       }
     }
     goto LOOP;                  /* tail-call optimization */
