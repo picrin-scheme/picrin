@@ -75,7 +75,9 @@ test-nostdlib:
 test-issue: test-picrin-issue test-repl-issue
 
 test-picrin-issue: $(TEST_RUNNER) $(PICRIN_ISSUE_TESTS)
-	$(TEST_RUNNER) $(PICRIN_ISSUE_TESTS)
+	for test in $(PICRIN_ISSUE_TESTS); do \
+	  $(TEST_RUNNER) "$$test"; \
+	done
 
 test-repl-issue: $(REPL_ISSUE_TESTS)
 
