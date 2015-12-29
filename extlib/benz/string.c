@@ -486,28 +486,28 @@ pic_str_string_ref(pic_state *pic)
 }
 
 #define DEFINE_STRING_CMP(name, op)                                     \
-	static pic_value                                                      \
-	pic_str_string_##name(pic_state *pic)                                 \
-	{                                                                     \
-		int argc, i;                                                     \
-		pic_value *argv;                                                    \
-																																				\
-		pic_get_args(pic, "*", &argc, &argv);                               \
-																																				\
-		if (argc < 1 || ! pic_str_p(argv[0])) {                             \
-			return pic_false_value();                                         \
-		}                                                                   \
-																																				\
-		for (i = 1; i < argc; ++i) {                                        \
-			if (! pic_str_p(argv[i])) {                                       \
-	return pic_false_value();                                       \
-			}                                                                 \
-			if (! (pic_str_cmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
-	return pic_false_value();                                       \
-			}                                                                 \
-		}                                                                   \
-		return pic_true_value();                                            \
-	}
+  static pic_value                                                      \
+  pic_str_string_##name(pic_state *pic)                                 \
+  {                                                                     \
+    int argc, i;                                                        \
+    pic_value *argv;                                                    \
+                                                                        \
+    pic_get_args(pic, "*", &argc, &argv);                               \
+                                                                        \
+    if (argc < 1 || ! pic_str_p(argv[0])) {                             \
+      return pic_false_value();                                         \
+    }                                                                   \
+                                                                        \
+    for (i = 1; i < argc; ++i) {                                        \
+      if (! pic_str_p(argv[i])) {                                       \
+        return pic_false_value();                                       \
+      }                                                                 \
+      if (! (pic_str_cmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
+        return pic_false_value();                                       \
+      }                                                                 \
+    }                                                                   \
+    return pic_true_value();                                            \
+  }
 
 DEFINE_STRING_CMP(eq, ==)
 DEFINE_STRING_CMP(lt, <)
@@ -518,37 +518,24 @@ DEFINE_STRING_CMP(ge, >=)
 static pic_value
 pic_str_string_copy(pic_state *pic)
 {
-	pic_str *str;
-	int n, start, end, len;
+  pic_str *str;
+  int n, start, end, len;
 
 	n = pic_get_args(pic, "s|ii", &str, &start, &end);
 
-	len = pic_str_len(str);
+  len = pic_str_len(str);
 
-	switch (n) {
-	case 1:
-		start = 0;
-	case 2:
-		end = len;
-	}
+  switch (n) {
+  case 1:
+    start = 0;
+  case 2:
+    end = len;
+  }
 
-#if 0
-#if 0
-	if (start < 0) start = 0; /* should an error be reported? */
-	if (end > len) end = len; /* should an error be reported? */
-#else
-	if ((start < 0) || (end < 0) || (start > len) || (end > len))
-		pic_errorf(pic, "string-copy: invalid index");
-#endif
-	if (end < start) /* surely this is an error!? */
-		pic_errorf(pic, "string-copy: start index > end index");
-#else
-	/* simplest version to catch all cases as errors */
-	if ((start < 0) || (end > len) || (end < start))
-		pic_errorf(pic, "string-copy: invalid index");
-#endif
+  if (start < 0 || end > len || end < start)
+    pic_errorf(pic, "string-copy: invalid index");
 
-	return pic_obj_value(pic_str_sub(pic, str, start, end));
+  return pic_obj_value(pic_str_sub(pic, str, start, end));
 }
 
 static pic_value
