@@ -532,21 +532,8 @@ pic_str_string_copy(pic_state *pic)
     end = len;
   }
 
-#if 0
-#if 0
-  if (start < 0) start = 0; /* should an error be reported? */
-  if (end > len) end = len; /* should an error be reported? */
-#else
-  if ((start < 0) || (end < 0) || (start > len) || (end > len))
+  if (start < 0 || end > len || end < start)
     pic_errorf(pic, "string-copy: invalid index");
-#endif
-  if (end < start) /* surely this is an error!? */
-    pic_errorf(pic, "string-copy: start index > end index");
-#else
-  /* simplest version to catch all cases as errors */
-  if ((start < 0) || (end > len) || (end < start))
-    pic_errorf(pic, "string-copy: invalid index");
-#endif
 
   return pic_obj_value(pic_str_sub(pic, str, start, end));
 }
