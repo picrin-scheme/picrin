@@ -489,7 +489,7 @@ pic_str_string_ref(pic_state *pic)
   static pic_value                                                      \
   pic_str_string_##name(pic_state *pic)                                 \
   {                                                                     \
-    int argc, i;                                                     \
+    int argc, i;                                                        \
     pic_value *argv;                                                    \
                                                                         \
     pic_get_args(pic, "*", &argc, &argv);                               \
@@ -500,10 +500,10 @@ pic_str_string_ref(pic_state *pic)
                                                                         \
     for (i = 1; i < argc; ++i) {                                        \
       if (! pic_str_p(argv[i])) {                                       \
-	return pic_false_value();                                       \
+        return pic_false_value();                                       \
       }                                                                 \
       if (! (pic_str_cmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
-	return pic_false_value();                                       \
+        return pic_false_value();                                       \
       }                                                                 \
     }                                                                   \
     return pic_true_value();                                            \
@@ -519,16 +519,21 @@ static pic_value
 pic_str_string_copy(pic_state *pic)
 {
   pic_str *str;
-  int n, start, end;
+  int n, start, end, len;
 
   n = pic_get_args(pic, "s|ii", &str, &start, &end);
+
+  len = pic_str_len(str);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = pic_str_len(str);
+    end = len;
   }
+
+  if (start < 0 || end > len || end < start)
+    pic_errorf(pic, "string-copy: invalid index");
 
   return pic_obj_value(pic_str_sub(pic, str, start, end));
 }
