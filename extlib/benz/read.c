@@ -237,104 +237,58 @@ read_uinteger(pic_state *pic, struct pic_port *port, int c)
   return u;
 }
 
-static int
-read_suffix(pic_state *pic, struct pic_port *port)
-{
-  int c, s = 1;
-
-  c = peek(pic, port);
-
-  if (c != 'e' && c != 'E') {
-    return 0;
-  }
-
-  next(pic, port);
-
-  switch ((c = next(pic, port))) {
-  case '-':
-    s = -1;
-  case '+':
-    c = next(pic, port);
-  default:
-    return s * read_uinteger(pic, port, c);
-  }
-}
-
 static pic_value
 read_unsigned(pic_state *pic, struct pic_port *port, int c)
 {
-  unsigned u;
-  int exp, s, i, e;
+#define ATOF_BUF_SIZE (64)
+  char buf[ATOF_BUF_SIZE];
+  double flt;
+  int idx = 0;  /* index into buffer */
+  int dpe = 0;  /* the number of '.' or 'e' characters seen */
 
-  u = read_uinteger(pic, port, c);
-
-  switch (peek(pic, port)) {
-#if PIC_ENABLE_LIBC
-  case '.': {
-    char buf[256];
-    i = sprintf(buf, "%d", u);
-    buf[i++] = next(pic, port);
-    while (isdigit(c = peek(pic, port))) {
-      buf[i++] = next(pic, port);
-    }
-    sprintf(buf + i, "e%d", read_suffix(pic, port));
-    return pic_float_value(atof(buf));
+  if (! isdigit(c)) {
+    read_error(pic, "expected one or more digits", pic_list1(pic, pic_char_value(c)));
   }
-#else
-  case '.': {
-    double f, g, h;
-    next(pic, port);
-    g = 0, e = 0;
-    while (isdigit(c = peek(pic, port))) {
-      g = g * 10 + (next(pic, port) - '0');
-      e++;
-    }
-    h = 1.0;
-    while (e-- > 0) {
-      h /= 10;
-    }
-    f = u + g * h;
-
-    exp = read_suffix(pic, port);
-    if (exp >= 0) {
-      s = 0;
-    } else {
-      exp = -exp;
-      s = 1;
-    }
-
-    e = 10;
-    for (i = 0; exp; ++i) {
-      if ((exp & 1) != 0) {
-        f = s ? f / e : (f * e);
-      }
-      e *= e;
-      exp >>= 1;
-    }
-    return pic_float_value(f);
+  buf[idx++] = (char )c;
+  while (isdigit(c = peek(pic, port)) && idx < ATOF_BUF_SIZE) {
+    buf[idx++] = (char )next(pic, port);
   }
-#endif
-
-  default:
-    exp = read_suffix(pic, port);
-    if (exp >= 0) {
-      s = 0;
-    } else {
-      exp = -exp;
-      s = 1;
+  if ('.' == peek(pic, port) && idx < ATOF_BUF_SIZE) {
+    dpe++;
+    buf[idx++] = (char )next(pic, port);
+    while (isdigit(c = peek(pic, port)) && idx < ATOF_BUF_SIZE) {
+      buf[idx++] = (char )next(pic, port);
     }
-
-    e = 10;
-    for (i = 0; exp; ++i) {
-      if ((exp & 1) != 0) {
-        u = s ? u / e : (u * e);
-      }
-      e *= e;
-      exp >>= 1;
-    }
-
-    return pic_int_value(u);
   }
+  c = peek(pic, port);
+
+  if ((c == 'e' || c == 'E') && idx < (ATOF_BUF_SIZE - 2)) {
+    dpe++;
+    buf[idx++] = (char )next(pic, port);
+    switch ((c = peek(pic, port))) {
+    case '-':
+    case '+':
+      buf[idx++] = (char )next(pic, port);
+      break;
+    default:
+      break;
+    }
+    if (! isdigit(peek(pic, port))) {
+      read_error(pic, "expected one or more digits", pic_list1(pic, pic_char_value(c)));
+    }
+    while (isdigit(c = peek(pic, port)) && idx < ATOF_BUF_SIZE) {
+      buf[idx++] = (char )next(pic, port);
+    }
+  }
+  if (idx >= ATOF_BUF_SIZE)
+    read_error(pic, "number too large", 
+                    pic_obj_value(pic_make_str(pic, (const char *)buf, ATOF_BUF_SIZE)));
+  buf[idx] = 0;
+  flt = atof(buf);
+
+  if (dpe == 0 && pic_valid_int(flt))
+    return pic_int_value((int )flt);
+  return pic_float_value(flt);
 }
 
 static pic_value
@@ -346,7 +300,7 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 negate(pic_value n)
 {
-  if (pic_int_p(n)) {
+  if (pic_int_p(n) && (INT_MIN != pic_int(n))) {
     return pic_int_value(-pic_int(n));
   } else {
     return pic_float_value(-pic_float(n));

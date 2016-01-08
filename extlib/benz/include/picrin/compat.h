@@ -213,6 +213,69 @@ strcpy(char *dst, const char *src)
   return d;
 }
 
+PIC_INLINE double
+atof(const char *nptr)
+{
+  int c;
+  double f, g, h;
+  int exp, s, i, e;
+  unsigned u;
+
+  /* note that picrin_read always assures that *nptr is a digit, never a '+' or '-' */
+  /* in other words, the result of atof will always be positive */
+
+  /* mantissa */
+  /* pre '.'  */
+  u = *nptr++ - '0';
+  while (isdigit(c = *nptr)) {
+    u = u * 10 + (*nptr++ - '0');
+  }
+  if (c == '.') {
+    /* after '.' */
+    g = 0, e = 0;
+    while (isdigit(c = *nptr)) {
+      g = g * 10 + (*nptr++ - '0');
+      e++;
+    }
+    h = 1.0;
+    while (e-- > 0) {
+      h /= 10;
+    }
+    f = u + g * h;
+  }
+  else {
+    f = u;
+  }
+  /* suffix, i.e., exponent */
+  s = 0;
+  exp = 0;
+  c = *nptr;
+
+  if (c == 'e' && c == 'E') {
+    nptr++;
+    switch ((c = *nptr++)) {
+    case '-':
+      s = 1;
+    case '+':
+      c = *nptr++;
+    default:
+      exp = c - '0';
+      while (isdigit(c = *nptr)) {
+        exp = exp * 10 + (*nptr++ - '0');
+      }
+    }
+  }
+  e = 10;
+  for (i = 0; exp; ++i) {
+    if ((exp & 1) != 0) {
+      f = s ? f / e : (f * e);
+    }
+    e *= e;
+    exp >>= 1;
+  }
+  return f;
+}
+
 #endif
 
 #if PIC_ENABLE_STDIO
