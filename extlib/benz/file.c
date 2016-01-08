@@ -345,39 +345,12 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
       ival = va_arg(ap, int);
       cnt += print_int(pic, stream, ival, 10);
       break;
-#if PIC_ENABLE_LIBC
     case 'f': {
-      char buf[100];
-      sprintf(buf, "%g", va_arg(ap, double));
+      char buf[64];
+      pic_dtoa(va_arg(ap, double), buf);
       cnt += xfputs(pic, buf, stream);
       break;
     }
-#else
-# define fabs(x) ((x) >= 0 ? (x) : -(x))
-    case 'f': {
-      double dval = va_arg(ap, double);
-      long lval;
-      if (dval < 0) {
-        dval = -dval;
-        xputc(pic, '-', stream);
-        cnt++;
-      }
-      lval = (long)dval;
-      cnt += print_int(pic, stream, lval, 10);
-      xputc(pic, '.', stream);
-      cnt++;
-      dval -= lval;
-      if ((ival = fabs(dval) * 1e4 + 0.5) == 0) {
-        cnt += xfputs(pic, "0000", stream);
-      } else {
-        if (ival < 1000) xputc(pic, '0', stream); cnt++;
-        if (ival <  100) xputc(pic, '0', stream); cnt++;
-        if (ival <   10) xputc(pic, '0', stream); cnt++;
-        cnt += print_int(pic, stream, ival, 10);
-      }
-      break;
-    }
-#endif
     case 'c':
       ival = va_arg(ap, int);
       cnt += xfputc(pic, ival, stream);

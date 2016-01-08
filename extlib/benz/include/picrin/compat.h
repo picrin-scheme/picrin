@@ -231,6 +231,7 @@ atof(const char *nptr)
     u = u * 10 + (*nptr++ - '0');
   }
   if (c == '.') {
+    nptr++;
     /* after '.' */
     g = 0, e = 0;
     while (isdigit(c = *nptr)) {
@@ -280,6 +281,62 @@ atof(const char *nptr)
 
 #if PIC_ENABLE_STDIO
 # include <stdio.h>
+
+PIC_INLINE void
+pic_dtoa(double dval, char *buf)
+{
+  sprintf(buf, "%g", dval);
+}
+
+#else
+
+PIC_INLINE void
+pic_dtoa(double dval, char *buf)
+{
+# define fabs(x) ((x) >= 0 ? (x) : -(x))
+  long lval, tlval;
+  int ival;
+  int scnt, ecnt, cnt = 0;
+  if (dval < 0) {
+    dval = -dval;
+    buf[cnt++] = '-';
+  }
+  lval = tlval = (long)dval;
+  scnt = cnt;
+  do {
+    buf[cnt++] = '0' + (tlval % 10);
+  } while ((tlval /= 10) != 0);
+  ecnt = cnt;
+  while (scnt < ecnt) {
+    char c = buf[scnt];
+    buf[scnt++] = buf[--ecnt];
+    buf[ecnt] = c;
+  }
+  buf[cnt++] = '.';
+  dval -= lval;
+  if ((ival = fabs(dval) * 1e4 + 0.5) == 0) {
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+  } else {
+    if (ival < 1000) buf[cnt++] = '0';
+    if (ival <  100) buf[cnt++] = '0';
+    if (ival <   10) buf[cnt++] = '0';
+    scnt = cnt;
+    do {
+      buf[cnt++] = '0' + (ival % 10);
+    } while ((ival /= 10) != 0);
+    ecnt = cnt;
+    while (scnt < ecnt) {
+      char c = buf[scnt];
+      buf[scnt++] = buf[--ecnt];
+      buf[ecnt] = c;
+    }
+  }
+  buf[cnt] = 0;
+}
+
 #endif
 
 #if defined(__cplusplus)
