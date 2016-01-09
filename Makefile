@@ -11,6 +11,7 @@ PICRIN_OBJS = \
 CONTRIB_SRCS =
 CONTRIB_OBJS = $(CONTRIB_SRCS:.c=.o)
 CONTRIB_LIBS =
+CONTRIB_DEFS =
 CONTRIB_INITS =
 CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
@@ -19,7 +20,7 @@ REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
 TEST_RUNNER = bin/picrin
 
-CFLAGS += -I./extlib/benz/include -Wall -Wextra
+CFLAGS += -I./extlib/benz/include -Wall -Wextra $(CONTRIB_DEFS)
 LDFLAGS += -lm
 
 prefix ?= /usr/local
