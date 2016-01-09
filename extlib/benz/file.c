@@ -347,7 +347,7 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
       break;
     case 'f': {
       char buf[64];
-      pic_dtoa(va_arg(ap, double), buf);
+      PIC_DOUBLE_TO_CSTRING(va_arg(ap, double), buf);
       cnt += xfputs(pic, buf, stream);
       break;
     }

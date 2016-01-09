@@ -284,7 +284,7 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "number too large", 
                     pic_obj_value(pic_make_str(pic, (const char *)buf, ATOF_BUF_SIZE)));
   buf[idx] = 0;
-  flt = atof(buf);
+  flt = PIC_CSTRING_TO_DOUBLE(buf);
 
   if (dpe == 0 && pic_valid_int(flt))
     return pic_int_value((int )flt);

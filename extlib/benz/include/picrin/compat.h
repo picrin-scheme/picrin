@@ -282,16 +282,16 @@ atof(const char *nptr)
 #if PIC_ENABLE_STDIO
 # include <stdio.h>
 
-PIC_INLINE void
-pic_dtoa(double dval, char *buf)
+void
+PIC_INLINE pic_dtoa(double dval, char *buf)
 {
   sprintf(buf, "%g", dval);
 }
 
 #else
 
-PIC_INLINE void
-pic_dtoa(double dval, char *buf)
+void
+PIC_INLINE pic_dtoa(double dval, char *buf)
 {
 # define fabs(x) ((x) >= 0 ? (x) : -(x))
   long lval, tlval;
@@ -338,6 +338,16 @@ pic_dtoa(double dval, char *buf)
 }
 
 #endif
+
+#ifndef PIC_DOUBLE_TO_CSTRING
+#define PIC_DOUBLE_TO_CSTRING pic_dtoa
+#endif
+void PIC_DOUBLE_TO_CSTRING(double, char *);
+
+#ifndef PIC_CSTRING_TO_DOUBLE
+#define PIC_CSTRING_TO_DOUBLE atof
+#endif
+double PIC_CSTRING_TO_DOUBLE(const char *);
 
 #if defined(__cplusplus)
 }
