@@ -213,11 +213,141 @@ strcpy(char *dst, const char *src)
   return d;
 }
 
+PIC_INLINE double
+atof(const char *nptr)
+{
+  int c;
+  double f, g, h;
+  int exp, s, i, e;
+  unsigned u;
+
+  /* note that picrin_read always assures that *nptr is a digit, never a '+' or '-' */
+  /* in other words, the result of atof will always be positive */
+
+  /* mantissa */
+  /* pre '.'  */
+  u = *nptr++ - '0';
+  while (isdigit(c = *nptr)) {
+    u = u * 10 + (*nptr++ - '0');
+  }
+  if (c == '.') {
+    nptr++;
+    /* after '.' */
+    g = 0, e = 0;
+    while (isdigit(c = *nptr)) {
+      g = g * 10 + (*nptr++ - '0');
+      e++;
+    }
+    h = 1.0;
+    while (e-- > 0) {
+      h /= 10;
+    }
+    f = u + g * h;
+  }
+  else {
+    f = u;
+  }
+  /* suffix, i.e., exponent */
+  s = 0;
+  exp = 0;
+  c = *nptr;
+
+  if (c == 'e' && c == 'E') {
+    nptr++;
+    switch ((c = *nptr++)) {
+    case '-':
+      s = 1;
+    case '+':
+      c = *nptr++;
+    default:
+      exp = c - '0';
+      while (isdigit(c = *nptr)) {
+        exp = exp * 10 + (*nptr++ - '0');
+      }
+    }
+  }
+  e = 10;
+  for (i = 0; exp; ++i) {
+    if ((exp & 1) != 0) {
+      f = s ? f / e : (f * e);
+    }
+    e *= e;
+    exp >>= 1;
+  }
+  return f;
+}
+
 #endif
 
 #if PIC_ENABLE_STDIO
 # include <stdio.h>
+
+PIC_INLINE void
+pic_dtoa(double dval, char *buf)
+{
+  sprintf(buf, "%g", dval);
+}
+
+#else
+
+PIC_INLINE void
+pic_dtoa(double dval, char *buf)
+{
+# define fabs(x) ((x) >= 0 ? (x) : -(x))
+  long lval, tlval;
+  int ival;
+  int scnt, ecnt, cnt = 0;
+  if (dval < 0) {
+    dval = -dval;
+    buf[cnt++] = '-';
+  }
+  lval = tlval = (long)dval;
+  scnt = cnt;
+  do {
+    buf[cnt++] = '0' + (tlval % 10);
+  } while ((tlval /= 10) != 0);
+  ecnt = cnt;
+  while (scnt < ecnt) {
+    char c = buf[scnt];
+    buf[scnt++] = buf[--ecnt];
+    buf[ecnt] = c;
+  }
+  buf[cnt++] = '.';
+  dval -= lval;
+  if ((ival = fabs(dval) * 1e4 + 0.5) == 0) {
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+  } else {
+    if (ival < 1000) buf[cnt++] = '0';
+    if (ival <  100) buf[cnt++] = '0';
+    if (ival <   10) buf[cnt++] = '0';
+    scnt = cnt;
+    do {
+      buf[cnt++] = '0' + (ival % 10);
+    } while ((ival /= 10) != 0);
+    ecnt = cnt;
+    while (scnt < ecnt) {
+      char c = buf[scnt];
+      buf[scnt++] = buf[--ecnt];
+      buf[ecnt] = c;
+    }
+  }
+  buf[cnt] = 0;
+}
+
 #endif
+
+#ifndef PIC_DOUBLE_TO_CSTRING
+#define PIC_DOUBLE_TO_CSTRING pic_dtoa
+#endif
+void PIC_DOUBLE_TO_CSTRING(double, char *);
+
+#ifndef PIC_CSTRING_TO_DOUBLE
+#define PIC_CSTRING_TO_DOUBLE atof
+#endif
+double PIC_CSTRING_TO_DOUBLE(const char *);
 
 #if defined(__cplusplus)
 }

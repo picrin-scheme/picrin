@@ -11,3 +11,4 @@ GTAGS
 _build
 _static
 _template
+.DS_Store
