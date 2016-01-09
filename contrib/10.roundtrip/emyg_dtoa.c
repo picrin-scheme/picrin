@@ -51,8 +51,8 @@ typedef struct DiyFp_s {
 
 static const int kDiySignificandSize = 64;
 static const int kDpSignificandSize = 52;
-static const int kDpExponentBias = 0x3FF + 52 /*kDpSignificandSize*/;
-static const int kDpMinExponent = -kDpExponentBias;
+static const int kDpExponentBias = 0x3FF + 52 /* 0x3FF + kDpSignificandSize */;
+static const int kDpMinExponent = -(0x3FF + 52) /* -kDpExponentBias */;
 static const uint64_t kDpExponentMask = UINT64_C2(0x7FF00000, 0x00000000);
 static const uint64_t kDpSignificandMask = UINT64_C2(0x000FFFFF, 0xFFFFFFFF);
 static const uint64_t kDpHiddenBit = UINT64_C2(0x00100000, 0x00000000);
