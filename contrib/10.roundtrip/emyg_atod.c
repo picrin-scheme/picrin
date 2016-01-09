@@ -736,6 +736,11 @@ no_conv:
     return minus ? -res : res;
 }
 
+double emyg_atod (const char *nptr)
+{
+    return emyg_strtod(nptr, NULL);
+}
+
 #ifdef TESTING_QUOREM
 
 int main (int argc, char **argv)

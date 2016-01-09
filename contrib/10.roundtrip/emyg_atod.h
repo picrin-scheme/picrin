@@ -7,6 +7,8 @@ extern "C" {
 
 double emyg_strtod (const char *nptr, char **endptr);
 
+double emyg_atod (const char *nptr);
+
 #ifdef __cplusplus
 }
 #endif
