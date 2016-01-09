@@ -51,7 +51,7 @@ typedef struct DiyFp_s {
 
 static const int kDiySignificandSize = 64;
 static const int kDpSignificandSize = 52;
-static const int kDpExponentBias = 0x3FF + kDpSignificandSize;
+static const int kDpExponentBias = 0x3FF + 52 /*kDpSignificandSize*/;
 static const int kDpMinExponent = -kDpExponentBias;
 static const uint64_t kDpExponentMask = UINT64_C2(0x7FF00000, 0x00000000);
 static const uint64_t kDpSignificandMask = UINT64_C2(0x000FFFFF, 0xFFFFFFFF);
@@ -96,14 +96,14 @@ static inline DiyFp DiyFp_multiply (const DiyFp lhs, const DiyFp rhs) {
   uint64_t l = _umul128(lhs.f, rhs.f, &h);
   if (l & (uint64_t(1) << 63)) // rounding
     h++;
-  return DiyFp_fro_parts(h, e + rhs.e + 64);
+  return DiyFp_fro_parts(h, lhs.e + rhs.e + 64);
 #elif (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) && defined(__x86_64__)
   unsigned __int128 p = (unsigned __int128 )(lhs.f) * (unsigned __int128 )(rhs.f);
   uint64_t h = p >> 64;
   uint64_t l = (uint64_t )(p);
-  if (l & (uint64_t(1) << 63)) // rounding
+  if (l & (((uint64_t )1) << 63)) // rounding
     h++;
-  return DiyFp_from_parts(h, e + rhs.e + 64);
+  return DiyFp_from_parts(h, lhs.e + rhs.e + 64);
 #else
   const uint64_t M32 = 0xFFFFFFFF;
   const uint64_t a = lhs.f >> 32;
@@ -382,7 +382,8 @@ static inline void Prettify(char* buffer, int length, int k) {
 
   if (length <= kk && kk <= 21) {
     // 1234e7 -> 12340000000
-    for (int i = length; i < kk; i++)
+    int i;
+    for (i = length; i < kk; i++)
       buffer[i] = '0';
     buffer[kk] = '.';
     buffer[kk + 1] = '0';
@@ -396,11 +397,12 @@ static inline void Prettify(char* buffer, int length, int k) {
   }
   else if (-6 < kk && kk <= 0) {
     // 1234e-6 -> 0.001234
+    int i;
     const int offset = 2 - kk;
     memmove(&buffer[offset], &buffer[0], length);
     buffer[0] = '0';
     buffer[1] = '.';
-    for (int i = 2; i < offset; i++)
+    for (i = 2; i < offset; i++)
       buffer[i] = '0';
     buffer[length + offset] = '\0';
   }
