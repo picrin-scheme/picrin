@@ -220,7 +220,7 @@ pic_number_string_to_number(pic_state *pic)
     flo = pic_read_cstr(pic, str);
   }
   pic_catch {
-    // swallow error
+    /* swallow error */
     flo = pic_false_value();
   }
 
