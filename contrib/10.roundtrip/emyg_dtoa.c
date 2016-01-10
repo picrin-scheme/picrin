@@ -421,11 +421,12 @@ static inline void Prettify(char* buffer, int length, int k) {
 }
 
 void emyg_dtoa (double value, char* buffer) {
-  // Not handling NaN and inf
-  assert(!isnan(value));
-  assert(!isinf(value));
 
-  if (value == 0) {
+  if (isinf(value))
+    strcpy(buffer, signbit(value) ? "-inf.0" : "+inf.0");
+  else if (isnan(value))
+    strcpy(buffer, signbit(value) ? "-nan.0" : "+nan.0");
+  else if (value == 0) {
     buffer[0] = '0';
     buffer[1] = '.';
     buffer[2] = '0';
