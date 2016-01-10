@@ -216,12 +216,19 @@ pic_number_string_to_number(pic_state *pic)
       : pic_float_value(num);
   }
 
-  flo = pic_read_cstr(pic, str);
+  pic_try {
+    flo = pic_read_cstr(pic, str);
+  }
+  pic_catch {
+    // swallow error
+    flo = pic_false_value();
+  }
+
   if (pic_int_p(flo) || pic_float_p(flo)) {
     return flo;
   }
 
-  pic_errorf(pic, "invalid string given: %s", str);
+  return pic_false_value();
 }
 
 void
