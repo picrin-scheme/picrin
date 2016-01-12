@@ -283,6 +283,10 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
   if (idx >= ATOF_BUF_SIZE)
     read_error(pic, "number too large", 
                     pic_obj_value(pic_make_str(pic, (const char *)buf, ATOF_BUF_SIZE)));
+
+  if (! isdelim(c))
+    read_error(pic, "non-delimiter character given after number", pic_list1(pic, pic_char_value(c)));
+
   buf[idx] = 0;
   flt = PIC_CSTRING_TO_DOUBLE(buf);
 
