@@ -5,10 +5,10 @@
 #include "picrin.h"
 
 struct pic_record *
-pic_make_record(pic_state *pic, struct pic_record *type)
+pic_make_record(pic_state *pic, struct pic_record *type, int len)
 {
   struct pic_record *rec;
-  struct pic_dict *data = pic_make_dict(pic);
+  struct pic_vector *data = pic_make_vec(pic, len);
 
   rec = (struct pic_record *)pic_obj_alloc(pic, sizeof(struct pic_record), PIC_TT_RECORD);
   rec->data = data;
@@ -28,18 +28,15 @@ pic_record_type(pic_state PIC_UNUSED(*pic), struct pic_record *rec)
 }
 
 pic_value
-pic_record_ref(pic_state *pic, struct pic_record *rec, pic_sym *slot)
+pic_record_ref(pic_state PIC_UNUSED(*pic), struct pic_record *rec, int slot)
 {
-  if (! pic_dict_has(pic, rec->data, slot)) {
-    pic_errorf(pic, "slot named ~s is not found for record: ~s", pic_obj_value(slot), pic_obj_value(rec));
-  }
-  return pic_dict_ref(pic, rec->data, slot);
+  return rec->data->data[slot];
 }
 
 void
-pic_record_set(pic_state *pic, struct pic_record *rec, pic_sym *slot, pic_value val)
+pic_record_set(pic_state PIC_UNUSED(*pic), struct pic_record *rec, int slot, pic_value val)
 {
-  pic_dict_set(pic, rec->data, slot, val);
+  rec->data->data[slot] = val;
 }
 
 static pic_value
@@ -47,12 +44,13 @@ pic_record_make_record(pic_state *pic)
 {
   struct pic_record * rec;
   pic_value rectype;
+  int len;
 
-  pic_get_args(pic, "o", &rectype);
+  pic_get_args(pic, "oi", &rectype, &len);
 
   pic_assert_type(pic, rectype, record);
 
-  rec = pic_make_record(pic, pic_record_ptr(rectype));
+  rec = pic_make_record(pic, pic_record_ptr(rectype), len);
 
   return pic_obj_value(rec);
 }
@@ -81,9 +79,9 @@ static pic_value
 pic_record_record_ref(pic_state *pic)
 {
   struct pic_record *rec;
-  pic_sym *slot;
+  int slot;
 
-  pic_get_args(pic, "rm", &rec, &slot);
+  pic_get_args(pic, "ri", &rec, &slot);
 
   return pic_record_ref(pic, rec, slot);
 }
@@ -92,10 +90,10 @@ static pic_value
 pic_record_record_set(pic_state *pic)
 {
   struct pic_record *rec;
-  pic_sym *slot;
+  int slot;
   pic_value val;
 
-  pic_get_args(pic, "rmo", &rec, &slot, &val);
+  pic_get_args(pic, "rio", &rec, &slot, &val);
 
   pic_record_set(pic, rec, slot, val);
 
@@ -110,5 +108,5 @@ pic_init_record(pic_state *pic)
   pic_defun(pic, "record-type", pic_record_record_type);
   pic_defun(pic, "record-ref", pic_record_record_ref);
   pic_defun(pic, "record-set!", pic_record_record_set);
-  pic_define(pic, "<record-type>", pic_obj_value(pic_make_record(pic, NULL)));
+  pic_define(pic, "<record-type>", pic_obj_value(pic_make_record(pic, NULL, 0)));
 }

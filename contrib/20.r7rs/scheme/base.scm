@@ -412,11 +412,13 @@
 
   ;; 5.5 Recored-type definitions
 
-  (define-syntax (define-record-constructor type name . fields)
+  (define-syntax (define-record-constructor type field-alist name . fields)
     (let ((record #'record))
       #`(define (#,name . #,fields)
-          (let ((#,record (make-record #,type)))
-            #,@(map (lambda (field) #`(record-set! #,record '#,field #,field)) fields)
+          (let ((#,record (make-record #,type #,(length field-alist))))
+            #,@(map
+                (lambda (field) #`(record-set! #,record #,(cdr (assq field field-alist)) #,field)) 
+                fields)
             #,record))))
 
   (define-syntax (define-record-predicate type name)
@@ -424,31 +426,39 @@
         (and (record? obj)
              (eq? (record-type obj) #,type))))
 
-  (define-syntax (define-record-accessor pred field accessor)
+  (define-syntax (define-record-accessor pred field-alist field accessor)
     #`(define (#,accessor record)
         (if (#,pred record)
-            (record-ref record '#,field)
+            (record-ref record #,(cdr (assq field field-alist)))
             (error (string-append (symbol->string  '#,accessor) ": wrong record type") record))))
 
-  (define-syntax (define-record-modifier pred field modifier)
+  (define-syntax (define-record-modifier pred field-alist field modifier)
     #`(define (#,modifier record val)
         (if (#,pred record)
-            (record-set! record '#,field val)
+            (record-set! record #,(cdr (assq field field-alist)) val) ;; '#,field
             (error (string-append (symbol->string '#,modifier) ": wrong record type")  record))))
 
-  (define-syntax (define-record-field pred field accessor . modifier-opt)
+  (define-syntax (define-record-field pred field-alist field accessor . modifier-opt)
     (if (null? modifier-opt)
-        #`(define-record-accessor #,pred #,field #,accessor)
+        #`(define-record-accessor #,pred #,field-alist #,field #,accessor)
         #`(begin
-            (define-record-accessor #,pred #,field #,accessor)
-            (define-record-modifier #,pred #,field #,(car modifier-opt)))))
+            (define-record-accessor #,pred #,field-alist #,field #,accessor)
+            (define-record-modifier #,pred #,field-alist #,field #,(car modifier-opt)))))
 
   (define-syntax (define-record-type name ctor pred . fields)
-    #`(begin
-        (define #,name (make-record <record-type>))
-        (define-record-constructor #,name #,@ctor)
-        (define-record-predicate #,name #,pred)
-        #,@(map (lambda (field) #`(define-record-field #,pred #,@field)) fields)))
+    (let ((field-alist (let lp ((fds fields) (idx 0) (alst '()))
+                            (if (null? fds)
+                              alst
+                              (lp (cdr fds)
+                                  (+ idx 1)
+                                  (cons
+                                    (cons (if (pair? (car fds)) (car (car fds)) (car fds)) idx)
+                                    alst))))))
+      #`(begin
+          (define #,name (make-record <record-type> 0))
+          (define-record-constructor #,name #,field-alist #,@ctor)
+          (define-record-predicate #,name #,pred)
+          #,@(map (lambda (field) #`(define-record-field #,pred #,field-alist #,@field)) fields))))
 
   (export define-record-type)
 
