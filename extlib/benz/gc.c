@@ -375,7 +375,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     if (obj->u.data.type->mark) {
       obj->u.data.type->mark(pic, obj->u.data.data, gc_mark);
     }
-    LOOP(obj->u.data.storage);
     break;
   }
   case PIC_TT_DICT: {
