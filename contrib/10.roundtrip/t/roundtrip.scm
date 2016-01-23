@@ -17,6 +17,12 @@
 
 (test #t (rountrip-ok +inf.0))
 
+(test #t (rountrip-ok +0.0))
+
+(test #t (rountrip-ok -0.0))
+
+(test #t (rountrip-ok 0.0))
+
 (test -inf.0 (string->number "-inf.0"))
 
 (test +inf.0 (string->number "+inf.0"))
