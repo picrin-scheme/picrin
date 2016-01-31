@@ -18,7 +18,6 @@ typedef struct {
 struct pic_data {
   PIC_OBJECT_HEADER
   const pic_data_type *type;
-  struct pic_dict *storage;
   void *data;
 };
 
