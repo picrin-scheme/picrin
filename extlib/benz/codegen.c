@@ -961,6 +961,10 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   obj = pic_list_ref(pic, obj, 1);
   switch (pic_type(obj)) {
+  case PIC_TT_UNDEF:
+    emit_n(pic, cxt, OP_PUSHUNDEF);
+    emit_ret(pic, cxt, tailpos);
+    break;
   case PIC_TT_BOOL:
     emit_n(pic, cxt, (pic_true_p(obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
     emit_ret(pic, cxt, tailpos);
