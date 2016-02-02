@@ -13,7 +13,6 @@ typedef struct {
   int insn;
   union {
     int i;
-    char c;
     struct {
       int depth;
       int idx;

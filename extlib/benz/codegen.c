@@ -732,13 +732,6 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
     cxt->clen++;                                \
   } while (0)                                   \
 
-#define emit_c(pic, cxt, ins, C) do {           \
-    check_code_size(pic, cxt);                  \
-    cxt->code[cxt->clen].insn = ins;            \
-    cxt->code[cxt->clen].u.c = C;               \
-    cxt->clen++;                                \
-  } while (0)                                   \
-
 #define emit_r(pic, cxt, ins, D, I) do {        \
     check_code_size(pic, cxt);                  \
     cxt->code[cxt->clen].insn = ins;            \
@@ -981,7 +974,7 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_ret(pic, cxt, tailpos);
     break;
   case PIC_TT_CHAR:
-    emit_c(pic, cxt, OP_PUSHCHAR, pic_char(obj));
+    emit_i(pic, cxt, OP_PUSHCHAR, pic_char(obj));
     emit_ret(pic, cxt, tailpos);
     break;
   default:
