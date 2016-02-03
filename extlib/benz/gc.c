@@ -500,11 +500,6 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct pic_object *)pic->macros);
   }
 
-  /* attribute table */
-  if (pic->attrs) {
-    gc_mark_object(pic, (struct pic_object *)pic->attrs);
-  }
-
   /* error object */
   gc_mark(pic, pic->err);
 
