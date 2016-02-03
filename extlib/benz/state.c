@@ -38,7 +38,6 @@ void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
-void pic_init_attr(pic_state *);
 void pic_init_reg(pic_state *);
 
 extern const char pic_boot[][80];
@@ -180,7 +179,6 @@ pic_init_core(pic_state *pic)
     pic_init_record(pic); DONE;
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
-    pic_init_attr(pic); DONE;
     pic_init_reg(pic); DONE;
 
     VM3(CONS);
@@ -311,9 +309,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* macros */
   pic->macros = NULL;
 
-  /* attributes */
-  pic->attrs = NULL;
-
   /* features */
   pic->features = pic_nil_value();
 
@@ -404,7 +399,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* root tables */
   pic->globals = pic_make_reg(pic);
   pic->macros = pic_make_reg(pic);
-  pic->attrs = pic_make_reg(pic);
 
   /* root block */
   pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TT_CP);
@@ -478,7 +472,6 @@ pic_close(pic_state *pic)
   pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
-  pic->attrs = NULL;
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 

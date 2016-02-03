@@ -122,7 +122,6 @@ struct pic_state {
   struct pic_reg *globals;
   struct pic_reg *macros;
   pic_value libs;
-  struct pic_reg *attrs;
 
   pic_reader reader;
   xFILE files[XOPEN_MAX];
@@ -234,10 +233,6 @@ PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
-
-struct pic_dict *pic_attr(pic_state *, pic_value);
-pic_value pic_attr_ref(pic_state *, pic_value, const char *);
-void pic_attr_set(pic_state *, pic_value, const char *, pic_value);
 
 struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
