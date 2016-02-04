@@ -35,7 +35,6 @@ extern "C" {
 #include "picrin/config.h"
 
 #include "picrin/compat.h"
-#include "picrin/kvec.h"
 #include "picrin/khash.h"
 
 typedef struct pic_state pic_state;
