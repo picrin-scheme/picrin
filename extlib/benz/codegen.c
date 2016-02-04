@@ -694,7 +694,8 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   struct pic_irep *irep;
 
   /* create irep */
-  irep = (struct pic_irep *)pic_obj_alloc(pic, sizeof(struct pic_irep), PIC_TT_IREP);
+  irep = pic_malloc(pic, sizeof(struct pic_irep));
+  irep->refc = 1;
   irep->varg = cxt->rest != NULL;
   irep->argc = (int)cxt->args->len + 1;
   irep->localc = (int)cxt->locals->len;
@@ -704,6 +705,11 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->ilen = cxt->ilen;
   irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
   irep->plen = cxt->plen;
+
+  irep->list.next = pic->ireps.next;
+  irep->list.prev = &pic->ireps;
+  irep->list.next->prev = &irep->list;
+  irep->list.prev->next = &irep->list;
 
   return irep;
 }
@@ -1086,6 +1092,7 @@ struct pic_proc *
 pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
 {
   struct pic_irep *irep;
+  struct pic_proc *proc;
   size_t ai = pic_gc_arena_preserve(pic);
 
 #if DEBUG
@@ -1143,7 +1150,9 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   puts("");
 #endif
 
-  SAVE(pic, ai, pic_obj_value(irep));
+  proc = pic_make_proc_irep(pic, irep, NULL);
 
-  return pic_make_proc_irep(pic, irep, NULL);
+  pic_irep_decref(pic, irep);
+
+  return proc;
 }

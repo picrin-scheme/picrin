@@ -20,15 +20,24 @@ typedef struct {
   } u;
 } pic_code;
 
+struct pic_list {
+  struct pic_list *prev, *next;
+};
+
 struct pic_irep {
-  PIC_OBJECT_HEADER
+  struct pic_list list;
+  int refc;
   pic_code *code;
   int argc, localc, capturec;
   bool varg;
   struct pic_irep **irep;
+  size_t ilen;
   pic_value *pool;
-  size_t ilen, plen;
+  size_t plen;
 };
+
+void pic_irep_incref(pic_state *, struct pic_irep *);
+void pic_irep_decref(pic_state *, struct pic_irep *);
 
 pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);
 pic_value pic_expand(pic_state *, pic_value, struct pic_env *);

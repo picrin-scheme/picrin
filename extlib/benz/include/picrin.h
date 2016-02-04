@@ -121,6 +121,7 @@ struct pic_state {
   struct pic_reg *globals;
   struct pic_reg *macros;
   pic_value libs;
+  struct pic_list ireps;        /* chain */
 
   pic_reader reader;
   xFILE files[XOPEN_MAX];
