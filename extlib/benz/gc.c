@@ -662,7 +662,9 @@ gc_sweep_phase(pic_state *pic)
   khiter_t it;
   khash_t(reg) *h;
   khash_t(s) *s = &pic->syms;
+  khash_t(i) *i = &pic->ids;
   pic_sym *sym;
+  struct pic_id *id;
   struct pic_object *obj;
   size_t total = 0, inuse = 0;
 
@@ -687,6 +689,16 @@ gc_sweep_phase(pic_state *pic)
     sym = kh_val(s, it);
     if (sym->gc_mark == PIC_GC_UNMARK) {
       kh_del(s, s, it);
+    }
+  }
+
+  /* identifier table */
+  for (it = kh_begin(i); it != kh_end(i); ++it) {
+    if (! kh_exist(i, it))
+      continue;
+    id = kh_val(i, it);
+    if (id->gc_mark == PIC_GC_UNMARK) {
+      kh_del(i, i, it);
     }
   }
 

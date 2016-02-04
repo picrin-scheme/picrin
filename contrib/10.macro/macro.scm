@@ -6,6 +6,7 @@
   (export define-macro
           make-identifier
           identifier?
+          identifier-handle
           identifier-variable
           identifier-environment
           variable?

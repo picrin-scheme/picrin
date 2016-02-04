@@ -303,6 +303,12 @@ pic_open(pic_allocf allocf, void *userdata)
   /* unique symbol count */
   pic->ucnt = 0;
 
+  /* identifier table */
+  kh_init(i, &pic->ids);
+
+  /* unique identifier count */
+  pic->icnt = 0;
+
   /* global variables */
   pic->globals = NULL;
 
@@ -461,7 +467,6 @@ pic_open(pic_allocf allocf, void *userdata)
 void
 pic_close(pic_state *pic)
 {
-  khash_t(s) *h = &pic->syms;
   pic_allocf allocf = pic->allocf;
 
   /* clear out root objects */
@@ -492,8 +497,12 @@ pic_close(pic_state *pic)
   allocf(pic->userdata, pic->cibase, 0);
   allocf(pic->userdata, pic->xpbase, 0);
 
-  /* free global stacks */
-  kh_destroy(s, h);
+  //assert(kh_size(&pic->syms) == 0); FIXME
+  assert(kh_size(&pic->ids) == 0);
+
+  /* free global tables */
+  kh_destroy(s, &pic->syms);
+  kh_destroy(i, &pic->ids);
 
   /* free GC arena */
   allocf(pic->userdata, pic->arena, 0);

@@ -13,6 +13,7 @@ KHASH_DECLARE(env, void *, pic_sym *)
 
 struct pic_id {
   PIC_OBJECT_HEADER
+  int uid;
   pic_value var;
   struct pic_env *env;
 };

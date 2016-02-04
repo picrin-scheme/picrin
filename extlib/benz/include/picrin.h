@@ -46,6 +46,7 @@ typedef struct pic_state pic_state;
 #include "picrin/gc.h"
 
 KHASH_DECLARE(s, const char *, pic_sym *)
+KHASH_DECLARE(i, int, struct pic_id *)
 
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
@@ -118,6 +119,8 @@ struct pic_state {
 
   khash_t(s) syms;              /* name to symbol */
   int ucnt;
+  khash_t(i) ids;               /* int to identifier */
+  int icnt;
   struct pic_reg *globals;
   struct pic_reg *macros;
   pic_value libs;

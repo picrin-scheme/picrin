@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 
+KHASH_DEFINE(i, int, struct pic_id *, kh_int_hash_func, kh_int_hash_equal)
 KHASH_DEFINE(env, void *, pic_sym *, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 bool
@@ -16,12 +17,22 @@ struct pic_id *
 pic_make_id(pic_state *pic, pic_value var, struct pic_env *env)
 {
   struct pic_id *id;
+  khiter_t it;
+  int ret;
 
   assert(pic_var_p(var));
 
   id = (struct pic_id *)pic_obj_alloc(pic, sizeof(struct pic_id), PIC_TT_ID);
+  id->uid = pic->icnt++;
   id->var = var;
   id->env = env;
+
+  it = kh_put(i, &pic->ids, id->uid, &ret);
+
+  assert(ret != 0);
+
+  kh_val(&pic->ids, it) = id;
+
   return id;
 }
 
@@ -113,13 +124,38 @@ static pic_value
 pic_macro_make_identifier(pic_state *pic)
 {
   pic_value var, env;
+  int n;
 
-  pic_get_args(pic, "oo", &var, &env);
+  n = pic_get_args(pic, "o|o", &var, &env);
+
+  if (n == 1) {
+    khiter_t it;
+
+    pic_assert_type(pic, var, int);
+
+    it = kh_get(i, &pic->ids, pic_int(var));
+
+    assert(kh_exist(&pic->ids, it));
+
+    return pic_gc_protect(pic, pic_obj_value(kh_val(&pic->ids, it)));
+  }
 
   pic_assert_type(pic, var, var);
   pic_assert_type(pic, env, env);
 
   return pic_obj_value(pic_make_id(pic, var, pic_env_ptr(env)));
+}
+
+static pic_value
+pic_macro_identifier_handle(pic_state *pic)
+{
+  pic_value id;
+
+  pic_get_args(pic, "o", &id);
+
+  pic_assert_type(pic, id, id);
+
+  return pic_int_value(pic_id_ptr(id)->uid);
 }
 
 static pic_value
@@ -180,6 +216,7 @@ pic_init_macro(pic_state *pic)
 {
   pic_defun(pic, "make-identifier", pic_macro_make_identifier);
   pic_defun(pic, "identifier?", pic_macro_identifier_p);
+  pic_defun(pic, "identifier-handle", pic_macro_identifier_handle);
   pic_defun(pic, "identifier-variable", pic_macro_identifier_variable);
   pic_defun(pic, "identifier-environment", pic_macro_identifier_environment);
 
