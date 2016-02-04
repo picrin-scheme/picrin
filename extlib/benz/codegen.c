@@ -95,12 +95,6 @@ expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferre
 }
 
 static pic_value
-expand_quote(pic_state *pic, pic_value expr)
-{
-  return pic_cons(pic, pic_obj_value(pic->uQUOTE), pic_cdr(pic, expr));
-}
-
-static pic_value
 expand_list(pic_state *pic, pic_value obj, struct pic_env *env, pic_value deferred)
 {
   size_t ai = pic_gc_arena_preserve(pic);
@@ -241,9 +235,6 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
       else if (functor == pic->uDEFINE) {
         return expand_define(pic, expr, env, deferred);
       }
-      else if (functor == pic->uQUOTE) {
-        return expand_quote(pic, expr);
-      }
 
       if ((mac = find_macro(pic, functor)) != NULL) {
         return expand(pic, pic_apply2(pic, mac, expr, pic_obj_value(env)), env, deferred);
@@ -309,10 +300,7 @@ optimize_beta(pic_state *pic, pic_value expr)
 
   if (pic_sym_p(pic_list_ref(pic, expr, 0))) {
     pic_sym *sym = pic_sym_ptr(pic_list_ref(pic, expr, 0));
-
-    if (sym == pic->uQUOTE) {
-      return expr;
-    } else if (sym == pic->uLAMBDA) {
+    if (sym == pic->uLAMBDA) {
       return pic_list3(pic, pic_list_ref(pic, expr, 0), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
     }
   }
@@ -601,9 +589,6 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
       else if (sym == pic->uLAMBDA) {
         return analyze_defer(pic, scope, obj);
       }
-      else if (sym == pic->uQUOTE) {
-        return obj;
-      }
       else if (sym == pic->uBEGIN || sym == pic->uSETBANG || sym == pic->uIF) {
         return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
       }
@@ -612,7 +597,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list2(pic, pic_obj_value(pic->uQUOTE), obj);
+    return obj;
   }
 }
 
@@ -955,11 +940,10 @@ codegen_begin(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 }
 
 static void
-codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+codegen_const(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 {
   int pidx;
 
-  obj = pic_list_ref(pic, obj, 1);
   switch (pic_type(obj)) {
   case PIC_TT_UNDEF:
     emit_n(pic, cxt, OP_PUSHUNDEF);
@@ -1040,6 +1024,11 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 {
   pic_sym *sym;
 
+  if (! pic_pair_p(obj)) {
+    codegen_const(pic, cxt, obj, tailpos);
+    return;
+  }
+
   sym = pic_sym_ptr(pic_car(pic, obj));
   if (sym == GREF || sym == CREF || sym == LREF) {
     codegen_ref(pic, cxt, obj, tailpos);
@@ -1055,9 +1044,6 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   }
   else if (sym == pic->uBEGIN) {
     codegen_begin(pic, cxt, obj, tailpos);
-  }
-  else if (sym == pic->uQUOTE) {
-    codegen_quote(pic, cxt, obj, tailpos);
   }
   else if (sym == CALL) {
     codegen_call(pic, cxt, obj, tailpos);

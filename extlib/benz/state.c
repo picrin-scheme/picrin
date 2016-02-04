@@ -134,7 +134,6 @@ pic_init_core(pic_state *pic)
 
     define_builtin_syntax(pic->uDEFINE, "builtin:define");
     define_builtin_syntax(pic->uSETBANG, "builtin:set!");
-    define_builtin_syntax(pic->uQUOTE, "builtin:quote");
     define_builtin_syntax(pic->uLAMBDA, "builtin:lambda");
     define_builtin_syntax(pic->uIF, "builtin:if");
     define_builtin_syntax(pic->uBEGIN, "builtin:begin");
@@ -360,7 +359,6 @@ pic_open(pic_allocf allocf, void *userdata)
   U(uIF, "if");
   U(uBEGIN, "begin");
   U(uSETBANG, "set!");
-  U(uQUOTE, "quote");
   U(uDEFINE_MACRO, "define-macro");
   U(uIMPORT, "import");
   U(uEXPORT, "export");
