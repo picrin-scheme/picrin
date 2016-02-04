@@ -4,6 +4,33 @@
 
 #include "picrin.h"
 
+void
+pic_irep_incref(pic_state PIC_UNUSED(*pic), struct pic_irep *irep)
+{
+  irep->refc++;
+}
+
+void
+pic_irep_decref(pic_state *pic, struct pic_irep *irep)
+{
+  size_t i;
+
+  if (--irep->refc == 0) {
+    pic_free(pic, irep->code);
+    pic_free(pic, irep->pool);
+
+    /* unchain before decref children ireps */
+    irep->list.prev->next = irep->list.next;
+    irep->list.next->prev = irep->list.prev;
+
+    for (i = 0; i < irep->ilen; ++i) {
+      pic_irep_decref(pic, irep->irep[i]);
+    }
+    pic_free(pic, irep->irep);
+    pic_free(pic, irep);
+  }
+}
+
 struct pic_proc *
 pic_make_proc(pic_state *pic, pic_func_t func)
 {
@@ -25,6 +52,7 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
   proc->tag = PIC_PROC_TAG_IREP;
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
+  pic_irep_incref(pic, irep);
   return proc;
 }
 

@@ -316,6 +316,10 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->libs = pic_nil_value();
   pic->lib = NULL;
 
+  /* ireps */
+  pic->ireps.next = &pic->ireps;
+  pic->ireps.prev = &pic->ireps;
+
   /* raised error object */
   pic->err = pic_invalid_value();
 
@@ -477,6 +481,18 @@ pic_close(pic_state *pic)
 
   /* free all heap objects */
   pic_gc_run(pic);
+
+#if 0
+  {
+    /* FIXME */
+    int i = 0;
+    struct pic_list *list;
+    for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
+      i++;
+    }
+    printf("%d\n", i);
+  }
+#endif
 
   /* flush all xfiles */
   xfflush(pic, NULL);

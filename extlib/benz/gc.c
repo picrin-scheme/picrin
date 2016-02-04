@@ -32,7 +32,6 @@ struct pic_object {
     struct pic_env env;
     struct pic_proc proc;
     struct pic_context cxt;
-    struct pic_irep irep;
     struct pic_port port;
     struct pic_error err;
     struct pic_lib lib;
@@ -300,7 +299,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_PROC: {
     if (pic_proc_irep_p(&obj->u.proc)) {
-      gc_mark_object(pic, (struct pic_object *)obj->u.proc.u.i.irep);
       if (obj->u.proc.u.i.cxt) {
         LOOP(obj->u.proc.u.i.cxt);
       }
@@ -358,17 +356,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, obj->u.lib.name);
     gc_mark_object(pic, (struct pic_object *)obj->u.lib.env);
     LOOP(obj->u.lib.exports);
-    break;
-  }
-  case PIC_TT_IREP: {
-    size_t i;
-
-    for (i = 0; i < obj->u.irep.ilen; ++i) {
-      gc_mark_object(pic, (struct pic_object *)obj->u.irep.irep[i]);
-    }
-    for (i = 0; i < obj->u.irep.plen; ++i) {
-      gc_mark(pic, obj->u.irep.pool[i]);
-    }
     break;
   }
   case PIC_TT_DATA: {
@@ -441,6 +428,7 @@ gc_mark_phase(pic_state *pic)
   pic_value *stack;
   pic_callinfo *ci;
   struct pic_proc **xhandler;
+  struct pic_list *list;
   size_t j;
 
   assert(pic->heap->regs == NULL);
@@ -470,6 +458,14 @@ gc_mark_phase(pic_state *pic)
   /* arena */
   for (j = 0; j < pic->arena_idx; ++j) {
     gc_mark_object(pic, (struct pic_object *)pic->arena[j]);
+  }
+
+  /* ireps */
+  for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
+    struct pic_irep *irep = (struct pic_irep *)list;
+    for (j = 0; j < irep->plen; ++j) {
+      gc_mark(pic, irep->pool[j]);
+    }
   }
 
   /* mark reserved symbols */
@@ -564,12 +560,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     kh_destroy(env, &obj->u.env.map);
     break;
   }
-  case PIC_TT_IREP: {
-    pic_free(pic, obj->u.irep.code);
-    pic_free(pic, obj->u.irep.irep);
-    pic_free(pic, obj->u.irep.pool);
-    break;
-  }
   case PIC_TT_DATA: {
     if (obj->u.data.type->dtor) {
       obj->u.data.type->dtor(pic, obj->u.data.data);
@@ -588,10 +578,15 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     kh_destroy(reg, &obj->u.reg.hash);
     break;
   }
+  case PIC_TT_PROC: {
+    if (pic_proc_irep_p(&obj->u.proc)) {
+      pic_irep_decref(pic, obj->u.proc.u.i.irep);
+    }
+    break;
+  }
 
   case PIC_TT_PAIR:
   case PIC_TT_CXT:
-  case PIC_TT_PROC:
   case PIC_TT_PORT:
   case PIC_TT_ERROR:
   case PIC_TT_ID:
