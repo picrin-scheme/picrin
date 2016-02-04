@@ -495,7 +495,7 @@ pic_close(pic_state *pic)
   allocf(pic->userdata, pic->cibase, 0);
   allocf(pic->userdata, pic->xpbase, 0);
 
-  //assert(kh_size(&pic->syms) == 0); FIXME
+  /* assert(kh_size(&pic->syms) == 0); FIXME */
   assert(kh_size(&pic->ids) == 0);
 
   /* free global tables */
