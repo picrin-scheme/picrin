@@ -11,13 +11,8 @@ extern "C" {
 
 typedef struct {
   int insn;
-  union {
-    int i;
-    struct {
-      int depth;
-      int idx;
-    } r;
-  } u;
+  int a;
+  int b;
 } pic_code;
 
 struct pic_list {

@@ -701,15 +701,15 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 #define emit_i(pic, cxt, ins, I) do {           \
     check_code_size(pic, cxt);                  \
     cxt->code[cxt->clen].insn = ins;            \
-    cxt->code[cxt->clen].u.i = I;               \
+    cxt->code[cxt->clen].a = I;                 \
     cxt->clen++;                                \
   } while (0)                                   \
 
 #define emit_r(pic, cxt, ins, D, I) do {        \
     check_code_size(pic, cxt);                  \
     cxt->code[cxt->clen].insn = ins;            \
-    cxt->code[cxt->clen].u.r.depth = D;         \
-    cxt->code[cxt->clen].u.r.idx = I;           \
+    cxt->code[cxt->clen].a = D;                 \
+    cxt->code[cxt->clen].b = I;                 \
     cxt->clen++;                                \
   } while (0)                                   \
 
@@ -912,11 +912,11 @@ codegen_if(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   emit_n(pic, cxt, OP_JMP);
 
-  cxt->code[s].u.i = (int)cxt->clen - s;
+  cxt->code[s].a = (int)cxt->clen - s;
 
   /* if true branch */
   codegen(pic, cxt, pic_list_ref(pic, obj, 2), tailpos);
-  cxt->code[t].u.i = (int)cxt->clen - t;
+  cxt->code[t].a = (int)cxt->clen - t;
 }
 
 static void
