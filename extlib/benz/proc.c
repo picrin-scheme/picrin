@@ -18,6 +18,7 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
   if (--irep->refc == 0) {
     pic_free(pic, irep->code);
     pic_free(pic, irep->pool);
+    pic_free(pic, irep->ints);
 
     /* unchain before decref children ireps */
     irep->list.prev->next = irep->list.next;

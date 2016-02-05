@@ -31,6 +31,9 @@ struct pic_irep {
   int argc, localc, capturec;
   bool varg;
   struct pic_irep **irep;
+  /* constants pool */
+  int *ints;
+  size_t ilen;
   pic_value *pool;
   size_t plen;
 };

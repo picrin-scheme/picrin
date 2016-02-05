@@ -613,6 +613,8 @@ typedef struct codegen_context {
   struct pic_irep **irep;
   size_t ilen, icapa;
   /* constant object pool */
+  int *ints;
+  size_t klen, kcapa;
   pic_value *pool;
   size_t plen, pcapa;
 
@@ -643,6 +645,10 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
+  cxt->ints = pic_calloc(pic, PIC_POOL_SIZE, sizeof(int));
+  cxt->klen = 0;
+  cxt->kcapa = PIC_POOL_SIZE;
+
   create_activation(pic, cxt);
 }
 
@@ -663,6 +669,8 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->irep[cxt->ilen] = NULL;
   irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
   irep->plen = cxt->plen;
+  irep->ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
+  irep->ilen = cxt->klen;
 
   irep->list.next = pic->ireps.next;
   irep->list.prev = &pic->ireps;
@@ -682,6 +690,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 #define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
 #define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
 #define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, pic_value)
+#define check_ints_size(pic, cxt) check_size(pic, cxt, k, ints, pic_value)
 
 #define emit_n(pic, cxt, ins) do {              \
     check_code_size(pic, cxt);                  \
@@ -927,32 +936,33 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   switch (pic_type(obj)) {
   case PIC_TT_UNDEF:
     emit_n(pic, cxt, OP_PUSHUNDEF);
-    emit_ret(pic, cxt, tailpos);
     break;
   case PIC_TT_BOOL:
     emit_n(pic, cxt, (pic_true_p(obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
-    emit_ret(pic, cxt, tailpos);
     break;
   case PIC_TT_INT:
-    emit_i(pic, cxt, OP_PUSHINT, pic_int(obj));
-    emit_ret(pic, cxt, tailpos);
+    check_ints_size(pic, cxt);
+    pidx = (int)cxt->klen++;
+    cxt->ints[pidx] = pic_int(obj);
+    emit_i(pic, cxt, OP_PUSHINT, pidx);
     break;
   case PIC_TT_NIL:
     emit_n(pic, cxt, OP_PUSHNIL);
-    emit_ret(pic, cxt, tailpos);
     break;
   case PIC_TT_CHAR:
-    emit_i(pic, cxt, OP_PUSHCHAR, pic_char(obj));
-    emit_ret(pic, cxt, tailpos);
+    check_ints_size(pic, cxt);
+    pidx = (int)cxt->klen++;
+    cxt->ints[pidx] = pic_char(obj);
+    emit_i(pic, cxt, OP_PUSHCHAR, pidx);
     break;
   default:
     check_pool_size(pic, cxt);
     pidx = (int)cxt->plen++;
     cxt->pool[pidx] = obj;
     emit_i(pic, cxt, OP_PUSHCONST, pidx);
-    emit_ret(pic, cxt, tailpos);
     break;
   }
+  emit_ret(pic, cxt, tailpos);
 }
 
 #define VM(uid, op)                             \

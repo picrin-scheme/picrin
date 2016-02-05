@@ -407,11 +407,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(c.u.i));
+      PUSH(pic_int_value(pic->ci->irep->ints[c.u.i]));
       NEXT;
     }
     CASE(OP_PUSHCHAR) {
-      PUSH(pic_char_value(c.u.i));
+      PUSH(pic_char_value(pic->ci->irep->ints[c.u.i]));
       NEXT;
     }
     CASE(OP_PUSHCONST) {
