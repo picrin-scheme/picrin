@@ -13,7 +13,7 @@ pic_irep_incref(pic_state PIC_UNUSED(*pic), struct pic_irep *irep)
 void
 pic_irep_decref(pic_state *pic, struct pic_irep *irep)
 {
-  size_t i;
+  struct pic_irep **i;
 
   if (--irep->refc == 0) {
     pic_free(pic, irep->code);
@@ -23,8 +23,9 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
     irep->list.prev->next = irep->list.next;
     irep->list.next->prev = irep->list.prev;
 
-    for (i = 0; i < irep->ilen; ++i) {
-      pic_irep_decref(pic, irep->irep[i]);
+    i = irep->irep;
+    while (*i) {
+      pic_irep_decref(pic, *i++);
     }
     pic_free(pic, irep->irep);
     pic_free(pic, irep);
