@@ -44,7 +44,7 @@ expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferre
   struct pic_proc *mac;
   pic_sym *functor;
 
-  functor = pic_resolve(pic, var, env);
+  functor = pic_resolve_variable(pic, env, var);
 
   if ((mac = find_macro(pic, functor)) != NULL) {
     return expand(pic, pic_apply2(pic, mac, var, pic_obj_value(env)), env, deferred);
@@ -55,7 +55,7 @@ expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferre
 static pic_value
 expand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, pic_obj_value(pic->uQUOTE), pic_cdr(pic, expr));
+  return pic_cons(pic, pic_obj_value(pic->sQUOTE), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -129,7 +129,7 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 
   expand_deferred(pic, deferred, in);
 
-  return pic_list3(pic, pic_obj_value(pic->uLAMBDA), formal, body);
+  return pic_list3(pic, pic_obj_value(pic->sLAMBDA), formal, body);
 }
 
 static pic_value
@@ -146,7 +146,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
   }
   val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
 
-  return pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_obj_value(uid), val);
+  return pic_list3(pic, pic_obj_value(pic->sDEFINE), pic_obj_value(uid), val);
 }
 
 static pic_value
@@ -188,18 +188,18 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
     if (pic_var_p(pic_car(pic, expr))) {
       pic_sym *functor;
 
-      functor = pic_resolve(pic, pic_car(pic, expr), env);
+      functor = pic_resolve_variable(pic, env, pic_car(pic, expr));
 
-      if (functor == pic->uDEFINE_MACRO) {
+      if (functor == pic->sDEFINE_MACRO) {
         return expand_defmacro(pic, expr, env);
       }
-      else if (functor == pic->uLAMBDA) {
+      else if (functor == pic->sLAMBDA) {
         return expand_defer(pic, expr, deferred);
       }
-      else if (functor == pic->uDEFINE) {
+      else if (functor == pic->sDEFINE) {
         return expand_define(pic, expr, env, deferred);
       }
-      else if (functor == pic->uQUOTE) {
+      else if (functor == pic->sQUOTE) {
         return expand_quote(pic, expr);
       }
 
@@ -268,9 +268,9 @@ optimize_beta(pic_state *pic, pic_value expr)
   if (pic_sym_p(pic_list_ref(pic, expr, 0))) {
     pic_sym *sym = pic_sym_ptr(pic_list_ref(pic, expr, 0));
 
-    if (sym == pic->uQUOTE) {
+    if (sym == pic->sQUOTE) {
       return expr;
-    } else if (sym == pic->uLAMBDA) {
+    } else if (sym == pic->sLAMBDA) {
       return pic_list3(pic, pic_list_ref(pic, expr, 0), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
     }
   }
@@ -285,7 +285,7 @@ optimize_beta(pic_state *pic, pic_value expr)
   pic_gc_protect(pic, expr);
 
   functor = pic_list_ref(pic, expr, 0);
-  if (pic_pair_p(functor) && pic_eq_p(pic_car(pic, functor), pic_obj_value(pic->uLAMBDA))) {
+  if (pic_pair_p(functor) && pic_eq_p(pic_car(pic, functor), pic_obj_value(pic->sLAMBDA))) {
     formals = pic_list_ref(pic, functor, 1);
     if (! pic_list_p(formals))
       goto exit;              /* TODO: support ((lambda args x) 1 2) */
@@ -294,12 +294,12 @@ optimize_beta(pic_state *pic, pic_value expr)
       goto exit;
     defs = pic_nil_value();
     pic_for_each (val, args, it) {
-      pic_push(pic, pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_car(pic, formals), val), defs);
+      pic_push(pic, pic_list3(pic, pic_obj_value(pic->sDEFINE), pic_car(pic, formals), val), defs);
       formals = pic_cdr(pic, formals);
     }
     expr = pic_list_ref(pic, functor, 2);
     pic_for_each (val, defs, it) {
-      expr = pic_list3(pic, pic_obj_value(pic->uBEGIN), val, expr);
+      expr = pic_list3(pic, pic_obj_value(pic->sBEGIN), val, expr);
     }
   }
  exit:
@@ -506,7 +506,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 
   analyzer_scope_destroy(pic, scope);
 
-  return pic_list6(pic, pic_obj_value(pic->uLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+  return pic_list6(pic, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
 }
 
 static pic_value
@@ -553,16 +553,16 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     if (pic_sym_p(proc)) {
       pic_sym *sym = pic_sym_ptr(proc);
 
-      if (sym == pic->uDEFINE) {
+      if (sym == pic->sDEFINE) {
         return analyze_define(pic, scope, obj);
       }
-      else if (sym == pic->uLAMBDA) {
+      else if (sym == pic->sLAMBDA) {
         return analyze_defer(pic, scope, obj);
       }
-      else if (sym == pic->uQUOTE) {
+      else if (sym == pic->sQUOTE) {
         return obj;
       }
-      else if (sym == pic->uBEGIN || sym == pic->uSETBANG || sym == pic->uIF) {
+      else if (sym == pic->sBEGIN || sym == pic->sSETBANG || sym == pic->sIF) {
         return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
       }
     }
@@ -570,7 +570,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list2(pic, pic_obj_value(pic->uQUOTE), obj);
+    return pic_list2(pic, pic_obj_value(pic->sQUOTE), obj);
   }
 }
 
@@ -988,22 +988,22 @@ codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
     sym = pic_sym_ptr(pic_list_ref(pic, functor, 1));
 
-    VM(pic->uCONS, OP_CONS)
-    VM(pic->uCAR, OP_CAR)
-    VM(pic->uCDR, OP_CDR)
-    VM(pic->uNILP, OP_NILP)
-    VM(pic->uSYMBOLP, OP_SYMBOLP)
-    VM(pic->uPAIRP, OP_PAIRP)
-    VM(pic->uNOT, OP_NOT)
-    VM(pic->uEQ, OP_EQ)
-    VM(pic->uLT, OP_LT)
-    VM(pic->uLE, OP_LE)
-    VM(pic->uGT, OP_GT)
-    VM(pic->uGE, OP_GE)
-    VM(pic->uADD, OP_ADD)
-    VM(pic->uSUB, OP_SUB)
-    VM(pic->uMUL, OP_MUL)
-    VM(pic->uDIV, OP_DIV)
+    VM(pic->sCONS, OP_CONS)
+    VM(pic->sCAR, OP_CAR)
+    VM(pic->sCDR, OP_CDR)
+    VM(pic->sNILP, OP_NILP)
+    VM(pic->sSYMBOLP, OP_SYMBOLP)
+    VM(pic->sPAIRP, OP_PAIRP)
+    VM(pic->sNOT, OP_NOT)
+    VM(pic->sEQ, OP_EQ)
+    VM(pic->sLT, OP_LT)
+    VM(pic->sLE, OP_LE)
+    VM(pic->sGT, OP_GT)
+    VM(pic->sGE, OP_GE)
+    VM(pic->sADD, OP_ADD)
+    VM(pic->sSUB, OP_SUB)
+    VM(pic->sMUL, OP_MUL)
+    VM(pic->sDIV, OP_DIV)
   }
 
   emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);
@@ -1018,19 +1018,19 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   if (sym == GREF || sym == CREF || sym == LREF) {
     codegen_ref(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uSETBANG || sym == pic->uDEFINE) {
+  else if (sym == pic->sSETBANG || sym == pic->sDEFINE) {
     codegen_set(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uLAMBDA) {
+  else if (sym == pic->sLAMBDA) {
     codegen_lambda(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uIF) {
+  else if (sym == pic->sIF) {
     codegen_if(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uBEGIN) {
+  else if (sym == pic->sBEGIN) {
     codegen_begin(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uQUOTE) {
+  else if (sym == pic->sQUOTE) {
     codegen_quote(pic, cxt, obj, tailpos);
   }
   else if (sym == CALL) {

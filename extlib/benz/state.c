@@ -108,19 +108,18 @@ pic_features(pic_state *pic)
   return pic->features;
 }
 
-#define DONE pic_gc_arena_restore(pic, ai);
+#define import_builtin_syntax(name) do {                                \
+    pic_sym *nick, *real;                                               \
+    nick = pic_intern(pic, "builtin:" name);                            \
+    real = pic_intern(pic, name);                                       \
+    pic_put_variable(pic, pic->lib->env, pic_obj_value(nick), real);    \
+  } while (0)
 
-#define define_builtin_syntax(uid, name)                                \
-  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
-
-#define VM(uid, name)                                                   \
-  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
-
-#define VM3(name)                                       \
-  pic->c##name = pic_vm_gref_slot(pic, pic->u##name);
-
-#define VM2(proc, name)                         \
-  proc = pic_ref(pic, pic->lib, name)
+#define declare_vm_procedure(name) do {                                 \
+    pic_sym *id;                                                        \
+    id = pic_intern(pic, name);                                         \
+    pic_put_variable(pic, pic->lib->env, pic_obj_value(id), id);        \
+  } while (0)
 
 static void
 pic_init_core(pic_state *pic)
@@ -132,32 +131,34 @@ pic_init_core(pic_state *pic)
   pic_deflibrary (pic, "(picrin base)") {
     size_t ai = pic_gc_arena_preserve(pic);
 
-    define_builtin_syntax(pic->uDEFINE, "builtin:define");
-    define_builtin_syntax(pic->uSETBANG, "builtin:set!");
-    define_builtin_syntax(pic->uQUOTE, "builtin:quote");
-    define_builtin_syntax(pic->uLAMBDA, "builtin:lambda");
-    define_builtin_syntax(pic->uIF, "builtin:if");
-    define_builtin_syntax(pic->uBEGIN, "builtin:begin");
-    define_builtin_syntax(pic->uDEFINE_MACRO, "builtin:define-macro");
+#define DONE pic_gc_arena_restore(pic, ai);
 
-    pic_defun(pic, "features", pic_features);
+    import_builtin_syntax("define");
+    import_builtin_syntax("set!");
+    import_builtin_syntax("quote");
+    import_builtin_syntax("lambda");
+    import_builtin_syntax("if");
+    import_builtin_syntax("begin");
+    import_builtin_syntax("define-macro");
 
-    VM(pic->uCONS, "cons");
-    VM(pic->uCAR, "car");
-    VM(pic->uCDR, "cdr");
-    VM(pic->uNILP, "null?");
-    VM(pic->uSYMBOLP, "symbol?");
-    VM(pic->uPAIRP, "pair?");
-    VM(pic->uNOT, "not");
-    VM(pic->uADD, "+");
-    VM(pic->uSUB, "-");
-    VM(pic->uMUL, "*");
-    VM(pic->uDIV, "/");
-    VM(pic->uEQ, "=");
-    VM(pic->uLT, "<");
-    VM(pic->uLE, "<=");
-    VM(pic->uGT, ">");
-    VM(pic->uGE, ">=");
+    declare_vm_procedure("cons");
+    declare_vm_procedure("car");
+    declare_vm_procedure("cdr");
+    declare_vm_procedure("null?");
+    declare_vm_procedure("symbol?");
+    declare_vm_procedure("pair?");
+    declare_vm_procedure("+");
+    declare_vm_procedure("-");
+    declare_vm_procedure("*");
+    declare_vm_procedure("/");
+    declare_vm_procedure("=");
+    declare_vm_procedure("<");
+    declare_vm_procedure(">");
+    declare_vm_procedure("<=");
+    declare_vm_procedure(">=");
+    declare_vm_procedure("not");
+
+    DONE;
 
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
@@ -181,39 +182,7 @@ pic_init_core(pic_state *pic)
     pic_init_lib(pic); DONE;
     pic_init_reg(pic); DONE;
 
-    VM3(CONS);
-    VM3(CAR);
-    VM3(CDR);
-    VM3(NILP);
-    VM3(SYMBOLP);
-    VM3(PAIRP);
-    VM3(NOT);
-    VM3(ADD);
-    VM3(SUB);
-    VM3(MUL);
-    VM3(DIV);
-    VM3(EQ);
-    VM3(LT);
-    VM3(LE);
-    VM3(GT);
-    VM3(GE);
-
-    VM2(pic->pCONS, "cons");
-    VM2(pic->pCAR, "car");
-    VM2(pic->pCDR, "cdr");
-    VM2(pic->pNILP, "null?");
-    VM2(pic->pSYMBOLP, "symbol?");
-    VM2(pic->pPAIRP, "pair?");
-    VM2(pic->pNOT, "not");
-    VM2(pic->pADD, "+");
-    VM2(pic->pSUB, "-");
-    VM2(pic->pMUL, "*");
-    VM2(pic->pDIV, "/");
-    VM2(pic->pEQ, "=");
-    VM2(pic->pLT, "<");
-    VM2(pic->pLE, "<=");
-    VM2(pic->pGT, ">");
-    VM2(pic->pGE, ">=");
+    pic_defun(pic, "features", pic_features);
 
     pic_try {
       pic_load_cstr(pic, &pic_boot[0][0]);
@@ -336,6 +305,12 @@ pic_open(pic_allocf allocf, void *userdata)
 
 #define S(slot,name) pic->slot = pic_intern(pic, name)
 
+  S(sDEFINE, "define");
+  S(sDEFINE_MACRO, "define-macro");
+  S(sLAMBDA, "lambda");
+  S(sIF, "if");
+  S(sBEGIN, "begin");
+  S(sSETBANG, "set!");
   S(sQUOTE, "quote");
   S(sQUASIQUOTE, "quasiquote");
   S(sUNQUOTE, "unquote");
@@ -349,56 +324,24 @@ pic_open(pic_allocf allocf, void *userdata)
   S(sDEFINE_LIBRARY, "define-library");
   S(sCOND_EXPAND, "cond-expand");
 
+  S(sCONS, "cons");
+  S(sCAR, "car");
+  S(sCDR, "cdr");
+  S(sNILP, "null?");
+  S(sSYMBOLP, "symbol?");
+  S(sPAIRP, "pair?");
+  S(sADD, "+");
+  S(sSUB, "-");
+  S(sMUL, "*");
+  S(sDIV, "/");
+  S(sEQ, "=");
+  S(sLT, "<");
+  S(sLE, "<=");
+  S(sGT, ">");
+  S(sGE, ">=");
+  S(sNOT, "not");
+
   pic_gc_arena_restore(pic, ai);
-
-#define U(slot,name) pic->slot = pic_uniq(pic, pic_obj_value(pic_intern(pic, name)))
-
-  U(uDEFINE, "define");
-  U(uLAMBDA, "lambda");
-  U(uIF, "if");
-  U(uBEGIN, "begin");
-  U(uSETBANG, "set!");
-  U(uQUOTE, "quote");
-  U(uDEFINE_MACRO, "define-macro");
-  U(uIMPORT, "import");
-  U(uEXPORT, "export");
-  U(uDEFINE_LIBRARY, "define-library");
-  U(uCOND_EXPAND, "cond-expand");
-  U(uCONS, "cons");
-  U(uCAR, "car");
-  U(uCDR, "cdr");
-  U(uNILP, "null?");
-  U(uSYMBOLP, "symbol?");
-  U(uPAIRP, "pair?");
-  U(uADD, "+");
-  U(uSUB, "-");
-  U(uMUL, "*");
-  U(uDIV, "/");
-  U(uEQ, "=");
-  U(uLT, "<");
-  U(uLE, "<=");
-  U(uGT, ">");
-  U(uGE, ">=");
-  U(uNOT, "not");
-  pic_gc_arena_restore(pic, ai);
-
-  /* system procedures */
-  pic->pCONS = pic_invalid_value();
-  pic->pCAR = pic_invalid_value();
-  pic->pCDR = pic_invalid_value();
-  pic->pNILP = pic_invalid_value();
-  pic->pSYMBOLP = pic_invalid_value();
-  pic->pPAIRP = pic_invalid_value();
-  pic->pNOT = pic_invalid_value();
-  pic->pADD = pic_invalid_value();
-  pic->pSUB = pic_invalid_value();
-  pic->pMUL = pic_invalid_value();
-  pic->pDIV = pic_invalid_value();
-  pic->pEQ = pic_invalid_value();
-  pic->pLT = pic_invalid_value();
-  pic->pLE = pic_invalid_value();
-  pic->pGT = pic_invalid_value();
-  pic->pGE = pic_invalid_value();
 
   /* root tables */
   pic->globals = pic_make_reg(pic);
@@ -426,23 +369,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* turn on GC */
   pic->gc_enable = true;
-
-  pic->cCONS = pic_box(pic, pic_invalid_value());
-  pic->cCAR = pic_box(pic, pic_invalid_value());
-  pic->cCDR = pic_box(pic, pic_invalid_value());
-  pic->cNILP = pic_box(pic, pic_invalid_value());
-  pic->cSYMBOLP = pic_box(pic, pic_invalid_value());
-  pic->cPAIRP = pic_box(pic, pic_invalid_value());
-  pic->cNOT = pic_box(pic, pic_invalid_value());
-  pic->cADD = pic_box(pic, pic_invalid_value());
-  pic->cSUB = pic_box(pic, pic_invalid_value());
-  pic->cMUL = pic_box(pic, pic_invalid_value());
-  pic->cDIV = pic_box(pic, pic_invalid_value());
-  pic->cEQ = pic_box(pic, pic_invalid_value());
-  pic->cLT = pic_box(pic, pic_invalid_value());
-  pic->cLE = pic_box(pic, pic_invalid_value());
-  pic->cGT = pic_box(pic, pic_invalid_value());
-  pic->cGE = pic_box(pic, pic_invalid_value());
 
   pic_init_core(pic);
 

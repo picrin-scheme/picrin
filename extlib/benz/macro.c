@@ -30,8 +30,23 @@ pic_make_env(pic_state *pic, struct pic_env *up)
 {
   struct pic_env *env;
 
+  assert(up != NULL);
+
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
   env->up = up;
+  env->prefix = NULL;
+  kh_init(env, &env->map);
+  return env;
+}
+
+struct pic_env *
+pic_make_topenv(pic_state *pic, pic_str *prefix)
+{
+  struct pic_env *env;
+
+  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+  env->up = NULL;
+  env->prefix = prefix;
   kh_init(env, &env->map);
   return env;
 }
@@ -48,33 +63,28 @@ pic_var_name(pic_state PIC_UNUSED(*pic), pic_value var)
 }
 
 pic_sym *
-pic_uniq(pic_state *pic, pic_value var)
+pic_add_variable(pic_state *pic, struct pic_env *env, pic_value var)
 {
+  const char *name;
+  pic_sym *uid;
   pic_str *str;
 
   assert(pic_var_p(var));
 
-  str = pic_format(pic, "%s.%d", pic_symbol_name(pic, pic_var_name(pic, var)), pic->ucnt++);
+  name = pic_symbol_name(pic, pic_var_name(pic, var));
 
-  return pic_intern_str(pic, str);
+  if (env->up == NULL && pic_sym_p(var)) {        /* toplevel & public */
+    str = pic_format(pic, "%s/%s", pic_str_cstr(pic, env->prefix), name);
+  } else {
+    str = pic_format(pic, ".%s.%d", name, pic->ucnt++);
+  }
+  uid = pic_intern_str(pic, str);
+
+  return pic_put_variable(pic, env, var, uid);
 }
 
 pic_sym *
-pic_add_variable(pic_state *pic, struct pic_env *env, pic_value var)
-{
-  pic_sym *uid;
-
-  assert(pic_var_p(var));
-
-  uid = pic_uniq(pic, var);
-
-  pic_put_variable(pic, env, var, uid);
-
-  return uid;
-}
-
-void
-pic_put_variable(pic_state PIC_UNUSED(*pic), struct pic_env *env, pic_value var, pic_sym *uid)
+pic_put_variable(pic_state *pic, struct pic_env *env, pic_value var, pic_sym *uid)
 {
   khiter_t it;
   int ret;
@@ -83,6 +93,8 @@ pic_put_variable(pic_state PIC_UNUSED(*pic), struct pic_env *env, pic_value var,
 
   it = kh_put(env, &env->map, pic_ptr(var), &ret);
   kh_val(&env->map, it) = uid;
+
+  return uid;
 }
 
 pic_sym *
@@ -115,7 +127,7 @@ lookup(void *var, struct pic_env *env)
 }
 
 pic_sym *
-pic_resolve(pic_state *pic, pic_value var, struct pic_env *env)
+pic_resolve_variable(pic_state *pic, struct pic_env *env, pic_value var)
 {
   pic_sym *uid;
 

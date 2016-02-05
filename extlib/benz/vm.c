@@ -636,8 +636,6 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
     }
 
 #define check_condition(name, n) do {                                   \
-      if (! pic_eq_p(pic->p##name, pic->c##name->value))                \
-        goto L_CALL;                                                    \
       if (c.a != n + 1)                                                 \
         goto L_CALL;                                                    \
     } while (0)

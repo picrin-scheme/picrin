@@ -4,13 +4,30 @@
 
 #include "picrin.h"
 
-static void
-setup_default_env(pic_state *pic, struct pic_env *env)
+static struct pic_env *
+make_library_env(pic_state *pic, pic_value name)
 {
-  pic_put_variable(pic, env, pic_obj_value(pic->sDEFINE_LIBRARY), pic->uDEFINE_LIBRARY);
-  pic_put_variable(pic, env, pic_obj_value(pic->sIMPORT), pic->uIMPORT);
-  pic_put_variable(pic, env, pic_obj_value(pic->sEXPORT), pic->uEXPORT);
-  pic_put_variable(pic, env, pic_obj_value(pic->sCOND_EXPAND), pic->uCOND_EXPAND);
+  struct pic_env *env;
+  pic_value dir, it;
+  pic_str *prefix = NULL;
+
+  pic_for_each (dir, name, it) {
+    if (prefix == NULL) {
+      prefix = pic_format(pic, "~a", dir);
+    } else {
+      prefix = pic_format(pic, "~a.~a", pic_obj_value(prefix), dir);
+    }
+  }
+
+  env = pic_make_topenv(pic, prefix);
+
+  /* set up default environment */
+  pic_put_variable(pic, env, pic_obj_value(pic->sDEFINE_LIBRARY), pic->sDEFINE_LIBRARY);
+  pic_put_variable(pic, env, pic_obj_value(pic->sIMPORT), pic->sIMPORT);
+  pic_put_variable(pic, env, pic_obj_value(pic->sEXPORT), pic->sEXPORT);
+  pic_put_variable(pic, env, pic_obj_value(pic->sCOND_EXPAND), pic->sCOND_EXPAND);
+
+  return env;
 }
 
 struct pic_lib *
@@ -24,10 +41,8 @@ pic_make_library(pic_state *pic, pic_value name)
     pic_errorf(pic, "library name already in use: ~s", name);
   }
 
-  env = pic_make_env(pic, NULL);
+  env = make_library_env(pic, name);
   exports = pic_make_dict(pic);
-
-  setup_default_env(pic, env);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->name = name;

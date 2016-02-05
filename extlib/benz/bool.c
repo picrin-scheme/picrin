@@ -40,11 +40,15 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
   switch (pic_type(x)) {
   case PIC_TT_ID: {
     struct pic_id *id1, *id2;
+    pic_sym *s1, *s2;
 
     id1 = pic_id_ptr(x);
     id2 = pic_id_ptr(y);
 
-    return pic_resolve(pic, id1->var, id1->env) == pic_resolve(pic, id2->var, id2->env);
+    s1 = pic_resolve_variable(pic, id1->env, id1->var);
+    s2 = pic_resolve_variable(pic, id2->env, id2->var);
+
+    return s1 == s2;
   }
   case PIC_TT_STRING: {
     return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;

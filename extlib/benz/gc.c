@@ -347,6 +347,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
         gc_mark_object(pic, (struct pic_object *)kh_val(h, it));
       }
     }
+    if (obj->u.env.prefix) {
+      gc_mark_object(pic, (struct pic_object *)obj->u.env.prefix);
+    }
     if (obj->u.env.up) {
       LOOP(obj->u.env.up);
     }
@@ -420,7 +423,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 }
 
 #define M(x) gc_mark_object(pic, (struct pic_object *)pic->x)
-#define P(x) gc_mark(pic, pic->x)
 
 static void
 gc_mark_phase(pic_state *pic)
@@ -469,22 +471,13 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* mark reserved symbols */
+  M(sDEFINE); M(sDEFINE_MACRO); M(sLAMBDA); M(sIF); M(sBEGIN); M(sSETBANG);
   M(sQUOTE); M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
   M(sSYNTAX_QUOTE); M(sSYNTAX_QUASIQUOTE); M(sSYNTAX_UNQUOTE); M(sSYNTAX_UNQUOTE_SPLICING);
   M(sDEFINE_LIBRARY); M(sIMPORT); M(sEXPORT); M(sCOND_EXPAND);
 
-  M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG); M(uDEFINE_MACRO);
-  M(uDEFINE_LIBRARY); M(uIMPORT); M(uEXPORT); M(uCOND_EXPAND);
-
-  M(uCONS); M(uCAR); M(uCDR); M(uNILP); M(uSYMBOLP); M(uPAIRP);
-  M(uADD); M(uSUB); M(uMUL); M(uDIV); M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
-
-  /* mark system procedures */
-  P(pCONS); P(pCAR); P(pCDR); P(pNILP); P(pSYMBOLP); P(pPAIRP); P(pNOT);
-  P(pADD); P(pSUB); P(pMUL); P(pDIV); P(pEQ); P(pLT); P(pLE); P(pGT); P(pGE);
-
-  M(cCONS); M(cCAR); M(cCDR); M(cNILP); M(cSYMBOLP); M(cPAIRP); M(cNOT);
-  M(cADD); M(cSUB); M(cMUL); M(cDIV); M(cEQ); M(cLT); M(cLE); M(cGT); M(cGE);
+  M(sCONS); M(sCAR); M(sCDR); M(sNILP); M(sSYMBOLP); M(sPAIRP);
+  M(sADD); M(sSUB); M(sMUL); M(sDIV); M(sEQ); M(sLT); M(sLE); M(sGT); M(sGE); M(sNOT);
 
   /* global variables */
   if (pic->globals) {
