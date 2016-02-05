@@ -38,7 +38,6 @@ struct pic_irep {
 void pic_irep_incref(pic_state *, struct pic_irep *);
 void pic_irep_decref(pic_state *, struct pic_irep *);
 
-pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);
 pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
 pic_value pic_analyze(pic_state *, pic_value);
 struct pic_irep *pic_codegen(pic_state *, pic_value);

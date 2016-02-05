@@ -99,6 +99,46 @@ pic_find_variable(pic_state PIC_UNUSED(*pic), struct pic_env *env, pic_value var
   return kh_val(&env->map, it);
 }
 
+static pic_sym *
+lookup(void *var, struct pic_env *env)
+{
+  khiter_t it;
+
+  while (env != NULL) {
+    it = kh_get(env, &env->map, var);
+    if (it != kh_end(&env->map)) {
+      return kh_val(&env->map, it);
+    }
+    env = env->up;
+  }
+  return NULL;
+}
+
+pic_sym *
+pic_resolve(pic_state *pic, pic_value var, struct pic_env *env)
+{
+  pic_sym *uid;
+
+  assert(env != NULL);
+
+  pic_assert_type(pic, var, var);
+
+  while ((uid = lookup(pic_ptr(var), env)) == NULL) {
+    if (pic_sym_p(var)) {
+      break;
+    }
+    env = pic_id_ptr(var)->env;
+    var = pic_id_ptr(var)->var;
+  }
+  if (uid == NULL) {
+    while (env->up != NULL) {
+      env = env->up;
+    }
+    uid = pic_add_variable(pic, env, var);
+  }
+  return uid;
+}
+
 static pic_value
 pic_macro_identifier_p(pic_state *pic)
 {
