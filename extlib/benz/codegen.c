@@ -39,15 +39,15 @@ static pic_value expand(pic_state *, pic_value, struct pic_env *, pic_value);
 static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 
 static pic_value
-expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferred)
+expand_var(pic_state *pic, pic_id *id, struct pic_env *env, pic_value deferred)
 {
   struct pic_proc *mac;
   pic_sym *functor;
 
-  functor = pic_resolve_variable(pic, env, var);
+  functor = pic_lookup_identifier(pic, id, env);
 
   if ((mac = find_macro(pic, functor)) != NULL) {
-    return expand(pic, pic_apply2(pic, mac, var, pic_obj_value(env)), env, deferred);
+    return expand(pic, pic_apply2(pic, mac, pic_obj_value(id), pic_obj_value(env)), env, deferred);
   }
   return pic_obj_value(functor);
 }
@@ -116,10 +116,10 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
   in = pic_make_env(pic, env);
 
   for (a = pic_cadr(pic, expr); pic_pair_p(a); a = pic_cdr(pic, a)) {
-    pic_add_variable(pic, in, pic_car(pic, a));
+    pic_add_identifier(pic, pic_id_ptr(pic_car(pic, a)), in);
   }
-  if (pic_var_p(a)) {
-    pic_add_variable(pic, in, a);
+  if (pic_id_p(a)) {
+    pic_add_identifier(pic, pic_id_ptr(a), in);
   }
 
   deferred = pic_list1(pic, pic_nil_value());
@@ -136,11 +136,12 @@ static pic_value
 expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
 {
   pic_sym *uid;
-  pic_value var, val;
+  pic_id *id;
+  pic_value val;
 
-  var = pic_cadr(pic, expr);
-  if ((uid = pic_find_variable(pic, env, var)) == NULL) {
-    uid = pic_add_variable(pic, env, var);
+  id = pic_id_ptr(pic_cadr(pic, expr));
+  if ((uid = pic_find_identifier(pic, id, env)) == NULL) {
+    uid = pic_add_identifier(pic, id, env);
   } else {
     shadow_macro(pic, uid);
   }
@@ -152,17 +153,18 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
 static pic_value
 expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 {
-  pic_value var, val;
+  pic_id *id;
+  pic_value val;
   pic_sym *uid;
 
-  var = pic_cadr(pic, expr);
-  if ((uid = pic_find_variable(pic, env, var)) == NULL) {
-    uid = pic_add_variable(pic, env, var);
+  id = pic_id_ptr(pic_cadr(pic, expr));
+  if ((uid = pic_find_identifier(pic, id, env)) == NULL) {
+    uid = pic_add_identifier(pic, id, env);
   }
 
   val = pic_eval(pic, pic_list_ref(pic, expr, 2), env);
   if (! pic_proc_p(val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", var);
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", pic_identifier_name(pic, id));
   }
 
   define_macro(pic, uid, pic_proc_ptr(val));
@@ -176,7 +178,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
   switch (pic_type(expr)) {
   case PIC_TT_ID:
   case PIC_TT_SYMBOL: {
-    return expand_var(pic, expr, env, deferred);
+    return expand_var(pic, pic_id_ptr(expr), env, deferred);
   }
   case PIC_TT_PAIR: {
     struct pic_proc *mac;
@@ -185,10 +187,10 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
       pic_errorf(pic, "cannot expand improper list: ~s", expr);
     }
 
-    if (pic_var_p(pic_car(pic, expr))) {
+    if (pic_id_p(pic_car(pic, expr))) {
       pic_sym *functor;
 
-      functor = pic_resolve_variable(pic, env, pic_car(pic, expr));
+      functor = pic_lookup_identifier(pic, pic_id_ptr(pic_car(pic, expr)), env);
 
       if (functor == pic->sDEFINE_MACRO) {
         return expand_defmacro(pic, expr, env);

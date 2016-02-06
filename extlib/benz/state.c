@@ -30,7 +30,6 @@ void pic_init_cont(pic_state *);
 void pic_init_char(pic_state *);
 void pic_init_error(pic_state *);
 void pic_init_str(pic_state *);
-void pic_init_macro(pic_state *);
 void pic_init_var(pic_state *);
 void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
@@ -112,13 +111,13 @@ pic_features(pic_state *pic)
     pic_sym *nick, *real;                                               \
     nick = pic_intern(pic, "builtin:" name);                            \
     real = pic_intern(pic, name);                                       \
-    pic_put_variable(pic, pic->lib->env, pic_obj_value(nick), real);    \
+    pic_put_identifier(pic, (pic_id *)nick, real, pic->lib->env);       \
   } while (0)
 
 #define declare_vm_procedure(name) do {                                 \
-    pic_sym *id;                                                        \
-    id = pic_intern(pic, name);                                         \
-    pic_put_variable(pic, pic->lib->env, pic_obj_value(id), id);        \
+    pic_sym *sym;                                                       \
+    sym = pic_intern(pic, name);                                        \
+    pic_put_identifier(pic, (pic_id *)sym, sym, pic->lib->env);         \
   } while (0)
 
 static void
@@ -172,7 +171,6 @@ pic_init_core(pic_state *pic)
     pic_init_char(pic); DONE;
     pic_init_error(pic); DONE;
     pic_init_str(pic); DONE;
-    pic_init_macro(pic); DONE;
     pic_init_var(pic); DONE;
     pic_init_write(pic); DONE;
     pic_init_read(pic); DONE;

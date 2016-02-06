@@ -208,17 +208,17 @@
 
     (define (constant? obj)
       (and (not (pair? obj))
-           (not (variable? obj))))
+           (not (identifier? obj))))
 
     (define (literal? obj)
-      (and (variable? obj)
+      (and (identifier? obj)
            (memq obj literals)))
 
     (define (many? pat)
       (and (pair? pat)
            (pair? (cdr pat))
-           (variable? (cadr pat))
-           (variable=? (cadr pat) ellipsis)))
+           (identifier? (cadr pat))
+           (identifier=? (cadr pat) ellipsis)))
 
     (define (pattern-validator pat)      ; pattern -> validator
       (letrec
@@ -228,8 +228,8 @@
                ((constant? pat)
                 #`(equal? '#,pat #,form))
                ((literal? pat)
-                #`(and (variable? #,form) (variable=? #'#,pat #,form)))
-               ((variable? pat)
+                #`(and (identifier? #,form) (identifier=? #'#,pat #,form)))
+               ((identifier? pat)
                 #t)
                ((many? pat)
                 (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
@@ -252,7 +252,7 @@
         '())
        ((literal? pat)
         '())
-       ((variable? pat)
+       ((identifier? pat)
         `(,pat))
        ((many? pat)
         (append (pattern-variables (car pat))
@@ -267,7 +267,7 @@
         '())
        ((literal? pat)
         '())
-       ((variable? pat)
+       ((identifier? pat)
         `((,pat . 0)))
        ((many? pat)
         (append (map-values succ (pattern-levels (car pat)))
@@ -285,7 +285,7 @@
                 '())
                ((literal? pat)
                 '())
-               ((variable? pat)
+               ((identifier? pat)
                 `((,pat . ,form)))
                ((many? pat)
                 (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
@@ -303,7 +303,7 @@
       (cond
        ((constant? pat)
         pat)
-       ((variable? pat)
+       ((identifier? pat)
         (let ((it (assq pat levels)))
           (if it
               (if (= 0 (cdr it))
