@@ -28,12 +28,12 @@
   (define (null-environment n)
     (if (not (= n 5))
         (error "unsupported environment version" n)
-        (library-environment (find-library '(scheme null)))))
+        (find-library '(scheme null))))
 
   (define (scheme-report-environment n)
     (if (not (= n 5))
         (error "unsupported environment version" n)
-        (library-environment (find-library '(scheme r5rs)))))
+        (find-library '(scheme r5rs))))
 
   (export * + - / < <= = > >=
           abs acos and

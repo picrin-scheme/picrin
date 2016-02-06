@@ -828,7 +828,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 
 #define SAVE(pic, ai, obj) pic_gc_arena_restore(pic, ai); pic_gc_protect(pic, obj)
 
-static struct pic_proc *
+struct pic_proc *
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct pic_irep *irep;
@@ -887,25 +887,34 @@ pic_compile(pic_state *pic, pic_value obj)
 }
 
 pic_value
-pic_eval(pic_state *pic, pic_value program, struct pic_env *env)
+pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
 {
-  struct pic_proc *proc;
+  pic_value r;
 
-  proc = pic_compile(pic, pic_expand(pic, program, env));
+  pic_try {
+    pic->prev_lib = pic->lib;
+    pic->lib = lib;
 
-  return pic_apply0(pic, proc);
+    r = pic_apply0(pic, pic_compile(pic, pic_expand(pic, program, lib->env)));
+  }
+  pic_catch {
+    pic->lib = pic->prev_lib;
+    pic_raise(pic, pic->err);
+  }
+
+  return r;
 }
 
 static pic_value
 pic_eval_eval(pic_state *pic)
 {
-  pic_value program, env;
+  pic_value program, lib;
 
-  pic_get_args(pic, "oo", &program, &env);
+  pic_get_args(pic, "oo", &program, &lib);
 
-  pic_assert_type(pic, env, env);
+  pic_assert_type(pic, lib, lib);
 
-  return pic_eval(pic, program, pic_env_ptr(env));
+  return pic_eval(pic, program, pic_lib_ptr(lib));
 }
 
 void

@@ -19,10 +19,7 @@
       (define (add-history str)
         #f))))
 
-  (define user-env (library-environment (find-library '(picrin user))))
-
   (define (init-env)
-    (current-library (find-library '(picrin user)))
     (eval
      '(import (scheme base)
               (scheme load)
@@ -35,8 +32,7 @@
               (scheme lazy)
               (scheme time)
               (picrin macro))
-     user-env)
-    (current-library (find-library '(picrin repl))))
+     (find-library '(picrin user))))
 
   (define (repl)
     (init-env)
@@ -67,7 +63,7 @@
                       (lambda (port)
                         (let next ((expr (read port)))
                           (unless (eof-object? expr)
-                            (write (eval expr user-env))
+                            (write (eval expr (find-library '(picrin user))))
                             (newline)
                             (set! str "")
                             (next (read port))))))))))
