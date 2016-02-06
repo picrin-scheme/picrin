@@ -9,6 +9,7 @@ CONTRIB_LIBS += \
 	contrib/40.srfi/srfi/26.scm\
 	contrib/40.srfi/srfi/43.scm\
 	contrib/40.srfi/srfi/60.scm\
+	contrib/40.srfi/srfi/64.scm\
 	contrib/40.srfi/srfi/95.scm\
 	contrib/40.srfi/srfi/106.scm\
 	contrib/40.srfi/srfi/111.scm

@@ -3,8 +3,7 @@
 ;;;  SRFI-64, A Scheme API for test suites
 ;;;
 (import (scheme base)
-        (picrin test))
-
+        (srfi 64))
 (test-begin "SRFI 64 - Meta-Test Suite")
 
 ;;;

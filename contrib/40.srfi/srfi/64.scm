@@ -186,30 +186,30 @@
         (%test-begin suite-name count))))
 
    (define (test-on-group-begin-simple runner suite-name count)
-     (if (null? (test-runner-group-stack runner))
-         (begin
-           (display "%%%% Starting test ")
-           (display suite-name)
-           (if test-log-to-file
-               (let* ((log-file-name
-                       (if (string? test-log-to-file) test-log-to-file
-                           (string-append suite-name ".log")))
-                      (log-file
-                       (open-output-file log-file-name)))
-                 (display "%%%% Starting test " log-file)
-                 (display suite-name log-file)
-                 (newline log-file)
-                 (test-runner-aux-value! runner log-file)
-                 (display "  (Writing full log to \"")
-                 (display log-file-name)
-                 (display "\")")))
-           (newline)))
-     (let ((log (test-runner-aux-value runner)))
-       (if (output-port? log)
-           (begin
-             (display "Group begin: " log)
-             (display suite-name log)
-             (newline log))))
+     ;; (if (null? (test-runner-group-stack runner))
+     ;;     (begin
+     ;;       (display "%%%% Starting test ")
+     ;;       (display suite-name)
+     ;;       (if test-log-to-file
+     ;;           (let* ((log-file-name
+     ;;                   (if (string? test-log-to-file) test-log-to-file
+     ;;                       (string-append suite-name ".log")))
+     ;;                  (log-file
+     ;;                   (open-output-file log-file-name)))
+     ;;             (display "%%%% Starting test " log-file)
+     ;;             (display suite-name log-file)
+     ;;             (newline log-file)
+     ;;             (test-runner-aux-value! runner log-file)
+     ;;             (display "  (Writing full log to \"")
+     ;;             (display log-file-name)
+     ;;             (display "\")")))
+     ;;       (newline)))
+     ;; (let ((log (test-runner-aux-value runner)))
+     ;;   (if (output-port? log)
+     ;;       (begin
+     ;;         (display "Group begin: " log)
+     ;;         (display suite-name log)
+     ;;         (newline log))))
      #f)
 
    (define (test-on-group-end-simple runner)
