@@ -28,11 +28,13 @@ struct pic_irep {
     struct {
       int code_offset;
       int ints_offset;
+      int nums_offset;
       int irep_offset;
     } p;
     struct {
       pic_code *code;
       int *ints;
+      double *nums;
       union irep_node {
         int offset;
         struct pic_irep *i;
@@ -40,7 +42,7 @@ struct pic_irep {
     } s;
   } u;
   pic_value *pool;              /* pool of heap objects */
-  size_t ncode, nirep, nints, npool;
+  size_t ncode, nirep, nints, nnums, npool;
 };
 
 void pic_irep_incref(pic_state *, struct pic_irep *);

@@ -615,6 +615,8 @@ typedef struct codegen_context {
   /* constant object pool */
   int *ints;
   size_t klen, kcapa;
+  double *nums;
+  size_t flen, fcapa;
   pic_value *pool;
   size_t plen, pcapa;
 
@@ -649,6 +651,10 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->klen = 0;
   cxt->kcapa = PIC_POOL_SIZE;
 
+  cxt->nums = pic_calloc(pic, PIC_POOL_SIZE, sizeof(double));
+  cxt->flen = 0;
+  cxt->fcapa = PIC_POOL_SIZE;
+
   create_activation(pic, cxt);
 }
 
@@ -667,10 +673,12 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->u.s.code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->clen);
   irep->u.s.irep = pic_realloc(pic, cxt->irep, sizeof(union irep_node) * cxt->ilen);
   irep->u.s.ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
+  irep->u.s.nums = pic_realloc(pic, cxt->nums, sizeof(double) * cxt->flen);
   irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
   irep->ncode = cxt->clen;
   irep->nirep = cxt->ilen;
   irep->nints = cxt->klen;
+  irep->nnums = cxt->flen;
   irep->npool = cxt->plen;
 
   irep->list.next = pic->ireps.next;
@@ -691,7 +699,8 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 #define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
 #define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
 #define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, pic_value)
-#define check_ints_size(pic, cxt) check_size(pic, cxt, k, ints, pic_value)
+#define check_ints_size(pic, cxt) check_size(pic, cxt, k, ints, int)
+#define check_nums_size(pic, cxt) check_size(pic, cxt, f, nums, double)
 
 #define emit_n(pic, cxt, ins) do {              \
     check_code_size(pic, cxt);                  \
@@ -946,6 +955,12 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     pidx = (int)cxt->klen++;
     cxt->ints[pidx] = pic_int(obj);
     emit_i(pic, cxt, OP_PUSHINT, pidx);
+    break;
+  case PIC_TT_FLOAT:
+    check_nums_size(pic, cxt);
+    pidx = (int)cxt->flen++;
+    cxt->nums[pidx] = pic_float(obj);
+    emit_i(pic, cxt, OP_PUSHFLOAT, pidx);
     break;
   case PIC_TT_NIL:
     emit_n(pic, cxt, OP_PUSHNIL);

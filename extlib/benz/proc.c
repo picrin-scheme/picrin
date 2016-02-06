@@ -18,6 +18,7 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
   if (--irep->refc == 0) {
     pic_free(pic, irep->u.s.code);
     pic_free(pic, irep->u.s.ints);
+    pic_free(pic, irep->u.s.nums);
     pic_free(pic, irep->pool);
 
     /* unchain before decref children ireps */
