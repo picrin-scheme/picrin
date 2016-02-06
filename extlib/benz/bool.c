@@ -4,92 +4,102 @@
 
 #include "picrin.h"
 
-static bool
-str_equal_p(pic_state *pic, struct pic_string *str1, struct pic_string *str2)
-{
-  return pic_str_cmp(pic, str1, str2) == 0;
-}
+KHASH_DECLARE(m, void *, int)
+KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 static bool
-blob_equal_p(struct pic_blob *blob1, struct pic_blob *blob2)
+internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m) *h)
 {
-  size_t i;
-
-  if (blob1->len != blob2->len) {
-    return false;
-  }
-  for (i = 0; i < blob1->len; ++i) {
-    if (blob1->data[i] != blob2->data[i])
-      return false;
-  }
-  return true;
-}
-
-static bool
-internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *xh, bool xh_initted_p)
-{
-  pic_value local = pic_nil_value();
-  size_t c;
+  pic_value localx = pic_nil_value();
+  pic_value localy = pic_nil_value();
+  int cx = 0;
+  int cy = 0;
 
   if (depth > 10) {
     if (depth > 200) {
       pic_errorf(pic, "Stack overflow in equal\n");
     }
     if (pic_pair_p(x) || pic_vec_p(x)) {
-      if (! xh_initted_p) {
-        xh_init_ptr(xh, 0);
-        xh_initted_p = true;
-      }
-
-      if (xh_get_ptr(xh, pic_obj_ptr(x)) != NULL) {
+      int ret;
+      kh_put(m, h, pic_obj_ptr(x), &ret);
+      if (ret != 0) {
         return true;            /* `x' was seen already.  */
-      } else {
-        xh_put_ptr(xh, pic_obj_ptr(x), NULL);
       }
     }
   }
-
-  c = 0;
 
  LOOP:
 
-  if (pic_eqv_p(x, y))
+  if (pic_eqv_p(x, y)) {
     return true;
-
-  if (pic_type(x) != pic_type(y))
+  }
+  if (pic_type(x) != pic_type(y)) {
     return false;
+  }
 
   switch (pic_type(x)) {
-  case PIC_TT_STRING:
-    return str_equal_p(pic, pic_str_ptr(x), pic_str_ptr(y));
+  case PIC_TT_ID: {
+    struct pic_id *id1, *id2;
 
-  case PIC_TT_BLOB:
-    return blob_equal_p(pic_blob_ptr(x), pic_blob_ptr(y));
+    id1 = pic_id_ptr(x);
+    id2 = pic_id_ptr(y);
 
-  case PIC_TT_PAIR: {
-    if (pic_nil_p(local)) {
-      local = x;
-    }
-    if (internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, xh, xh_initted_p)) {
-      x = pic_cdr(pic, x);
-      y = pic_cdr(pic, y);
+    return pic_resolve(pic, id1->var, id1->env) == pic_resolve(pic, id2->var, id2->env);
+  }
+  case PIC_TT_STRING: {
+    return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;
+  }
+  case PIC_TT_BLOB: {
+    pic_blob *blob1, *blob2;
+    int i;
 
-      c++;
+    blob1 = pic_blob_ptr(x);
+    blob2 = pic_blob_ptr(y);
 
-      if (c == 2) {
-        c = 0;
-        local = pic_cdr(pic, local);
-        if (pic_eq_p(local, x)) {
-          return true;
-        }
-      }
-      goto LOOP;
-    } else {
+    if (blob1->len != blob2->len) {
       return false;
     }
+    for (i = 0; i < blob1->len; ++i) {
+      if (blob1->data[i] != blob2->data[i])
+        return false;
+    }
+    return true;
+  }
+  case PIC_TT_PAIR: {
+    if (! internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, h))
+      return false;
+
+    /* Floyd's cycle-finding algorithm */
+    if (pic_nil_p(localx)) {
+      localx = x;
+    }
+    x = pic_cdr(pic, x);
+    cx++;
+    if (pic_nil_p(localy)) {
+      localy = y;
+    }
+    y = pic_cdr(pic, y);
+    cy++;
+    if (cx == 2) {
+      cx = 0;
+      localx = pic_cdr(pic, localx);
+      if (pic_eq_p(localx, x)) {
+        if (cy < 0 ) return true; /* both lists circular */
+        cx = INT_MIN; /* found a cycle on x */
+      }
+    }
+    if (cy == 2) {
+      cy = 0;
+      localy = pic_cdr(pic, localy);
+      if (pic_eq_p(localy, y)) {
+        if (cx < 0 ) return true; /* both lists circular */
+        cy = INT_MIN; /* found a cycle on y */
+      }
+    }
+    goto LOOP;                  /* tail-call optimization */
   }
   case PIC_TT_VECTOR: {
-    size_t i;
+    int i;
     struct pic_vector *u, *v;
 
     u = pic_vec_ptr(x);
@@ -99,7 +109,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
       return false;
     }
     for (i = 0; i < u->len; ++i) {
-      if (! internal_equal_p(pic, u->data[i], v->data[i], depth + 1, xh, xh_initted_p))
+      if (! internal_equal_p(pic, u->data[i], v->data[i], depth + 1, h))
         return false;
     }
     return true;
@@ -112,9 +122,11 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, xhash *
 bool
 pic_equal_p(pic_state *pic, pic_value x, pic_value y)
 {
-  xhash ht;
+  khash_t(m) h;
 
-  return internal_equal_p(pic, x, y, 0, &ht, false);
+  kh_init(m, &h);
+
+  return internal_equal_p(pic, x, y, 0, &h);
 }
 
 static pic_value
@@ -170,7 +182,7 @@ pic_bool_boolean_p(pic_state *pic)
 static pic_value
 pic_bool_boolean_eq_p(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -189,13 +201,11 @@ pic_bool_boolean_eq_p(pic_state *pic)
 void
 pic_init_bool(pic_state *pic)
 {
-  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
-
   pic_defun(pic, "eq?", pic_bool_eq_p);
   pic_defun(pic, "eqv?", pic_bool_eqv_p);
   pic_defun(pic, "equal?", pic_bool_equal_p);
 
-  pic_defun_vm(pic, "not", pic->rNOT, pic_bool_not);
+  pic_defun(pic, "not", pic_bool_not);
 
   pic_defun(pic, "boolean?", pic_bool_boolean_p);
   pic_defun(pic, "boolean=?", pic_bool_boolean_eq_p);

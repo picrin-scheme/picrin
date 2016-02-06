@@ -5,12 +5,19 @@
 #include "picrin.h"
 
 void
-pic_add_feature(pic_state *pic, const char *feature)
+pic_set_argv(pic_state *pic, int argc, char *argv[], char **envp)
 {
-  pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
+  pic->argc = argc;
+  pic->argv = argv;
+  pic->envp = envp;
 }
 
-void pic_init_undef(pic_state *);
+void
+pic_add_feature(pic_state *pic, const char *feature)
+{
+  pic_push(pic, pic_obj_value(pic_intern(pic, feature)), pic->features);
+}
+
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -31,7 +38,6 @@ void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
-void pic_init_attr(pic_state *);
 void pic_init_reg(pic_state *);
 
 extern const char pic_boot[][80];
@@ -40,7 +46,10 @@ static void
 pic_init_features(pic_state *pic)
 {
   pic_add_feature(pic, "picrin");
+
+#if __STDC_IEC_559__
   pic_add_feature(pic, "ieee-float");
+#endif
 
 #if _POSIX_SOURCE
   pic_add_feature(pic, "posix");
@@ -91,27 +100,65 @@ pic_init_features(pic_state *pic)
 #endif
 }
 
+static pic_value
+pic_features(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic->features;
+}
+
 #define DONE pic_gc_arena_restore(pic, ai);
+
+#define define_builtin_syntax(uid, name)                                \
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
+
+#define VM(uid, name)                                                   \
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
+
+#define VM3(name)                                       \
+  pic->c##name = pic_vm_gref_slot(pic, pic->u##name);
+
+#define VM2(proc, name)                         \
+  proc = pic_ref(pic, pic->lib, name)
 
 static void
 pic_init_core(pic_state *pic)
 {
-  void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
+  struct pic_box *pic_vm_gref_slot(pic_state *, pic_sym *);
 
   pic_init_features(pic);
 
   pic_deflibrary (pic, "(picrin base)") {
     size_t ai = pic_gc_arena_preserve(pic);
 
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE, pic->rDEFINE);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sSETBANG, pic->rSETBANG);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sQUOTE, pic->rQUOTE);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sLAMBDA, pic->rLAMBDA);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sIF, pic->rIF);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sBEGIN, pic->rBEGIN);
-    pic_define_syntactic_keyword(pic, pic->lib->env, pic->sDEFINE_SYNTAX, pic->rDEFINE_SYNTAX);
+    define_builtin_syntax(pic->uDEFINE, "builtin:define");
+    define_builtin_syntax(pic->uSETBANG, "builtin:set!");
+    define_builtin_syntax(pic->uQUOTE, "builtin:quote");
+    define_builtin_syntax(pic->uLAMBDA, "builtin:lambda");
+    define_builtin_syntax(pic->uIF, "builtin:if");
+    define_builtin_syntax(pic->uBEGIN, "builtin:begin");
+    define_builtin_syntax(pic->uDEFINE_MACRO, "builtin:define-macro");
 
-    pic_init_undef(pic); DONE;
+    pic_defun(pic, "features", pic_features);
+
+    VM(pic->uCONS, "cons");
+    VM(pic->uCAR, "car");
+    VM(pic->uCDR, "cdr");
+    VM(pic->uNILP, "null?");
+    VM(pic->uSYMBOLP, "symbol?");
+    VM(pic->uPAIRP, "pair?");
+    VM(pic->uNOT, "not");
+    VM(pic->uADD, "+");
+    VM(pic->uSUB, "-");
+    VM(pic->uMUL, "*");
+    VM(pic->uDIV, "/");
+    VM(pic->uEQ, "=");
+    VM(pic->uLT, "<");
+    VM(pic->uLE, "<=");
+    VM(pic->uGT, ">");
+    VM(pic->uGE, ">=");
+
     pic_init_bool(pic); DONE;
     pic_init_pair(pic); DONE;
     pic_init_port(pic); DONE;
@@ -132,17 +179,54 @@ pic_init_core(pic_state *pic)
     pic_init_record(pic); DONE;
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
-    pic_init_attr(pic); DONE;
     pic_init_reg(pic); DONE;
 
-    pic_load_cstr(pic, &pic_boot[0][0]);
-  }
+    VM3(CONS);
+    VM3(CAR);
+    VM3(CDR);
+    VM3(NILP);
+    VM3(SYMBOLP);
+    VM3(PAIRP);
+    VM3(NOT);
+    VM3(ADD);
+    VM3(SUB);
+    VM3(MUL);
+    VM3(DIV);
+    VM3(EQ);
+    VM3(LT);
+    VM3(LE);
+    VM3(GT);
+    VM3(GE);
 
-  pic_import_library(pic, pic->PICRIN_BASE);
+    VM2(pic->pCONS, "cons");
+    VM2(pic->pCAR, "car");
+    VM2(pic->pCDR, "cdr");
+    VM2(pic->pNILP, "null?");
+    VM2(pic->pSYMBOLP, "symbol?");
+    VM2(pic->pPAIRP, "pair?");
+    VM2(pic->pNOT, "not");
+    VM2(pic->pADD, "+");
+    VM2(pic->pSUB, "-");
+    VM2(pic->pMUL, "*");
+    VM2(pic->pDIV, "/");
+    VM2(pic->pEQ, "=");
+    VM2(pic->pLT, "<");
+    VM2(pic->pLE, "<=");
+    VM2(pic->pGT, ">");
+    VM2(pic->pGE, ">=");
+
+    pic_try {
+      pic_load_cstr(pic, &pic_boot[0][0]);
+    }
+    pic_catch {
+      pic_print_backtrace(pic, xstdout);
+      pic_panic(pic, "");
+    }
+  }
 }
 
 pic_state *
-pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
+pic_open(pic_allocf allocf, void *userdata)
 {
   struct pic_port *pic_make_standard_port(pic_state *, xFILE *, short);
   char t;
@@ -150,7 +234,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic_state *pic;
   size_t ai;
 
-  pic = allocf(NULL, sizeof(pic_state));
+  pic = allocf(userdata, NULL, sizeof(pic_state));
 
   if (! pic) {
     goto EXIT_PIC;
@@ -159,22 +243,26 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* allocator */
   pic->allocf = allocf;
 
+  /* user data */
+  pic->userdata = userdata;
+
   /* turn off GC */
   pic->gc_enable = false;
 
-  /* jmp */
-  pic->jmp = NULL;
+  /* continuation chain */
+  pic->cc = NULL;
+  pic->ccnt = 0;
 
   /* root block */
   pic->cp = NULL;
 
   /* command line */
-  pic->argc = argc;
-  pic->argv = argv;
-  pic->envp = envp;
+  pic->argc = 0;
+  pic->argv = NULL;
+  pic->envp = NULL;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_value));
+  pic->stbase = pic->sp = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   if (! pic->sp) {
@@ -182,7 +270,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   }
 
   /* callinfo */
-  pic->cibase = pic->ci = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
+  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   if (! pic->ci) {
@@ -190,7 +278,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   }
 
   /* exception handler */
-  pic->xpbase = pic->xp = allocf(NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
+  pic->xpbase = pic->xp = allocf(userdata, NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   if (! pic->xp) {
@@ -198,7 +286,7 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   }
 
   /* GC arena */
-  pic->arena = allocf(NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
+  pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
@@ -206,30 +294,20 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
     goto EXIT_ARENA;
   }
 
-  /* trampoline iseq */
-  pic->iseq = allocf(NULL, 2 * sizeof(pic_code));
-
-  if (! pic->iseq) {
-    goto EXIT_ISEQ;
-  }
-
   /* memory heap */
   pic->heap = pic_heap_open(pic);
 
-  /* registries */
-  pic->regs = NULL;
-
   /* symbol table */
-  xh_init_str(&pic->syms, sizeof(pic_sym *));
+  kh_init(s, &pic->syms);
+
+  /* unique symbol count */
+  pic->ucnt = 0;
 
   /* global variables */
   pic->globals = NULL;
 
   /* macros */
   pic->macros = NULL;
-
-  /* attributes */
-  pic->attrs = NULL;
 
   /* features */
   pic->features = pic_nil_value();
@@ -238,13 +316,15 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   pic->libs = pic_nil_value();
   pic->lib = NULL;
 
+  /* ireps */
+  pic->ireps.next = &pic->ireps;
+  pic->ireps.prev = &pic->ireps;
+
   /* raised error object */
   pic->err = pic_invalid_value();
 
-  /* standard ports */
-  pic->xSTDIN = NULL;
-  pic->xSTDOUT = NULL;
-  pic->xSTDERR = NULL;
+  /* file pool */
+  memset(pic->files, 0, sizeof pic->files);
 
   /* parameter table */
   pic->ptable = pic_nil_value();
@@ -254,114 +334,87 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 
   ai = pic_gc_arena_preserve(pic);
 
-#define S(slot,name) pic->slot = pic_intern_cstr(pic, name);
+#define S(slot,name) pic->slot = pic_intern(pic, name)
 
-  S(sDEFINE, "define");
-  S(sLAMBDA, "lambda");
-  S(sIF, "if");
-  S(sBEGIN, "begin");
-  S(sSETBANG, "set!");
   S(sQUOTE, "quote");
   S(sQUASIQUOTE, "quasiquote");
   S(sUNQUOTE, "unquote");
   S(sUNQUOTE_SPLICING, "unquote-splicing");
-  S(sDEFINE_SYNTAX, "define-syntax");
+  S(sSYNTAX_QUOTE, "syntax-quote");
+  S(sSYNTAX_QUASIQUOTE, "syntax-quasiquote");
+  S(sSYNTAX_UNQUOTE, "syntax-unquote");
+  S(sSYNTAX_UNQUOTE_SPLICING, "syntax-unquote-splicing");
   S(sIMPORT, "import");
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
   S(sCOND_EXPAND, "cond-expand");
-  S(sAND, "and");
-  S(sOR, "or");
-  S(sELSE, "else");
-  S(sLIBRARY, "library");
-  S(sONLY, "only");
-  S(sRENAME, "rename");
-  S(sPREFIX, "prefix");
-  S(sEXCEPT, "except");
-  S(sCONS, "cons");
-  S(sCAR, "car");
-  S(sCDR, "cdr");
-  S(sNILP, "null?");
-  S(sSYMBOLP, "symbol?");
-  S(sPAIRP, "pair?");
-  S(sADD, "+");
-  S(sSUB, "-");
-  S(sMUL, "*");
-  S(sDIV, "/");
-  S(sMINUS, "minus");
-  S(sEQ, "=");
-  S(sLT, "<");
-  S(sLE, "<=");
-  S(sGT, ">");
-  S(sGE, ">=");
-  S(sNOT, "not");
-  S(sREAD, "read");
-  S(sFILE, "file");
-  S(sCALL, "call");
-  S(sTAILCALL, "tail-call");
-  S(sGREF, "gref");
-  S(sLREF, "lref");
-  S(sCREF, "cref");
-  S(sRETURN, "return");
-  S(sCALL_WITH_VALUES, "call-with-values");
-  S(sTAILCALL_WITH_VALUES, "tailcall-with-values");
 
   pic_gc_arena_restore(pic, ai);
 
-#define R(slot,name) pic->slot = pic_gensym(pic, pic_intern_cstr(pic, name));
+#define U(slot,name) pic->slot = pic_uniq(pic, pic_obj_value(pic_intern(pic, name)))
 
-  R(rDEFINE, "define");
-  R(rLAMBDA, "lambda");
-  R(rIF, "if");
-  R(rBEGIN, "begin");
-  R(rSETBANG, "set!");
-  R(rQUOTE, "quote");
-  R(rDEFINE_SYNTAX, "define-syntax");
-  R(rIMPORT, "import");
-  R(rEXPORT, "export");
-  R(rDEFINE_LIBRARY, "define-library");
-  R(rCOND_EXPAND, "cond-expand");
-  R(rCONS, "cons");
-  R(rCAR, "car");
-  R(rCDR, "cdr");
-  R(rNILP, "null?");
-  R(rSYMBOLP, "symbol?");
-  R(rPAIRP, "pair?");
-  R(rADD, "+");
-  R(rSUB, "-");
-  R(rMUL, "*");
-  R(rDIV, "/");
-  R(rEQ, "=");
-  R(rLT, "<");
-  R(rLE, "<=");
-  R(rGT, ">");
-  R(rGE, ">=");
-  R(rNOT, "not");
-  R(rVALUES, "values");
-  R(rCALL_WITH_VALUES, "call-with-values");
+  U(uDEFINE, "define");
+  U(uLAMBDA, "lambda");
+  U(uIF, "if");
+  U(uBEGIN, "begin");
+  U(uSETBANG, "set!");
+  U(uQUOTE, "quote");
+  U(uDEFINE_MACRO, "define-macro");
+  U(uIMPORT, "import");
+  U(uEXPORT, "export");
+  U(uDEFINE_LIBRARY, "define-library");
+  U(uCOND_EXPAND, "cond-expand");
+  U(uCONS, "cons");
+  U(uCAR, "car");
+  U(uCDR, "cdr");
+  U(uNILP, "null?");
+  U(uSYMBOLP, "symbol?");
+  U(uPAIRP, "pair?");
+  U(uADD, "+");
+  U(uSUB, "-");
+  U(uMUL, "*");
+  U(uDIV, "/");
+  U(uEQ, "=");
+  U(uLT, "<");
+  U(uLE, "<=");
+  U(uGT, ">");
+  U(uGE, ">=");
+  U(uNOT, "not");
   pic_gc_arena_restore(pic, ai);
+
+  /* system procedures */
+  pic->pCONS = pic_invalid_value();
+  pic->pCAR = pic_invalid_value();
+  pic->pCDR = pic_invalid_value();
+  pic->pNILP = pic_invalid_value();
+  pic->pSYMBOLP = pic_invalid_value();
+  pic->pPAIRP = pic_invalid_value();
+  pic->pNOT = pic_invalid_value();
+  pic->pADD = pic_invalid_value();
+  pic->pSUB = pic_invalid_value();
+  pic->pMUL = pic_invalid_value();
+  pic->pDIV = pic_invalid_value();
+  pic->pEQ = pic_invalid_value();
+  pic->pLT = pic_invalid_value();
+  pic->pLE = pic_invalid_value();
+  pic->pGT = pic_invalid_value();
+  pic->pGE = pic_invalid_value();
 
   /* root tables */
-  pic->globals = pic_make_dict(pic);
-  pic->macros = pic_make_dict(pic);
-  pic->attrs = pic_make_reg(pic);
+  pic->globals = pic_make_reg(pic);
+  pic->macros = pic_make_reg(pic);
 
   /* root block */
-  pic->cp = pic_malloc(pic, sizeof(pic_checkpoint));
+  pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TT_CP);
   pic->cp->prev = NULL;
   pic->cp->depth = 0;
   pic->cp->in = pic->cp->out = NULL;
 
   /* reader */
-  pic->reader = pic_reader_open(pic);
-
-  /* standard I/O */
-  pic->xSTDIN = pic_make_standard_port(pic, xstdin, PIC_PORT_IN);
-  pic->xSTDOUT = pic_make_standard_port(pic, xstdout, PIC_PORT_OUT);
-  pic->xSTDERR = pic_make_standard_port(pic, xstderr, PIC_PORT_OUT);
+  pic_reader_init(pic);
 
   /* parameter table */
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_dict(pic)), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_reg(pic)), pic->ptable);
 
   /* standard libraries */
   pic->PICRIN_BASE = pic_make_library(pic, pic_read_cstr(pic, "(picrin base)"));
@@ -374,22 +427,37 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
   /* turn on GC */
   pic->gc_enable = true;
 
+  pic->cCONS = pic_box(pic, pic_invalid_value());
+  pic->cCAR = pic_box(pic, pic_invalid_value());
+  pic->cCDR = pic_box(pic, pic_invalid_value());
+  pic->cNILP = pic_box(pic, pic_invalid_value());
+  pic->cSYMBOLP = pic_box(pic, pic_invalid_value());
+  pic->cPAIRP = pic_box(pic, pic_invalid_value());
+  pic->cNOT = pic_box(pic, pic_invalid_value());
+  pic->cADD = pic_box(pic, pic_invalid_value());
+  pic->cSUB = pic_box(pic, pic_invalid_value());
+  pic->cMUL = pic_box(pic, pic_invalid_value());
+  pic->cDIV = pic_box(pic, pic_invalid_value());
+  pic->cEQ = pic_box(pic, pic_invalid_value());
+  pic->cLT = pic_box(pic, pic_invalid_value());
+  pic->cLE = pic_box(pic, pic_invalid_value());
+  pic->cGT = pic_box(pic, pic_invalid_value());
+  pic->cGE = pic_box(pic, pic_invalid_value());
+
   pic_init_core(pic);
 
   pic_gc_arena_restore(pic, ai);
 
   return pic;
 
- EXIT_ISEQ:
-  allocf(pic->arena, 0);
  EXIT_ARENA:
-  allocf(pic->xp, 0);
+  allocf(userdata, pic->xp, 0);
  EXIT_XP:
-  allocf(pic->ci, 0);
+  allocf(userdata, pic->ci, 0);
  EXIT_CI:
-  allocf(pic->sp, 0);
+  allocf(userdata, pic->sp, 0);
  EXIT_SP:
-  allocf(pic, 0);
+  allocf(userdata, pic, 0);
  EXIT_PIC:
   return NULL;
 }
@@ -397,21 +465,8 @@ pic_open(int argc, char *argv[], char **envp, pic_allocf allocf)
 void
 pic_close(pic_state *pic)
 {
-  xh_entry *it;
+  khash_t(s) *h = &pic->syms;
   pic_allocf allocf = pic->allocf;
-
-  /* invoke exit handlers */
-  while (pic->cp) {
-    if (pic->cp->out) {
-      pic_apply0(pic, pic->cp->out);
-    }
-    pic->cp = pic->cp->prev;
-  }
-
-  /* free symbol names */
-  for (it = xh_begin(&pic->syms); it != NULL; it = xh_next(it)) {
-    allocf(xh_key(it, char *), 0);
-  }
 
   /* clear out root objects */
   pic->sp = pic->stbase;
@@ -421,36 +476,43 @@ pic_close(pic_state *pic)
   pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
-  pic->attrs = NULL;
-  xh_clear(&pic->syms);
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 
   /* free all heap objects */
   pic_gc_run(pic);
 
+#if 0
+  {
+    /* FIXME */
+    int i = 0;
+    struct pic_list *list;
+    for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
+      i++;
+    }
+    printf("%d\n", i);
+  }
+#endif
+
   /* flush all xfiles */
-  xfflush(NULL);
+  xfflush(pic, NULL);
 
   /* free heaps */
   pic_heap_close(pic, pic->heap);
 
   /* free reader struct */
-  pic_reader_close(pic, pic->reader);
+  pic_reader_destroy(pic);
 
   /* free runtime context */
-  allocf(pic->stbase, 0);
-  allocf(pic->cibase, 0);
-  allocf(pic->xpbase, 0);
-
-  /* free trampoline iseq */
-  allocf(pic->iseq, 0);
+  allocf(pic->userdata, pic->stbase, 0);
+  allocf(pic->userdata, pic->cibase, 0);
+  allocf(pic->userdata, pic->xpbase, 0);
 
   /* free global stacks */
-  xh_destroy(&pic->syms);
+  kh_destroy(s, h);
 
   /* free GC arena */
-  allocf(pic->arena, 0);
+  allocf(pic->userdata, pic->arena, 0);
 
-  allocf(pic, 0);
+  allocf(pic->userdata, pic, 0);
 }

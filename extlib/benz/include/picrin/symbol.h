@@ -11,7 +11,7 @@ extern "C" {
 
 struct pic_symbol {
   PIC_OBJECT_HEADER
-  pic_str *str;
+  const char *cstr;
 };
 
 #define pic_sym_p(v) (pic_type(v) == PIC_TT_SYMBOL)

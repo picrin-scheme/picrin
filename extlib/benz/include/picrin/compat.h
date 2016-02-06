@@ -9,6 +9,87 @@
 extern "C" {
 #endif
 
+#if __STDC_VERSION__ >= 199901L
+# include <stdbool.h>
+#else
+# define bool char
+# define true 1
+# define false 0
+#endif
+
+#if __STDC_VERSION__ >= 199901L
+# include <stddef.h>
+#elif ! defined(offsetof)
+# define offsetof(s,m) ((size_t)&(((s *)NULL)->m))
+#endif
+
+#if __STDC_VERSION__ >= 199901L
+# include <stdint.h>
+#else
+# if INT_MAX > 2147483640L      /* borrowed from luaconf.h */
+typedef int int32_t;
+typedef unsigned int uint32_t;
+# else
+typedef long int32_t;
+typedef unsigned long uint32_t;
+# endif
+#endif
+
+#if __STDC_VERSION__ >= 201112L
+# include <stdnoreturn.h>
+# define PIC_NORETURN noreturn
+#elif __GNUC__ || __clang__
+# define PIC_NORETURN __attribute__((noreturn))
+#else
+# define PIC_NORETURN
+#endif
+
+#if __STDC_VERSION__ >= 199901L
+# define PIC_INLINE static inline
+#elif __GNUC__ || __clang__
+# define PIC_INLINE static __inline__
+#else
+# define PIC_INLINE static
+#endif
+
+#define PIC_FALLTHROUGH ((void)0)
+
+#if __GNUC__ || __clang__
+# define PIC_UNUSED(v) __attribute__((unused)) v
+#else
+# define PIC_UNUSED(v) v
+#endif
+
+#define PIC_GENSYM2_(x,y) PIC_G##x##_##y##_
+#define PIC_GENSYM1_(x,y) PIC_GENSYM2_(x,y)
+#if defined(__COUNTER__)
+# define PIC_GENSYM(x) PIC_GENSYM1_(__COUNTER__,x)
+#else
+# define PIC_GENSYM(x) PIC_GENSYM1_(__LINE__,x)
+#endif
+
+#if __GNUC__
+# define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+#if GCC_VERSION >= 40500 || __clang__
+# define PIC_UNREACHABLE() (__builtin_unreachable())
+#else
+# define PIC_UNREACHABLE() (assert(false))
+#endif
+#if __GNUC__
+# undef GCC_VERSION
+#endif
+
+#define PIC_SWAP(type,a,b)                      \
+  PIC_SWAP_HELPER_(type, PIC_GENSYM(tmp), a, b)
+#define PIC_SWAP_HELPER_(type,tmp,a,b)          \
+  do {                                          \
+    type tmp = (a);                             \
+    (a) = (b);                                  \
+    (b) = tmp;                                  \
+  } while (0)
+
+
 #if PIC_ENABLE_LIBC
 
 #include <string.h>
@@ -18,7 +99,7 @@ extern "C" {
 
 #else
 
-# define assert(v) 0
+# define assert(v) (void)0
 
 PIC_INLINE int
 isspace(int c)
@@ -132,7 +213,141 @@ strcpy(char *dst, const char *src)
   return d;
 }
 
+PIC_INLINE double
+atof(const char *nptr)
+{
+  int c;
+  double f, g, h;
+  int exp, s, i, e;
+  unsigned u;
+
+  /* note that picrin_read always assures that *nptr is a digit, never a '+' or '-' */
+  /* in other words, the result of atof will always be positive */
+
+  /* mantissa */
+  /* pre '.'  */
+  u = *nptr++ - '0';
+  while (isdigit(c = *nptr)) {
+    u = u * 10 + (*nptr++ - '0');
+  }
+  if (c == '.') {
+    nptr++;
+    /* after '.' */
+    g = 0, e = 0;
+    while (isdigit(c = *nptr)) {
+      g = g * 10 + (*nptr++ - '0');
+      e++;
+    }
+    h = 1.0;
+    while (e-- > 0) {
+      h /= 10;
+    }
+    f = u + g * h;
+  }
+  else {
+    f = u;
+  }
+  /* suffix, i.e., exponent */
+  s = 0;
+  exp = 0;
+  c = *nptr;
+
+  if (c == 'e' && c == 'E') {
+    nptr++;
+    switch ((c = *nptr++)) {
+    case '-':
+      s = 1;
+    case '+':
+      c = *nptr++;
+    default:
+      exp = c - '0';
+      while (isdigit(c = *nptr)) {
+        exp = exp * 10 + (*nptr++ - '0');
+      }
+    }
+  }
+  e = 10;
+  for (i = 0; exp; ++i) {
+    if ((exp & 1) != 0) {
+      f = s ? f / e : (f * e);
+    }
+    e *= e;
+    exp >>= 1;
+  }
+  return f;
+}
+
 #endif
+
+#if PIC_ENABLE_STDIO
+# include <stdio.h>
+
+PIC_INLINE void
+pic_dtoa(double dval, char *buf)
+{
+  sprintf(buf, "%g", dval);
+}
+
+#else
+
+PIC_INLINE void
+pic_dtoa(double dval, char *buf)
+{
+# define fabs(x) ((x) >= 0 ? (x) : -(x))
+  long lval, tlval;
+  int ival;
+  int scnt, ecnt, cnt = 0;
+  if (dval < 0) {
+    dval = -dval;
+    buf[cnt++] = '-';
+  }
+  lval = tlval = (long)dval;
+  scnt = cnt;
+  do {
+    buf[cnt++] = '0' + (tlval % 10);
+  } while ((tlval /= 10) != 0);
+  ecnt = cnt;
+  while (scnt < ecnt) {
+    char c = buf[scnt];
+    buf[scnt++] = buf[--ecnt];
+    buf[ecnt] = c;
+  }
+  buf[cnt++] = '.';
+  dval -= lval;
+  if ((ival = fabs(dval) * 1e4 + 0.5) == 0) {
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+    buf[cnt++] = '0';
+  } else {
+    if (ival < 1000) buf[cnt++] = '0';
+    if (ival <  100) buf[cnt++] = '0';
+    if (ival <   10) buf[cnt++] = '0';
+    scnt = cnt;
+    do {
+      buf[cnt++] = '0' + (ival % 10);
+    } while ((ival /= 10) != 0);
+    ecnt = cnt;
+    while (scnt < ecnt) {
+      char c = buf[scnt];
+      buf[scnt++] = buf[--ecnt];
+      buf[ecnt] = c;
+    }
+  }
+  buf[cnt] = 0;
+}
+
+#endif
+
+#ifndef PIC_DOUBLE_TO_CSTRING
+#define PIC_DOUBLE_TO_CSTRING pic_dtoa
+#endif
+void PIC_DOUBLE_TO_CSTRING(double, char *);
+
+#ifndef PIC_CSTRING_TO_DOUBLE
+#define PIC_CSTRING_TO_DOUBLE atof
+#endif
+double PIC_CSTRING_TO_DOUBLE(const char *);
 
 #if defined(__cplusplus)
 }

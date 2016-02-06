@@ -11,11 +11,11 @@
 /** enable word boxing  */
 /* #define PIC_WORD_BOXING 0 */
 
-/** enable floating point number support */
-/* #define PIC_ENABLE_FLOAT 1 */
-
 /** no dependency on libc */
 /* #define PIC_ENABLE_LIBC 1 */
+
+/** use stdio or not */
+/* #define PIC_ENABLE_STDIO 1 */
 
 /** custom setjmp/longjmp */
 /* #define PIC_JMPBUF jmp_buf */
@@ -29,6 +29,8 @@
 /* #define PIC_ARENA_SIZE 1000 */
 
 /* #define PIC_HEAP_PAGE_SIZE 10000 */
+
+/* #define PIC_PAGE_REQUEST_THRESHOLD(total) ((total) * 77 / 100) */
 
 /* #define PIC_STACK_SIZE 1024 */
 
@@ -63,10 +65,6 @@
 # error cannot enable both PIC_NAN_BOXING and PIC_WORD_BOXING simultaneously
 #endif
 
-#if PIC_WORD_BOXING && PIC_ENABLE_FLOAT
-# error cannot enable both PIC_WORD_BOXING and PIC_ENABLE_FLOAT simultaneously
-#endif
-
 #ifndef PIC_WORD_BOXING
 # define PIC_WORD_BOXING 0
 #endif
@@ -79,18 +77,12 @@
 # endif
 #endif
 
-#ifndef PIC_ENABLE_FLOAT
-# if ! PIC_WORD_BOXING
-#  define PIC_ENABLE_FLOAT 1
-# endif
-#endif
-
 #ifndef PIC_ENABLE_LIBC
 # define PIC_ENABLE_LIBC 1
 #endif
 
-#if PIC_NAN_BOXING && defined(PIC_ENABLE_FLOAT) && ! PIC_ENABLE_FLOAT
-# error cannot disable float support when nan boxing is on
+#ifndef PIC_ENABLE_STDIO
+# define PIC_ENABLE_STDIO 1
 #endif
 
 #ifndef PIC_JMPBUF
@@ -117,11 +109,15 @@
 #endif
 
 #ifndef PIC_HEAP_PAGE_SIZE
-# define PIC_HEAP_PAGE_SIZE (2 * 1024 * 1024)
+# define PIC_HEAP_PAGE_SIZE (4 * 1024 * 1024)
+#endif
+
+#ifndef PIC_PAGE_REQUEST_THRESHOLD
+# define PIC_PAGE_REQUEST_THRESHOLD(total) ((total) * 77 / 100)
 #endif
 
 #ifndef PIC_STACK_SIZE
-# define PIC_STACK_SIZE 1024
+# define PIC_STACK_SIZE 2048
 #endif
 
 #ifndef PIC_RESCUE_SIZE

@@ -18,7 +18,6 @@ typedef struct {
 struct pic_data {
   PIC_OBJECT_HEADER
   const pic_data_type *type;
-  xhash storage;                /* const char * to pic_value table */
   void *data;
 };
 

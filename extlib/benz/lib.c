@@ -7,12 +7,10 @@
 static void
 setup_default_env(pic_state *pic, struct pic_env *env)
 {
-  void pic_define_syntactic_keyword(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
-
-  pic_define_syntactic_keyword(pic, env, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY);
-  pic_define_syntactic_keyword(pic, env, pic->sIMPORT, pic->rIMPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sEXPORT, pic->rEXPORT);
-  pic_define_syntactic_keyword(pic, env, pic->sCOND_EXPAND, pic->rCOND_EXPAND);
+  pic_put_variable(pic, env, pic_obj_value(pic->sDEFINE_LIBRARY), pic->uDEFINE_LIBRARY);
+  pic_put_variable(pic, env, pic_obj_value(pic->sIMPORT), pic->uIMPORT);
+  pic_put_variable(pic, env, pic_obj_value(pic->sEXPORT), pic->uEXPORT);
+  pic_put_variable(pic, env, pic_obj_value(pic->sCOND_EXPAND), pic->uCOND_EXPAND);
 }
 
 struct pic_lib *
@@ -54,271 +52,159 @@ pic_find_library(pic_state *pic, pic_value spec)
   return pic_lib_ptr(pic_cdr(pic, v));
 }
 
-static void
-import_table(pic_state *pic, pic_value spec, struct pic_dict *imports)
+void
+pic_import(pic_state *pic, struct pic_lib *lib)
 {
-  struct pic_lib *lib;
-  struct pic_dict *table;
-  pic_value val, tmp, prefix, it;
-  pic_sym *sym, *id, *tag, *nick;
-  xh_entry *iter;
+  pic_sym *name, *realname, *uid;
+  khiter_t it;
 
-  table = pic_make_dict(pic);
+  pic_dict_for_each (name, lib->exports, it) {
+    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
 
-  if (pic_pair_p(spec) && pic_sym_p(pic_car(pic, spec))) {
-
-    tag = pic_sym_ptr(pic_car(pic, spec));
-
-    if (tag == pic->sONLY) {
-      import_table(pic, pic_cadr(pic, spec), table);
-
-      pic_for_each (val, pic_cddr(pic, spec), it) {
-        pic_dict_set(pic, imports, pic_sym_ptr(val), pic_dict_ref(pic, table, pic_sym_ptr(val)));
-      }
-      return;
-    }
-    if (tag == pic->sRENAME) {
-      import_table(pic, pic_cadr(pic, spec), imports);
-
-      pic_for_each (val, pic_cddr(pic, spec), it) {
-        tmp = pic_dict_ref(pic, imports, pic_sym_ptr(pic_car(pic, val)));
-        pic_dict_del(pic, imports, pic_sym_ptr(pic_car(pic, val)));
-        pic_dict_set(pic, imports, pic_sym_ptr(pic_cadr(pic, val)), tmp);
-      }
-      return;
-    }
-    if (tag == pic->sPREFIX) {
-      import_table(pic, pic_cadr(pic, spec), table);
-
-      prefix = pic_list_ref(pic, spec, 2);
-      pic_dict_for_each (sym, table, iter) {
-        id = pic_intern(pic, pic_format(pic, "~s~s", prefix, pic_obj_value(sym)));
-        pic_dict_set(pic, imports, id, pic_dict_ref(pic, table, sym));
-      }
-      return;
-    }
-    if (tag == pic->sEXCEPT) {
-      import_table(pic, pic_cadr(pic, spec), imports);
-      pic_for_each (val, pic_cddr(pic, spec), it) {
-        pic_dict_del(pic, imports, pic_sym_ptr(val));
-      }
-      return;
-    }
-  }
-  lib = pic_find_library(pic, spec);
-  if (! lib) {
-    pic_errorf(pic, "library not found: ~a", spec);
-  }
-  pic_dict_for_each (nick, lib->exports, iter) {
-    pic_sym *realname, *rename;
-
-    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, nick));
-
-    if ((rename = pic_find_rename(pic, lib->env, realname)) == NULL) {
+    if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
       pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
     }
-    pic_dict_set(pic, imports, nick, pic_obj_value(rename));
+    pic_put_variable(pic, pic->lib->env, pic_obj_value(name), uid);
   }
-}
-
-static void
-import(pic_state *pic, pic_value spec)
-{
-  struct pic_dict *imports;
-  pic_sym *sym;
-  xh_entry *it;
-
-  imports = pic_make_dict(pic);
-
-  import_table(pic, spec, imports);
-
-  pic_dict_for_each (sym, imports, it) {
-    pic_put_rename(pic, pic->lib->env, sym, pic_sym_ptr(pic_dict_ref(pic, imports, sym)));
-  }
-}
-
-static void
-export(pic_state *pic, pic_value spec)
-{
-  pic_sym *sRENAME = pic_intern_cstr(pic, "rename");
-  pic_value a, b;
-
-  if (pic_sym_p(spec)) {        /* (export a) */
-    a = b = spec;
-  } else {                      /* (export (rename a b)) */
-    if (! pic_list_p(spec))
-      goto fail;
-    if (! (pic_length(pic, spec) == 3))
-      goto fail;
-    if (! pic_eq_p(pic_car(pic, spec), pic_obj_value(sRENAME)))
-      goto fail;
-    if (! pic_sym_p(a = pic_list_ref(pic, spec, 1)))
-      goto fail;
-    if (! pic_sym_p(b = pic_list_ref(pic, spec, 2)))
-      goto fail;
-  }
-
-#if DEBUG
-  printf("* exporting %s as %s\n", pic_symbol_name(pic, pic_sym_ptr(b)), pic_symbol_name(pic, pic_sym_ptr(a)));
-#endif
-
-  pic_dict_set(pic, pic->lib->exports, pic_sym_ptr(b), a);
-
-  return;
-
- fail:
-  pic_errorf(pic, "illegal export spec: ~s", spec);
 }
 
 void
-pic_import(pic_state *pic, pic_value spec)
+pic_export(pic_state *pic, pic_sym *name)
 {
-  import(pic, spec);
+  pic_dict_set(pic, pic->lib->exports, name, pic_obj_value(name));
 }
 
-void
-pic_import_library(pic_state *pic, struct pic_lib *lib)
+static pic_value
+pic_lib_make_library(pic_state *pic)
 {
-  import(pic, lib->name);
+  pic_value name;
+
+  pic_get_args(pic, "o", &name);
+
+  return pic_obj_value(pic_make_library(pic, name));
 }
 
-void
-pic_export(pic_state *pic, pic_sym *sym)
+static pic_value
+pic_lib_find_library(pic_state *pic)
 {
-  export(pic, pic_obj_value(sym));
-}
+  pic_value name;
+  struct pic_lib *lib;
 
-static bool
-condexpand(pic_state *pic, pic_value clause)
-{
-  pic_sym *tag;
-  pic_value c, feature, it;
+  pic_get_args(pic, "o", &name);
 
-  if (pic_eq_p(clause, pic_obj_value(pic->sELSE))) {
-    return true;
+  if ((lib = pic_find_library(pic, name)) == NULL) {
+    return pic_false_value();
   }
-  if (pic_sym_p(clause)) {
-    pic_for_each (feature, pic->features, it) {
-      if(pic_eq_p(feature, clause))
-        return true;
-    }
-    return false;
+  return pic_obj_value(lib);
+}
+
+static pic_value
+pic_lib_current_library(pic_state *pic)
+{
+  pic_value lib;
+  int n;
+
+  n = pic_get_args(pic, "|o", &lib);
+
+  if (n == 0) {
+    return pic_obj_value(pic->lib);
+  }
+  else {
+    pic_assert_type(pic, lib, lib);
+
+    pic->lib = pic_lib_ptr(lib);
+
+    return pic_undef_value();
+  }
+}
+
+static pic_value
+pic_lib_library_import(pic_state *pic)
+{
+  pic_value lib_opt;
+  pic_sym *name, *realname, *uid, *alias = NULL;
+  struct pic_lib *lib;
+
+  pic_get_args(pic, "om|m", &lib_opt, &name, &alias);
+
+  pic_assert_type(pic, lib_opt, lib);
+
+  if (alias == NULL) {
+    alias = name;
   }
 
-  if (! (pic_pair_p(clause) && pic_sym_p(pic_car(pic, clause)))) {
-    pic_errorf(pic, "invalid 'cond-expand' clause ~s", clause);
+  lib = pic_lib_ptr(lib_opt);
+
+  if (! pic_dict_has(pic, lib->exports, name)) {
+    pic_errorf(pic, "attempted to import undefined variable '~s'", pic_obj_value(name));
   } else {
-    tag = pic_sym_ptr(pic_car(pic, clause));
+    realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
   }
 
-  if (tag == pic->sLIBRARY) {
-    return pic_find_library(pic, pic_list_ref(pic, clause, 1)) != NULL;
-  }
-  if (tag == pic->sNOT) {
-    return ! condexpand(pic, pic_list_ref(pic, clause, 1));
-  }
-  if (tag == pic->sAND) {
-    pic_for_each (c, pic_cdr(pic, clause), it) {
-      if (! condexpand(pic, c))
-        return false;
-    }
-    return true;
-  }
-  if (tag == pic->sOR) {
-    pic_for_each (c, pic_cdr(pic, clause), it) {
-      if (condexpand(pic, c))
-        return true;
-    }
-    return false;
-  }
-
-  pic_errorf(pic, "unknown 'cond-expand' directive ~s", clause);
-}
-
-static pic_value
-pic_lib_condexpand(pic_state *pic)
-{
-  pic_value *clauses;
-  size_t argc, i;
-
-  pic_get_args(pic, "*", &argc, &clauses);
-
-  for (i = 0; i < argc; i++) {
-    if (condexpand(pic, pic_car(pic, clauses[i]))) {
-      return pic_cons(pic, pic_obj_value(pic->rBEGIN), pic_cdr(pic, clauses[i]));
-    }
+  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
+    pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
+  } else {
+    pic_put_variable(pic, pic->lib->env, pic_obj_value(alias), uid);
   }
 
   return pic_undef_value();
 }
 
 static pic_value
-pic_lib_import(pic_state *pic)
+pic_lib_library_export(pic_state *pic)
 {
-  size_t argc, i;
-  pic_value *argv;
+  pic_sym *name, *alias = NULL;
 
-  pic_get_args(pic, "*", &argc, &argv);
+  pic_get_args(pic, "m|m", &name, &alias);
 
-  for (i = 0; i < argc; ++i) {
-    import(pic, argv[i]);
+  if (alias == NULL) {
+    alias = name;
   }
+
+  pic_dict_set(pic, pic->lib->exports, alias, pic_obj_value(name));
 
   return pic_undef_value();
 }
 
 static pic_value
-pic_lib_export(pic_state *pic)
+pic_lib_library_exports(pic_state *pic)
 {
-  size_t argc, i;
-  pic_value *argv;
+  pic_value lib, exports = pic_nil_value();
+  pic_sym *sym;
+  khiter_t it;
 
-  pic_get_args(pic, "*", &argc, &argv);
+  pic_get_args(pic, "o", &lib);
 
-  for (i = 0; i < argc; ++i) {
-    export(pic, argv[i]);
+  pic_assert_type(pic, lib, lib);
+
+  pic_dict_for_each (sym, pic_lib_ptr(lib)->exports, it) {
+    pic_push(pic, pic_obj_value(sym), exports);
   }
 
-  return pic_undef_value();
+  return exports;
 }
 
 static pic_value
-pic_lib_define_library(pic_state *pic)
+pic_lib_library_environment(pic_state *pic)
 {
-  struct pic_lib *lib, *prev = pic->lib;
-  size_t argc, i;
-  pic_value spec, *argv;
+  pic_value lib;
 
-  pic_get_args(pic, "o*", &spec, &argc, &argv);
+  pic_get_args(pic, "o", &lib);
 
-  if ((lib = pic_find_library(pic, spec)) == NULL) {
-    lib = pic_make_library(pic, spec);
-  }
+  pic_assert_type(pic, lib, lib);
 
-  pic_try {
-    pic->lib = lib;
-
-    for (i = 0; i < argc; ++i) {
-      pic_void(pic_eval(pic, argv[i], pic->lib));
-    }
-
-    pic->lib = prev;
-  }
-  pic_catch {
-    pic->lib = prev;   /* restores pic->lib even if an error occured */
-    pic_raise(pic, pic->err);
-  }
-
-  return pic_undef_value();
+  return pic_obj_value(pic_lib_ptr(lib)->env);
 }
 
 void
 pic_init_lib(pic_state *pic)
 {
-  void pic_defmacro(pic_state *, pic_sym *, pic_sym *, pic_func_t);
+  pic_defun(pic, "make-library", pic_lib_make_library);
+  pic_defun(pic, "find-library", pic_lib_find_library);
+  pic_defun(pic, "library-exports", pic_lib_library_exports);
+  pic_defun(pic, "library-environment", pic_lib_library_environment);
 
-  pic_defmacro(pic, pic->sCOND_EXPAND, pic->rCOND_EXPAND, pic_lib_condexpand);
-  pic_defmacro(pic, pic->sIMPORT, pic->rIMPORT, pic_lib_import);
-  pic_defmacro(pic, pic->sEXPORT, pic->rEXPORT, pic_lib_export);
-  pic_defmacro(pic, pic->sDEFINE_LIBRARY, pic->rDEFINE_LIBRARY, pic_lib_define_library);
+  pic_defun(pic, "current-library", pic_lib_current_library);
+  pic_defun(pic, "library-import", pic_lib_library_import);
+  pic_defun(pic, "library-export", pic_lib_library_export);
 }

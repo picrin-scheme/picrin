@@ -17,7 +17,7 @@ pic_get_backtrace(pic_state *pic)
     struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
 
     trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "  at "));
-    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, pic_symbol_name(pic, pic_proc_name(proc))));
+    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "(anonymous lambda)"));
 
     if (pic_proc_func_p(proc)) {
       trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));
@@ -38,22 +38,26 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
   assert(! pic_invalid_p(pic->err));
 
   if (! pic_error_p(pic->err)) {
-    xfprintf(file, "raise: ");
+    xfprintf(pic, file, "raise: ");
     pic_fwrite(pic, pic->err, file);
   } else {
     struct pic_error *e;
+    pic_value elem, it;
 
     e = pic_error_ptr(pic->err);
-    if (e->type != pic_intern_cstr(pic, "")) {
+    if (e->type != pic_intern(pic, "")) {
       pic_fwrite(pic, pic_obj_value(e->type), file);
-      xfprintf(file, " ");
+      xfprintf(pic, file, " ");
     }
-    xfprintf(file, "error: ");
+    xfprintf(pic, file, "error: ");
     pic_fwrite(pic, pic_obj_value(e->msg), file);
-    xfprintf(file, "\n");
 
-    /* TODO: print error irritants */
+    pic_for_each (elem, e->irrs, it) { /* print error irritants */
+      xfprintf(pic, file, " ");
+      pic_fwrite(pic, elem, file);
+    }
+    xfprintf(pic, file, "\n");
 
-    xfputs(pic_str_cstr(pic, e->stack), file);
+    xfputs(pic, pic_str_cstr(pic, e->stack), file);
   }
 }

@@ -1,16 +1,20 @@
+sudo: false
 language: c
 compiler:
   - gcc
   - clang
+addons:
+  apt:
+    packages:
+      - gcc-multilib
+#     - valgrind
 env:
   - CFLAGS="-m32"
   - CFLAGS="-m64"
-before_script:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y libc6:i386 libgcc1:i386 gcc-4.6-base:i386 gcc-multilib
 script:
   - perl --version
   - make test
+# - make test-contrib TEST_RUNNER="valgrind -q --leak-check=full --dsymutil=yes --error-exitcode=1 bin/picrin"
   - make clean
   - make debug
-  - make test 2> /dev/null >/dev/null
+  - make test

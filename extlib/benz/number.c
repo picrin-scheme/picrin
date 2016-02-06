@@ -4,23 +4,119 @@
 
 #include "picrin.h"
 
-#if ! PIC_ENABLE_FLOAT
 static pic_value
-pic_number_id(pic_state *pic)
+pic_number_number_p(pic_state *pic)
 {
-  int i;
+  pic_value v;
 
-  pic_get_args(pic, "i", &i);
+  pic_get_args(pic, "o", &v);
 
-  return pic_int_value(i);
+  return pic_bool_value(pic_float_p(v) || pic_int_p(v));
 }
-#endif
 
-/**
- * Returns the length of string representing val.
- * radix is between 2 and 36 (inclusive).
- * No error checks are performed in this function.
- */
+static pic_value
+pic_number_exact_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_int_p(v));
+}
+
+static pic_value
+pic_number_inexact_p(pic_state *pic)
+{
+  pic_value v;
+
+  pic_get_args(pic, "o", &v);
+
+  return pic_bool_value(pic_float_p(v));
+}
+
+static pic_value
+pic_number_inexact(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_float_value(f);
+}
+
+static pic_value
+pic_number_exact(pic_state *pic)
+{
+  double f;
+
+  pic_get_args(pic, "f", &f);
+
+  return pic_int_value((int)f);
+}
+
+#define DEFINE_CMP(op)                                  \
+  static pic_value                                      \
+  pic_number_##op(pic_state *pic)                       \
+  {                                                     \
+    int argc, i;                                        \
+    pic_value *argv;                                    \
+                                                        \
+    pic_get_args(pic, "*", &argc, &argv);               \
+                                                        \
+    if (argc < 2) {                                     \
+      return pic_true_value();                          \
+    }                                                   \
+                                                        \
+    for (i = 1; i < argc; ++i) {                        \
+      if (! pic_##op(pic, argv[i - 1], argv[i])) {      \
+        return pic_false_value();                       \
+      }                                                 \
+    }                                                   \
+    return pic_true_value();                            \
+  }
+
+DEFINE_CMP(eq)
+DEFINE_CMP(lt)
+DEFINE_CMP(le)
+DEFINE_CMP(gt)
+DEFINE_CMP(ge)
+
+#define DEFINE_AOP(op, v1, c0)                  \
+  static pic_value                              \
+  pic_number_##op(pic_state *pic)               \
+  {                                             \
+    int argc, i;                                \
+    pic_value *argv, tmp;                       \
+                                                \
+    pic_get_args(pic, "*", &argc, &argv);       \
+                                                \
+    if (argc == 0) {                            \
+      c0;                                       \
+    }                                           \
+    else if (argc == 1) {                       \
+      return v1;                                \
+    }                                           \
+                                                \
+    tmp = argv[0];                              \
+    for (i = 1; i < argc; ++i) {                \
+      tmp = pic_##op(pic, tmp, argv[i]);        \
+    }                                           \
+    return tmp;                                 \
+  }
+
+DEFINE_AOP(add, argv[0], do {
+    return pic_int_value(0);
+  } while (0))
+DEFINE_AOP(mul, argv[0], do {
+    return pic_int_value(1);
+  } while (0))
+DEFINE_AOP(sub, pic_sub(pic, pic_int_value(0), argv[0]), do {
+    pic_errorf(pic, "-: at least one argument required");
+  } while (0))
+DEFINE_AOP(div, pic_div(pic, pic_int_value(1), argv[0]), do {
+    pic_errorf(pic, "/: at least one argument required");
+  } while (0))
+
 static int
 number_string_length(int val, int radix)
 {
@@ -40,12 +136,6 @@ number_string_length(int val, int radix)
   return count;
 }
 
-/**
- * Returns the string representing val.
- * radix is between 2 and 36 (inclusive).
- * This function overwrites buffer and stores the result.
- * No error checks are performed in this function. It is caller's responsibility to avoid buffer-overrun.
- */
 static void
 number_string(int val, int radix, int length, char *buffer) {
   const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -70,484 +160,8 @@ number_string(int val, int radix, int length, char *buffer) {
 }
 
 static pic_value
-pic_number_real_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-#if PIC_ENABLE_FLOAT
-  return pic_bool_value(pic_float_p(v) || pic_int_p(v));
-#else
-  return pic_bool_value(pic_int_p(v));
-#endif
-}
-
-static pic_value
-pic_number_integer_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  if (pic_int_p(v)) {
-    return pic_true_value();
-  }
-#if PIC_ENABLE_FLOAT
-  if (pic_float_p(v)) {
-    double f = pic_float(v);
-
-    if (isinf(f)) {
-      return pic_false_value();
-    }
-
-    if (f == round(f)) {
-      return pic_true_value();
-    }
-  }
-#endif
-  return pic_false_value();
-}
-
-static pic_value
-pic_number_exact_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  return pic_bool_value(pic_int_p(v));
-}
-
-static pic_value
-pic_number_inexact_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-#if PIC_ENABLE_FLOAT
-  return pic_bool_value(pic_float_p(v));
-#else
-  return pic_false_value();
-#endif
-}
-
-#define DEFINE_ARITH_CMP(op, name)			\
-  static pic_value					\
-  pic_number_##name(pic_state *pic)			\
-  {							\
-    size_t argc, i;                                     \
-    pic_value *argv;					\
-    double f,g;						\
-    							\
-    pic_get_args(pic, "ff*", &f, &g, &argc, &argv);	\
-    							\
-    if (! (f op g))					\
-      return pic_false_value();				\
-    							\
-    for (i = 0; i < argc; ++i) {			\
-      f = g;                                            \
-      if (pic_float_p(argv[i]))				\
-	g = pic_float(argv[i]);				\
-      else if (pic_int_p(argv[i]))			\
-	g = pic_int(argv[i]);				\
-      else						\
-	pic_errorf(pic, #op ": number required");	\
-      							\
-      if (! (f op g))					\
-	return pic_false_value();			\
-    }							\
-    							\
-    return pic_true_value();				\
-  }
-
-#define DEFINE_ARITH_CMP2(op, name)			\
-  static pic_value					\
-  pic_number_##name(pic_state *pic)			\
-  {							\
-    size_t argc, i;                                     \
-    pic_value *argv;					\
-    int f,g;						\
-    							\
-    pic_get_args(pic, "ii*", &f, &g, &argc, &argv);	\
-    							\
-    if (! (f op g))					\
-      return pic_false_value();				\
-    							\
-    for (i = 0; i < argc; ++i) {			\
-      f = g;                                            \
-      if (pic_int_p(argv[i]))                           \
-	g = pic_int(argv[i]);				\
-      else						\
-	pic_errorf(pic, #op ": number required");	\
-      							\
-      if (! (f op g))					\
-	return pic_false_value();			\
-    }							\
-    							\
-    return pic_true_value();				\
-  }
-
-#if PIC_ENABLE_FLOAT
-DEFINE_ARITH_CMP(==, eq)
-DEFINE_ARITH_CMP(<, lt)
-DEFINE_ARITH_CMP(>, gt)
-DEFINE_ARITH_CMP(<=, le)
-DEFINE_ARITH_CMP(>=, ge)
-#else
-DEFINE_ARITH_CMP2(==, eq)
-DEFINE_ARITH_CMP2(<, lt)
-DEFINE_ARITH_CMP2(>, gt)
-DEFINE_ARITH_CMP2(<=, le)
-DEFINE_ARITH_CMP2(>=, ge)
-#endif
-
-#define DEFINE_ARITH_OP(op, name, unit)                         \
-  static pic_value                                              \
-  pic_number_##name(pic_state *pic)                             \
-  {                                                             \
-    size_t argc, i;                                             \
-    pic_value *argv;                                            \
-    double f;                                                   \
-    bool e = true;                                              \
-                                                                \
-    pic_get_args(pic, "*", &argc, &argv);                       \
-                                                                \
-    f = unit;                                                   \
-    for (i = 0; i < argc; ++i) {                                \
-      if (pic_int_p(argv[i])) {                                 \
-        f op##= pic_int(argv[i]);                               \
-      }                                                         \
-      else if (pic_float_p(argv[i])) {                          \
-        e = false;                                              \
-        f op##= pic_float(argv[i]);                             \
-      }                                                         \
-      else {                                                    \
-        pic_errorf(pic, #op ": number required");               \
-      }                                                         \
-    }                                                           \
-                                                                \
-    return e ? pic_int_value((int)f) : pic_float_value(f);      \
-  }
-
-#define DEFINE_ARITH_OP2(op, name, unit)                        \
-  static pic_value                                              \
-  pic_number_##name(pic_state *pic)                             \
-  {                                                             \
-    size_t argc, i;                                             \
-    pic_value *argv;                                            \
-    int f;                                                      \
-                                                                \
-    pic_get_args(pic, "*", &argc, &argv);                       \
-                                                                \
-    f = unit;                                                   \
-    for (i = 0; i < argc; ++i) {                                \
-      if (pic_int_p(argv[i])) {                                 \
-        f op##= pic_int(argv[i]);                               \
-      }                                                         \
-      else {                                                    \
-        pic_errorf(pic, #op ": number required");               \
-      }                                                         \
-    }                                                           \
-                                                                \
-    return pic_int_value(f);                                    \
-  }
-
-#if PIC_ENABLE_FLOAT
-DEFINE_ARITH_OP(+, add, 0)
-DEFINE_ARITH_OP(*, mul, 1)
-#else
-DEFINE_ARITH_OP2(+, add, 0)
-DEFINE_ARITH_OP2(*, mul, 1)
-#endif
-
-#define DEFINE_ARITH_INV_OP(op, name, unit, exact)                      \
-  static pic_value                                                      \
-  pic_number_##name(pic_state *pic)                                     \
-  {                                                                     \
-    size_t argc, i;                                                     \
-    pic_value *argv;                                                    \
-    double f;                                                           \
-    bool e = true;                                                      \
-                                                                        \
-    pic_get_args(pic, "F*", &f, &e, &argc, &argv);                      \
-                                                                        \
-    e = e && exact;                                                     \
-                                                                        \
-    if (argc == 0) {                                                    \
-      f = unit op f;                                                    \
-    }                                                                   \
-    for (i = 0; i < argc; ++i) {                                        \
-      if (pic_int_p(argv[i])) {                                         \
-        f op##= pic_int(argv[i]);                                       \
-      }                                                                 \
-      else if (pic_float_p(argv[i])) {                                  \
-        e = false;                                                      \
-        f op##= pic_float(argv[i]);                                     \
-      }                                                                 \
-      else {                                                            \
-        pic_errorf(pic, #op ": number required");                       \
-      }                                                                 \
-    }                                                                   \
-                                                                        \
-    return e ? pic_int_value((int)f) : pic_float_value(f);              \
-  }
-
-#define DEFINE_ARITH_INV_OP2(op, name, unit)                            \
-  static pic_value                                                      \
-  pic_number_##name(pic_state *pic)                                     \
-  {                                                                     \
-    size_t argc, i;                                                     \
-    pic_value *argv;                                                    \
-    int f;                                                              \
-                                                                        \
-    pic_get_args(pic, "i*", &f, &argc, &argv);                          \
-                                                                        \
-    if (argc == 0) {                                                    \
-      f = unit op f;                                                    \
-    }                                                                   \
-    for (i = 0; i < argc; ++i) {                                        \
-      if (pic_int_p(argv[i])) {                                         \
-        f op##= pic_int(argv[i]);                                       \
-      }                                                                 \
-      else {                                                            \
-        pic_errorf(pic, #op ": number required");                       \
-      }                                                                 \
-    }                                                                   \
-                                                                        \
-    return pic_int_value(f);                                            \
-  }
-
-#if PIC_ENABLE_FLOAT
-DEFINE_ARITH_INV_OP(-, sub, 0, true)
-DEFINE_ARITH_INV_OP(/, div, 1, false)
-#else
-DEFINE_ARITH_INV_OP2(-, sub, 0)
-DEFINE_ARITH_INV_OP2(/, div, 1)
-#endif
-
-static pic_value
-pic_number_abs(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value(f < 0 ? -f : f);
-  }
-  else {
-    return pic_float_value(fabs(f));
-  }
-#else
-  int i;
-
-  pic_get_args(pic, "i", &i);
-
-  return pic_int_value(i < 0 ? -i : i);
-#endif
-}
-
-static pic_value
-pic_number_expt(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  double f, g, h;
-  bool e1, e2;
-
-  pic_get_args(pic, "FF", &f, &e1, &g, &e2);
-
-  h = pow(f, g);
-  if (e1 && e2) {
-    if (h <= INT_MAX) {
-      return pic_int_value((int)h);
-    }
-  }
-  return pic_float_value(h);
-#else
-  int x, y, i, e = 1, r = 1, s = 0;
-
-  pic_get_args(pic, "ii", &x, &y);
-
-  if (y < 0) {
-    s = 1;
-    y = -y;
-  }
-  e = x;
-  for (i = 0; y; ++i) {
-    if ((y & 1) != 0) {
-      r *= e;
-    }
-    e *= e;
-    y >>= 1;
-  }
-  if (s != 0) {
-    r = 1 / r;
-  }
-  return pic_int_value(r);
-#endif
-}
-
-static pic_value
-pic_number_floor2(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  int i, j;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  if (e1 && e2) {
-    int k;
-
-    k = (i < 0 && j < 0) || (0 <= i && 0 <= j)
-      ? i / j
-      : (i / j) - 1;
-
-    return pic_values2(pic, pic_int_value(k), pic_int_value(i - k * j));
-  }
-  else {
-    double q, r;
-
-    q = floor((double)i/j);
-    r = i - j * q;
-    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
-  }
-#else
-  int i, j, k;
-
-  pic_get_args(pic, "ii", &i, &j);
-
-  k = (i < 0 && j < 0) || (0 <= i && 0 <= j)
-    ? i / j
-    : (i / j) - 1;
-
-  return pic_values2(pic, pic_int_value(k), pic_int_value(i - k * j));
-#endif
-}
-
-static pic_value
-pic_number_trunc2(pic_state *pic)
-{
-#if PIC_ENABLE_FLOAT
-  int i, j;
-  bool e1, e2;
-
-  pic_get_args(pic, "II", &i, &e1, &j, &e2);
-
-  if (e1 && e2) {
-    return pic_values2(pic, pic_int_value(i/j), pic_int_value(i - (i/j) * j));
-  }
-  else {
-    double q, r;
-
-    q = trunc((double)i/j);
-    r = i - j * q;
-
-    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
-  }
-#else
-  int i, j;
-
-  pic_get_args(pic, "ii", &i, &j);
-
-  return pic_values2(pic, pic_int_value(i/j), pic_int_value(i - (i/j) * j));
-#endif
-}
-
-#if PIC_ENABLE_FLOAT
-static pic_value
-pic_number_floor(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(floor(f));
-  }
-}
-
-static pic_value
-pic_number_ceil(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(ceil(f));
-  }
-}
-
-static pic_value
-pic_number_trunc(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(trunc(f));
-  }
-}
-
-static pic_value
-pic_number_round(pic_state *pic)
-{
-  double f;
-  bool e;
-
-  pic_get_args(pic, "F", &f, &e);
-
-  if (e) {
-    return pic_int_value((int)f);
-  }
-  else {
-    return pic_float_value(round(f));
-  }
-}
-
-static pic_value
-pic_number_inexact(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_float_value(f);
-}
-
-static pic_value
-pic_number_exact(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_int_value((int)(round(f)));
-}
-#endif
-
-static pic_value
 pic_number_number_to_string(pic_state *pic)
 {
-#if PIC_ENABLE_FLOAT
   double f;
   bool e;
   int radix = 10;
@@ -562,7 +176,7 @@ pic_number_number_to_string(pic_state *pic)
   if (e) {
     int ival = (int) f;
     int ilen = number_string_length(ival, radix);
-    size_t s = ilen + 1;
+    int s = ilen + 1;
     char *buf = pic_malloc(pic, s);
 
     number_string(ival, radix, ilen, buf);
@@ -574,7 +188,7 @@ pic_number_number_to_string(pic_state *pic)
   else {
     struct pic_port *port = pic_open_output_string(pic);
 
-    xfprintf(port->file, "%f", f);
+    xfprintf(pic, port->file, "%f", f);
 
     str = pic_get_output_string(pic, port);
 
@@ -582,46 +196,16 @@ pic_number_number_to_string(pic_state *pic)
   }
 
   return pic_obj_value(str);
-#else
-  int f;
-  bool e;
-  int radix = 10;
-  pic_str *str;
-  size_t s;
-  char *buf;
-  int ival, ilen;
-
-  pic_get_args(pic, "i|i", &f, &e, &radix);
-
-  if (radix < 2 || radix > 36) {
-    pic_errorf(pic, "number->string: invalid radix %d (between 2 and 36, inclusive)", radix);
-  }
-
-  ival = f;
-  ilen = number_string_length(ival, radix);
-  s = ilen + 1;
-
-  buf = pic_malloc(pic, s);
-
-  number_string(ival, radix, ilen, buf);
-
-  str = pic_make_str(pic, buf, s - 1);
-
-  pic_free(pic, buf);
-
-  return pic_obj_value(str);
-#endif
 }
 
 static pic_value
 pic_number_string_to_number(pic_state *pic)
 {
-#if PIC_ENABLE_FLOAT
   const char *str;
   int radix = 10;
   long num;
   char *eptr;
-  double flo;
+  pic_value flo;
 
   pic_get_args(pic, "z|i", &str, &radix);
 
@@ -632,246 +216,51 @@ pic_number_string_to_number(pic_state *pic)
       : pic_float_value(num);
   }
 
-  flo = strtod(str, &eptr);
-  if (*eptr == '\0') {
-    return pic_float_value(flo);
+  pic_try {
+    flo = pic_read_cstr(pic, str);
+  }
+  pic_catch {
+    /* swallow error */
+    flo = pic_false_value();
   }
 
-  pic_errorf(pic, "invalid string given: %s", str);
-#else
-  const char *str;
-  int radix = 10;
-  long num;
-  char *eptr;
-
-  pic_get_args(pic, "z|i", &str, &radix);
-
-  num = strtol(str, &eptr, radix);
-  if (*eptr == '\0') {
-    return pic_int_value(num);
+  if (pic_int_p(flo) || pic_float_p(flo)) {
+    return flo;
   }
 
-  pic_errorf(pic, "invalid string given: %s", str);
-#endif
+  return pic_false_value();
 }
-
-#if PIC_ENABLE_FLOAT
-static pic_value
-pic_number_finite_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  if (pic_int_p(v))
-    return pic_true_value();
-  if (pic_float_p(v) && ! (isinf(pic_float(v)) || isnan(pic_float(v))))
-    return pic_true_value();
-  else
-    return pic_false_value();
-}
-
-static pic_value
-pic_number_infinite_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  if (pic_float_p(v) && isinf(pic_float(v)))
-    return pic_true_value();
-  else
-    return pic_false_value();
-}
-
-static pic_value
-pic_number_nan_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  if (pic_float_p(v) && isnan(pic_float(v)))
-    return pic_true_value();
-  else
-    return pic_false_value();
-}
-
-static pic_value
-pic_number_exp(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-  return pic_float_value(exp(f));
-}
-
-static pic_value
-pic_number_log(pic_state *pic)
-{
-  double f,g;
-  int argc;
-
-  argc = pic_get_args(pic, "f|f", &f, &g);
-  if (argc == 1) {
-    return pic_float_value(log(f));
-  }
-  else {
-    return pic_float_value(log(f) / log(g));
-  }
-}
-
-static pic_value
-pic_number_sin(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-  f = sin(f);
-  return pic_float_value(f);
-}
-
-static pic_value
-pic_number_cos(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-  f = cos(f);
-  return pic_float_value(f);
-}
-
-static pic_value
-pic_number_tan(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-  f = tan(f);
-  return pic_float_value(f);
-}
-
-static pic_value
-pic_number_acos(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-  f = acos(f);
-  return pic_float_value(f);
-}
-
-static pic_value
-pic_number_asin(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-  f = asin(f);
-  return pic_float_value(f);
-}
-
-static pic_value
-pic_number_atan(pic_state *pic)
-{
-  double f,g;
-  int argc;
-
-  argc = pic_get_args(pic, "f|f", &f, &g);
-  if (argc == 1) {
-    f = atan(f);
-    return pic_float_value(f);
-  }
-  else {
-    return pic_float_value(atan2(f,g));
-  }
-}
-
-static pic_value
-pic_number_sqrt(pic_state *pic)
-{
-  double f;
-
-  pic_get_args(pic, "f", &f);
-
-  return pic_float_value(sqrt(f));
-}
-#endif
 
 void
 pic_init_number(pic_state *pic)
 {
-  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
-
   size_t ai = pic_gc_arena_preserve(pic);
 
-  pic_defun(pic, "number?", pic_number_real_p);
-  pic_defun(pic, "complex?", pic_number_real_p);
-  pic_defun(pic, "real?", pic_number_real_p);
-  pic_defun(pic, "rational?", pic_number_real_p);
-  pic_defun(pic, "integer?", pic_number_integer_p);
+  pic_defun(pic, "number?", pic_number_number_p);
   pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "exact?", pic_number_exact_p);
   pic_defun(pic, "inexact?", pic_number_inexact_p);
   pic_gc_arena_restore(pic, ai);
 
-  pic_defun_vm(pic, "=", pic->rEQ, pic_number_eq);
-  pic_defun_vm(pic, "<", pic->rLT, pic_number_lt);
-  pic_defun_vm(pic, ">", pic->rGT, pic_number_gt);
-  pic_defun_vm(pic, "<=", pic->rLE, pic_number_le);
-  pic_defun_vm(pic, ">=", pic->rGE, pic_number_ge);
-  pic_gc_arena_restore(pic, ai);
-
-  pic_defun_vm(pic, "+", pic->rADD, pic_number_add);
-  pic_defun_vm(pic, "-", pic->rSUB, pic_number_sub);
-  pic_defun_vm(pic, "*", pic->rMUL, pic_number_mul);
-  pic_defun_vm(pic, "/", pic->rDIV, pic_number_div);
-  pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "abs", pic_number_abs);
-  pic_defun(pic, "expt", pic_number_expt);
-  pic_gc_arena_restore(pic, ai);
-
-  pic_defun(pic, "floor/", pic_number_floor2);
-  pic_defun(pic, "truncate/", pic_number_trunc2);
-  pic_gc_arena_restore(pic, ai);
-
-#if PIC_ENABLE_FLOAT
-  pic_defun(pic, "floor", pic_number_floor);
-  pic_defun(pic, "ceiling", pic_number_ceil);
-  pic_defun(pic, "truncate", pic_number_trunc);
-  pic_defun(pic, "round", pic_number_round);
   pic_defun(pic, "inexact", pic_number_inexact);
   pic_defun(pic, "exact", pic_number_exact);
   pic_gc_arena_restore(pic, ai);
-#else
-  pic_defun(pic, "floor", pic_number_id);
-  pic_defun(pic, "ceiling", pic_number_id);
-  pic_defun(pic, "truncate", pic_number_id);
-  pic_defun(pic, "round", pic_number_id);
-  pic_defun(pic, "inexact", pic_number_id);
-  pic_defun(pic, "exact", pic_number_id);
+
+  pic_defun(pic, "=", pic_number_eq);
+  pic_defun(pic, "<", pic_number_lt);
+  pic_defun(pic, ">", pic_number_gt);
+  pic_defun(pic, "<=", pic_number_le);
+  pic_defun(pic, ">=", pic_number_ge);
   pic_gc_arena_restore(pic, ai);
-#endif
+
+  pic_defun(pic, "+", pic_number_add);
+  pic_defun(pic, "-", pic_number_sub);
+  pic_defun(pic, "*", pic_number_mul);
+  pic_defun(pic, "/", pic_number_div);
+  pic_gc_arena_restore(pic, ai);
 
   pic_defun(pic, "number->string", pic_number_number_to_string);
   pic_defun(pic, "string->number", pic_number_string_to_number);
   pic_gc_arena_restore(pic, ai);
-
-#if PIC_ENABLE_FLOAT
-  pic_defun(pic, "finite?", pic_number_finite_p);
-  pic_defun(pic, "infinite?", pic_number_infinite_p);
-  pic_defun(pic, "nan?", pic_number_nan_p);
-  pic_defun(pic, "sqrt", pic_number_sqrt);
-  pic_defun(pic, "exp", pic_number_exp);
-  pic_defun(pic, "log", pic_number_log);
-  pic_defun(pic, "sin", pic_number_sin);
-  pic_defun(pic, "cos", pic_number_cos);
-  pic_defun(pic, "tan", pic_number_tan);
-  pic_defun(pic, "acos", pic_number_acos);
-  pic_defun(pic, "asin", pic_number_asin);
-  pic_defun(pic, "atan", pic_number_atan);
-  pic_gc_arena_restore(pic, ai);
-#endif
 }

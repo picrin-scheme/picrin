@@ -4,20 +4,41 @@
 
 #include "picrin.h"
 
+void
+pic_irep_incref(pic_state PIC_UNUSED(*pic), struct pic_irep *irep)
+{
+  irep->refc++;
+}
+
+void
+pic_irep_decref(pic_state *pic, struct pic_irep *irep)
+{
+  size_t i;
+
+  if (--irep->refc == 0) {
+    pic_free(pic, irep->code);
+    pic_free(pic, irep->pool);
+
+    /* unchain before decref children ireps */
+    irep->list.prev->next = irep->list.next;
+    irep->list.next->prev = irep->list.prev;
+
+    for (i = 0; i < irep->ilen; ++i) {
+      pic_irep_decref(pic, irep->irep[i]);
+    }
+    pic_free(pic, irep->irep);
+    pic_free(pic, irep);
+  }
+}
+
 struct pic_proc *
-pic_make_proc(pic_state *pic, pic_func_t func, const char *name)
+pic_make_proc(pic_state *pic, pic_func_t func)
 {
   struct pic_proc *proc;
-  pic_sym *sym;
-
-  assert(name != NULL);
-
-  sym = pic_intern_cstr(pic, name);
 
   proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
   proc->tag = PIC_PROC_TAG_FUNC;
   proc->u.f.func = func;
-  proc->u.f.name = sym;
   proc->u.f.env = NULL;
   return proc;
 }
@@ -31,19 +52,8 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
   proc->tag = PIC_PROC_TAG_IREP;
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
+  pic_irep_incref(pic, irep);
   return proc;
-}
-
-pic_sym *
-pic_proc_name(struct pic_proc *proc)
-{
-  switch (proc->tag) {
-  case PIC_PROC_TAG_FUNC:
-    return proc->u.f.name;
-  case PIC_PROC_TAG_IREP:
-    return proc->u.i.irep->name;
-  }
-  PIC_UNREACHABLE();
 }
 
 struct pic_dict *
@@ -60,19 +70,19 @@ pic_proc_env(pic_state *pic, struct pic_proc *proc)
 bool
 pic_proc_env_has(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  return pic_dict_has(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
+  return pic_dict_has(pic, pic_proc_env(pic, proc), pic_intern(pic, key));
 }
 
 pic_value
 pic_proc_env_ref(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  return pic_dict_ref(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
+  return pic_dict_ref(pic, pic_proc_env(pic, proc), pic_intern(pic, key));
 }
 
 void
 pic_proc_env_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value val)
 {
-  pic_dict_set(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key), val);
+  pic_dict_set(pic, pic_proc_env(pic, proc), pic_intern(pic, key), val);
 }
 
 static pic_value
@@ -90,7 +100,7 @@ pic_proc_apply(pic_state *pic)
 {
   struct pic_proc *proc;
   pic_value *args;
-  size_t argc;
+  int argc;
   pic_value arg_list;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
@@ -104,7 +114,7 @@ pic_proc_apply(pic_state *pic)
     arg_list = pic_cons(pic, args[argc], arg_list);
   }
 
-  return pic_apply_trampoline(pic, proc, arg_list);
+  return pic_apply_trampoline_list(pic, proc, arg_list);
 }
 
 void

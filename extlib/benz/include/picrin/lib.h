@@ -16,6 +16,7 @@ struct pic_lib {
   struct pic_dict *exports;
 };
 
+#define pic_lib_p(o) (pic_type(o) == PIC_TT_LIB)
 #define pic_lib_ptr(o) ((struct pic_lib *)pic_ptr(o))
 
 #if defined(__cplusplus)

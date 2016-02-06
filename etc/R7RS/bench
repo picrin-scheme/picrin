@@ -1,0 +1,368 @@
+#!/usr/bin/env bash
+
+# For running R6RS benchmarks.
+#
+# Please report any errors or extensions to the author:
+#
+#   William D Clinger (will@ccs.neu.edu)
+#
+# This script was loosely modelled after Marc Feeley's
+# script for benchmarking R5RS systems, with additional
+# contributions by Harvey Stein.
+#
+# Usage:
+#
+#     % cd test/Benchmarking/R6RS
+#     % ./bench <system> <benchmark>
+#
+# For the current list of systems and benchmarks, run this
+# script with no arguments.
+#
+# The benchmarks must be contained within a src subdirectory
+# of the directory in which this script is run.
+#
+# The inputs to the benchmarks must be contained within an
+# inputs subdirectory of the directory in which this script
+# is run.
+
+OSNAME="`( uname )`"
+
+# The following definitions are not in use, but using them
+# might improve the script.
+
+HOME="`( pwd )`"
+SRC="${HOME}/src"
+INPUTS="${HOME}/inputs"
+
+# TEMP="/tmp/larcenous"
+
+################################################################
+
+GABRIEL_BENCHMARKS="browse deriv destruc diviter divrec puzzle triangl tak takl ntakl cpstak ctak"
+
+NUM_BENCHMARKS="fib fibc sum sumfp fft mbrot mbrotZ nucleic pnpoly"
+
+KVW_BENCHMARKS="ack array1 string sum1 cat tail wc"
+
+IO_BENCHMARKS="read1"
+
+OTHER_BENCHMARKS="compiler conform dynamic earley graphs lattice matrix mazefun nqueens paraffins parsing peval pi primes quicksort ray scheme simplex slatex"
+
+GC_BENCHMARKS="nboyer sboyer gcbench mperm"
+
+SYNTH_BENCHMARKS="equal"
+
+ALL_BENCHMARKS="$GABRIEL_BENCHMARKS $NUM_BENCHMARKS $KVW_BENCHMARKS $IO_BENCHMARKS $OTHER_BENCHMARKS $GC_BENCHMARKS $SYNTH_BENCHMARKS"
+
+################################################################
+
+NB_RUNS=1
+clean=true
+options=""
+
+# On our Solaris machines, we can't install systems in
+# /usr/local, and some are in random places for historical
+# reasons.
+
+setup ()
+{
+  case ${OSNAME} in
+
+    "SunOS")
+
+        APPS="/proj/will/Apps"
+
+        ;;
+
+    "Linux")
+
+        APPS="/usr/local"
+
+        IKARUS="${APPS}/bin/ikarus"
+        HENCHMAN="/home/henchman/bin/larceny"
+        ;;
+
+    "Darwin")
+
+        IKARUS=${IKARUS:-"ikarus"}
+        ;;
+
+  esac
+
+  # For both Solaris and Linux machines.
+
+  SAGITTARIUS=${SAGITTARIUS:-"sash"}
+  GAUCHE=${GAUCHE:-"gosh"}
+  FOMENT=${FOMENT:-"foment"}
+  HUSK=${HUSK:-"huski"}
+  CHIBI=${CHIBI:-"chibi-scheme"}
+  PICRIN=${PICRIN:-"picrin"}
+}
+
+setup
+
+# -----------------------------------------------------------------------------
+
+error ()
+{
+  echo $1
+  echo '
+Usage: bench [-r runs] <system> <benchmark>
+
+<system> is the abbreviated name of the implementation to benchmark:
+
+  sagittarius      for Sagittarius Scheme
+  gauche           for Gauche Scheme
+  picrin           for picrin Scheme
+  all              for all of the above
+
+<benchmark> is the name of the benchmark(s) to run:
+
+  all         for all of the usual benchmarks
+  fib         for the fib benchmark
+  "fib ack"   for the fib and ack benchmarks
+
+runs is the number of times to run each benchmark (default is 1).'
+
+  exit
+}
+
+# -----------------------------------------------------------------------------
+
+# FIXME: DANGER! DANGER! DANGER!
+# DON'T USE THIS UNTIL IT'S BEEN FIXED!
+
+cleanup ()
+{
+  if [ "$clean" = "true" ] ; then
+     # It's true that technically speaking, we should be in the build
+     # directory when this fcn is called.  Thus, we should be able to
+     # just do rm *.  However, that's kind of dangerous, so instead,
+     # we delete files newer than the mark file that evaluate () makes.
+
+     for x in * ; do
+        if [ $x -nt clean_newer_than_me ] ; then
+          rm $x
+        fi
+     done
+  fi
+  rm clean_newer_than_me
+}
+
+evaluate ()
+{
+# echo > clean_newer_than_me
+  sleep 1
+  {
+    echo
+    echo Testing $1 under ${NAME}
+    echo Compiling...
+#    $COMP "${TEMP}/$1.${EXTENSION}"
+    i=0
+    while [ "$i" -lt "$NB_RUNS" ]
+    do
+      echo Running...
+      $EXEC "${SRC}/$1.sch" "${INPUTS}/$1.input"
+      i=`expr $i + 1`
+    done
+  } 2>&1 | tee -a results.${NAME}
+
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Sagittarius Scheme
+
+sagittarius_comp ()
+{
+  :
+}
+
+sagittarius_exec ()
+{
+  time "${SAGITTARIUS}" -t -n "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Gauche Scheme
+
+gauche_comp ()
+{
+  :
+}
+
+gauche_exec ()
+{
+  time "${GAUCHE}" -I. -r7 "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Foment
+
+foment_comp ()
+{
+  :
+}
+
+foment_exec ()
+{
+  time "${FOMENT}" "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Husk Scheme
+
+husk_comp ()
+{
+  :
+}
+
+husk_exec ()
+{
+  time "${HUSK}" "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+# Definitions specific to Chibi Scheme
+
+chibi_comp ()
+{
+  :
+}
+
+chibi_exec ()
+{
+  time "${CHIBI}" "$1" < "$2"
+}
+
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Definitions specific to picrin Scheme
+
+picrin_comp ()
+{
+  :
+}
+
+picrin_exec ()
+{
+  time "${PICRIN}" "$1" < "$2"
+}
+
+
+## Arg processing...
+if [ "$#" -lt 2 ]; then
+  error '>>> At least two command line arguments are needed'
+fi
+
+
+while [ $# -gt 2 ] ; do
+   arg="$1"
+   shift
+   case $arg in
+      -r) NB_RUNS=$1    ; shift ;;
+      -c) clean=$1      ; shift ;;
+      -o) options=$1    ; shift ;;
+       *) error ">>> Unknown argument of $arg given." ;;
+   esac
+done
+
+if [ "$#" -ne 2 ]; then
+  error '>>> Last two arguments must be <system> and <benchmark>'
+fi
+
+case "$1" in
+               all) systems="$ALL_SYSTEMS" ;;
+                 *) systems="$1" ;;
+esac
+
+case "$2" in
+      all) benchmarks="$ALL_BENCHMARKS" ;;
+  gabriel) benchmarks="$GABRIEL_BENCHMARKS" ;;
+      kvw) benchmarks="$KVW_BENCHMARKS" ;;
+    other) benchmarks="$OTHER_BENCHMARKS" ;;
+      awk) benchmarks="$AWK_BENCHMARKS" ;;
+        c) benchmarks="$C_BENCHMARKS" ;;
+     java) benchmarks="$JAVA_BENCHMARKS" ;;
+        *) benchmarks="$2" ;;
+esac
+
+## Run each benchmark under each system...
+for system in $systems ; do
+
+   case "$system" in
+
+sagittarius)NAME='Sagittarius'
+            COMP=sagittarius_comp
+            EXEC=sagittarius_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+     gauche)NAME='Gauche'
+            COMP=gauche_comp
+            EXEC=gauche_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+      chibi)NAME='Chibi'
+            COMP=chibi_comp
+            EXEC=chibi_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+     foment)NAME='Foment'
+            COMP=foment_comp
+            EXEC=foment_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+       husk)NAME='Husk'
+            COMP=husk_comp
+            EXEC=husk_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+       picrin)NAME='picrin'
+            COMP=picrin_comp
+            EXEC=picrin_exec
+            COMPOPTS=""
+            EXTENSION="sch"
+            EXTENSIONCOMP="sch"
+	    COMPCOMMANDS=""
+	    EXECCOMMANDS=""
+            ;;
+
+   esac
+
+   {
+      echo
+      echo '****************************'
+      echo Benchmarking ${NAME} on `date` under `uname -a`
+   } >> results.${NAME}
+
+#   mkdir "${TEMP}"
+
+   for program in $benchmarks ; do
+      evaluate $program
+   done
+done
