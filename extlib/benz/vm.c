@@ -353,7 +353,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 #if PIC_DIRECT_THREADED_VM
   static const void *oplabels[] = {
     &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHUNDEF, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE,
-    &&L_OP_PUSHFALSE, &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHCONST,
+    &&L_OP_PUSHFALSE, &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHEOF, &&L_OP_PUSHCONST,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
@@ -412,6 +412,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
     }
     CASE(OP_PUSHCHAR) {
       PUSH(pic_char_value(pic->ci->irep->u.s.ints[c.a]));
+      NEXT;
+    }
+    CASE(OP_PUSHEOF) {
+      PUSH(pic_eof_object());
       NEXT;
     }
     CASE(OP_PUSHCONST) {

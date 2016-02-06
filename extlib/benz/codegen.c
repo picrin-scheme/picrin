@@ -950,6 +950,9 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   case PIC_TT_NIL:
     emit_n(pic, cxt, OP_PUSHNIL);
     break;
+  case PIC_TT_EOF:
+    emit_n(pic, cxt, OP_PUSHEOF);
+    break;
   case PIC_TT_CHAR:
     check_ints_size(pic, cxt);
     pidx = (int)cxt->klen++;

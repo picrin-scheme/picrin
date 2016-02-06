@@ -18,6 +18,7 @@ enum pic_opcode {
   OP_PUSHFALSE,
   OP_PUSHINT,
   OP_PUSHCHAR,
+  OP_PUSHEOF,
   OP_PUSHCONST,
   OP_GREF,
   OP_GSET,
@@ -84,6 +85,9 @@ pic_dump_code(pic_code c)
     break;
   case OP_PUSHCHAR:
     printf("OP_PUSHCHAR\t%c\n", c.a);
+    break;
+  case OP_PUSHEOF:
+    puts("OP_PUSHEOF");
     break;
   case OP_PUSHCONST:
     printf("OP_PUSHCONST\t%d\n", c.a);
