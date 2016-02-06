@@ -261,6 +261,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
 static pic_value
 expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 {
+  struct pic_proc *pic_compile(pic_state *, pic_value);
   pic_id *id;
   pic_value val;
   pic_sym *uid;
@@ -270,7 +271,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
     uid = pic_add_identifier(pic, id, env);
   }
 
-  val = pic_eval(pic, pic_list_ref(pic, expr, 2), env);
+  val = pic_apply0(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)));
   if (! pic_proc_p(val)) {
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", pic_identifier_name(pic, id));
   }
