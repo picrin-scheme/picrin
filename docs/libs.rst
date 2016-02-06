@@ -117,7 +117,7 @@ Symbol-to-object hash table.
 
 - **(dictionary-ref dict key)**
 
-  Look up dictionary dict for a value associated with key. If dict has a slot for key `key`, the value stored in the slot is returned. Otherwise `#undefined` is returned.
+  Look up dictionary dict for a value associated with key. If dict has a slot for key `key`, a pair containing the key object and the associated value is returned. Otherwise `#f` is returned.
 
 - **(dictionary-set! dict key obj)**
 

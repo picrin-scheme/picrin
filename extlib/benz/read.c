@@ -14,7 +14,7 @@ read_error(pic_state *pic, const char *msg)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic->sREAD, msg, pic_nil_value());
+  e = pic_make_error(pic, pic_intern(pic, "read"), msg, pic_nil_value());
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -64,7 +64,6 @@ isdelim(int c)
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
-#if PIC_ENABLE_FLOAT
 static bool
 strcaseeq(const char *s1, const char *s2)
 {
@@ -76,7 +75,6 @@ strcaseeq(const char *s1, const char *s2)
   }
   return a == b;
 }
-#endif
 
 static int
 case_fold(pic_state *pic, int c)
@@ -216,7 +214,7 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
     buf[len] = 0;
   }
 
-  sym = pic_intern_cstr(pic, buf);
+  sym = pic_intern(pic, buf);
   pic_free(pic, buf);
 
   return pic_obj_value(sym);
@@ -267,22 +265,35 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
 {
   unsigned u;
   int exp, s, i, e;
-#if PIC_ENABLE_FLOAT
-  double f, g;
-#endif
 
   u = read_uinteger(pic, port, c);
 
   switch (peek(pic, port)) {
-#if PIC_ENABLE_FLOAT
-  case '.':
+#if PIC_ENABLE_LIBC
+  case '.': {
+    char buf[256];
+    i = sprintf(buf, "%d", u);
+    buf[i++] = next(pic, port);
+    while (isdigit(c = peek(pic, port))) {
+      buf[i++] = next(pic, port);
+    }
+    sprintf(buf + i, "e%d", read_suffix(pic, port));
+    return pic_float_value(atof(buf));
+  }
+#else
+  case '.': {
+    double f, g, h;
     next(pic, port);
     g = 0, e = 0;
     while (isdigit(c = peek(pic, port))) {
       g = g * 10 + (next(pic, port) - '0');
       e++;
     }
-    f = u + g * pow(10, -e);
+    h = 1.0;
+    while (e-- > 0) {
+      h /= 10;
+    }
+    f = u + g * h;
 
     exp = read_suffix(pic, port);
     if (exp >= 0) {
@@ -301,6 +312,7 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
       exp >>= 1;
     }
     return pic_float_value(f);
+  }
 #endif
 
   default:
@@ -334,15 +346,11 @@ read_number(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 negate(pic_value n)
 {
-#if PIC_ENABLE_FLOAT
   if (pic_int_p(n)) {
     return pic_int_value(-pic_int(n));
   } else {
     return pic_float_value(-pic_float(n));
   }
-#else
-  return pic_int_value(-pic_int(n));
-#endif
 }
 
 static pic_value
@@ -355,14 +363,12 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
-#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-inf.0")) {
-      return pic_float_value(-INFINITY);
+      return pic_float_value(-(1.0 / 0.0));
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-nan.0")) {
-      return pic_float_value(-NAN);
+      return pic_float_value(-(0.0 / 0.0));
     }
-#endif
     return sym;
   }
 }
@@ -377,14 +383,12 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
-#if PIC_ENABLE_FLOAT
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+inf.0")) {
-      return pic_float_value(INFINITY);
+      return pic_float_value(1.0 / 0.0);
     }
     if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+nan.0")) {
-      return pic_float_value(NAN);
+      return pic_float_value(0.0 / 0.0);
     }
-#endif
     return sym;
   }
 }
@@ -425,7 +429,7 @@ read_char(pic_state *pic, struct pic_port *port, int c)
   if (! isdelim(peek(pic, port))) {
     switch (c) {
     default: read_error(pic, "unexpected character after char literal");
-    case 'a': c = '\a'; if (! expect(pic, port, "lerm")) goto fail; break;
+    case 'a': c = '\a'; if (! expect(pic, port, "larm")) goto fail; break;
     case 'b': c = '\b'; if (! expect(pic, port, "ackspace")) goto fail; break;
     case 'd': c = 0x7F; if (! expect(pic, port, "elete")) goto fail; break;
     case 'e': c = 0x1B; if (! expect(pic, port, "scape")) goto fail; break;
@@ -525,7 +529,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
   }
   buf[cnt] = '\0';
 
-  sym = pic_intern_cstr(pic, buf);
+  sym = pic_intern(pic, buf);
   pic_free(pic, buf);
 
   return pic_obj_value(sym);
@@ -631,11 +635,19 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
 static pic_value
 read_vector(pic_state *pic, struct pic_port *port, int c)
 {
-  pic_value list;
+  pic_value list, it, elem;
+  pic_vec *vec;
+  size_t i = 0;
 
   list = read(pic, port, c);
 
-  return pic_obj_value(pic_make_vec_from_list(pic, list));
+  vec = pic_make_vec(pic, pic_length(pic, list));
+
+  pic_for_each (elem, list, it) {
+    vec->data[i++] = elem;
+  }
+
+  return pic_obj_value(vec);
 }
 
 static pic_value
@@ -855,24 +867,24 @@ pic_reader_destroy(pic_state *pic)
 pic_value
 pic_read(pic_state *pic, struct pic_port *port)
 {
+  size_t ai = pic_gc_arena_preserve(pic);
   pic_value val;
-  int c = next(pic, port);
+  int c;
 
- retry:
-  c = skip(pic, port, c);
+  while ((c = skip(pic, port, next(pic, port))) != EOF) {
+    val = read_nullable(pic, port, c);
 
+    if (! pic_invalid_p(val)) {
+      break;
+    }
+    pic_gc_arena_restore(pic, ai);
+  }
   if (c == EOF) {
     return pic_eof_object();
   }
 
-  val = read_nullable(pic, port, c);
-
-  if (pic_invalid_p(val)) {
-    c = next(pic, port);
-    goto retry;
-  }
-
-  return val;
+  pic_gc_arena_restore(pic, ai);
+  return pic_gc_protect(pic, val);
 }
 
 pic_value

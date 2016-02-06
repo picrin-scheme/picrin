@@ -79,6 +79,7 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
   pic->arena_idx = cont->arena_idx;
   pic->ip = cont->ip;
   pic->ptable = cont->ptable;
+  pic->cc = cont->prev;
 }
 
 static pic_value
@@ -140,8 +141,6 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   pic_save_point(pic, &cont);
 
   if (PIC_SETJMP(pic, cont.jmp)) {
-    pic->cc = pic->cc->prev;
-
     return pic_values_by_list(pic, cont.results);
   }
   else {
@@ -155,44 +154,62 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   }
 }
 
+static pic_value
+pic_va_values(pic_state *pic, size_t n, ...)
+{
+  pic_vec *args = pic_make_vec(pic, n);
+  va_list ap;
+  size_t i = 0;
+
+  va_start(ap, n);
+
+  while (i < n) {
+    args->data[i++] = va_arg(ap, pic_value);
+  }
+
+  va_end(ap);
+
+  return pic_values(pic, n, args->data);
+}
+
 pic_value
 pic_values0(pic_state *pic)
 {
-  return pic_values_by_list(pic, pic_nil_value());
+  return pic_va_values(pic, 0);
 }
 
 pic_value
 pic_values1(pic_state *pic, pic_value arg1)
 {
-  return pic_values_by_list(pic, pic_list1(pic, arg1));
+  return pic_va_values(pic, 1, arg1);
 }
 
 pic_value
 pic_values2(pic_state *pic, pic_value arg1, pic_value arg2)
 {
-  return pic_values_by_list(pic, pic_list2(pic, arg1, arg2));
+  return pic_va_values(pic, 2, arg1, arg2);
 }
 
 pic_value
 pic_values3(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3)
 {
-  return pic_values_by_list(pic, pic_list3(pic, arg1, arg2, arg3));
+  return pic_va_values(pic, 3, arg1, arg2, arg3);
 }
 
 pic_value
 pic_values4(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
 {
-  return pic_values_by_list(pic, pic_list4(pic, arg1, arg2, arg3, arg4));
+  return pic_va_values(pic, 4, arg1, arg2, arg3, arg4);
 }
 
 pic_value
 pic_values5(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
 {
-  return pic_values_by_list(pic, pic_list5(pic, arg1, arg2, arg3, arg4, arg5));
+  return pic_va_values(pic, 5, arg1, arg2, arg3, arg4, arg5);
 }
 
 pic_value
-pic_values_by_array(pic_state *pic, size_t argc, pic_value *argv)
+pic_values(pic_state *pic, size_t argc, pic_value *argv)
 {
   size_t i;
 
@@ -264,7 +281,7 @@ pic_cont_values(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  return pic_values_by_array(pic, argc, argv);
+  return pic_values(pic, argc, argv);
 }
 
 static pic_value
@@ -272,26 +289,28 @@ pic_cont_call_with_values(pic_state *pic)
 {
   struct pic_proc *producer, *consumer;
   size_t argc;
-  pic_value args[256];
+  pic_vec *args;
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
   pic_apply(pic, producer, pic_nil_value());
 
-  argc = pic_receive(pic, 256, args);
+  argc = pic_receive(pic, 0, NULL);
+  args = pic_make_vec(pic, argc);
 
-  return pic_apply_trampoline(pic, consumer, pic_list_by_array(pic, argc, args));
+  pic_receive(pic, argc, args->data);
+
+  return pic_apply_trampoline(pic, consumer, argc, args->data);
 }
 
 void
 pic_init_cont(pic_state *pic)
 {
-  void pic_defun_vm(pic_state *, const char *, pic_sym *, pic_func_t);
-
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
+  pic_defun(pic, "escape", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
 
-  pic_defun_vm(pic, "values", pic->uVALUES, pic_cont_values);
-  pic_defun_vm(pic, "call-with-values", pic->uCALL_WITH_VALUES, pic_cont_call_with_values);
+  pic_defun(pic, "values", pic_cont_values);
+  pic_defun(pic, "call-with-values", pic_cont_call_with_values);
 }

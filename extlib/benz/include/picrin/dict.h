@@ -22,7 +22,7 @@ struct pic_dict {
 struct pic_dict *pic_make_dict(pic_state *);
 
 #define pic_dict_for_each(sym, dict, it)        \
-  pic_dict_for_each_help(sym, (&dict->hash), it)
+  pic_dict_for_each_help(sym, (&(dict)->hash), it)
 #define pic_dict_for_each_help(sym, h, it)        \
   for (it = kh_begin(h); it != kh_end(h); ++it)   \
     if ((sym = kh_key(h, it)), kh_exist(h, it))

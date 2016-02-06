@@ -240,25 +240,6 @@ pic_make_str_cstr(pic_state *pic, const char *cstr)
   return pic_make_str(pic, cstr, strlen(cstr));
 }
 
-pic_str *
-pic_make_str_fill(pic_state *pic, size_t len, char fill)
-{
-  size_t i;
-  char *buf = pic_malloc(pic, len);
-  pic_str *str;
-
-  for (i = 0; i < len; ++i) {
-    buf[i] = fill;
-  }
-  buf[i] = '\0';
-
-  str = pic_make_str(pic, buf, len);
-
-  pic_free(pic, buf);
-
-  return str;
-}
-
 size_t
 pic_str_len(pic_str *str)
 {
@@ -335,11 +316,9 @@ pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
       case 'p':
         xfprintf(pic, file, "%p", va_arg(ap, void *));
         break;
-#if PIC_ENABLE_FLOAT
       case 'f':
         xfprintf(pic, file, "%f", va_arg(ap, double));
         break;
-#endif
       }
       break;
     case '~':
@@ -471,10 +450,18 @@ pic_str_make_string(pic_state *pic)
 {
   size_t len;
   char c = ' ';
+  char *buf;
+  pic_value ret;
 
   pic_get_args(pic, "k|c", &len, &c);
 
-  return pic_obj_value(pic_make_str_fill(pic, len, c));
+  buf = pic_malloc(pic, len);
+  memset(buf, c, len);
+
+  ret = pic_obj_value(pic_make_str(pic, buf, len));
+
+  pic_free(pic, buf);
+  return ret;
 }
 
 static pic_value

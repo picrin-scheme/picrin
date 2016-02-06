@@ -330,9 +330,6 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
   const char *p;
   char *sval;
   int ival;
-#if PIC_ENABLE_FLOAT
-  double dval;
-#endif
   void *vp;
   int cnt = 0;
 
@@ -348,24 +345,43 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
       ival = va_arg(ap, int);
       cnt += print_int(pic, stream, ival, 10);
       break;
-#if PIC_ENABLE_FLOAT
-    case 'f':
-      dval = va_arg(ap, double);
-      cnt += print_int(pic, stream, dval, 10);
+#if PIC_ENABLE_LIBC
+    case 'f': {
+      char buf[100];
+      sprintf(buf, "%g", va_arg(ap, double));
+      cnt += xfputs(pic, buf, stream);
+      break;
+    }
+#else
+# define fabs(x) ((x) >= 0 ? (x) : -(x))
+    case 'f': {
+      double dval = va_arg(ap, double);
+      long lval;
+      if (dval < 0) {
+        dval = -dval;
+        xputc(pic, '-', stream);
+        cnt++;
+      }
+      lval = (long)dval;
+      cnt += print_int(pic, stream, lval, 10);
       xputc(pic, '.', stream);
       cnt++;
-      if ((ival = fabs((dval - floor(dval)) * 1e4) + 0.5) == 0) {
+      dval -= lval;
+      if ((ival = fabs(dval) * 1e4 + 0.5) == 0) {
         cnt += xfputs(pic, "0000", stream);
       } else {
-        int i;
-        for (i = 0; i < 3 - (int)log10(ival); ++i) {
-          xputc(pic, '0', stream);
-          cnt++;
-        }
+        if (ival < 1000) xputc(pic, '0', stream); cnt++;
+        if (ival <  100) xputc(pic, '0', stream); cnt++;
+        if (ival <   10) xputc(pic, '0', stream); cnt++;
         cnt += print_int(pic, stream, ival, 10);
       }
       break;
+    }
 #endif
+    case 'c':
+      ival = va_arg(ap, int);
+      cnt += xfputc(pic, ival, stream);
+      break;
     case 's':
       sval = va_arg(ap, char*);
       cnt += xfputs(pic, sval, stream);

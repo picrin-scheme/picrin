@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/opcode.h"
 
 /**
  * macro expander
@@ -80,9 +81,17 @@ static pic_value expand(pic_state *, pic_value, struct pic_env *, pic_value);
 static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 
 static pic_value
-expand_var(pic_state *pic, pic_value var, struct pic_env *env)
+expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferred)
 {
-  return pic_obj_value(pic_resolve(pic, var, env));
+  struct pic_proc *mac;
+  pic_sym *functor;
+
+  functor = pic_resolve(pic, var, env);
+
+  if ((mac = find_macro(pic, functor)) != NULL) {
+    return expand(pic, pic_apply2(pic, mac, var, pic_obj_value(env)), env, deferred);
+  }
+  return pic_obj_value(functor);
 }
 
 static pic_value
@@ -113,7 +122,7 @@ expand_list(pic_state *pic, pic_value obj, struct pic_env *env, pic_value deferr
 static pic_value
 expand_defer(pic_state *pic, pic_value expr, pic_value deferred)
 {
-  pic_value skel = pic_list1(pic, pic_invalid_value()); /* (#<invalid>) */
+  pic_value skel = pic_cons(pic, pic_invalid_value(), pic_invalid_value());
 
   pic_set_car(pic, deferred, pic_acons(pic, expr, skel, pic_car(pic, deferred)));
 
@@ -209,7 +218,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
   switch (pic_type(expr)) {
   case PIC_TT_ID:
   case PIC_TT_SYMBOL: {
-    return expand_var(pic, expr, env);
+    return expand_var(pic, expr, env, deferred);
   }
   case PIC_TT_PAIR: {
     struct pic_proc *mac;
@@ -237,7 +246,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
       }
 
       if ((mac = find_macro(pic, functor)) != NULL) {
-        return expand_node(pic, pic_apply2(pic, mac, expr, pic_obj_value(env)), env, deferred);
+        return expand(pic, pic_apply2(pic, mac, expr, pic_obj_value(env)), env, deferred);
       }
     }
     return expand_list(pic, expr, env, deferred);
@@ -286,8 +295,74 @@ pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
   return v;
 }
 
+static pic_value
+optimize_beta(pic_state *pic, pic_value expr)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value functor, formals, args, tmp, val, it, defs;
+
+  if (! pic_list_p(expr))
+    return expr;
+
+  if (pic_nil_p(expr))
+    return expr;
+
+  if (pic_sym_p(pic_list_ref(pic, expr, 0))) {
+    pic_sym *sym = pic_sym_ptr(pic_list_ref(pic, expr, 0));
+
+    if (sym == pic->uQUOTE) {
+      return expr;
+    } else if (sym == pic->uLAMBDA) {
+      return pic_list3(pic, pic_list_ref(pic, expr, 0), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
+    }
+  }
+
+  tmp = pic_nil_value();
+  pic_for_each (val, expr, it) {
+    pic_push(pic, optimize_beta(pic, val), tmp);
+  }
+  expr = pic_reverse(pic, tmp);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, expr);
+
+  functor = pic_list_ref(pic, expr, 0);
+  if (pic_pair_p(functor) && pic_eq_p(pic_car(pic, functor), pic_obj_value(pic->uLAMBDA))) {
+    formals = pic_list_ref(pic, functor, 1);
+    if (! pic_list_p(formals))
+      goto exit;              /* TODO: support ((lambda args x) 1 2) */
+    args = pic_cdr(pic, expr);
+    if (pic_length(pic, formals) != pic_length(pic, args))
+      goto exit;
+    defs = pic_nil_value();
+    pic_for_each (val, args, it) {
+      pic_push(pic, pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_car(pic, formals), val), defs);
+      formals = pic_cdr(pic, formals);
+    }
+    expr = pic_list_ref(pic, functor, 2);
+    pic_for_each (val, defs, it) {
+      expr = pic_list3(pic, pic_obj_value(pic->uBEGIN), val, expr);
+    }
+  }
+ exit:
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, expr);
+  return expr;
+}
+
+pic_value
+pic_optimize(pic_state *pic, pic_value expr)
+{
+  return optimize_beta(pic, expr);
+}
+
 KHASH_DECLARE(a, pic_sym *, int)
 KHASH_DEFINE2(a, pic_sym *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
+
+/**
+ * TODO: don't use khash_t, use kvec_t instead
+ */
 
 typedef struct analyze_scope {
   int depth;
@@ -320,7 +395,7 @@ analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, anal
 
   scope->up = up;
   scope->depth = up ? up->depth + 1 : 0;
-  scope->defer = pic_nil_value();
+  scope->defer = pic_list1(pic, pic_nil_value());
 }
 
 static void
@@ -337,23 +412,15 @@ search_scope(analyze_scope *scope, pic_sym *sym)
   return kh_get(a, &scope->args, sym) != kh_end(&scope->args) || kh_get(a, &scope->locals, sym) != kh_end(&scope->locals) || scope->depth == 0;
 }
 
-static void
-capture_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
-{
-  int ret;
-
-  kh_put(a, &scope->captures, sym, &ret);
-}
-
 static int
 find_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
-  int depth = 0;
+  int depth = 0, ret;
 
   while (scope) {
     if (search_scope(scope, sym)) {
       if (depth > 0) {
-        capture_var(pic, scope, sym);
+        kh_put(a, &scope->captures, sym, &ret); /* capture! */
       }
       return depth;
     }
@@ -369,7 +436,7 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   int ret;
 
   if (search_scope(scope, sym)) {
-    if (scope->depth > 0 || pic_dict_has(pic, pic->globals, sym)) {
+    if (scope->depth > 0 || (pic_dict_has(pic, pic->globals, sym) && ! pic_invalid_p(pic_cdr(pic, pic_dict_ref(pic, pic->globals, sym))))) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
     }
     return;
@@ -378,33 +445,8 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   kh_put(a, &scope->locals, sym, &ret);
 }
 
-static pic_value analyze_node(pic_state *, analyze_scope *, pic_value, bool);
-static pic_value analyze_procedure(pic_state *, analyze_scope *, pic_value);
-
-static pic_value
-analyze(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value res;
-  pic_sym *tag;
-
-  res = analyze_node(pic, scope, obj, tailpos);
-
-  tag = pic_sym_ptr(pic_car(pic, res));
-  if (tailpos) {
-    if (tag == pic->sIF || tag == pic->sBEGIN || tag == pic->sTAILCALL || tag == pic->sTAILCALL_WITH_VALUES || tag == pic->sRETURN) {
-      /* pass through */
-    }
-    else {
-      res = pic_list2(pic, pic_obj_value(pic->sRETURN), res);
-    }
-  }
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, res);
-  pic_gc_protect(pic, scope->defer);
-  return res;
-}
+static pic_value analyze(pic_state *, analyze_scope *, pic_value);
+static pic_value analyze_lambda(pic_state *, analyze_scope *, pic_value);
 
 static pic_value
 analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
@@ -425,12 +467,9 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 static pic_value
 analyze_defer(pic_state *pic, analyze_scope *scope, pic_value form)
 {
-  pic_sym *sNOWHERE = pic_intern_cstr(pic, "<<nowhere>>");
-  pic_value skel;
+  pic_value skel = pic_cons(pic, pic_invalid_value(), pic_invalid_value());
 
-  skel = pic_list2(pic, pic_obj_value(pic->sGREF), pic_obj_value(sNOWHERE));
-
-  pic_push(pic, pic_cons(pic, skel, form), scope->defer);
+  pic_set_car(pic, scope->defer, pic_acons(pic, form, skel, pic_car(pic, scope->defer)));
 
   return skel;
 }
@@ -438,30 +477,31 @@ analyze_defer(pic_state *pic, analyze_scope *scope, pic_value form)
 static void
 analyze_deferred(pic_state *pic, analyze_scope *scope)
 {
-  pic_value defer, it, skel, form, val;
+  pic_value defer, val, src, dst, it;
+
+  scope->defer = pic_car(pic, scope->defer);
 
   pic_for_each (defer, pic_reverse(pic, scope->defer), it) {
-    skel = pic_car(pic, defer);
-    form = pic_cdr(pic, defer);
+    src = pic_car(pic, defer);
+    dst = pic_cdr(pic, defer);
 
-    val = analyze_procedure(pic, scope, form);
+    val = analyze_lambda(pic, scope, src);
 
     /* copy */
-    pic_pair_ptr(skel)->car = pic_car(pic, val);
-    pic_pair_ptr(skel)->cdr = pic_cdr(pic, val);
+    pic_set_car(pic, dst, pic_car(pic, val));
+    pic_set_cdr(pic, dst, pic_cdr(pic, val));
   }
-
-  scope->defer = pic_nil_value();
 }
 
 static pic_value
-analyze_procedure(pic_state *pic, analyze_scope *up, pic_value form)
+analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 {
   analyze_scope s, *scope = &s;
   pic_value formals, body;
   pic_value rest = pic_undef_value();
   pic_vec *args, *locals, *captures;
   size_t i, j;
+  khiter_t it;
 
   formals = pic_list_ref(pic, form, 1);
   body = pic_list_ref(pic, form, 2);
@@ -469,7 +509,7 @@ analyze_procedure(pic_state *pic, analyze_scope *up, pic_value form)
   analyzer_scope_init(pic, scope, formals, up);
 
   /* analyze body */
-  body = analyze(pic, scope, body, true);
+  body = analyze(pic, scope, body);
   analyze_deferred(pic, scope);
 
   args = pic_make_vec(pic, kh_size(&scope->args));
@@ -482,258 +522,58 @@ analyze_procedure(pic_state *pic, analyze_scope *up, pic_value form)
   }
 
   locals = pic_make_vec(pic, kh_size(&scope->locals));
-  for (i = kh_begin(&scope->locals), j = 0; i < kh_end(&scope->locals); ++i) {
-    if (kh_exist(&scope->locals, i)) {
-      locals->data[j++] = pic_obj_value(kh_key(&scope->locals, i));
+  j = 0;
+  if (scope->rest != NULL) {
+    locals->data[j++] = pic_obj_value(scope->rest);
+  }
+  for (it = kh_begin(&scope->locals); it < kh_end(&scope->locals); ++it) {
+    if (kh_exist(&scope->locals, it)) {
+      if (scope->rest != NULL && kh_key(&scope->locals, it) == scope->rest)
+        continue;
+      locals->data[j++] = pic_obj_value(kh_key(&scope->locals, it));
     }
   }
 
   captures = pic_make_vec(pic, kh_size(&scope->captures));
-  for (i = kh_begin(&scope->captures), j = 0; i < kh_end(&scope->captures); ++i) {
-    if (kh_exist(&scope->captures, i)) {
-      captures->data[j++] = pic_obj_value(kh_key(&scope->captures, i));
+  for (it = kh_begin(&scope->captures), j = 0; it < kh_end(&scope->captures); ++it) {
+    if (kh_exist(&scope->captures, it)) {
+      captures->data[j++] = pic_obj_value(kh_key(&scope->captures, it));
     }
   }
 
   analyzer_scope_destroy(pic, scope);
 
-  return pic_list6(pic, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+  return pic_list6(pic, pic_obj_value(pic->uLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+}
+
+static pic_value
+analyze_list(pic_state *pic, analyze_scope *scope, pic_value obj)
+{
+  pic_value seq = pic_nil_value(), val, it;
+
+  pic_for_each (val, obj, it) {
+    pic_push(pic, analyze(pic, scope, val), seq);
+  }
+
+  return pic_reverse(pic, seq);
 }
 
 static pic_value
 analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  pic_value var, val;
-
   define_var(pic, scope, pic_sym_ptr(pic_list_ref(pic, obj, 1)));
 
-  var = analyze(pic, scope, pic_list_ref(pic, obj, 1), false);
-  val = analyze(pic, scope, pic_list_ref(pic, obj, 2), false);
-
-  return pic_list3(pic, pic_obj_value(pic->sSETBANG), var, val);
+  return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
 }
 
 static pic_value
-analyze_if(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
+analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  pic_value cond, if_true, if_false;
-
-  if_true = pic_list_ref(pic, obj, 2);
-  if_false = pic_list_ref(pic, obj, 3);
-
-  cond = analyze(pic, scope, pic_list_ref(pic, obj, 1), false);
-  if_true = analyze(pic, scope, if_true, tailpos);
-  if_false = analyze(pic, scope, if_false, tailpos);
-
-  return pic_list4(pic, pic_obj_value(pic->sIF), cond, if_true, if_false);
+  return pic_cons(pic, pic_obj_value(pic->sCALL), analyze_list(pic, scope, obj));
 }
 
 static pic_value
-analyze_begin(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value beg1, beg2;
-
-  beg1 = pic_list_ref(pic, obj, 1);
-  beg2 = pic_list_ref(pic, obj, 2);
-
-  beg1 = analyze(pic, scope, beg1, false);
-  beg2 = analyze(pic, scope, beg2, tailpos);
-
-  return pic_list3(pic, pic_obj_value(pic->sBEGIN), beg1, beg2);
-}
-
-static pic_value
-analyze_set(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value var, val;
-
-  var = pic_list_ref(pic, obj, 1);
-  val = pic_list_ref(pic, obj, 2);
-
-  var = analyze(pic, scope, var, false);
-  val = analyze(pic, scope, val, false);
-
-  return pic_list3(pic, pic_obj_value(pic->sSETBANG), var, val);
-}
-
-static pic_value
-analyze_quote(pic_state *pic, pic_value obj)
-{
-  return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_list_ref(pic, obj, 1));
-}
-
-#define ARGC_ASSERT_GE(n, name) do {                                    \
-    if (pic_length(pic, obj) < (n) + 1) {                               \
-      pic_errorf(pic,                                                   \
-        #name ": wrong number of arguments (%d for at least %d)",       \
-                 pic_length(pic, obj) - 1,                              \
-                 n);                                                    \
-    }                                                                   \
-  } while (0)
-
-#define FOLD_ARGS(sym) do {                                     \
-    obj = analyze(pic, scope, pic_car(pic, args), false);       \
-    pic_for_each (arg, pic_cdr(pic, args), it) {                \
-      obj = pic_list3(pic, pic_obj_value(sym), obj,             \
-                      analyze(pic, scope, arg, false));         \
-    }                                                           \
-  } while (0)
-
-static pic_value
-analyze_add(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(0, "+");
-  switch (pic_length(pic, obj)) {
-  case 1:
-    return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_int_value(0));
-  case 2:
-    return analyze(pic, scope, pic_car(pic, pic_cdr(pic, obj)), tailpos);
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sADD);
-    return obj;
-  }
-}
-
-static pic_value
-analyze_sub(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(1, "-");
-  switch (pic_length(pic, obj)) {
-  case 2:
-    return pic_list2(pic, pic_obj_value(pic->sMINUS),
-                     analyze(pic, scope, pic_car(pic, pic_cdr(pic, obj)), false));
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sSUB);
-    return obj;
-  }
-}
-
-static pic_value
-analyze_mul(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(0, "*");
-  switch (pic_length(pic, obj)) {
-  case 1:
-    return pic_list2(pic, pic_obj_value(pic->sQUOTE), pic_int_value(1));
-  case 2:
-    return analyze(pic, scope, pic_car(pic, pic_cdr(pic, obj)), tailpos);
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sMUL);
-    return obj;
-  }
-}
-
-static pic_value
-analyze_div(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  pic_value args, arg, it;
-
-  ARGC_ASSERT_GE(1, "/");
-  switch (pic_length(pic, obj)) {
-  case 2:
-    args = pic_cdr(pic, obj);
-#if PIC_ENABLE_FLOAT
-    obj = pic_list3(pic, pic_car(pic, obj), pic_float_value(1), pic_car(pic, args));
-#else
-    obj = pic_list3(pic, pic_car(pic, obj), pic_int_value(1), pic_car(pic, args));
-#endif
-    return analyze(pic, scope, obj, false);
-  default:
-    args = pic_cdr(pic, obj);
-    FOLD_ARGS(pic->sDIV);
-    return obj;
-  }
-}
-
-static pic_value
-analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value seq, elt, it;
-  pic_sym *call;
-
-  if (! tailpos) {
-    call = pic->sCALL;
-  } else {
-    call = pic->sTAILCALL;
-  }
-  seq = pic_list1(pic, pic_obj_value(call));
-  pic_for_each (elt, obj, it) {
-    seq = pic_cons(pic, analyze(pic, scope, elt, false), seq);
-  }
-  return pic_reverse(pic, seq);
-}
-
-static pic_value
-analyze_values(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value v, seq, it;
-
-  if (! tailpos) {
-    return analyze_call(pic, scope, obj, false);
-  }
-
-  seq = pic_list1(pic, pic_obj_value(pic->sRETURN));
-  pic_for_each (v, pic_cdr(pic, obj), it) {
-    seq = pic_cons(pic, analyze(pic, scope, v, false), seq);
-  }
-  return pic_reverse(pic, seq);
-}
-
-static pic_value
-analyze_call_with_values(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
-{
-  pic_value prod, cnsm;
-  pic_sym *call;
-
-  if (pic_length(pic, obj) != 3) {
-    pic_errorf(pic, "call-with-values: wrong number of arguments (%d for 2)", pic_length(pic, obj) - 1);
-  }
-
-  if (! tailpos) {
-    call = pic->sCALL_WITH_VALUES;
-  } else {
-    call = pic->sTAILCALL_WITH_VALUES;
-  }
-  prod = analyze(pic, scope, pic_list_ref(pic, obj, 1), false);
-  cnsm = analyze(pic, scope, pic_list_ref(pic, obj, 2), false);
-  return pic_list3(pic, pic_obj_value(call), prod, cnsm);
-}
-
-#define ARGC_ASSERT(n, name) do {                                       \
-    if (pic_length(pic, obj) != (n) + 1) {                              \
-      pic_errorf(pic, #name ": wrong number of arguments (%d for %d)",  \
-                 pic_length(pic, obj) - 1, n);                          \
-    }                                                                   \
-  } while (0)
-
-#define ARGC_ASSERT_WITH_FALLBACK(n) do {       \
-    if (pic_length(pic, obj) != (n) + 1) {      \
-      goto fallback;                            \
-    }						\
-  } while (0)
-
-#define CONSTRUCT_OP1(op)                                               \
-  pic_list2(pic,                                                        \
-            pic_obj_value(op),                                          \
-            analyze(pic, scope, pic_list_ref(pic, obj, 1), false))
-
-#define CONSTRUCT_OP2(op)                                               \
-  pic_list3(pic,                                                        \
-            pic_obj_value(op),                                          \
-            analyze(pic, scope, pic_list_ref(pic, obj, 1), false),      \
-            analyze(pic, scope, pic_list_ref(pic, obj, 2), false))
-
-static pic_value
-analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
+analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
   switch (pic_type(obj)) {
   case PIC_TT_SYMBOL: {
@@ -756,92 +596,32 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj, bool tailpos)
       else if (sym == pic->uLAMBDA) {
         return analyze_defer(pic, scope, obj);
       }
-      else if (sym == pic->uIF) {
-        return analyze_if(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uBEGIN) {
-        return analyze_begin(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uSETBANG) {
-        return analyze_set(pic, scope, obj);
-      }
       else if (sym == pic->uQUOTE) {
-        return analyze_quote(pic, obj);
+        return obj;
       }
-      else if (sym == pic->uCONS) {
-	ARGC_ASSERT(2, "cons");
-        return CONSTRUCT_OP2(pic->sCONS);
-      }
-      else if (sym == pic->uCAR) {
-	ARGC_ASSERT(1, "car");
-        return CONSTRUCT_OP1(pic->sCAR);
-      }
-      else if (sym == pic->uCDR) {
-	ARGC_ASSERT(1, "cdr");
-        return CONSTRUCT_OP1(pic->sCDR);
-      }
-      else if (sym == pic->uNILP) {
-	ARGC_ASSERT(1, "nil?");
-        return CONSTRUCT_OP1(pic->sNILP);
-      }
-      else if (sym == pic->uSYMBOLP) {
-        ARGC_ASSERT(1, "symbol?");
-        return CONSTRUCT_OP1(pic->sSYMBOLP);
-      }
-      else if (sym == pic->uPAIRP) {
-        ARGC_ASSERT(1, "pair?");
-        return CONSTRUCT_OP1(pic->sPAIRP);
-      }
-      else if (sym == pic->uADD) {
-        return analyze_add(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uSUB) {
-        return analyze_sub(pic, scope, obj);
-      }
-      else if (sym == pic->uMUL) {
-        return analyze_mul(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uDIV) {
-        return analyze_div(pic, scope, obj);
-      }
-      else if (sym == pic->uEQ) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sEQ);
-      }
-      else if (sym == pic->uLT) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sLT);
-      }
-      else if (sym == pic->uLE) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sLE);
-      }
-      else if (sym == pic->uGT) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sGT);
-      }
-      else if (sym == pic->uGE) {
-	ARGC_ASSERT_WITH_FALLBACK(2);
-        return CONSTRUCT_OP2(pic->sGE);
-      }
-      else if (sym == pic->uNOT) {
-        ARGC_ASSERT(1, "not");
-        return CONSTRUCT_OP1(pic->sNOT);
-      }
-      else if (sym == pic->uVALUES) {
-        return analyze_values(pic, scope, obj, tailpos);
-      }
-      else if (sym == pic->uCALL_WITH_VALUES) {
-        return analyze_call_with_values(pic, scope, obj, tailpos);
+      else if (sym == pic->uBEGIN || sym == pic->uSETBANG || sym == pic->uIF) {
+        return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
       }
     }
-    fallback:
 
-    return analyze_call(pic, scope, obj, tailpos);
+    return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list2(pic, pic_obj_value(pic->sQUOTE), obj);
+    return pic_list2(pic, pic_obj_value(pic->uQUOTE), obj);
   }
+}
+
+static pic_value
+analyze(pic_state *pic, analyze_scope *scope, pic_value obj)
+{
+  size_t ai = pic_gc_arena_preserve(pic);
+  pic_value res;
+
+  res = analyze_node(pic, scope, obj);
+
+  pic_gc_arena_restore(pic, ai);
+  pic_gc_protect(pic, res);
+  return res;
 }
 
 pic_value
@@ -851,7 +631,7 @@ pic_analyze(pic_state *pic, pic_value obj)
 
   analyzer_scope_init(pic, scope, pic_nil_value(), NULL);
 
-  obj = analyze(pic, scope, obj, true);
+  obj = analyze(pic, scope, obj);
 
   analyze_deferred(pic, scope);
 
@@ -872,9 +652,6 @@ typedef struct codegen_context {
   /* constant object pool */
   pic_value *pool;
   size_t plen, pcapa;
-  /* symbol pool */
-  pic_sym **syms;
-  size_t slen, scapa;
 
   struct codegen_context *up;
 } codegen_context;
@@ -903,10 +680,6 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
-  cxt->syms = pic_calloc(pic, PIC_SYMS_SIZE, sizeof(pic_sym *));
-  cxt->slen = 0;
-  cxt->scapa = PIC_SYMS_SIZE;
-
   create_activation(pic, cxt);
 }
 
@@ -927,91 +700,50 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->ilen = cxt->ilen;
   irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
   irep->plen = cxt->plen;
-  irep->syms = pic_realloc(pic, cxt->syms, sizeof(pic_sym *) * cxt->slen);
-  irep->slen = cxt->slen;
 
   return irep;
 }
 
-static void
-emit_n(pic_state *pic, codegen_context *cxt, enum pic_opcode insn)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->clen++;
-}
+#define check_size(pic, cxt, x, name, type) do {                        \
+    if (cxt->x##len >= cxt->x##capa) {                                  \
+      cxt->x##capa *= 2;                                                \
+      cxt->name = pic_realloc(pic, cxt->name, sizeof(type) * cxt->x##capa); \
+    }                                                                   \
+  } while (0)
 
-static void
-emit_i(pic_state *pic, codegen_context *cxt, enum pic_opcode insn, int i)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->code[cxt->clen].u.i = i;
-  cxt->clen++;
-}
+#define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
+#define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
+#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, pic_value)
 
-static void
-emit_c(pic_state *pic, codegen_context *cxt, enum pic_opcode insn, char c)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->code[cxt->clen].u.c = c;
-  cxt->clen++;
-}
+#define emit_n(pic, cxt, ins) do {              \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->clen++;                                \
+  } while (0)                                   \
 
-static void
-emit_r(pic_state *pic, codegen_context *cxt, enum pic_opcode insn, int d, int i)
-{
-  if (cxt->clen >= cxt->ccapa) {
-    cxt->ccapa *= 2;
-    cxt->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->ccapa);
-  }
-  cxt->code[cxt->clen].insn = insn;
-  cxt->code[cxt->clen].u.r.depth = d;
-  cxt->code[cxt->clen].u.r.idx = i;
-  cxt->clen++;
-}
+#define emit_i(pic, cxt, ins, I) do {           \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->code[cxt->clen].u.i = I;               \
+    cxt->clen++;                                \
+  } while (0)                                   \
 
-static void
-create_activation(pic_state *pic, codegen_context *cxt)
-{
-  size_t i, n;
-  size_t offset;
-  struct pic_reg *regs;
+#define emit_c(pic, cxt, ins, C) do {           \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->code[cxt->clen].u.c = C;               \
+    cxt->clen++;                                \
+  } while (0)                                   \
 
-  regs = pic_make_reg(pic);
+#define emit_r(pic, cxt, ins, D, I) do {        \
+    check_code_size(pic, cxt);                  \
+    cxt->code[cxt->clen].insn = ins;            \
+    cxt->code[cxt->clen].u.r.depth = D;         \
+    cxt->code[cxt->clen].u.r.idx = I;           \
+    cxt->clen++;                                \
+  } while (0)                                   \
 
-  offset = 1;
-  for (i = 0; i < cxt->args->len; ++i) {
-    n = i + offset;
-    pic_reg_set(pic, regs, pic_sym_ptr(cxt->args->data[i]), pic_size_value(n));
-  }
-  offset += i;
-  for (i = 0; i < cxt->locals->len; ++i) {
-    n = i + offset;
-    pic_reg_set(pic, regs, pic_sym_ptr(cxt->locals->data[i]), pic_size_value(n));
-  }
-
-  for (i = 0; i < cxt->captures->len; ++i) {
-    n = (size_t)pic_int(pic_reg_ref(pic, regs, pic_sym_ptr(cxt->captures->data[i])));
-    if (n <= cxt->args->len || cxt->rest == pic_sym_ptr(cxt->captures->data[i])) {
-      /* copy arguments to capture variable area */
-      emit_i(pic, cxt, OP_LREF, (int)n);
-    } else {
-      /* otherwise, just extend the stack */
-      emit_n(pic, cxt, OP_PUSHUNDEF);
-    }
-  }
-}
+#define emit_ret(pic, cxt, tailpos) if (tailpos) emit_n(pic, cxt, OP_RET)
 
 static int
 index_capture(codegen_context *cxt, pic_sym *sym, int depth)
@@ -1048,304 +780,132 @@ index_local(codegen_context *cxt, pic_sym *sym)
 }
 
 static int
-index_symbol(pic_state *pic, codegen_context *cxt, pic_sym *sym)
+index_global(pic_state *pic, codegen_context *cxt, pic_sym *name)
 {
-  size_t i;
+  extern pic_value pic_vm_gref_slot(pic_state *, pic_sym *);
+  int pidx;
+  pic_value slot;
 
-  for (i = 0; i < cxt->slen; ++i) {
-    if (cxt->syms[i] == sym) {
-      return i;
-    }
-  }
-  if (cxt->slen >= cxt->scapa) {
-    cxt->scapa *= 2;
-    cxt->syms = pic_realloc(pic, cxt->syms, sizeof(pic_sym *) * cxt->scapa);
-  }
-  cxt->syms[cxt->slen++] = sym;
-  return i;
+  slot = pic_vm_gref_slot(pic, name);
+
+  check_pool_size(pic, cxt);
+  pidx = (int)cxt->plen++;
+  cxt->pool[pidx] = slot;
+
+  return pidx;
 }
 
-static struct pic_irep *codegen_lambda(pic_state *, codegen_context *, pic_value);
+static void
+create_activation(pic_state *pic, codegen_context *cxt)
+{
+  size_t i;
+  int n;
+
+  for (i = 0; i < cxt->captures->len; ++i) {
+    n = index_local(cxt, pic_sym_ptr(cxt->captures->data[i]));
+    assert(n != -1);
+    if (n <= (int)cxt->args->len || cxt->rest == pic_sym_ptr(cxt->captures->data[i])) {
+      /* copy arguments to capture variable area */
+      emit_i(pic, cxt, OP_LREF, n);
+    } else {
+      /* otherwise, just extend the stack */
+      emit_n(pic, cxt, OP_PUSHUNDEF);
+    }
+  }
+}
+
+static void codegen(pic_state *, codegen_context *, pic_value, bool);
 
 static void
-codegen(pic_state *pic, codegen_context *cxt, pic_value obj)
+codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 {
   pic_sym *sym;
 
   sym = pic_sym_ptr(pic_car(pic, obj));
   if (sym == pic->sGREF) {
-    emit_i(pic, cxt, OP_GREF, index_symbol(pic, cxt, pic_sym_ptr(pic_list_ref(pic, obj, 1))));
-    return;
-  } else if (sym == pic->sCREF) {
+    pic_sym *name;
+
+    name = pic_sym_ptr(pic_list_ref(pic, obj, 1));
+    emit_i(pic, cxt, OP_GREF, index_global(pic, cxt, name));
+    emit_ret(pic, cxt, tailpos);
+  }
+  else if (sym == pic->sCREF) {
     pic_sym *name;
     int depth;
 
     depth = pic_int(pic_list_ref(pic, obj, 1));
     name  = pic_sym_ptr(pic_list_ref(pic, obj, 2));
     emit_r(pic, cxt, OP_CREF, depth, index_capture(cxt, name, depth));
-    return;
-  } else if (sym == pic->sLREF) {
+    emit_ret(pic, cxt, tailpos);
+  }
+  else if (sym == pic->sLREF) {
     pic_sym *name;
     int i;
 
     name = pic_sym_ptr(pic_list_ref(pic, obj, 1));
     if ((i = index_capture(cxt, name, 0)) != -1) {
       emit_i(pic, cxt, OP_LREF, i + (int)cxt->args->len + (int)cxt->locals->len + 1);
-      return;
-    }
-    emit_i(pic, cxt, OP_LREF, index_local(cxt, name));
-    return;
-  } else if (sym == pic->sSETBANG) {
-    pic_value var, val;
-    pic_sym *type;
-
-    val = pic_list_ref(pic, obj, 2);
-    codegen(pic, cxt, val);
-
-    var = pic_list_ref(pic, obj, 1);
-    type = pic_sym_ptr(pic_list_ref(pic, var, 0));
-    if (type == pic->sGREF) {
-      emit_i(pic, cxt, OP_GSET, index_symbol(pic, cxt, pic_sym_ptr(pic_list_ref(pic, var, 1))));
-      emit_n(pic, cxt, OP_PUSHUNDEF);
-      return;
-    }
-    else if (type == pic->sCREF) {
-      pic_sym *name;
-      int depth;
-
-      depth = pic_int(pic_list_ref(pic, var, 1));
-      name  = pic_sym_ptr(pic_list_ref(pic, var, 2));
-      emit_r(pic, cxt, OP_CSET, depth, index_capture(cxt, name, depth));
-      emit_n(pic, cxt, OP_PUSHUNDEF);
-      return;
-    }
-    else if (type == pic->sLREF) {
-      pic_sym *name;
-      int i;
-
-      name = pic_sym_ptr(pic_list_ref(pic, var, 1));
-      if ((i = index_capture(cxt, name, 0)) != -1) {
-        emit_i(pic, cxt, OP_LSET, i + (int)cxt->args->len + (int)cxt->locals->len + 1);
-        emit_n(pic, cxt, OP_PUSHUNDEF);
-        return;
-      }
-      emit_i(pic, cxt, OP_LSET, index_local(cxt, name));
-      emit_n(pic, cxt, OP_PUSHUNDEF);
-      return;
+      emit_ret(pic, cxt, tailpos);
+    } else {
+      emit_i(pic, cxt, OP_LREF, index_local(cxt, name));
+      emit_ret(pic, cxt, tailpos);
     }
   }
-  else if (sym == pic->sLAMBDA) {
-    int k;
-
-    if (cxt->ilen >= cxt->icapa) {
-      cxt->icapa *= 2;
-      cxt->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->icapa);
-    }
-    k = (int)cxt->ilen++;
-    emit_i(pic, cxt, OP_LAMBDA, k);
-
-    cxt->irep[k] = codegen_lambda(pic, cxt, obj);
-    return;
-  }
-  else if (sym == pic->sIF) {
-    int s, t;
-
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-
-    s = (int)cxt->clen;
-
-    emit_n(pic, cxt, OP_JMPIF);
-
-    /* if false branch */
-    codegen(pic, cxt, pic_list_ref(pic, obj, 3));
-
-    t = (int)cxt->clen;
-
-    emit_n(pic, cxt, OP_JMP);
-
-    cxt->code[s].u.i = (int)cxt->clen - s;
-
-    /* if true branch */
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    cxt->code[t].u.i = (int)cxt->clen - t;
-    return;
-  }
-  else if (sym == pic->sBEGIN) {
-    pic_value elt, it;
-    int i = 0;
-
-    pic_for_each (elt, pic_cdr(pic, obj), it) {
-      if (i++ != 0) {
-        emit_n(pic, cxt, OP_POP);
-      }
-      codegen(pic, cxt, elt);
-    }
-    return;
-  }
-  else if (sym == pic->sQUOTE) {
-    int pidx;
-
-    obj = pic_list_ref(pic, obj, 1);
-    switch (pic_type(obj)) {
-    case PIC_TT_BOOL:
-      emit_n(pic, cxt, (pic_true_p(obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
-      return;
-    case PIC_TT_INT:
-      emit_i(pic, cxt, OP_PUSHINT, pic_int(obj));
-      return;
-    case PIC_TT_NIL:
-      emit_n(pic, cxt, OP_PUSHNIL);
-      return;
-    case PIC_TT_CHAR:
-      emit_c(pic, cxt, OP_PUSHCHAR, pic_char(obj));
-      return;
-    default:
-      if (cxt->plen >= cxt->pcapa) {
-        cxt->pcapa *= 2;
-        cxt->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->pcapa);
-      }
-      pidx = (int)cxt->plen++;
-      cxt->pool[pidx] = obj;
-      emit_i(pic, cxt, OP_PUSHCONST, pidx);
-      return;
-    }
-  }
-  else if (sym == pic->sCONS) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_CONS);
-    return;
-  }
-  else if (sym == pic->sCAR) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_CAR);
-    return;
-  }
-  else if (sym == pic->sCDR) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_CDR);
-    return;
-  }
-  else if (sym == pic->sNILP) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_NILP);
-    return;
-  }
-  else if (sym == pic->sSYMBOLP) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_SYMBOLP);
-    return;
-  }
-  else if (sym == pic->sPAIRP) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_PAIRP);
-    return;
-  }
-  else if (sym == pic->sADD) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_ADD);
-    return;
-  }
-  else if (sym == pic->sSUB) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_SUB);
-    return;
-  }
-  else if (sym == pic->sMUL) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_MUL);
-    return;
-  }
-  else if (sym == pic->sDIV) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_DIV);
-    return;
-  }
-  else if (sym == pic->sMINUS) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_MINUS);
-    return;
-  }
-  else if (sym == pic->sEQ) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_EQ);
-    return;
-  }
-  else if (sym == pic->sLT) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_LT);
-    return;
-  }
-  else if (sym == pic->sLE) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    emit_n(pic, cxt, OP_LE);
-    return;
-  }
-  else if (sym == pic->sGT) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_LT);
-    return;
-  }
-  else if (sym == pic->sGE) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_LE);
-    return;
-  }
-  else if (sym == pic->sNOT) {
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    emit_n(pic, cxt, OP_NOT);
-    return;
-  }
-  else if (sym == pic->sCALL || sym == pic->sTAILCALL) {
-    int len = (int)pic_length(pic, obj);
-    pic_value elt, it;
-
-    pic_for_each (elt, pic_cdr(pic, obj), it) {
-      codegen(pic, cxt, elt);
-    }
-    emit_i(pic, cxt, (sym == pic->sCALL ? OP_CALL : OP_TAILCALL), len - 1);
-    return;
-  }
-  else if (sym == pic->sCALL_WITH_VALUES || sym == pic->sTAILCALL_WITH_VALUES) {
-    /* stack consumer at first */
-    codegen(pic, cxt, pic_list_ref(pic, obj, 2));
-    codegen(pic, cxt, pic_list_ref(pic, obj, 1));
-    /* call producer */
-    emit_i(pic, cxt, OP_CALL, 1);
-    /* call consumer */
-    emit_i(pic, cxt, (sym == pic->sCALL_WITH_VALUES ? OP_CALL : OP_TAILCALL), -1);
-    return;
-  }
-  else if (sym == pic->sRETURN) {
-    int len = (int)pic_length(pic, obj);
-    pic_value elt, it;
-
-    pic_for_each (elt, pic_cdr(pic, obj), it) {
-      codegen(pic, cxt, elt);
-    }
-    emit_i(pic, cxt, OP_RET, len - 1);
-    return;
-  }
-  pic_errorf(pic, "codegen: unknown AST type ~s", obj);
 }
 
-static struct pic_irep *
-codegen_lambda(pic_state *pic, codegen_context *up, pic_value obj)
+static void
+codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 {
-  codegen_context c, *cxt = &c;
+  pic_value var, val;
+  pic_sym *type;
+
+  val = pic_list_ref(pic, obj, 2);
+  codegen(pic, cxt, val, false);
+
+  var = pic_list_ref(pic, obj, 1);
+  type = pic_sym_ptr(pic_list_ref(pic, var, 0));
+  if (type == pic->sGREF) {
+    pic_sym *name;
+
+    name = pic_sym_ptr(pic_list_ref(pic, var, 1));
+    emit_i(pic, cxt, OP_GSET, index_global(pic, cxt, name));
+    emit_ret(pic, cxt, tailpos);
+  }
+  else if (type == pic->sCREF) {
+    pic_sym *name;
+    int depth;
+
+    depth = pic_int(pic_list_ref(pic, var, 1));
+    name  = pic_sym_ptr(pic_list_ref(pic, var, 2));
+    emit_r(pic, cxt, OP_CSET, depth, index_capture(cxt, name, depth));
+    emit_ret(pic, cxt, tailpos);
+  }
+  else if (type == pic->sLREF) {
+    pic_sym *name;
+    int i;
+
+    name = pic_sym_ptr(pic_list_ref(pic, var, 1));
+    if ((i = index_capture(cxt, name, 0)) != -1) {
+      emit_i(pic, cxt, OP_LSET, i + (int)cxt->args->len + (int)cxt->locals->len + 1);
+      emit_ret(pic, cxt, tailpos);
+    } else {
+      emit_i(pic, cxt, OP_LSET, index_local(cxt, name));
+      emit_ret(pic, cxt, tailpos);
+    }
+  }
+}
+
+static void
+codegen_lambda(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+{
+  codegen_context c, *inner_cxt = &c;
   pic_value rest_opt, body;
   pic_sym *rest = NULL;
   pic_vec *args, *locals, *captures;
 
+  check_irep_size(pic, cxt);
+
+  /* extract arguments */
   rest_opt = pic_list_ref(pic, obj, 1);
   if (pic_sym_p(rest_opt)) {
     rest = pic_sym_ptr(rest_opt);
@@ -1355,13 +915,164 @@ codegen_lambda(pic_state *pic, codegen_context *up, pic_value obj)
   captures = pic_vec_ptr(pic_list_ref(pic, obj, 4));
   body = pic_list_ref(pic, obj, 5);
 
-  /* inner environment */
-  codegen_context_init(pic, cxt, up, rest, args, locals, captures);
-  {
-    /* body */
-    codegen(pic, cxt, body);
+  /* emit irep */
+  codegen_context_init(pic, inner_cxt, cxt, rest, args, locals, captures);
+  codegen(pic, inner_cxt, body, true);
+  cxt->irep[cxt->ilen] = codegen_context_destroy(pic, inner_cxt);
+
+  /* emit OP_LAMBDA */
+  emit_i(pic, cxt, OP_LAMBDA, cxt->ilen++);
+  emit_ret(pic, cxt, tailpos);
+}
+
+static void
+codegen_if(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+{
+  int s, t;
+
+  codegen(pic, cxt, pic_list_ref(pic, obj, 1), false);
+
+  s = (int)cxt->clen;
+
+  emit_n(pic, cxt, OP_JMPIF);
+
+  /* if false branch */
+  codegen(pic, cxt, pic_list_ref(pic, obj, 3), tailpos);
+
+  t = (int)cxt->clen;
+
+  emit_n(pic, cxt, OP_JMP);
+
+  cxt->code[s].u.i = (int)cxt->clen - s;
+
+  /* if true branch */
+  codegen(pic, cxt, pic_list_ref(pic, obj, 2), tailpos);
+  cxt->code[t].u.i = (int)cxt->clen - t;
+}
+
+static void
+codegen_begin(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+{
+  codegen(pic, cxt, pic_list_ref(pic, obj, 1), false);
+  emit_n(pic, cxt, OP_POP);
+  codegen(pic, cxt, pic_list_ref(pic, obj, 2), tailpos);
+}
+
+static void
+codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+{
+  int pidx;
+
+  obj = pic_list_ref(pic, obj, 1);
+  switch (pic_type(obj)) {
+  case PIC_TT_BOOL:
+    emit_n(pic, cxt, (pic_true_p(obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
+    emit_ret(pic, cxt, tailpos);
+    break;
+  case PIC_TT_INT:
+    emit_i(pic, cxt, OP_PUSHINT, pic_int(obj));
+    emit_ret(pic, cxt, tailpos);
+    break;
+  case PIC_TT_NIL:
+    emit_n(pic, cxt, OP_PUSHNIL);
+    emit_ret(pic, cxt, tailpos);
+    break;
+  case PIC_TT_CHAR:
+    emit_c(pic, cxt, OP_PUSHCHAR, pic_char(obj));
+    emit_ret(pic, cxt, tailpos);
+    break;
+  default:
+    check_pool_size(pic, cxt);
+    pidx = (int)cxt->plen++;
+    cxt->pool[pidx] = obj;
+    emit_i(pic, cxt, OP_PUSHCONST, pidx);
+    emit_ret(pic, cxt, tailpos);
+    break;
   }
-  return codegen_context_destroy(pic, cxt);
+}
+
+static bool
+codegen_call_vm(pic_state *pic, codegen_context *cxt, pic_value proc, size_t len, bool tailpos)
+{
+  if (pic_sym_ptr(pic_list_ref(pic, proc, 0)) == pic->sGREF) {
+    pic_sym *sym;
+
+    sym = pic_sym_ptr(pic_list_ref(pic, proc, 1));
+
+#define VM(uid, op)                             \
+    if (sym == uid) {                           \
+      emit_i(pic, cxt, op, len);                \
+      emit_ret(pic, cxt, tailpos);              \
+      return true;                              \
+    }
+
+    VM(pic->uCONS, OP_CONS)
+    VM(pic->uCAR, OP_CAR)
+    VM(pic->uCDR, OP_CDR)
+    VM(pic->uNILP, OP_NILP)
+    VM(pic->uSYMBOLP, OP_SYMBOLP)
+    VM(pic->uPAIRP, OP_PAIRP)
+    VM(pic->uNOT, OP_NOT)
+    VM(pic->uEQ, OP_EQ)
+    VM(pic->uLT, OP_LT)
+    VM(pic->uLE, OP_LE)
+    VM(pic->uGT, OP_GT)
+    VM(pic->uGE, OP_GE)
+    VM(pic->uADD, OP_ADD)
+    VM(pic->uSUB, OP_SUB)
+    VM(pic->uMUL, OP_MUL)
+    VM(pic->uDIV, OP_DIV)
+  }
+  return false;
+}
+
+static void
+codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+{
+  int len = (int)pic_length(pic, obj);
+  pic_value elt, it;
+
+  pic_for_each (elt, pic_cdr(pic, obj), it) {
+    codegen(pic, cxt, elt, false);
+  }
+
+  if (codegen_call_vm(pic, cxt, pic_list_ref(pic, obj, 1), len - 1, tailpos)) {
+    return;
+  }
+
+  emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);
+}
+
+static void
+codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
+{
+  pic_sym *sym;
+
+  sym = pic_sym_ptr(pic_car(pic, obj));
+  if (sym == pic->sGREF || sym == pic->sCREF || sym == pic->sLREF) {
+    codegen_ref(pic, cxt, obj, tailpos);
+  }
+  else if (sym == pic->uSETBANG || sym == pic->uDEFINE) {
+    codegen_set(pic, cxt, obj, tailpos);
+  }
+  else if (sym == pic->uLAMBDA) {
+    codegen_lambda(pic, cxt, obj, tailpos);
+  }
+  else if (sym == pic->uIF) {
+    codegen_if(pic, cxt, obj, tailpos);
+  }
+  else if (sym == pic->uBEGIN) {
+    codegen_begin(pic, cxt, obj, tailpos);
+  }
+  else if (sym == pic->uQUOTE) {
+    codegen_quote(pic, cxt, obj, tailpos);
+  }
+  else if (sym == pic->sCALL) {
+    codegen_call(pic, cxt, obj, tailpos);
+  }
+  else {
+    pic_errorf(pic, "codegen: unknown AST type ~s", obj);
+  }
 }
 
 struct pic_irep *
@@ -1372,10 +1083,12 @@ pic_codegen(pic_state *pic, pic_value obj)
 
   codegen_context_init(pic, cxt, NULL, NULL, empty, empty, empty);
 
-  codegen(pic, cxt, obj);
+  codegen(pic, cxt, obj, true);
 
   return codegen_context_destroy(pic, cxt);
 }
+
+#define SAVE(pic, ai, obj) pic_gc_arena_restore(pic, ai); pic_gc_protect(pic, obj)
 
 struct pic_proc *
 pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
@@ -1402,6 +1115,19 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
 
+  SAVE(pic, ai, obj);
+
+  /* optimize */
+  obj = pic_optimize(pic, obj);
+#if DEBUG
+  fprintf(stdout, "## optimize completed\n");
+  pic_write(pic, obj);
+  fprintf(stdout, "\n");
+  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
+#endif
+
+  SAVE(pic, ai, obj);
+
   /* analyze */
   obj = pic_analyze(pic, obj);
 #if DEBUG
@@ -1410,6 +1136,8 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   fprintf(stdout, "\n");
   fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
 #endif
+
+  SAVE(pic, ai, obj);
 
   /* codegen */
   irep = pic_codegen(pic, obj);
@@ -1423,8 +1151,7 @@ pic_compile(pic_state *pic, pic_value obj, struct pic_env *env)
   puts("");
 #endif
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, pic_obj_value(irep));
+  SAVE(pic, ai, pic_obj_value(irep));
 
   return pic_make_proc_irep(pic, irep, NULL);
 }

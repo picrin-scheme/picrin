@@ -8,7 +8,9 @@
           (scheme lazy)
           (scheme eval)
           (scheme load)
-          (picrin base))
+          (only (picrin base)
+                library-environment
+                find-library))
 
   (define-library (scheme null)
     (import (scheme base))

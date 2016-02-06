@@ -89,7 +89,7 @@ extern "C" {
 
 #else
 
-# define assert(v) 0
+# define assert(v) (void)0
 
 PIC_INLINE int
 isspace(int c)
@@ -203,10 +203,6 @@ strcpy(char *dst, const char *src)
   return d;
 }
 
-#endif
-
-#if PIC_ENABLE_FLOAT
-# include <math.h>
 #endif
 
 #if PIC_ENABLE_STDIO

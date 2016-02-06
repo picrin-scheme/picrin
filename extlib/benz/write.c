@@ -101,19 +101,19 @@ write_str(pic_state *pic, pic_str *str, xFILE *file, int mode)
   xfprintf(pic, file, "\"");
 }
 
-#if PIC_ENABLE_FLOAT
 static void
 write_float(pic_state *pic, double f, xFILE *file)
 {
-  if (isnan(f)) {
-    xfprintf(pic, file, signbit(f) ? "-nan.0" : "+nan.0");
-  } else if (isinf(f)) {
-    xfprintf(pic, file, signbit(f) ? "-inf.0" : "+inf.0");
+  if (f != f) {
+    xfprintf(pic, file, "+nan.0");
+  } else if (f == 1.0 / 0.0) {
+    xfprintf(pic, file, "+inf.0");
+  } else if (f == -1.0 / 0.0) {
+    xfprintf(pic, file, "-inf.0");
   } else {
     xfprintf(pic, file, "%f", f);
   }
 }
-#endif
 
 static void write_core(struct writer_control *p, pic_value);
 
@@ -291,11 +291,9 @@ write_core(struct writer_control *p, pic_value obj)
   case PIC_TT_INT:
     xfprintf(pic, file, "%d", pic_int(obj));
     break;
-#if PIC_ENABLE_FLOAT
   case PIC_TT_FLOAT:
     write_float(pic, pic_float(obj), file);
     break;
-#endif
   case PIC_TT_SYMBOL:
     xfprintf(pic, file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
     break;

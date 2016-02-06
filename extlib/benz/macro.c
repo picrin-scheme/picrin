@@ -56,7 +56,7 @@ pic_uniq(pic_state *pic, pic_value var)
 
   str = pic_format(pic, "%s.%d", pic_symbol_name(pic, pic_var_name(pic, var)), pic->ucnt++);
 
-  return pic_intern(pic, str);
+  return pic_intern_str(pic, str);
 }
 
 pic_sym *

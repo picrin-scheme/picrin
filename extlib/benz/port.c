@@ -98,6 +98,16 @@ file_open(pic_state *pic, const char *name, const char *mode) {
   }
 }
 
+PIC_NORETURN static void
+file_error(pic_state *pic, const char *msg)
+{
+  struct pic_error *e;
+
+  e = pic_make_error(pic, pic_intern(pic, "file"), msg, pic_nil_value());
+
+  pic_raise(pic, pic_obj_value(e));
+}
+
 struct pic_port *
 pic_open_file(pic_state *pic, const char *name, int flags) {
   struct pic_port *port;
@@ -108,8 +118,7 @@ pic_open_file(pic_state *pic, const char *name, int flags) {
     mode = 'w';
   }
   if ((file = file_open(pic, name, &mode)) == NULL) {
-    pic_str *msg = pic_format(pic, "could not open file '%s'", name);
-    pic_raise(pic, pic_obj_value(pic_make_error(pic, pic->sFILE, pic_str_cstr(pic, msg), pic_nil_value())));
+    file_error(pic, pic_str_cstr(pic, pic_format(pic, "could not open file '%s'", name)));
   }
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
@@ -267,7 +276,7 @@ pic_open_input_string(pic_state *pic, const char *str)
 {
   struct pic_port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, str, strlen(str));
   port->flags = PIC_PORT_IN | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
@@ -279,7 +288,7 @@ pic_open_output_string(pic_state *pic)
 {
   struct pic_port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
@@ -512,7 +521,7 @@ pic_port_open_input_blob(pic_state *pic)
 
   pic_get_args(pic, "b", &blob);
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, (const char *)blob->data, blob->len);
   port->flags = PIC_PORT_IN | PIC_PORT_BINARY | PIC_PORT_OPEN;
 
@@ -526,7 +535,7 @@ pic_port_open_output_bytevector(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port *), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
   port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_BINARY | PIC_PORT_OPEN;
 

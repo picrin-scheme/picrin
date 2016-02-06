@@ -24,7 +24,7 @@ pic_car(pic_state *pic, pic_value obj)
   struct pic_pair *pair;
 
   if (! pic_pair_p(obj)) {
-    pic_errorf(pic, "pair required, but got ~s", obj);
+    pic_errorf(pic, "car: pair required, but got ~s", obj);
   }
   pair = pic_pair_ptr(obj);
 
@@ -37,7 +37,7 @@ pic_cdr(pic_state *pic, pic_value obj)
   struct pic_pair *pair;
 
   if (! pic_pair_p(obj)) {
-    pic_errorf(pic, "pair required, but got ~s", obj);
+    pic_errorf(pic, "cdr: pair required, but got ~s", obj);
   }
   pair = pic_pair_ptr(obj);
 

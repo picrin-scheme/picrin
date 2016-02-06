@@ -5,7 +5,7 @@
 #include "picrin.h"
 
 void
-pic_load_port(pic_state *pic, struct pic_port *port)
+pic_load(pic_state *pic, struct pic_port *port)
 {
   pic_value form;
   size_t ai = pic_gc_arena_preserve(pic);
@@ -23,7 +23,7 @@ pic_load_cstr(pic_state *pic, const char *src)
   struct pic_port *port = pic_open_input_string(pic, src);
 
   pic_try {
-    pic_load_port(pic, port);
+    pic_load(pic, port);
   }
   pic_catch {
     pic_close_port(pic, port);
