@@ -26,17 +26,10 @@ struct pic_irep {
   bool varg;
   union {
     struct {
-      int code_offset;
-      int ints_offset;
-      int nums_offset;
-      int irep_offset;
-    } p;
-    struct {
       pic_code *code;
       int *ints;
       double *nums;
       union irep_node {
-        int offset;
         struct pic_irep *i;
       } *irep;
     } s;
