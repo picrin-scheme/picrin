@@ -361,12 +361,15 @@
 
   (define-syntax test-values
     (syntax-rules ()
-      ((_ test-name expect expr)
+      ((_ test-name expect expr test?)
        (test test-name
              (call-with-values (lambda () expect) (lambda results results))
-             (call-with-values (lambda () expr) (lambda results results))))
+             (call-with-values (lambda () expr) (lambda results results))
+             test?))
+      ((_ expect expr test?)
+       (test-values no-name expect expr test))
       ((_ expect expr)
-       (test-values no-name expect expr))))
+       (test-values no-name expect expr equal?))))
 
   (define-syntax test-assert
     (syntax-rules ()
@@ -413,7 +416,7 @@
   (define-syntax test-begin
     (syntax-rules ()
       ((_ suit-name count)
-       (let ((r (test-runner-current)))         
+       (let ((r (test-runner-current)))
          (group-stack! r (cons suit-name (group-stack r)))
          ((on-test-begin r) r suit-name count)))
       ((_ suit-name)
