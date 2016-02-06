@@ -889,18 +889,18 @@ pic_compile(pic_state *pic, pic_value obj)
 pic_value
 pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
 {
+  struct pic_lib *prev_lib = pic->lib;
   pic_value r;
 
+  pic->lib = lib;
   pic_try {
-    pic->prev_lib = pic->lib;
-    pic->lib = lib;
-
     r = pic_apply0(pic, pic_compile(pic, pic_expand(pic, program, lib->env)));
   }
   pic_catch {
-    pic->lib = pic->prev_lib;
+    pic->lib = prev_lib;
     pic_raise(pic, pic->err);
   }
+  pic->lib = prev_lib;
 
   return r;
 }

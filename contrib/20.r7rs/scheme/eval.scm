@@ -9,7 +9,7 @@
   (define (number->symbol n)
     (string->symbol (number->string n)))
 
-  (define (environment specs)
+  (define (environment . specs)
     (let ((library-name `(picrin @@my-environment ,(number->symbol counter))))
       (inc! counter)
       (let ((lib (make-library library-name)))
