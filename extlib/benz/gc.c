@@ -378,8 +378,10 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_RECORD: {
-    gc_mark_object(pic, (struct pic_object *)obj->u.rec.type);
-    LOOP(obj->u.rec.data);
+    gc_mark(pic, obj->u.rec.type);
+    if (pic_obj_p(obj->u.rec.datum)) {
+      LOOP(pic_obj_ptr(obj->u.rec.datum));
+    }
     break;
   }
   case PIC_TT_SYMBOL: {

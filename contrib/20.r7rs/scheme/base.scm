@@ -412,11 +412,14 @@
 
   ;; 5.5 Recored-type definitions
 
+  (define (make-record-type name)
+    (vector name))                      ; TODO
+
   (define-syntax (define-record-constructor type name . fields)
     (let ((record #'record))
       #`(define (#,name . #,fields)
-          (let ((#,record (make-record #,type)))
-            #,@(map (lambda (field) #`(record-set! #,record '#,field #,field)) fields)
+          (let ((#,record (make-record #,type (make-dictionary))))
+            #,@(map (lambda (field) #`(dictionary-set! (record-datum #,record) '#,field #,field)) fields)
             #,record))))
 
   (define-syntax (define-record-predicate type name)
@@ -427,13 +430,13 @@
   (define-syntax (define-record-accessor pred field accessor)
     #`(define (#,accessor record)
         (if (#,pred record)
-            (record-ref record '#,field)
+            (cdr (dictionary-ref (record-datum record) '#,field))
             (error (string-append (symbol->string  '#,accessor) ": wrong record type") record))))
 
   (define-syntax (define-record-modifier pred field modifier)
     #`(define (#,modifier record val)
         (if (#,pred record)
-            (record-set! record '#,field val)
+            (dictionary-set! (record-datum record) '#,field val)
             (error (string-append (symbol->string '#,modifier) ": wrong record type")  record))))
 
   (define-syntax (define-record-field pred field accessor . modifier-opt)
@@ -445,7 +448,7 @@
 
   (define-syntax (define-record-type name ctor pred . fields)
     #`(begin
-        (define #,name (make-record <record-type>))
+        (define #,name (make-record-type '#,name))
         (define-record-constructor #,name #,@ctor)
         (define-record-predicate #,name #,pred)
         #,@(map (lambda (field) #`(define-record-field #,pred #,@field)) fields)))
