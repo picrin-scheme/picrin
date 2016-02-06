@@ -118,6 +118,9 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     }
     return true;
   }
+  case PIC_TT_DATA: {
+    return pic_data_ptr(x)->data == pic_data_ptr(y)->data;
+  }
   default:
     return false;
   }
