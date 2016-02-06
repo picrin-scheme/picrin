@@ -31,6 +31,8 @@
               (scheme cxr)
               (scheme lazy)
               (scheme time)
+              (scheme eval)
+              (scheme r5rs)
               (picrin macro))
      (find-library '(picrin user))))
 
