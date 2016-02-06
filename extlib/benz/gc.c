@@ -333,8 +333,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_ID: {
-    gc_mark(pic, obj->u.id.var);
-    LOOP(obj->u.id.env);
+    gc_mark_object(pic, (struct pic_object *)obj->u.id.u.id.id);
+    LOOP(obj->u.id.u.id.env);
     break;
   }
   case PIC_TT_ENV: {
@@ -343,7 +343,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (kh_exist(h, it)) {
-        gc_mark_object(pic, kh_key(h, it));
+        gc_mark_object(pic, (struct pic_object *)kh_key(h, it));
         gc_mark_object(pic, (struct pic_object *)kh_val(h, it));
       }
     }

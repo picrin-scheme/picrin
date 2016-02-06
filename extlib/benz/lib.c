@@ -22,10 +22,10 @@ make_library_env(pic_state *pic, pic_value name)
   env = pic_make_topenv(pic, prefix);
 
   /* set up default environment */
-  pic_put_variable(pic, env, pic_obj_value(pic->sDEFINE_LIBRARY), pic->sDEFINE_LIBRARY);
-  pic_put_variable(pic, env, pic_obj_value(pic->sIMPORT), pic->sIMPORT);
-  pic_put_variable(pic, env, pic_obj_value(pic->sEXPORT), pic->sEXPORT);
-  pic_put_variable(pic, env, pic_obj_value(pic->sCOND_EXPAND), pic->sCOND_EXPAND);
+  pic_put_identifier(pic, (pic_id *)pic->sDEFINE_LIBRARY, pic->sDEFINE_LIBRARY, env);
+  pic_put_identifier(pic, (pic_id *)pic->sIMPORT, pic->sIMPORT, env);
+  pic_put_identifier(pic, (pic_id *)pic->sEXPORT, pic->sEXPORT, env);
+  pic_put_identifier(pic, (pic_id *)pic->sCOND_EXPAND, pic->sCOND_EXPAND, env);
 
   return env;
 }
@@ -76,10 +76,10 @@ pic_import(pic_state *pic, struct pic_lib *lib)
   pic_dict_for_each (name, lib->exports, it) {
     realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
 
-    if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
+    if ((uid = pic_find_identifier(pic, (pic_id *)realname, lib->env)) == NULL) {
       pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
     }
-    pic_put_variable(pic, pic->lib->env, pic_obj_value(name), uid);
+    pic_put_identifier(pic, (pic_id *)name, uid, pic->lib->env);
   }
 }
 
@@ -156,10 +156,10 @@ pic_lib_library_import(pic_state *pic)
     realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
   }
 
-  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
+  if ((uid = pic_find_identifier(pic, (pic_id *)realname, lib->env)) == NULL) {
     pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
   } else {
-    pic_put_variable(pic, pic->lib->env, pic_obj_value(alias), uid);
+    pic_put_identifier(pic, (pic_id *)alias, uid, pic->lib->env);
   }
 
   return pic_undef_value();

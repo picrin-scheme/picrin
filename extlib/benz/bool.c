@@ -45,8 +45,8 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     id1 = pic_id_ptr(x);
     id2 = pic_id_ptr(y);
 
-    s1 = pic_resolve_variable(pic, id1->env, id1->var);
-    s2 = pic_resolve_variable(pic, id2->env, id2->var);
+    s1 = pic_lookup_identifier(pic, id1->u.id.id, id1->u.id.env);
+    s2 = pic_lookup_identifier(pic, id2->u.id.id, id2->u.id.env);
 
     return s1 == s2;
   }

@@ -183,6 +183,7 @@ struct pic_env;
 
 /* set aliases to basic types */
 typedef struct pic_symbol pic_sym;
+typedef struct pic_id pic_id;
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;

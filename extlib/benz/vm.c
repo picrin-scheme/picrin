@@ -922,8 +922,8 @@ pic_define_(pic_state *pic, const char *name, pic_value val)
 
   sym = pic_intern(pic, name);
 
-  if ((uid = pic_find_variable(pic, pic->lib->env, pic_obj_value(sym))) == NULL) {
-    uid = pic_add_variable(pic, pic->lib->env, pic_obj_value(sym));
+  if ((uid = pic_find_identifier(pic, (pic_id *)sym, pic->lib->env)) == NULL) {
+    uid = pic_add_identifier(pic, (pic_id *)sym, pic->lib->env);
   } else {
     if (pic_reg_has(pic, pic->globals, uid)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(uid));
@@ -973,7 +973,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 
   sym = pic_intern(pic, name);
 
-  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
+  if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
@@ -987,7 +987,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 
   sym = pic_intern(pic, name);
 
-  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(sym))) == NULL) {
+  if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
