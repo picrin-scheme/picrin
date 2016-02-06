@@ -353,7 +353,8 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 #if PIC_DIRECT_THREADED_VM
   static const void *oplabels[] = {
     &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHUNDEF, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE,
-    &&L_OP_PUSHFALSE, &&L_OP_PUSHINT, &&L_OP_PUSHCHAR, &&L_OP_PUSHCONST,
+    &&L_OP_PUSHFALSE, &&L_OP_PUSHINT, &&L_OP_PUSHFLOAT,
+    &&L_OP_PUSHCHAR, &&L_OP_PUSHEOF, &&L_OP_PUSHCONST,
     &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
     &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
     &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
@@ -378,7 +379,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 
   /* boot! */
   boot[0].insn = OP_CALL;
-  boot[0].u.i = argc + 1;
+  boot[0].a = argc + 1;
   boot[1].insn = OP_STOP;
   pic->ip = boot;
 
@@ -407,23 +408,31 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(c.u.i));
+      PUSH(pic_int_value(pic->ci->irep->u.s.ints[c.a]));
+      NEXT;
+    }
+    CASE(OP_PUSHFLOAT) {
+      PUSH(pic_float_value(pic->ci->irep->u.s.nums[c.a]));
       NEXT;
     }
     CASE(OP_PUSHCHAR) {
-      PUSH(pic_char_value(c.u.i));
+      PUSH(pic_char_value(pic->ci->irep->u.s.ints[c.a]));
+      NEXT;
+    }
+    CASE(OP_PUSHEOF) {
+      PUSH(pic_eof_object());
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      PUSH(pic->ci->irep->pool[c.u.i]);
+      PUSH(pic_obj_value(pic->ci->irep->pool[c.a]));
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(vm_gref(pic, pic_box_ptr(pic->ci->irep->pool[c.u.i]), NULL)); /* FIXME */
+      PUSH(vm_gref(pic, (struct pic_box *)(pic->ci->irep->pool[c.a]), NULL)); /* FIXME */
       NEXT;
     }
     CASE(OP_GSET) {
-      vm_gset(pic_box_ptr(pic->ci->irep->pool[c.u.i]), POP());
+      vm_gset((struct pic_box *)(pic->ci->irep->pool[c.a]), POP());
       PUSH(pic_undef_value());
       NEXT;
     }
@@ -432,12 +441,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       struct pic_irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.u.i >= irep->argc + irep->localc) {
-          PUSH(ci->cxt->regs[c.u.i - (ci->regs - ci->fp)]);
+        if (c.a >= irep->argc + irep->localc) {
+          PUSH(ci->cxt->regs[c.a - (ci->regs - ci->fp)]);
           NEXT;
         }
       }
-      PUSH(pic->ci->fp[c.u.i]);
+      PUSH(pic->ci->fp[c.a]);
       NEXT;
     }
     CASE(OP_LSET) {
@@ -445,41 +454,41 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       struct pic_irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.u.i >= irep->argc + irep->localc) {
-          ci->cxt->regs[c.u.i - (ci->regs - ci->fp)] = POP();
+        if (c.a >= irep->argc + irep->localc) {
+          ci->cxt->regs[c.a - (ci->regs - ci->fp)] = POP();
           PUSH(pic_undef_value());
           NEXT;
         }
       }
-      pic->ci->fp[c.u.i] = POP();
+      pic->ci->fp[c.a] = POP();
       PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_CREF) {
-      int depth = c.u.r.depth;
+      int depth = c.a;
       struct pic_context *cxt;
 
       cxt = pic->ci->up;
       while (--depth) {
 	cxt = cxt->up;
       }
-      PUSH(cxt->regs[c.u.r.idx]);
+      PUSH(cxt->regs[c.b]);
       NEXT;
     }
     CASE(OP_CSET) {
-      int depth = c.u.r.depth;
+      int depth = c.a;
       struct pic_context *cxt;
 
       cxt = pic->ci->up;
       while (--depth) {
 	cxt = cxt->up;
       }
-      cxt->regs[c.u.r.idx] = POP();
+      cxt->regs[c.b] = POP();
       PUSH(pic_undef_value());
       NEXT;
     }
     CASE(OP_JMP) {
-      pic->ip += c.u.i;
+      pic->ip += c.a;
       JUMP;
     }
     CASE(OP_JMPIF) {
@@ -487,7 +496,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 
       v = POP();
       if (! pic_false_p(v)) {
-	pic->ip += c.u.i;
+	pic->ip += c.a;
 	JUMP;
       }
       NEXT;
@@ -496,13 +505,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       pic_value x, v;
       pic_callinfo *ci;
 
-      if (c.u.i == -1) {
+      if (c.a == -1) {
         pic->sp += pic->ci[1].retc - 1;
-        c.u.i = pic->ci[1].retc + 1;
+        c.a = pic->ci[1].retc + 1;
       }
 
     L_CALL:
-      x = pic->sp[-c.u.i];
+      x = pic->sp[-c.a];
       if (! pic_proc_p(x)) {
 	pic_errorf(pic, "invalid application: ~s", x);
       }
@@ -515,10 +524,10 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       }
 
       ci = PUSHCI();
-      ci->argc = c.u.i;
+      ci->argc = c.a;
       ci->retc = 1;
       ci->ip = pic->ip;
-      ci->fp = pic->sp - c.u.i;
+      ci->fp = pic->sp - c.a;
       ci->irep = NULL;
       ci->cxt = NULL;
       if (pic_proc_func_p(proc)) {
@@ -567,7 +576,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         ci->regc = irep->capturec;
         ci->regs = ci->fp + irep->argc + irep->localc;
 
-	pic->ip = irep->code;
+	pic->ip = irep->u.s.code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
       }
@@ -581,12 +590,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         vm_tear_off(pic->ci);
       }
 
-      if (c.u.i == -1) {
+      if (c.a == -1) {
         pic->sp += pic->ci[1].retc - 1;
-        c.u.i = pic->ci[1].retc + 1;
+        c.a = pic->ci[1].retc + 1;
       }
 
-      argc = c.u.i;
+      argc = c.a;
       argv = pic->sp - argc;
       for (i = 0; i < argc; ++i) {
 	pic->ci->fp[i] = argv[i];
@@ -629,16 +638,14 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         vm_push_cxt(pic);
       }
 
-      proc = pic_make_proc_irep(pic, pic->ci->irep->irep[c.u.i], pic->ci->cxt);
+      proc = pic_make_proc_irep(pic, pic->ci->irep->u.s.irep[c.a].i, pic->ci->cxt);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;
     }
 
 #define check_condition(name, n) do {                                   \
-      if (! pic_eq_p(pic->p##name, pic->c##name->value))                \
-        goto L_CALL;                                                    \
-      if (c.u.i != n + 1)                                               \
+      if (c.a != n + 1)                                                 \
         goto L_CALL;                                                    \
     } while (0)
 

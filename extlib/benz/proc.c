@@ -16,17 +16,19 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
   size_t i;
 
   if (--irep->refc == 0) {
-    pic_free(pic, irep->code);
+    pic_free(pic, irep->u.s.code);
+    pic_free(pic, irep->u.s.ints);
+    pic_free(pic, irep->u.s.nums);
     pic_free(pic, irep->pool);
 
     /* unchain before decref children ireps */
     irep->list.prev->next = irep->list.next;
     irep->list.next->prev = irep->list.prev;
 
-    for (i = 0; i < irep->ilen; ++i) {
-      pic_irep_decref(pic, irep->irep[i]);
+    for (i = 0; i < irep->nirep; ++i) {
+      pic_irep_decref(pic, irep->u.s.irep[i].i);
     }
-    pic_free(pic, irep->irep);
+    pic_free(pic, irep->u.s.irep);
     pic_free(pic, irep);
   }
 }

@@ -17,7 +17,9 @@ enum pic_opcode {
   OP_PUSHTRUE,
   OP_PUSHFALSE,
   OP_PUSHINT,
+  OP_PUSHFLOAT,
   OP_PUSHCHAR,
+  OP_PUSHEOF,
   OP_PUSHCONST,
   OP_GREF,
   OP_GSET,
@@ -52,7 +54,7 @@ enum pic_opcode {
 
 #define PIC_INIT_CODE_I(code, op, ival) do {    \
     code.insn = op;                             \
-    code.u.i = ival;                            \
+    code.a = ival;                              \
   } while (0)
 
 #if DEBUG
@@ -80,52 +82,58 @@ pic_dump_code(pic_code c)
     puts("OP_PUSHFALSE");
     break;
   case OP_PUSHINT:
-    printf("OP_PUSHINT\t%d\n", c.u.i);
+    printf("OP_PUSHINT\t%d\n", c.a);
+    break;
+  case OP_PUSHFLOAT:
+    printf("OP_PUSHFLAOT\t%d\n", c.a);
     break;
   case OP_PUSHCHAR:
-    printf("OP_PUSHCHAR\t%c\n", c.u.c);
+    printf("OP_PUSHCHAR\t%c\n", c.a);
+    break;
+  case OP_PUSHEOF:
+    puts("OP_PUSHEOF");
     break;
   case OP_PUSHCONST:
-    printf("OP_PUSHCONST\t%d\n", c.u.i);
+    printf("OP_PUSHCONST\t%d\n", c.a);
     break;
   case OP_GREF:
-    printf("OP_GREF\t%i\n", c.u.i);
+    printf("OP_GREF\t%i\n", c.a);
     break;
   case OP_GSET:
-    printf("OP_GSET\t%i\n", c.u.i);
+    printf("OP_GSET\t%i\n", c.a);
     break;
   case OP_LREF:
-    printf("OP_LREF\t%d\n", c.u.i);
+    printf("OP_LREF\t%d\n", c.a);
     break;
   case OP_LSET:
-    printf("OP_LSET\t%d\n", c.u.i);
+    printf("OP_LSET\t%d\n", c.a);
     break;
   case OP_CREF:
-    printf("OP_CREF\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
+    printf("OP_CREF\t%d\t%d\n", c.a, c.b);
     break;
   case OP_CSET:
-    printf("OP_CSET\t%d\t%d\n", c.u.r.depth, c.u.r.idx);
+    printf("OP_CSET\t%d\t%d\n", c.a, c.b);
     break;
   case OP_JMP:
-    printf("OP_JMP\t%x\n", c.u.i);
+    printf("OP_JMP\t%x\n", c.a);
     break;
   case OP_JMPIF:
-    printf("OP_JMPIF\t%x\n", c.u.i);
+    printf("OP_JMPIF\t%x\n", c.a);
     break;
   case OP_NOT:
     puts("OP_NOT");
     break;
   case OP_CALL:
-    printf("OP_CALL\t%d\n", c.u.i);
+    printf("OP_CALL\t%d\n", c.a);
     break;
   case OP_TAILCALL:
-    printf("OP_TAILCALL\t%d\n", c.u.i);
+    printf("OP_TAILCALL\t%d\n", c.a);
     break;
   case OP_RET:
     puts("OP_RET");
     break;
   case OP_LAMBDA:
-    printf("OP_LAMBDA\t%d\n", c.u.i);
+    printf("OP_LAMBDA\t%d\n", c.a);
     break;
   case OP_CONS:
     puts("OP_CONS");
@@ -181,17 +189,20 @@ pic_dump_code(pic_code c)
 PIC_INLINE void
 pic_dump_irep(struct pic_irep *irep)
 {
-  unsigned i;
+  size_t i;
 
   printf("## irep %p\n", (void *)irep);
-  printf("[clen = %zd, argc = %d, localc = %d, capturec = %d]\n", irep->clen, irep->argc, irep->localc, irep->capturec);
-  for (i = 0; i < irep->clen; ++i) {
+  printf("# argc     = %d\n", irep->argc);
+  printf("# localc   = %d\n", irep->localc);
+  printf("# capturec = %d\n", irep->capturec);
+
+  for (i = 0; i < irep->ncode; ++i) {
     printf("%02x: ", i);
-    pic_dump_code(irep->code[i]);
+    pic_dump_code(irep->u.s.code[i]);
   }
 
-  for (i = 0; i < irep->ilen; ++i) {
-    pic_dump_irep(irep->irep[i]);
+  for (i = 0; i < irep->nirep; ++i) {
+    pic_dump_irep(irep->u.s.irep[i].i);
   }
 }
 
