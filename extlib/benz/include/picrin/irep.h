@@ -41,7 +41,7 @@ struct pic_irep {
       } *irep;
     } s;
   } u;
-  pic_value *pool;              /* pool of heap objects */
+  struct pic_object **pool;     /* pool of heap objects */
   size_t ncode, nirep, nints, nnums, npool;
 };
 

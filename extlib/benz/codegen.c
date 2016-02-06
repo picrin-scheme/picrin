@@ -617,7 +617,7 @@ typedef struct codegen_context {
   size_t klen, kcapa;
   double *nums;
   size_t flen, fcapa;
-  pic_value *pool;
+  struct pic_object **pool;
   size_t plen, pcapa;
 
   struct codegen_context *up;
@@ -643,7 +643,7 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->ilen = 0;
   cxt->icapa = PIC_IREP_SIZE;
 
-  cxt->pool = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
+  cxt->pool = pic_calloc(pic, PIC_POOL_SIZE, sizeof(struct pic_object *));
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
@@ -674,7 +674,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->u.s.irep = pic_realloc(pic, cxt->irep, sizeof(union irep_node) * cxt->ilen);
   irep->u.s.ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
   irep->u.s.nums = pic_realloc(pic, cxt->nums, sizeof(double) * cxt->flen);
-  irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
+  irep->pool = pic_realloc(pic, cxt->pool, sizeof(struct pic_object *) * cxt->plen);
   irep->ncode = cxt->clen;
   irep->nirep = cxt->ilen;
   irep->nints = cxt->klen;
@@ -698,7 +698,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 
 #define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
 #define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
-#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, pic_value)
+#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, struct pic_object *)
 #define check_ints_size(pic, cxt) check_size(pic, cxt, k, ints, int)
 #define check_nums_size(pic, cxt) check_size(pic, cxt, f, nums, double)
 
@@ -770,7 +770,7 @@ index_global(pic_state *pic, codegen_context *cxt, pic_sym *name)
 
   check_pool_size(pic, cxt);
   pidx = (int)cxt->plen++;
-  cxt->pool[pidx] = pic_obj_value(slot);
+  cxt->pool[pidx] = (struct pic_object *)(slot);
 
   return pidx;
 }
@@ -975,9 +975,10 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_i(pic, cxt, OP_PUSHCHAR, pidx);
     break;
   default:
+    assert(pic_obj_p(obj));
     check_pool_size(pic, cxt);
     pidx = (int)cxt->plen++;
-    cxt->pool[pidx] = obj;
+    cxt->pool[pidx] = pic_obj_ptr(obj);
     emit_i(pic, cxt, OP_PUSHCONST, pidx);
     break;
   }

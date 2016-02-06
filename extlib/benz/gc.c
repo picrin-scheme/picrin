@@ -466,7 +466,7 @@ gc_mark_phase(pic_state *pic)
   for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
     struct pic_irep *irep = (struct pic_irep *)list;
     for (j = 0; j < irep->npool; ++j) {
-      gc_mark(pic, irep->pool[j]);
+      gc_mark_object(pic, irep->pool[j]);
     }
   }
 

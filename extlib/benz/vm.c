@@ -424,15 +424,15 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      PUSH(pic->ci->irep->pool[c.a]);
+      PUSH(pic_obj_value(pic->ci->irep->pool[c.a]));
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(vm_gref(pic, pic_box_ptr(pic->ci->irep->pool[c.a]), NULL)); /* FIXME */
+      PUSH(vm_gref(pic, (struct pic_box *)(pic->ci->irep->pool[c.a]), NULL)); /* FIXME */
       NEXT;
     }
     CASE(OP_GSET) {
-      vm_gset(pic_box_ptr(pic->ci->irep->pool[c.a]), POP());
+      vm_gset((struct pic_box *)(pic->ci->irep->pool[c.a]), POP());
       PUSH(pic_undef_value());
       NEXT;
     }
