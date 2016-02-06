@@ -43,11 +43,11 @@ var_set(pic_state *pic, struct pic_proc *var, pic_value val)
 static pic_value
 var_call(pic_state *pic)
 {
-  struct pic_proc *self = pic_get_proc(pic);
+  struct pic_proc *self;
   pic_value val;
   int n;
 
-  n = pic_get_args(pic, "|o", &val);
+  n = pic_get_args(pic, "&|o", &self, &val);
 
   if (n == 0) {
     return var_get(pic, self);

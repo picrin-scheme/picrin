@@ -155,7 +155,6 @@ void pic_set_argv(pic_state *, int argc, char *argv[], char **envp);
 
 void pic_add_feature(pic_state *, const char *);
 
-struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 
 bool pic_eq_p(pic_value, pic_value);

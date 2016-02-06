@@ -5,18 +5,9 @@
 #include "picrin.h"
 #include "picrin/opcode.h"
 
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
-
-struct pic_proc *
-pic_get_proc(pic_state *pic)
-{
-  pic_value v = GET_OPERAND(pic,0);
-
-  if (! pic_proc_p(v)) {
-    pic_errorf(pic, "fatal error");
-  }
-  return pic_proc_ptr(v);
-}
 
 /**
  * char type                    desc.
@@ -45,61 +36,62 @@ int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
-  int paramc, optc, min;
+  int paramc = 0, optc = 0;
   int i, argc = pic->ci->argc - 1;
   va_list ap;
-  bool rest = false, opt = false;
+  bool proc = false, rest = false, opt = false;
 
-  /* paramc: required args count as scheme proc
-     optc:   optional args count as scheme proc
-     argc:   passed args count as scheme proc
-     vargc:  args count passed to this function
-  */
-
-  /* check nparams first */
-  for (paramc = 0, c = *format; c;  c = format[++paramc]) {
-    if (c == '|') {
-      opt = true;
-      break;
+  /* parse format */
+  if ((c = *format) != '\0') {
+    if (c == '&') {
+      proc = true;
+      format++;                 /* forget about '&' */
     }
-    else if (c == '*') {
-      rest = true;
-      break;
+    for (paramc = 0, c = *format; c;  c = format[++paramc]) {
+      if (c == '|') {
+        opt = true;
+        break;
+      } else if (c == '*') {
+        rest = true;
+        break;
+      }
     }
+    for (optc = 0; opt && c; c = format[paramc + opt + ++optc]) {
+      if (c == '*') {
+        rest = true;
+        break;
+      }
+    }
+    assert((opt ? 1 : 0) <= optc); /* at least 1 char after '|'? */
+    assert(format[paramc + opt + optc + rest] == '\0'); /* no extra chars? */
   }
 
-  for (optc = 0;  opt && c; c = format[paramc + opt + ++optc]) {
-     if (c == '*') {
-      rest = true;
-      break;
-    }
-  }
-
-  /* '|' should be followed by at least 1 char */
-  assert((opt ? 1 : 0) <= optc);
-  /* '*' should not be followed by any char */
-  assert(format[paramc + opt + optc + rest] == '\0');
-
-  /* check argc. */
   if (argc < paramc || (paramc + optc < argc && ! rest)) {
     pic_errorf(pic, "pic_get_args: wrong number of arguments (%d for %s%d)", argc, rest? "at least " : "", paramc);
   }
 
-  /* start dispatching */
   va_start(ap, format);
-  min = paramc + optc < argc ? paramc + optc : argc;
-  for (i = 1; i < min + 1; i++) {
+
+  /* dispatch */
+  if (proc) {
+    struct pic_proc **proc;
+
+    proc = va_arg(ap, struct pic_proc **);
+    *proc = pic_proc_ptr(GET_OPERAND(pic, 0));
+  }
+  for (i = 1; i <= MIN(paramc + optc, argc); ++i) {
 
     c = *format++;
-    /* skip '|' if exists. This is always safe because of assert and argc check */
-    c = c == '|' ? *format++ : c;
+    if (c == '|') {
+      c = *format++;
+    }
 
     switch (c) {
     case 'o': {
       pic_value *p;
 
       p = va_arg(ap, pic_value*);
-      *p = GET_OPERAND(pic,i);
+      *p = GET_OPERAND(pic, i);
       break;
     }
 
@@ -168,15 +160,17 @@ pic_get_args(pic_state *pic, const char *format, ...)
     }
   }
   if (rest) {
-      int *n;
-      pic_value **argv;
+    int *n;
+    pic_value **argv;
 
-      n = va_arg(ap, int *);
-      argv = va_arg(ap, pic_value **);
-      *n = argc - (i - 1);
-      *argv = &GET_OPERAND(pic, i);
+    n = va_arg(ap, int *);
+    argv = va_arg(ap, pic_value **);
+    *n = argc - (i - 1);
+    *argv = &GET_OPERAND(pic, i);
   }
+
   va_end(ap);
+
   return argc;
 }
 

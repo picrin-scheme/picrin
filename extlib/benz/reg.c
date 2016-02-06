@@ -104,12 +104,12 @@ reg_set(pic_state *pic, struct pic_reg *reg, void *key, pic_value val)
 static pic_value
 reg_call(pic_state *pic)
 {
-  struct pic_proc *self = pic_get_proc(pic);
+  struct pic_proc *self;
   struct pic_reg *reg;
   pic_value key, val;
   int n;
 
-  n = pic_get_args(pic, "o|o", &key, &val);
+  n = pic_get_args(pic, "&o|o", &self, &key, &val);
 
   if (! pic_obj_p(key)) {
     pic_errorf(pic, "attempted to set a non-object key '~s' in a register", key);

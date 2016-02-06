@@ -51,13 +51,13 @@ pic_value
 pic_native_exception_handler(pic_state *pic)
 {
   pic_value err;
-  struct pic_proc *cont;
+  struct pic_proc *self, *cont;
 
-  pic_get_args(pic, "o", &err);
+  pic_get_args(pic, "&o", &self, &err);
 
   pic->err = err;
 
-  cont = pic_proc_ptr(pic_proc_env_ref(pic, pic_get_proc(pic), "cont"));
+  cont = pic_proc_ptr(pic_proc_env_ref(pic, self, "cont"));
 
   pic_apply1(pic, cont, pic_false_value());
 
