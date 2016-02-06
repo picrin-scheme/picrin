@@ -115,7 +115,7 @@ pic_socket_make_socket(pic_state *pic)
       continue;
     }
 
-    if (it->ai_flags & AI_PASSIVE) {
+    if (hints.ai_flags & AI_PASSIVE) {
       int yes = 1;
       if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == 0 &&
           bind(fd, it->ai_addr, it->ai_addrlen) == 0) {
