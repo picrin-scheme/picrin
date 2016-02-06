@@ -27,6 +27,7 @@
  *  p   struct pic_port **      port object
  *  d   struct pic_dict **      dictionary object
  *  e   struct pic_error **     error object
+ *  r   struct pic_record **    record object
  *
  *  |                           optional operator
  *  *   int *, pic_value **  variable length operator
@@ -152,8 +153,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
     PTR_CASE('l', proc, struct pic_proc *)
     PTR_CASE('p', port, struct pic_port *)
     PTR_CASE('d', dict, struct pic_dict *)
-    PTR_CASE('r', record, struct pic_record *)
     PTR_CASE('e', error, struct pic_error *)
+    PTR_CASE('r', rec, struct pic_record *)
 
     default:
       pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
