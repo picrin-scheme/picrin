@@ -9,48 +9,6 @@
  * macro expander
  */
 
-static pic_sym *
-lookup(pic_state *pic, pic_value var, struct pic_env *env)
-{
-  khiter_t it;
-
-  pic_assert_type(pic, var, var);
-
-  while (env != NULL) {
-    it = kh_get(env, &env->map, pic_ptr(var));
-    if (it != kh_end(&env->map)) {
-      return kh_val(&env->map, it);
-    }
-    env = env->up;
-  }
-  return NULL;
-}
-
-pic_sym *
-pic_resolve(pic_state *pic, pic_value var, struct pic_env *env)
-{
-  pic_sym *uid;
-
-  assert(env != NULL);
-
-  pic_assert_type(pic, var, var);
-
-  while ((uid = lookup(pic, var, env)) == NULL) {
-    if (pic_sym_p(var)) {
-      break;
-    }
-    env = pic_id_ptr(var)->env;
-    var = pic_id_ptr(var)->var;
-  }
-  if (uid == NULL) {
-    while (env->up != NULL) {
-      env = env->up;
-    }
-    uid = pic_add_variable(pic, env, var);
-  }
-  return uid;
-}
-
 static void
 define_macro(pic_state *pic, pic_sym *uid, struct pic_proc *mac)
 {
@@ -86,7 +44,7 @@ expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferre
   struct pic_proc *mac;
   pic_sym *functor;
 
-  functor = pic_resolve(pic, var, env);
+  functor = pic_resolve_variable(pic, env, var);
 
   if ((mac = find_macro(pic, functor)) != NULL) {
     return expand(pic, pic_apply2(pic, mac, var, pic_obj_value(env)), env, deferred);
@@ -97,7 +55,7 @@ expand_var(pic_state *pic, pic_value var, struct pic_env *env, pic_value deferre
 static pic_value
 expand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, pic_obj_value(pic->uQUOTE), pic_cdr(pic, expr));
+  return pic_cons(pic, pic_obj_value(pic->sQUOTE), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -171,7 +129,7 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 
   expand_deferred(pic, deferred, in);
 
-  return pic_list3(pic, pic_obj_value(pic->uLAMBDA), formal, body);
+  return pic_list3(pic, pic_obj_value(pic->sLAMBDA), formal, body);
 }
 
 static pic_value
@@ -188,7 +146,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
   }
   val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
 
-  return pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_obj_value(uid), val);
+  return pic_list3(pic, pic_obj_value(pic->sDEFINE), pic_obj_value(uid), val);
 }
 
 static pic_value
@@ -230,18 +188,18 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
     if (pic_var_p(pic_car(pic, expr))) {
       pic_sym *functor;
 
-      functor = pic_resolve(pic, pic_car(pic, expr), env);
+      functor = pic_resolve_variable(pic, env, pic_car(pic, expr));
 
-      if (functor == pic->uDEFINE_MACRO) {
+      if (functor == pic->sDEFINE_MACRO) {
         return expand_defmacro(pic, expr, env);
       }
-      else if (functor == pic->uLAMBDA) {
+      else if (functor == pic->sLAMBDA) {
         return expand_defer(pic, expr, deferred);
       }
-      else if (functor == pic->uDEFINE) {
+      else if (functor == pic->sDEFINE) {
         return expand_define(pic, expr, env, deferred);
       }
-      else if (functor == pic->uQUOTE) {
+      else if (functor == pic->sQUOTE) {
         return expand_quote(pic, expr);
       }
 
@@ -310,9 +268,9 @@ optimize_beta(pic_state *pic, pic_value expr)
   if (pic_sym_p(pic_list_ref(pic, expr, 0))) {
     pic_sym *sym = pic_sym_ptr(pic_list_ref(pic, expr, 0));
 
-    if (sym == pic->uQUOTE) {
+    if (sym == pic->sQUOTE) {
       return expr;
-    } else if (sym == pic->uLAMBDA) {
+    } else if (sym == pic->sLAMBDA) {
       return pic_list3(pic, pic_list_ref(pic, expr, 0), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
     }
   }
@@ -327,7 +285,7 @@ optimize_beta(pic_state *pic, pic_value expr)
   pic_gc_protect(pic, expr);
 
   functor = pic_list_ref(pic, expr, 0);
-  if (pic_pair_p(functor) && pic_eq_p(pic_car(pic, functor), pic_obj_value(pic->uLAMBDA))) {
+  if (pic_pair_p(functor) && pic_eq_p(pic_car(pic, functor), pic_obj_value(pic->sLAMBDA))) {
     formals = pic_list_ref(pic, functor, 1);
     if (! pic_list_p(formals))
       goto exit;              /* TODO: support ((lambda args x) 1 2) */
@@ -336,12 +294,12 @@ optimize_beta(pic_state *pic, pic_value expr)
       goto exit;
     defs = pic_nil_value();
     pic_for_each (val, args, it) {
-      pic_push(pic, pic_list3(pic, pic_obj_value(pic->uDEFINE), pic_car(pic, formals), val), defs);
+      pic_push(pic, pic_list3(pic, pic_obj_value(pic->sDEFINE), pic_car(pic, formals), val), defs);
       formals = pic_cdr(pic, formals);
     }
     expr = pic_list_ref(pic, functor, 2);
     pic_for_each (val, defs, it) {
-      expr = pic_list3(pic, pic_obj_value(pic->uBEGIN), val, expr);
+      expr = pic_list3(pic, pic_obj_value(pic->sBEGIN), val, expr);
     }
   }
  exit:
@@ -548,7 +506,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 
   analyzer_scope_destroy(pic, scope);
 
-  return pic_list6(pic, pic_obj_value(pic->uLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+  return pic_list6(pic, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
 }
 
 static pic_value
@@ -595,16 +553,16 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     if (pic_sym_p(proc)) {
       pic_sym *sym = pic_sym_ptr(proc);
 
-      if (sym == pic->uDEFINE) {
+      if (sym == pic->sDEFINE) {
         return analyze_define(pic, scope, obj);
       }
-      else if (sym == pic->uLAMBDA) {
+      else if (sym == pic->sLAMBDA) {
         return analyze_defer(pic, scope, obj);
       }
-      else if (sym == pic->uQUOTE) {
+      else if (sym == pic->sQUOTE) {
         return obj;
       }
-      else if (sym == pic->uBEGIN || sym == pic->uSETBANG || sym == pic->uIF) {
+      else if (sym == pic->sBEGIN || sym == pic->sSETBANG || sym == pic->sIF) {
         return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
       }
     }
@@ -612,7 +570,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list2(pic, pic_obj_value(pic->uQUOTE), obj);
+    return pic_list2(pic, pic_obj_value(pic->sQUOTE), obj);
   }
 }
 
@@ -652,10 +610,14 @@ typedef struct codegen_context {
   pic_code *code;
   size_t clen, ccapa;
   /* child ireps */
-  struct pic_irep **irep;
+  union irep_node *irep;
   size_t ilen, icapa;
   /* constant object pool */
-  pic_value *pool;
+  int *ints;
+  size_t klen, kcapa;
+  double *nums;
+  size_t flen, fcapa;
+  struct pic_object **pool;
   size_t plen, pcapa;
 
   struct codegen_context *up;
@@ -677,13 +639,21 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
 
-  cxt->irep = pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
+  cxt->irep = pic_calloc(pic, PIC_IREP_SIZE, sizeof(union irep_node));
   cxt->ilen = 0;
   cxt->icapa = PIC_IREP_SIZE;
 
-  cxt->pool = pic_calloc(pic, PIC_POOL_SIZE, sizeof(pic_value));
+  cxt->pool = pic_calloc(pic, PIC_POOL_SIZE, sizeof(struct pic_object *));
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
+
+  cxt->ints = pic_calloc(pic, PIC_POOL_SIZE, sizeof(int));
+  cxt->klen = 0;
+  cxt->kcapa = PIC_POOL_SIZE;
+
+  cxt->nums = pic_calloc(pic, PIC_POOL_SIZE, sizeof(double));
+  cxt->flen = 0;
+  cxt->fcapa = PIC_POOL_SIZE;
 
   create_activation(pic, cxt);
 }
@@ -700,11 +670,16 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->argc = (int)cxt->args->len + 1;
   irep->localc = (int)cxt->locals->len;
   irep->capturec = (int)cxt->captures->len;
-  irep->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->clen);
-  irep->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->ilen);
-  irep->ilen = cxt->ilen;
-  irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
-  irep->plen = cxt->plen;
+  irep->u.s.code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->clen);
+  irep->u.s.irep = pic_realloc(pic, cxt->irep, sizeof(union irep_node) * cxt->ilen);
+  irep->u.s.ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
+  irep->u.s.nums = pic_realloc(pic, cxt->nums, sizeof(double) * cxt->flen);
+  irep->pool = pic_realloc(pic, cxt->pool, sizeof(struct pic_object *) * cxt->plen);
+  irep->ncode = cxt->clen;
+  irep->nirep = cxt->ilen;
+  irep->nints = cxt->klen;
+  irep->nnums = cxt->flen;
+  irep->npool = cxt->plen;
 
   irep->list.next = pic->ireps.next;
   irep->list.prev = &pic->ireps;
@@ -723,7 +698,9 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 
 #define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
 #define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
-#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, pic_value)
+#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, struct pic_object *)
+#define check_ints_size(pic, cxt) check_size(pic, cxt, k, ints, int)
+#define check_nums_size(pic, cxt) check_size(pic, cxt, f, nums, double)
 
 #define emit_n(pic, cxt, ins) do {              \
     check_code_size(pic, cxt);                  \
@@ -734,15 +711,15 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 #define emit_i(pic, cxt, ins, I) do {           \
     check_code_size(pic, cxt);                  \
     cxt->code[cxt->clen].insn = ins;            \
-    cxt->code[cxt->clen].u.i = I;               \
+    cxt->code[cxt->clen].a = I;                 \
     cxt->clen++;                                \
   } while (0)                                   \
 
 #define emit_r(pic, cxt, ins, D, I) do {        \
     check_code_size(pic, cxt);                  \
     cxt->code[cxt->clen].insn = ins;            \
-    cxt->code[cxt->clen].u.r.depth = D;         \
-    cxt->code[cxt->clen].u.r.idx = I;           \
+    cxt->code[cxt->clen].a = D;                 \
+    cxt->code[cxt->clen].b = I;                 \
     cxt->clen++;                                \
   } while (0)                                   \
 
@@ -793,7 +770,7 @@ index_global(pic_state *pic, codegen_context *cxt, pic_sym *name)
 
   check_pool_size(pic, cxt);
   pidx = (int)cxt->plen++;
-  cxt->pool[pidx] = pic_obj_value(slot);
+  cxt->pool[pidx] = (struct pic_object *)(slot);
 
   return pidx;
 }
@@ -920,7 +897,7 @@ codegen_lambda(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos
   /* emit irep */
   codegen_context_init(pic, inner_cxt, cxt, rest, args, locals, captures);
   codegen(pic, inner_cxt, body, true);
-  cxt->irep[cxt->ilen] = codegen_context_destroy(pic, inner_cxt);
+  cxt->irep[cxt->ilen].i = codegen_context_destroy(pic, inner_cxt);
 
   /* emit OP_LAMBDA */
   emit_i(pic, cxt, OP_LAMBDA, cxt->ilen++);
@@ -945,11 +922,11 @@ codegen_if(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   emit_n(pic, cxt, OP_JMP);
 
-  cxt->code[s].u.i = (int)cxt->clen - s;
+  cxt->code[s].a = (int)cxt->clen - s;
 
   /* if true branch */
   codegen(pic, cxt, pic_list_ref(pic, obj, 2), tailpos);
-  cxt->code[t].u.i = (int)cxt->clen - t;
+  cxt->code[t].a = (int)cxt->clen - t;
 }
 
 static void
@@ -969,32 +946,43 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   switch (pic_type(obj)) {
   case PIC_TT_UNDEF:
     emit_n(pic, cxt, OP_PUSHUNDEF);
-    emit_ret(pic, cxt, tailpos);
     break;
   case PIC_TT_BOOL:
     emit_n(pic, cxt, (pic_true_p(obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
-    emit_ret(pic, cxt, tailpos);
     break;
   case PIC_TT_INT:
-    emit_i(pic, cxt, OP_PUSHINT, pic_int(obj));
-    emit_ret(pic, cxt, tailpos);
+    check_ints_size(pic, cxt);
+    pidx = (int)cxt->klen++;
+    cxt->ints[pidx] = pic_int(obj);
+    emit_i(pic, cxt, OP_PUSHINT, pidx);
+    break;
+  case PIC_TT_FLOAT:
+    check_nums_size(pic, cxt);
+    pidx = (int)cxt->flen++;
+    cxt->nums[pidx] = pic_float(obj);
+    emit_i(pic, cxt, OP_PUSHFLOAT, pidx);
     break;
   case PIC_TT_NIL:
     emit_n(pic, cxt, OP_PUSHNIL);
-    emit_ret(pic, cxt, tailpos);
+    break;
+  case PIC_TT_EOF:
+    emit_n(pic, cxt, OP_PUSHEOF);
     break;
   case PIC_TT_CHAR:
-    emit_i(pic, cxt, OP_PUSHCHAR, pic_char(obj));
-    emit_ret(pic, cxt, tailpos);
+    check_ints_size(pic, cxt);
+    pidx = (int)cxt->klen++;
+    cxt->ints[pidx] = pic_char(obj);
+    emit_i(pic, cxt, OP_PUSHCHAR, pidx);
     break;
   default:
+    assert(pic_obj_p(obj));
     check_pool_size(pic, cxt);
     pidx = (int)cxt->plen++;
-    cxt->pool[pidx] = obj;
+    cxt->pool[pidx] = pic_obj_ptr(obj);
     emit_i(pic, cxt, OP_PUSHCONST, pidx);
-    emit_ret(pic, cxt, tailpos);
     break;
   }
+  emit_ret(pic, cxt, tailpos);
 }
 
 #define VM(uid, op)                             \
@@ -1020,22 +1008,22 @@ codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
     sym = pic_sym_ptr(pic_list_ref(pic, functor, 1));
 
-    VM(pic->uCONS, OP_CONS)
-    VM(pic->uCAR, OP_CAR)
-    VM(pic->uCDR, OP_CDR)
-    VM(pic->uNILP, OP_NILP)
-    VM(pic->uSYMBOLP, OP_SYMBOLP)
-    VM(pic->uPAIRP, OP_PAIRP)
-    VM(pic->uNOT, OP_NOT)
-    VM(pic->uEQ, OP_EQ)
-    VM(pic->uLT, OP_LT)
-    VM(pic->uLE, OP_LE)
-    VM(pic->uGT, OP_GT)
-    VM(pic->uGE, OP_GE)
-    VM(pic->uADD, OP_ADD)
-    VM(pic->uSUB, OP_SUB)
-    VM(pic->uMUL, OP_MUL)
-    VM(pic->uDIV, OP_DIV)
+    VM(pic->sCONS, OP_CONS)
+    VM(pic->sCAR, OP_CAR)
+    VM(pic->sCDR, OP_CDR)
+    VM(pic->sNILP, OP_NILP)
+    VM(pic->sSYMBOLP, OP_SYMBOLP)
+    VM(pic->sPAIRP, OP_PAIRP)
+    VM(pic->sNOT, OP_NOT)
+    VM(pic->sEQ, OP_EQ)
+    VM(pic->sLT, OP_LT)
+    VM(pic->sLE, OP_LE)
+    VM(pic->sGT, OP_GT)
+    VM(pic->sGE, OP_GE)
+    VM(pic->sADD, OP_ADD)
+    VM(pic->sSUB, OP_SUB)
+    VM(pic->sMUL, OP_MUL)
+    VM(pic->sDIV, OP_DIV)
   }
 
   emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);
@@ -1050,19 +1038,19 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   if (sym == GREF || sym == CREF || sym == LREF) {
     codegen_ref(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uSETBANG || sym == pic->uDEFINE) {
+  else if (sym == pic->sSETBANG || sym == pic->sDEFINE) {
     codegen_set(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uLAMBDA) {
+  else if (sym == pic->sLAMBDA) {
     codegen_lambda(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uIF) {
+  else if (sym == pic->sIF) {
     codegen_if(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uBEGIN) {
+  else if (sym == pic->sBEGIN) {
     codegen_begin(pic, cxt, obj, tailpos);
   }
-  else if (sym == pic->uQUOTE) {
+  else if (sym == pic->sQUOTE) {
     codegen_quote(pic, cxt, obj, tailpos);
   }
   else if (sym == CALL) {
