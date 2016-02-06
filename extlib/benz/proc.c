@@ -13,22 +13,21 @@ pic_irep_incref(pic_state PIC_UNUSED(*pic), struct pic_irep *irep)
 void
 pic_irep_decref(pic_state *pic, struct pic_irep *irep)
 {
-  struct pic_irep **i;
+  size_t i;
 
   if (--irep->refc == 0) {
-    pic_free(pic, irep->code);
+    pic_free(pic, irep->u.s.code);
+    pic_free(pic, irep->u.s.ints);
     pic_free(pic, irep->pool);
-    pic_free(pic, irep->ints);
 
     /* unchain before decref children ireps */
     irep->list.prev->next = irep->list.next;
     irep->list.next->prev = irep->list.prev;
 
-    i = irep->irep;
-    while (*i) {
-      pic_irep_decref(pic, *i++);
+    for (i = 0; i < irep->nirep; ++i) {
+      pic_irep_decref(pic, irep->u.s.irep[i].i);
     }
-    pic_free(pic, irep->irep);
+    pic_free(pic, irep->u.s.irep);
     pic_free(pic, irep);
   }
 }

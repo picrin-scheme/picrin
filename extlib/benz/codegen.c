@@ -610,7 +610,7 @@ typedef struct codegen_context {
   pic_code *code;
   size_t clen, ccapa;
   /* child ireps */
-  struct pic_irep **irep;
+  union irep_node *irep;
   size_t ilen, icapa;
   /* constant object pool */
   int *ints;
@@ -637,7 +637,7 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
 
-  cxt->irep = pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
+  cxt->irep = pic_calloc(pic, PIC_IREP_SIZE, sizeof(union irep_node));
   cxt->ilen = 0;
   cxt->icapa = PIC_IREP_SIZE;
 
@@ -664,13 +664,14 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->argc = (int)cxt->args->len + 1;
   irep->localc = (int)cxt->locals->len;
   irep->capturec = (int)cxt->captures->len;
-  irep->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->clen);
-  irep->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * (cxt->ilen + 1));
-  irep->irep[cxt->ilen] = NULL;
+  irep->u.s.code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->clen);
+  irep->u.s.irep = pic_realloc(pic, cxt->irep, sizeof(union irep_node) * cxt->ilen);
+  irep->u.s.ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
   irep->pool = pic_realloc(pic, cxt->pool, sizeof(pic_value) * cxt->plen);
-  irep->plen = cxt->plen;
-  irep->ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
-  irep->ilen = cxt->klen;
+  irep->ncode = cxt->clen;
+  irep->nirep = cxt->ilen;
+  irep->nints = cxt->klen;
+  irep->npool = cxt->plen;
 
   irep->list.next = pic->ireps.next;
   irep->list.prev = &pic->ireps;
@@ -887,7 +888,7 @@ codegen_lambda(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos
   /* emit irep */
   codegen_context_init(pic, inner_cxt, cxt, rest, args, locals, captures);
   codegen(pic, inner_cxt, body, true);
-  cxt->irep[cxt->ilen] = codegen_context_destroy(pic, inner_cxt);
+  cxt->irep[cxt->ilen].i = codegen_context_destroy(pic, inner_cxt);
 
   /* emit OP_LAMBDA */
   emit_i(pic, cxt, OP_LAMBDA, cxt->ilen++);

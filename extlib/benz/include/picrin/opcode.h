@@ -181,17 +181,20 @@ pic_dump_code(pic_code c)
 PIC_INLINE void
 pic_dump_irep(struct pic_irep *irep)
 {
-  unsigned i;
+  size_t i;
 
   printf("## irep %p\n", (void *)irep);
-  printf("[clen = %zd, argc = %d, localc = %d, capturec = %d]\n", irep->clen, irep->argc, irep->localc, irep->capturec);
-  for (i = 0; i < irep->clen; ++i) {
+  printf("# argc     = %d\n", irep->argc);
+  printf("# localc   = %d\n", irep->localc);
+  printf("# capturec = %d\n", irep->capturec);
+
+  for (i = 0; i < irep->ncode; ++i) {
     printf("%02x: ", i);
-    pic_dump_code(irep->code[i]);
+    pic_dump_code(irep->u.s.code[i]);
   }
 
-  for (i = 0; i < irep->ilen; ++i) {
-    pic_dump_irep(irep->irep[i]);
+  for (i = 0; i < irep->nirep; ++i) {
+    pic_dump_irep(irep->u.s.irep[i].i);
   }
 }
 

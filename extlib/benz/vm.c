@@ -407,11 +407,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(pic->ci->irep->ints[c.a]));
+      PUSH(pic_int_value(pic->ci->irep->u.s.ints[c.a]));
       NEXT;
     }
     CASE(OP_PUSHCHAR) {
-      PUSH(pic_char_value(pic->ci->irep->ints[c.a]));
+      PUSH(pic_char_value(pic->ci->irep->u.s.ints[c.a]));
       NEXT;
     }
     CASE(OP_PUSHCONST) {
@@ -567,7 +567,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         ci->regc = irep->capturec;
         ci->regs = ci->fp + irep->argc + irep->localc;
 
-	pic->ip = irep->code;
+	pic->ip = irep->u.s.code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
       }
@@ -629,7 +629,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         vm_push_cxt(pic);
       }
 
-      proc = pic_make_proc_irep(pic, pic->ci->irep->irep[c.a], pic->ci->cxt);
+      proc = pic_make_proc_irep(pic, pic->ci->irep->u.s.irep[c.a].i, pic->ci->cxt);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;

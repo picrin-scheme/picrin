@@ -21,16 +21,26 @@ struct pic_list {
 
 struct pic_irep {
   struct pic_list list;
-  int refc;
-  pic_code *code;
+  unsigned refc;
   int argc, localc, capturec;
   bool varg;
-  struct pic_irep **irep;
-  /* constants pool */
-  int *ints;
-  size_t ilen;
-  pic_value *pool;
-  size_t plen;
+  union {
+    struct {
+      int code_offset;
+      int ints_offset;
+      int irep_offset;
+    } p;
+    struct {
+      pic_code *code;
+      int *ints;
+      union irep_node {
+        int offset;
+        struct pic_irep *i;
+      } *irep;
+    } s;
+  } u;
+  pic_value *pool;              /* pool of heap objects */
+  size_t ncode, nirep, nints, npool;
 };
 
 void pic_irep_incref(pic_state *, struct pic_irep *);
