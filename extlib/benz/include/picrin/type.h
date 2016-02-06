@@ -156,8 +156,8 @@ enum pic_tt {
   PIC_TT_DICT,
   PIC_TT_REG,
   PIC_TT_RECORD,
+  PIC_TT_BOX,
   PIC_TT_CXT,
-  PIC_TT_IREP,
   PIC_TT_CP
 };
 
@@ -165,10 +165,11 @@ enum pic_tt {
   enum pic_tt tt;                               \
   char gc_mark;
 
-struct pic_object {
+struct pic_basic {
   PIC_OBJECT_HEADER
 };
 
+struct pic_object;
 struct pic_symbol;
 struct pic_pair;
 struct pic_string;
@@ -181,7 +182,6 @@ struct pic_error;
 struct pic_env;
 
 /* set aliases to basic types */
-typedef pic_value pic_list;
 typedef struct pic_symbol pic_sym;
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
@@ -226,7 +226,6 @@ PIC_INLINE pic_value pic_invalid_value();
 PIC_INLINE pic_value pic_obj_value(void *);
 PIC_INLINE pic_value pic_float_value(double);
 PIC_INLINE pic_value pic_int_value(int);
-PIC_INLINE pic_value pic_size_value(size_t);
 PIC_INLINE pic_value pic_char_value(char c);
 
 PIC_INLINE bool pic_eq_p(pic_value, pic_value);
@@ -255,7 +254,7 @@ pic_type(pic_value v)
   case PIC_VTYPE_EOF:
     return PIC_TT_EOF;
   case PIC_VTYPE_HEAP:
-    return ((struct pic_object *)pic_ptr(v))->tt;
+    return ((struct pic_basic *)pic_ptr(v))->tt;
   }
 
   PIC_UNREACHABLE();
@@ -305,14 +304,14 @@ pic_type_repr(enum pic_tt tt)
     return "env";
   case PIC_TT_LIB:
     return "lib";
-  case PIC_TT_IREP:
-    return "irep";
   case PIC_TT_DATA:
     return "data";
   case PIC_TT_DICT:
     return "dict";
   case PIC_TT_REG:
     return "reg";
+  case PIC_TT_BOX:
+    return "box";
   case PIC_TT_RECORD:
     return "record";
   case PIC_TT_CP:
@@ -355,17 +354,6 @@ pic_bool_value(bool b)
 
   pic_init_value(v, b ? PIC_VTYPE_TRUE : PIC_VTYPE_FALSE);
   return v;
-}
-
-PIC_INLINE pic_value
-pic_size_value(size_t s)
-{
-  if (sizeof(unsigned) < sizeof(size_t)) {
-    if (s > (size_t)INT_MAX) {
-      return pic_float_value(s);
-    }
-  }
-  return pic_int_value((int)s);
 }
 
 #if PIC_NAN_BOXING

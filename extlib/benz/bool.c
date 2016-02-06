@@ -8,10 +8,12 @@ KHASH_DECLARE(m, void *, int)
 KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 static bool
-internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, khash_t(m) *h)
+internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m) *h)
 {
-  pic_value local = pic_nil_value();
-  size_t c = 0;
+  pic_value localx = pic_nil_value();
+  pic_value localy = pic_nil_value();
+  int cx = 0;
+  int cy = 0;
 
   if (depth > 10) {
     if (depth > 200) {
@@ -49,7 +51,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, khash_t
   }
   case PIC_TT_BLOB: {
     pic_blob *blob1, *blob2;
-    size_t i;
+    int i;
 
     blob1 = pic_blob_ptr(x);
     blob2 = pic_blob_ptr(y);
@@ -68,23 +70,36 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, size_t depth, khash_t
       return false;
 
     /* Floyd's cycle-finding algorithm */
-    if (pic_nil_p(local)) {
-      local = x;
+    if (pic_nil_p(localx)) {
+      localx = x;
     }
     x = pic_cdr(pic, x);
+    cx++;
+    if (pic_nil_p(localy)) {
+      localy = y;
+    }
     y = pic_cdr(pic, y);
-    c++;
-    if (c == 2) {
-      c = 0;
-      local = pic_cdr(pic, local);
-      if (pic_eq_p(local, x)) {
-        return true;
+    cy++;
+    if (cx == 2) {
+      cx = 0;
+      localx = pic_cdr(pic, localx);
+      if (pic_eq_p(localx, x)) {
+        if (cy < 0 ) return true; /* both lists circular */
+        cx = INT_MIN; /* found a cycle on x */
+      }
+    }
+    if (cy == 2) {
+      cy = 0;
+      localy = pic_cdr(pic, localy);
+      if (pic_eq_p(localy, y)) {
+        if (cx < 0 ) return true; /* both lists circular */
+        cy = INT_MIN; /* found a cycle on y */
       }
     }
     goto LOOP;                  /* tail-call optimization */
   }
   case PIC_TT_VECTOR: {
-    size_t i;
+    int i;
     struct pic_vector *u, *v;
 
     u = pic_vec_ptr(x);
@@ -167,7 +182,7 @@ pic_bool_boolean_p(pic_state *pic)
 static pic_value
 pic_bool_boolean_eq_p(pic_state *pic)
 {
-  size_t argc, i;
+  int argc, i;
   pic_value *argv;
 
   pic_get_args(pic, "*", &argc, &argv);

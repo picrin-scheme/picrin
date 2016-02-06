@@ -1,4 +1,5 @@
 (import (scheme base)
+        (scheme write)
         (picrin test))
 
 (test-begin)

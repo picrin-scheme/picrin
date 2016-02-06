@@ -41,9 +41,9 @@ pic_value pic_values2(pic_state *, pic_value, pic_value);
 pic_value pic_values3(pic_state *, pic_value, pic_value, pic_value);
 pic_value pic_values4(pic_state *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_values5(pic_state *, pic_value, pic_value, pic_value, pic_value, pic_value);
-pic_value pic_values(pic_state *, size_t, pic_value *);
+pic_value pic_values(pic_state *, int, pic_value *);
 pic_value pic_values_by_list(pic_state *, pic_value);
-size_t pic_receive(pic_state *, size_t, pic_value *);
+int pic_receive(pic_state *, int, pic_value *);
 
 pic_value pic_callcc(pic_state *, struct pic_proc *);
 

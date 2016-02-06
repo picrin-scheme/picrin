@@ -12,13 +12,13 @@ extern "C" {
 struct pic_vector {
   PIC_OBJECT_HEADER
   pic_value *data;
-  size_t len;
+  int len;
 };
 
 #define pic_vec_p(v) (pic_type(v) == PIC_TT_VECTOR)
 #define pic_vec_ptr(o) ((struct pic_vector *)pic_ptr(o))
 
-pic_vec *pic_make_vec(pic_state *, size_t);
+pic_vec *pic_make_vec(pic_state *, int);
 
 #if defined(__cplusplus)
 }

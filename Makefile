@@ -11,16 +11,19 @@ PICRIN_OBJS = \
 CONTRIB_SRCS =
 CONTRIB_OBJS = $(CONTRIB_SRCS:.c=.o)
 CONTRIB_LIBS =
+CONTRIB_DEFS =
 CONTRIB_INITS =
 CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
+PICRIN_ISSUE_TESTS = $(wildcard t/issue/*.scm)
+REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
 TEST_RUNNER = bin/picrin
 
-CFLAGS += -I./extlib/benz/include -Wall -Wextra
+CFLAGS += -I./extlib/benz/include -Wall -Wextra $(CONTRIB_DEFS)
 LDFLAGS += -lm
 
-prefix = /usr/local
+prefix ?= /usr/local
 
 all: CFLAGS += -O2 -DNDEBUG=1
 all: bin/picrin
@@ -62,13 +65,25 @@ docs/contrib.rst: $(CONTRIB_DOCS)
 run: bin/picrin
 	bin/picrin
 
-test: test-contribs test-nostdlib
+test: test-contribs test-nostdlib test-issue
 
 test-contribs: bin/picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
 	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0' -D'PIC_ENABLE_STDIO=0' -ffreestanding -nostdlib -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libbenz.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	rm -f lib/libbenz.so
+
+test-issue: test-picrin-issue test-repl-issue
+
+test-picrin-issue: $(TEST_RUNNER) $(PICRIN_ISSUE_TESTS)
+	for test in $(PICRIN_ISSUE_TESTS); do \
+	  $(TEST_RUNNER) "$$test"; \
+	done
+
+test-repl-issue: $(REPL_ISSUE_TESTS)
+
+$(REPL_ISSUE_TESTS):
+	PICRIN=$(TEST_RUNNER) ./$@
 
 install: all
 	install -c bin/picrin $(prefix)/bin/picrin
@@ -80,4 +95,4 @@ clean:
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
 
-.PHONY: all install clean run test test-r7rs test-contribs doc $(CONTRIB_TESTS)
+.PHONY: all install clean run test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)

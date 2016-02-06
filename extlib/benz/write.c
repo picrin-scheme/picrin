@@ -49,7 +49,7 @@ writer_control_destroy(struct writer_control *p)
 static void
 write_blob(pic_state *pic, pic_blob *blob, xFILE *file)
 {
-  size_t i;
+  int i;
 
   xfprintf(pic, file, "#u8(");
   for (i = 0; i < blob->len; ++i) {
@@ -84,7 +84,7 @@ write_char(pic_state *pic, char c, xFILE *file, int mode)
 static void
 write_str(pic_state *pic, pic_str *str, xFILE *file, int mode)
 {
-  size_t i;
+  int i;
   const char *cstr = pic_str_cstr(pic, str);
 
   if (mode == DISPLAY_MODE) {
@@ -224,7 +224,7 @@ write_vec(struct writer_control *p, pic_vec *vec)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
-  size_t i;
+  int i;
 
   xfprintf(pic, file, "#(");
   for (i = 0; i < vec->len; ++i) {
@@ -356,7 +356,7 @@ traverse(struct writer_control *p, pic_value obj)
         traverse(p, pic_cdr(pic, obj));
       } else if (pic_vec_p(obj)) {
         /* vector */
-        size_t i;
+        int i;
         for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
           traverse(p, pic_vec_ptr(obj)->data[i]);
         }

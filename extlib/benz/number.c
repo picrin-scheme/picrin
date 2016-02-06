@@ -58,7 +58,7 @@ pic_number_exact(pic_state *pic)
   static pic_value                                      \
   pic_number_##op(pic_state *pic)                       \
   {                                                     \
-    size_t argc, i;                                     \
+    int argc, i;                                        \
     pic_value *argv;                                    \
                                                         \
     pic_get_args(pic, "*", &argc, &argv);               \
@@ -85,7 +85,7 @@ DEFINE_CMP(ge)
   static pic_value                              \
   pic_number_##op(pic_state *pic)               \
   {                                             \
-    size_t argc, i;                             \
+    int argc, i;                                \
     pic_value *argv, tmp;                       \
                                                 \
     pic_get_args(pic, "*", &argc, &argv);       \
@@ -176,7 +176,7 @@ pic_number_number_to_string(pic_state *pic)
   if (e) {
     int ival = (int) f;
     int ilen = number_string_length(ival, radix);
-    size_t s = ilen + 1;
+    int s = ilen + 1;
     char *buf = pic_malloc(pic, s);
 
     number_string(ival, radix, ilen, buf);
@@ -216,12 +216,19 @@ pic_number_string_to_number(pic_state *pic)
       : pic_float_value(num);
   }
 
-  flo = pic_read_cstr(pic, str);
+  pic_try {
+    flo = pic_read_cstr(pic, str);
+  }
+  pic_catch {
+    /* swallow error */
+    flo = pic_false_value();
+  }
+
   if (pic_int_p(flo) || pic_float_p(flo)) {
     return flo;
   }
 
-  pic_errorf(pic, "invalid string given: %s", str);
+  return pic_false_value();
 }
 
 void

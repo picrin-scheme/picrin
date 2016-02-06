@@ -20,7 +20,7 @@ struct pic_error {
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)
 #define pic_error_ptr(v) ((struct pic_error *)pic_ptr(v))
 
-struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_list);
+struct pic_error *pic_make_error(pic_state *, pic_sym *, const char *, pic_value);
 
 /* do not return from try block! */
 
@@ -55,7 +55,7 @@ struct pic_proc *pic_pop_handler(pic_state *);
 
 pic_value pic_raise_continuable(pic_state *, pic_value);
 PIC_NORETURN void pic_raise(pic_state *, pic_value);
-PIC_NORETURN void pic_error(pic_state *, const char *, pic_list);
+PIC_NORETURN void pic_error(pic_state *, const char *, pic_value);
 
 #if defined(__cplusplus)
 }

@@ -38,7 +38,6 @@ void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
-void pic_init_attr(pic_state *);
 void pic_init_reg(pic_state *);
 
 extern const char pic_boot[][80];
@@ -112,10 +111,10 @@ pic_features(pic_state *pic)
 #define DONE pic_gc_arena_restore(pic, ai);
 
 #define define_builtin_syntax(uid, name)                                \
-  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern(pic, name), uid)
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
 
 #define VM(uid, name)                                                   \
-  pic_define_syntactic_keyword_(pic, pic->lib->env, pic_intern(pic, name), uid)
+  pic_put_variable(pic, pic->lib->env, pic_obj_value(pic_intern(pic, name)), uid)
 
 #define VM3(name)                                       \
   pic->c##name = pic_vm_gref_slot(pic, pic->u##name);
@@ -126,8 +125,7 @@ pic_features(pic_state *pic)
 static void
 pic_init_core(pic_state *pic)
 {
-  void pic_define_syntactic_keyword_(pic_state *, struct pic_env *, pic_sym *, pic_sym *);
-  pic_value pic_vm_gref_slot(pic_state *, pic_sym *);
+  struct pic_box *pic_vm_gref_slot(pic_state *, pic_sym *);
 
   pic_init_features(pic);
 
@@ -181,7 +179,6 @@ pic_init_core(pic_state *pic)
     pic_init_record(pic); DONE;
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
-    pic_init_attr(pic); DONE;
     pic_init_reg(pic); DONE;
 
     VM3(CONS);
@@ -237,7 +234,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic_state *pic;
   size_t ai;
 
-  pic = allocf(NULL, sizeof(pic_state));
+  pic = allocf(userdata, NULL, sizeof(pic_state));
 
   if (! pic) {
     goto EXIT_PIC;
@@ -265,7 +262,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->envp = NULL;
 
   /* prepare VM stack */
-  pic->stbase = pic->sp = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_value));
+  pic->stbase = pic->sp = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
 
   if (! pic->sp) {
@@ -273,7 +270,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* callinfo */
-  pic->cibase = pic->ci = allocf(NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
+  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   if (! pic->ci) {
@@ -281,7 +278,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* exception handler */
-  pic->xpbase = pic->xp = allocf(NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
+  pic->xpbase = pic->xp = allocf(userdata, NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   if (! pic->xp) {
@@ -289,7 +286,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* GC arena */
-  pic->arena = allocf(NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
+  pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
@@ -299,9 +296,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* memory heap */
   pic->heap = pic_heap_open(pic);
-
-  /* registries */
-  pic->regs = NULL;
 
   /* symbol table */
   kh_init(s, &pic->syms);
@@ -315,15 +309,16 @@ pic_open(pic_allocf allocf, void *userdata)
   /* macros */
   pic->macros = NULL;
 
-  /* attributes */
-  pic->attrs = NULL;
-
   /* features */
   pic->features = pic_nil_value();
 
   /* libraries */
   pic->libs = pic_nil_value();
   pic->lib = NULL;
+
+  /* ireps */
+  pic->ireps.next = &pic->ireps;
+  pic->ireps.prev = &pic->ireps;
 
   /* raised error object */
   pic->err = pic_invalid_value();
@@ -353,10 +348,6 @@ pic_open(pic_allocf allocf, void *userdata)
   S(sEXPORT, "export");
   S(sDEFINE_LIBRARY, "define-library");
   S(sCOND_EXPAND, "cond-expand");
-  S(sCALL, "call");
-  S(sGREF, "gref");
-  S(sLREF, "lref");
-  S(sCREF, "cref");
 
   pic_gc_arena_restore(pic, ai);
 
@@ -410,9 +401,8 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->pGE = pic_invalid_value();
 
   /* root tables */
-  pic->globals = pic_make_dict(pic);
-  pic->macros = pic_make_dict(pic);
-  pic->attrs = pic_make_reg(pic);
+  pic->globals = pic_make_reg(pic);
+  pic->macros = pic_make_reg(pic);
 
   /* root block */
   pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TT_CP);
@@ -437,22 +427,22 @@ pic_open(pic_allocf allocf, void *userdata)
   /* turn on GC */
   pic->gc_enable = true;
 
-  pic->cCONS = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cCAR = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cCDR = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cNILP = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cSYMBOLP = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cPAIRP = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cNOT = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cADD = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cSUB = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cMUL = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cDIV = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cEQ = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cLT = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cLE = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cGT = pic_cons(pic, pic_false_value(), pic_invalid_value());
-  pic->cGE = pic_cons(pic, pic_false_value(), pic_invalid_value());
+  pic->cCONS = pic_box(pic, pic_invalid_value());
+  pic->cCAR = pic_box(pic, pic_invalid_value());
+  pic->cCDR = pic_box(pic, pic_invalid_value());
+  pic->cNILP = pic_box(pic, pic_invalid_value());
+  pic->cSYMBOLP = pic_box(pic, pic_invalid_value());
+  pic->cPAIRP = pic_box(pic, pic_invalid_value());
+  pic->cNOT = pic_box(pic, pic_invalid_value());
+  pic->cADD = pic_box(pic, pic_invalid_value());
+  pic->cSUB = pic_box(pic, pic_invalid_value());
+  pic->cMUL = pic_box(pic, pic_invalid_value());
+  pic->cDIV = pic_box(pic, pic_invalid_value());
+  pic->cEQ = pic_box(pic, pic_invalid_value());
+  pic->cLT = pic_box(pic, pic_invalid_value());
+  pic->cLE = pic_box(pic, pic_invalid_value());
+  pic->cGT = pic_box(pic, pic_invalid_value());
+  pic->cGE = pic_box(pic, pic_invalid_value());
 
   pic_init_core(pic);
 
@@ -461,13 +451,13 @@ pic_open(pic_allocf allocf, void *userdata)
   return pic;
 
  EXIT_ARENA:
-  allocf(pic->xp, 0);
+  allocf(userdata, pic->xp, 0);
  EXIT_XP:
-  allocf(pic->ci, 0);
+  allocf(userdata, pic->ci, 0);
  EXIT_CI:
-  allocf(pic->sp, 0);
+  allocf(userdata, pic->sp, 0);
  EXIT_SP:
-  allocf(pic, 0);
+  allocf(userdata, pic, 0);
  EXIT_PIC:
   return NULL;
 }
@@ -486,12 +476,23 @@ pic_close(pic_state *pic)
   pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
-  pic->attrs = NULL;
   pic->features = pic_nil_value();
   pic->libs = pic_nil_value();
 
   /* free all heap objects */
   pic_gc_run(pic);
+
+#if 0
+  {
+    /* FIXME */
+    int i = 0;
+    struct pic_list *list;
+    for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
+      i++;
+    }
+    printf("%d\n", i);
+  }
+#endif
 
   /* flush all xfiles */
   xfflush(pic, NULL);
@@ -503,15 +504,15 @@ pic_close(pic_state *pic)
   pic_reader_destroy(pic);
 
   /* free runtime context */
-  allocf(pic->stbase, 0);
-  allocf(pic->cibase, 0);
-  allocf(pic->xpbase, 0);
+  allocf(pic->userdata, pic->stbase, 0);
+  allocf(pic->userdata, pic->cibase, 0);
+  allocf(pic->userdata, pic->xpbase, 0);
 
   /* free global stacks */
   kh_destroy(s, h);
 
   /* free GC arena */
-  allocf(pic->arena, 0);
+  allocf(pic->userdata, pic->arena, 0);
 
-  allocf(pic, 0);
+  allocf(pic->userdata, pic, 0);
 }

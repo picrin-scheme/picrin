@@ -35,7 +35,6 @@ extern "C" {
 #include "picrin/config.h"
 
 #include "picrin/compat.h"
-#include "picrin/kvec.h"
 #include "picrin/khash.h"
 
 typedef struct pic_state pic_state;
@@ -67,7 +66,7 @@ typedef struct {
   struct pic_context *up;
 } pic_callinfo;
 
-typedef void *(*pic_allocf)(void *, size_t);
+typedef void *(*pic_allocf)(void *, void *, size_t);
 
 struct pic_state {
   int argc;
@@ -91,25 +90,26 @@ struct pic_state {
 
   pic_code *ip;
 
-  pic_value ptable;
+  pic_value ptable;             /* list of registers */
 
   struct pic_lib *lib, *prev_lib;
 
   pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE, *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
+  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE;
+  pic_sym *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
   pic_sym *sDEFINE_LIBRARY, *sIMPORT, *sEXPORT, *sCOND_EXPAND;
-  pic_sym *sGREF, *sCREF, *sLREF, *sCALL;
 
   pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG, *uDEFINE_MACRO;
   pic_sym *uDEFINE_LIBRARY, *uIMPORT, *uEXPORT, *uCOND_EXPAND;
+
   pic_sym *uCONS, *uCAR, *uCDR, *uNILP, *uSYMBOLP, *uPAIRP;
   pic_sym *uADD, *uSUB, *uMUL, *uDIV, *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
 
   pic_value pCONS, pCAR, pCDR, pNILP, pPAIRP, pSYMBOLP, pNOT;
   pic_value pADD, pSUB, pMUL, pDIV, pEQ, pLT, pLE, pGT, pGE;
 
-  pic_value cCONS, cCAR, cCDR, cNILP, cPAIRP, cSYMBOLP, cNOT;
-  pic_value cADD, cSUB, cMUL, cDIV, cEQ, cLT, cLE, cGT, cGE;
+  struct pic_box *cCONS, *cCAR, *cCDR, *cNILP, *cPAIRP, *cSYMBOLP, *cNOT;
+  struct pic_box *cADD, *cSUB, *cMUL, *cDIV, *cEQ, *cLT, *cLE, *cGT, *cGE;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
@@ -118,10 +118,10 @@ struct pic_state {
 
   khash_t(s) syms;              /* name to symbol */
   int ucnt;
-  struct pic_dict *globals;
-  struct pic_dict *macros;
+  struct pic_reg *globals;
+  struct pic_reg *macros;
   pic_value libs;
-  struct pic_reg *attrs;
+  struct pic_list ireps;        /* chain */
 
   pic_reader reader;
   xFILE files[XOPEN_MAX];
@@ -131,7 +131,6 @@ struct pic_state {
   struct pic_heap *heap;
   struct pic_object **arena;
   size_t arena_size, arena_idx;
-  struct pic_reg *regs;
 
   pic_value err;
 
@@ -143,9 +142,9 @@ typedef pic_value (*pic_func_t)(pic_state *);
 void *pic_malloc(pic_state *, size_t);
 void *pic_realloc(pic_state *, void *, size_t);
 void *pic_calloc(pic_state *, size_t, size_t);
-struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
 void pic_free(pic_state *, void *);
 
+struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
 void pic_gc_run(pic_state *);
 pic_value pic_gc_protect(pic_state *, pic_value);
 size_t pic_gc_arena_preserve(pic_state *);
@@ -158,7 +157,7 @@ void pic_gc_arena_restore(pic_state *, size_t);
     pic_gc_arena_restore(pic, ai);              \
   } while (0)
 
-void *pic_default_allocf(void *, size_t);
+void *pic_default_allocf(void *, void *, size_t);
 pic_state *pic_open(pic_allocf, void *);
 void pic_close(pic_state *);
 void pic_set_argv(pic_state *, int argc, char *argv[], char **envp);
@@ -185,27 +184,28 @@ void pic_load_cstr(pic_state *, const char *);
 void pic_define(pic_state *, const char *, pic_value);
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
-/* functions suffixed with '_' will not perform automatic export */
+/* functions suffixed with '_' do not involve automatic export */
 void pic_define_(pic_state *, const char *, pic_value);
 void pic_defun_(pic_state *, const char *, pic_func_t);
 void pic_defvar_(pic_state *, const char *, pic_value, struct pic_proc *);
 
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
-pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_list);
+pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, pic_value);
 pic_value pic_funcall0(pic_state *pic, struct pic_lib *, const char *);
 pic_value pic_funcall1(pic_state *pic, struct pic_lib *, const char *, pic_value);
 pic_value pic_funcall2(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value);
 pic_value pic_funcall3(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value, pic_value);
 
-pic_value pic_apply(pic_state *, struct pic_proc *, pic_value);
+pic_value pic_apply(pic_state *, struct pic_proc *, int, pic_value *);
 pic_value pic_apply0(pic_state *, struct pic_proc *);
 pic_value pic_apply1(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply2(pic_state *, struct pic_proc *, pic_value, pic_value);
 pic_value pic_apply3(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value);
 pic_value pic_apply4(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value);
 pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_value, pic_value, pic_value);
-pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, size_t, pic_value *);
+pic_value pic_apply_list(pic_state *, struct pic_proc *, pic_value);
+pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, int, pic_value *);
 pic_value pic_apply_trampoline_list(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
 
@@ -233,10 +233,6 @@ PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
-
-struct pic_dict *pic_attr(pic_state *, pic_value);
-pic_value pic_attr_ref(pic_state *, pic_value, const char *);
-void pic_attr_set(pic_state *, pic_value, const char *, pic_value);
 
 struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
@@ -269,6 +265,7 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
+#include "picrin/box.h"
 
 #if defined(__cplusplus)
 }

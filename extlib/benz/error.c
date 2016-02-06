@@ -188,7 +188,7 @@ static pic_value
 pic_error_error(pic_state *pic)
 {
   const char *str;
-  size_t argc;
+  int argc;
   pic_value *argv;
 
   pic_get_args(pic, "z*", &str, &argc, &argv);

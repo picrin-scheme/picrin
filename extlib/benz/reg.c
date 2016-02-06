@@ -31,6 +31,22 @@ pic_reg_ref(pic_state *pic, struct pic_reg *reg, void *key)
   return kh_val(h, it);
 }
 
+void *
+pic_reg_rev_ref(pic_state *pic, struct pic_reg *reg, pic_value val)
+{
+  khash_t(reg) *h = &reg->hash;
+
+  if (h->n_buckets) {
+    khint_t i = 0;
+    while ((i < h->n_buckets) && (ac_iseither(h->flags, i) || !pic_eq_p(h->vals[i], val))) {
+      i += 1;
+    }
+    if (i < h->n_buckets) return kh_key(h, i);
+  }
+  pic_errorf(pic, "key not found for an element: ~s", val);
+  return NULL;
+}
+
 void
 pic_reg_set(pic_state PIC_UNUSED(*pic), struct pic_reg *reg, void *key, pic_value val)
 {

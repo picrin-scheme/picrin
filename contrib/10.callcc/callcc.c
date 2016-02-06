@@ -11,21 +11,23 @@ struct pic_fullcont {
   ptrdiff_t stk_len;
 
   pic_value *st_ptr;
-  size_t sp_offset, st_len;
+  size_t sp_offset;
+  ptrdiff_t st_len;
 
   pic_callinfo *ci_ptr;
-  size_t ci_offset, ci_len;
+  size_t ci_offset;
+  ptrdiff_t ci_len;
 
   struct pic_proc **xp_ptr;
-  size_t xp_offset, xp_len;
+  size_t xp_offset;
+  ptrdiff_t xp_len;
 
   pic_code *ip;
 
   pic_value ptable;
 
   struct pic_object **arena;
-  size_t arena_size;
-  int arena_idx;
+  size_t arena_size, arena_idx;
 
   pic_value results;
 };
@@ -81,7 +83,7 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
   }
 
   /* arena */
-  for (i = 0; i < (size_t)cont->arena_idx; ++i) {
+  for (i = 0; i < cont->arena_idx; ++i) {
     mark(pic, pic_obj_value(cont->arena[i]));
   }
 
@@ -184,17 +186,17 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
   pic->cc = cont->prev_jmp;
   pic->cp = cont->cp;
 
-  pic->stbase = pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
+  assert(pic->stend - pic->stbase >= cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
   pic->sp = pic->stbase + cont->sp_offset;
   pic->stend = pic->stbase + cont->st_len;
 
-  pic->cibase = pic_realloc(pic, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
+  assert(pic->ciend - pic->cibase >= cont->ci_len);
   memcpy(pic->cibase, cont->ci_ptr, sizeof(pic_callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
 
-  pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
+  assert(pic->xpend - pic->xpbase >= cont->xp_len);
   memcpy(pic->xpbase, cont->xp_ptr, sizeof(struct pic_proc *) * cont->xp_len);
   pic->xp = pic->xpbase + cont->xp_offset;
   pic->xpend = pic->xpbase + cont->xp_len;
@@ -203,7 +205,7 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
 
   pic->ptable = cont->ptable;
 
-  pic->arena = pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * cont->arena_size);
+  assert(pic->arena_size >= cont->arena_size);
   memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
@@ -217,7 +219,7 @@ PIC_NORETURN static pic_value
 cont_call(pic_state *pic)
 {
   struct pic_proc *proc;
-  size_t argc;
+  int argc;
   pic_value *argv;
   struct pic_fullcont *cont;
 
