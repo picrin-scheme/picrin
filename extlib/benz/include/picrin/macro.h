@@ -29,6 +29,8 @@ pic_sym *pic_put_identifier(pic_state *, pic_id *, pic_sym *, struct pic_env *);
 pic_sym *pic_find_identifier(pic_state *, pic_id *, struct pic_env *);
 pic_sym *pic_lookup_identifier(pic_state *, pic_id *, struct pic_env *);
 
+pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
+
 #if defined(__cplusplus)
 }
 #endif
