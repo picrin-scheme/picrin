@@ -104,7 +104,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
 
   pic_get_args(pic, "m", &sym);
 
-  return pic_obj_value(pic_make_str_cstr(pic, sym->cstr));
+  return pic_obj_value(pic_make_cstr(pic, sym->cstr));
 }
 
 static pic_value
