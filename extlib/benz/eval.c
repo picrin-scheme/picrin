@@ -117,7 +117,7 @@ analyzer_scope_destroy(pic_state *pic, analyze_scope *scope)
 }
 
 static bool
-search_scope(analyze_scope *scope, pic_sym *sym)
+search_scope(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
   return kh_get(a, &scope->args, sym) != kh_end(&scope->args) || kh_get(a, &scope->locals, sym) != kh_end(&scope->locals) || scope->depth == 0;
 }
@@ -128,7 +128,7 @@ find_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   int depth = 0, ret;
 
   while (scope) {
-    if (search_scope(scope, sym)) {
+    if (search_scope(pic, scope, sym)) {
       if (depth > 0) {
         kh_put(a, &scope->captures, sym, &ret); /* capture! */
       }
@@ -145,7 +145,7 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 {
   int ret;
 
-  if (search_scope(scope, sym)) {
+  if (search_scope(pic, scope, sym)) {
     if (scope->depth > 0 || pic_reg_has(pic, pic->globals, sym)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
     }

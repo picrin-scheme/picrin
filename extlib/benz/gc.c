@@ -384,6 +384,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
+    LOOP(obj->u.sym.str);
     break;
   }
   case PIC_TT_REG: {
@@ -559,7 +560,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
-    pic_free(pic, (void *)obj->u.sym.cstr);
+    /* TODO: remove this symbol's entry from pic->syms immediately */
     break;
   }
   case PIC_TT_REG: {

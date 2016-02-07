@@ -27,6 +27,8 @@
 #ifndef AC_KHASH_H
 #define AC_KHASH_H
 
+#include <stddef.h>
+
 typedef int khint_t;
 typedef khint_t khiter_t;
 
@@ -41,23 +43,6 @@ typedef khint_t khiter_t;
 #define ac_roundup32(x)                                                 \
   (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 
-PIC_INLINE khint_t ac_X31_hash_string(const char *s)
-{
-  khint_t h = (khint_t)*s;
-  if (h) for (++s ; *s; ++s) h = (h << 5) - h + (khint_t)*s;
-  return h;
-}
-PIC_INLINE khint_t ac_Wang_hash(khint_t key)
-{
-  key += ~(key << 15);
-  key ^=  (key >> 10);
-  key +=  (key << 3);
-  key ^=  (key >> 6);
-  key += ~(key << 11);
-  key ^=  (key >> 16);
-  return key;
-}
-
 #define ac_fsize(m) ((m) < 16? 1 : (m)>>4)
 #define ac_hash_upper(x) ((((x) * 2) * 77 / 100 + 1) / 2)
 
@@ -71,7 +56,7 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
   void kh_init_##name(kh_##name##_t *h);                                \
   void kh_destroy_##name(pic_state *, kh_##name##_t *h);                 \
   void kh_clear_##name(kh_##name##_t *h);                               \
-  khint_t kh_get_##name(const kh_##name##_t *h, khkey_t key);           \
+  khint_t kh_get_##name(pic_state *, const kh_##name##_t *h, khkey_t key); \
   void kh_resize_##name(pic_state *, kh_##name##_t *h, khint_t new_n_buckets); \
   khint_t kh_put_##name(pic_state *, kh_##name##_t *h, khkey_t key, int *ret); \
   void kh_del_##name(kh_##name##_t *h, khint_t x);
@@ -95,8 +80,9 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
       h->size = h->n_occupied = 0;                                      \
     }                                                                   \
   }                                                                     \
-  khint_t kh_get_##name(const kh_##name##_t *h, khkey_t key)            \
+  khint_t kh_get_##name(pic_state *pic, const kh_##name##_t *h, khkey_t key) \
   {                                                                     \
+    (void)pic;                                                          \
     if (h->n_buckets) {                                                 \
       khint_t k, i, last, mask, step = 0;                               \
       mask = h->n_buckets - 1;                                          \
@@ -220,9 +206,6 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
 #define kh_ptr_hash_equal(a, b) ((a) == (b))
 #define kh_int_hash_func(key) (int)(key)
 #define kh_int_hash_equal(a, b) ((a) == (b))
-#define kh_str_hash_func(key) ac_X31_hash_string(key)
-#define kh_str_hash_equal(a, b) (strcmp(a, b) == 0)
-#define kh_int_hash_func2(k) ac_Wang_hash((khint_t)key)
 
 /* --- END OF HASH FUNCTIONS --- */
 
@@ -232,7 +215,7 @@ PIC_INLINE khint_t ac_Wang_hash(khint_t key)
 #define kh_clear(name, h) kh_clear_##name(h)
 #define kh_resize(name, h, s) kh_resize_##name(pic, h, s)
 #define kh_put(name, h, k, r) kh_put_##name(pic, h, k, r)
-#define kh_get(name, h, k) kh_get_##name(h, k)
+#define kh_get(name, h, k) kh_get_##name(pic, h, k)
 #define kh_del(name, h, k) kh_del_##name(h, k)
 
 #define kh_exist(h, x) (!ac_iseither((h)->flags, (x)))

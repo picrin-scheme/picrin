@@ -29,6 +29,7 @@ int pic_str_len(pic_str *);
 pic_str *pic_str_cat(pic_state *, pic_str *, pic_str *);
 pic_str *pic_str_sub(pic_state *, pic_str *, int, int);
 int pic_str_cmp(pic_state *, pic_str *, pic_str *);
+int pic_str_hash(pic_state *, pic_str *);
 const char *pic_str_cstr(pic_state *, pic_str *);
 
 pic_str *pic_format(pic_state *, const char *, ...);

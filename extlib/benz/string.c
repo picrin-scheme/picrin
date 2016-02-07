@@ -288,6 +288,19 @@ pic_str_cmp(pic_state *pic, pic_str *str1, pic_str *str2)
   return strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
 }
 
+int
+pic_str_hash(pic_state *pic, pic_str *str)
+{
+  const char *s;
+  int h = 0;
+
+  s = pic_str_cstr(pic, str);
+  while (*s) {
+    h = (h << 5) - h + *s++;
+  }
+  return h;
+}
+
 const char *
 pic_str_cstr(pic_state *pic, pic_str *str)
 {
