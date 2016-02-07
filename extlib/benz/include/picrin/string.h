@@ -20,23 +20,20 @@ void pic_rope_decref(pic_state *, struct pic_rope *);
 #define pic_str_p(v) (pic_type(v) == PIC_TT_STRING)
 #define pic_str_ptr(o) ((struct pic_string *)pic_ptr(o))
 
-pic_str *pic_make_str(pic_state *, const char * /* nullable */, int);
-pic_str *pic_make_str_cstr(pic_state *, const char *);
+pic_str *pic_make_str(pic_state *, const char *, int);
+#define pic_make_cstr(pic, cstr) pic_make_str(pic, (cstr), strlen(cstr))
+#define pic_make_lit(pic, lit) pic_make_str(pic, "" lit, -((int)sizeof lit - 1))
 
 char pic_str_ref(pic_state *, pic_str *, int);
 int pic_str_len(pic_str *);
 pic_str *pic_str_cat(pic_state *, pic_str *, pic_str *);
 pic_str *pic_str_sub(pic_state *, pic_str *, int, int);
 int pic_str_cmp(pic_state *, pic_str *, pic_str *);
+int pic_str_hash(pic_state *, pic_str *);
 const char *pic_str_cstr(pic_state *, pic_str *);
 
 pic_str *pic_format(pic_state *, const char *, ...);
 pic_str *pic_vformat(pic_state *, const char *, va_list);
-void pic_vfformat(pic_state *, xFILE *, const char *, va_list);
-
-pic_value pic_xformat(pic_state *, const char *, ...);
-pic_value pic_xvformat(pic_state *, const char *, va_list);
-pic_value pic_xvfformat(pic_state *, xFILE *, const char *, va_list);
 
 #if defined(__cplusplus)
 }

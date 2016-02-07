@@ -45,7 +45,7 @@ typedef struct pic_state pic_state;
 #include "picrin/read.h"
 #include "picrin/gc.h"
 
-KHASH_DECLARE(s, const char *, pic_sym *)
+KHASH_DECLARE(s, pic_str *, pic_sym *)
 
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
@@ -251,7 +251,6 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
-#include "picrin/box.h"
 
 #if defined(__cplusplus)
 }

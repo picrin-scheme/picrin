@@ -35,7 +35,6 @@ struct pic_object {
     struct pic_port port;
     struct pic_error err;
     struct pic_lib lib;
-    struct pic_box box;
     struct pic_checkpoint cp;
   } u;
 };
@@ -385,6 +384,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
+    LOOP(obj->u.sym.str);
     break;
   }
   case PIC_TT_REG: {
@@ -392,12 +392,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
     reg->prev = pic->heap->regs;
     pic->heap->regs = reg;
-    break;
-  }
-  case PIC_TT_BOX: {
-    if (pic_obj_p(obj->u.box.value)) {
-      LOOP(pic_obj_ptr(obj->u.box.value));
-    }
     break;
   }
   case PIC_TT_CP: {
@@ -566,7 +560,7 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
-    pic_free(pic, (void *)obj->u.sym.cstr);
+    /* TODO: remove this symbol's entry from pic->syms immediately */
     break;
   }
   case PIC_TT_REG: {
@@ -588,7 +582,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_LIB:
   case PIC_TT_RECORD:
   case PIC_TT_CP:
-  case PIC_TT_BOX:
     break;
 
   case PIC_TT_NIL:

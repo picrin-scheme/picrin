@@ -13,7 +13,7 @@ struct pic_id {
   union {
     struct pic_symbol {
       PIC_OBJECT_HEADER
-      const char *cstr;
+      pic_str *str;
     } sym;
     struct {
       PIC_OBJECT_HEADER

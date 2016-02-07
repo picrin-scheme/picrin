@@ -11,18 +11,18 @@ pic_get_backtrace(pic_state *pic)
   pic_callinfo *ci;
   pic_str *trace;
 
-  trace = pic_make_str(pic, NULL, 0);
+  trace = pic_make_lit(pic, "");
 
   for (ci = pic->ci; ci != pic->cibase; --ci) {
     struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
 
-    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "  at "));
-    trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, "(anonymous lambda)"));
+    trace = pic_str_cat(pic, trace, pic_make_lit(pic, "  at "));
+    trace = pic_str_cat(pic, trace, pic_make_lit(pic, "(anonymous lambda)"));
 
     if (pic_proc_func_p(proc)) {
-      trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (native function)\n"));
+      trace = pic_str_cat(pic, trace, pic_make_lit(pic, " (native function)\n"));
     } else if (pic_proc_irep_p(proc)) {
-      trace = pic_str_cat(pic, trace, pic_make_str_cstr(pic, " (unknown location)\n")); /* TODO */
+      trace = pic_str_cat(pic, trace, pic_make_lit(pic, " (unknown location)\n")); /* TODO */
     }
   }
 

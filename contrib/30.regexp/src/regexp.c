@@ -146,7 +146,7 @@ pic_regexp_regexp_split(pic_state *pic)
     input += match.rm_eo;
   }
 
-  pic_push(pic, pic_obj_value(pic_make_str_cstr(pic, input)), output);
+  pic_push(pic, pic_obj_value(pic_make_cstr(pic, input)), output);
 
   return pic_reverse(pic, output);
 }
@@ -157,7 +157,7 @@ pic_regexp_regexp_replace(pic_state *pic)
   pic_value reg;
   const char *input;
   regmatch_t match;
-  pic_str *txt, *output = pic_make_str(pic, NULL, 0);
+  pic_str *txt, *output = pic_make_lit(pic, "");
 
   pic_get_args(pic, "ozs", &reg, &input, &txt);
 
