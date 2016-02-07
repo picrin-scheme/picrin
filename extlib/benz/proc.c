@@ -904,7 +904,7 @@ pic_define_(pic_state *pic, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
 
-  sym = pic_intern(pic, name);
+  sym = pic_intern_cstr(pic, name);
 
   if ((uid = pic_find_identifier(pic, (pic_id *)sym, pic->lib->env)) == NULL) {
     uid = pic_add_identifier(pic, (pic_id *)sym, pic->lib->env);
@@ -921,7 +921,7 @@ void
 pic_define(pic_state *pic, const char *name, pic_value val)
 {
   pic_define_(pic, name, val);
-  pic_export(pic, pic_intern(pic, name));
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 void
@@ -934,7 +934,7 @@ void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
   pic_defun_(pic, name, cfunc);
-  pic_export(pic, pic_intern(pic, name));
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 void
@@ -947,7 +947,7 @@ void
 pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
 {
   pic_defvar_(pic, name, init, conv);
-  pic_export(pic, pic_intern(pic, name));
+  pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 pic_value
@@ -955,7 +955,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
 {
   pic_sym *sym, *uid;
 
-  sym = pic_intern(pic, name);
+  sym = pic_intern_cstr(pic, name);
 
   if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
@@ -969,7 +969,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
 
-  sym = pic_intern(pic, name);
+  sym = pic_intern_cstr(pic, name);
 
   if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
@@ -1088,19 +1088,19 @@ pic_proc_env(pic_state *pic, struct pic_proc *proc)
 bool
 pic_proc_env_has(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  return pic_dict_has(pic, pic_proc_env(pic, proc), pic_intern(pic, key));
+  return pic_dict_has(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
 }
 
 pic_value
 pic_proc_env_ref(pic_state *pic, struct pic_proc *proc, const char *key)
 {
-  return pic_dict_ref(pic, pic_proc_env(pic, proc), pic_intern(pic, key));
+  return pic_dict_ref(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
 }
 
 void
 pic_proc_env_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value val)
 {
-  pic_dict_set(pic, pic_proc_env(pic, proc), pic_intern(pic, key), val);
+  pic_dict_set(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key), val);
 }
 
 static pic_value

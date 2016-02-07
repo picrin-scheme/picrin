@@ -46,7 +46,7 @@ pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
   } else {
     str = pic_format(pic, ".%s.%d", name, pic->ucnt++);
   }
-  uid = pic_intern_str(pic, str);
+  uid = pic_intern(pic, str);
 
   return pic_put_identifier(pic, id, uid, env);
 }

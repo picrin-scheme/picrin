@@ -141,7 +141,7 @@ pic_error(pic_state *pic, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern(pic, ""), msg, irrs);
+  e = pic_make_error(pic, pic_intern_lit(pic, ""), msg, irrs);
 
   pic_raise(pic, pic_obj_value(e));
 }

@@ -10,7 +10,7 @@
 KHASH_DEFINE(s, pic_str *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
 
 pic_sym *
-pic_intern_str(pic_state *pic, pic_str *str)
+pic_intern(pic_state *pic, pic_str *str)
 {
   khash_t(s) *h = &pic->syms;
   pic_sym *sym;
@@ -29,12 +29,6 @@ pic_intern_str(pic_state *pic, pic_str *str)
   kh_val(h, it) = sym;
 
   return sym;
-}
-
-pic_sym *
-pic_intern(pic_state *pic, const char *cstr)
-{
-  return pic_intern_str(pic, pic_make_cstr(pic, cstr));
 }
 
 pic_id *
@@ -110,7 +104,7 @@ pic_symbol_string_to_symbol(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_obj_value(pic_intern_str(pic, str));
+  return pic_obj_value(pic_intern(pic, str));
 }
 
 static pic_value

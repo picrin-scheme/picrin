@@ -160,10 +160,10 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
 static pic_value analyze(pic_state *, analyze_scope *, pic_value);
 static pic_value analyze_lambda(pic_state *, analyze_scope *, pic_value);
 
-#define GREF pic_intern(pic, "gref")
-#define LREF pic_intern(pic, "lref")
-#define CREF pic_intern(pic, "cref")
-#define CALL pic_intern(pic, "call")
+#define GREF pic_intern_lit(pic, "gref")
+#define LREF pic_intern_lit(pic, "lref")
+#define CREF pic_intern_lit(pic, "cref")
+#define CALL pic_intern_lit(pic, "call")
 
 static pic_value
 analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)

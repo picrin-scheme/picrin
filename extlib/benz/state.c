@@ -15,7 +15,7 @@ pic_set_argv(pic_state *pic, int argc, char *argv[], char **envp)
 void
 pic_add_feature(pic_state *pic, const char *feature)
 {
-  pic_push(pic, pic_obj_value(pic_intern(pic, feature)), pic->features);
+  pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
 }
 
 void pic_init_bool(pic_state *);
@@ -109,14 +109,14 @@ pic_features(pic_state *pic)
 
 #define import_builtin_syntax(name) do {                                \
     pic_sym *nick, *real;                                               \
-    nick = pic_intern(pic, "builtin:" name);                            \
-    real = pic_intern(pic, name);                                       \
+    nick = pic_intern_lit(pic, "builtin:" name);                        \
+    real = pic_intern_lit(pic, name);                                   \
     pic_put_identifier(pic, (pic_id *)nick, real, pic->lib->env);       \
   } while (0)
 
 #define declare_vm_procedure(name) do {                                 \
     pic_sym *sym;                                                       \
-    sym = pic_intern(pic, name);                                        \
+    sym = pic_intern_lit(pic, name);                                    \
     pic_put_identifier(pic, (pic_id *)sym, sym, pic->lib->env);         \
   } while (0)
 
@@ -301,7 +301,7 @@ pic_open(pic_allocf allocf, void *userdata)
 
   ai = pic_gc_arena_preserve(pic);
 
-#define S(slot,name) pic->slot = pic_intern(pic, name)
+#define S(slot,name) pic->slot = pic_intern_lit(pic, name)
 
   S(sDEFINE, "define");
   S(sDEFINE_MACRO, "define-macro");
