@@ -146,11 +146,13 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   int ret;
 
   if (search_scope(scope, sym)) {
-    if (scope->depth > 0 || (pic_reg_has(pic, pic->globals, sym) && ! pic_invalid_p(pic_box_ptr(pic_reg_ref(pic, pic->globals, sym))->value))) {
+    if (scope->depth > 0 || pic_reg_has(pic, pic->globals, sym)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
     }
     return;
   }
+
+  pic_reg_set(pic, pic->globals, sym, pic_invalid_value());
 
   kh_put(a, &scope->locals, sym, &ret);
 }
@@ -514,15 +516,11 @@ index_local(codegen_context *cxt, pic_sym *sym)
 static int
 index_global(pic_state *pic, codegen_context *cxt, pic_sym *name)
 {
-  extern struct pic_box *pic_vm_gref_slot(pic_state *, pic_sym *);
   int pidx;
-  struct pic_box *slot;
-
-  slot = pic_vm_gref_slot(pic, name);
 
   check_pool_size(pic, cxt);
   pidx = (int)cxt->plen++;
-  cxt->pool[pidx] = (struct pic_object *)(slot);
+  cxt->pool[pidx] = (struct pic_object *)name;
 
   return pidx;
 }

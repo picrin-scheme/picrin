@@ -175,35 +175,24 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return argc;
 }
 
-struct pic_box *
-pic_vm_gref_slot(pic_state *pic, pic_sym *uid) /* TODO: make this static */
-{
-  struct pic_box *box;
-
-  if (pic_reg_has(pic, pic->globals, uid)) {
-    return pic_box_ptr(pic_reg_ref(pic, pic->globals, uid));
-  }
-  box = pic_box(pic, pic_invalid_value());
-  pic_reg_set(pic, pic->globals, uid, pic_obj_value(box));
-  return box;
-}
-
 static pic_value
-vm_gref(pic_state *pic, struct pic_box *slot, pic_sym *uid)
+vm_gref(pic_state *pic, pic_sym *uid)
 {
-  if (pic_invalid_p(slot->value)) {
-    if (uid == NULL) {
-      uid = pic_reg_rev_ref(pic, pic->globals, pic_obj_value(slot));
-    }
+  if (! pic_reg_has(pic, pic->globals, uid)) {
+    pic_reg_set(pic, pic->globals, uid, pic_invalid_value());
+
     pic_errorf(pic, "uninitialized global variable: %s", pic_symbol_name(pic, uid));
+
+    return pic_invalid_value();
   }
-  return slot->value;
+
+  return pic_reg_ref(pic, pic->globals, uid);
 }
 
 static void
-vm_gset(struct pic_box *slot, pic_value value)
+vm_gset(pic_state *pic, pic_sym *uid, pic_value value)
 {
-  slot->value = value;
+  pic_reg_set(pic, pic->globals, uid, value);
 }
 
 static void
@@ -423,11 +412,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(vm_gref(pic, (struct pic_box *)(pic->ci->irep->pool[c.a]), NULL)); /* FIXME */
+      PUSH(vm_gref(pic, (pic_sym *)pic->ci->irep->pool[c.a]));
       NEXT;
     }
     CASE(OP_GSET) {
-      vm_gset((struct pic_box *)(pic->ci->irep->pool[c.a]), POP());
+      vm_gset(pic, (pic_sym *)pic->ci->irep->pool[c.a], POP());
       PUSH(pic_undef_value());
       NEXT;
     }
@@ -972,7 +961,7 @@ pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  return vm_gref(pic, pic_vm_gref_slot(pic, uid), uid);
+  return vm_gref(pic, uid);
 }
 
 void
@@ -986,7 +975,7 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
     pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
   }
 
-  vm_gset(pic_vm_gref_slot(pic, uid), val);
+  vm_gset(pic, uid, val);
 }
 
 static struct pic_proc *
