@@ -283,13 +283,12 @@ pic_str_cstr(pic_state *pic, pic_str *str)
   return rope_cstr(pic, str->rope);
 }
 
-pic_value
-pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
+static void
+pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 {
   char c;
-  pic_value irrs = pic_nil_value();
 
-  while ((c = *fmt++)) {
+  while ((c = *fmt++) != '\0') {
     switch (c) {
     default:
       xfputc(pic, c, file);
@@ -337,52 +336,17 @@ pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
         xfputc(pic, '\n', file);
         break;
       case 'a':
-        irrs = pic_cons(pic, pic_fdisplay(pic, va_arg(ap, pic_value), file), irrs);
+        pic_fdisplay(pic, va_arg(ap, pic_value), file);
         break;
       case 's':
-        irrs = pic_cons(pic, pic_fwrite(pic, va_arg(ap, pic_value), file), irrs);
+        pic_fwrite(pic, va_arg(ap, pic_value), file);
         break;
       }
       break;
     }
   }
  exit:
-
-  return pic_reverse(pic, irrs);
-}
-
-pic_value
-pic_xvformat(pic_state *pic, const char *fmt, va_list ap)
-{
-  struct pic_port *port;
-  pic_value irrs;
-
-  port = pic_open_output_string(pic);
-
-  irrs = pic_xvfformat(pic, port->file, fmt, ap);
-  irrs = pic_cons(pic, pic_obj_value(pic_get_output_string(pic, port)), irrs);
-
-  pic_close_port(pic, port);
-  return irrs;
-}
-
-pic_value
-pic_xformat(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-  pic_value objs;
-
-  va_start(ap, fmt);
-  objs = pic_xvformat(pic, fmt, ap);
-  va_end(ap);
-
-  return objs;
-}
-
-void
-pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
-{
-  pic_xvfformat(pic, file, fmt, ap);
+  return;
 }
 
 pic_str *

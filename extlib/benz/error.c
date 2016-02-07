@@ -21,30 +21,29 @@ void
 pic_warnf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  pic_value err_line;
+  pic_str *err;
 
   va_start(ap, fmt);
-  err_line = pic_xvformat(pic, fmt, ap);
+  err = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line))));
+  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, err));
 }
 
 void
 pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  pic_value err_line, irrs;
   const char *msg;
+  pic_str *err;
 
   va_start(ap, fmt);
-  err_line = pic_xvformat(pic, fmt, ap);
+  err = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  msg = pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line)));
-  irrs = pic_cdr(pic, err_line);
+  msg = pic_str_cstr(pic, err);
 
-  pic_error(pic, msg, irrs);
+  pic_error(pic, msg, pic_nil_value());
 }
 
 pic_value
