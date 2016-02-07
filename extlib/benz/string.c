@@ -26,8 +26,9 @@ struct pic_rope {
 #define CHUNK_DECREF(c) do {                    \
     struct pic_chunk *c_ = (c);                 \
     if (! --c_->refcnt) {                       \
-      if (c_->str != c_->buf)                   \
+      if (c_->str != c_->buf) {                 \
         pic_free(pic, c_->str);                 \
+      }                                         \
       pic_free(pic, c_);                        \
     }                                           \
   } while (0)
@@ -56,7 +57,7 @@ pic_make_chunk(pic_state *pic, const char *str, size_t len)
 {
   struct pic_chunk *c;
 
-  c = pic_malloc(pic, sizeof(struct pic_chunk) + len);
+  c = pic_malloc(pic, offsetof(struct pic_chunk, buf) + len + 1);
   c->refcnt = 1;
   c->str = c->buf;
   c->len = len;
