@@ -32,11 +32,9 @@ struct pic_object {
     struct pic_env env;
     struct pic_proc proc;
     struct pic_context cxt;
-    struct pic_irep irep;
     struct pic_port port;
     struct pic_error err;
     struct pic_lib lib;
-    struct pic_box box;
     struct pic_checkpoint cp;
   } u;
 };
@@ -300,7 +298,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_PROC: {
     if (pic_proc_irep_p(&obj->u.proc)) {
-      gc_mark_object(pic, (struct pic_object *)obj->u.proc.u.i.irep);
       if (obj->u.proc.u.i.cxt) {
         LOOP(obj->u.proc.u.i.cxt);
       }
@@ -335,8 +332,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_ID: {
-    gc_mark(pic, obj->u.id.var);
-    LOOP(obj->u.id.env);
+    gc_mark_object(pic, (struct pic_object *)obj->u.id.u.id.id);
+    LOOP(obj->u.id.u.id.env);
     break;
   }
   case PIC_TT_ENV: {
@@ -345,9 +342,12 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (kh_exist(h, it)) {
-        gc_mark_object(pic, kh_key(h, it));
+        gc_mark_object(pic, (struct pic_object *)kh_key(h, it));
         gc_mark_object(pic, (struct pic_object *)kh_val(h, it));
       }
+    }
+    if (obj->u.env.prefix) {
+      gc_mark_object(pic, (struct pic_object *)obj->u.env.prefix);
     }
     if (obj->u.env.up) {
       LOOP(obj->u.env.up);
@@ -358,17 +358,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     gc_mark(pic, obj->u.lib.name);
     gc_mark_object(pic, (struct pic_object *)obj->u.lib.env);
     LOOP(obj->u.lib.exports);
-    break;
-  }
-  case PIC_TT_IREP: {
-    size_t i;
-
-    for (i = 0; i < obj->u.irep.ilen; ++i) {
-      gc_mark_object(pic, (struct pic_object *)obj->u.irep.irep[i]);
-    }
-    for (i = 0; i < obj->u.irep.plen; ++i) {
-      gc_mark(pic, obj->u.irep.pool[i]);
-    }
     break;
   }
   case PIC_TT_DATA: {
@@ -388,11 +377,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_RECORD: {
-    gc_mark_object(pic, (struct pic_object *)obj->u.rec.type);
-    LOOP(obj->u.rec.data);
+    gc_mark(pic, obj->u.rec.type);
+    if (pic_obj_p(obj->u.rec.datum)) {
+      LOOP(pic_obj_ptr(obj->u.rec.datum));
+    }
     break;
   }
   case PIC_TT_SYMBOL: {
+    LOOP(obj->u.sym.str);
     break;
   }
   case PIC_TT_REG: {
@@ -400,12 +392,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
     reg->prev = pic->heap->regs;
     pic->heap->regs = reg;
-    break;
-  }
-  case PIC_TT_BOX: {
-    if (pic_obj_p(obj->u.box.value)) {
-      LOOP(pic_obj_ptr(obj->u.box.value));
-    }
     break;
   }
   case PIC_TT_CP: {
@@ -433,7 +419,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 }
 
 #define M(x) gc_mark_object(pic, (struct pic_object *)pic->x)
-#define P(x) gc_mark(pic, pic->x)
 
 static void
 gc_mark_phase(pic_state *pic)
@@ -441,6 +426,7 @@ gc_mark_phase(pic_state *pic)
   pic_value *stack;
   pic_callinfo *ci;
   struct pic_proc **xhandler;
+  struct pic_list *list;
   size_t j;
 
   assert(pic->heap->regs == NULL);
@@ -472,23 +458,22 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct pic_object *)pic->arena[j]);
   }
 
+  /* ireps */
+  for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
+    struct pic_irep *irep = (struct pic_irep *)list;
+    for (j = 0; j < irep->npool; ++j) {
+      gc_mark_object(pic, irep->pool[j]);
+    }
+  }
+
   /* mark reserved symbols */
+  M(sDEFINE); M(sDEFINE_MACRO); M(sLAMBDA); M(sIF); M(sBEGIN); M(sSETBANG);
   M(sQUOTE); M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
   M(sSYNTAX_QUOTE); M(sSYNTAX_QUASIQUOTE); M(sSYNTAX_UNQUOTE); M(sSYNTAX_UNQUOTE_SPLICING);
   M(sDEFINE_LIBRARY); M(sIMPORT); M(sEXPORT); M(sCOND_EXPAND);
 
-  M(uDEFINE); M(uLAMBDA); M(uIF); M(uBEGIN); M(uQUOTE); M(uSETBANG); M(uDEFINE_MACRO);
-  M(uDEFINE_LIBRARY); M(uIMPORT); M(uEXPORT); M(uCOND_EXPAND);
-
-  M(uCONS); M(uCAR); M(uCDR); M(uNILP); M(uSYMBOLP); M(uPAIRP);
-  M(uADD); M(uSUB); M(uMUL); M(uDIV); M(uEQ); M(uLT); M(uLE); M(uGT); M(uGE); M(uNOT);
-
-  /* mark system procedures */
-  P(pCONS); P(pCAR); P(pCDR); P(pNILP); P(pSYMBOLP); P(pPAIRP); P(pNOT);
-  P(pADD); P(pSUB); P(pMUL); P(pDIV); P(pEQ); P(pLT); P(pLE); P(pGT); P(pGE);
-
-  M(cCONS); M(cCAR); M(cCDR); M(cNILP); M(cSYMBOLP); M(cPAIRP); M(cNOT);
-  M(cADD); M(cSUB); M(cMUL); M(cDIV); M(cEQ); M(cLT); M(cLE); M(cGT); M(cGE);
+  M(sCONS); M(sCAR); M(sCDR); M(sNILP); M(sSYMBOLP); M(sPAIRP);
+  M(sADD); M(sSUB); M(sMUL); M(sDIV); M(sEQ); M(sLT); M(sLE); M(sGT); M(sGE); M(sNOT);
 
   /* global variables */
   if (pic->globals) {
@@ -498,11 +483,6 @@ gc_mark_phase(pic_state *pic)
   /* macro objects */
   if (pic->macros) {
     gc_mark_object(pic, (struct pic_object *)pic->macros);
-  }
-
-  /* attribute table */
-  if (pic->attrs) {
-    gc_mark_object(pic, (struct pic_object *)pic->attrs);
   }
 
   /* error object */
@@ -569,12 +549,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     kh_destroy(env, &obj->u.env.map);
     break;
   }
-  case PIC_TT_IREP: {
-    pic_free(pic, obj->u.irep.code);
-    pic_free(pic, obj->u.irep.irep);
-    pic_free(pic, obj->u.irep.pool);
-    break;
-  }
   case PIC_TT_DATA: {
     if (obj->u.data.type->dtor) {
       obj->u.data.type->dtor(pic, obj->u.data.data);
@@ -586,24 +560,28 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TT_SYMBOL: {
-    pic_free(pic, (void *)obj->u.sym.cstr);
+    /* TODO: remove this symbol's entry from pic->syms immediately */
     break;
   }
   case PIC_TT_REG: {
     kh_destroy(reg, &obj->u.reg.hash);
     break;
   }
+  case PIC_TT_PROC: {
+    if (pic_proc_irep_p(&obj->u.proc)) {
+      pic_irep_decref(pic, obj->u.proc.u.i.irep);
+    }
+    break;
+  }
 
   case PIC_TT_PAIR:
   case PIC_TT_CXT:
-  case PIC_TT_PROC:
   case PIC_TT_PORT:
   case PIC_TT_ERROR:
   case PIC_TT_ID:
   case PIC_TT_LIB:
   case PIC_TT_RECORD:
   case PIC_TT_CP:
-  case PIC_TT_BOX:
     break;
 
   case PIC_TT_NIL:

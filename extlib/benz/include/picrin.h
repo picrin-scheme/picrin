@@ -35,7 +35,6 @@ extern "C" {
 #include "picrin/config.h"
 
 #include "picrin/compat.h"
-#include "picrin/kvec.h"
 #include "picrin/khash.h"
 
 typedef struct pic_state pic_state;
@@ -46,7 +45,7 @@ typedef struct pic_state pic_state;
 #include "picrin/read.h"
 #include "picrin/gc.h"
 
-KHASH_DECLARE(s, const char *, pic_sym *)
+KHASH_DECLARE(s, pic_str *, pic_sym *)
 
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
@@ -95,22 +94,13 @@ struct pic_state {
 
   struct pic_lib *lib, *prev_lib;
 
+  pic_sym *sDEFINE, *sDEFINE_MACRO, *sLAMBDA, *sIF, *sBEGIN, *sSETBANG;
   pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
   pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE;
   pic_sym *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
   pic_sym *sDEFINE_LIBRARY, *sIMPORT, *sEXPORT, *sCOND_EXPAND;
-
-  pic_sym *uDEFINE, *uLAMBDA, *uIF, *uBEGIN, *uQUOTE, *uSETBANG, *uDEFINE_MACRO;
-  pic_sym *uDEFINE_LIBRARY, *uIMPORT, *uEXPORT, *uCOND_EXPAND;
-
-  pic_sym *uCONS, *uCAR, *uCDR, *uNILP, *uSYMBOLP, *uPAIRP;
-  pic_sym *uADD, *uSUB, *uMUL, *uDIV, *uEQ, *uLT, *uLE, *uGT, *uGE, *uNOT;
-
-  pic_value pCONS, pCAR, pCDR, pNILP, pPAIRP, pSYMBOLP, pNOT;
-  pic_value pADD, pSUB, pMUL, pDIV, pEQ, pLT, pLE, pGT, pGE;
-
-  struct pic_box *cCONS, *cCAR, *cCDR, *cNILP, *cPAIRP, *cSYMBOLP, *cNOT;
-  struct pic_box *cADD, *cSUB, *cMUL, *cDIV, *cEQ, *cLT, *cLE, *cGT, *cGE;
+  pic_sym *sCONS, *sCAR, *sCDR, *sNILP, *sSYMBOLP, *sPAIRP;
+  pic_sym *sADD, *sSUB, *sMUL, *sDIV, *sEQ, *sLT, *sLE, *sGT, *sGE, *sNOT;
 
   struct pic_lib *PICRIN_BASE;
   struct pic_lib *PICRIN_USER;
@@ -122,7 +112,7 @@ struct pic_state {
   struct pic_reg *globals;
   struct pic_reg *macros;
   pic_value libs;
-  struct pic_reg *attrs;
+  struct pic_list ireps;        /* chain */
 
   pic_reader reader;
   xFILE files[XOPEN_MAX];
@@ -165,16 +155,11 @@ void pic_set_argv(pic_state *, int argc, char *argv[], char **envp);
 
 void pic_add_feature(pic_state *, const char *);
 
-struct pic_proc *pic_get_proc(pic_state *);
 int pic_get_args(pic_state *, const char *, ...);
 
 bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
 bool pic_equal_p(pic_state *, pic_value, pic_value);
-
-pic_sym *pic_intern(pic_state *, const char *);
-pic_sym *pic_intern_str(pic_state *, pic_str *);
-const char *pic_symbol_name(pic_state *, pic_sym *);
 
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
@@ -208,7 +193,7 @@ pic_value pic_apply5(pic_state *, struct pic_proc *, pic_value, pic_value, pic_v
 pic_value pic_apply_list(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, int, pic_value *);
 pic_value pic_apply_trampoline_list(pic_state *, struct pic_proc *, pic_value);
-pic_value pic_eval(pic_state *, pic_value, struct pic_env *);
+pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
@@ -234,10 +219,6 @@ PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
-
-struct pic_dict *pic_attr(pic_state *, pic_value);
-pic_value pic_attr_ref(pic_state *, pic_value, const char *);
-void pic_attr_set(pic_state *, pic_value, const char *, pic_value);
 
 struct pic_port *pic_stdin(pic_state *);
 struct pic_port *pic_stdout(pic_state *);
@@ -270,7 +251,6 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
 #include "picrin/reg.h"
-#include "picrin/box.h"
 
 #if defined(__cplusplus)
 }

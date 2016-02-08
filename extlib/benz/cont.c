@@ -85,13 +85,13 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
 static pic_value
 cont_call(pic_state *pic)
 {
-  struct pic_proc *self = pic_get_proc(pic);
+  struct pic_proc *self;
   int argc;
   pic_value *argv;
   int id;
   struct pic_cont *cc, *cont;
 
-  pic_get_args(pic, "*", &argc, &argv);
+  pic_get_args(pic, "&*", &self, &argc, &argv);
 
   id = pic_int(pic_proc_env_ref(pic, self, "id"));
 

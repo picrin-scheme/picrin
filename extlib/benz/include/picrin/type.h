@@ -156,9 +156,7 @@ enum pic_tt {
   PIC_TT_DICT,
   PIC_TT_REG,
   PIC_TT_RECORD,
-  PIC_TT_BOX,
   PIC_TT_CXT,
-  PIC_TT_IREP,
   PIC_TT_CP
 };
 
@@ -184,6 +182,7 @@ struct pic_env;
 
 /* set aliases to basic types */
 typedef struct pic_symbol pic_sym;
+typedef struct pic_id pic_id;
 typedef struct pic_pair pic_pair;
 typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
@@ -305,16 +304,12 @@ pic_type_repr(enum pic_tt tt)
     return "env";
   case PIC_TT_LIB:
     return "lib";
-  case PIC_TT_IREP:
-    return "irep";
   case PIC_TT_DATA:
     return "data";
   case PIC_TT_DICT:
     return "dict";
   case PIC_TT_REG:
     return "reg";
-  case PIC_TT_BOX:
-    return "box";
   case PIC_TT_RECORD:
     return "record";
   case PIC_TT_CP:

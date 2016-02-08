@@ -218,15 +218,14 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
 PIC_NORETURN static pic_value
 cont_call(pic_state *pic)
 {
-  struct pic_proc *proc;
+  struct pic_proc *self;
   int argc;
   pic_value *argv;
   struct pic_fullcont *cont;
 
-  proc = pic_get_proc(pic);
-  pic_get_args(pic, "*", &argc, &argv);
+  pic_get_args(pic, "&*", &self, &argc, &argv);
 
-  cont = pic_data_ptr(pic_proc_env_ref(pic, proc, "cont"))->data;
+  cont = pic_data_ptr(pic_proc_env_ref(pic, self, "cont"))->data;
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */

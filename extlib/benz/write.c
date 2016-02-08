@@ -283,7 +283,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, pic_true_p(obj) ? "#t" : "#f");
     break;
   case PIC_TT_ID:
-    xfprintf(pic, file, "#<identifier %s>", pic_symbol_name(pic, pic_var_name(pic, obj)));
+    xfprintf(pic, file, "#<identifier %s>", pic_identifier_name(pic, pic_id_ptr(obj)));
     break;
   case PIC_TT_EOF:
     xfprintf(pic, file, "#.(eof-object)");
@@ -437,7 +437,7 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 
   va_start(ap, fmt);
 
-  str = pic_str_ptr(pic_car(pic, pic_xvformat(pic, fmt, ap)));
+  str = pic_vformat(pic, fmt, ap);
 
   va_end(ap);
 

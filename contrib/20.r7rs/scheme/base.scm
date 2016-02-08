@@ -208,17 +208,17 @@
 
     (define (constant? obj)
       (and (not (pair? obj))
-           (not (variable? obj))))
+           (not (identifier? obj))))
 
     (define (literal? obj)
-      (and (variable? obj)
+      (and (identifier? obj)
            (memq obj literals)))
 
     (define (many? pat)
       (and (pair? pat)
            (pair? (cdr pat))
-           (variable? (cadr pat))
-           (variable=? (cadr pat) ellipsis)))
+           (identifier? (cadr pat))
+           (identifier=? (cadr pat) ellipsis)))
 
     (define (pattern-validator pat)      ; pattern -> validator
       (letrec
@@ -228,8 +228,8 @@
                ((constant? pat)
                 #`(equal? '#,pat #,form))
                ((literal? pat)
-                #`(and (variable? #,form) (variable=? #'#,pat #,form)))
-               ((variable? pat)
+                #`(and (identifier? #,form) (identifier=? #'#,pat #,form)))
+               ((identifier? pat)
                 #t)
                ((many? pat)
                 (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
@@ -252,7 +252,7 @@
         '())
        ((literal? pat)
         '())
-       ((variable? pat)
+       ((identifier? pat)
         `(,pat))
        ((many? pat)
         (append (pattern-variables (car pat))
@@ -267,7 +267,7 @@
         '())
        ((literal? pat)
         '())
-       ((variable? pat)
+       ((identifier? pat)
         `((,pat . 0)))
        ((many? pat)
         (append (map-values succ (pattern-levels (car pat)))
@@ -285,7 +285,7 @@
                 '())
                ((literal? pat)
                 '())
-               ((variable? pat)
+               ((identifier? pat)
                 `((,pat . ,form)))
                ((many? pat)
                 (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
@@ -303,7 +303,7 @@
       (cond
        ((constant? pat)
         pat)
-       ((variable? pat)
+       ((identifier? pat)
         (let ((it (assq pat levels)))
           (if it
               (if (= 0 (cdr it))
@@ -410,14 +410,18 @@
 
   (export define-syntax)
 
-  ;; 5.5 Recored-type definitions
+  ;; 5.5 Record-type definitions
+
+  (define (make-record-type name)
+    (vector name))                      ; TODO
 
   (define-syntax (define-record-constructor type field-alist name . fields)
     (let ((record #'record))
       #`(define (#,name . #,fields)
-          (let ((#,record (make-record #,type #,(length field-alist))))
+          (let ((#,record (make-record #,type (make-vector #,(length field-alist)))))
             #,@(map
-                (lambda (field) #`(record-set! #,record #,(cdr (assq field field-alist)) #,field)) 
+                (lambda (field)
+                  #`(vector-set! (record-datum #,record) #,(cdr (assq field field-alist)) #,field)) 
                 fields)
             #,record))))
 
@@ -429,13 +433,13 @@
   (define-syntax (define-record-accessor pred field-alist field accessor)
     #`(define (#,accessor record)
         (if (#,pred record)
-            (record-ref record #,(cdr (assq field field-alist)))
+            (vector-ref (record-datum record) #,(cdr (assq field field-alist)))
             (error (string-append (symbol->string  '#,accessor) ": wrong record type") record))))
 
   (define-syntax (define-record-modifier pred field-alist field modifier)
     #`(define (#,modifier record val)
         (if (#,pred record)
-            (record-set! record #,(cdr (assq field field-alist)) val) ;; '#,field
+            (vector-set! (record-datum record) #,(cdr (assq field field-alist)) val)
             (error (string-append (symbol->string '#,modifier) ": wrong record type")  record))))
 
   (define-syntax (define-record-field pred field-alist field accessor . modifier-opt)
@@ -455,7 +459,7 @@
                                     (cons (if (pair? (car fds)) (car (car fds)) (car fds)) idx)
                                     alst))))))
       #`(begin
-          (define #,name (make-record <record-type> 0))
+          (define #,name (make-record-type '#,name))
           (define-record-constructor #,name #,field-alist #,@ctor)
           (define-record-predicate #,name #,pred)
           #,@(map (lambda (field) #`(define-record-field #,pred #,field-alist #,@field)) fields))))

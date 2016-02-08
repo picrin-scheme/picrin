@@ -26,8 +26,6 @@ struct pic_rope {
 #define CHUNK_DECREF(c) do {                    \
     struct pic_chunk *c_ = (c);                 \
     if (! --c_->refcnt) {                       \
-      if (c_->str != c_->buf)                   \
-        pic_free(pic, c_->str);                 \
       pic_free(pic, c_);                        \
     }                                           \
   } while (0)
@@ -56,12 +54,25 @@ pic_make_chunk(pic_state *pic, const char *str, size_t len)
 {
   struct pic_chunk *c;
 
-  c = pic_malloc(pic, sizeof(struct pic_chunk) + len);
+  c = pic_malloc(pic, offsetof(struct pic_chunk, buf) + len + 1);
   c->refcnt = 1;
   c->str = c->buf;
   c->len = len;
   c->buf[len] = 0;
   memcpy(c->buf, str, len);
+
+  return c;
+}
+
+static struct pic_chunk *
+pic_make_chunk_lit(pic_state *pic, const char *str, size_t len)
+{
+  struct pic_chunk *c;
+
+  c = pic_malloc(pic, sizeof(struct pic_chunk));
+  c->refcnt = 1;
+  c->str = (char *)str;
+  c->len = len;
 
   return c;
 }
@@ -213,7 +224,7 @@ rope_cstr(pic_state *pic, struct pic_rope *x)
     return x->chunk->str;       /* reuse cached chunk */
   }
 
-  c = pic_malloc(pic, sizeof(struct pic_chunk) + x->weight);
+  c = pic_malloc(pic, offsetof(struct pic_chunk, buf) + x->weight + 1);
   c->refcnt = 1;
   c->len = x->weight;
   c->str = c->buf;
@@ -228,16 +239,17 @@ rope_cstr(pic_state *pic, struct pic_rope *x)
 pic_str *
 pic_make_str(pic_state *pic, const char *str, int len)
 {
-  if (str == NULL && len > 0) {
-    pic_errorf(pic, "zero length specified against NULL ptr");
-  }
-  return pic_make_string(pic, pic_make_rope(pic, pic_make_chunk(pic, str, len)));
-}
+  struct pic_chunk *c;
 
-pic_str *
-pic_make_str_cstr(pic_state *pic, const char *cstr)
-{
-  return pic_make_str(pic, cstr, strlen(cstr));
+  if (len > 0) {
+    c = pic_make_chunk(pic, str, len);
+  } else {
+    if (len == 0) {
+      str = "";
+    }
+    c = pic_make_chunk_lit(pic, str, -len);
+  }
+  return pic_make_string(pic, pic_make_rope(pic, c));
 }
 
 int
@@ -276,19 +288,31 @@ pic_str_cmp(pic_state *pic, pic_str *str1, pic_str *str2)
   return strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
 }
 
+int
+pic_str_hash(pic_state *pic, pic_str *str)
+{
+  const char *s;
+  int h = 0;
+
+  s = pic_str_cstr(pic, str);
+  while (*s) {
+    h = (h << 5) - h + *s++;
+  }
+  return h;
+}
+
 const char *
 pic_str_cstr(pic_state *pic, pic_str *str)
 {
   return rope_cstr(pic, str->rope);
 }
 
-pic_value
-pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
+static void
+pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 {
   char c;
-  pic_value irrs = pic_nil_value();
 
-  while ((c = *fmt++)) {
+  while ((c = *fmt++) != '\0') {
     switch (c) {
     default:
       xfputc(pic, c, file);
@@ -336,52 +360,17 @@ pic_xvfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
         xfputc(pic, '\n', file);
         break;
       case 'a':
-        irrs = pic_cons(pic, pic_fdisplay(pic, va_arg(ap, pic_value), file), irrs);
+        pic_fdisplay(pic, va_arg(ap, pic_value), file);
         break;
       case 's':
-        irrs = pic_cons(pic, pic_fwrite(pic, va_arg(ap, pic_value), file), irrs);
+        pic_fwrite(pic, va_arg(ap, pic_value), file);
         break;
       }
       break;
     }
   }
  exit:
-
-  return pic_reverse(pic, irrs);
-}
-
-pic_value
-pic_xvformat(pic_state *pic, const char *fmt, va_list ap)
-{
-  struct pic_port *port;
-  pic_value irrs;
-
-  port = pic_open_output_string(pic);
-
-  irrs = pic_xvfformat(pic, port->file, fmt, ap);
-  irrs = pic_cons(pic, pic_obj_value(pic_get_output_string(pic, port)), irrs);
-
-  pic_close_port(pic, port);
-  return irrs;
-}
-
-pic_value
-pic_xformat(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-  pic_value objs;
-
-  va_start(ap, fmt);
-  objs = pic_xvformat(pic, fmt, ap);
-  va_end(ap);
-
-  return objs;
-}
-
-void
-pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
-{
-  pic_xvfformat(pic, file, fmt, ap);
+  return;
 }
 
 pic_str *
@@ -547,7 +536,7 @@ pic_str_string_append(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  str = pic_make_str(pic, NULL, 0);
+  str = pic_make_lit(pic, "");
   for (i = 0; i < argc; ++i) {
     if (! pic_str_p(argv[i])) {
       pic_errorf(pic, "type error");
@@ -651,7 +640,7 @@ pic_str_list_to_string(pic_state *pic)
   pic_get_args(pic, "o", &list);
 
   if (pic_length(pic, list) == 0) {
-    return pic_obj_value(pic_make_str(pic, NULL, 0));
+    return pic_obj_value(pic_make_lit(pic, ""));
   }
 
   buf = pic_malloc(pic, pic_length(pic, list));

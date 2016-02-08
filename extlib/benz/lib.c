@@ -4,13 +4,30 @@
 
 #include "picrin.h"
 
-static void
-setup_default_env(pic_state *pic, struct pic_env *env)
+static struct pic_env *
+make_library_env(pic_state *pic, pic_value name)
 {
-  pic_put_variable(pic, env, pic_obj_value(pic->sDEFINE_LIBRARY), pic->uDEFINE_LIBRARY);
-  pic_put_variable(pic, env, pic_obj_value(pic->sIMPORT), pic->uIMPORT);
-  pic_put_variable(pic, env, pic_obj_value(pic->sEXPORT), pic->uEXPORT);
-  pic_put_variable(pic, env, pic_obj_value(pic->sCOND_EXPAND), pic->uCOND_EXPAND);
+  struct pic_env *env;
+  pic_value dir, it;
+  pic_str *prefix = NULL;
+
+  pic_for_each (dir, name, it) {
+    if (prefix == NULL) {
+      prefix = pic_format(pic, "~a", dir);
+    } else {
+      prefix = pic_format(pic, "~a.~a", pic_obj_value(prefix), dir);
+    }
+  }
+
+  env = pic_make_topenv(pic, prefix);
+
+  /* set up default environment */
+  pic_put_identifier(pic, (pic_id *)pic->sDEFINE_LIBRARY, pic->sDEFINE_LIBRARY, env);
+  pic_put_identifier(pic, (pic_id *)pic->sIMPORT, pic->sIMPORT, env);
+  pic_put_identifier(pic, (pic_id *)pic->sEXPORT, pic->sEXPORT, env);
+  pic_put_identifier(pic, (pic_id *)pic->sCOND_EXPAND, pic->sCOND_EXPAND, env);
+
+  return env;
 }
 
 struct pic_lib *
@@ -24,10 +41,8 @@ pic_make_library(pic_state *pic, pic_value name)
     pic_errorf(pic, "library name already in use: ~s", name);
   }
 
-  env = pic_make_env(pic, NULL);
+  env = make_library_env(pic, name);
   exports = pic_make_dict(pic);
-
-  setup_default_env(pic, env);
 
   lib = (struct pic_lib *)pic_obj_alloc(pic, sizeof(struct pic_lib), PIC_TT_LIB);
   lib->name = name;
@@ -61,10 +76,10 @@ pic_import(pic_state *pic, struct pic_lib *lib)
   pic_dict_for_each (name, lib->exports, it) {
     realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
 
-    if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
+    if ((uid = pic_find_identifier(pic, (pic_id *)realname, lib->env)) == NULL) {
       pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
     }
-    pic_put_variable(pic, pic->lib->env, pic_obj_value(name), uid);
+    pic_put_identifier(pic, (pic_id *)name, uid, pic->lib->env);
   }
 }
 
@@ -141,10 +156,10 @@ pic_lib_library_import(pic_state *pic)
     realname = pic_sym_ptr(pic_dict_ref(pic, lib->exports, name));
   }
 
-  if ((uid = pic_find_variable(pic, lib->env, pic_obj_value(realname))) == NULL) {
+  if ((uid = pic_find_identifier(pic, (pic_id *)realname, lib->env)) == NULL) {
     pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
   } else {
-    pic_put_variable(pic, pic->lib->env, pic_obj_value(alias), uid);
+    pic_put_identifier(pic, (pic_id *)alias, uid, pic->lib->env);
   }
 
   return pic_undef_value();

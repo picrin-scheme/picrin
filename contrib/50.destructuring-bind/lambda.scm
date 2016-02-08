@@ -4,7 +4,7 @@
 
   (define-syntax (destructuring-bind formal value . body)
     (cond
-     ((variable? formal)
+     ((identifier? formal)
       #`(let ((#,formal #,value))
           #,@body))
      ((pair? formal)

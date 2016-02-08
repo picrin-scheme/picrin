@@ -21,43 +21,42 @@ void
 pic_warnf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  pic_value err_line;
+  pic_str *err;
 
   va_start(ap, fmt);
-  err_line = pic_xvformat(pic, fmt, ap);
+  err = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line))));
+  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, err));
 }
 
 void
 pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  pic_value err_line, irrs;
   const char *msg;
+  pic_str *err;
 
   va_start(ap, fmt);
-  err_line = pic_xvformat(pic, fmt, ap);
+  err = pic_vformat(pic, fmt, ap);
   va_end(ap);
 
-  msg = pic_str_cstr(pic, pic_str_ptr(pic_car(pic, err_line)));
-  irrs = pic_cdr(pic, err_line);
+  msg = pic_str_cstr(pic, err);
 
-  pic_error(pic, msg, irrs);
+  pic_error(pic, msg, pic_nil_value());
 }
 
 pic_value
 pic_native_exception_handler(pic_state *pic)
 {
   pic_value err;
-  struct pic_proc *cont;
+  struct pic_proc *self, *cont;
 
-  pic_get_args(pic, "o", &err);
+  pic_get_args(pic, "&o", &self, &err);
 
   pic->err = err;
 
-  cont = pic_proc_ptr(pic_proc_env_ref(pic, pic_get_proc(pic), "cont"));
+  cont = pic_proc_ptr(pic_proc_env_ref(pic, self, "cont"));
 
   pic_apply1(pic, cont, pic_false_value());
 
@@ -101,7 +100,7 @@ pic_make_error(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
   e->type = type;
-  e->msg = pic_make_str_cstr(pic, msg);
+  e->msg = pic_make_cstr(pic, msg);
   e->irrs = irrs;
   e->stack = stack;
 
@@ -142,7 +141,7 @@ pic_error(pic_state *pic, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern(pic, ""), msg, irrs);
+  e = pic_make_error(pic, pic_intern_lit(pic, ""), msg, irrs);
 
   pic_raise(pic, pic_obj_value(e));
 }

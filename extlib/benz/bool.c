@@ -40,11 +40,15 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
   switch (pic_type(x)) {
   case PIC_TT_ID: {
     struct pic_id *id1, *id2;
+    pic_sym *s1, *s2;
 
     id1 = pic_id_ptr(x);
     id2 = pic_id_ptr(y);
 
-    return pic_resolve(pic, id1->var, id1->env) == pic_resolve(pic, id2->var, id2->env);
+    s1 = pic_lookup_identifier(pic, id1->u.id.id, id1->u.id.env);
+    s2 = pic_lookup_identifier(pic, id2->u.id.id, id2->u.id.env);
+
+    return s1 == s2;
   }
   case PIC_TT_STRING: {
     return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;
@@ -113,6 +117,9 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
         return false;
     }
     return true;
+  }
+  case PIC_TT_DATA: {
+    return pic_data_ptr(x)->data == pic_data_ptr(y)->data;
   }
   default:
     return false;

@@ -11,31 +11,35 @@ extern "C" {
 
 typedef struct {
   int insn;
-  union {
-    int i;
-    char c;
-    struct {
-      int depth;
-      int idx;
-    } r;
-  } u;
+  int a;
+  int b;
 } pic_code;
 
-struct pic_irep {
-  PIC_OBJECT_HEADER
-  pic_code *code;
-  int argc, localc, capturec;
-  bool varg;
-  struct pic_irep **irep;
-  pic_value *pool;
-  size_t ilen, plen;
+struct pic_list {
+  struct pic_list *prev, *next;
 };
 
-pic_sym *pic_resolve(pic_state *, pic_value, struct pic_env *);
-pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
-pic_value pic_analyze(pic_state *, pic_value);
-struct pic_irep *pic_codegen(pic_state *, pic_value);
-struct pic_proc *pic_compile(pic_state *, pic_value, struct pic_env *);
+struct pic_irep {
+  struct pic_list list;
+  unsigned refc;
+  int argc, localc, capturec;
+  bool varg;
+  union {
+    struct {
+      pic_code *code;
+      int *ints;
+      double *nums;
+      union irep_node {
+        struct pic_irep *i;
+      } *irep;
+    } s;
+  } u;
+  struct pic_object **pool;     /* pool of heap objects */
+  size_t ncode, nirep, nints, nnums, npool;
+};
+
+void pic_irep_incref(pic_state *, struct pic_irep *);
+void pic_irep_decref(pic_state *, struct pic_irep *);
 
 #if defined(__cplusplus)
 }

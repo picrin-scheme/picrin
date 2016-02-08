@@ -6,10 +6,9 @@
   (export define-macro
           make-identifier
           identifier?
+          identifier=?
           identifier-variable
-          identifier-environment
-          variable?
-          variable=?)
+          identifier-environment)
 
   ;; simple macro
 
@@ -51,7 +50,7 @@
                            id))))))
          (walk (lambda (f form)
                  (cond
-                  ((variable? form)
+                  ((identifier? form)
                    (f form))
                   ((pair? form)
                    (cons (walk f (car form)) (walk f (cdr form))))
@@ -64,7 +63,7 @@
                 (let loop ((free free))
                   (if (null? free)
                       (wrap free)
-                      (if (variable=? var (car free))
+                      (if (identifier=? var (car free))
                           var
                           (loop (cdr free))))))))
         (walk f form))))
@@ -78,7 +77,7 @@
                    (identifier-variable var)))
          (walk (lambda (f form)
                  (cond
-                  ((variable? form)
+                  ((identifier? form)
                    (f form))
                   ((pair? form)
                    (cons (walk f (car form)) (walk f (cdr form))))
@@ -112,7 +111,7 @@
                                (register var id)
                                id))))))
            (compare (lambda (x y)
-                      (variable=?
+                      (identifier=?
                        (make-identifier x use-env)
                        (make-identifier y use-env)))))
         (f form rename compare))))
@@ -145,7 +144,7 @@
                            (rename var2)))))
              (walk (lambda (f form)
                      (cond
-                      ((variable? form)
+                      ((identifier? form)
                        (f form))
                       ((pair? form)
                        (cons (walk f (car form)) (walk f (cdr form))))
@@ -154,7 +153,7 @@
                       (else
                        form))))
              (compare (lambda (x y)
-                        (variable=?
+                        (identifier=?
                          (make-identifier x mac-env)
                          (make-identifier y mac-env)))))
           (walk flip (f (walk inject form) inject compare))))))
