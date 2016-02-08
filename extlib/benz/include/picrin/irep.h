@@ -24,17 +24,11 @@ struct pic_irep {
   unsigned refc;
   int argc, localc, capturec;
   bool varg;
-  union {
-    struct {
-      pic_code *code;
-      int *ints;
-      double *nums;
-      union irep_node {
-        struct pic_irep *i;
-      } *irep;
-    } s;
-  } u;
-  struct pic_object **pool;     /* pool of heap objects */
+  pic_code *code;
+  struct pic_irep **irep;
+  int *ints;
+  double *nums;
+  struct pic_object **pool;
   size_t ncode, nirep, nints, nnums, npool;
 };
 

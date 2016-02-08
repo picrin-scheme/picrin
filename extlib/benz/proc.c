@@ -392,15 +392,15 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(pic->ci->irep->u.s.ints[c.a]));
+      PUSH(pic_int_value(pic->ci->irep->ints[c.a]));
       NEXT;
     }
     CASE(OP_PUSHFLOAT) {
-      PUSH(pic_float_value(pic->ci->irep->u.s.nums[c.a]));
+      PUSH(pic_float_value(pic->ci->irep->nums[c.a]));
       NEXT;
     }
     CASE(OP_PUSHCHAR) {
-      PUSH(pic_char_value(pic->ci->irep->u.s.ints[c.a]));
+      PUSH(pic_char_value(pic->ci->irep->ints[c.a]));
       NEXT;
     }
     CASE(OP_PUSHEOF) {
@@ -560,7 +560,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         ci->regc = irep->capturec;
         ci->regs = ci->fp + irep->argc + irep->localc;
 
-	pic->ip = irep->u.s.code;
+	pic->ip = irep->code;
 	pic_gc_arena_restore(pic, ai);
 	JUMP;
       }
@@ -622,7 +622,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         vm_push_cxt(pic);
       }
 
-      proc = pic_make_proc_irep(pic, pic->ci->irep->u.s.irep[c.a].i, pic->ci->cxt);
+      proc = pic_make_proc_irep(pic, pic->ci->irep->irep[c.a], pic->ci->cxt);
       PUSH(pic_obj_value(proc));
       pic_gc_arena_restore(pic, ai);
       NEXT;
@@ -1032,9 +1032,9 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
   size_t i;
 
   if (--irep->refc == 0) {
-    pic_free(pic, irep->u.s.code);
-    pic_free(pic, irep->u.s.ints);
-    pic_free(pic, irep->u.s.nums);
+    pic_free(pic, irep->code);
+    pic_free(pic, irep->ints);
+    pic_free(pic, irep->nums);
     pic_free(pic, irep->pool);
 
     /* unchain before decref children ireps */
@@ -1042,9 +1042,9 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
     irep->list.next->prev = irep->list.prev;
 
     for (i = 0; i < irep->nirep; ++i) {
-      pic_irep_decref(pic, irep->u.s.irep[i].i);
+      pic_irep_decref(pic, irep->irep[i]);
     }
-    pic_free(pic, irep->u.s.irep);
+    pic_free(pic, irep->irep);
     pic_free(pic, irep);
   }
 }
