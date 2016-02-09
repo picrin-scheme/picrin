@@ -69,9 +69,6 @@ typedef struct {
 typedef void *(*pic_allocf)(void *, void *, size_t);
 
 struct pic_state {
-  int argc;
-  char **argv, **envp;
-
   pic_allocf allocf;
   void *userdata;
 
@@ -151,7 +148,6 @@ void pic_gc_arena_restore(pic_state *, size_t);
 void *pic_default_allocf(void *, void *, size_t);
 pic_state *pic_open(pic_allocf, void *);
 void pic_close(pic_state *);
-void pic_set_argv(pic_state *, int argc, char *argv[], char **envp);
 
 void pic_add_feature(pic_state *, const char *);
 

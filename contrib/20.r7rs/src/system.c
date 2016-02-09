@@ -6,6 +6,10 @@
 
 #include "picrin.h"
 
+extern int picrin_argc;
+extern char **picrin_argv;
+extern char **picrin_envp;
+
 static pic_value
 pic_system_cmdline(pic_state *pic)
 {
@@ -14,10 +18,10 @@ pic_system_cmdline(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  for (i = 0; i < pic->argc; ++i) {
+  for (i = 0; i < picrin_argc; ++i) {
     size_t ai = pic_gc_arena_preserve(pic);
 
-    v = pic_cons(pic, pic_obj_value(pic_make_cstr(pic, pic->argv[i])), v);
+    v = pic_cons(pic, pic_obj_value(pic_make_cstr(pic, picrin_argv[i])), v);
     pic_gc_arena_restore(pic, ai);
   }
 
@@ -96,11 +100,11 @@ pic_system_getenvs(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  if (! pic->envp) {
+  if (! picrin_envp) {
     return pic_nil_value();
   }
 
-  for (envp = pic->envp; *envp; ++envp) {
+  for (envp = picrin_envp; *envp; ++envp) {
     pic_str *key, *val;
     int i;
 

@@ -4,43 +4,6 @@
 
 #include "picrin.h"
 
-void
-pic_set_argv(pic_state *pic, int argc, char *argv[], char **envp)
-{
-  pic->argc = argc;
-  pic->argv = argv;
-  pic->envp = envp;
-}
-
-void
-pic_add_feature(pic_state *pic, const char *feature)
-{
-  pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
-}
-
-void pic_init_bool(pic_state *);
-void pic_init_pair(pic_state *);
-void pic_init_port(pic_state *);
-void pic_init_number(pic_state *);
-void pic_init_proc(pic_state *);
-void pic_init_symbol(pic_state *);
-void pic_init_vector(pic_state *);
-void pic_init_blob(pic_state *);
-void pic_init_cont(pic_state *);
-void pic_init_char(pic_state *);
-void pic_init_error(pic_state *);
-void pic_init_str(pic_state *);
-void pic_init_var(pic_state *);
-void pic_init_write(pic_state *);
-void pic_init_read(pic_state *);
-void pic_init_dict(pic_state *);
-void pic_init_record(pic_state *);
-void pic_init_eval(pic_state *);
-void pic_init_lib(pic_state *);
-void pic_init_reg(pic_state *);
-
-extern const char pic_boot[][80];
-
 static void
 pic_init_features(pic_state *pic)
 {
@@ -99,6 +62,12 @@ pic_init_features(pic_state *pic)
 #endif
 }
 
+void
+pic_add_feature(pic_state *pic, const char *feature)
+{
+  pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
+}
+
 static pic_value
 pic_features(pic_state *pic)
 {
@@ -119,6 +88,29 @@ pic_features(pic_state *pic)
     sym = pic_intern_lit(pic, name);                                    \
     pic_put_identifier(pic, (pic_id *)sym, sym, pic->lib->env);         \
   } while (0)
+
+void pic_init_bool(pic_state *);
+void pic_init_pair(pic_state *);
+void pic_init_port(pic_state *);
+void pic_init_number(pic_state *);
+void pic_init_proc(pic_state *);
+void pic_init_symbol(pic_state *);
+void pic_init_vector(pic_state *);
+void pic_init_blob(pic_state *);
+void pic_init_cont(pic_state *);
+void pic_init_char(pic_state *);
+void pic_init_error(pic_state *);
+void pic_init_str(pic_state *);
+void pic_init_var(pic_state *);
+void pic_init_write(pic_state *);
+void pic_init_read(pic_state *);
+void pic_init_dict(pic_state *);
+void pic_init_record(pic_state *);
+void pic_init_eval(pic_state *);
+void pic_init_lib(pic_state *);
+void pic_init_reg(pic_state *);
+
+extern const char pic_boot[][80];
 
 static void
 pic_init_core(pic_state *pic)
@@ -222,11 +214,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* root block */
   pic->cp = NULL;
-
-  /* command line */
-  pic->argc = 0;
-  pic->argv = NULL;
-  pic->envp = NULL;
 
   /* prepare VM stack */
   pic->stbase = pic->sp = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_value));

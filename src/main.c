@@ -34,6 +34,10 @@ pic_init_picrin(pic_state *pic)
   pic_load_piclib(pic);
 }
 
+int picrin_argc;
+char **picrin_argv;
+char **picrin_envp;
+
 int
 main(int argc, char *argv[], char **envp)
 {
@@ -42,7 +46,10 @@ main(int argc, char *argv[], char **envp)
   int status;
 
   pic = pic_open(pic_default_allocf, NULL);
-  pic_set_argv(pic, argc, argv, envp);
+
+  picrin_argc = argc;
+  picrin_argv = argv;
+  picrin_envp = envp;
 
   pic_try {
     pic_init_picrin(pic);
