@@ -106,8 +106,8 @@ struct pic_state {
 
   khash_t(s) oblist;            /* string to symbol */
   int ucnt;
-  struct pic_reg *globals;
-  struct pic_reg *macros;
+  struct pic_weak *globals;
+  struct pic_weak *macros;
   pic_value libs;
   struct pic_list ireps;        /* chain */
 
@@ -246,7 +246,7 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #include "picrin/string.h"
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
-#include "picrin/reg.h"
+#include "picrin/weak.h"
 
 #if defined(__cplusplus)
 }

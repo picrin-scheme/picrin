@@ -17,12 +17,12 @@ static pic_value
 var_get(pic_state *pic, struct pic_proc *var)
 {
   pic_value elem, it;
-  struct pic_reg *reg;
+  struct pic_weak *weak;
 
   pic_for_each (elem, pic->ptable, it) {
-    reg = pic_reg_ptr(elem);
-    if (pic_reg_has(pic, reg, var)) {
-      return pic_reg_ref(pic, reg, var);
+    weak = pic_weak_ptr(elem);
+    if (pic_weak_has(pic, weak, var)) {
+      return pic_weak_ref(pic, weak, var);
     }
   }
   pic_panic(pic, "logic flaw");
@@ -31,11 +31,11 @@ var_get(pic_state *pic, struct pic_proc *var)
 static pic_value
 var_set(pic_state *pic, struct pic_proc *var, pic_value val)
 {
-  struct pic_reg *reg;
+  struct pic_weak *weak;
 
-  reg = pic_reg_ptr(pic_car(pic, pic->ptable));
+  weak = pic_weak_ptr(pic_car(pic, pic->ptable));
 
-  pic_reg_set(pic, reg, var, val);
+  pic_weak_set(pic, weak, var, val);
 
   return pic_undef_value();
 }
@@ -91,7 +91,7 @@ pic_var_with_parameter(pic_state *pic)
 
   pic_get_args(pic, "l", &body);
 
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_reg(pic)), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_weak(pic)), pic->ptable);
 
   val = pic_apply0(pic, body);
 

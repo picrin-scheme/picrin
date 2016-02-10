@@ -108,7 +108,7 @@ void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
-void pic_init_reg(pic_state *);
+void pic_init_weak(pic_state *);
 
 extern const char pic_boot[][80];
 
@@ -170,7 +170,7 @@ pic_init_core(pic_state *pic)
     pic_init_record(pic); DONE;
     pic_init_eval(pic); DONE;
     pic_init_lib(pic); DONE;
-    pic_init_reg(pic); DONE;
+    pic_init_weak(pic); DONE;
 
     pic_defun(pic, "features", pic_features);
 
@@ -329,8 +329,8 @@ pic_open(pic_allocf allocf, void *userdata)
   pic_gc_arena_restore(pic, ai);
 
   /* root tables */
-  pic->globals = pic_make_reg(pic);
-  pic->macros = pic_make_reg(pic);
+  pic->globals = pic_make_weak(pic);
+  pic->macros = pic_make_weak(pic);
 
   /* root block */
   pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TT_CP);
@@ -342,7 +342,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic_reader_init(pic);
 
   /* parameter table */
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_reg(pic)), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_weak(pic)), pic->ptable);
 
   /* standard libraries */
   pic->PICRIN_BASE = pic_make_library(pic, pic_read_cstr(pic, "(picrin base)"));

@@ -178,21 +178,21 @@ pic_get_args(pic_state *pic, const char *format, ...)
 static pic_value
 vm_gref(pic_state *pic, pic_sym *uid)
 {
-  if (! pic_reg_has(pic, pic->globals, uid)) {
-    pic_reg_set(pic, pic->globals, uid, pic_invalid_value());
+  if (! pic_weak_has(pic, pic->globals, uid)) {
+    pic_weak_set(pic, pic->globals, uid, pic_invalid_value());
 
     pic_errorf(pic, "uninitialized global variable: %s", pic_symbol_name(pic, uid));
 
     return pic_invalid_value();
   }
 
-  return pic_reg_ref(pic, pic->globals, uid);
+  return pic_weak_ref(pic, pic->globals, uid);
 }
 
 static void
 vm_gset(pic_state *pic, pic_sym *uid, pic_value value)
 {
-  pic_reg_set(pic, pic->globals, uid, value);
+  pic_weak_set(pic, pic->globals, uid, value);
 }
 
 static void
@@ -909,7 +909,7 @@ pic_define_(pic_state *pic, const char *name, pic_value val)
   if ((uid = pic_find_identifier(pic, (pic_id *)sym, pic->lib->env)) == NULL) {
     uid = pic_add_identifier(pic, (pic_id *)sym, pic->lib->env);
   } else {
-    if (pic_reg_has(pic, pic->globals, uid)) {
+    if (pic_weak_has(pic, pic->globals, uid)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(uid));
     }
   }

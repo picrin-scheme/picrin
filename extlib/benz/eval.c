@@ -146,13 +146,13 @@ define_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   int ret;
 
   if (search_scope(pic, scope, sym)) {
-    if (scope->depth > 0 || pic_reg_has(pic, pic->globals, sym)) {
+    if (scope->depth > 0 || pic_weak_has(pic, pic->globals, sym)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(sym));
     }
     return;
   }
 
-  pic_reg_set(pic, pic->globals, sym, pic_invalid_value());
+  pic_weak_set(pic, pic->globals, sym, pic_invalid_value());
 
   kh_put(a, &scope->locals, sym, &ret);
 }

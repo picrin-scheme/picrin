@@ -25,7 +25,7 @@ struct pic_object {
     struct pic_pair pair;
     struct pic_vector vec;
     struct pic_dict dict;
-    struct pic_reg reg;
+    struct pic_weak weak;
     struct pic_data data;
     struct pic_record rec;
     struct pic_id id;
@@ -42,7 +42,7 @@ struct pic_object {
 struct pic_heap {
   union header base, *freep;
   struct heap_page *pages;
-  struct pic_reg *regs;         /* weak map chain */
+  struct pic_weak *weaks;       /* weak map chain */
 };
 
 struct pic_heap *
@@ -58,7 +58,7 @@ pic_heap_open(pic_state *pic)
   heap->freep = &heap->base;
   heap->pages = NULL;
 
-  heap->regs = NULL;
+  heap->weaks = NULL;
 
   return heap;
 }
@@ -387,11 +387,11 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     LOOP(obj->u.sym.str);
     break;
   }
-  case PIC_TT_REG: {
-    struct pic_reg *reg = (struct pic_reg *)obj;
+  case PIC_TT_WEAK: {
+    struct pic_weak *weak = (struct pic_weak *)obj;
 
-    reg->prev = pic->heap->regs;
-    pic->heap->regs = reg;
+    weak->prev = pic->heap->weaks;
+    pic->heap->weaks = weak;
     break;
   }
   case PIC_TT_CP: {
@@ -429,7 +429,7 @@ gc_mark_phase(pic_state *pic)
   struct pic_list *list;
   size_t j;
 
-  assert(pic->heap->regs == NULL);
+  assert(pic->heap->weaks == NULL);
 
   /* checkpoint */
   if (pic->cp) {
@@ -497,19 +497,19 @@ gc_mark_phase(pic_state *pic)
   /* parameter table */
   gc_mark(pic, pic->ptable);
 
-  /* registries */
+  /* weak maps */
   do {
     struct pic_object *key;
     pic_value val;
     khiter_t it;
-    khash_t(reg) *h;
-    struct pic_reg *reg;
+    khash_t(weak) *h;
+    struct pic_weak *weak;
 
     j = 0;
-    reg = pic->heap->regs;
+    weak = pic->heap->weaks;
 
-    while (reg != NULL) {
-      h = &reg->hash;
+    while (weak != NULL) {
+      h = &weak->hash;
       for (it = kh_begin(h); it != kh_end(h); ++it) {
         if (! kh_exist(h, it))
           continue;
@@ -522,7 +522,7 @@ gc_mark_phase(pic_state *pic)
           }
         }
       }
-      reg = reg->prev;
+      weak = weak->prev;
     }
   } while (j > 0);
 }
@@ -563,8 +563,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
     /* TODO: remove this symbol's entry from pic->syms immediately */
     break;
   }
-  case PIC_TT_REG: {
-    kh_destroy(reg, &obj->u.reg.hash);
+  case PIC_TT_WEAK: {
+    kh_destroy(weak, &obj->u.weak.hash);
     break;
   }
   case PIC_TT_PROC: {
@@ -643,24 +643,24 @@ gc_sweep_phase(pic_state *pic)
 {
   struct heap_page *page;
   khiter_t it;
-  khash_t(reg) *h;
+  khash_t(weak) *h;
   khash_t(s) *s = &pic->oblist;
   pic_sym *sym;
   struct pic_object *obj;
   size_t total = 0, inuse = 0;
 
-  /* registries */
-  while (pic->heap->regs != NULL) {
-    h = &pic->heap->regs->hash;
+  /* weak maps */
+  while (pic->heap->weaks != NULL) {
+    h = &pic->heap->weaks->hash;
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (! kh_exist(h, it))
         continue;
       obj = kh_key(h, it);
       if (obj->u.basic.gc_mark == PIC_GC_UNMARK) {
-        kh_del(reg, h, it);
+        kh_del(weak, h, it);
       }
     }
-    pic->heap->regs = pic->heap->regs->prev;
+    pic->heap->weaks = pic->heap->weaks->prev;
   }
 
   /* symbol table */
