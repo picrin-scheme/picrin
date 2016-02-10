@@ -87,7 +87,7 @@ struct pic_state {
 
   pic_code *ip;
 
-  pic_value ptable;             /* list of registers */
+  pic_value ptable;             /* list of ephemerons */
 
   struct pic_lib *lib, *prev_lib;
 

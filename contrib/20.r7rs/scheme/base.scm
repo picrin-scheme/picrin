@@ -360,13 +360,13 @@
       #`(call-with-current-environment
          (lambda (env)
            (letrec
-               ((#,'rename (let ((reg (make-register)))
+               ((#,'rename (let ((wm (make-ephemeron)))
                              (lambda (x)
-                               (let ((y (reg x)))
+                               (let ((y (wm x)))
                                  (if y
                                      (cdr y)
                                      (let ((id (make-identifier x env)))
-                                       (reg x id)
+                                       (wm x id)
                                        id)))))))
              (lambda #,'it
                #,(compile-rules rules))))))

@@ -1,6 +1,6 @@
 (define-library (picrin base)
 
-  (define attribute-table (make-register))
+  (define attribute-table (make-ephemeron))
 
   (define (attribute obj)
     (let ((r (attribute-table obj)))

@@ -72,7 +72,7 @@ pic_weak_del(pic_state *pic, struct pic_weak *weak, void *key)
 
   it = kh_get(weak, h, key);
   if (it == kh_end(h)) {
-    pic_errorf(pic, "no slot named ~s found in register", pic_obj_value(key));
+    pic_errorf(pic, "no slot named ~s found in ephemeron", pic_obj_value(key));
   }
   kh_del(weak, h, it);
 }
@@ -112,7 +112,7 @@ weak_call(pic_state *pic)
   n = pic_get_args(pic, "&o|o", &self, &key, &val);
 
   if (! pic_obj_p(key)) {
-    pic_errorf(pic, "attempted to set a non-object key '~s' in a register", key);
+    pic_errorf(pic, "attempted to set a non-object key '~s' in an ephemeron", key);
   }
 
   weak = pic_weak_ptr(pic_proc_env_ref(pic, self, "weak"));
@@ -125,7 +125,7 @@ weak_call(pic_state *pic)
 }
 
 static pic_value
-pic_weak_make_register(pic_state *pic)
+pic_weak_make_ephemeron(pic_state *pic)
 {
   struct pic_weak *weak;
   struct pic_proc *proc;
@@ -144,5 +144,5 @@ pic_weak_make_register(pic_state *pic)
 void
 pic_init_weak(pic_state *pic)
 {
-  pic_defun(pic, "make-register", pic_weak_make_register);
+  pic_defun(pic, "make-ephemeron", pic_weak_make_ephemeron);
 }
