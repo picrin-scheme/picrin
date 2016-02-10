@@ -104,7 +104,7 @@ struct pic_state {
 
   pic_value features;
 
-  khash_t(s) syms;              /* name to symbol */
+  khash_t(s) oblist;            /* string to symbol */
   int ucnt;
   struct pic_reg *globals;
   struct pic_reg *macros;

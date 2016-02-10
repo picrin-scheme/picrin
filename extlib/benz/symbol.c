@@ -12,7 +12,7 @@ KHASH_DEFINE(s, pic_str *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
 pic_sym *
 pic_intern(pic_state *pic, pic_str *str)
 {
-  khash_t(s) *h = &pic->syms;
+  khash_t(s) *h = &pic->oblist;
   pic_sym *sym;
   khiter_t it;
   int ret;

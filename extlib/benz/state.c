@@ -252,7 +252,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->heap = pic_heap_open(pic);
 
   /* symbol table */
-  kh_init(s, &pic->syms);
+  kh_init(s, &pic->oblist);
 
   /* unique symbol count */
   pic->ucnt = 0;
@@ -376,7 +376,7 @@ pic_open(pic_allocf allocf, void *userdata)
 void
 pic_close(pic_state *pic)
 {
-  khash_t(s) *h = &pic->syms;
+  khash_t(s) *h = &pic->oblist;
   pic_allocf allocf = pic->allocf;
 
   /* clear out root objects */

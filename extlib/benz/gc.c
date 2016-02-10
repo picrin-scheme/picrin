@@ -644,7 +644,7 @@ gc_sweep_phase(pic_state *pic)
   struct heap_page *page;
   khiter_t it;
   khash_t(reg) *h;
-  khash_t(s) *s = &pic->syms;
+  khash_t(s) *s = &pic->oblist;
   pic_sym *sym;
   struct pic_object *obj;
   size_t total = 0, inuse = 0;
