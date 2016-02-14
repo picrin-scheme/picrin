@@ -56,7 +56,7 @@ main(int argc, char *argv[], char **envp)
 
     PICRIN_MAIN = pic_find_library(pic, pic_read_cstr(pic, "(picrin main)"));
 
-    pic_funcall(pic, PICRIN_MAIN, "main", pic_nil_value());
+    pic_funcall(pic, PICRIN_MAIN, "main", 0);
 
     status = 0;
   }
