@@ -784,49 +784,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 }
 
 pic_value
-pic_call(pic_state *pic, struct pic_proc *proc, int n, ...)
-{
-  pic_value r;
-  va_list ap;
-
-  va_start(ap, n);
-  r = pic_vcall(pic, proc, n, ap);
-  va_end(ap);
-  return r;
-}
-
-pic_value
-pic_vcall(pic_state *pic, struct pic_proc *proc, int n, va_list ap)
-{
-  pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
-  int i;
-
-  for (i = 0; i < n; ++i) {
-    args[i] = va_arg(ap, pic_value);
-  }
-  return pic_apply(pic, proc, n, args);
-}
-
-pic_value
-pic_apply_list(pic_state *pic, struct pic_proc *proc, pic_value list)
-{
-  int n, i = 0;
-  pic_vec *args;
-  pic_value x, it;
-
-  n = pic_length(pic, list);
-
-  args = pic_make_vec(pic, n);
-
-  pic_for_each (x, list, it) {
-    args->data[i++] = x;
-  }
-
-  return pic_apply(pic, proc, n, args->data);
-}
-
-pic_value
-pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, int argc, pic_value *args)
+pic_applyk(pic_state *pic, struct pic_proc *proc, int argc, pic_value *args)
 {
   pic_value *sp;
   pic_callinfo *ci;
@@ -855,18 +813,27 @@ pic_apply_trampoline(pic_state *pic, struct pic_proc *proc, int argc, pic_value 
 }
 
 pic_value
-pic_apply_trampoline_list(pic_state *pic, struct pic_proc *proc, pic_value args)
+pic_call(pic_state *pic, struct pic_proc *proc, int n, ...)
 {
-  int i, argc = pic_length(pic, args);
-  pic_value val, it;
-  pic_vec *argv = pic_make_vec(pic, argc);
+  pic_value r;
+  va_list ap;
 
-  i = 0;
-  pic_for_each (val, args, it) {
-    argv->data[i++] = val;
+  va_start(ap, n);
+  r = pic_vcall(pic, proc, n, ap);
+  va_end(ap);
+  return r;
+}
+
+pic_value
+pic_vcall(pic_state *pic, struct pic_proc *proc, int n, va_list ap)
+{
+  pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
+  int i;
+
+  for (i = 0; i < n; ++i) {
+    args[i] = va_arg(ap, pic_value);
   }
-
-  return pic_apply_trampoline(pic, proc, argc, argv->data);
+  return pic_apply(pic, proc, n, args);
 }
 
 void
@@ -1043,9 +1010,8 @@ static pic_value
 pic_proc_apply(pic_state *pic)
 {
   struct pic_proc *proc;
-  pic_value *args;
-  int argc;
-  pic_value arg_list;
+  pic_value *args, *arg_list;
+  int argc, n, i;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
@@ -1053,12 +1019,17 @@ pic_proc_apply(pic_state *pic)
     pic_errorf(pic, "apply: wrong number of arguments");
   }
 
-  arg_list = args[--argc];
-  while (argc--) {
-    arg_list = pic_cons(pic, args[argc], arg_list);
-  }
+  n = argc - 1 + pic_length(pic, args[argc - 1]);
 
-  return pic_apply_trampoline_list(pic, proc, arg_list);
+  arg_list = pic_alloca(pic, sizeof(pic_value) * n);
+  for (i = 0; i < argc - 1; ++i) {
+    arg_list[i] = args[i];
+  }
+  while (i < n) {
+    arg_list[i] = pic_list_ref(pic, args[argc - 1], i - argc + 1);
+    i++;
+  }
+  return pic_applyk(pic, proc, n, arg_list);
 }
 
 void

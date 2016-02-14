@@ -164,9 +164,7 @@ PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 pic_value pic_call(pic_state *, struct pic_proc *, int, ...);
 pic_value pic_vcall(pic_state *, struct pic_proc *, int, va_list);
 pic_value pic_apply(pic_state *, struct pic_proc *, int, pic_value *);
-pic_value pic_apply_list(pic_state *, struct pic_proc *, pic_value);
-pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, int, pic_value *);
-pic_value pic_apply_trampoline_list(pic_state *, struct pic_proc *, pic_value);
+pic_value pic_applyk(pic_state *, struct pic_proc *, int, pic_value *);
 
 pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
 

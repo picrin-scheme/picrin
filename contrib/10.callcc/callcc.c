@@ -273,6 +273,7 @@ pic_callcc_callcc(pic_state *pic)
   else {
     struct pic_proc *c;
     struct pic_data *dat;
+    pic_value args[1];
 
     c = pic_make_proc(pic, cont_call);
 
@@ -281,7 +282,8 @@ pic_callcc_callcc(pic_state *pic)
     /* save the continuation object in proc */
     pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
 
-    return pic_apply_trampoline_list(pic, proc, pic_list1(pic, pic_obj_value(c)));
+    args[0] = pic_obj_value(c);
+    return pic_applyk(pic, proc, 1, args);
   }
 }
 

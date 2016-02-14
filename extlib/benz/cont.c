@@ -300,7 +300,7 @@ pic_cont_call_with_values(pic_state *pic)
 
   pic_receive(pic, argc, args->data);
 
-  return pic_apply_trampoline(pic, consumer, argc, args->data);
+  return pic_applyk(pic, consumer, argc, args->data);
 }
 
 void
