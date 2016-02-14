@@ -784,6 +784,30 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 }
 
 pic_value
+pic_call(pic_state *pic, struct pic_proc *proc, int n, ...)
+{
+  pic_value r;
+  va_list ap;
+
+  va_start(ap, n);
+  r = pic_vcall(pic, proc, n, ap);
+  va_end(ap);
+  return r;
+}
+
+pic_value
+pic_vcall(pic_state *pic, struct pic_proc *proc, int n, va_list ap)
+{
+  pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
+  int i;
+
+  for (i = 0; i < n; ++i) {
+    args[i] = va_arg(ap, pic_value);
+  }
+  return pic_apply(pic, proc, n, args);
+}
+
+pic_value
 pic_apply_list(pic_state *pic, struct pic_proc *proc, pic_value list)
 {
   int n, i = 0;
@@ -959,46 +983,21 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
   vm_gset(pic, uid, val);
 }
 
-static struct pic_proc *
-pic_ref_proc(pic_state *pic, struct pic_lib *lib, const char *name)
+pic_value
+pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, int n, ...)
 {
-  pic_value proc;
+  pic_value proc, r;
+  va_list ap;
 
   proc = pic_ref(pic, lib, name);
 
   pic_assert_type(pic, proc, proc);
 
-  return pic_proc_ptr(proc);
-}
+  va_start(ap, n);
+  r = pic_vcall(pic, pic_proc_ptr(proc), n, ap);
+  va_end(ap);
 
-pic_value
-pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, pic_value args)
-{
-  return pic_apply_list(pic, pic_ref_proc(pic, lib, name), args);
-}
-
-pic_value
-pic_funcall0(pic_state *pic, struct pic_lib *lib, const char *name)
-{
-  return pic_apply0(pic, pic_ref_proc(pic, lib, name));
-}
-
-pic_value
-pic_funcall1(pic_state *pic, struct pic_lib *lib, const char *name, pic_value arg0)
-{
-  return pic_apply1(pic, pic_ref_proc(pic, lib, name), arg0);
-}
-
-pic_value
-pic_funcall2(pic_state *pic, struct pic_lib *lib, const char *name, pic_value arg0, pic_value arg1)
-{
-  return pic_apply2(pic, pic_ref_proc(pic, lib, name), arg0, arg1);
-}
-
-pic_value
-pic_funcall3(pic_state *pic, struct pic_lib *lib, const char *name, pic_value arg0, pic_value arg1, pic_value arg2)
-{
-  return pic_apply3(pic, pic_ref_proc(pic, lib, name), arg0, arg1, arg2);
+  return r;
 }
 
 void

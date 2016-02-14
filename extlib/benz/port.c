@@ -172,7 +172,7 @@ pic_define_standard_port(pic_state *pic, const char *name, xFILE *file, int dir)
   {                                                     \
     pic_value obj;                                      \
                                                         \
-    obj = pic_funcall0(pic, pic->PICRIN_BASE, var);     \
+    obj = pic_funcall(pic, pic->PICRIN_BASE, var, 0);   \
                                                         \
     return pic_port_ptr(obj);                           \
   }
