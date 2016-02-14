@@ -8,7 +8,7 @@ static pic_value
 var_conv(pic_state *pic, struct pic_proc *var, pic_value val)
 {
   if (pic_proc_env_has(pic, var, "conv") != 0) {
-    return pic_apply1(pic, pic_proc_ptr(pic_proc_env_ref(pic, var, "conv")), val);
+    return pic_call(pic, pic_proc_ptr(pic_proc_env_ref(pic, var, "conv")), 1, val);
   }
   return val;
 }
@@ -67,7 +67,7 @@ pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
     pic_proc_env_set(pic, var, "conv", pic_obj_value(conv));
   }
 
-  pic_apply1(pic, var, init);
+  pic_call(pic, var, 1, init);
 
   return var;
 }
@@ -93,7 +93,7 @@ pic_var_with_parameter(pic_state *pic)
 
   pic->ptable = pic_cons(pic, pic_obj_value(pic_make_weak(pic)), pic->ptable);
 
-  val = pic_apply0(pic, body);
+  val = pic_call(pic, body, 0);
 
   pic->ptable = pic_cdr(pic, pic->ptable);
 

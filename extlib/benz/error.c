@@ -58,7 +58,7 @@ pic_native_exception_handler(pic_state *pic)
 
   cont = pic_proc_ptr(pic_proc_env_ref(pic, self, "cont"));
 
-  pic_apply1(pic, cont, pic_false_value());
+  pic_call(pic, cont, 1, pic_false_value());
 
   PIC_UNREACHABLE();
 }
@@ -117,7 +117,7 @@ pic_raise_continuable(pic_state *pic, pic_value err)
 
   pic_gc_protect(pic, pic_obj_value(handler));
 
-  v = pic_apply1(pic, handler, err);
+  v = pic_call(pic, handler, 1, err);
 
   pic_push_handler(pic, handler);
 
@@ -156,7 +156,7 @@ pic_error_with_exception_handler(pic_state *pic)
 
   pic_push_handler(pic, handler);
 
-  val = pic_apply0(pic, thunk);
+  val = pic_call(pic, thunk, 0);
 
   pic_pop_handler(pic);
 

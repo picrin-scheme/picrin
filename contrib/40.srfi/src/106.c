@@ -389,7 +389,7 @@ pic_socket_call_with_socket(pic_state *pic)
   sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
-  result = pic_apply1(pic, proc, obj);
+  result = pic_call(pic, proc, 1, obj);
 
   socket_close(sock);
 

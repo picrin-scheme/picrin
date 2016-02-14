@@ -155,7 +155,7 @@ expand_var(pic_state *pic, pic_id *id, struct pic_env *env, pic_value deferred)
   functor = pic_lookup_identifier(pic, id, env);
 
   if ((mac = find_macro(pic, functor)) != NULL) {
-    return expand(pic, pic_apply2(pic, mac, pic_obj_value(id), pic_obj_value(env)), env, deferred);
+    return expand(pic, pic_call(pic, mac, 2, pic_obj_value(id), pic_obj_value(env)), env, deferred);
   }
   return pic_obj_value(functor);
 }
@@ -271,7 +271,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
     uid = pic_add_identifier(pic, id, env);
   }
 
-  val = pic_apply0(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)));
+  val = pic_call(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)), 0);
   if (! pic_proc_p(val)) {
     pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", pic_identifier_name(pic, id));
   }
@@ -315,7 +315,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
       }
 
       if ((mac = find_macro(pic, functor)) != NULL) {
-        return expand(pic, pic_apply2(pic, mac, expr, pic_obj_value(env)), env, deferred);
+        return expand(pic, pic_call(pic, mac, 2, expr, pic_obj_value(env)), env, deferred);
       }
     }
     return expand_list(pic, expr, env, deferred);

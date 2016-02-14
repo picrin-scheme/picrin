@@ -274,7 +274,7 @@ pic_member(pic_state *pic, pic_value key, pic_value list, struct pic_proc *compa
     if (pic_equal_p(pic, key, pic_car(pic, list)))
       return list;
   } else {
-    if (pic_test(pic_apply2(pic, compar, key, pic_car(pic, list))))
+    if (pic_test(pic_call(pic, compar, 2, key, pic_car(pic, list))))
       return list;
   }
 
@@ -333,7 +333,7 @@ pic_assoc(pic_state *pic, pic_value key, pic_value assoc, struct pic_proc *compa
     if (pic_equal_p(pic, key, pic_car(pic, cell)))
       return cell;
   } else {
-    if (pic_test(pic_apply2(pic, compar, key, pic_car(pic, cell))))
+    if (pic_test(pic_call(pic, compar, 2, key, pic_car(pic, cell))))
       return cell;
   }
 

@@ -166,7 +166,7 @@ pic_dict_dictionary_map(pic_state *pic)
 
   for (it = kh_begin(kh); it != kh_end(kh); ++it) {
     if (kh_exist(kh, it)) {
-      pic_push(pic, pic_apply1(pic, proc, pic_obj_value(kh_key(kh, it))), ret);
+      pic_push(pic, pic_call(pic, proc, 1, pic_obj_value(kh_key(kh, it))), ret);
     }
   }
 
@@ -187,7 +187,7 @@ pic_dict_dictionary_for_each(pic_state *pic)
 
   for (it = kh_begin(kh); it != kh_end(kh); ++it) {
     if (kh_exist(kh, it)) {
-      pic_apply1(pic, proc, pic_obj_value(kh_key(kh, it)));
+      pic_call(pic, proc, 1, pic_obj_value(kh_key(kh, it)));
     }
   }
 

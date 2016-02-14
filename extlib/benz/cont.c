@@ -12,10 +12,10 @@ pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)
 
   if (here->depth < there->depth) {
     pic_wind(pic, here, there->prev);
-    pic_apply0(pic, there->in);
+    pic_call(pic, there->in, 0);
   }
   else {
-    pic_apply0(pic, there->out);
+    pic_call(pic, there->out, 0);
     pic_wind(pic, here->prev, there);
   }
 }
@@ -27,7 +27,7 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   pic_value val;
 
   if (in != NULL) {
-    pic_apply0(pic, in);        /* enter */
+    pic_call(pic, in, 0);       /* enter */
   }
 
   here = pic->cp;
@@ -37,12 +37,12 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   pic->cp->in = in;
   pic->cp->out = out;
 
-  val = pic_apply0(pic, thunk);
+  val = pic_call(pic, thunk, 0);
 
   pic->cp = here;
 
   if (out != NULL) {
-    pic_apply0(pic, out);       /* exit */
+    pic_call(pic, out, 0);      /* exit */
   }
 
   return val;
@@ -146,7 +146,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   else {
     pic_value val;
 
-    val = pic_apply1(pic, proc, pic_obj_value(pic_make_cont(pic, &cont)));
+    val = pic_call(pic, proc, 1, pic_obj_value(pic_make_cont(pic, &cont)));
 
     pic->cc = pic->cc->prev;
 
@@ -293,7 +293,7 @@ pic_cont_call_with_values(pic_state *pic)
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
-  pic_apply0(pic, producer);
+  pic_call(pic, producer, 0);
 
   argc = pic_receive(pic, 0, NULL);
   args = pic_make_vec(pic, argc);

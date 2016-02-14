@@ -869,60 +869,6 @@ pic_apply_trampoline_list(pic_state *pic, struct pic_proc *proc, pic_value args)
   return pic_apply_trampoline(pic, proc, argc, argv->data);
 }
 
-static pic_value
-pic_va_apply(pic_state *pic, struct pic_proc *proc, int n, ...)
-{
-  pic_vec *args = pic_make_vec(pic, n);
-  va_list ap;
-  int i = 0;
-
-  va_start(ap, n);
-
-  while (i < n) {
-    args->data[i++] = va_arg(ap, pic_value);
-  }
-
-  va_end(ap);
-
-  return pic_apply(pic, proc, n, args->data);
-}
-
-pic_value
-pic_apply0(pic_state *pic, struct pic_proc *proc)
-{
-  return pic_va_apply(pic, proc, 0);
-}
-
-pic_value
-pic_apply1(pic_state *pic, struct pic_proc *proc, pic_value arg1)
-{
-  return pic_va_apply(pic, proc, 1, arg1);
-}
-
-pic_value
-pic_apply2(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2)
-{
-  return pic_va_apply(pic, proc, 2, arg1, arg2);
-}
-
-pic_value
-pic_apply3(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3)
-{
-  return pic_va_apply(pic, proc, 3, arg1, arg2, arg3);
-}
-
-pic_value
-pic_apply4(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
-{
-  return pic_va_apply(pic, proc, 4, arg1, arg2, arg3, arg4);
-}
-
-pic_value
-pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
-{
-  return pic_va_apply(pic, proc, 5, arg1, arg2, arg3, arg4, arg5);
-}
-
 void
 pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {

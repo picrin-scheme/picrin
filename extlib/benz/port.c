@@ -332,7 +332,7 @@ pic_port_call_with_port(pic_state *pic)
 
   pic_get_args(pic, "pl", &port, &proc);
 
-  value = pic_apply1(pic, proc, pic_obj_value(port));
+  value = pic_call(pic, proc, 1, pic_obj_value(port));
 
   pic_close_port(pic, port);
 

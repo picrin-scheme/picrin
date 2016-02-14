@@ -254,7 +254,7 @@ pic_callcc_full(pic_state *pic, struct pic_proc *proc)
     /* save the continuation object in proc */
     pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
 
-    return pic_apply1(pic, proc, pic_obj_value(c));
+    return pic_call(pic, proc, 1, pic_obj_value(c));
   }
 }
 

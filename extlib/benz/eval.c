@@ -892,7 +892,7 @@ pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
 
   pic->lib = lib;
   pic_try {
-    r = pic_apply0(pic, pic_compile(pic, pic_expand(pic, program, lib->env)));
+    r = pic_call(pic, pic_compile(pic, pic_expand(pic, program, lib->env)), 0);
   }
   pic_catch {
     pic->lib = prev_lib;
