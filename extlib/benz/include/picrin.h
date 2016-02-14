@@ -32,98 +32,13 @@ extern "C" {
 #include <limits.h>
 #include <stdarg.h>
 
-#include "picrin/config.h"
-
-#include "picrin/compat.h"
-#include "picrin/khash.h"
+#include "picrin/setup.h"
 
 typedef struct pic_state pic_state;
 
-typedef void *(*pic_allocf)(void *, void *, size_t);
-
 #include "picrin/type.h"
-#include "picrin/irep.h"
-#include "picrin/file.h"
-#include "picrin/read.h"
-#include "picrin/gc.h"
 
-KHASH_DECLARE(s, struct pic_string *, pic_sym *)
-
-typedef struct pic_checkpoint {
-  PIC_OBJECT_HEADER
-  struct pic_proc *in;
-  struct pic_proc *out;
-  int depth;
-  struct pic_checkpoint *prev;
-} pic_checkpoint;
-
-typedef struct {
-  int argc, retc;
-  pic_code *ip;
-  pic_value *fp;
-  struct pic_irep *irep;
-  struct pic_context *cxt;
-  int regc;
-  pic_value *regs;
-  struct pic_context *up;
-} pic_callinfo;
-
-struct pic_state {
-  pic_allocf allocf;
-  void *userdata;
-
-  pic_checkpoint *cp;
-  struct pic_cont *cc;
-  int ccnt;
-
-  pic_value *sp;
-  pic_value *stbase, *stend;
-
-  pic_callinfo *ci;
-  pic_callinfo *cibase, *ciend;
-
-  struct pic_proc **xp;
-  struct pic_proc **xpbase, **xpend;
-
-  pic_code *ip;
-
-  pic_value ptable;             /* list of ephemerons */
-
-  struct pic_lib *lib, *prev_lib;
-
-  pic_sym *sDEFINE, *sDEFINE_MACRO, *sLAMBDA, *sIF, *sBEGIN, *sSETBANG;
-  pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE;
-  pic_sym *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
-  pic_sym *sDEFINE_LIBRARY, *sIMPORT, *sEXPORT, *sCOND_EXPAND;
-  pic_sym *sCONS, *sCAR, *sCDR, *sNILP, *sSYMBOLP, *sPAIRP;
-  pic_sym *sADD, *sSUB, *sMUL, *sDIV, *sEQ, *sLT, *sLE, *sGT, *sGE, *sNOT;
-
-  struct pic_lib *PICRIN_BASE;
-  struct pic_lib *PICRIN_USER;
-
-  pic_value features;
-
-  khash_t(s) oblist;            /* string to symbol */
-  int ucnt;
-  struct pic_weak *globals;
-  struct pic_weak *macros;
-  pic_value libs;
-  struct pic_list ireps;        /* chain */
-
-  pic_reader reader;
-  xFILE files[XOPEN_MAX];
-  pic_code iseq[2];             /* for pic_apply_trampoline */
-
-  bool gc_enable;
-  struct pic_heap *heap;
-  struct pic_object **arena;
-  size_t arena_size, arena_idx;
-
-  pic_value err;
-
-  char *native_stack_start;
-};
+typedef void *(*pic_allocf)(void *, void *, size_t);
 
 pic_state *pic_open(pic_allocf, void *);
 void pic_close(pic_state *);
@@ -262,6 +177,10 @@ struct pic_string *pic_str_sub(pic_state *, struct pic_string *, int, int);
 int pic_str_cmp(pic_state *, struct pic_string *, struct pic_string *);
 int pic_str_hash(pic_state *, struct pic_string *);
 
+/* extra stuff */
+
+#include "picrin/state.h"
+
 #include "picrin/blob.h"
 #include "picrin/cont.h"
 #include "picrin/data.h"
@@ -277,8 +196,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
 #include "picrin/weak.h"
-
-/* extra stuff */
 
 void *pic_default_allocf(void *, void *, size_t);
 

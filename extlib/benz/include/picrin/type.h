@@ -197,6 +197,7 @@ struct pic_proc;
 struct pic_port;
 struct pic_error;
 struct pic_env;
+struct pic_lib;
 
 /* set aliases to basic types */
 typedef struct pic_symbol pic_sym;
