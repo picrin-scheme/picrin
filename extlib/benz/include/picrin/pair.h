@@ -15,7 +15,6 @@ struct pic_pair {
   pic_value cdr;
 };
 
-#define pic_pair_p(v) (pic_type(v) == PIC_TT_PAIR)
 #define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
 
 PIC_INLINE pic_value
@@ -44,11 +43,6 @@ pic_cdr(pic_state *pic, pic_value obj)
   return pair->cdr;
 }
 
-pic_value pic_cons(pic_state *, pic_value, pic_value);
-void pic_set_car(pic_state *, pic_value, pic_value);
-void pic_set_cdr(pic_state *, pic_value, pic_value);
-
-bool pic_list_p(pic_value);
 pic_value pic_list1(pic_state *, pic_value);
 pic_value pic_list2(pic_state *, pic_value, pic_value);
 pic_value pic_list3(pic_state *, pic_value, pic_value, pic_value);
@@ -66,7 +60,6 @@ pic_value pic_make_list(pic_state *, int, pic_value);
 #define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
 #define pic_pop(pic, place) (place = pic_cdr(pic, place))
 
-int pic_length(pic_state *, pic_value);
 pic_value pic_reverse(pic_state *, pic_value);
 pic_value pic_append(pic_state *, pic_value, pic_value);
 
@@ -86,8 +79,6 @@ pic_value pic_cdar(pic_state *, pic_value);
 pic_value pic_cddr(pic_state *, pic_value);
 
 pic_value pic_list_tail(pic_state *, pic_value, int);
-pic_value pic_list_ref(pic_state *, pic_value, int);
-void pic_list_set(pic_state *, pic_value, int, pic_value);
 pic_value pic_list_copy(pic_state *, pic_value);
 
 #if defined(__cplusplus)

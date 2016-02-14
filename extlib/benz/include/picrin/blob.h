@@ -15,7 +15,6 @@ struct pic_blob {
   int len;
 };
 
-#define pic_blob_p(v) (pic_type(v) == PIC_TT_BLOB)
 #define pic_blob_ptr(v) ((struct pic_blob *)pic_ptr(v))
 
 struct pic_blob *pic_make_blob(pic_state *, int);

@@ -23,20 +23,13 @@ struct pic_id {
   } u;
 };
 
-#define pic_sym_p(v) (pic_type(v) == PIC_TT_SYMBOL)
 #define pic_sym_ptr(v) ((pic_sym *)pic_ptr(v))
 
 #define pic_id_p(v) (pic_type(v) == PIC_TT_ID || pic_type(v) == PIC_TT_SYMBOL)
 #define pic_id_ptr(v) ((pic_id *)pic_ptr(v))
 
-pic_sym *pic_intern(pic_state *, pic_str *);
-#define pic_intern_str(pic,s,i) pic_intern(pic, pic_make_str(pic, (s), (i)))
-#define pic_intern_cstr(pic,s) pic_intern(pic, pic_make_cstr(pic, (s)))
-#define pic_intern_lit(pic,lit) pic_intern(pic, pic_make_lit(pic, lit))
-
 pic_id *pic_make_identifier(pic_state *, pic_id *, struct pic_env *);
 
-const char *pic_symbol_name(pic_state *, pic_sym *);
 const char *pic_identifier_name(pic_state *, pic_id *);
 
 #if defined(__cplusplus)

@@ -39,7 +39,6 @@ struct pic_proc {
 #define pic_proc_func_p(proc) ((proc)->tag == PIC_PROC_TAG_FUNC)
 #define pic_proc_irep_p(proc) ((proc)->tag == PIC_PROC_TAG_IREP)
 
-#define pic_proc_p(o) (pic_type(o) == PIC_TT_PROC)
 #define pic_proc_ptr(o) ((struct pic_proc *)pic_ptr(o))
 
 #define pic_context_p(o) (pic_type(o) == PIC_TT_CXT)
