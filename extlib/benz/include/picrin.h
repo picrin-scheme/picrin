@@ -39,6 +39,8 @@ extern "C" {
 
 typedef struct pic_state pic_state;
 
+typedef void *(*pic_allocf)(void *, void *, size_t);
+
 #include "picrin/type.h"
 #include "picrin/irep.h"
 #include "picrin/file.h"
@@ -65,8 +67,6 @@ typedef struct {
   pic_value *regs;
   struct pic_context *up;
 } pic_callinfo;
-
-typedef void *(*pic_allocf)(void *, void *, size_t);
 
 struct pic_state {
   pic_allocf allocf;
@@ -125,43 +125,24 @@ struct pic_state {
   char *native_stack_start;
 };
 
-typedef pic_value (*pic_func_t)(pic_state *);
+pic_state *pic_open(pic_allocf, void *);
+void pic_close(pic_state *);
+
+int pic_get_args(pic_state *, const char *, ...);
 
 void *pic_malloc(pic_state *, size_t);
 void *pic_realloc(pic_state *, void *, size_t);
 void *pic_calloc(pic_state *, size_t, size_t);
 void pic_free(pic_state *, void *);
 
-struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
+typedef pic_value (*pic_func_t)(pic_state *);
+
 void pic_gc_run(pic_state *);
 pic_value pic_gc_protect(pic_state *, pic_value);
 size_t pic_gc_arena_preserve(pic_state *);
 void pic_gc_arena_restore(pic_state *, size_t);
-#define pic_void(exec)                          \
-  pic_void_(PIC_GENSYM(ai), exec)
-#define pic_void_(ai,exec) do {                 \
-    size_t ai = pic_gc_arena_preserve(pic);     \
-    exec;                                       \
-    pic_gc_arena_restore(pic, ai);              \
-  } while (0)
-
-void *pic_default_allocf(void *, void *, size_t);
-pic_state *pic_open(pic_allocf, void *);
-void pic_close(pic_state *);
 
 void pic_add_feature(pic_state *, const char *);
-
-int pic_get_args(pic_state *, const char *, ...);
-
-bool pic_eq_p(pic_value, pic_value);
-bool pic_eqv_p(pic_value, pic_value);
-bool pic_equal_p(pic_state *, pic_value, pic_value);
-
-pic_value pic_read(pic_state *, struct pic_port *);
-pic_value pic_read_cstr(pic_state *, const char *);
-
-void pic_load(pic_state *, struct pic_port *);
-void pic_load_cstr(pic_state *, const char *);
 
 void pic_define(pic_state *, const char *, pic_value);
 void pic_defun(pic_state *, const char *, pic_func_t);
@@ -179,6 +160,14 @@ pic_value pic_funcall1(pic_state *pic, struct pic_lib *, const char *, pic_value
 pic_value pic_funcall2(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value);
 pic_value pic_funcall3(pic_state *pic, struct pic_lib *, const char *, pic_value, pic_value, pic_value);
 
+struct pic_lib *pic_make_library(pic_state *, pic_value);
+struct pic_lib *pic_find_library(pic_state *, pic_value);
+void pic_import(pic_state *, struct pic_lib *);
+void pic_export(pic_state *, pic_sym *);
+
+PIC_NORETURN void pic_panic(pic_state *, const char *);
+PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
+
 pic_value pic_apply(pic_state *, struct pic_proc *, int, pic_value *);
 pic_value pic_apply0(pic_state *, struct pic_proc *);
 pic_value pic_apply1(pic_state *, struct pic_proc *, pic_value);
@@ -191,10 +180,47 @@ pic_value pic_apply_trampoline(pic_state *, struct pic_proc *, int, pic_value *)
 pic_value pic_apply_trampoline_list(pic_state *, struct pic_proc *, pic_value);
 pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
 
-struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
+bool pic_eq_p(pic_value, pic_value);
+bool pic_eqv_p(pic_value, pic_value);
+bool pic_equal_p(pic_state *, pic_value, pic_value);
 
-struct pic_lib *pic_make_library(pic_state *, pic_value);
-struct pic_lib *pic_find_library(pic_state *, pic_value);
+#include "picrin/blob.h"
+#include "picrin/cont.h"
+#include "picrin/data.h"
+#include "picrin/dict.h"
+#include "picrin/error.h"
+#include "picrin/lib.h"
+#include "picrin/macro.h"
+#include "picrin/pair.h"
+#include "picrin/port.h"
+#include "picrin/proc.h"
+#include "picrin/record.h"
+#include "picrin/string.h"
+#include "picrin/symbol.h"
+#include "picrin/vector.h"
+#include "picrin/weak.h"
+
+/* extra stuff */
+
+void *pic_default_allocf(void *, void *, size_t);
+
+struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
+
+#define pic_void(exec)                          \
+  pic_void_(PIC_GENSYM(ai), exec)
+#define pic_void_(ai,exec) do {                 \
+    size_t ai = pic_gc_arena_preserve(pic);     \
+    exec;                                       \
+    pic_gc_arena_restore(pic, ai);              \
+  } while (0)
+
+pic_value pic_read(pic_state *, struct pic_port *);
+pic_value pic_read_cstr(pic_state *, const char *);
+
+void pic_load(pic_state *, struct pic_port *);
+void pic_load_cstr(pic_state *, const char *);
+
+struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
 #define pic_deflibrary(pic, spec)                                       \
   for (((assert(pic->prev_lib == NULL)),                                \
@@ -207,11 +233,6 @@ struct pic_lib *pic_find_library(pic_state *, pic_value);
        ((pic->lib = pic->prev_lib),                                     \
         (pic->prev_lib = NULL)))
 
-void pic_import(pic_state *, struct pic_lib *);
-void pic_export(pic_state *, pic_sym *);
-
-PIC_NORETURN void pic_panic(pic_state *, const char *);
-PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 void pic_warnf(pic_state *, const char *, ...);
 pic_str *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
@@ -231,22 +252,6 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 # define pic_debug(pic,obj) pic_fwrite(pic,obj,xstderr)
 # define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
 #endif
-
-#include "picrin/blob.h"
-#include "picrin/cont.h"
-#include "picrin/data.h"
-#include "picrin/dict.h"
-#include "picrin/error.h"
-#include "picrin/lib.h"
-#include "picrin/macro.h"
-#include "picrin/pair.h"
-#include "picrin/port.h"
-#include "picrin/proc.h"
-#include "picrin/record.h"
-#include "picrin/string.h"
-#include "picrin/symbol.h"
-#include "picrin/vector.h"
-#include "picrin/weak.h"
 
 #if defined(__cplusplus)
 }
