@@ -686,7 +686,7 @@ gc_sweep_phase(pic_state *pic)
 }
 
 void
-pic_gc_run(pic_state *pic)
+pic_gc(pic_state *pic)
 {
   if (! pic->gc_enable) {
     return;
@@ -702,12 +702,12 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
   struct pic_object *obj;
 
 #if GC_STRESS
-  pic_gc_run(pic);
+  pic_gc(pic);
 #endif
 
   obj = (struct pic_object *)heap_alloc(pic, size);
   if (obj == NULL) {
-    pic_gc_run(pic);
+    pic_gc(pic);
     obj = (struct pic_object *)heap_alloc(pic, size);
     if (obj == NULL) {
       heap_morecore(pic);

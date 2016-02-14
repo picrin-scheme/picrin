@@ -391,7 +391,7 @@ pic_close(pic_state *pic)
   pic->libs = pic_nil_value();
 
   /* free all heap objects */
-  pic_gc_run(pic);
+  pic_gc(pic);
 
 #if 0
   {
