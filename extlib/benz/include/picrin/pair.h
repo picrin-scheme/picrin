@@ -78,7 +78,6 @@ pic_value pic_cadr(pic_state *, pic_value);
 pic_value pic_cdar(pic_state *, pic_value);
 pic_value pic_cddr(pic_state *, pic_value);
 
-pic_value pic_list_tail(pic_state *, pic_value, int);
 pic_value pic_list_copy(pic_state *, pic_value);
 
 #if defined(__cplusplus)

@@ -175,9 +175,9 @@ int pic_int(pic_value);
 double pic_float(pic_value);
 char pic_char(pic_value);
 bool pic_bool(pic_value);
-/* const char *pic_str(pic_state *, pic_value, int *len); */
+/* const char *pic_str(pic_state *, pic_value); */
 /* unsigned char *pic_blob(pic_state *, pic_value, int *len); */
-void *pic_data(pic_state *, pic_value);
+/* void *pic_data(pic_state *, pic_value); */
 
 pic_value pic_undef_value();
 pic_value pic_int_value(int);
@@ -187,6 +187,7 @@ pic_value pic_true_value();
 pic_value pic_false_value();
 pic_value pic_bool_value(bool);
 
+#define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
 #define pic_int_p(v) (pic_vtype(v) == PIC_VTYPE_INT)
 #define pic_float_p(v) (pic_vtype(v) == PIC_VTYPE_FLOAT)
 #define pic_char_p(v) (pic_vtype(v) == PIC_VTYPE_CHAR)
@@ -202,7 +203,6 @@ pic_value pic_bool_value(bool);
 #define pic_dict_p(v) (pic_type(v) == PIC_TT_DICT)
 #define pic_weak_p(v) (pic_type(v) == PIC_TT_WEAK)
 #define pic_sym_p(v) (pic_type(v) == PIC_TT_SYMBOL)
-#define pic_undef_p(v) (pic_vtype(v) == PIC_VTYPE_UNDEF)
 
 enum pic_tt pic_type(pic_value);
 const char *pic_type_repr(enum pic_tt);
@@ -222,6 +222,7 @@ bool pic_list_p(pic_value);
 pic_value pic_list(pic_state *, int n, ...);
 pic_value pic_vlist(pic_state *, int n, va_list);
 pic_value pic_list_ref(pic_state *, pic_value, int);
+pic_value pic_list_tail(pic_state *, pic_value, int);
 void pic_list_set(pic_state *, pic_value, int, pic_value);
 int pic_length(pic_state *, pic_value);
 
