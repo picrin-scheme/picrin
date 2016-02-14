@@ -82,18 +82,20 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
   pic->cc = cont->prev;
 }
 
+#define CV_ID 0
+#define CV_ESCAPE 1
+
 static pic_value
 cont_call(pic_state *pic)
 {
-  struct pic_proc *self;
   int argc;
   pic_value *argv;
   int id;
   struct pic_cont *cc, *cont;
 
-  pic_get_args(pic, "&*", &self, &argc, &argv);
+  pic_get_args(pic, "*", &argc, &argv);
 
-  id = pic_int(pic_proc_env_ref(pic, self, "id"));
+  id = pic_int(pic_closure_ref(pic, CV_ID));
 
   /* check if continuation is alive */
   for (cc = pic->cc; cc != NULL; cc = cc->prev) {
@@ -105,7 +107,7 @@ cont_call(pic_state *pic)
     pic_errorf(pic, "calling dead escape continuation");
   }
 
-  cont = pic_data_ptr(pic_proc_env_ref(pic, self, "escape"))->data;
+  cont = pic_data_ptr(pic_closure_ref(pic, CV_ESCAPE))->data;
   cont->results = pic_list_by_array(pic, argc, argv);
 
   pic_load_point(pic, cont);
@@ -120,15 +122,9 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
 {
   static const pic_data_type cont_type = { "cont", NULL, NULL };
   struct pic_proc *c;
-  struct pic_data *e;
-
-  c = pic_make_proc(pic, cont_call);
-
-  e = pic_data_alloc(pic, &cont_type, cont);
 
   /* save the escape continuation in proc */
-  pic_proc_env_set(pic, c, "escape", pic_obj_value(e));
-  pic_proc_env_set(pic, c, "id", pic_int_value(cont->id));
+  c = pic_lambda(pic, cont_call, 2, pic_int_value(cont->id), pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
 
   return c;
 }

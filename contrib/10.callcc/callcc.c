@@ -218,14 +218,13 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
 PIC_NORETURN static pic_value
 cont_call(pic_state *pic)
 {
-  struct pic_proc *self;
   int argc;
   pic_value *argv;
   struct pic_fullcont *cont;
 
-  pic_get_args(pic, "&*", &self, &argc, &argv);
+  pic_get_args(pic, "*", &argc, &argv);
 
-  cont = pic_data_ptr(pic_proc_env_ref(pic, self, "cont"))->data;
+  cont = pic_data_ptr(pic_closure_ref(pic, 0))->data;
   cont->results = pic_list_by_array(pic, argc, argv);
 
   /* execute guard handlers */
@@ -245,14 +244,9 @@ pic_callcc_full(pic_state *pic, struct pic_proc *proc)
   }
   else {
     struct pic_proc *c;
-    struct pic_data *dat;
-
-    c = pic_make_proc(pic, cont_call);
-
-    dat = pic_data_alloc(pic, &cont_type, cont);
 
     /* save the continuation object in proc */
-    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
+    c = pic_lambda(pic, cont_call, 1, pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
 
     return pic_call(pic, proc, 1, pic_obj_value(c));
   }
@@ -272,15 +266,10 @@ pic_callcc_callcc(pic_state *pic)
   }
   else {
     struct pic_proc *c;
-    struct pic_data *dat;
     pic_value args[1];
 
-    c = pic_make_proc(pic, cont_call);
-
-    dat = pic_data_alloc(pic, &cont_type, cont);
-
     /* save the continuation object in proc */
-    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
+    c = pic_lambda(pic, cont_call, 1, pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
 
     args[0] = pic_obj_value(c);
     return pic_applyk(pic, proc, 1, args);
@@ -288,7 +277,7 @@ pic_callcc_callcc(pic_state *pic)
 }
 
 #define pic_redefun(pic, lib, name, func)       \
-  pic_set(pic, lib, name, pic_obj_value(pic_make_proc(pic, func)))
+  pic_set(pic, lib, name, pic_obj_value(pic_make_proc(pic, func, 0, NULL)))
 
 void
 pic_init_callcc(pic_state *pic)

@@ -302,8 +302,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
         LOOP(obj->u.proc.u.i.cxt);
       }
     } else {
-      if (obj->u.proc.u.f.env) {
-        LOOP(obj->u.proc.u.f.env);
+      int i;
+      for (i = 0; i < obj->u.proc.u.f.localc; ++i) {
+        gc_mark(pic, obj->u.proc.locals[i]);
       }
     }
     break;

@@ -163,7 +163,7 @@ pic_define_standard_port(pic_state *pic, const char *name, xFILE *file, int dir)
   port->file = file;
   port->flags = dir | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
-  pic_defvar(pic, name, pic_obj_value(port), pic_make_proc(pic, pic_assert_port));
+  pic_defvar(pic, name, pic_obj_value(port), pic_make_proc(pic, pic_assert_port, 0, NULL));
 }
 
 #define DEFINE_STANDARD_PORT_ACCESSOR(name, var)        \

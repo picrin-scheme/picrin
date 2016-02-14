@@ -200,7 +200,7 @@ vm_push_cxt(pic_state *pic)
 {
   pic_callinfo *ci = pic->ci;
 
-  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, sizeof(struct pic_context) + sizeof(pic_value) * ci->regc, PIC_TT_CXT);
+  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, offsetof(struct pic_context, storage) + sizeof(pic_value) * ci->regc, PIC_TT_CXT);
   ci->cxt->up = ci->up;
   ci->cxt->regc = ci->regc;
   ci->cxt->regs = ci->regs;
@@ -836,6 +836,30 @@ pic_vcall(pic_state *pic, struct pic_proc *proc, int n, va_list ap)
   return pic_apply(pic, proc, n, args);
 }
 
+struct pic_proc *
+pic_lambda(pic_state *pic, pic_func_t f, int n, ...)
+{
+  struct pic_proc *proc;
+  va_list ap;
+
+  va_start(ap, n);
+  proc = pic_vlambda(pic, f, n, ap);
+  va_end(ap);
+  return proc;
+}
+
+struct pic_proc *
+pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
+{
+  pic_value *env = pic_alloca(pic, sizeof(pic_value) * n);
+  int i;
+
+  for (i = 0; i < n; ++i) {
+    env[i] = va_arg(ap, pic_value);
+  }
+  return pic_make_proc(pic, f, n, env);
+}
+
 void
 pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
@@ -855,9 +879,9 @@ pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 }
 
 void
-pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
+pic_defun(pic_state *pic, const char *name, pic_func_t f)
 {
-  pic_define(pic, pic->lib, name, pic_obj_value(pic_make_proc(pic, cfunc)));
+  pic_define(pic, pic->lib, name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)));
   pic_export(pic, pic_intern_cstr(pic, name));
 }
 
@@ -894,6 +918,36 @@ pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
   }
 
   vm_gset(pic, uid, val);
+}
+
+pic_value
+pic_closure_ref(pic_state *pic, int n)
+{
+  struct pic_proc *self;
+
+  self = pic_proc_ptr(GET_OPERAND(pic, 0));
+
+  assert(pic_proc_func_p(self));
+
+  if (n < 0 || self->u.f.localc <= n) {
+    pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
+  }
+  return pic_proc_ptr(GET_OPERAND(pic, 0))->locals[n];
+}
+
+void
+pic_closure_set(pic_state *pic, int n, pic_value v)
+{
+  struct pic_proc *self;
+
+  self = pic_proc_ptr(GET_OPERAND(pic, 0));
+
+  assert(pic_proc_func_p(self));
+
+  if (n < 0 || self->u.f.localc <= n) {
+    pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
+  }
+  pic_proc_ptr(GET_OPERAND(pic, 0))->locals[n] = v;
 }
 
 pic_value
@@ -943,14 +997,18 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
 }
 
 struct pic_proc *
-pic_make_proc(pic_state *pic, pic_func_t func)
+pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
 {
   struct pic_proc *proc;
+  int i;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
+  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals) + sizeof(pic_value) * n, PIC_TT_PROC);
   proc->tag = PIC_PROC_TAG_FUNC;
   proc->u.f.func = func;
-  proc->u.f.env = NULL;
+  proc->u.f.localc = n;
+  for (i = 0; i < n; ++i) {
+    proc->locals[i] = env[i];
+  }
   return proc;
 }
 
@@ -959,41 +1017,12 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
 {
   struct pic_proc *proc;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, sizeof(struct pic_proc), PIC_TT_PROC);
+  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals), PIC_TT_PROC);
   proc->tag = PIC_PROC_TAG_IREP;
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
   pic_irep_incref(pic, irep);
   return proc;
-}
-
-struct pic_dict *
-pic_proc_env(pic_state *pic, struct pic_proc *proc)
-{
-  assert(pic_proc_func_p(proc));
-
-  if (! proc->u.f.env) {
-    proc->u.f.env = pic_make_dict(pic);
-  }
-  return proc->u.f.env;
-}
-
-bool
-pic_proc_env_has(pic_state *pic, struct pic_proc *proc, const char *key)
-{
-  return pic_dict_has(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
-}
-
-pic_value
-pic_proc_env_ref(pic_state *pic, struct pic_proc *proc, const char *key)
-{
-  return pic_dict_ref(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key));
-}
-
-void
-pic_proc_env_set(pic_state *pic, struct pic_proc *proc, const char *key, pic_value val)
-{
-  pic_dict_set(pic, pic_proc_env(pic, proc), pic_intern_cstr(pic, key), val);
 }
 
 static pic_value

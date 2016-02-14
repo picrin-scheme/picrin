@@ -56,7 +56,7 @@ pic_native_exception_handler(pic_state *pic)
 
   pic->err = err;
 
-  cont = pic_proc_ptr(pic_proc_env_ref(pic, self, "cont"));
+  cont = pic_proc_ptr(pic_closure_ref(pic, 0));
 
   pic_call(pic, cont, 1, pic_false_value());
 

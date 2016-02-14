@@ -151,6 +151,8 @@ void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
 void pic_define(pic_state *, struct pic_lib *, const char *, pic_value);
 pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
 void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
+pic_value pic_closure_ref(pic_state *, int);
+void pic_closure_set(pic_state *, int, pic_value);
 pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, int, ...);
 
 struct pic_lib *pic_make_library(pic_state *, pic_value);
@@ -161,12 +163,12 @@ void pic_export(pic_state *, pic_sym *);
 PIC_NORETURN void pic_panic(pic_state *, const char *);
 PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);
 
+struct pic_proc *pic_lambda(pic_state *, pic_func_t, int, ...);
+struct pic_proc *pic_vlambda(pic_state *, pic_func_t, int, va_list);
 pic_value pic_call(pic_state *, struct pic_proc *, int, ...);
 pic_value pic_vcall(pic_state *, struct pic_proc *, int, va_list);
 pic_value pic_apply(pic_state *, struct pic_proc *, int, pic_value *);
 pic_value pic_applyk(pic_state *, struct pic_proc *, int, pic_value *);
-
-pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
 
 bool pic_eq_p(pic_value, pic_value);
 bool pic_eqv_p(pic_value, pic_value);
@@ -207,6 +209,8 @@ pic_value pic_read_cstr(pic_state *, const char *);
 
 void pic_load(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
+
+pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 

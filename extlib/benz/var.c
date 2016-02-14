@@ -5,15 +5,6 @@
 #include "picrin.h"
 
 static pic_value
-var_conv(pic_state *pic, struct pic_proc *var, pic_value val)
-{
-  if (pic_proc_env_has(pic, var, "conv") != 0) {
-    return pic_call(pic, pic_proc_ptr(pic_proc_env_ref(pic, var, "conv")), 1, val);
-  }
-  return val;
-}
-
-static pic_value
 var_get(pic_state *pic, struct pic_proc *var)
 {
   pic_value elem, it;
@@ -52,7 +43,13 @@ var_call(pic_state *pic)
   if (n == 0) {
     return var_get(pic, self);
   } else {
-    return var_set(pic, self, var_conv(pic, self, val));
+    pic_value conv;
+
+    conv = pic_closure_ref(pic, 0);
+    if (! pic_false_p(conv)) {
+      val = pic_call(pic, pic_proc_ptr(conv), 1, val);
+    }
+    return var_set(pic, self, val);
   }
 }
 
@@ -60,12 +57,12 @@ struct pic_proc *
 pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
 {
   struct pic_proc *var;
-
-  var = pic_make_proc(pic, var_call);
+  pic_value c = pic_false_value();
 
   if (conv != NULL) {
-    pic_proc_env_set(pic, var, "conv", pic_obj_value(conv));
+    c = pic_obj_value(conv);
   }
+  var = pic_lambda(pic, var_call, 1, c);
 
   pic_call(pic, var, 1, init);
 
