@@ -24,6 +24,8 @@ pic_intern(pic_state *pic, pic_str *str)
     return sym;
   }
 
+  kh_val(h, it) = pic->sQUOTE;  /* dummy */
+
   sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TT_SYMBOL);
   sym->str = str;
   kh_val(h, it) = sym;
