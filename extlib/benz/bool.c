@@ -54,7 +54,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;
   }
   case PIC_TT_BLOB: {
-    pic_blob *blob1, *blob2;
+    struct pic_blob *blob1, *blob2;
     int i;
 
     blob1 = pic_blob_ptr(x);

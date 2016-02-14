@@ -7,10 +7,10 @@
 #define kh_pic_str_hash(a) (pic_str_hash(pic, (a)))
 #define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, (a), (b)) == 0)
 
-KHASH_DEFINE(s, pic_str *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
+KHASH_DEFINE(s, struct pic_string *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
 
 pic_sym *
-pic_intern(pic_state *pic, pic_str *str)
+pic_intern(pic_state *pic, struct pic_string *str)
 {
   khash_t(s) *h = &pic->oblist;
   pic_sym *sym;
@@ -102,7 +102,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
 static pic_value
 pic_symbol_string_to_symbol(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
 
   pic_get_args(pic, "s", &str);
 

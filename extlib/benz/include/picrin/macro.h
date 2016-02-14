@@ -15,13 +15,13 @@ struct pic_env {
   PIC_OBJECT_HEADER
   khash_t(env) map;
   struct pic_env *up;
-  pic_str *prefix;
+  struct pic_string *prefix;
 };
 
 #define pic_env_p(v) (pic_type(v) == PIC_TT_ENV)
 #define pic_env_ptr(v) ((struct pic_env *)pic_ptr(v))
 
-struct pic_env *pic_make_topenv(pic_state *, pic_str *);
+struct pic_env *pic_make_topenv(pic_state *, struct pic_string *);
 struct pic_env *pic_make_env(pic_state *, struct pic_env *);
 
 pic_sym *pic_add_identifier(pic_state *, pic_id *, struct pic_env *);

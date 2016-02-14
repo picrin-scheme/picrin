@@ -30,7 +30,7 @@ pic_blob_bytevector(pic_state *pic)
 {
   pic_value *argv;
   int argc, i;
-  pic_blob *blob;
+  struct pic_blob *blob;
   unsigned char *data;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -55,7 +55,7 @@ pic_blob_bytevector(pic_state *pic)
 static pic_value
 pic_blob_make_bytevector(pic_state *pic)
 {
-  pic_blob *blob;
+  struct pic_blob *blob;
   int k, i, b = 0;
 
   pic_get_args(pic, "i|i", &k, &b);
@@ -110,7 +110,7 @@ pic_blob_bytevector_u8_set(pic_state *pic)
 static pic_value
 pic_blob_bytevector_copy_i(pic_state *pic)
 {
-  pic_blob *to, *from;
+  struct pic_blob *to, *from;
   int n, at, start, end;
 
   n = pic_get_args(pic, "bib|ii", &to, &at, &from, &start, &end);
@@ -141,7 +141,7 @@ pic_blob_bytevector_copy_i(pic_state *pic)
 static pic_value
 pic_blob_bytevector_copy(pic_state *pic)
 {
-  pic_blob *from, *to;
+  struct pic_blob *from, *to;
   int n, start, end, i = 0;
 
   n = pic_get_args(pic, "b|ii", &from, &start, &end);
@@ -170,7 +170,7 @@ pic_blob_bytevector_append(pic_state *pic)
 {
   int argc, i, j, len;
   pic_value *argv;
-  pic_blob *blob;
+  struct pic_blob *blob;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -196,7 +196,7 @@ pic_blob_bytevector_append(pic_state *pic)
 static pic_value
 pic_blob_list_to_bytevector(pic_state *pic)
 {
-  pic_blob *blob;
+  struct pic_blob *blob;
   unsigned char *data;
   pic_value list, e, it;
 
@@ -220,7 +220,7 @@ pic_blob_list_to_bytevector(pic_state *pic)
 static pic_value
 pic_blob_bytevector_to_list(pic_state *pic)
 {
-  pic_blob *blob;
+  struct pic_blob *blob;
   pic_value list;
   int n, start, end, i;
 

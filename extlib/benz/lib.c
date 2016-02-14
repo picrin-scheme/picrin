@@ -9,7 +9,7 @@ make_library_env(pic_state *pic, pic_value name)
 {
   struct pic_env *env;
   pic_value dir, it;
-  pic_str *prefix = NULL;
+  struct pic_string *prefix = NULL;
 
   pic_for_each (dir, name, it) {
     if (prefix == NULL) {

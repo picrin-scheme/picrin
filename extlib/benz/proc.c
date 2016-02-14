@@ -19,10 +19,10 @@
  *  F   double *, bool *        float with exactness
  *  c   char *                  char
  *  z   char **                 c string
- *  s   pic_str **              string object
  *  m   pic_sym **              symbol
  *  v   pic_vec **              vector object
- *  b   pic_blob **             bytevector object
+ *  s   struct pic_str **       string object
+ *  b   struct pic_blob **      bytevector object
  *  l   struct pic_proc **      lambda object
  *  p   struct pic_port **      port object
  *  d   struct pic_dict **      dictionary object
@@ -146,10 +146,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
 #define PTR_CASE(c, type, ctype)                        \
       VAL_CASE(c, type, ctype, pic_## type ##_ptr(v))
 
-    PTR_CASE('s', str, pic_str *)
     PTR_CASE('m', sym, pic_sym *)
     PTR_CASE('v', vec, pic_vec *)
-    PTR_CASE('b', blob, pic_blob *)
+    PTR_CASE('s', str, struct pic_string *)
+    PTR_CASE('b', blob, struct pic_blob *)
     PTR_CASE('l', proc, struct pic_proc *)
     PTR_CASE('p', port, struct pic_port *)
     PTR_CASE('d', dict, struct pic_dict *)

@@ -12,9 +12,9 @@ extern "C" {
 struct pic_error {
   PIC_OBJECT_HEADER
   pic_sym *type;
-  pic_str *msg;
+  struct pic_string *msg;
   pic_value irrs;
-  pic_str *stack;
+  struct pic_string *stack;
 };
 
 #define pic_error_p(v) (pic_type(v) == PIC_TT_ERROR)

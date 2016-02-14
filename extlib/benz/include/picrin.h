@@ -47,7 +47,7 @@ typedef void *(*pic_allocf)(void *, void *, size_t);
 #include "picrin/read.h"
 #include "picrin/gc.h"
 
-KHASH_DECLARE(s, pic_str *, pic_sym *)
+KHASH_DECLARE(s, struct pic_string *, pic_sym *)
 
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
@@ -247,19 +247,19 @@ void pic_weak_del(pic_state *, struct pic_weak *, void *);
 bool pic_weak_has(pic_state *, struct pic_weak *, void *);
 
 /* symbol */
-pic_sym *pic_intern(pic_state *, pic_str *);
+pic_sym *pic_intern(pic_state *, struct pic_string *);
 #define pic_intern_str(pic,s,i) pic_intern(pic, pic_make_str(pic, (s), (i)))
 #define pic_intern_cstr(pic,s) pic_intern(pic, pic_make_cstr(pic, (s)))
 #define pic_intern_lit(pic,lit) pic_intern(pic, pic_make_lit(pic, lit))
 const char *pic_symbol_name(pic_state *, pic_sym *);
 
 /* string */
-int pic_str_len(pic_str *);
-char pic_str_ref(pic_state *, pic_str *, int);
-pic_str *pic_str_cat(pic_state *, pic_str *, pic_str *);
-pic_str *pic_str_sub(pic_state *, pic_str *, int, int);
-int pic_str_cmp(pic_state *, pic_str *, pic_str *);
-int pic_str_hash(pic_state *, pic_str *);
+int pic_str_len(struct pic_string *);
+char pic_str_ref(pic_state *, struct pic_string *, int);
+struct pic_string *pic_str_cat(pic_state *, struct pic_string *, struct pic_string *);
+struct pic_string *pic_str_sub(pic_state *, struct pic_string *, int, int);
+int pic_str_cmp(pic_state *, struct pic_string *, struct pic_string *);
+int pic_str_hash(pic_state *, struct pic_string *);
 
 #include "picrin/blob.h"
 #include "picrin/cont.h"
@@ -313,7 +313,7 @@ struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
         (pic->prev_lib = NULL)))
 
 void pic_warnf(pic_state *, const char *, ...);
-pic_str *pic_get_backtrace(pic_state *);
+struct pic_string *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
 
 struct pic_port *pic_stdin(pic_state *);

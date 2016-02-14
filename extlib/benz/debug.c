@@ -4,12 +4,12 @@
 
 #include "picrin.h"
 
-pic_str *
+struct pic_string *
 pic_get_backtrace(pic_state *pic)
 {
   size_t ai = pic_gc_arena_preserve(pic);
   pic_callinfo *ci;
-  pic_str *trace;
+  struct pic_string *trace;
 
   trace = pic_make_lit(pic, "");
 

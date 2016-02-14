@@ -105,7 +105,7 @@ pic_system_getenvs(pic_state *pic)
   }
 
   for (envp = picrin_envp; *envp; ++envp) {
-    pic_str *key, *val;
+    struct pic_string *key, *val;
     int i;
 
     for (i = 0; (*envp)[i] != '='; ++i)

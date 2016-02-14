@@ -93,12 +93,12 @@ pic_make_rope(pic_state *pic, struct pic_chunk *c)
   return x;
 }
 
-static pic_str *
+static struct pic_string *
 pic_make_string(pic_state *pic, struct pic_rope *rope)
 {
-  pic_str *str;
+  struct pic_string *str;
 
-  str = (pic_str *)pic_obj_alloc(pic, sizeof(pic_str), PIC_TT_STRING);
+  str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TT_STRING);
   str->rope = rope;             /* delegate ownership */
   return str;
 }
@@ -236,7 +236,7 @@ rope_cstr(pic_state *pic, struct pic_rope *x)
   return c->str;
 }
 
-pic_str *
+struct pic_string *
 pic_make_str(pic_state *pic, const char *str, int len)
 {
   struct pic_chunk *c;
@@ -253,13 +253,13 @@ pic_make_str(pic_state *pic, const char *str, int len)
 }
 
 int
-pic_str_len(pic_str *str)
+pic_str_len(struct pic_string *str)
 {
   return rope_len(str->rope);
 }
 
 char
-pic_str_ref(pic_state *pic, pic_str *str, int i)
+pic_str_ref(pic_state *pic, struct pic_string *str, int i)
 {
   int c;
 
@@ -270,26 +270,26 @@ pic_str_ref(pic_state *pic, pic_str *str, int i)
   return (char)c;
 }
 
-pic_str *
-pic_str_cat(pic_state *pic, pic_str *a, pic_str *b)
+struct pic_string *
+pic_str_cat(pic_state *pic, struct pic_string *a, struct pic_string *b)
 {
   return pic_make_string(pic, rope_cat(pic, a->rope, b->rope));
 }
 
-pic_str *
-pic_str_sub(pic_state *pic, pic_str *str, int s, int e)
+struct pic_string *
+pic_str_sub(pic_state *pic, struct pic_string *str, int s, int e)
 {
   return pic_make_string(pic, rope_sub(pic, str->rope, s, e));
 }
 
 int
-pic_str_cmp(pic_state *pic, pic_str *str1, pic_str *str2)
+pic_str_cmp(pic_state *pic, struct pic_string *str1, struct pic_string *str2)
 {
   return strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
 }
 
 int
-pic_str_hash(pic_state *pic, pic_str *str)
+pic_str_hash(pic_state *pic, struct pic_string *str)
 {
   const char *s;
   int h = 0;
@@ -302,7 +302,7 @@ pic_str_hash(pic_state *pic, pic_str *str)
 }
 
 const char *
-pic_str_cstr(pic_state *pic, pic_str *str)
+pic_str_cstr(pic_state *pic, struct pic_string *str)
 {
   return rope_cstr(pic, str->rope);
 }
@@ -373,11 +373,11 @@ pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
   return;
 }
 
-pic_str *
+struct pic_string *
 pic_vformat(pic_state *pic, const char *fmt, va_list ap)
 {
   struct pic_port *port;
-  pic_str *str;
+  struct pic_string *str;
 
   port = pic_open_output_string(pic);
 
@@ -388,11 +388,11 @@ pic_vformat(pic_state *pic, const char *fmt, va_list ap)
   return str;
 }
 
-pic_str *
+struct pic_string *
 pic_format(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  pic_str *str;
+  struct pic_string *str;
 
   va_start(ap, fmt);
   str = pic_vformat(pic, fmt, ap);
@@ -416,7 +416,7 @@ pic_str_string(pic_state *pic)
 {
   int argc, i;
   pic_value *argv;
-  pic_str *str;
+  struct pic_string *str;
   char *buf;
 
   pic_get_args(pic, "*", &argc, &argv);
@@ -456,7 +456,7 @@ pic_str_make_string(pic_state *pic)
 static pic_value
 pic_str_string_length(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
 
   pic_get_args(pic, "s", &str);
 
@@ -466,7 +466,7 @@ pic_str_string_length(pic_state *pic)
 static pic_value
 pic_str_string_ref(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
   int k;
 
   pic_get_args(pic, "si", &str, &k);
@@ -507,7 +507,7 @@ DEFINE_STRING_CMP(ge, >=)
 static pic_value
 pic_str_string_copy(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
   int n, start, end, len;
 
   n = pic_get_args(pic, "s|ii", &str, &start, &end);
@@ -532,7 +532,7 @@ pic_str_string_append(pic_state *pic)
 {
   int argc, i;
   pic_value *argv;
-  pic_str *str;
+  struct pic_string *str;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -552,7 +552,7 @@ pic_str_string_map(pic_state *pic)
   struct pic_proc *proc;
   pic_value *argv, vals, val;
   int argc, i, len, j;
-  pic_str *str;
+  struct pic_string *str;
   char *buf;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
@@ -632,7 +632,7 @@ pic_str_string_for_each(pic_state *pic)
 static pic_value
 pic_str_list_to_string(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
   pic_value list, e, it;
   int i;
   char *buf;
@@ -667,7 +667,7 @@ pic_str_list_to_string(pic_state *pic)
 static pic_value
 pic_str_string_to_list(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
   pic_value list;
   int n, start, end, i;
 

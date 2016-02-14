@@ -323,7 +323,7 @@ pic_vec_vector_to_string(pic_state *pic)
   pic_vec *vec;
   char *buf;
   int n, start, end, i;
-  pic_str *str;
+  struct pic_string *str;
 
   n = pic_get_args(pic, "v|ii", &vec, &start, &end);
 
@@ -355,7 +355,7 @@ pic_vec_vector_to_string(pic_state *pic)
 static pic_value
 pic_vec_string_to_vector(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
   int n, start, end, i;
   pic_vec *vec;
 

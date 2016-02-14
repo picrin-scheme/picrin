@@ -218,7 +218,7 @@ pic_number_number_to_string(pic_state *pic)
   double f;
   bool e;
   int radix = 10;
-  pic_str *str;
+  struct pic_string *str;
 
   pic_get_args(pic, "F|i", &f, &e, &radix);
 

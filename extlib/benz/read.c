@@ -419,7 +419,7 @@ read_string(pic_state *pic, struct pic_port *port, int c)
 {
   char *buf;
   int size, cnt;
-  pic_str *str;
+  struct pic_string *str;
 
   size = 256;
   buf = pic_malloc(pic, size);
@@ -499,7 +499,7 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
   int nbits, n;
   int len, i;
   unsigned char *dat;
-  pic_blob *blob;
+  struct pic_blob *blob;
 
   nbits = 0;
 

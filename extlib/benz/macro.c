@@ -21,7 +21,7 @@ pic_make_env(pic_state *pic, struct pic_env *up)
 }
 
 struct pic_env *
-pic_make_topenv(pic_state *pic, pic_str *prefix)
+pic_make_topenv(pic_state *pic, struct pic_string *prefix)
 {
   struct pic_env *env;
 
@@ -37,7 +37,7 @@ pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 {
   const char *name;
   pic_sym *uid;
-  pic_str *str;
+  struct pic_string *str;
 
   name = pic_identifier_name(pic, id);
 

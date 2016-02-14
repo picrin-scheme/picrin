@@ -47,7 +47,7 @@ writer_control_destroy(struct writer_control *p)
 }
 
 static void
-write_blob(pic_state *pic, pic_blob *blob, xFILE *file)
+write_blob(pic_state *pic, struct pic_blob *blob, xFILE *file)
 {
   int i;
 
@@ -82,7 +82,7 @@ write_char(pic_state *pic, char c, xFILE *file, int mode)
 }
 
 static void
-write_str(pic_state *pic, pic_str *str, xFILE *file, int mode)
+write_str(pic_state *pic, struct pic_string *str, xFILE *file, int mode)
 {
   int i;
   const char *cstr = pic_str_cstr(pic, str);
@@ -433,7 +433,7 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 {
   xFILE *file = pic_stdout(pic)->file;
   va_list ap;
-  pic_str *str;
+  struct pic_string *str;
 
   va_start(ap, fmt);
 

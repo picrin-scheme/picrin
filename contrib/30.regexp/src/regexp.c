@@ -82,7 +82,7 @@ pic_regexp_regexp_match(pic_state *pic)
   const char *input;
   regmatch_t match[100];
   pic_value matches, positions;
-  pic_str *str;
+  struct pic_string *str;
   int i, offset;
 
   pic_get_args(pic, "oz", &reg, &input);
@@ -157,7 +157,7 @@ pic_regexp_regexp_replace(pic_state *pic)
   pic_value reg;
   const char *input;
   regmatch_t match;
-  pic_str *txt, *output = pic_make_lit(pic, "");
+  struct pic_string *txt, *output = pic_make_lit(pic, "");
 
   pic_get_args(pic, "ozs", &reg, &input, &txt);
 

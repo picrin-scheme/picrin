@@ -202,9 +202,7 @@ struct pic_env;
 typedef struct pic_symbol pic_sym;
 typedef struct pic_id pic_id;
 typedef struct pic_pair pic_pair;
-typedef struct pic_string pic_str;
 typedef struct pic_vector pic_vec;
-typedef struct pic_blob pic_blob;
 
 #define pic_obj_p(v) (pic_vtype(v) == PIC_VTYPE_HEAP)
 #define pic_obj_ptr(v) ((struct pic_object *)pic_ptr(v))

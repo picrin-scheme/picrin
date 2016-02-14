@@ -21,7 +21,7 @@ void
 pic_warnf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  pic_str *err;
+  struct pic_string *err;
 
   va_start(ap, fmt);
   err = pic_vformat(pic, fmt, ap);
@@ -35,7 +35,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
   const char *msg;
-  pic_str *err;
+  struct pic_string *err;
 
   va_start(ap, fmt);
   err = pic_vformat(pic, fmt, ap);
@@ -94,7 +94,7 @@ struct pic_error *
 pic_make_error(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
-  pic_str *stack;
+  struct pic_string *stack;
 
   stack = pic_get_backtrace(pic);
 

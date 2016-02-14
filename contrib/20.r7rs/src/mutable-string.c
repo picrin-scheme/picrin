@@ -1,9 +1,9 @@
 #include "picrin.h"
 
 void
-pic_str_set(pic_state *pic, pic_str *str, int i, char c)
+pic_str_set(pic_state *pic, struct pic_string *str, int i, char c)
 {
-  pic_str *x, *y, *z, *tmp;
+  struct pic_string *x, *y, *z, *tmp;
   char buf[1];
 
   if (pic_str_len(str) <= i) {
@@ -26,7 +26,7 @@ pic_str_set(pic_state *pic, pic_str *str, int i, char c)
 static pic_value
 pic_str_string_set(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
   char c;
   int k;
 
@@ -39,7 +39,7 @@ pic_str_string_set(pic_state *pic)
 static pic_value
 pic_str_string_copy_ip(pic_state *pic)
 {
-  pic_str *to, *from;
+  struct pic_string *to, *from;
   int n, at, start, end;
 
   n = pic_get_args(pic, "sis|ii", &to, &at, &from, &start, &end);
@@ -63,7 +63,7 @@ pic_str_string_copy_ip(pic_state *pic)
 static pic_value
 pic_str_string_fill_ip(pic_state *pic)
 {
-  pic_str *str;
+  struct pic_string *str;
   char c;
   int n, start, end;
 

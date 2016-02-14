@@ -546,7 +546,7 @@ static pic_value
 pic_port_get_output_bytevector(pic_state *pic)
 {
   struct pic_port *port = pic_stdout(pic);
-  pic_blob *blob;
+  struct pic_blob *blob;
   struct strfile *s;
 
   pic_get_args(pic, "|p", &port);
@@ -646,7 +646,7 @@ pic_port_char_ready_p(pic_state *pic)
 static pic_value
 pic_port_read_string(pic_state *pic){
   struct pic_port *port = pic_stdin(pic), *buf;
-  pic_str *str;
+  struct pic_string *str;
   int k, i;
   int c;
   pic_value res = pic_eof_object();
@@ -725,7 +725,7 @@ static pic_value
 pic_port_read_blob(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
-  pic_blob *blob;
+  struct pic_blob *blob;
   int k, i;
 
   pic_get_args(pic, "i|p", &k, &port);
