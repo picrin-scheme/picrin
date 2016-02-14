@@ -900,53 +900,34 @@ pic_apply5(pic_state *pic, struct pic_proc *proc, pic_value arg1, pic_value arg2
 }
 
 void
-pic_define_(pic_state *pic, const char *name, pic_value val)
+pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
 
   sym = pic_intern_cstr(pic, name);
 
-  if ((uid = pic_find_identifier(pic, (pic_id *)sym, pic->lib->env)) == NULL) {
-    uid = pic_add_identifier(pic, (pic_id *)sym, pic->lib->env);
+  if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
+    uid = pic_add_identifier(pic, (pic_id *)sym, lib->env);
   } else {
     if (pic_weak_has(pic, pic->globals, uid)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(uid));
     }
   }
 
-  pic_set(pic, pic->lib, name, val);
-}
-
-void
-pic_define(pic_state *pic, const char *name, pic_value val)
-{
-  pic_define_(pic, name, val);
-  pic_export(pic, pic_intern_cstr(pic, name));
-}
-
-void
-pic_defun_(pic_state *pic, const char *name, pic_func_t cfunc)
-{
-  pic_define_(pic, name, pic_obj_value(pic_make_proc(pic, cfunc)));
+  pic_set(pic, lib, name, val);
 }
 
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t cfunc)
 {
-  pic_defun_(pic, name, cfunc);
+  pic_define(pic, pic->lib, name, pic_obj_value(pic_make_proc(pic, cfunc)));
   pic_export(pic, pic_intern_cstr(pic, name));
-}
-
-void
-pic_defvar_(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
-{
-  pic_define_(pic, name, pic_obj_value(pic_make_var(pic, init, conv)));
 }
 
 void
 pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
 {
-  pic_defvar_(pic, name, init, conv);
+  pic_define(pic, pic->lib, name, pic_obj_value(pic_make_var(pic, init, conv)));
   pic_export(pic, pic_intern_cstr(pic, name));
 }
 
