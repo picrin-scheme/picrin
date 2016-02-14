@@ -137,6 +137,7 @@ void pic_free(pic_state *, void *);
 
 typedef pic_value (*pic_func_t)(pic_state *);
 
+void *pic_alloca(pic_state *, size_t);
 pic_value pic_gc_protect(pic_state *, pic_value);
 size_t pic_gc_arena_preserve(pic_state *);
 void pic_gc_arena_restore(pic_state *, size_t);

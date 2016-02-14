@@ -696,6 +696,15 @@ pic_gc(pic_state *pic)
   gc_sweep_phase(pic);
 }
 
+void *
+pic_alloca(pic_state *pic, size_t n)
+{
+  static const pic_data_type t = { "pic_alloca", pic_free, 0 };
+
+  /* TODO: optimize */
+  return pic_data_alloc(pic, &t, pic_malloc(pic, n))->data;
+}
+
 struct pic_object *
 pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
 {
