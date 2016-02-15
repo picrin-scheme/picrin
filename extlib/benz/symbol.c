@@ -7,17 +7,17 @@
 #define kh_pic_str_hash(a) (pic_str_hash(pic, (a)))
 #define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, (a), (b)) == 0)
 
-KHASH_DEFINE(s, struct pic_string *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
+KHASH_DEFINE(oblist, struct pic_string *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
 
 pic_sym *
 pic_intern(pic_state *pic, struct pic_string *str)
 {
-  khash_t(s) *h = &pic->oblist;
+  khash_t(oblist) *h = &pic->oblist;
   pic_sym *sym;
   khiter_t it;
   int ret;
 
-  it = kh_put(s, h, str, &ret);
+  it = kh_put(oblist, h, str, &ret);
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
     pic_gc_protect(pic, pic_obj_value(sym));

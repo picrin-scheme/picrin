@@ -16,7 +16,7 @@ extern "C" {
 #include "picrin/read.h"
 #include "picrin/gc.h"
 
-KHASH_DECLARE(s, struct pic_string *, pic_sym *)
+KHASH_DECLARE(oblist, struct pic_string *, pic_sym *)
 
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
@@ -73,7 +73,7 @@ struct pic_state {
 
   pic_value features;
 
-  khash_t(s) oblist;            /* string to symbol */
+  khash_t(oblist) oblist;       /* string to symbol */
   int ucnt;
   struct pic_weak *globals;
   struct pic_weak *macros;

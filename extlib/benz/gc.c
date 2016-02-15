@@ -645,7 +645,7 @@ gc_sweep_phase(pic_state *pic)
   struct heap_page *page;
   khiter_t it;
   khash_t(weak) *h;
-  khash_t(s) *s = &pic->oblist;
+  khash_t(oblist) *s = &pic->oblist;
   pic_sym *sym;
   struct pic_object *obj;
   size_t total = 0, inuse = 0;
@@ -670,7 +670,7 @@ gc_sweep_phase(pic_state *pic)
       continue;
     sym = kh_val(s, it);
     if (sym->gc_mark == PIC_GC_UNMARK) {
-      kh_del(s, s, it);
+      kh_del(oblist, s, it);
     }
   }
 
