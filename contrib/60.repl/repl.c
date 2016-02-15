@@ -15,7 +15,7 @@ pic_repl_tty_p(pic_state *pic)
 void
 pic_init_repl(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin repl)") {
-    pic_defun(pic, "tty?", pic_repl_tty_p);
-  }
+  pic_deflibrary(pic, "(picrin repl)");
+
+  pic_defun(pic, "tty?", pic_repl_tty_p);
 }

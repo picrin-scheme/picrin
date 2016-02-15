@@ -55,6 +55,17 @@ pic_make_library(pic_state *pic, pic_value name)
   return lib;
 }
 
+void
+pic_in_library(pic_state *pic, pic_value name)
+{
+  struct pic_lib *lib;
+
+  if ((lib = pic_find_library(pic, name)) == NULL) {
+    pic_errorf(pic, "library not found ~s", name);
+  }
+  pic->lib = lib;
+}
+
 struct pic_lib *
 pic_find_library(pic_state *pic, pic_value spec)
 {

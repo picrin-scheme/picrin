@@ -58,7 +58,7 @@ struct pic_state {
 
   pic_value ptable;             /* list of ephemerons */
 
-  struct pic_lib *lib, *prev_lib;
+  struct pic_lib *lib;
 
   pic_sym *sDEFINE, *sDEFINE_MACRO, *sLAMBDA, *sIF, *sBEGIN, *sSETBANG;
   pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;

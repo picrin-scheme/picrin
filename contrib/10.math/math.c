@@ -284,27 +284,27 @@ pic_number_expt(pic_state *pic)
 void
 pic_init_math(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin math)") {
-    pic_defun(pic, "floor/", pic_number_floor2);
-    pic_defun(pic, "truncate/", pic_number_trunc2);
-    pic_defun(pic, "floor", pic_number_floor);
-    pic_defun(pic, "ceiling", pic_number_ceil);
-    pic_defun(pic, "truncate", pic_number_trunc);
-    pic_defun(pic, "round", pic_number_round);
+  pic_deflibrary(pic, "(picrin math)");
 
-    pic_defun(pic, "finite?", pic_number_finite_p);
-    pic_defun(pic, "infinite?", pic_number_infinite_p);
-    pic_defun(pic, "nan?", pic_number_nan_p);
-    pic_defun(pic, "sqrt", pic_number_sqrt);
-    pic_defun(pic, "exp", pic_number_exp);
-    pic_defun(pic, "log", pic_number_log);
-    pic_defun(pic, "sin", pic_number_sin);
-    pic_defun(pic, "cos", pic_number_cos);
-    pic_defun(pic, "tan", pic_number_tan);
-    pic_defun(pic, "acos", pic_number_acos);
-    pic_defun(pic, "asin", pic_number_asin);
-    pic_defun(pic, "atan", pic_number_atan);
-    pic_defun(pic, "abs", pic_number_abs);
-    pic_defun(pic, "expt", pic_number_expt);
-  }
+  pic_defun(pic, "floor/", pic_number_floor2);
+  pic_defun(pic, "truncate/", pic_number_trunc2);
+  pic_defun(pic, "floor", pic_number_floor);
+  pic_defun(pic, "ceiling", pic_number_ceil);
+  pic_defun(pic, "truncate", pic_number_trunc);
+  pic_defun(pic, "round", pic_number_round);
+
+  pic_defun(pic, "finite?", pic_number_finite_p);
+  pic_defun(pic, "infinite?", pic_number_infinite_p);
+  pic_defun(pic, "nan?", pic_number_nan_p);
+  pic_defun(pic, "sqrt", pic_number_sqrt);
+  pic_defun(pic, "exp", pic_number_exp);
+  pic_defun(pic, "log", pic_number_log);
+  pic_defun(pic, "sin", pic_number_sin);
+  pic_defun(pic, "cos", pic_number_cos);
+  pic_defun(pic, "tan", pic_number_tan);
+  pic_defun(pic, "acos", pic_number_acos);
+  pic_defun(pic, "asin", pic_number_asin);
+  pic_defun(pic, "atan", pic_number_atan);
+  pic_defun(pic, "abs", pic_number_abs);
+  pic_defun(pic, "expt", pic_number_expt);
 }

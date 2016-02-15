@@ -13,7 +13,7 @@ pic_random_real(pic_state *pic)
 void
 pic_init_random(pic_state *pic)
 {
-  pic_deflibrary (pic, "(srfi 27)") {
-    pic_defun(pic, "random-real", pic_random_real);
-  }
+  pic_deflibrary(pic, "(srfi 27)");
+
+  pic_defun(pic, "random-real", pic_random_real);
 }

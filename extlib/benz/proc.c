@@ -179,13 +179,8 @@ static pic_value
 vm_gref(pic_state *pic, pic_sym *uid)
 {
   if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_weak_set(pic, pic->globals, uid, pic_invalid_value());
-
     pic_errorf(pic, "uninitialized global variable: %s", pic_symbol_name(pic, uid));
-
-    return pic_invalid_value();
   }
-
   return pic_weak_ref(pic, pic->globals, uid);
 }
 

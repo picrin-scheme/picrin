@@ -402,123 +402,123 @@ pic_init_srfi_106(pic_state *pic)
 #define pic_defun_(pic, name, f) pic_define(pic, pic->lib, name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)))
 #define pic_define_(pic, name, v) pic_define(pic, pic->lib, name, v)
 
-  pic_deflibrary (pic, "(srfi 106)") {
-    pic_defun_(pic, "socket?", pic_socket_socket_p);
-    pic_defun_(pic, "make-socket", pic_socket_make_socket);
-    pic_defun_(pic, "socket-accept", pic_socket_socket_accept);
-    pic_defun_(pic, "socket-send", pic_socket_socket_send);
-    pic_defun_(pic, "socket-recv", pic_socket_socket_recv);
-    pic_defun_(pic, "socket-shutdown", pic_socket_socket_shutdown);
-    pic_defun_(pic, "socket-close", pic_socket_socket_close);
-    pic_defun_(pic, "socket-input-port", pic_socket_socket_input_port);
-    pic_defun_(pic, "socket-output-port", pic_socket_socket_output_port);
-    pic_defun_(pic, "call-with-socket", pic_socket_call_with_socket);
+  pic_deflibrary(pic, "(srfi 106)");
+
+  pic_defun_(pic, "socket?", pic_socket_socket_p);
+  pic_defun_(pic, "make-socket", pic_socket_make_socket);
+  pic_defun_(pic, "socket-accept", pic_socket_socket_accept);
+  pic_defun_(pic, "socket-send", pic_socket_socket_send);
+  pic_defun_(pic, "socket-recv", pic_socket_socket_recv);
+  pic_defun_(pic, "socket-shutdown", pic_socket_socket_shutdown);
+  pic_defun_(pic, "socket-close", pic_socket_socket_close);
+  pic_defun_(pic, "socket-input-port", pic_socket_socket_input_port);
+  pic_defun_(pic, "socket-output-port", pic_socket_socket_output_port);
+  pic_defun_(pic, "call-with-socket", pic_socket_call_with_socket);
 
 #ifdef AF_INET
-    pic_define_(pic, "*af-inet*", pic_int_value(AF_INET));
+  pic_define_(pic, "*af-inet*", pic_int_value(AF_INET));
 #else
-    pic_define_(pic, "*af-inet*", pic_false_value());
+  pic_define_(pic, "*af-inet*", pic_false_value());
 #endif
 #ifdef AF_INET6
-    pic_define_(pic, "*af-inet6*", pic_int_value(AF_INET6));
+  pic_define_(pic, "*af-inet6*", pic_int_value(AF_INET6));
 #else
-    pic_define_(pic, "*af-inet6*", pic_false_value());
+  pic_define_(pic, "*af-inet6*", pic_false_value());
 #endif
 #ifdef AF_UNSPEC
-    pic_define_(pic, "*af-unspec*", pic_int_value(AF_UNSPEC));
+  pic_define_(pic, "*af-unspec*", pic_int_value(AF_UNSPEC));
 #else
-    pic_define_(pic, "*af-unspec*", pic_false_value());
+  pic_define_(pic, "*af-unspec*", pic_false_value());
 #endif
 
 #ifdef SOCK_STREAM
-    pic_define_(pic, "*sock-stream*", pic_int_value(SOCK_STREAM));
+  pic_define_(pic, "*sock-stream*", pic_int_value(SOCK_STREAM));
 #else
-    pic_define_(pic, "*sock-stream*", pic_false_value());
+  pic_define_(pic, "*sock-stream*", pic_false_value());
 #endif
 #ifdef SOCK_DGRAM
-    pic_define_(pic, "*sock-dgram*", pic_int_value(SOCK_DGRAM));
+  pic_define_(pic, "*sock-dgram*", pic_int_value(SOCK_DGRAM));
 #else
-    pic_define_(pic, "*sock-dgram*", pic_false_value());
+  pic_define_(pic, "*sock-dgram*", pic_false_value());
 #endif
 
 #ifdef AI_CANONNAME
-    pic_define_(pic, "*ai-canonname*", pic_int_value(AI_CANONNAME));
+  pic_define_(pic, "*ai-canonname*", pic_int_value(AI_CANONNAME));
 #else
-    pic_define_(pic, "*ai-canonname*", pic_false_value());
+  pic_define_(pic, "*ai-canonname*", pic_false_value());
 #endif
 #ifdef AI_NUMERICHOST
-    pic_define_(pic, "*ai-numerichost*", pic_int_value(AI_NUMERICHOST));
+  pic_define_(pic, "*ai-numerichost*", pic_int_value(AI_NUMERICHOST));
 #else
-    pic_define_(pic, "*ai-numerichost*", pic_false_value());
+  pic_define_(pic, "*ai-numerichost*", pic_false_value());
 #endif
-/* AI_V4MAPPED and AI_ALL are not supported by *BSDs, even though they are defined in netdb.h. */
+  /* AI_V4MAPPED and AI_ALL are not supported by *BSDs, even though they are defined in netdb.h. */
 #if defined(AI_V4MAPPED) && !defined(BSD)
-    pic_define_(pic, "*ai-v4mapped*", pic_int_value(AI_V4MAPPED));
+  pic_define_(pic, "*ai-v4mapped*", pic_int_value(AI_V4MAPPED));
 #else
-    pic_define_(pic, "*ai-v4mapped*", pic_false_value());
+  pic_define_(pic, "*ai-v4mapped*", pic_false_value());
 #endif
 #if defined(AI_ALL) && !defined(BSD)
-    pic_define_(pic, "*ai-all*", pic_int_value(AI_ALL));
+  pic_define_(pic, "*ai-all*", pic_int_value(AI_ALL));
 #else
-    pic_define_(pic, "*ai-all*", pic_false_value());
+  pic_define_(pic, "*ai-all*", pic_false_value());
 #endif
 #ifdef AI_ADDRCONFIG
-    pic_define_(pic, "*ai-addrconfig*", pic_int_value(AI_ADDRCONFIG));
+  pic_define_(pic, "*ai-addrconfig*", pic_int_value(AI_ADDRCONFIG));
 #else
-    pic_define_(pic, "*ai-addrconfig*", pic_false_value());
+  pic_define_(pic, "*ai-addrconfig*", pic_false_value());
 #endif
 #ifdef AI_PASSIVE
-    pic_define_(pic, "*ai-passive*", pic_int_value(AI_PASSIVE));
+  pic_define_(pic, "*ai-passive*", pic_int_value(AI_PASSIVE));
 #else
-    pic_define_(pic, "*ai-passive*", pic_false_value());
+  pic_define_(pic, "*ai-passive*", pic_false_value());
 #endif
 
 #ifdef IPPROTO_IP
-    pic_define_(pic, "*ipproto-ip*", pic_int_value(IPPROTO_IP));
+  pic_define_(pic, "*ipproto-ip*", pic_int_value(IPPROTO_IP));
 #else
-    pic_define_(pic, "*ipproto-ip*", pic_false_value());
+  pic_define_(pic, "*ipproto-ip*", pic_false_value());
 #endif
 #ifdef IPPROTO_TCP
-    pic_define_(pic, "*ipproto-tcp*", pic_int_value(IPPROTO_TCP));
+  pic_define_(pic, "*ipproto-tcp*", pic_int_value(IPPROTO_TCP));
 #else
-    pic_define_(pic, "*ipproto-tcp*", pic_false_value());
+  pic_define_(pic, "*ipproto-tcp*", pic_false_value());
 #endif
 #ifdef IPPROTO_UDP
-    pic_define_(pic, "*ipproto-udp*", pic_int_value(IPPROTO_UDP));
+  pic_define_(pic, "*ipproto-udp*", pic_int_value(IPPROTO_UDP));
 #else
-    pic_define_(pic, "*ipproto-udp*", pic_false_value());
+  pic_define_(pic, "*ipproto-udp*", pic_false_value());
 #endif
 
 #ifdef MSG_PEEK
-    pic_define_(pic, "*msg-peek*", pic_int_value(MSG_PEEK));
+  pic_define_(pic, "*msg-peek*", pic_int_value(MSG_PEEK));
 #else
-    pic_define_(pic, "*msg-peek*", pic_false_value());
+  pic_define_(pic, "*msg-peek*", pic_false_value());
 #endif
 #ifdef MSG_OOB
-    pic_define_(pic, "*msg-oob*", pic_int_value(MSG_OOB));
+  pic_define_(pic, "*msg-oob*", pic_int_value(MSG_OOB));
 #else
-    pic_define_(pic, "*msg-oob*", pic_false_value());
+  pic_define_(pic, "*msg-oob*", pic_false_value());
 #endif
 #ifdef MSG_WAITALL
-    pic_define_(pic, "*msg-waitall*", pic_int_value(MSG_WAITALL));
+  pic_define_(pic, "*msg-waitall*", pic_int_value(MSG_WAITALL));
 #else
-    pic_define_(pic, "*msg-waitall*", pic_false_value());
+  pic_define_(pic, "*msg-waitall*", pic_false_value());
 #endif
 
 #ifdef SHUT_RD
-    pic_define_(pic, "*shut-rd*", pic_int_value(SHUT_RD));
+  pic_define_(pic, "*shut-rd*", pic_int_value(SHUT_RD));
 #else
-    pic_define_(pic, "*shut-rd*", pic_false_value());
+  pic_define_(pic, "*shut-rd*", pic_false_value());
 #endif
 #ifdef SHUT_WR
-    pic_define_(pic, "*shut-wr*", pic_int_value(SHUT_WR));
+  pic_define_(pic, "*shut-wr*", pic_int_value(SHUT_WR));
 #else
-    pic_define_(pic, "*shut-wr*", pic_false_value());
+  pic_define_(pic, "*shut-wr*", pic_false_value());
 #endif
 #ifdef SHUT_RDWR
-    pic_define_(pic, "*shut-rdwr*", pic_int_value(SHUT_RDWR));
+  pic_define_(pic, "*shut-rdwr*", pic_int_value(SHUT_RDWR));
 #else
-    pic_define_(pic, "*shut-rdwr*", pic_false_value());
+  pic_define_(pic, "*shut-rdwr*", pic_false_value());
 #endif
-  }
 }

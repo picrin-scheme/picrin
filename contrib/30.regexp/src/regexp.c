@@ -178,12 +178,12 @@ pic_regexp_regexp_replace(pic_state *pic)
 void
 pic_init_regexp(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin regexp)") {
-    pic_defun(pic, "regexp", pic_regexp_regexp);
-    pic_defun(pic, "regexp?", pic_regexp_regexp_p);
-    pic_defun(pic, "regexp-match", pic_regexp_regexp_match);
-    /* pic_defun(pic, "regexp-search", pic_regexp_regexp_search); */
-    pic_defun(pic, "regexp-split", pic_regexp_regexp_split);
-    pic_defun(pic, "regexp-replace", pic_regexp_regexp_replace);
-  }
+  pic_deflibrary(pic, "(picrin regexp)");
+
+  pic_defun(pic, "regexp", pic_regexp_regexp);
+  pic_defun(pic, "regexp?", pic_regexp_regexp_p);
+  pic_defun(pic, "regexp-match", pic_regexp_regexp_match);
+  /* pic_defun(pic, "regexp-search", pic_regexp_regexp_search); */
+  pic_defun(pic, "regexp-split", pic_regexp_regexp_split);
+  pic_defun(pic, "regexp-replace", pic_regexp_regexp_replace);
 }

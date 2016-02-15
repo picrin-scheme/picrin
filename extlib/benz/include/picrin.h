@@ -219,16 +219,13 @@ pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
-#define pic_deflibrary(pic, spec)                                       \
-  for (((assert(pic->prev_lib == NULL)),                                \
-        (pic->prev_lib = pic->lib),                                     \
-        (pic->lib = pic_find_library(pic, pic_read_cstr(pic, (spec)))), \
-        (pic->lib = pic->lib                                            \
-         ? pic->lib                                                     \
-         : pic_make_library(pic, pic_read_cstr(pic, (spec)))));         \
-       pic->prev_lib != NULL;                                           \
-       ((pic->lib = pic->prev_lib),                                     \
-        (pic->prev_lib = NULL)))
+#define pic_deflibrary(pic, spec) do {                          \
+    pic_value libname = pic_read_cstr(pic, spec);               \
+    if (pic_find_library(pic, libname) == NULL) {               \
+      pic_make_library(pic, libname);                           \
+    }                                                           \
+    pic_in_library(pic, libname);                               \
+  } while (0)
 
 void pic_warnf(pic_state *, const char *, ...);
 struct pic_string *pic_get_backtrace(pic_state *);

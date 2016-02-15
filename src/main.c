@@ -26,9 +26,8 @@ pic_init_picrin(pic_state *pic)
 {
   pic_add_feature(pic, "r7rs");
 
-  pic_deflibrary (pic, "(picrin library)") {
-    pic_defun(pic, "libraries", pic_libraries);
-  }
+  pic_deflibrary(pic, "(picrin library)");
+  pic_defun(pic, "libraries", pic_libraries);
 
   pic_init_contrib(pic);
   pic_load_piclib(pic);

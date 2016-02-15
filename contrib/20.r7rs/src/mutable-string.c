@@ -85,9 +85,9 @@ pic_str_string_fill_ip(pic_state *pic)
 void
 pic_init_mutable_string(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin string)") {
-    pic_defun(pic, "string-set!", pic_str_string_set);
-    pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
-    pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
-  }
+  pic_deflibrary(pic, "(picrin string)");
+
+  pic_defun(pic, "string-set!", pic_str_string_set);
+  pic_defun(pic, "string-copy!", pic_str_string_copy_ip);
+  pic_defun(pic, "string-fill!", pic_str_string_fill_ip);
 }
