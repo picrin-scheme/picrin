@@ -360,11 +360,12 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TYPE_DICT: {
     pic_sym *sym;
-    khiter_t it;
+    pic_value val;
+    int it = 0;
 
-    pic_dict_for_each (sym, &obj->u.dict, it) {
+    while (pic_dict_next(pic, &obj->u.dict, &it, &sym, &val)) {
       gc_mark_object(pic, (struct pic_object *)sym);
-      gc_mark(pic, pic_dict_ref(pic, &obj->u.dict, sym));
+      gc_mark(pic, val);
     }
     break;
   }

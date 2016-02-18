@@ -242,13 +242,14 @@ write_dict(struct writer_control *p, struct pic_dict *dict)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
-  pic_sym *sym;
-  khiter_t it;
+  pic_sym *key;
+  pic_value val;
+  int it = 0;
 
   xfprintf(pic, file, "#.(dictionary");
-  pic_dict_for_each (sym, dict, it) {
-    xfprintf(pic, file, " '%s ", pic_str(pic, pic_sym_name(pic, sym)));
-    write_core(p, pic_dict_ref(pic, dict, sym));
+  while (pic_dict_next(pic, dict, &it, &key, &val)) {
+    xfprintf(pic, file, " '%s ", pic_str(pic, pic_sym_name(pic, key)));
+    write_core(p, val);
   }
   xfprintf(pic, file, ")");
 }
@@ -366,9 +367,10 @@ traverse(struct writer_control *p, pic_value obj)
         }
       } else {
         /* dictionary */
-        pic_sym *sym;
-        pic_dict_for_each (sym, pic_dict_ptr(obj), it) {
-          traverse(p, pic_dict_ref(pic, pic_dict_ptr(obj), sym));
+        int it = 0;
+        pic_value val;
+        while (pic_dict_next(pic, pic_dict_ptr(obj), &it, NULL, &val)) {
+          traverse(p, val);
         }
       }
 

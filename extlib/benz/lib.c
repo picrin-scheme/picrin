@@ -107,13 +107,14 @@ void
 pic_import(pic_state *pic, const char *lib)
 {
   pic_sym *name, *realname, *uid;
-  khiter_t it;
+  int it = 0;
+  pic_value val;
   struct pic_lib *libp;
 
   libp = get_library(pic, lib);
 
-  pic_dict_for_each (name, libp->exports, it) {
-    realname = pic_sym_ptr(pic_dict_ref(pic, libp->exports, name));
+  while (pic_dict_next(pic, libp->exports, &it, &name, &val)) {
+    realname = pic_sym_ptr(val);
 
     if ((uid = pic_find_identifier(pic, (pic_id *)realname, libp->env)) == NULL) {
       pic_errorf(pic, "attempted to export undefined variable '~s'", pic_obj_value(realname));
@@ -220,14 +221,14 @@ pic_lib_library_exports(pic_state *pic)
   const char *lib;
   pic_value exports = pic_nil_value(pic);
   pic_sym *sym;
-  khiter_t it;
+  int it = 0;
   struct pic_lib *libp;
 
   pic_get_args(pic, "z", &lib);
 
   libp = get_library(pic, lib);
 
-  pic_dict_for_each (sym, libp->exports, it) {
+  while (pic_dict_next(pic, libp->exports, &it, &sym, NULL)) {
     pic_push(pic, pic_obj_value(sym), exports);
   }
 
