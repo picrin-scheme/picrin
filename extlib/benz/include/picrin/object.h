@@ -44,6 +44,18 @@ struct pic_vector {
 #define pic_vec_ptr(o) ((struct pic_vector *)pic_obj_ptr(o))
 
 
+/* dictionary */
+
+KHASH_DECLARE(dict, pic_sym *, pic_value)
+
+struct pic_dict {
+  PIC_OBJECT_HEADER
+  khash_t(dict) hash;
+};
+
+#define pic_dict_ptr(v) ((struct pic_dict *)pic_obj_ptr(v))
+
+
 /* weak */
 
 KHASH_DECLARE(weak, void *, pic_value)

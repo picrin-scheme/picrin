@@ -261,7 +261,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 
 #include "picrin/cont.h"
 #include "picrin/data.h"
-#include "picrin/dict.h"
 #include "picrin/error.h"
 #include "picrin/macro.h"
 #include "picrin/pair.h"
