@@ -13,7 +13,7 @@ pic_load_load(pic_state *pic)
 
   pic_get_args(pic, "z|o", &fn, &envid);
 
-  port = pic_open_file(pic, fn, PIC_PORT_IN | PIC_PORT_TEXT);
+  port = pic_open_file(pic, fn, PIC_PORT_IN);
 
   pic_load(pic, port);
 

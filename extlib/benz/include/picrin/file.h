@@ -33,8 +33,6 @@ typedef struct {
 #define xstdout (&pic->files[1])
 #define xstderr (&pic->files[2])
 
-extern const xFILE x_iob[XOPEN_MAX];
-
 enum _flags {
   X_READ  = 01,
   X_WRITE = 02,

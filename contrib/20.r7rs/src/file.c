@@ -15,7 +15,7 @@ file_error(pic_state *pic, const char *msg)
 pic_value
 pic_file_open_input_file(pic_state *pic)
 {
-  static const short flags = PIC_PORT_IN | PIC_PORT_TEXT;
+  static const short flags = PIC_PORT_IN;
   char *fname;
 
   pic_get_args(pic, "z", &fname);
@@ -26,7 +26,7 @@ pic_file_open_input_file(pic_state *pic)
 pic_value
 pic_file_open_binary_input_file(pic_state *pic)
 {
-  static const short flags = PIC_PORT_IN | PIC_PORT_BINARY;
+  static const short flags = PIC_PORT_IN;
   char *fname;
 
   pic_get_args(pic, "z", &fname);
@@ -37,7 +37,7 @@ pic_file_open_binary_input_file(pic_state *pic)
 pic_value
 pic_file_open_output_file(pic_state *pic)
 {
-  static const short flags = PIC_PORT_OUT | PIC_PORT_TEXT;
+  static const short flags = PIC_PORT_OUT;
   char *fname;
 
   pic_get_args(pic, "z", &fname);
@@ -48,7 +48,7 @@ pic_file_open_output_file(pic_state *pic)
 pic_value
 pic_file_open_binary_output_file(pic_state *pic)
 {
-  static const short flags = PIC_PORT_OUT | PIC_PORT_BINARY;
+  static const short flags = PIC_PORT_OUT;
   char *fname;
 
   pic_get_args(pic, "z", &fname);

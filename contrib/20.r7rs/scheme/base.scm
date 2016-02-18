@@ -776,6 +776,14 @@
 
   ;; 6.13. Input and output
 
+  (define (const-true _) #t)
+
+  (define (input-port-open? port)
+    (and (input-port? port) (port-open? port)))
+
+  (define (output-port-open? port)
+    (and (output-port? port) (port-open? port)))
+
   (export current-input-port
           current-output-port
           current-error-port
@@ -785,11 +793,11 @@
           port?
           input-port?
           output-port?
-          textual-port?
-          binary-port?
+          (rename const-true textual-port?)
+          (rename const-true binary-port?)
 
-          (rename port-open? input-port-open?)
-          (rename port-open? output-port-open?)
+          input-port-open?
+          output-port-open?
           close-port
           (rename close-port close-input-port)
           (rename close-port close-output-port)

@@ -152,7 +152,7 @@ pic_define_standard_port(pic_state *pic, const char *name, xFILE *file, int dir)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = file;
-  port->flags = dir | PIC_PORT_TEXT | PIC_PORT_OPEN;
+  port->flags = dir | PIC_PORT_OPEN;
 
   pic_defvar(pic, name, pic_obj_value(port), pic_make_proc(pic, pic_assert_port, 0, NULL));
 }
@@ -269,7 +269,7 @@ pic_open_input_string(pic_state *pic, const char *str)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, str, strlen(str));
-  port->flags = PIC_PORT_IN | PIC_PORT_TEXT | PIC_PORT_OPEN;
+  port->flags = PIC_PORT_IN | PIC_PORT_OPEN;
 
   return port;
 }
@@ -281,7 +281,7 @@ pic_open_output_string(pic_state *pic)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, NULL, 0);
-  port->flags = PIC_PORT_OUT | PIC_PORT_TEXT | PIC_PORT_OPEN;
+  port->flags = PIC_PORT_OUT | PIC_PORT_OPEN;
 
   return port;
 }
@@ -361,36 +361,6 @@ pic_port_output_port_p(pic_state *pic)
 }
 
 static pic_value
-pic_port_textual_port_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  if (pic_port_p(pic, v) && (pic_port_ptr(v)->flags & PIC_PORT_TEXT) != 0) {
-    return pic_true_value(pic);
-  }
-  else {
-    return pic_false_value(pic);
-  }
-}
-
-static pic_value
-pic_port_binary_port_p(pic_state *pic)
-{
-  pic_value v;
-
-  pic_get_args(pic, "o", &v);
-
-  if (pic_port_p(pic, v) && (pic_port_ptr(v)->flags & PIC_PORT_BINARY) != 0) {
-    return pic_true_value(pic);
-  }
-  else {
-    return pic_false_value(pic);
-  }
-}
-
-static pic_value
 pic_port_port_p(pic_state *pic)
 {
   pic_value v;
@@ -447,14 +417,6 @@ pic_port_close_port(pic_state *pic)
         pic_errorf(pic, caller ": expected output port");               \
       case PIC_PORT_OUT:                                                \
         pic_errorf(pic, caller ": expected input port");                \
-      case PIC_PORT_IN | PIC_PORT_TEXT:                                 \
-        pic_errorf(pic, caller ": expected input/textual port");        \
-      case PIC_PORT_IN | PIC_PORT_BINARY:                               \
-        pic_errorf(pic, caller ": expected input/binary port");         \
-      case PIC_PORT_OUT | PIC_PORT_TEXT:                                \
-        pic_errorf(pic, caller ": expected output/textual port");       \
-      case PIC_PORT_OUT | PIC_PORT_BINARY:                              \
-        pic_errorf(pic, caller ": expected output/binary port");        \
       }                                                                 \
     }                                                                   \
     if ((port->flags & PIC_PORT_OPEN) == 0) {                           \
@@ -494,7 +456,7 @@ pic_port_get_output_string(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "get-output-string");
+  assert_port_profile(port, PIC_PORT_OUT, "get-output-string");
 
   return pic_obj_value(pic_get_output_string(pic, port));
 }
@@ -509,7 +471,7 @@ pic_port_open_input_blob(pic_state *pic)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, (const char *)blob->data, blob->len);
-  port->flags = PIC_PORT_IN | PIC_PORT_BINARY | PIC_PORT_OPEN;
+  port->flags = PIC_PORT_IN | PIC_PORT_OPEN;
 
   return pic_obj_value(port);
 }
@@ -523,7 +485,7 @@ pic_port_open_output_bytevector(pic_state *pic)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, NULL, 0);
-  port->flags = PIC_PORT_OUT | PIC_PORT_BINARY | PIC_PORT_OPEN;
+  port->flags = PIC_PORT_OUT | PIC_PORT_OPEN;
 
   return pic_obj_value(port);
 }
@@ -537,7 +499,7 @@ pic_port_get_output_bytevector(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, "get-output-bytevector");
+  assert_port_profile(port, PIC_PORT_OUT, "get-output-bytevector");
 
   if (port->file->vtable.write != string_write) {
     pic_errorf(pic, "get-output-bytevector: port is not made by open-output-bytevector");
@@ -560,7 +522,7 @@ pic_port_read_char(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "read-char");
+  assert_port_profile(port, PIC_PORT_IN, "read-char");
 
   if ((c = xfgetc(pic, port->file)) == EOF) {
     return pic_eof_object(pic);
@@ -578,7 +540,7 @@ pic_port_peek_char(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "peek-char");
+  assert_port_profile(port, PIC_PORT_IN, "peek-char");
 
   if ((c = xfgetc(pic, port->file)) == EOF) {
     return pic_eof_object(pic);
@@ -599,7 +561,7 @@ pic_port_read_line(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "read-line");
+  assert_port_profile(port, PIC_PORT_IN, "read-line");
 
   buf = pic_open_output_string(pic);
   while ((c = xfgetc(pic, port->file)) != EOF && c != '\n') {
@@ -621,7 +583,7 @@ pic_port_char_ready_p(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "char-ready?");
+  assert_port_profile(port, PIC_PORT_IN, "char-ready?");
 
   pic_get_args(pic, "|p", &port);
 
@@ -638,7 +600,7 @@ pic_port_read_string(pic_state *pic){
 
   pic_get_args(pic, "i|p", &k,  &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "read-stritg");
+  assert_port_profile(port, PIC_PORT_IN, "read-stritg");
 
   c = EOF;
   buf = pic_open_output_string(pic);
@@ -665,7 +627,7 @@ pic_port_read_byte(pic_state *pic){
   int c;
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "read-u8");
+  assert_port_profile(port, PIC_PORT_IN, "read-u8");
   if ((c = xfgetc(pic, port->file)) == EOF) {
     return pic_eof_object(pic);
   }
@@ -681,7 +643,7 @@ pic_port_peek_byte(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "peek-u8");
+  assert_port_profile(port, PIC_PORT_IN, "peek-u8");
 
   c = xfgetc(pic, port->file);
   if (c == EOF) {
@@ -700,7 +662,7 @@ pic_port_byte_ready_p(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "u8-ready?");
+  assert_port_profile(port, PIC_PORT_IN, "u8-ready?");
 
   return pic_true_value(pic);      /* FIXME: always returns #t */
 }
@@ -715,7 +677,7 @@ pic_port_read_blob(pic_state *pic)
 
   pic_get_args(pic, "i|p", &k, &port);
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "read-bytevector");
+  assert_port_profile(port, PIC_PORT_IN, "read-bytevector");
 
   blob = pic_blob_value(pic, 0, k);
 
@@ -748,7 +710,7 @@ pic_port_read_blob_ip(pic_state *pic)
     end = bv->len;
   }
 
-  assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "read-bytevector!");
+  assert_port_profile(port, PIC_PORT_IN, "read-bytevector!");
 
   if (end < start) {
     pic_errorf(pic, "read-bytevector!: end index must be greater than or equal to start index");
@@ -776,7 +738,7 @@ pic_port_newline(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "newline");
+  assert_port_profile(port, PIC_PORT_OUT, "newline");
 
   xfputs(pic, "\n", port->file);
   return pic_undef_value(pic);
@@ -790,7 +752,7 @@ pic_port_write_char(pic_state *pic)
 
   pic_get_args(pic, "c|p", &c, &port);
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "write-char");
+  assert_port_profile(port, PIC_PORT_OUT, "write-char");
 
   xfputc(pic, c, port->file);
   return pic_undef_value(pic);
@@ -813,7 +775,7 @@ pic_port_write_string(pic_state *pic)
     end = INT_MAX;
   }
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "write-string");
+  assert_port_profile(port, PIC_PORT_OUT, "write-string");
 
   for (i = start; i < end && str[i] != '\0'; ++i) {
     xfputc(pic, str[i], port->file);
@@ -829,7 +791,7 @@ pic_port_write_byte(pic_state *pic)
 
   pic_get_args(pic, "i|p", &i, &port);
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, "write-u8");
+  assert_port_profile(port, PIC_PORT_OUT, "write-u8");
 
   xfputc(pic, i, port->file);
   return pic_undef_value(pic);
@@ -852,7 +814,7 @@ pic_port_write_blob(pic_state *pic)
     end = blob->len;
   }
 
-  assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, "write-bytevector");
+  assert_port_profile(port, PIC_PORT_OUT, "write-bytevector");
 
   for (i = start; i < end; ++i) {
     xfputc(pic, blob->data[i], port->file);
@@ -906,8 +868,6 @@ pic_init_port(pic_state *pic)
 
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);
-  pic_defun(pic, "textual-port?", pic_port_textual_port_p);
-  pic_defun(pic, "binary-port?", pic_port_binary_port_p);
   pic_defun(pic, "port?", pic_port_port_p);
 
   pic_defun(pic, "port-open?", pic_port_port_open_p);

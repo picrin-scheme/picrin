@@ -333,7 +333,7 @@ make_socket_port(pic_state *pic, struct pic_socket_t *sock, short dir)
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = xfunopen(pic, sock, xf_socket_read, xf_socket_write, xf_socket_seek, xf_socket_close);
-  port->flags = dir | PIC_PORT_BINARY | PIC_PORT_OPEN;
+  port->flags = dir | PIC_PORT_OPEN;
   return port;
 }
 
