@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 static pic_value
 var_get(pic_state *pic, struct pic_proc *var)

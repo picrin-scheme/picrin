@@ -271,7 +271,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 #include "picrin/string.h"
 #include "picrin/symbol.h"
 #include "picrin/vector.h"
-#include "picrin/weak.h"
 
 void *pic_default_allocf(void *, void *, size_t);
 

@@ -2,8 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
-#ifndef PICRIN_WEAK_H
-#define PICRIN_WEAK_H
+#ifndef PICRIN_OBJECT_H
+#define PICRIN_OBJECT_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -18,6 +18,7 @@ struct pic_weak {
 };
 
 #define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))
+
 
 #if defined(__cplusplus)
 }
