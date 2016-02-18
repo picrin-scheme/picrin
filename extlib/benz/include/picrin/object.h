@@ -190,6 +190,16 @@ struct pic_error {
 struct pic_error *pic_make_error(pic_state *, const char *, const char *, pic_value);
 
 
+/* port */
+
+struct pic_port {
+  PIC_OBJECT_HEADER
+  xFILE *file;
+};
+
+#define pic_port_ptr(v) ((struct pic_port *)pic_obj_ptr(v))
+
+
 #if defined(__cplusplus)
 }
 #endif

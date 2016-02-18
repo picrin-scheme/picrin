@@ -272,7 +272,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 
 #include "picrin/cont.h"
 #include "picrin/macro.h"
-#include "picrin/port.h"
 
 void *pic_default_allocf(void *, void *, size_t);
 
@@ -282,6 +281,9 @@ void *pic_default_allocf(void *, void *, size_t);
   }
 
 struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
+
+struct pic_port *pic_make_port(pic_state *, xFILE *file);
+void pic_close_port(pic_state *, struct pic_port *port);
 
 #define pic_void(exec)                          \
   pic_void_(PIC_GENSYM(ai), exec)
