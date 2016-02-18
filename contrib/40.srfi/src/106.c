@@ -69,22 +69,16 @@ pic_socket_socket_p(pic_state *pic)
 static pic_value
 pic_socket_make_socket(pic_state *pic)
 {
-  pic_value n, s;
   const char *node, *service;
   int family, socktype, flags, protocol;
   int result;
   struct addrinfo hints, *ai, *it;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "ooiiii", &n, &s, &family, &socktype, &flags, &protocol);
+  pic_get_args(pic, "zziiii", &node, &service, &family, &socktype, &flags, &protocol);
 
-  node = service = NULL;
-  if (pic_str_p(pic, n)) {
-    node = pic_str(pic, pic_str_ptr(n));
-  }
-  if (pic_str_p(pic, s)) {
-    service = pic_str(pic, pic_str_ptr(s));
-  }
+  if (strlen(node) == 0) node = NULL;
+  if (strlen(service) == 0) service = NULL;
 
   sock = pic_malloc(pic, sizeof(struct pic_socket_t));
   sock->fd = -1;

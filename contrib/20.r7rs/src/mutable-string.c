@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include "picrin/object.h"
 
 void
 pic_str_set(pic_state *pic, struct pic_string *str, int i, char c)
