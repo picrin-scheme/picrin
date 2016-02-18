@@ -276,8 +276,8 @@ pic_callcc_callcc(pic_state *pic)
   }
 }
 
-#define pic_redefun(pic, lib, name, func)       \
-  pic_set(pic, lib, name, pic_obj_value(pic_make_proc(pic, func, 0, NULL)))
+#define pic_redefun(pic, lib, name, func)                               \
+  pic_set(pic, lib, name, pic_obj_value(pic_lambda(pic, func, 0)))
 
 void
 pic_init_callcc(pic_state *pic)

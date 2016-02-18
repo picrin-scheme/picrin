@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 struct pic_string *
 pic_get_backtrace(pic_state *pic)

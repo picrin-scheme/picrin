@@ -392,7 +392,7 @@ pic_init_srfi_106(pic_state *pic)
 {
   pic_deflibrary(pic, "srfi.106");
 
-#define pic_defun_(pic, name, f) pic_define(pic, "srfi.106", name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)))
+#define pic_defun_(pic, name, f) pic_define(pic, "srfi.106", name, pic_obj_value(pic_lambda(pic, f, 0)))
 #define pic_define_(pic, name, v) pic_define(pic, "srfi.106", name, v)
 
   pic_defun_(pic, "socket?", pic_socket_socket_p);

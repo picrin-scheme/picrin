@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 void
 pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)
