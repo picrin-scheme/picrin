@@ -263,8 +263,7 @@ pic_socket_socket_recv(pic_state *pic)
     pic_errorf(pic, "%s", strerror(errno));
   }
 
-  bv = pic_make_blob(pic, len);
-  memcpy(bv->data, buf, len);
+  bv = pic_blob_value(pic, buf, len);
   free(buf);
 
   return pic_obj_value(bv);

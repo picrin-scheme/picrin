@@ -5,13 +5,16 @@
 #include "picrin.h"
 
 struct pic_blob *
-pic_make_blob(pic_state *pic, int len)
+pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
 {
   struct pic_blob *bv;
 
   bv = (struct pic_blob *)pic_obj_alloc(pic, sizeof(struct pic_blob), PIC_TYPE_BLOB);
   bv->data = pic_malloc(pic, len);
   bv->len = len;
+  if (buf) {
+    memcpy(bv->data, buf, len);
+  }
   return bv;
 }
 
@@ -35,7 +38,7 @@ pic_blob_bytevector(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  blob = pic_make_blob(pic, argc);
+  blob = pic_blob_value(pic, 0, argc);
 
   data = blob->data;
 
@@ -63,7 +66,7 @@ pic_blob_make_bytevector(pic_state *pic)
   if (b < 0 || b > 255)
     pic_errorf(pic, "byte out of range");
 
-  blob = pic_make_blob(pic, k);
+  blob = pic_blob_value(pic, 0, k);
   for (i = 0; i < k; ++i) {
     blob->data[i] = (unsigned char)b;
   }
@@ -157,7 +160,7 @@ pic_blob_bytevector_copy(pic_state *pic)
     pic_errorf(pic, "make-bytevector: end index must not be less than start index");
   }
 
-  to = pic_make_blob(pic, end - start);
+  to = pic_blob_value(pic, 0, end - start);
   while (start < end) {
     to->data[i++] = from->data[start++];
   }
@@ -180,7 +183,7 @@ pic_blob_bytevector_append(pic_state *pic)
     len += pic_blob_ptr(argv[i])->len;
   }
 
-  blob = pic_make_blob(pic, len);
+  blob = pic_blob_value(pic, 0, len);
 
   len = 0;
   for (i = 0; i < argc; ++i) {
@@ -202,7 +205,7 @@ pic_blob_list_to_bytevector(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  blob = pic_make_blob(pic, pic_length(pic, list));
+  blob = pic_blob_value(pic, 0, pic_length(pic, list));
 
   data = blob->data;
 

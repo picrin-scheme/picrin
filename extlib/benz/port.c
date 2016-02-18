@@ -546,8 +546,7 @@ pic_port_get_output_bytevector(pic_state *pic)
 
   s = port->file->vtable.cookie;
 
-  blob = pic_make_blob(pic, s->end);
-  memcpy(blob->data, s->buf, s->end);
+  blob = pic_blob_value(pic, (unsigned char *)s->buf, s->end);
 
   return pic_obj_value(blob);
 }
@@ -717,7 +716,7 @@ pic_port_read_blob(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "read-bytevector");
 
-  blob = pic_make_blob(pic, k);
+  blob = pic_blob_value(pic, 0, k);
 
   i = xfread(pic, blob->data, sizeof(char), k, port->file);
   if (i == 0) {
