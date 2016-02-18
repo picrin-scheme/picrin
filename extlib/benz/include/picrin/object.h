@@ -69,6 +69,17 @@ struct pic_weak {
 #define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))
 
 
+/* data */
+
+struct pic_data {
+  PIC_OBJECT_HEADER
+  const pic_data_type *type;
+  void *data;
+};
+
+#define pic_data_ptr(o) ((struct pic_data *)pic_obj_ptr(o))
+
+
 #if defined(__cplusplus)
 }
 #endif

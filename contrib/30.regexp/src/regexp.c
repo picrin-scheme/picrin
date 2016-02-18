@@ -20,7 +20,7 @@ regexp_dtor(pic_state *pic, void *data)
 static const pic_data_type regexp_type = { "regexp", regexp_dtor, NULL };
 
 #define pic_regexp_p(pic, o) (pic_data_type_p(pic, (o), &regexp_type))
-#define pic_regexp_data_ptr(o) ((struct pic_regexp_t *)pic_data_ptr(o)->data)
+#define pic_regexp_data(pic, v) ((struct pic_regexp_t *)pic_data(pic, v))
 
 static pic_value
 pic_regexp_regexp(pic_state *pic)
@@ -92,11 +92,11 @@ pic_regexp_regexp_match(pic_state *pic)
   matches = pic_nil_value(pic);
   positions = pic_nil_value(pic);
 
-  if (strchr(pic_regexp_data_ptr(reg)->flags, 'g') != NULL) {
+  if (strchr(pic_regexp_data(pic, reg)->flags, 'g') != NULL) {
     /* global search */
 
     offset = 0;
-    while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, match, 0) != REG_NOMATCH) {
+    while (regexec(&pic_regexp_data(pic, reg)->reg, input, 1, match, 0) != REG_NOMATCH) {
       pic_push(pic, pic_obj_value(pic_str_value(pic, input, match[0].rm_eo - match[0].rm_so)), matches);
       pic_push(pic, pic_int_value(pic, offset), positions);
 
@@ -106,7 +106,7 @@ pic_regexp_regexp_match(pic_state *pic)
   } else {
     /* local search */
 
-    if (regexec(&pic_regexp_data_ptr(reg)->reg, input, 100, match, 0) == 0) {
+    if (regexec(&pic_regexp_data(pic, reg)->reg, input, 100, match, 0) == 0) {
       for (i = 0; i < 100; ++i) {
         if (match[i].rm_so == -1) {
           break;
@@ -140,7 +140,7 @@ pic_regexp_regexp_split(pic_state *pic)
 
   pic_assert_type(pic, reg, regexp);
 
-  while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
+  while (regexec(&pic_regexp_data(pic, reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
     pic_push(pic, pic_obj_value(pic_str_value(pic, input, match.rm_so)), output);
 
     input += match.rm_eo;
@@ -163,7 +163,7 @@ pic_regexp_regexp_replace(pic_state *pic)
 
   pic_assert_type(pic, reg, regexp);
 
-  while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
+  while (regexec(&pic_regexp_data(pic, reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
     output = pic_str_cat(pic, output, pic_str_value(pic, input, match.rm_so));
     output = pic_str_cat(pic, output, txt);
 

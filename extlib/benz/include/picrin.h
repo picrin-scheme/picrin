@@ -123,7 +123,7 @@ PIC_INLINE char pic_char(pic_state *, pic_value);
 #define pic_bool(pic,v) (! pic_false_p(pic, v))
 const char *pic_str(pic_state *, struct pic_string *);
 unsigned char *pic_blob(pic_state *, struct pic_blob *, int *len);
-void *pic_data(pic_state *, struct pic_data *);
+void *pic_data(pic_state *, pic_value);
 
 typedef struct {
   const char *type_name;
@@ -260,7 +260,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 #include "picrin/state.h"
 
 #include "picrin/cont.h"
-#include "picrin/data.h"
 #include "picrin/error.h"
 #include "picrin/macro.h"
 #include "picrin/pair.h"
@@ -295,6 +294,8 @@ void pic_load_cstr(pic_state *, const char *);
 pic_value pic_eval(pic_state *, pic_value, const char *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
+
+bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
 
 #define pic_deflibrary(pic, lib) do {           \
     if (! pic_find_library(pic, lib)) {         \

@@ -47,7 +47,7 @@ socket_dtor(pic_state *pic, void *data)
 static const pic_data_type socket_type = { "socket", socket_dtor, NULL };
 
 #define pic_socket_p(pic, o) (pic_data_type_p(pic, (o), &socket_type))
-#define pic_socket_data_ptr(o) ((struct pic_socket_t *)pic_data_ptr(o)->data)
+#define pic_socket_data(pic, o) ((struct pic_socket_t *)pic_data(pic, o))
 
 PIC_INLINE void
 validate_socket_object(pic_state *pic, pic_value v)
@@ -154,7 +154,7 @@ pic_socket_socket_accept(pic_state *pic)
   pic_get_args(pic, "o", &obj);
   validate_socket_object(pic, obj);
 
-  sock = pic_socket_data_ptr(obj);
+  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   errno = 0;
@@ -194,7 +194,7 @@ pic_socket_socket_send(pic_state *pic)
   pic_get_args(pic, "ob|i", &obj, &bv, &flags);
   validate_socket_object(pic, obj);
 
-  sock = pic_socket_data_ptr(obj);
+  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   cursor = pic_blob(pic, bv, &remain);
@@ -236,7 +236,7 @@ pic_socket_socket_recv(pic_state *pic)
     pic_errorf(pic, "size must not be negative");
   }
 
-  sock = pic_socket_data_ptr(obj);
+  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   buf = malloc(size);
@@ -271,7 +271,7 @@ pic_socket_socket_shutdown(pic_state *pic)
   pic_get_args(pic, "oi", &obj, &how);
   validate_socket_object(pic, obj);
 
-  sock = pic_socket_data_ptr(obj);
+  sock = pic_socket_data(pic, obj);
   if (sock->fd != -1) {
     shutdown(sock->fd, how);
     sock->fd = -1;
@@ -288,7 +288,7 @@ pic_socket_socket_close(pic_state *pic)
   pic_get_args(pic, "o", &obj);
   validate_socket_object(pic, obj);
 
-  socket_close(pic_socket_data_ptr(obj));
+  socket_close(pic_socket_data(pic, obj));
 
   return pic_undef_value(pic);
 }
@@ -346,7 +346,7 @@ pic_socket_socket_input_port(pic_state *pic)
   pic_get_args(pic, "o", &obj);
   validate_socket_object(pic, obj);
 
-  sock = pic_socket_data_ptr(obj);
+  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   return pic_obj_value(make_socket_port(pic, sock, PIC_PORT_IN));
@@ -361,7 +361,7 @@ pic_socket_socket_output_port(pic_state *pic)
   pic_get_args(pic, "o", &obj);
   validate_socket_object(pic, obj);
 
-  sock = pic_socket_data_ptr(obj);
+  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   return pic_obj_value(make_socket_port(pic, sock, PIC_PORT_OUT));
@@ -377,7 +377,7 @@ pic_socket_call_with_socket(pic_state *pic)
   pic_get_args(pic, "ol", &obj, &proc);
   validate_socket_object(pic, obj);
 
-  sock = pic_socket_data_ptr(obj);
+  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   result = pic_call(pic, proc, 1, obj);
