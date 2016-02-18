@@ -62,6 +62,13 @@ enum _flags {
 xFILE *xfunopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
 int xfclose(pic_state *, xFILE *);
 
+#if PIC_ENABLE_STDIO
+xFILE *xfopen_file(pic_state *, FILE *, const char *mode);
+#endif
+xFILE *xfopen_buf(pic_state *, const char *buf, int len, const char *mode);
+int xfget_buf(pic_state *, xFILE *file, const char **buf, int *len);
+xFILE *xfopen_null(pic_state *, const char *mode);
+
 /* buffer management */
 int x_fillbuf(pic_state *, xFILE *);
 int x_flushbuf(pic_state *, int, xFILE *);

@@ -188,7 +188,6 @@ pic_init_core(pic_state *pic)
 pic_state *
 pic_open(pic_allocf allocf, void *userdata)
 {
-  struct pic_port *pic_make_standard_port(pic_state *, xFILE *, short);
   char t;
 
   pic_state *pic;
@@ -280,6 +279,17 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* file pool */
   memset(pic->files, 0, sizeof pic->files);
+#if PIC_ENABLE_STDIO
+  xfopen_file(pic, stdin, "r");
+  xfopen_file(pic, stdout, "w");
+  xfopen_file(pic, stderr, "w");
+  pic->files[1].flag |= X_LNBUF;
+  pic->files[2].flag |= X_UNBUF;
+#else
+  xfopen_null(pic, "r");
+  xfopen_null(pic, "w");
+  xfopen_null(pic, "w");
+#endif
 
   /* parameter table */
   pic->ptable = pic_nil_value(pic);

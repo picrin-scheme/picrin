@@ -350,9 +350,9 @@ void pic_warnf(pic_state *, const char *, ...);
 struct pic_string *pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
 
-struct pic_port *pic_stdin(pic_state *);
-struct pic_port *pic_stdout(pic_state *);
-struct pic_port *pic_stderr(pic_state *);
+#define pic_stdin(pic) pic_port_ptr(pic_funcall(pic, "picrin.base", "current-input-port", 0))
+#define pic_stdout(pic) pic_port_ptr(pic_funcall(pic, "picrin.base", "current-output-port", 0))
+#define pic_stderr(pic) pic_port_ptr(pic_funcall(pic, "picrin.base", "current-error-port", 0))
 
 pic_value pic_write(pic_state *, pic_value); /* returns given obj */
 pic_value pic_fwrite(pic_state *, pic_value, xFILE *);

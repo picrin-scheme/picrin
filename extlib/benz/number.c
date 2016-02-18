@@ -239,13 +239,14 @@ pic_number_number_to_string(pic_state *pic)
     pic_free(pic, buf);
   }
   else {
-    struct pic_port *port = pic_open_output_string(pic);
+    xFILE *file = xfopen_buf(pic, NULL, 0, "w");
+    const char *buf;
+    int len;
 
-    xfprintf(pic, port->file, "%f", f);
-
-    str = pic_get_output_string(pic, port);
-
-    pic_close_port(pic, port);
+    xfprintf(pic, file, "%f", f);
+    xfget_buf(pic, file, &buf, &len);
+    str = pic_str_value(pic, buf, len);
+    xfclose(pic, file);
   }
 
   return pic_obj_value(str);

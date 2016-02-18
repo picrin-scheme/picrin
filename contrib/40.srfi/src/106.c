@@ -327,14 +327,17 @@ xf_socket_close(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie))
 }
 
 static struct pic_port *
-make_socket_port(pic_state *pic, struct pic_socket_t *sock, short dir)
+make_socket_port(pic_state *pic, struct pic_socket_t *sock, const char *mode)
 {
-  struct pic_port *port;
+  xFILE *fp;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
-  port->file = xfunopen(pic, sock, xf_socket_read, xf_socket_write, xf_socket_seek, xf_socket_close);
-  port->flags = dir | PIC_PORT_OPEN;
-  return port;
+  if (*mode == 'r') {
+    fp = xfunopen(pic, sock, xf_socket_read, 0, xf_socket_seek, xf_socket_close);
+  } else {
+    fp = xfunopen(pic, sock, 0, xf_socket_write, xf_socket_seek, xf_socket_close);
+  }
+
+  return pic_make_port(pic, fp);
 }
 
 static pic_value
@@ -349,7 +352,7 @@ pic_socket_socket_input_port(pic_state *pic)
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
-  return pic_obj_value(make_socket_port(pic, sock, PIC_PORT_IN));
+  return pic_obj_value(make_socket_port(pic, sock, "r"));
 }
 
 static pic_value
@@ -364,7 +367,7 @@ pic_socket_socket_output_port(pic_state *pic)
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
-  return pic_obj_value(make_socket_port(pic, sock, PIC_PORT_OUT));
+  return pic_obj_value(make_socket_port(pic, sock, "w"));
 }
 
 static pic_value

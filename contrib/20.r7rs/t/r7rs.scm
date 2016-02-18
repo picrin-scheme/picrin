@@ -1766,6 +1766,8 @@
   (test 'exception value)
   (test "condition: an-error!" (get-output-string out)))
 
+(flush-output-port)
+
 (define (test-exception-handler-4 v out)
   (call-with-current-continuation
    (lambda (k)

@@ -18,9 +18,9 @@ pic_load(pic_state *pic, struct pic_port *port)
 }
 
 void
-pic_load_cstr(pic_state *pic, const char *src)
+pic_load_cstr(pic_state *pic, const char *str)
 {
-  struct pic_port *port = pic_open_input_string(pic, src);
+  struct pic_port *port = pic_make_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
 
   pic_try {
     pic_load(pic, port);

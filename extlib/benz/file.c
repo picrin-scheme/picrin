@@ -378,6 +378,198 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
   return cnt;
 }
 
+#if PIC_ENABLE_STDIO
+
+static int
+file_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size) {
+  FILE *file = cookie;
+  int r;
+
+  size = 1;                     /* override size */
+
+  r = (int)fread(ptr, 1, (size_t)size, file);
+  if (r < size && ferror(file)) {
+    return -1;
+  }
+  if (r == 0 && feof(file)) {
+    clearerr(file);
+  }
+  return r;
+}
+
+static int
+file_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int size) {
+  FILE *file = cookie;
+  int r;
+
+  r = (int)fwrite(ptr, 1, (size_t)size, file);
+  if (r < size) {
+    return -1;
+  }
+  fflush(cookie);
+  return r;
+}
+
+static long
+file_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence) {
+  switch (whence) {
+  case XSEEK_CUR:
+    whence = SEEK_CUR;
+    break;
+  case XSEEK_SET:
+    whence = SEEK_SET;
+    break;
+  case XSEEK_END:
+    whence = SEEK_END;
+    break;
+  }
+  if (fseek(cookie, pos, whence) == 0) {
+    return ftell(cookie);
+  }
+  return -1;
+}
+
+static int
+file_close(pic_state PIC_UNUSED(*pic), void *cookie) {
+  return fclose(cookie);
+}
+
+xFILE *xfopen_file(pic_state *pic, FILE *fp, const char *mode) {
+  switch (*mode) {
+  case 'r':
+    return xfunopen(pic, fp, file_read, 0, file_seek, file_close);
+  default:
+    return xfunopen(pic, fp, 0, file_write, file_seek, file_close);
+  }
+}
+
+#endif
+
+typedef struct { char *buf; long pos, end, capa; } xbuf_t;
+
+static int
+string_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size)
+{
+  xbuf_t *m = cookie;
+
+  if (size > (int)(m->end - m->pos))
+    size = (int)(m->end - m->pos);
+  memcpy(ptr, m->buf + m->pos, size);
+  m->pos += size;
+  return size;
+}
+
+static int
+string_write(pic_state *pic, void *cookie, const char *ptr, int size)
+{
+  xbuf_t *m = cookie;
+
+  if (m->pos + size >= m->capa) {
+    m->capa = (m->pos + size) * 2;
+    m->buf = pic_realloc(pic, m->buf, m->capa);
+  }
+  memcpy(m->buf + m->pos, ptr, size);
+  m->pos += size;
+  if (m->end < m->pos)
+    m->end = m->pos;
+  return size;
+}
+
+static long
+string_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence)
+{
+  xbuf_t *m = cookie;
+
+  switch (whence) {
+  case XSEEK_SET:
+    m->pos = pos;
+    break;
+  case XSEEK_CUR:
+    m->pos += pos;
+    break;
+  case XSEEK_END:
+    m->pos = m->end + pos;
+    break;
+  }
+
+  return m->pos;
+}
+
+static int
+string_close(pic_state *pic, void *cookie)
+{
+  xbuf_t *m = cookie;
+
+  pic_free(pic, m->buf);
+  pic_free(pic, m);
+  return 0;
+}
+
+xFILE *xfopen_buf(pic_state *pic, const char *data, int size, const char *mode) {
+  xbuf_t *m;
+  xFILE *file;
+
+  m = pic_malloc(pic, sizeof(xbuf_t));
+  m->buf = pic_malloc(pic, size);
+  m->pos = 0;
+  m->end = size;
+  m->capa = size;
+
+  if (*mode == 'r') {
+    memcpy(m->buf, data, size);
+    file = xfunopen(pic, m, string_read, NULL, string_seek, string_close);
+  } else {
+    file = xfunopen(pic, m, NULL, string_write, string_seek, string_close);
+  }
+  if (file == NULL) {
+    string_close(pic, m);
+  }
+  return file;
+}
+
+int xfget_buf(pic_state *pic, xFILE *file, const char **buf, int *len) {
+  xbuf_t *s;
+
+  xfflush(pic, file);
+
+  if (file->vtable.write != string_write) {
+    return -1;
+  }
+  s = file->vtable.cookie;
+  *len = s->end;
+  *buf = s->buf;
+  return 0;
+}
+
+static int
+null_read(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), char PIC_UNUSED(*ptr), int PIC_UNUSED(size)) {
+  return 0;
+}
+
+static int
+null_write(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), const char PIC_UNUSED(*ptr), int size) {
+  return size;
+}
+
+static long
+null_seek(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence)) {
+  return 0;
+}
+
+static int
+null_close(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie)) {
+  return 0;
+}
+
+xFILE *xfopen_null(pic_state PIC_UNUSED(*pic), const char *mode) {
+  switch (*mode) {
+  case 'r':
+    return xfunopen(pic, 0, null_read, 0, null_seek, null_close);
+  default:
+    return xfunopen(pic, 0, 0, null_write, null_seek, null_close);
+  }
+}
+
 #if 0
 int main()
 {

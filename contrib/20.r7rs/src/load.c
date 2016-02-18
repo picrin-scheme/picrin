@@ -4,16 +4,24 @@
 
 #include "picrin.h"
 
+#include <stdio.h>
+
 static pic_value
 pic_load_load(pic_state *pic)
 {
   pic_value envid;
   char *fn;
   struct pic_port *port;
+  FILE *fp;
 
   pic_get_args(pic, "z|o", &fn, &envid);
 
-  port = pic_open_file(pic, fn, PIC_PORT_IN);
+  fp = fopen(fn, "r");
+  if (fp == NULL) {
+    pic_errorf(pic, "load: could not open file %s", fn);
+  }
+
+  port = pic_make_port(pic, xfopen_file(pic, fp, "r"));
 
   pic_load(pic, port);
 

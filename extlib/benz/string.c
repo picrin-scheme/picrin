@@ -309,7 +309,7 @@ pic_str(pic_state *pic, struct pic_string *str)
 }
 
 static void
-pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
+vfstrf(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 {
   char c;
 
@@ -377,15 +377,17 @@ pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 struct pic_string *
 pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 {
-  struct pic_port *port;
   struct pic_string *str;
+  xFILE *file;
+  const char *buf;
+  int len;
 
-  port = pic_open_output_string(pic);
+  file = xfopen_buf(pic, NULL, 0, "w");
 
-  pic_vfformat(pic, port->file, fmt, ap);
-  str = pic_get_output_string(pic, port);
-
-  pic_close_port(pic, port);
+  vfstrf(pic, file, fmt, ap);
+  xfget_buf(pic, file, &buf, &len);
+  str = pic_str_value(pic, buf, len);
+  xfclose(pic, file);
   return str;
 }
 
