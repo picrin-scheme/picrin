@@ -94,7 +94,7 @@ file_error(pic_state *pic, const char *msg)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_lit(pic, "file"), msg, pic_nil_value(pic));
+  e = pic_make_error(pic, "file", msg, pic_nil_value(pic));
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -257,7 +257,7 @@ string_open(pic_state *pic, const char *data, size_t size)
 
   if (file == NULL) {
     string_close(pic, m);
-    pic_error(pic, "could not open new output string/bytevector port", pic_nil_value(pic));
+    pic_error(pic, "", "could not open new output string/bytevector port", pic_nil_value(pic));
   }
   return file;
 }

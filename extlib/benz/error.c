@@ -44,7 +44,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
 
   msg = pic_str(pic, err);
 
-  pic_error(pic, msg, pic_nil_value(pic));
+  pic_error(pic, "", msg, pic_nil_value(pic));
 }
 
 pic_value
@@ -92,15 +92,16 @@ pic_pop_handler(pic_state *pic)
 }
 
 struct pic_error *
-pic_make_error(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
+pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
   struct pic_string *stack;
+  pic_sym *ty = pic_intern_cstr(pic, type);
 
   stack = pic_get_backtrace(pic);
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TYPE_ERROR);
-  e->type = type;
+  e->type = ty;
   e->msg = pic_cstr_value(pic, msg);
   e->irrs = irrs;
   e->stack = stack;
@@ -138,11 +139,11 @@ pic_raise(pic_state *pic, pic_value err)
 }
 
 void
-pic_error(pic_state *pic, const char *msg, pic_value irrs)
+pic_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_lit(pic, ""), msg, irrs);
+  e = pic_make_error(pic, type, msg, irrs);
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -193,7 +194,7 @@ pic_error_error(pic_state *pic)
 
   pic_get_args(pic, "z*", &str, &argc, &argv);
 
-  pic_error(pic, str, pic_list_by_array(pic, argc, argv));
+  pic_error(pic, "", str, pic_list_by_array(pic, argc, argv));
 }
 
 static pic_value

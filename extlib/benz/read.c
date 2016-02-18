@@ -11,13 +11,9 @@ static pic_value read(pic_state *pic, struct pic_port *port, int c);
 static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
 
 PIC_NORETURN static void
-read_error(pic_state *pic, const char *msg, pic_value irritant)
+read_error(pic_state *pic, const char *msg, pic_value irritants)
 {
-  struct pic_error *e;
-
-  e = pic_make_error(pic, pic_intern_lit(pic, "read"), msg, irritant);
-
-  pic_raise(pic, pic_obj_value(e));
+  pic_error(pic, "read", msg, irritants);
 }
 
 static int

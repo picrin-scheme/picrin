@@ -163,6 +163,22 @@ struct pic_record {
 struct pic_record *pic_make_rec(pic_state *, pic_value, pic_value);
 
 
+/* error */
+
+struct pic_error {
+  PIC_OBJECT_HEADER
+  pic_sym *type;
+  struct pic_string *msg;
+  pic_value irrs;
+  struct pic_string *stack;
+};
+
+#define pic_error_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ERROR)
+#define pic_error_ptr(v) ((struct pic_error *)pic_obj_ptr(v))
+
+struct pic_error *pic_make_error(pic_state *, const char *, const char *, pic_value);
+
+
 #if defined(__cplusplus)
 }
 #endif

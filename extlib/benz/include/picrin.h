@@ -109,6 +109,8 @@ void pic_export(pic_state *, pic_sym *sym);
 
 PIC_NORETURN void pic_panic(pic_state *, const char *msg);
 PIC_NORETURN void pic_errorf(pic_state *, const char *fmt, ...);
+PIC_NORETURN void pic_error(pic_state *, const char *type, const char *msg, pic_value irrs);
+PIC_NORETURN void pic_raise(pic_state *, pic_value v);
 
 struct pic_proc *pic_lambda(pic_state *, pic_func_t f, int n, ...);
 struct pic_proc *pic_vlambda(pic_state *, pic_func_t f, int n, va_list);
@@ -260,7 +262,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 #include "picrin/state.h"
 
 #include "picrin/cont.h"
-#include "picrin/error.h"
 #include "picrin/macro.h"
 #include "picrin/pair.h"
 #include "picrin/port.h"
@@ -300,6 +301,35 @@ bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
     }                                           \
     pic_in_library(pic, lib);                   \
   } while (0)
+
+/* do not return from try block! */
+
+#define pic_try                                 \
+  pic_try_(PIC_GENSYM(cont), PIC_GENSYM(handler))
+#define pic_catch                               \
+  pic_catch_(PIC_GENSYM(label))
+#define pic_try_(cont, handler)                                         \
+  do {                                                                  \
+    extern void pic_push_handler(pic_state *, struct pic_proc *);       \
+    extern struct pic_proc *pic_pop_handler(pic_state *);               \
+    extern pic_value pic_native_exception_handler(pic_state *);         \
+    struct pic_cont cont;                                               \
+    pic_save_point(pic, &cont);                                         \
+    if (PIC_SETJMP(pic, cont.jmp) == 0) {                               \
+      struct pic_proc *handler;                                         \
+      handler = pic_lambda(pic, pic_native_exception_handler, 1, pic_obj_value(pic_make_cont(pic, &cont))); \
+      do {                                                              \
+        pic_push_handler(pic, handler);
+#define pic_catch_(label)                                 \
+        pic_pop_handler(pic);                             \
+      } while (0);                                        \
+      pic->cc = pic->cc->prev;                            \
+    } else {                                              \
+      goto label;                                         \
+    }                                                     \
+  } while (0);                                            \
+  if (0)                                                  \
+  label:
 
 void pic_warnf(pic_state *, const char *, ...);
 struct pic_string *pic_get_backtrace(pic_state *);
