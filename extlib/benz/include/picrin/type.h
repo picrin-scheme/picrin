@@ -169,7 +169,6 @@ enum pic_tt {
   PIC_TT_ERROR,
   PIC_TT_ID,
   PIC_TT_ENV,
-  PIC_TT_LIB,
   PIC_TT_DATA,
   PIC_TT_DICT,
   PIC_TT_WEAK,
@@ -197,7 +196,6 @@ struct pic_proc;
 struct pic_port;
 struct pic_error;
 struct pic_env;
-struct pic_lib;
 
 /* set aliases to basic types */
 typedef struct pic_symbol pic_sym;
@@ -298,8 +296,6 @@ pic_type_repr(enum pic_tt tt)
     return "proc";
   case PIC_TT_ENV:
     return "env";
-  case PIC_TT_LIB:
-    return "lib";
   case PIC_TT_DATA:
     return "data";
   case PIC_TT_DICT:

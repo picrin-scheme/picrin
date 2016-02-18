@@ -284,7 +284,7 @@ pic_number_expt(pic_state *pic)
 void
 pic_init_math(pic_state *pic)
 {
-  pic_deflibrary(pic, "(picrin math)");
+  pic_deflibrary(pic, "picrin.math");
 
   pic_defun(pic, "floor/", pic_number_floor2);
   pic_defun(pic, "truncate/", pic_number_trunc2);

@@ -206,6 +206,15 @@ typedef khint_t khiter_t;
 #define kh_ptr_hash_equal(a, b) ((a) == (b))
 #define kh_int_hash_func(key) (int)(key)
 #define kh_int_hash_equal(a, b) ((a) == (b))
+PIC_INLINE int kh_str_hash_func(const char *s) {
+  int h = 0;
+  while (*s) {
+    h = (h << 5) - h + *s++;
+  }
+  return h;
+}
+#define kh_str_cmp_func(a, b) (strcmp((a), (b)) == 0)
+
 
 /* --- END OF HASH FUNCTIONS --- */
 

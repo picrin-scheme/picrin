@@ -120,7 +120,7 @@ pic_init_core(pic_state *pic)
 
   pic_init_features(pic);
 
-  pic_deflibrary(pic, "(picrin base)");
+  pic_deflibrary(pic, "picrin.base");
 
   ai = pic_gc_arena_preserve(pic);
 
@@ -268,7 +268,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->features = pic_nil_value();
 
   /* libraries */
-  pic->libs = pic_nil_value();
+  kh_init(ltable, &pic->ltable);
   pic->lib = NULL;
 
   /* ireps */
@@ -346,9 +346,8 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->ptable = pic_cons(pic, pic_obj_value(pic_make_weak(pic)), pic->ptable);
 
   /* standard libraries */
-  pic->PICRIN_BASE = pic_make_library(pic, pic_read_cstr(pic, "(picrin base)"));
-  pic->PICRIN_USER = pic_make_library(pic, pic_read_cstr(pic, "(picrin user)"));
-  pic->lib = pic->PICRIN_USER;
+  pic_make_library(pic, "picrin.user");
+  pic_in_library(pic, "picrin.user");
 
   pic_gc_arena_restore(pic, ai);
 
@@ -376,7 +375,6 @@ pic_open(pic_allocf allocf, void *userdata)
 void
 pic_close(pic_state *pic)
 {
-  khash_t(oblist) *h = &pic->oblist;
   pic_allocf allocf = pic->allocf;
 
   /* clear out root objects */
@@ -388,7 +386,9 @@ pic_close(pic_state *pic)
   pic->globals = NULL;
   pic->macros = NULL;
   pic->features = pic_nil_value();
-  pic->libs = pic_nil_value();
+
+  /* free all libraries */
+  kh_clear(ltable, &pic->ltable);
 
   /* free all heap objects */
   pic_gc(pic);
@@ -420,7 +420,8 @@ pic_close(pic_state *pic)
   allocf(pic->userdata, pic->xpbase, 0);
 
   /* free global stacks */
-  kh_destroy(oblist, h);
+  kh_destroy(oblist, &pic->oblist);
+  kh_destroy(ltable, &pic->ltable);
 
   /* free GC arena */
   allocf(pic->userdata, pic->arena, 0);

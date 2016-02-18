@@ -399,10 +399,10 @@ pic_socket_call_with_socket(pic_state *pic)
 void
 pic_init_srfi_106(pic_state *pic)
 {
-#define pic_defun_(pic, name, f) pic_define(pic, pic->lib, name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)))
-#define pic_define_(pic, name, v) pic_define(pic, pic->lib, name, v)
+  pic_deflibrary(pic, "srfi.106");
 
-  pic_deflibrary(pic, "(srfi 106)");
+#define pic_defun_(pic, name, f) pic_define(pic, "srfi.106", name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)))
+#define pic_define_(pic, name, v) pic_define(pic, "srfi.106", name, v)
 
   pic_defun_(pic, "socket?", pic_socket_socket_p);
   pic_defun_(pic, "make-socket", pic_socket_make_socket);

@@ -41,7 +41,7 @@ pic_jiffies_per_second(pic_state *pic)
 void
 pic_init_time(pic_state *pic)
 {
-  pic_deflibrary(pic, "(scheme time)");
+  pic_deflibrary(pic, "scheme.time");
 
   pic_defun(pic, "current-second", pic_current_second);
   pic_defun(pic, "current-jiffy", pic_current_jiffy);

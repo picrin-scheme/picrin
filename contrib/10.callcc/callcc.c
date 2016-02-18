@@ -282,8 +282,6 @@ pic_callcc_callcc(pic_state *pic)
 void
 pic_init_callcc(pic_state *pic)
 {
-  pic_deflibrary(pic, "(scheme base)");
-
-  pic_redefun(pic, pic->PICRIN_BASE, "call-with-current-continuation", pic_callcc_callcc);
-  pic_redefun(pic, pic->PICRIN_BASE, "call/cc", pic_callcc_callcc);
+  pic_redefun(pic, "picrin.base", "call-with-current-continuation", pic_callcc_callcc);
+  pic_redefun(pic, "picrin.base", "call/cc", pic_callcc_callcc);
 }

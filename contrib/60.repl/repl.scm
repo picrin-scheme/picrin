@@ -34,7 +34,7 @@
               (scheme eval)
               (scheme r5rs)
               (picrin macro))
-     (find-library '(picrin user))))
+     "picrin.user"))
 
   (define (repl)
     (init-env)
@@ -65,7 +65,7 @@
                       (lambda (port)
                         (let next ((expr (read port)))
                           (unless (eof-object? expr)
-                            (write (eval expr (find-library '(picrin user))))
+                            (write (eval expr "picrin.user"))
                             (newline)
                             (set! str "")
                             (next (read port))))))))))

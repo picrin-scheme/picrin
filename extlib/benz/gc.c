@@ -34,7 +34,6 @@ struct pic_object {
     struct pic_context cxt;
     struct pic_port port;
     struct pic_error err;
-    struct pic_lib lib;
     struct pic_checkpoint cp;
   } u;
 };
@@ -347,18 +346,9 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
         gc_mark_object(pic, (struct pic_object *)kh_val(h, it));
       }
     }
-    if (obj->u.env.prefix) {
-      gc_mark_object(pic, (struct pic_object *)obj->u.env.prefix);
-    }
     if (obj->u.env.up) {
       LOOP(obj->u.env.up);
     }
-    break;
-  }
-  case PIC_TT_LIB: {
-    gc_mark(pic, obj->u.lib.name);
-    gc_mark_object(pic, (struct pic_object *)obj->u.lib.env);
-    LOOP(obj->u.lib.exports);
     break;
   }
   case PIC_TT_DATA: {
@@ -428,6 +418,7 @@ gc_mark_phase(pic_state *pic)
   pic_callinfo *ci;
   struct pic_proc **xhandler;
   struct pic_list *list;
+  khiter_t it;
   size_t j;
 
   assert(pic->heap->weaks == NULL);
@@ -492,11 +483,18 @@ gc_mark_phase(pic_state *pic)
   /* features */
   gc_mark(pic, pic->features);
 
-  /* library table */
-  gc_mark(pic, pic->libs);
-
   /* parameter table */
   gc_mark(pic, pic->ptable);
+
+  /* library table */
+  for (it = kh_begin(&pic->ltable); it != kh_end(&pic->ltable); ++it) {
+    if (! kh_exist(&pic->ltable, it)) {
+      continue;
+    }
+    gc_mark_object(pic, (struct pic_object *)kh_val(&pic->ltable, it).name);
+    gc_mark_object(pic, (struct pic_object *)kh_val(&pic->ltable, it).env);
+    gc_mark_object(pic, (struct pic_object *)kh_val(&pic->ltable, it).exports);
+  }
 
   /* weak maps */
   do {
@@ -580,7 +578,6 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TT_PORT:
   case PIC_TT_ERROR:
   case PIC_TT_ID:
-  case PIC_TT_LIB:
   case PIC_TT_RECORD:
   case PIC_TT_CP:
     break;

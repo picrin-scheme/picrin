@@ -856,14 +856,30 @@ pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
 }
 
 void
-pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
+pic_defun(pic_state *pic, const char *name, pic_func_t f)
+{
+  pic_define(pic, pic_current_library(pic), name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)));
+  pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+void
+pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
+{
+  pic_define(pic, pic_current_library(pic), name, pic_obj_value(pic_make_var(pic, init, conv)));
+  pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+void
+pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
+  struct pic_env *env;
 
   sym = pic_intern_cstr(pic, name);
 
-  if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
-    uid = pic_add_identifier(pic, (pic_id *)sym, lib->env);
+  env = pic_library_environment(pic, lib);
+  if ((uid = pic_find_identifier(pic, (pic_id *)sym, env)) == NULL) {
+    uid = pic_add_identifier(pic, (pic_id *)sym, env);
   } else {
     if (pic_weak_has(pic, pic->globals, uid)) {
       pic_warnf(pic, "redefining variable: ~s", pic_obj_value(uid));
@@ -873,43 +889,33 @@ pic_define(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
   pic_set(pic, lib, name, val);
 }
 
-void
-pic_defun(pic_state *pic, const char *name, pic_func_t f)
-{
-  pic_define(pic, pic->lib, name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)));
-  pic_export(pic, pic_intern_cstr(pic, name));
-}
-
-void
-pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
-{
-  pic_define(pic, pic->lib, name, pic_obj_value(pic_make_var(pic, init, conv)));
-  pic_export(pic, pic_intern_cstr(pic, name));
-}
-
 pic_value
-pic_ref(pic_state *pic, struct pic_lib *lib, const char *name)
+pic_ref(pic_state *pic, const char *lib, const char *name)
 {
   pic_sym *sym, *uid;
+  struct pic_env *env;
 
   sym = pic_intern_cstr(pic, name);
 
-  if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
-    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
+  env = pic_library_environment(pic, lib);
+  if ((uid = pic_find_identifier(pic, (pic_id *)sym, env)) == NULL) {
+    pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
   }
 
   return vm_gref(pic, uid);
 }
 
 void
-pic_set(pic_state *pic, struct pic_lib *lib, const char *name, pic_value val)
+pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 {
   pic_sym *sym, *uid;
+  struct pic_env *env;
 
   sym = pic_intern_cstr(pic, name);
 
-  if ((uid = pic_find_identifier(pic, (pic_id *)sym, lib->env)) == NULL) {
-    pic_errorf(pic, "symbol \"%s\" not defined in library ~s", name, lib->name);
+  env = pic_library_environment(pic, lib);
+  if ((uid = pic_find_identifier(pic, (pic_id *)sym, env)) == NULL) {
+    pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
   }
 
   vm_gset(pic, uid, val);
@@ -946,7 +952,7 @@ pic_closure_set(pic_state *pic, int n, pic_value v)
 }
 
 pic_value
-pic_funcall(pic_state *pic, struct pic_lib *lib, const char *name, int n, ...)
+pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
 {
   pic_value proc, r;
   va_list ap;

@@ -240,7 +240,7 @@ pic_vec_vector_map(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
-    vec->data[i] = pic_funcall(pic, pic->PICRIN_BASE, "apply", 2, pic_obj_value(proc), vals);
+    vec->data[i] = pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
   }
 
   return pic_obj_value(vec);
@@ -269,7 +269,7 @@ pic_vec_vector_for_each(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
-    pic_funcall(pic, pic->PICRIN_BASE, "apply", 2, pic_obj_value(proc), vals);
+    pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
   }
 
   return pic_undef_value();

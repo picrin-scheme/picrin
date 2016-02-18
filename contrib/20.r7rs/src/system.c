@@ -127,7 +127,7 @@ pic_system_getenvs(pic_state *pic)
 void
 pic_init_system(pic_state *pic)
 {
-  pic_deflibrary(pic, "(scheme process-context)");
+  pic_deflibrary(pic, "scheme.process-context");
 
   pic_defun(pic, "command-line", pic_system_cmdline);
   pic_defun(pic, "exit", pic_system_exit);

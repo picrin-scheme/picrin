@@ -247,11 +247,11 @@ void
 pic_init_readline(pic_state *pic){
   using_history();
 
-  pic_deflibrary(pic, "(picrin readline)");
+  pic_deflibrary(pic, "picrin.readline");
 
   pic_defun(pic, "readline", pic_rl_readline);
 
-  pic_deflibrary(pic, "(picrin readline history)");
+  pic_deflibrary(pic, "picrin.readline.history");
 
   /* pic_defun(pic, "history-offset", pic_rl_history_offset); */
   pic_defun(pic, "history-length", pic_rl_history_length);

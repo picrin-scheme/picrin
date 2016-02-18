@@ -11,7 +11,7 @@ pic_load(pic_state *pic, struct pic_port *port)
   size_t ai = pic_gc_arena_preserve(pic);
 
   while (! pic_eof_p(form = pic_read(pic, port))) {
-    pic_eval(pic, form, pic->lib);
+    pic_eval(pic, form, pic_current_library(pic));
 
     pic_gc_arena_restore(pic, ai);
   }

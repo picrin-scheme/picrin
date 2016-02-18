@@ -15,7 +15,7 @@ struct pic_env {
   PIC_OBJECT_HEADER
   khash_t(env) map;
   struct pic_env *up;
-  struct pic_string *prefix;
+  struct pic_string *lib;
 };
 
 #define pic_env_p(v) (pic_type(v) == PIC_TT_ENV)

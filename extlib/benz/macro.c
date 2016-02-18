@@ -15,19 +15,19 @@ pic_make_env(pic_state *pic, struct pic_env *up)
 
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
   env->up = up;
-  env->prefix = NULL;
+  env->lib = NULL;
   kh_init(env, &env->map);
   return env;
 }
 
 struct pic_env *
-pic_make_topenv(pic_state *pic, struct pic_string *prefix)
+pic_make_topenv(pic_state *pic, struct pic_string *lib)
 {
   struct pic_env *env;
 
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
   env->up = NULL;
-  env->prefix = prefix;
+  env->lib = lib;
   kh_init(env, &env->map);
   return env;
 }
@@ -42,7 +42,7 @@ pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
   name = pic_identifier_name(pic, id);
 
   if (env->up == NULL && pic_sym_p(pic_obj_value(id))) { /* toplevel & public */
-    str = pic_format(pic, "%s/%s", pic_str_cstr(pic, env->prefix), name);
+    str = pic_format(pic, "%s/%s", pic_str_cstr(pic, env->lib), name);
   } else {
     str = pic_format(pic, ".%s.%d", name, pic->ucnt++);
   }

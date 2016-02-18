@@ -178,7 +178,7 @@ pic_regexp_regexp_replace(pic_state *pic)
 void
 pic_init_regexp(pic_state *pic)
 {
-  pic_deflibrary(pic, "(picrin regexp)");
+  pic_deflibrary(pic, "picrin.regexp");
 
   pic_defun(pic, "regexp", pic_regexp_regexp);
   pic_defun(pic, "regexp?", pic_regexp_regexp_p);

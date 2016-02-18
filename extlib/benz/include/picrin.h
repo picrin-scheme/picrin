@@ -63,17 +63,18 @@ void pic_add_feature(pic_state *, const char *);
 void pic_defun(pic_state *, const char *, pic_func_t);
 void pic_defvar(pic_state *, const char *, pic_value, struct pic_proc *);
 
-void pic_define(pic_state *, struct pic_lib *, const char *, pic_value);
-pic_value pic_ref(pic_state *, struct pic_lib *, const char *);
-void pic_set(pic_state *, struct pic_lib *, const char *, pic_value);
+void pic_define(pic_state *, const char *, const char *, pic_value);
+pic_value pic_ref(pic_state *, const char *, const char *);
+void pic_set(pic_state *, const char *, const char *, pic_value);
 pic_value pic_closure_ref(pic_state *, int);
 void pic_closure_set(pic_state *, int, pic_value);
-pic_value pic_funcall(pic_state *pic, struct pic_lib *, const char *, int, ...);
+pic_value pic_funcall(pic_state *pic, const char *, const char *, int, ...);
 
-struct pic_lib *pic_make_library(pic_state *, pic_value);
-void pic_in_library(pic_state *, pic_value);
-struct pic_lib *pic_find_library(pic_state *, pic_value);
-void pic_import(pic_state *, struct pic_lib *);
+void pic_make_library(pic_state *, const char *);
+void pic_in_library(pic_state *, const char *);
+bool pic_find_library(pic_state *, const char *);
+const char *pic_current_library(pic_state *);
+void pic_import(pic_state *, const char *);
 void pic_export(pic_state *, pic_sym *);
 
 PIC_NORETURN void pic_panic(pic_state *, const char *);
@@ -186,7 +187,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 #include "picrin/data.h"
 #include "picrin/dict.h"
 #include "picrin/error.h"
-#include "picrin/lib.h"
 #include "picrin/macro.h"
 #include "picrin/pair.h"
 #include "picrin/port.h"
@@ -215,16 +215,15 @@ pic_value pic_read_cstr(pic_state *, const char *);
 void pic_load(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
 
-pic_value pic_eval(pic_state *, pic_value, struct pic_lib *);
+pic_value pic_eval(pic_state *, pic_value, const char *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
-#define pic_deflibrary(pic, spec) do {                          \
-    pic_value libname = pic_read_cstr(pic, spec);               \
-    if (pic_find_library(pic, libname) == NULL) {               \
-      pic_make_library(pic, libname);                           \
-    }                                                           \
-    pic_in_library(pic, libname);                               \
+#define pic_deflibrary(pic, lib) do {           \
+    if (! pic_find_library(pic, lib)) {         \
+      pic_make_library(pic, lib);               \
+    }                                           \
+    pic_in_library(pic, lib);                   \
   } while (0)
 
 void pic_warnf(pic_state *, const char *, ...);
@@ -241,6 +240,8 @@ void pic_printf(pic_state *, const char *, ...);
 void pic_fprintf(pic_state *, struct pic_port *, const char *, ...);
 pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
+
+struct pic_env *pic_library_environment(pic_state *, const char *);
 
 #if DEBUG
 # define pic_debug(pic,obj) pic_fwrite(pic,obj,xstderr)

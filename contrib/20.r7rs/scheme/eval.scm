@@ -6,14 +6,11 @@
   (define-syntax (inc! n)
     #`(set! #,n (+ #,n 1)))
 
-  (define (number->symbol n)
-    (string->symbol (number->string n)))
-
   (define (environment . specs)
-    (let ((library-name `(picrin @@my-environment ,(number->symbol counter))))
+    (let ((lib (string-append "picrin.@@my-environment." (number->string counter))))
       (inc! counter)
-      (let ((lib (make-library library-name)))
-        (eval `(import ,@specs) lib)
-        lib)))
+      (make-library lib)
+      (eval `(import ,@specs) lib)
+      lib))
 
   (export environment eval))

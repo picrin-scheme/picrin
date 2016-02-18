@@ -16,7 +16,11 @@ extern "C" {
 #include "picrin/read.h"
 #include "picrin/gc.h"
 
-KHASH_DECLARE(oblist, struct pic_string *, pic_sym *)
+struct pic_lib {
+  struct pic_string *name;
+  struct pic_env *env;
+  struct pic_dict *exports;
+};
 
 typedef struct pic_checkpoint {
   PIC_OBJECT_HEADER
@@ -36,6 +40,9 @@ typedef struct {
   pic_value *regs;
   struct pic_context *up;
 } pic_callinfo;
+
+KHASH_DECLARE(oblist, struct pic_string *, pic_sym *)
+KHASH_DECLARE(ltable, const char *, struct pic_lib)
 
 struct pic_state {
   pic_allocf allocf;
@@ -68,16 +75,13 @@ struct pic_state {
   pic_sym *sCONS, *sCAR, *sCDR, *sNILP, *sSYMBOLP, *sPAIRP;
   pic_sym *sADD, *sSUB, *sMUL, *sDIV, *sEQ, *sLT, *sLE, *sGT, *sGE, *sNOT;
 
-  struct pic_lib *PICRIN_BASE;
-  struct pic_lib *PICRIN_USER;
-
   pic_value features;
 
   khash_t(oblist) oblist;       /* string to symbol */
   int ucnt;
   struct pic_weak *globals;
   struct pic_weak *macros;
-  pic_value libs;
+  khash_t(ltable) ltable;
   struct pic_list ireps;        /* chain */
 
   pic_reader reader;

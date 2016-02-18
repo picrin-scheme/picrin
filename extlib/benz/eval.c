@@ -885,20 +885,23 @@ pic_compile(pic_state *pic, pic_value obj)
 }
 
 pic_value
-pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
+pic_eval(pic_state *pic, pic_value program, const char *lib)
 {
-  struct pic_lib *prev_lib = pic->lib;
+  const char *prev_lib = pic_current_library(pic);
+  struct pic_env *env;
   pic_value r;
 
-  pic->lib = lib;
+  env = pic_library_environment(pic, lib);
+
+  pic_in_library(pic, lib);
   pic_try {
-    r = pic_call(pic, pic_compile(pic, pic_expand(pic, program, lib->env)), 0);
+    r = pic_call(pic, pic_compile(pic, pic_expand(pic, program, env)), 0);
   }
   pic_catch {
-    pic->lib = prev_lib;
+    pic_in_library(pic, prev_lib);
     pic_raise(pic, pic->err);
   }
-  pic->lib = prev_lib;
+  pic_in_library(pic, prev_lib);
 
   return r;
 }
@@ -906,13 +909,12 @@ pic_eval(pic_state *pic, pic_value program, struct pic_lib *lib)
 static pic_value
 pic_eval_eval(pic_state *pic)
 {
-  pic_value program, lib;
+  pic_value program;
+  const char *str;
 
-  pic_get_args(pic, "oo", &program, &lib);
+  pic_get_args(pic, "oz", &program, &str);
 
-  pic_assert_type(pic, lib, lib);
-
-  return pic_eval(pic, program, pic_lib_ptr(lib));
+  return pic_eval(pic, program, str);
 }
 
 void

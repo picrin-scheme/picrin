@@ -542,12 +542,24 @@ my $src = <<'EOL';
 
 ;;; library primitives
 
+(define (mangle name)
+  (define (->string n)
+    (if (symbol? n)
+        (symbol->string n)
+        (number->string n)))
+  (define (join strs delim)
+    (let loop ((res (car strs)) (strs (cdr strs)))
+      (if (null? strs)
+          res
+          (loop (string-append res delim (car strs)) (cdr strs)))))
+  (join (map ->string name) "."))
+
 (define-macro define-library
   (lambda (form _)
-    (let ((name (cadr form))
+    (let ((lib (mangle (cadr form)))
           (body (cddr form)))
-      (let ((new-library (or (find-library name) (make-library name))))
-        (for-each (lambda (expr) (eval expr new-library)) body)))))
+      (or (find-library lib) (make-library lib))
+      (for-each (lambda (expr) (eval expr lib)) body))))
 
 (define-macro cond-expand
   (lambda (form _)
@@ -559,7 +571,7 @@ my $src = <<'EOL';
                        (memq form (features)))
                   (and (pair? form)
                        (case (car form)
-                         ((library) (find-library (cadr form)))
+                         ((library) (find-library (mangle (cadr form))))
                          ((not) (not (test (cadr form))))
                          ((and) (let loop ((form (cdr form)))
                                   (or (null? form)
@@ -584,7 +596,13 @@ my $src = <<'EOL';
              (string->symbol
               (string-append
                (symbol->string prefix)
-               (symbol->string symbol))))))
+               (symbol->string symbol)))))
+          (getlib
+           (lambda (name)
+             (let ((lib (mangle name)))
+               (if (find-library lib)
+                   lib
+                   (error "library not found" name))))))
       (letrec
           ((extract
             (lambda (spec)
@@ -592,7 +610,7 @@ my $src = <<'EOL';
                 ((only rename prefix except)
                  (extract (cadr spec)))
                 (else
-                 (or (find-library spec) (error "library not found" spec))))))
+                 (getlib spec)))))
            (collect
             (lambda (spec)
               (case (car spec)
@@ -615,8 +633,7 @@ my $src = <<'EOL';
                              (loop (cdr alist))
                              (cons (car alist) (loop (cdr alist))))))))
                 (else
-                 (let ((lib (or (find-library spec) (error "library not found" spec))))
-                   (map (lambda (x) (cons x x)) (library-exports lib))))))))
+                 (map (lambda (x) (cons x x)) (library-exports (getlib spec))))))))
         (letrec
             ((import
                (lambda (spec)
@@ -948,31 +965,37 @@ const char pic_boot[][80] = {
 "rm))))\n      `(let ()\n         ,@(map (lambda (x)\n                  `(,(the 'def",
 "ine-syntax) ,(car x) ,(cadr x)))\n                formal)\n         ,@body))))\n\n(d",
 "efine-macro let-syntax\n  (lambda (form env)\n    `(,(the 'letrec-syntax) ,@(cdr f",
-"orm))))\n\n\n;;; library primitives\n\n(define-macro define-library\n  (lambda (form _",
-")\n    (let ((name (cadr form))\n          (body (cddr form)))\n      (let ((new-li",
-"brary (or (find-library name) (make-library name))))\n        (for-each (lambda (",
-"expr) (eval expr new-library)) body)))))\n\n(define-macro cond-expand\n  (lambda (f",
-"orm _)\n    (letrec\n        ((test (lambda (form)\n                 (or\n          ",
-"        (eq? form 'else)\n                  (and (symbol? form)\n                 ",
-"      (memq form (features)))\n                  (and (pair? form)\n              ",
-"         (case (car form)\n                         ((library) (find-library (cad",
-"r form)))\n                         ((not) (not (test (cadr form))))\n            ",
-"             ((and) (let loop ((form (cdr form)))\n                              ",
-"    (or (null? form)\n                                      (and (test (car form)",
-") (loop (cdr form))))))\n                         ((or) (let loop ((form (cdr for",
-"m)))\n                                 (and (pair? form)\n                        ",
-"              (or (test (car form)) (loop (cdr form))))))\n                      ",
-"   (else #f)))))))\n      (let loop ((clauses (cdr form)))\n        (if (null? cla",
-"uses)\n            #undefined\n            (if (test (caar clauses))\n             ",
-"   `(,the-begin ,@(cdar clauses))\n                (loop (cdr clauses))))))))\n\n(d",
-"efine-macro import\n  (lambda (form _)\n    (let ((caddr\n           (lambda (x) (c",
-"ar (cdr (cdr x)))))\n          (prefix\n           (lambda (prefix symbol)\n       ",
-"      (string->symbol\n              (string-append\n               (symbol->strin",
-"g prefix)\n               (symbol->string symbol))))))\n      (letrec\n          ((",
-"extract\n            (lambda (spec)\n              (case (car spec)\n              ",
-"  ((only rename prefix except)\n                 (extract (cadr spec)))\n         ",
-"       (else\n                 (or (find-library spec) (error \"library not found\"",
-" spec))))))\n           (collect\n            (lambda (spec)\n              (case (",
+"orm))))\n\n\n;;; library primitives\n\n(define (mangle name)\n  (define (->string n)\n ",
+"   (if (symbol? n)\n        (symbol->string n)\n        (number->string n)))\n  (de",
+"fine (join strs delim)\n    (let loop ((res (car strs)) (strs (cdr strs)))\n      ",
+"(if (null? strs)\n          res\n          (loop (string-append res delim (car str",
+"s)) (cdr strs)))))\n  (join (map ->string name) \".\"))\n\n(define-macro define-libra",
+"ry\n  (lambda (form _)\n    (let ((lib (mangle (cadr form)))\n          (body (cddr",
+" form)))\n      (or (find-library lib) (make-library lib))\n      (for-each (lambd",
+"a (expr) (eval expr lib)) body))))\n\n(define-macro cond-expand\n  (lambda (form _)",
+"\n    (letrec\n        ((test (lambda (form)\n                 (or\n                ",
+"  (eq? form 'else)\n                  (and (symbol? form)\n                       ",
+"(memq form (features)))\n                  (and (pair? form)\n                    ",
+"   (case (car form)\n                         ((library) (find-library (mangle (c",
+"adr form))))\n                         ((not) (not (test (cadr form))))\n         ",
+"                ((and) (let loop ((form (cdr form)))\n                           ",
+"       (or (null? form)\n                                      (and (test (car fo",
+"rm)) (loop (cdr form))))))\n                         ((or) (let loop ((form (cdr ",
+"form)))\n                                 (and (pair? form)\n                     ",
+"                 (or (test (car form)) (loop (cdr form))))))\n                   ",
+"      (else #f)))))))\n      (let loop ((clauses (cdr form)))\n        (if (null? ",
+"clauses)\n            #undefined\n            (if (test (caar clauses))\n          ",
+"      `(,the-begin ,@(cdar clauses))\n                (loop (cdr clauses))))))))\n",
+"\n(define-macro import\n  (lambda (form _)\n    (let ((caddr\n           (lambda (x)",
+" (car (cdr (cdr x)))))\n          (prefix\n           (lambda (prefix symbol)\n    ",
+"         (string->symbol\n              (string-append\n               (symbol->st",
+"ring prefix)\n               (symbol->string symbol)))))\n          (getlib\n      ",
+"     (lambda (name)\n             (let ((lib (mangle name)))\n               (if (",
+"find-library lib)\n                   lib\n                   (error \"library not ",
+"found\" name))))))\n      (letrec\n          ((extract\n            (lambda (spec)\n ",
+"             (case (car spec)\n                ((only rename prefix except)\n     ",
+"            (extract (cadr spec)))\n                (else\n                 (getli",
+"b spec)))))\n           (collect\n            (lambda (spec)\n              (case (",
 "car spec)\n                ((only)\n                 (let ((alist (collect (cadr s",
 "pec))))\n                   (map (lambda (var) (assq var alist)) (cddr spec))))\n ",
 "               ((rename)\n                 (let ((alist (collect (cadr spec)))\n  ",
@@ -985,25 +1008,24 @@ const char pic_boot[][80] = {
 "f (null? alist)\n                         '()\n                         (if (memq ",
 "(caar alist) (cddr spec))\n                             (loop (cdr alist))\n      ",
 "                       (cons (car alist) (loop (cdr alist))))))))\n              ",
-"  (else\n                 (let ((lib (or (find-library spec) (error \"library not ",
-"found\" spec))))\n                   (map (lambda (x) (cons x x)) (library-exports",
-" lib))))))))\n        (letrec\n            ((import\n               (lambda (spec)\n",
-"                 (let ((lib (extract spec))\n                       (alist (colle",
-"ct spec)))\n                   (for-each\n                    (lambda (slot)\n     ",
-"                 (library-import lib (cdr slot) (car slot)))\n                   ",
-" alist)))))\n          (for-each import (cdr form)))))))\n\n(define-macro export\n  ",
-"(lambda (form _)\n    (letrec\n        ((collect\n          (lambda (spec)\n        ",
-"    (cond\n             ((symbol? spec)\n              `(,spec . ,spec))\n         ",
-"    ((and (list? spec) (= (length spec) 3) (eq? (car spec) 'rename))\n           ",
-"   `(,(list-ref spec 1) . ,(list-ref spec 2)))\n             (else\n              ",
-"(error \"malformed export\")))))\n         (export\n           (lambda (spec)\n      ",
-"       (let ((slot (collect spec)))\n               (library-export (car slot) (c",
-"dr slot))))))\n      (for-each export (cdr form)))))\n\n(export define lambda quote",
-" set! if begin define-macro\n        let let* letrec letrec*\n        let-values l",
-"et*-values define-values\n        quasiquote unquote unquote-splicing\n        and",
-" or\n        cond case else =>\n        do when unless\n        parameterize\n      ",
-"  define-syntax\n        syntax-quote syntax-unquote\n        syntax-quasiquote sy",
-"ntax-unquote-splicing\n        let-syntax letrec-syntax\n        syntax-error)\n\n\n",
+"  (else\n                 (map (lambda (x) (cons x x)) (library-exports (getlib s",
+"pec))))))))\n        (letrec\n            ((import\n               (lambda (spec)\n ",
+"                (let ((lib (extract spec))\n                       (alist (collec",
+"t spec)))\n                   (for-each\n                    (lambda (slot)\n      ",
+"                (library-import lib (cdr slot) (car slot)))\n                    ",
+"alist)))))\n          (for-each import (cdr form)))))))\n\n(define-macro export\n  (",
+"lambda (form _)\n    (letrec\n        ((collect\n          (lambda (spec)\n         ",
+"   (cond\n             ((symbol? spec)\n              `(,spec . ,spec))\n          ",
+"   ((and (list? spec) (= (length spec) 3) (eq? (car spec) 'rename))\n            ",
+"  `(,(list-ref spec 1) . ,(list-ref spec 2)))\n             (else\n              (",
+"error \"malformed export\")))))\n         (export\n           (lambda (spec)\n       ",
+"      (let ((slot (collect spec)))\n               (library-export (car slot) (cd",
+"r slot))))))\n      (for-each export (cdr form)))))\n\n(export define lambda quote ",
+"set! if begin define-macro\n        let let* letrec letrec*\n        let-values le",
+"t*-values define-values\n        quasiquote unquote unquote-splicing\n        and ",
+"or\n        cond case else =>\n        do when unless\n        parameterize\n       ",
+" define-syntax\n        syntax-quote syntax-unquote\n        syntax-quasiquote syn",
+"tax-unquote-splicing\n        let-syntax letrec-syntax\n        syntax-error)\n\n\n",
 "",
 ""
 };
