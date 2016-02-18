@@ -109,7 +109,7 @@ cont_call(pic_state *pic)
   }
 
   cont = pic_data_ptr(pic_closure_ref(pic, CV_ESCAPE))->data;
-  cont->results = pic_list_by_array(pic, argc, argv);
+  cont->results = pic_make_list(pic, argc, argv);
 
   pic_load_point(pic, cont);
 

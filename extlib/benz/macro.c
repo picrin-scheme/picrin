@@ -191,7 +191,7 @@ expand_defer(pic_state *pic, pic_value expr, pic_value deferred)
 {
   pic_value skel = pic_cons(pic, pic_invalid_value(), pic_invalid_value());
 
-  pic_set_car(pic, deferred, pic_acons(pic, expr, skel, pic_car(pic, deferred)));
+  pic_set_car(pic, deferred, pic_cons(pic, pic_cons(pic, expr, skel), pic_car(pic, deferred)));
 
   return skel;
 }
@@ -231,14 +231,14 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
     pic_add_identifier(pic, pic_id_ptr(a), in);
   }
 
-  deferred = pic_list1(pic, pic_nil_value(pic));
+  deferred = pic_list(pic, 1, pic_nil_value(pic));
 
   formal = expand_list(pic, pic_list_ref(pic, expr, 1), in, deferred);
   body = expand(pic, pic_list_ref(pic, expr, 2), in, deferred);
 
   expand_deferred(pic, deferred, in);
 
-  return pic_list3(pic, pic_obj_value(pic->sLAMBDA), formal, body);
+  return pic_list(pic, 3, pic_obj_value(pic->sLAMBDA), formal, body);
 }
 
 static pic_value
@@ -256,7 +256,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
   }
   val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
 
-  return pic_list3(pic, pic_obj_value(pic->sDEFINE), pic_obj_value(uid), val);
+  return pic_list(pic, 3, pic_obj_value(pic->sDEFINE), pic_obj_value(uid), val);
 }
 
 static pic_value
@@ -350,7 +350,7 @@ pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
   puts("");
 #endif
 
-  deferred = pic_list1(pic, pic_nil_value(pic));
+  deferred = pic_list(pic, 1, pic_nil_value(pic));
 
   v = expand(pic, expr, env, deferred);
 

@@ -194,7 +194,7 @@ pic_error_error(pic_state *pic)
 
   pic_get_args(pic, "z*", &str, &argc, &argv);
 
-  pic_error(pic, "", str, pic_list_by_array(pic, argc, argv));
+  pic_error(pic, "", str, pic_make_list(pic, argc, argv));
 }
 
 static pic_value

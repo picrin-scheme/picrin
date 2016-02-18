@@ -225,7 +225,7 @@ cont_call(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   cont = pic_data(pic, pic_closure_ref(pic, 0));
-  cont->results = pic_list_by_array(pic, argc, argv);
+  cont->results = pic_make_list(pic, argc, argv);
 
   /* execute guard handlers */
   pic_wind(pic, pic->cp, cont->cp);

@@ -205,20 +205,29 @@ bool pic_eq_p(pic_state *, pic_value, pic_value);
 bool pic_eqv_p(pic_state *, pic_value, pic_value);
 bool pic_equal_p(pic_state *, pic_value, pic_value);
 
+/* pair */
+pic_value pic_cons(pic_state *, pic_value car, pic_value cdr);
+pic_value pic_car(pic_state *, pic_value pair);
+pic_value pic_cdr(pic_state *, pic_value pair);
+void pic_set_car(pic_state *, pic_value pair, pic_value car);
+void pic_set_cdr(pic_state *, pic_value pair, pic_value cdr);
+pic_value pic_caar(pic_state *, pic_value);
+pic_value pic_cadr(pic_state *, pic_value);
+pic_value pic_cdar(pic_state *, pic_value);
+pic_value pic_cddr(pic_state *, pic_value);
+
 /* list */
 pic_value pic_nil_value(pic_state *);
-pic_value pic_cons(pic_state *, pic_value, pic_value);
-PIC_INLINE pic_value pic_car(pic_state *, pic_value);
-PIC_INLINE pic_value pic_cdr(pic_state *, pic_value);
-void pic_set_car(pic_state *, pic_value, pic_value);
-void pic_set_cdr(pic_state *, pic_value, pic_value);
 bool pic_list_p(pic_state *, pic_value);
+pic_value pic_make_list(pic_state *, int n, pic_value *argv);
 pic_value pic_list(pic_state *, int n, ...);
 pic_value pic_vlist(pic_state *, int n, va_list);
-pic_value pic_list_ref(pic_state *, pic_value, int);
-pic_value pic_list_tail(pic_state *, pic_value, int);
-void pic_list_set(pic_state *, pic_value, int, pic_value);
-int pic_length(pic_state *, pic_value);
+pic_value pic_list_ref(pic_state *, pic_value list, int i);
+void pic_list_set(pic_state *, pic_value list, int i, pic_value v);
+pic_value pic_list_tail(pic_state *, pic_value list, int i);
+int pic_length(pic_state *, pic_value list);
+pic_value pic_reverse(pic_state *, pic_value list);
+pic_value pic_append(pic_state *, pic_value xs, pic_value ys);
 
 /* vector */
 pic_vec *pic_make_vec(pic_state *, int);
@@ -263,7 +272,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 
 #include "picrin/cont.h"
 #include "picrin/macro.h"
-#include "picrin/pair.h"
 #include "picrin/port.h"
 
 void *pic_default_allocf(void *, void *, size_t);
@@ -330,6 +338,13 @@ bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
   } while (0);                                            \
   if (0)                                                  \
   label:
+
+#define pic_for_each(var, list, it)                                     \
+  for (it = (list); ! pic_nil_p(pic, it); it = pic_cdr(pic, it))        \
+    if ((var = pic_car(pic, it)), true)
+
+#define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
+#define pic_pop(pic, place) (place = pic_cdr(pic, place))
 
 void pic_warnf(pic_state *, const char *, ...);
 struct pic_string *pic_get_backtrace(pic_state *);

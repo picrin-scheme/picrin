@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 pic_value
 pic_cons(pic_state *pic, pic_value car, pic_value cdr)
@@ -14,6 +15,32 @@ pic_cons(pic_state *pic, pic_value car, pic_value cdr)
   pair->cdr = cdr;
 
   return pic_obj_value(pair);
+}
+
+pic_value
+pic_car(pic_state *pic, pic_value obj)
+{
+  struct pic_pair *pair;
+
+  if (! pic_pair_p(pic, obj)) {
+    pic_errorf(pic, "car: pair required, but got ~s", obj);
+  }
+  pair = pic_pair_ptr(obj);
+
+  return pair->car;
+}
+
+pic_value
+pic_cdr(pic_state *pic, pic_value obj)
+{
+  struct pic_pair *pair;
+
+  if (! pic_pair_p(pic, obj)) {
+    pic_errorf(pic, "cdr: pair required, but got ~s", obj);
+  }
+  pair = pic_pair_ptr(obj);
+
+  return pair->cdr;
 }
 
 void
@@ -40,6 +67,30 @@ pic_set_cdr(pic_state *pic, pic_value obj, pic_value val)
   pair = pic_pair_ptr(obj);
 
   pair->cdr = val;
+}
+
+pic_value
+pic_caar(pic_state *pic, pic_value v)
+{
+  return pic_car(pic, pic_car(pic, v));
+}
+
+pic_value
+pic_cadr(pic_state *pic, pic_value v)
+{
+  return pic_car(pic, pic_cdr(pic, v));
+}
+
+pic_value
+pic_cdar(pic_state *pic, pic_value v)
+{
+  return pic_cdr(pic, pic_car(pic, v));
+}
+
+pic_value
+pic_cddr(pic_state *pic, pic_value v)
+{
+  return pic_cdr(pic, pic_cdr(pic, v));
 }
 
 bool
@@ -73,112 +124,60 @@ pic_list_p(pic_state *pic, pic_value obj)
 }
 
 pic_value
-pic_list1(pic_state *pic, pic_value obj1)
-{
-  return pic_cons(pic, obj1, pic_nil_value(pic));
-}
-
-pic_value
-pic_list2(pic_state *pic, pic_value obj1, pic_value obj2)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value val;
-
-  val = pic_cons(pic, obj1, pic_list1(pic, obj2));
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, val);
-  return val;
-}
-
-pic_value
-pic_list3(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value val;
-
-  val = pic_cons(pic, obj1, pic_list2(pic, obj2, obj3));
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, val);
-  return val;
-}
-
-pic_value
-pic_list4(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value val;
-
-  val = pic_cons(pic, obj1, pic_list3(pic, obj2, obj3, obj4));
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, val);
-  return val;
-}
-
-pic_value
-pic_list5(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4, pic_value obj5)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value val;
-
-  val = pic_cons(pic, obj1, pic_list4(pic, obj2, obj3, obj4, obj5));
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, val);
-  return val;
-}
-
-pic_value
-pic_list6(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4, pic_value obj5, pic_value obj6)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value val;
-
-  val = pic_cons(pic, obj1, pic_list5(pic, obj2, obj3, obj4, obj5, obj6));
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, val);
-  return val;
-}
-
-pic_value
-pic_list7(pic_state *pic, pic_value obj1, pic_value obj2, pic_value obj3, pic_value obj4, pic_value obj5, pic_value obj6, pic_value obj7)
-{
-  size_t ai = pic_gc_arena_preserve(pic);
-  pic_value val;
-
-  val = pic_cons(pic, obj1, pic_list6(pic, obj2, obj3, obj4, obj5, obj6, obj7));
-
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, val);
-  return val;
-}
-
-pic_value
-pic_list_by_array(pic_state *pic, int c, pic_value *vs)
-{
-  pic_value v;
-
-  v = pic_nil_value(pic);
-  while (c--) {
-    v = pic_cons(pic, vs[c], v);
-  }
-  return v;
-}
-
-pic_value
-pic_make_list(pic_state *pic, int k, pic_value fill)
+pic_make_list(pic_state *pic, int n, pic_value *argv)
 {
   pic_value list;
   int i;
 
   list = pic_nil_value(pic);
-  for (i = 0; i < k; ++i) {
-    list = pic_cons(pic, fill, list);
+  for (i = n - 1; i >= 0; --i) {
+    list = pic_cons(pic, argv[i], list);
   }
+  return list;
+}
 
+pic_value
+pic_list(pic_state *pic, int n, ...)
+{
+  va_list ap;
+  pic_value list;
+
+  va_start(ap, n);
+  list = pic_vlist(pic, n, ap);
+  va_end(ap);
+  return list;
+}
+
+pic_value
+pic_vlist(pic_state *pic, int n, va_list ap)
+{
+  pic_value *argv = pic_alloca(pic, sizeof(pic_value) * n);
+  int i;
+
+  for (i = 0; i < n; ++i) {
+    argv[i] = va_arg(ap, pic_value);
+  }
+  return pic_make_list(pic, n, argv);
+}
+
+pic_value
+pic_list_ref(pic_state *pic, pic_value list, int i)
+{
+  return pic_car(pic, pic_list_tail(pic, list, i));
+}
+
+void
+pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
+{
+  pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
+}
+
+pic_value
+pic_list_tail(pic_state *pic, pic_value list, int i)
+{
+  while (i-- > 0) {
+    list = pic_cdr(pic, list);
+  }
   return list;
 }
 
@@ -230,177 +229,6 @@ pic_append(pic_state *pic, pic_value xs, pic_value ys)
     pic_gc_protect(pic, ys);
   }
   return ys;
-}
-
-pic_value
-pic_memq(pic_state *pic, pic_value key, pic_value list)
-{
- enter:
-
-  if (pic_nil_p(pic, list))
-    return pic_false_value(pic);
-
-  if (pic_eq_p(pic, key, pic_car(pic, list)))
-    return list;
-
-  list = pic_cdr(pic, list);
-  goto enter;
-}
-
-pic_value
-pic_memv(pic_state *pic, pic_value key, pic_value list)
-{
- enter:
-
-  if (pic_nil_p(pic, list))
-    return pic_false_value(pic);
-
-  if (pic_eqv_p(pic, key, pic_car(pic, list)))
-    return list;
-
-  list = pic_cdr(pic, list);
-  goto enter;
-}
-
-pic_value
-pic_member(pic_state *pic, pic_value key, pic_value list, struct pic_proc *compar)
-{
- enter:
-
-  if (pic_nil_p(pic, list))
-    return pic_false_value(pic);
-
-  if (compar == NULL) {
-    if (pic_equal_p(pic, key, pic_car(pic, list)))
-      return list;
-  } else {
-    if (pic_test(pic, pic_call(pic, compar, 2, key, pic_car(pic, list))))
-      return list;
-  }
-
-  list = pic_cdr(pic, list);
-  goto enter;
-}
-
-pic_value
-pic_assq(pic_state *pic, pic_value key, pic_value assoc)
-{
-  pic_value cell;
-
- enter:
-
-  if (pic_nil_p(pic, assoc))
-    return pic_false_value(pic);
-
-  cell = pic_car(pic, assoc);
-  if (pic_eq_p(pic, key, pic_car(pic, cell)))
-    return cell;
-
-  assoc = pic_cdr(pic, assoc);
-  goto enter;
-}
-
-pic_value
-pic_assv(pic_state *pic, pic_value key, pic_value assoc)
-{
-  pic_value cell;
-
- enter:
-
-  if (pic_nil_p(pic, assoc))
-    return pic_false_value(pic);
-
-  cell = pic_car(pic, assoc);
-  if (pic_eqv_p(pic, key, pic_car(pic, cell)))
-    return cell;
-
-  assoc = pic_cdr(pic, assoc);
-  goto enter;
-}
-
-pic_value
-pic_assoc(pic_state *pic, pic_value key, pic_value assoc, struct pic_proc *compar)
-{
-  pic_value cell;
-
- enter:
-
-  if (pic_nil_p(pic, assoc))
-    return pic_false_value(pic);
-
-  cell = pic_car(pic, assoc);
-  if (compar == NULL) {
-    if (pic_equal_p(pic, key, pic_car(pic, cell)))
-      return cell;
-  } else {
-    if (pic_test(pic, pic_call(pic, compar, 2, key, pic_car(pic, cell))))
-      return cell;
-  }
-
-  assoc = pic_cdr(pic, assoc);
-  goto enter;
-}
-
-pic_value
-pic_acons(pic_state *pic, pic_value key, pic_value val, pic_value assoc)
-{
-  return pic_cons(pic, pic_cons(pic, key, val), assoc);
-}
-
-pic_value
-pic_caar(pic_state *pic, pic_value v)
-{
-  return pic_car(pic, pic_car(pic, v));
-}
-
-pic_value
-pic_cadr(pic_state *pic, pic_value v)
-{
-  return pic_car(pic, pic_cdr(pic, v));
-}
-
-pic_value
-pic_cdar(pic_state *pic, pic_value v)
-{
-  return pic_cdr(pic, pic_car(pic, v));
-}
-
-pic_value
-pic_cddr(pic_state *pic, pic_value v)
-{
-  return pic_cdr(pic, pic_cdr(pic, v));
-}
-
-pic_value
-pic_list_tail(pic_state *pic, pic_value list, int i)
-{
-  while (i-- > 0) {
-    list = pic_cdr(pic, list);
-  }
-  return list;
-}
-
-pic_value
-pic_list_ref(pic_state *pic, pic_value list, int i)
-{
-  return pic_car(pic, pic_list_tail(pic, list, i));
-}
-
-void
-pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
-{
-  pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
-}
-
-pic_value
-pic_list_copy(pic_state *pic, pic_value obj)
-{
-  if (pic_pair_p(pic, obj)) {
-    return pic_cons(pic, pic_car(pic, obj), pic_list_copy(pic, pic_cdr(pic, obj)));
-  }
-  else {
-    return obj;
-  }
 }
 
 static pic_value
@@ -530,12 +358,16 @@ pic_pair_list_p(pic_state *pic)
 static pic_value
 pic_pair_make_list(pic_state *pic)
 {
-  int i;
-  pic_value fill = pic_undef_value(pic);
+  int k, i;
+  pic_value list, fill = pic_undef_value(pic);
 
-  pic_get_args(pic, "i|o", &i, &fill);
+  pic_get_args(pic, "i|o", &k, &fill);
 
-  return pic_make_list(pic, i, fill);
+  list = pic_nil_value(pic);
+  for (i = 0; i < k; ++i) {
+    list = pic_cons(pic, fill, list);
+  }
+  return list;
 }
 
 static pic_value
@@ -546,7 +378,7 @@ pic_pair_list(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  return pic_list_by_array(pic, argc, argv);
+  return pic_make_list(pic, argc, argv);
 }
 
 static pic_value
@@ -627,11 +459,28 @@ pic_pair_list_set(pic_state *pic)
 static pic_value
 pic_pair_list_copy(pic_state *pic)
 {
-  pic_value obj;
+  pic_value list, head, tail, tmp;
 
-  pic_get_args(pic, "o", &obj);
+  pic_get_args(pic, "o", &list);
 
-  return pic_list_copy(pic, obj);
+  head = tail = pic_nil_value(pic);
+
+  while (pic_pair_p(pic, list)) {
+    tmp = pic_list(pic, 1, pic_car(pic, list));
+    if (! pic_nil_p(pic, tail)) {
+      pic_set_cdr(pic, tail, tmp);
+    }
+    tail = tmp;
+    if (pic_nil_p(pic, head)) {
+      head = tail;
+    }
+    list = pic_cdr(pic, list);
+  }
+  if (pic_nil_p(pic, tail)) {
+    return list;
+  }
+  pic_set_cdr(pic, tail, list);
+  return head;
 }
 
 static pic_value
@@ -702,7 +551,13 @@ pic_pair_memq(pic_state *pic)
 
   pic_get_args(pic, "oo", &key, &list);
 
-  return pic_memq(pic, key, list);
+  while (! pic_nil_p(pic, list)) {
+    if (pic_eq_p(pic, key, pic_car(pic, list))) {
+      return list;
+    }
+    list = pic_cdr(pic, list);
+  }
+  return pic_false_value(pic);
 }
 
 static pic_value
@@ -712,7 +567,13 @@ pic_pair_memv(pic_state *pic)
 
   pic_get_args(pic, "oo", &key, &list);
 
-  return pic_memv(pic, key, list);
+  while (! pic_nil_p(pic, list)) {
+    if (pic_eqv_p(pic, key, pic_car(pic, list))) {
+      return list;
+    }
+    list = pic_cdr(pic, list);
+  }
+  return pic_false_value(pic);
 }
 
 static pic_value
@@ -723,38 +584,73 @@ pic_pair_member(pic_state *pic)
 
   pic_get_args(pic, "oo|l", &key, &list, &proc);
 
-  return pic_member(pic, key, list, proc);
+  while (! pic_nil_p(pic, list)) {
+    if (proc == NULL) {
+      if (pic_equal_p(pic, key, pic_car(pic, list)))
+        return list;
+    } else {
+      if (pic_test(pic, pic_call(pic, proc, 2, key, pic_car(pic, list))))
+        return list;
+    }
+    list = pic_cdr(pic, list);
+  }
+  return pic_false_value(pic);
 }
 
 static pic_value
 pic_pair_assq(pic_state *pic)
 {
-  pic_value key, list;
+  pic_value key, alist, cell;
 
-  pic_get_args(pic, "oo", &key, &list);
+  pic_get_args(pic, "oo", &key, &alist);
 
-  return pic_assq(pic, key, list);
+  while (! pic_nil_p(pic, alist)) {
+    cell = pic_car(pic, alist);
+    if (pic_eq_p(pic, key, pic_car(pic, cell))) {
+      return cell;
+    }
+    alist = pic_cdr(pic, alist);
+  }
+  return pic_false_value(pic);
 }
 
 static pic_value
 pic_pair_assv(pic_state *pic)
 {
-  pic_value key, list;
+  pic_value key, alist, cell;
 
-  pic_get_args(pic, "oo", &key, &list);
+  pic_get_args(pic, "oo", &key, &alist);
 
-  return pic_assv(pic, key, list);
+  while (! pic_nil_p(pic, alist)) {
+    cell = pic_car(pic, alist);
+    if (pic_eqv_p(pic, key, pic_car(pic, cell))) {
+      return cell;
+    }
+    alist = pic_cdr(pic, alist);
+  }
+  return pic_false_value(pic);
 }
 
 static pic_value
 pic_pair_assoc(pic_state *pic)
 {
   struct pic_proc *proc = NULL;
-  pic_value key, list;
+  pic_value key, alist, cell;
 
-  pic_get_args(pic, "oo|l", &key, &list, &proc);
+  pic_get_args(pic, "oo|l", &key, &alist, &proc);
 
-  return pic_assoc(pic, key, list, proc);
+  while (! pic_nil_p(pic, alist)) {
+    cell = pic_car(pic, alist);
+    if (proc == NULL) {
+      if (pic_equal_p(pic, key, pic_car(pic, cell)))
+        return cell;
+    } else {
+      if (pic_test(pic, pic_call(pic, proc, 2, key, pic_car(pic, cell))))
+        return cell;
+    }
+    alist = pic_cdr(pic, alist);
+  }
+  return pic_false_value(pic);
 }
 
 void

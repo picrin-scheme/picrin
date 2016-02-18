@@ -36,6 +36,17 @@ pic_id *pic_make_identifier(pic_state *, pic_id *, struct pic_env *);
 struct pic_string *pic_id_name(pic_state *, pic_id *);
 
 
+/* pair */
+
+struct pic_pair {
+  PIC_OBJECT_HEADER
+  pic_value car;
+  pic_value cdr;
+};
+
+#define pic_pair_ptr(o) ((struct pic_pair *)pic_obj_ptr(o))
+
+
 /* blob */
 
 struct pic_blob {

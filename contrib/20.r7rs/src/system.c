@@ -115,7 +115,7 @@ pic_system_getenvs(pic_state *pic)
     val = pic_cstr_value(pic, getenv(pic_str(pic, key)));
 
     /* push */
-    data = pic_acons(pic, pic_obj_value(key), pic_obj_value(val), data);
+    data = pic_cons(pic, pic_cons(pic, pic_obj_value(key), pic_obj_value(val)), data);
 
     pic_gc_arena_restore(pic, ai);
     pic_gc_protect(pic, data);

@@ -24,7 +24,7 @@ optimize_beta(pic_state *pic, pic_value expr)
     if (sym == pic->sQUOTE) {
       return expr;
     } else if (sym == pic->sLAMBDA) {
-      return pic_list3(pic, pic_list_ref(pic, expr, 0), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
+      return pic_list(pic, 3, pic_list_ref(pic, expr, 0), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
     }
   }
 
@@ -47,12 +47,12 @@ optimize_beta(pic_state *pic, pic_value expr)
       goto exit;
     defs = pic_nil_value(pic);
     pic_for_each (val, args, it) {
-      pic_push(pic, pic_list3(pic, pic_obj_value(pic->sDEFINE), pic_car(pic, formals), val), defs);
+      pic_push(pic, pic_list(pic, 3, pic_obj_value(pic->sDEFINE), pic_car(pic, formals), val), defs);
       formals = pic_cdr(pic, formals);
     }
     expr = pic_list_ref(pic, functor, 2);
     pic_for_each (val, defs, it) {
-      expr = pic_list3(pic, pic_obj_value(pic->sBEGIN), val, expr);
+      expr = pic_list(pic, 3, pic_obj_value(pic->sBEGIN), val, expr);
     }
   }
  exit:
@@ -106,7 +106,7 @@ analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, anal
 
   scope->up = up;
   scope->depth = up ? up->depth + 1 : 0;
-  scope->defer = pic_list1(pic, pic_nil_value(pic));
+  scope->defer = pic_list(pic, 1, pic_nil_value(pic));
 }
 
 static void
@@ -174,11 +174,11 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   depth = find_var(pic, scope, sym);
 
   if (depth == scope->depth) {
-    return pic_list2(pic, pic_obj_value(GREF), pic_obj_value(sym));
+    return pic_list(pic, 2, pic_obj_value(GREF), pic_obj_value(sym));
   } else if (depth == 0) {
-    return pic_list2(pic, pic_obj_value(LREF), pic_obj_value(sym));
+    return pic_list(pic, 2, pic_obj_value(LREF), pic_obj_value(sym));
   } else {
-    return pic_list3(pic, pic_obj_value(CREF), pic_int_value(pic, depth), pic_obj_value(sym));
+    return pic_list(pic, 3, pic_obj_value(CREF), pic_int_value(pic, depth), pic_obj_value(sym));
   }
 }
 
@@ -187,7 +187,7 @@ analyze_defer(pic_state *pic, analyze_scope *scope, pic_value form)
 {
   pic_value skel = pic_cons(pic, pic_invalid_value(), pic_invalid_value());
 
-  pic_set_car(pic, scope->defer, pic_acons(pic, form, skel, pic_car(pic, scope->defer)));
+  pic_set_car(pic, scope->defer, pic_cons(pic, pic_cons(pic, form, skel), pic_car(pic, scope->defer)));
 
   return skel;
 }
@@ -261,7 +261,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 
   analyzer_scope_destroy(pic, scope);
 
-  return pic_list6(pic, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
+  return pic_list(pic, 6, pic_obj_value(pic->sLAMBDA), rest, pic_obj_value(args), pic_obj_value(locals), pic_obj_value(captures), body);
 }
 
 static pic_value
@@ -325,7 +325,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list2(pic, pic_obj_value(pic->sQUOTE), obj);
+    return pic_list(pic, 2, pic_obj_value(pic->sQUOTE), obj);
   }
 }
 
