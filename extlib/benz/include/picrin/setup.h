@@ -10,19 +10,9 @@
 # endif
 #endif
 
-#if PIC_NAN_BOXING && PIC_WORD_BOXING
-# error cannot enable both PIC_NAN_BOXING and PIC_WORD_BOXING simultaneously
-#endif
-
-#ifndef PIC_WORD_BOXING
-# define PIC_WORD_BOXING 0
-#endif
-
-#if ! PIC_WORD_BOXING
-# ifndef PIC_NAN_BOXING
-#  if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
-#   define PIC_NAN_BOXING 1
-#  endif
+#ifndef PIC_NAN_BOXING
+# if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
+#  define PIC_NAN_BOXING 1
 # endif
 #endif
 

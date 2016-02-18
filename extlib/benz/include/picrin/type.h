@@ -72,46 +72,6 @@ pic_char(pic_value v)
   return v & 0xfffffffful;
 }
 
-#elif PIC_WORD_BOXING
-
-typedef unsigned long pic_value;
-
-#define pic_ptr(v) ((void *)(v))
-#define pic_init_value(v,vtype) do {            \
-    v = (vtype << 3) + 7;                       \
-  } while (0)
-
-PIC_INLINE enum pic_vtype
-pic_vtype(pic_value v)
-{
-  if ((v & 1) == 0) {
-    return PIC_VTYPE_HEAP;
-  }
-  if ((v & 2) == 0) {
-    return PIC_VTYPE_INT;
-  }
-  if ((v & 4) == 0) {
-    return PIC_VTYPE_CHAR;
-  }
-  return v >> 3;
-}
-
-PIC_INLINE int
-pic_int(pic_value v)
-{
-  v >>= 2;
-  if ((v & ((ULONG_MAX >> 3) + 1)) != 0) {
-    v |= ULONG_MAX - (ULONG_MAX >> 2);
-  }
-  return v;
-}
-
-PIC_INLINE char
-pic_char(pic_value v)
-{
-  return v >> 3;
-}
-
 #else
 
 typedef struct {
@@ -394,26 +354,6 @@ pic_char_value(char c)
   return v;
 }
 
-#elif PIC_WORD_BOXING
-
-PIC_INLINE pic_value
-pic_obj_value(void *ptr)
-{
-  return (pic_value)ptr;
-}
-
-PIC_INLINE pic_value
-pic_int_value(int i)
-{
-  return (i << 2) + 1;
-}
-
-PIC_INLINE pic_value
-pic_char_value(char c)
-{
-  return (c << 3) + 3;
-}
-
 #else
 
 PIC_INLINE pic_value
@@ -476,7 +416,7 @@ pic_invalid_value()
   return v;
 }
 
-#if PIC_NAN_BOXING || PIC_WORD_BOXING
+#if PIC_NAN_BOXING
 
 PIC_INLINE bool
 pic_eq_p(pic_value x, pic_value y)
