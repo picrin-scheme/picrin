@@ -15,7 +15,7 @@ struct pic_vector {
   int len;
 };
 
-#define pic_vec_ptr(o) ((struct pic_vector *)pic_ptr(o))
+#define pic_vec_ptr(o) ((struct pic_vector *)pic_obj_ptr(o))
 
 #if defined(__cplusplus)
 }

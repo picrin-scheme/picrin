@@ -15,7 +15,7 @@ struct pic_pair {
   pic_value cdr;
 };
 
-#define pic_pair_ptr(o) ((struct pic_pair *)pic_ptr(o))
+#define pic_pair_ptr(o) ((struct pic_pair *)pic_obj_ptr(o))
 
 PIC_INLINE pic_value
 pic_car(pic_state *pic, pic_value obj)

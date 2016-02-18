@@ -23,9 +23,7 @@ struct pic_port {
   int flags;
 };
 
-#define pic_port_ptr(v) ((struct pic_port *)pic_ptr(v))
-
-pic_value pic_eof_object();
+#define pic_port_ptr(v) ((struct pic_port *)pic_obj_ptr(v))
 
 struct pic_port *pic_open_input_string(pic_state *, const char *);
 struct pic_port *pic_open_output_string(pic_state *);

@@ -838,7 +838,7 @@ pic_read(pic_state *pic, struct pic_port *port)
     pic_gc_arena_restore(pic, ai);
   }
   if (c == EOF) {
-    return pic_eof_object();
+    return pic_eof_object(pic);
   }
 
   pic_gc_arena_restore(pic, ai);

@@ -11,7 +11,7 @@ pic_make_dict(pic_state *pic)
 {
   struct pic_dict *dict;
 
-  dict = (struct pic_dict *)pic_obj_alloc(pic, sizeof(struct pic_dict), PIC_TT_DICT);
+  dict = (struct pic_dict *)pic_obj_alloc(pic, sizeof(struct pic_dict), PIC_TYPE_DICT);
   kh_init(dict, &dict->hash);
 
   return dict;

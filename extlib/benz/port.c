@@ -4,16 +4,6 @@
 
 #include "picrin.h"
 
-pic_value
-pic_eof_object()
-{
-  pic_value v;
-
-  pic_init_value(v, PIC_VTYPE_EOF);
-
-  return v;
-}
-
 static pic_value
 pic_assert_port(pic_state *pic)
 {
@@ -121,7 +111,7 @@ pic_open_file(pic_state *pic, const char *name, int flags) {
     file_error(pic, pic_str_cstr(pic, pic_format(pic, "could not open file '%s'", name)));
   }
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = file;
   port->flags = flags | PIC_PORT_OPEN;
 
@@ -159,7 +149,7 @@ pic_define_standard_port(pic_state *pic, const char *name, xFILE *file, int dir)
 {
   struct pic_port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = file;
   port->flags = dir | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
@@ -276,7 +266,7 @@ pic_open_input_string(pic_state *pic, const char *str)
 {
   struct pic_port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, str, strlen(str));
   port->flags = PIC_PORT_IN | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
@@ -288,7 +278,7 @@ pic_open_output_string(pic_state *pic)
 {
   struct pic_port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_TEXT | PIC_PORT_OPEN;
 
@@ -424,7 +414,7 @@ pic_port_eof_object(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_eof_object();
+  return pic_eof_object(pic);
 }
 
 static pic_value
@@ -516,7 +506,7 @@ pic_port_open_input_blob(pic_state *pic)
 
   pic_get_args(pic, "b", &blob);
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, (const char *)blob->data, blob->len);
   port->flags = PIC_PORT_IN | PIC_PORT_BINARY | PIC_PORT_OPEN;
 
@@ -530,7 +520,7 @@ pic_port_open_output_bytevector(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
+  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
   port->file = string_open(pic, NULL, 0);
   port->flags = PIC_PORT_OUT | PIC_PORT_BINARY | PIC_PORT_OPEN;
 
@@ -573,7 +563,7 @@ pic_port_read_char(pic_state *pic)
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "read-char");
 
   if ((c = xfgetc(pic, port->file)) == EOF) {
-    return pic_eof_object();
+    return pic_eof_object(pic);
   }
   else {
     return pic_char_value(pic, (char)c);
@@ -591,7 +581,7 @@ pic_port_peek_char(pic_state *pic)
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_TEXT, "peek-char");
 
   if ((c = xfgetc(pic, port->file)) == EOF) {
-    return pic_eof_object();
+    return pic_eof_object(pic);
   }
   else {
     xungetc(c, port->file);
@@ -605,7 +595,7 @@ pic_port_read_line(pic_state *pic)
   int c;
   struct pic_port *port = pic_stdin(pic), *buf;
   struct pic_string *str;
-  pic_value res = pic_eof_object();
+  pic_value res = pic_eof_object(pic);
 
   pic_get_args(pic, "|p", &port);
 
@@ -644,7 +634,7 @@ pic_port_read_string(pic_state *pic){
   struct pic_string *str;
   int k, i;
   int c;
-  pic_value res = pic_eof_object();
+  pic_value res = pic_eof_object(pic);
 
   pic_get_args(pic, "i|p", &k,  &port);
 
@@ -677,7 +667,7 @@ pic_port_read_byte(pic_state *pic){
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "read-u8");
   if ((c = xfgetc(pic, port->file)) == EOF) {
-    return pic_eof_object();
+    return pic_eof_object(pic);
   }
 
   return pic_int_value(pic, c);
@@ -695,7 +685,7 @@ pic_port_peek_byte(pic_state *pic)
 
   c = xfgetc(pic, port->file);
   if (c == EOF) {
-    return pic_eof_object();
+    return pic_eof_object(pic);
   }
   else {
     xungetc(c, port->file);
@@ -731,7 +721,7 @@ pic_port_read_blob(pic_state *pic)
 
   i = xfread(pic, blob->data, sizeof(char), k, port->file);
   if (i == 0) {
-    return pic_eof_object();
+    return pic_eof_object(pic);
   }
   else {
     pic_realloc(pic, blob->data, i);
@@ -772,7 +762,7 @@ pic_port_read_blob_ip(pic_state *pic)
   pic_free(pic, buf);
 
   if (i == 0) {
-    return pic_eof_object();
+    return pic_eof_object(pic);
   }
   else {
     return pic_int_value(pic, i);

@@ -16,7 +16,7 @@ struct pic_dict {
   khash_t(dict) hash;
 };
 
-#define pic_dict_ptr(v) ((struct pic_dict *)pic_ptr(v))
+#define pic_dict_ptr(v) ((struct pic_dict *)pic_obj_ptr(v))
 
 #define pic_dict_for_each(sym, dict, it)        \
   pic_dict_for_each_help(sym, (&(dict)->hash), it)

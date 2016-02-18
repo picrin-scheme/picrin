@@ -17,7 +17,7 @@ struct pic_weak {
   struct pic_weak *prev;         /* for GC */
 };
 
-#define pic_weak_ptr(v) ((struct pic_weak *)pic_ptr(v))
+#define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))
 
 #if defined(__cplusplus)
 }

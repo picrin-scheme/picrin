@@ -4,6 +4,60 @@
 
 #include "picrin.h"
 
+#if PIC_NAN_BOXING
+
+bool
+pic_eq_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+{
+  return x == y;
+}
+
+bool
+pic_eqv_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+{
+  return x == y;
+}
+
+#else
+
+bool
+pic_eq_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+{
+  if (pic_type(pic, x) != pic_type(pic, y))
+    return false;
+
+  switch (pic_type(pic, x)) {
+  case PIC_TYPE_NIL:
+    return true;
+  case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
+    return pic_type(pic, x) == pic_type(pic, y);
+  default:
+    return pic_obj_ptr(x) == pic_obj_ptr(y);
+  }
+}
+
+bool
+pic_eqv_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+{
+  if (pic_type(pic, x) != pic_type(pic, y))
+    return false;
+
+  switch (pic_type(pic, x)) {
+  case PIC_TYPE_NIL:
+    return true;
+  case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
+    return pic_type(pic, x) == pic_type(pic, y);
+  case PIC_TYPE_FLOAT:
+    return pic_float(pic, x) == pic_float(pic, y);
+  case PIC_TYPE_INT:
+    return pic_int(pic, x) == pic_int(pic, y);
+  default:
+    return pic_obj_ptr(x) == pic_obj_ptr(y);
+  }
+}
+
+#endif
+
 KHASH_DECLARE(m, void *, int)
 KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 
@@ -38,7 +92,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
   }
 
   switch (pic_type(pic, x)) {
-  case PIC_TT_ID: {
+  case PIC_TYPE_ID: {
     struct pic_id *id1, *id2;
     pic_sym *s1, *s2;
 
@@ -50,10 +104,10 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
 
     return s1 == s2;
   }
-  case PIC_TT_STRING: {
+  case PIC_TYPE_STRING: {
     return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;
   }
-  case PIC_TT_BLOB: {
+  case PIC_TYPE_BLOB: {
     struct pic_blob *blob1, *blob2;
     int i;
 
@@ -69,7 +123,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     }
     return true;
   }
-  case PIC_TT_PAIR: {
+  case PIC_TYPE_PAIR: {
     if (! internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, h))
       return false;
 
@@ -102,7 +156,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     }
     goto LOOP;                  /* tail-call optimization */
   }
-  case PIC_TT_VECTOR: {
+  case PIC_TYPE_VECTOR: {
     int i;
     struct pic_vector *u, *v;
 
@@ -118,7 +172,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     }
     return true;
   }
-  case PIC_TT_DATA: {
+  case PIC_TYPE_DATA: {
     return pic_data_ptr(x)->data == pic_data_ptr(y)->data;
   }
   default:

@@ -98,7 +98,7 @@ pic_make_string(pic_state *pic, struct pic_rope *rope)
 {
   struct pic_string *str;
 
-  str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TT_STRING);
+  str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TYPE_STRING);
   str->rope = rope;             /* delegate ownership */
   return str;
 }

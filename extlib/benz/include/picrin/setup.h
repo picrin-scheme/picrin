@@ -5,13 +5,13 @@
 #include "picrin/config.h"
 
 #ifndef PIC_DIRECT_THREADED_VM
-# if (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
+# if (defined(__GNUC__) || defined(__clang__)) && ! defined(__STRICT_ANSI__)
 #  define PIC_DIRECT_THREADED_VM 1
 # endif
 #endif
 
 #ifndef PIC_NAN_BOXING
-# if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && __STRICT_ANSI__ != 1
+# if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && ! defined(__STRICT_ANSI__)
 #  define PIC_NAN_BOXING 1
 # endif
 #endif

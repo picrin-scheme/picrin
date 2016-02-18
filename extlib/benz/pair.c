@@ -9,7 +9,7 @@ pic_cons(pic_state *pic, pic_value car, pic_value cdr)
 {
   struct pic_pair *pair;
 
-  pair = (struct pic_pair *)pic_obj_alloc(pic, sizeof(struct pic_pair), PIC_TT_PAIR);
+  pair = (struct pic_pair *)pic_obj_alloc(pic, sizeof(struct pic_pair), PIC_TYPE_PAIR);
   pair->car = car;
   pair->cdr = cdr;
 

@@ -9,7 +9,7 @@ pic_make_blob(pic_state *pic, int len)
 {
   struct pic_blob *bv;
 
-  bv = (struct pic_blob *)pic_obj_alloc(pic, sizeof(struct pic_blob), PIC_TT_BLOB);
+  bv = (struct pic_blob *)pic_obj_alloc(pic, sizeof(struct pic_blob), PIC_TYPE_BLOB);
   bv->data = pic_malloc(pic, len);
   bv->len = len;
   return bv;

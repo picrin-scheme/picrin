@@ -37,10 +37,10 @@ pic_system_exit(pic_state *pic)
   argc = pic_get_args(pic, "|o", &v);
   if (argc == 1) {
     switch (pic_type(pic, v)) {
-    case PIC_TT_FLOAT:
+    case PIC_TYPE_FLOAT:
       status = (int)pic_float(pic, v);
       break;
-    case PIC_TT_INT:
+    case PIC_TYPE_INT:
       status = pic_int(pic, v);
       break;
     default:
@@ -62,10 +62,10 @@ pic_system_emergency_exit(pic_state *pic)
   argc = pic_get_args(pic, "|o", &v);
   if (argc == 1) {
     switch (pic_type(pic, v)) {
-    case PIC_TT_FLOAT:
+    case PIC_TYPE_FLOAT:
       status = (int)pic_float(pic, v);
       break;
-    case PIC_TT_INT:
+    case PIC_TYPE_INT:
       status = pic_int(pic, v);
       break;
     default:

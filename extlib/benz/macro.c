@@ -13,7 +13,7 @@ pic_make_env(pic_state *pic, struct pic_env *up)
 
   assert(up != NULL);
 
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
   env->up = up;
   env->lib = NULL;
   kh_init(env, &env->map);
@@ -25,7 +25,7 @@ pic_make_topenv(pic_state *pic, struct pic_string *lib)
 {
   struct pic_env *env;
 
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TT_ENV);
+  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
   env->up = NULL;
   env->lib = lib;
   kh_init(env, &env->map);
@@ -285,11 +285,11 @@ static pic_value
 expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
 {
   switch (pic_type(pic, expr)) {
-  case PIC_TT_ID:
-  case PIC_TT_SYMBOL: {
+  case PIC_TYPE_ID:
+  case PIC_TYPE_SYMBOL: {
     return expand_var(pic, pic_id_ptr(expr), env, deferred);
   }
-  case PIC_TT_PAIR: {
+  case PIC_TYPE_PAIR: {
     struct pic_proc *mac;
 
     if (! pic_list_p(pic, expr)) {

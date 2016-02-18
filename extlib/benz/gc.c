@@ -277,14 +277,14 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 #define LOOP(o) obj = (struct pic_object *)(o); goto loop
 
   switch (obj->u.basic.tt) {
-  case PIC_TT_PAIR: {
+  case PIC_TYPE_PAIR: {
     gc_mark(pic, obj->u.pair.car);
     if (pic_obj_p(pic, obj->u.pair.cdr)) {
       LOOP(pic_obj_ptr(obj->u.pair.cdr));
     }
     break;
   }
-  case PIC_TT_CXT: {
+  case PIC_TYPE_CXT: {
     int i;
 
     for (i = 0; i < obj->u.cxt.regc; ++i) {
@@ -295,7 +295,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_PROC: {
+  case PIC_TYPE_PROC: {
     if (pic_proc_irep_p(&obj->u.proc)) {
       if (obj->u.proc.u.i.cxt) {
         LOOP(obj->u.proc.u.i.cxt);
@@ -308,35 +308,35 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_PORT: {
+  case PIC_TYPE_PORT: {
     break;
   }
-  case PIC_TT_ERROR: {
+  case PIC_TYPE_ERROR: {
     gc_mark_object(pic, (struct pic_object *)obj->u.err.type);
     gc_mark_object(pic, (struct pic_object *)obj->u.err.msg);
     gc_mark(pic, obj->u.err.irrs);
     LOOP(obj->u.err.stack);
     break;
   }
-  case PIC_TT_STRING: {
+  case PIC_TYPE_STRING: {
     break;
   }
-  case PIC_TT_VECTOR: {
+  case PIC_TYPE_VECTOR: {
     int i;
     for (i = 0; i < obj->u.vec.len; ++i) {
       gc_mark(pic, obj->u.vec.data[i]);
     }
     break;
   }
-  case PIC_TT_BLOB: {
+  case PIC_TYPE_BLOB: {
     break;
   }
-  case PIC_TT_ID: {
+  case PIC_TYPE_ID: {
     gc_mark_object(pic, (struct pic_object *)obj->u.id.u.id.id);
     LOOP(obj->u.id.u.id.env);
     break;
   }
-  case PIC_TT_ENV: {
+  case PIC_TYPE_ENV: {
     khash_t(env) *h = &obj->u.env.map;
     khiter_t it;
 
@@ -351,13 +351,13 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_DATA: {
+  case PIC_TYPE_DATA: {
     if (obj->u.data.type->mark) {
       obj->u.data.type->mark(pic, obj->u.data.data, gc_mark);
     }
     break;
   }
-  case PIC_TT_DICT: {
+  case PIC_TYPE_DICT: {
     pic_sym *sym;
     khiter_t it;
 
@@ -367,25 +367,25 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_RECORD: {
+  case PIC_TYPE_RECORD: {
     gc_mark(pic, obj->u.rec.type);
     if (pic_obj_p(pic, obj->u.rec.datum)) {
       LOOP(pic_obj_ptr(obj->u.rec.datum));
     }
     break;
   }
-  case PIC_TT_SYMBOL: {
+  case PIC_TYPE_SYMBOL: {
     LOOP(obj->u.sym.str);
     break;
   }
-  case PIC_TT_WEAK: {
+  case PIC_TYPE_WEAK: {
     struct pic_weak *weak = (struct pic_weak *)obj;
 
     weak->prev = pic->heap->weaks;
     pic->heap->weaks = weak;
     break;
   }
-  case PIC_TT_CP: {
+  case PIC_TYPE_CP: {
     if (obj->u.cp.prev) {
       gc_mark_object(pic, (struct pic_object *)obj->u.cp.prev);
     }
@@ -397,14 +397,15 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TT_NIL:
-  case PIC_TT_BOOL:
-  case PIC_TT_FLOAT:
-  case PIC_TT_INT:
-  case PIC_TT_CHAR:
-  case PIC_TT_EOF:
-  case PIC_TT_UNDEF:
-  case PIC_TT_INVALID:
+  case PIC_TYPE_NIL:
+  case PIC_TYPE_TRUE:
+  case PIC_TYPE_FALSE:
+  case PIC_TYPE_FLOAT:
+  case PIC_TYPE_INT:
+  case PIC_TYPE_CHAR:
+  case PIC_TYPE_EOF:
+  case PIC_TYPE_UNDEF:
+  case PIC_TYPE_INVALID:
     pic_panic(pic, "logic flaw");
   }
 }
@@ -532,64 +533,65 @@ static void
 gc_finalize_object(pic_state *pic, struct pic_object *obj)
 {
   switch (obj->u.basic.tt) {
-  case PIC_TT_VECTOR: {
+  case PIC_TYPE_VECTOR: {
     pic_free(pic, obj->u.vec.data);
     break;
   }
-  case PIC_TT_BLOB: {
+  case PIC_TYPE_BLOB: {
     pic_free(pic, obj->u.blob.data);
     break;
   }
-  case PIC_TT_STRING: {
+  case PIC_TYPE_STRING: {
     pic_rope_decref(pic, obj->u.str.rope);
     break;
   }
-  case PIC_TT_ENV: {
+  case PIC_TYPE_ENV: {
     kh_destroy(env, &obj->u.env.map);
     break;
   }
-  case PIC_TT_DATA: {
+  case PIC_TYPE_DATA: {
     if (obj->u.data.type->dtor) {
       obj->u.data.type->dtor(pic, obj->u.data.data);
     }
     break;
   }
-  case PIC_TT_DICT: {
+  case PIC_TYPE_DICT: {
     kh_destroy(dict, &obj->u.dict.hash);
     break;
   }
-  case PIC_TT_SYMBOL: {
+  case PIC_TYPE_SYMBOL: {
     /* TODO: remove this symbol's entry from pic->syms immediately */
     break;
   }
-  case PIC_TT_WEAK: {
+  case PIC_TYPE_WEAK: {
     kh_destroy(weak, &obj->u.weak.hash);
     break;
   }
-  case PIC_TT_PROC: {
+  case PIC_TYPE_PROC: {
     if (pic_proc_irep_p(&obj->u.proc)) {
       pic_irep_decref(pic, obj->u.proc.u.i.irep);
     }
     break;
   }
 
-  case PIC_TT_PAIR:
-  case PIC_TT_CXT:
-  case PIC_TT_PORT:
-  case PIC_TT_ERROR:
-  case PIC_TT_ID:
-  case PIC_TT_RECORD:
-  case PIC_TT_CP:
+  case PIC_TYPE_PAIR:
+  case PIC_TYPE_CXT:
+  case PIC_TYPE_PORT:
+  case PIC_TYPE_ERROR:
+  case PIC_TYPE_ID:
+  case PIC_TYPE_RECORD:
+  case PIC_TYPE_CP:
     break;
 
-  case PIC_TT_NIL:
-  case PIC_TT_BOOL:
-  case PIC_TT_FLOAT:
-  case PIC_TT_INT:
-  case PIC_TT_CHAR:
-  case PIC_TT_EOF:
-  case PIC_TT_UNDEF:
-  case PIC_TT_INVALID:
+  case PIC_TYPE_NIL:
+  case PIC_TYPE_TRUE:
+  case PIC_TYPE_FALSE:
+  case PIC_TYPE_FLOAT:
+  case PIC_TYPE_INT:
+  case PIC_TYPE_CHAR:
+  case PIC_TYPE_EOF:
+  case PIC_TYPE_UNDEF:
+  case PIC_TYPE_INVALID:
     pic_panic(pic, "logic flaw");
   }
 }
@@ -704,7 +706,7 @@ pic_alloca(pic_state *pic, size_t n)
 }
 
 struct pic_object *
-pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
+pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
 {
   struct pic_object *obj;
 
@@ -724,17 +726,17 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, enum pic_tt tt)
     }
   }
   obj->u.basic.gc_mark = PIC_GC_UNMARK;
-  obj->u.basic.tt = tt;
+  obj->u.basic.tt = type;
 
   return obj;
 }
 
 struct pic_object *
-pic_obj_alloc(pic_state *pic, size_t size, enum pic_tt tt)
+pic_obj_alloc(pic_state *pic, size_t size, int type)
 {
   struct pic_object *obj;
 
-  obj = pic_obj_alloc_unsafe(pic, size, tt);
+  obj = pic_obj_alloc_unsafe(pic, size, type);
 
   gc_protect(pic, obj);
   return obj;

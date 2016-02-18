@@ -10,7 +10,7 @@ pic_make_vec(pic_state *pic, int len)
   struct pic_vector *vec;
   int i;
 
-  vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TT_VECTOR);
+  vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TYPE_VECTOR);
   vec->len = len;
   vec->data = (pic_value *)pic_malloc(pic, sizeof(pic_value) * len);
   for (i = 0; i < len; ++i) {

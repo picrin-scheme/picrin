@@ -15,8 +15,8 @@ struct pic_record {
   pic_value datum;
 };
 
-#define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TT_RECORD)
-#define pic_rec_ptr(v) ((struct pic_record *)pic_ptr(v))
+#define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TYPE_RECORD)
+#define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
 
 struct pic_record *pic_make_rec(pic_state *, pic_value, pic_value);
 

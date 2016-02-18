@@ -293,10 +293,10 @@ static pic_value
 analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
   switch (pic_type(pic, obj)) {
-  case PIC_TT_SYMBOL: {
+  case PIC_TYPE_SYMBOL: {
     return analyze_var(pic, scope, pic_sym_ptr(obj));
   }
-  case PIC_TT_PAIR: {
+  case PIC_TYPE_PAIR: {
     pic_value proc;
 
     if (! pic_list_p(pic, obj)) {
@@ -694,38 +694,41 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   obj = pic_list_ref(pic, obj, 1);
   switch (pic_type(pic, obj)) {
-  case PIC_TT_UNDEF:
+  case PIC_TYPE_UNDEF:
     emit_n(pic, cxt, OP_PUSHUNDEF);
     break;
-  case PIC_TT_BOOL:
-    emit_n(pic, cxt, (pic_true_p(pic, obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
+  case PIC_TYPE_TRUE:
+    emit_n(pic, cxt, OP_PUSHTRUE);
     break;
-  case PIC_TT_INT:
+  case PIC_TYPE_FALSE:
+    emit_n(pic, cxt, OP_PUSHFALSE);
+    break;
+  case PIC_TYPE_INT:
     check_ints_size(pic, cxt);
     pidx = (int)cxt->klen++;
     cxt->ints[pidx] = pic_int(pic, obj);
     emit_i(pic, cxt, OP_PUSHINT, pidx);
     break;
-  case PIC_TT_FLOAT:
+  case PIC_TYPE_FLOAT:
     check_nums_size(pic, cxt);
     pidx = (int)cxt->flen++;
     cxt->nums[pidx] = pic_float(pic, obj);
     emit_i(pic, cxt, OP_PUSHFLOAT, pidx);
     break;
-  case PIC_TT_NIL:
+  case PIC_TYPE_NIL:
     emit_n(pic, cxt, OP_PUSHNIL);
     break;
-  case PIC_TT_EOF:
+  case PIC_TYPE_EOF:
     emit_n(pic, cxt, OP_PUSHEOF);
     break;
-  case PIC_TT_CHAR:
+  case PIC_TYPE_CHAR:
     check_ints_size(pic, cxt);
     pidx = (int)cxt->klen++;
     cxt->ints[pidx] = pic_char(pic, obj);
     emit_i(pic, cxt, OP_PUSHCHAR, pidx);
     break;
   default:
-    assert(pic_obj_p(obj));
+    assert(pic_obj_p(pic,obj));
     check_pool_size(pic, cxt);
     pidx = (int)cxt->plen++;
     cxt->pool[pidx] = pic_obj_ptr(obj);

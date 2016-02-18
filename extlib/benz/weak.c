@@ -11,7 +11,7 @@ pic_make_weak(pic_state *pic)
 {
   struct pic_weak *weak;
 
-  weak = (struct pic_weak *)pic_obj_alloc(pic, sizeof(struct pic_weak), PIC_TT_WEAK);
+  weak = (struct pic_weak *)pic_obj_alloc(pic, sizeof(struct pic_weak), PIC_TYPE_WEAK);
   weak->prev = NULL;
   kh_init(weak, &weak->hash);
 

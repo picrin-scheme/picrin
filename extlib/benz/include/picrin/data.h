@@ -21,7 +21,7 @@ struct pic_data {
   void *data;
 };
 
-#define pic_data_ptr(o) ((struct pic_data *)pic_ptr(o))
+#define pic_data_ptr(o) ((struct pic_data *)pic_obj_ptr(o))
 
 PIC_INLINE bool pic_data_type_p(pic_state *pic, const pic_value obj, const pic_data_type *type) {
   return pic_data_p(pic, obj) && pic_data_ptr(obj)->type == type;

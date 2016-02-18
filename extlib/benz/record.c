@@ -9,7 +9,7 @@ pic_make_rec(pic_state *pic, pic_value type, pic_value datum)
 {
   struct pic_record *rec;
 
-  rec = (struct pic_record *)pic_obj_alloc(pic, sizeof(struct pic_record), PIC_TT_RECORD);
+  rec = (struct pic_record *)pic_obj_alloc(pic, sizeof(struct pic_record), PIC_TYPE_RECORD);
   rec->type = type;
   rec->datum = datum;
 

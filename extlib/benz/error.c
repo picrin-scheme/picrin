@@ -98,7 +98,7 @@ pic_make_error(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
 
   stack = pic_get_backtrace(pic);
 
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
+  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TYPE_ERROR);
   e->type = type;
   e->msg = pic_make_cstr(pic, msg);
   e->irrs = irrs;

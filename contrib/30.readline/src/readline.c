@@ -21,7 +21,7 @@ pic_rl_readline(pic_state *pic)
   if(result)
     return pic_obj_value(pic_make_cstr(pic, result));
   else
-    return pic_eof_object();
+    return pic_eof_object(pic);
 }
 
 static pic_value

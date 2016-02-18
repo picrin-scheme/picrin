@@ -26,7 +26,7 @@ pic_intern(pic_state *pic, struct pic_string *str)
 
   kh_val(h, it) = pic->sQUOTE;  /* dummy */
 
-  sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TT_SYMBOL);
+  sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TYPE_SYMBOL);
   sym->str = str;
   kh_val(h, it) = sym;
 
@@ -38,7 +38,7 @@ pic_make_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 {
   pic_id *nid;
 
-  nid = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TT_ID);
+  nid = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TYPE_ID);
   nid->u.id.id = id;
   nid->u.id.env = env;
   return nid;

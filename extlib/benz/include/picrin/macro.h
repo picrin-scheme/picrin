@@ -18,8 +18,8 @@ struct pic_env {
   struct pic_string *lib;
 };
 
-#define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TT_ENV)
-#define pic_env_ptr(v) ((struct pic_env *)pic_ptr(v))
+#define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
+#define pic_env_ptr(v) ((struct pic_env *)pic_obj_ptr(v))
 
 struct pic_env *pic_make_topenv(pic_state *, struct pic_string *);
 struct pic_env *pic_make_env(pic_state *, struct pic_env *);

@@ -36,7 +36,36 @@ extern "C" {
 
 typedef struct pic_state pic_state;
 
-#include "picrin/type.h"
+#if PIC_NAN_BOXING
+# include <stdint.h>
+typedef uint64_t pic_value;
+#else
+typedef struct {
+  unsigned char type;
+  union {
+    void *data;
+    double f;
+    int i;
+    char c;
+  } u;
+} pic_value;
+#endif
+
+struct pic_object;
+struct pic_symbol;
+struct pic_pair;
+struct pic_string;
+struct pic_vector;
+struct pic_blob;
+struct pic_proc;
+struct pic_port;
+struct pic_error;
+struct pic_env;
+
+typedef struct pic_symbol pic_sym;
+typedef struct pic_id pic_id;
+typedef struct pic_pair pic_pair;
+typedef struct pic_vector pic_vec;
 
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 
@@ -87,13 +116,54 @@ pic_value pic_vcall(pic_state *, struct pic_proc *proc, int, va_list);
 pic_value pic_apply(pic_state *, struct pic_proc *proc, int n, pic_value *argv);
 pic_value pic_applyk(pic_state *, struct pic_proc *proc, int n, pic_value *argv);
 
-int pic_int(pic_state *, pic_value);
-double pic_float(pic_state *, pic_value);
-char pic_char(pic_state *, pic_value);
-bool pic_bool(pic_state *, pic_value);
-/* const char *pic_str(pic_state *, pic_value); */
-/* unsigned char *pic_blob(pic_state *, pic_value, int *len); */
-/* void *pic_data(pic_state *, pic_value); */
+#define PIC_TYPE_INVALID 1
+#define PIC_TYPE_FLOAT   2
+#define PIC_TYPE_INT     3
+#define PIC_TYPE_CHAR    4
+#define PIC_TYPE_EOF     5
+#define PIC_TYPE_UNDEF   6
+#define PIC_TYPE_TRUE    8
+#define PIC_TYPE_NIL     7
+#define PIC_TYPE_FALSE   9
+#define PIC_IVAL_END     10
+/* --------------------- */
+#define PIC_TYPE_STRING  16
+#define PIC_TYPE_VECTOR  17
+#define PIC_TYPE_BLOB    18
+#define PIC_TYPE_PROC    19
+#define PIC_TYPE_PORT    20
+#define PIC_TYPE_ERROR   21
+#define PIC_TYPE_ID      22
+#define PIC_TYPE_ENV     23
+#define PIC_TYPE_DATA    24
+#define PIC_TYPE_DICT    25
+#define PIC_TYPE_WEAK    26
+#define PIC_TYPE_RECORD  27
+#define PIC_TYPE_SYMBOL  28
+#define PIC_TYPE_PAIR    29
+#define PIC_TYPE_CXT     30
+#define PIC_TYPE_CP      31
+
+#include "picrin/type.h"
+
+#define pic_undef_p(pic,v) (pic_type(pic,v) == PIC_TYPE_UNDEF)
+#define pic_int_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INT)
+#define pic_float_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FLOAT)
+#define pic_char_p(pic,v) (pic_type(pic,v) == PIC_TYPE_CHAR)
+#define pic_eof_p(pic, v) (pic_vtype(pic, v) == PIC_TYPE_EOF)
+#define pic_true_p(pic,v) (pic_type(pic,v) == PIC_TYPE_TRUE)
+#define pic_false_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FALSE)
+#define pic_str_p(pic,v) (pic_type(pic,v) == PIC_TYPE_STRING)
+#define pic_blob_p(pic,v) (pic_type(pic,v) == PIC_TYPE_BLOB)
+#define pic_proc_p(pic,v) (pic_type(pic,v) == PIC_TYPE_PROC)
+#define pic_data_p(pic,v) (pic_type(pic,v) == PIC_TYPE_DATA)
+#define pic_nil_p(pic,v) (pic_type(pic,v) == PIC_TYPE_NIL)
+#define pic_pair_p(pic,v) (pic_type(pic,v) == PIC_TYPE_PAIR)
+#define pic_vec_p(pic,v) (pic_type(pic,v) == PIC_TYPE_VECTOR)
+#define pic_dict_p(pic,v) (pic_type(pic,v) == PIC_TYPE_DICT)
+#define pic_weak_p(pic,v) (pic_type(pic,v) == PIC_TYPE_WEAK)
+#define pic_port_p(pic, v) (pic_type(pic, v) == PIC_TYPE_PORT)
+#define pic_sym_p(pic,v) (pic_type(pic,v) == PIC_TYPE_SYMBOL)
 
 pic_value pic_undef_value(pic_state *);
 pic_value pic_int_value(pic_state *, int);
@@ -102,27 +172,18 @@ pic_value pic_char_value(pic_state *, char);
 pic_value pic_true_value(pic_state *);
 pic_value pic_false_value(pic_state *);
 pic_value pic_bool_value(pic_state *, bool);
+pic_value pic_eof_object(pic_state *);
 
-#define pic_undef_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_UNDEF)
-#define pic_int_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_INT)
-#define pic_float_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_FLOAT)
-#define pic_char_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_CHAR)
-#define pic_true_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_TRUE)
-#define pic_false_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_FALSE)
-#define pic_str_p(pic,v) (pic_type(pic,v) == PIC_TT_STRING)
-#define pic_blob_p(pic,v) (pic_type(pic,v) == PIC_TT_BLOB)
-#define pic_proc_p(pic,v) (pic_type(pic,v) == PIC_TT_PROC)
-#define pic_data_p(pic,v) (pic_type(pic,v) == PIC_TT_DATA)
-#define pic_nil_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_NIL)
-#define pic_pair_p(pic,v) (pic_type(pic,v) == PIC_TT_PAIR)
-#define pic_vec_p(pic,v) (pic_type(pic,v) == PIC_TT_VECTOR)
-#define pic_dict_p(pic,v) (pic_type(pic,v) == PIC_TT_DICT)
-#define pic_weak_p(pic,v) (pic_type(pic,v) == PIC_TT_WEAK)
-#define pic_port_p(pic, v) (pic_type(pic, v) == PIC_TT_PORT)
-#define pic_sym_p(pic,v) (pic_type(pic,v) == PIC_TT_SYMBOL)
+int pic_int(pic_state *, pic_value);
+double pic_float(pic_state *, pic_value);
+char pic_char(pic_state *, pic_value);
+bool pic_bool(pic_state *, pic_value);
+/* const char *pic_str(pic_state *, pic_value); */
+/* unsigned char *pic_blob(pic_state *, pic_value, int *len); */
+/* void *pic_data(pic_state *, pic_value); */
 
-enum pic_tt pic_type(pic_state *, pic_value);
-const char *pic_type_repr(pic_state *, enum pic_tt);
+int pic_type(pic_state *, pic_value);
+const char *pic_typename(pic_state *, int);
 
 bool pic_eq_p(pic_state *, pic_value, pic_value);
 bool pic_eqv_p(pic_state *, pic_value, pic_value);
@@ -205,7 +266,7 @@ void *pic_default_allocf(void *, void *, size_t);
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-struct pic_object *pic_obj_alloc(pic_state *, size_t, enum pic_tt);
+struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
 
 #define pic_void(exec)                          \
   pic_void_(PIC_GENSYM(ai), exec)

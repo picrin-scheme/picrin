@@ -107,11 +107,11 @@ pic_get_args(pic_state *pic, const char *format, ...)
                                                                         \
         v = GET_OPERAND(pic, i);                                        \
         switch (pic_type(pic, v)) {                                     \
-        case PIC_TT_FLOAT:                                              \
+        case PIC_TYPE_FLOAT:                                              \
           *n = pic_float(pic, v);                                       \
           *e = false;                                                   \
           break;                                                        \
-        case PIC_TT_INT:                                                \
+        case PIC_TYPE_INT:                                                \
           *n = pic_int(pic, v);                                         \
           *e = true;                                                    \
           break;                                                        \
@@ -195,7 +195,7 @@ vm_push_cxt(pic_state *pic)
 {
   pic_callinfo *ci = pic->ci;
 
-  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, offsetof(struct pic_context, storage) + sizeof(pic_value) * ci->regc, PIC_TT_CXT);
+  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, offsetof(struct pic_context, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_CXT);
   ci->cxt->up = ci->up;
   ci->cxt->regc = ci->regc;
   ci->cxt->regs = ci->regs;
@@ -321,6 +321,17 @@ pic_vm_tear_off(pic_state *pic)
 # define VM_CALL_PRINT
 #endif
 
+/* for arithmetic instructions */
+pic_value pic_add(pic_state *, pic_value, pic_value);
+pic_value pic_sub(pic_state *, pic_value, pic_value);
+pic_value pic_mul(pic_state *, pic_value, pic_value);
+pic_value pic_div(pic_state *, pic_value, pic_value);
+bool pic_eq(pic_state *, pic_value, pic_value);
+bool pic_lt(pic_state *, pic_value, pic_value);
+bool pic_le(pic_state *, pic_value, pic_value);
+bool pic_gt(pic_state *, pic_value, pic_value);
+bool pic_ge(pic_state *, pic_value, pic_value);
+
 pic_value
 pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 {
@@ -399,7 +410,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHEOF) {
-      PUSH(pic_eof_object());
+      PUSH(pic_eof_object(pic));
       NEXT;
     }
     CASE(OP_PUSHCONST) {
@@ -1003,7 +1014,7 @@ pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
   struct pic_proc *proc;
   int i;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals) + sizeof(pic_value) * n, PIC_TT_PROC);
+  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC);
   proc->tag = PIC_PROC_TAG_FUNC;
   proc->u.f.func = func;
   proc->u.f.localc = n;
@@ -1018,7 +1029,7 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
 {
   struct pic_proc *proc;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals), PIC_TT_PROC);
+  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals), PIC_TYPE_PROC);
   proc->tag = PIC_PROC_TAG_IREP;
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;

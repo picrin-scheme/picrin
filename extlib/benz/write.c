@@ -134,10 +134,10 @@ write_pair_help(struct writer_control *p, struct pic_pair *pair)
   else if (pic_pair_p(pic, pair->cdr)) {
 
     /* shared objects */
-    if ((it = kh_get(l, lh, pic_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
+    if ((it = kh_get(l, lh, pic_obj_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
       xfprintf(pic, p->file, " . ");
 
-      kh_put(v, vh, pic_ptr(pair->cdr), &ret);
+      kh_put(v, vh, pic_obj_ptr(pair->cdr), &ret);
       if (ret == 0) {           /* if exists */
         xfprintf(pic, p->file, "#%d#", kh_val(lh, it));
         return;
@@ -151,8 +151,8 @@ write_pair_help(struct writer_control *p, struct pic_pair *pair)
     write_pair_help(p, pic_pair_ptr(pair->cdr));
 
     if (p->op == OP_WRITE) {
-      if ((it = kh_get(l, lh, pic_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
-        it = kh_get(v, vh, pic_ptr(pair->cdr));
+      if ((it = kh_get(l, lh, pic_obj_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
+        it = kh_get(v, vh, pic_obj_ptr(pair->cdr));
         kh_del(v, vh, it);
       }
     }
@@ -263,8 +263,8 @@ write_core(struct writer_control *p, pic_value obj)
   int ret;
 
   /* shared objects */
-  if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
-    kh_put(v, vh, pic_ptr(obj), &ret);
+  if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_obj_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
+    kh_put(v, vh, pic_obj_ptr(obj), &ret);
     if (ret == 0) {             /* if exists */
       xfprintf(pic, file, "#%d#", kh_val(lh, it));
       return;
@@ -273,56 +273,59 @@ write_core(struct writer_control *p, pic_value obj)
   }
 
   switch (pic_type(pic, obj)) {
-  case PIC_TT_UNDEF:
+  case PIC_TYPE_UNDEF:
     xfprintf(pic, file, "#undefined");
     break;
-  case PIC_TT_NIL:
+  case PIC_TYPE_NIL:
     xfprintf(pic, file, "()");
     break;
-  case PIC_TT_BOOL:
-    xfprintf(pic, file, pic_true_p(pic, obj) ? "#t" : "#f");
+  case PIC_TYPE_TRUE:
+    xfprintf(pic, file, "#t");
     break;
-  case PIC_TT_ID:
+  case PIC_TYPE_FALSE:
+    xfprintf(pic, file, "#f");
+    break;
+  case PIC_TYPE_ID:
     xfprintf(pic, file, "#<identifier %s>", pic_identifier_name(pic, pic_id_ptr(obj)));
     break;
-  case PIC_TT_EOF:
+  case PIC_TYPE_EOF:
     xfprintf(pic, file, "#.(eof-object)");
     break;
-  case PIC_TT_INT:
+  case PIC_TYPE_INT:
     xfprintf(pic, file, "%d", pic_int(pic, obj));
     break;
-  case PIC_TT_FLOAT:
+  case PIC_TYPE_FLOAT:
     write_float(pic, pic_float(pic, obj), file);
     break;
-  case PIC_TT_SYMBOL:
+  case PIC_TYPE_SYMBOL:
     xfprintf(pic, file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
     break;
-  case PIC_TT_BLOB:
+  case PIC_TYPE_BLOB:
     write_blob(pic, pic_blob_ptr(obj), file);
     break;
-  case PIC_TT_CHAR:
+  case PIC_TYPE_CHAR:
     write_char(pic, pic_char(pic, obj), file, p->mode);
     break;
-  case PIC_TT_STRING:
+  case PIC_TYPE_STRING:
     write_str(pic, pic_str_ptr(obj), file, p->mode);
     break;
-  case PIC_TT_PAIR:
+  case PIC_TYPE_PAIR:
     write_pair(p, pic_pair_ptr(obj));
     break;
-  case PIC_TT_VECTOR:
+  case PIC_TYPE_VECTOR:
     write_vec(p, pic_vec_ptr(obj));
     break;
-  case PIC_TT_DICT:
+  case PIC_TYPE_DICT:
     write_dict(p, pic_dict_ptr(obj));
     break;
   default:
-    xfprintf(pic, file, "#<%s %p>", pic_type_repr(pic, pic_type(pic, obj)), pic_ptr(obj));
+    xfprintf(pic, file, "#<%s %p>", pic_typename(pic, pic_type(pic, obj)), pic_obj_ptr(obj));
     break;
   }
 
   if (p->op == OP_WRITE) {
-    if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
-      it = kh_get(v, vh, pic_ptr(obj));
+    if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_obj_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
+      it = kh_get(v, vh, pic_obj_ptr(obj));
       kh_del(v, vh, it);
     }
   }
@@ -338,14 +341,14 @@ traverse(struct writer_control *p, pic_value obj)
   }
 
   switch (pic_type(pic, obj)) {
-  case PIC_TT_PAIR:
-  case PIC_TT_VECTOR:
-  case PIC_TT_DICT: {
+  case PIC_TYPE_PAIR:
+  case PIC_TYPE_VECTOR:
+  case PIC_TYPE_DICT: {
     khash_t(l) *h = &p->labels;
     khiter_t it;
     int ret;
 
-    it = kh_put(l, h, pic_ptr(obj), &ret);
+    it = kh_put(l, h, pic_obj_ptr(obj), &ret);
     if (ret != 0) {
       /* first time */
       kh_val(h, it) = -1;
@@ -369,7 +372,7 @@ traverse(struct writer_control *p, pic_value obj)
       }
 
       if (p->op == OP_WRITE) {
-        it = kh_get(l, h, pic_ptr(obj));
+        it = kh_get(l, h, pic_obj_ptr(obj));
         if (kh_val(h, it) == -1) {
           kh_del(l, h, it);
         }
