@@ -120,8 +120,8 @@ rope_at(struct pic_rope *x, size_t i)
     if (i < x->left->weight) {
       x = x->left;
     } else {
-      x = x->right;
       i -= x->left->weight;
+      x = x->right;
     }
   }
   return -1;
