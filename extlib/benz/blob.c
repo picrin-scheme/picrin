@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 struct pic_blob *
 pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
@@ -16,6 +17,13 @@ pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
     memcpy(bv->data, buf, len);
   }
   return bv;
+}
+
+unsigned char *
+pic_blob(pic_state PIC_UNUSED(*pic), struct pic_blob *blob, int *len)
+{
+  *len = blob->len;
+  return blob->data;
 }
 
 static pic_value

@@ -258,7 +258,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 
 #include "picrin/state.h"
 
-#include "picrin/blob.h"
 #include "picrin/cont.h"
 #include "picrin/data.h"
 #include "picrin/dict.h"

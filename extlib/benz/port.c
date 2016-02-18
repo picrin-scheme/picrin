@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 static pic_value
 pic_assert_port(pic_state *pic)

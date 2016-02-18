@@ -188,8 +188,7 @@ pic_socket_socket_send(pic_state *pic)
   pic_value obj;
   struct pic_blob *bv;
   const unsigned char *cursor;
-  int flags = 0;
-  size_t remain, written;
+  int flags = 0, remain, written;
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "ob|i", &obj, &bv, &flags);
@@ -198,8 +197,7 @@ pic_socket_socket_send(pic_state *pic)
   sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
-  cursor = bv->data;
-  remain = bv->len;
+  cursor = pic_blob(pic, bv, &remain);
   written = 0;
   errno = 0;
   while (remain > 0) {
