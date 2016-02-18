@@ -11,7 +11,7 @@ file_error(pic_state *pic, const char *msg)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_lit(pic, "file"), msg, pic_nil_value());
+  e = pic_make_error(pic, pic_intern_lit(pic, "file"), msg, pic_nil_value(pic));
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -71,9 +71,9 @@ pic_file_exists_p(pic_state *pic)
   fp = fopen(fname, "r");
   if (fp) {
     fclose(fp);
-    return pic_true_value();
+    return pic_true_value(pic);
   } else {
-    return pic_false_value();
+    return pic_false_value(pic);
   }
 }
 
@@ -87,7 +87,7 @@ pic_file_delete(pic_state *pic)
   if (remove(fname) != 0) {
     file_error(pic, "file cannot be deleted");
   }
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 void

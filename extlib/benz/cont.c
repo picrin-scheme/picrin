@@ -60,7 +60,7 @@ pic_save_point(pic_state *pic, struct pic_cont *cont)
   cont->ip = pic->ip;
   cont->ptable = pic->ptable;
   cont->prev = pic->cc;
-  cont->results = pic_undef_value();
+  cont->results = pic_undef_value(pic);
   cont->id = pic->ccnt++;
 
   pic->cc = cont;
@@ -95,7 +95,7 @@ cont_call(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  id = pic_int(pic_closure_ref(pic, CV_ID));
+  id = pic_int(pic, pic_closure_ref(pic, CV_ID));
 
   /* check if continuation is alive */
   for (cc = pic->cc; cc != NULL; cc = cc->prev) {
@@ -124,7 +124,7 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
   struct pic_proc *c;
 
   /* save the escape continuation in proc */
-  c = pic_lambda(pic, cont_call, 2, pic_int_value(cont->id), pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
+  c = pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
 
   return c;
 }
@@ -214,7 +214,7 @@ pic_values(pic_state *pic, int argc, pic_value *argv)
   }
   pic->ci->retc = (int)argc;
 
-  return argc == 0 ? pic_undef_value() : pic->sp[0];
+  return argc == 0 ? pic_undef_value(pic) : pic->sp[0];
 }
 
 pic_value
@@ -229,7 +229,7 @@ pic_values_by_list(pic_state *pic, pic_value list)
   }
   pic->ci->retc = i;
 
-  return pic_nil_p(list) ? pic_undef_value() : pic->sp[0];
+  return pic_nil_p(pic, list) ? pic_undef_value(pic) : pic->sp[0];
 }
 
 int

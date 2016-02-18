@@ -22,7 +22,7 @@ pic_blob_bytevector_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_blob_p(v));
+  return pic_bool_value(pic, pic_blob_p(pic, v));
 }
 
 static pic_value
@@ -42,11 +42,11 @@ pic_blob_bytevector(pic_state *pic)
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], int);
 
-    if (pic_int(argv[i]) < 0 || pic_int(argv[i]) > 255) {
+    if (pic_int(pic, argv[i]) < 0 || pic_int(pic, argv[i]) > 255) {
       pic_errorf(pic, "byte out of range");
     }
 
-    *data++ = (unsigned char)pic_int(argv[i]);
+    *data++ = (unsigned char)pic_int(pic, argv[i]);
   }
 
   return pic_obj_value(blob);
@@ -78,7 +78,7 @@ pic_blob_bytevector_length(pic_state *pic)
 
   pic_get_args(pic, "b", &bv);
 
-  return pic_int_value(bv->len);
+  return pic_int_value(pic, bv->len);
 }
 
 static pic_value
@@ -89,7 +89,7 @@ pic_blob_bytevector_u8_ref(pic_state *pic)
 
   pic_get_args(pic, "bi", &bv, &k);
 
-  return pic_int_value(bv->data[k]);
+  return pic_int_value(pic, bv->data[k]);
 }
 
 static pic_value
@@ -104,7 +104,7 @@ pic_blob_bytevector_u8_set(pic_state *pic)
     pic_errorf(pic, "byte out of range");
 
   bv->data[k] = (unsigned char)v;
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -128,14 +128,14 @@ pic_blob_bytevector_copy_i(pic_state *pic)
     while (start < end) {
       to->data[--at] = from->data[--end];
     }
-    return pic_undef_value();
+    return pic_undef_value(pic);
   }
 
   while (start < end) {
     to->data[at++] = from->data[start++];
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -209,10 +209,10 @@ pic_blob_list_to_bytevector(pic_state *pic)
   pic_for_each (e, list, it) {
     pic_assert_type(pic, e, int);
 
-    if (pic_int(e) < 0 || pic_int(e) > 255)
+    if (pic_int(pic, e) < 0 || pic_int(pic, e) > 255)
       pic_errorf(pic, "byte out of range");
 
-    *data++ = (unsigned char)pic_int(e);
+    *data++ = (unsigned char)pic_int(pic, e);
   }
   return pic_obj_value(blob);
 }
@@ -233,10 +233,10 @@ pic_blob_bytevector_to_list(pic_state *pic)
     end = blob->len;
   }
 
-  list = pic_nil_value();
+  list = pic_nil_value(pic);
 
   for (i = start; i < end; ++i) {
-    pic_push(pic, pic_int_value(blob->data[i]), list);
+    pic_push(pic, pic_int_value(pic, blob->data[i]), list);
   }
   return pic_reverse(pic, list);
 }

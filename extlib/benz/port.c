@@ -103,7 +103,7 @@ file_error(pic_state *pic, const char *msg)
 {
   struct pic_error *e;
 
-  e = pic_make_error(pic, pic_intern_lit(pic, "file"), msg, pic_nil_value());
+  e = pic_make_error(pic, pic_intern_lit(pic, "file"), msg, pic_nil_value(pic));
 
   pic_raise(pic, pic_obj_value(e));
 }
@@ -266,7 +266,7 @@ string_open(pic_state *pic, const char *data, size_t size)
 
   if (file == NULL) {
     string_close(pic, m);
-    pic_error(pic, "could not open new output string/bytevector port", pic_nil_value());
+    pic_error(pic, "could not open new output string/bytevector port", pic_nil_value(pic));
   }
   return file;
 }
@@ -346,11 +346,11 @@ pic_port_input_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_IN) != 0) {
-    return pic_true_value();
+  if (pic_port_p(pic, v) && (pic_port_ptr(v)->flags & PIC_PORT_IN) != 0) {
+    return pic_true_value(pic);
   }
   else {
-    return pic_false_value();
+    return pic_false_value(pic);
   }
 }
 
@@ -361,11 +361,11 @@ pic_port_output_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_OUT) != 0) {
-    return pic_true_value();
+  if (pic_port_p(pic, v) && (pic_port_ptr(v)->flags & PIC_PORT_OUT) != 0) {
+    return pic_true_value(pic);
   }
   else {
-    return pic_false_value();
+    return pic_false_value(pic);
   }
 }
 
@@ -376,11 +376,11 @@ pic_port_textual_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_TEXT) != 0) {
-    return pic_true_value();
+  if (pic_port_p(pic, v) && (pic_port_ptr(v)->flags & PIC_PORT_TEXT) != 0) {
+    return pic_true_value(pic);
   }
   else {
-    return pic_false_value();
+    return pic_false_value(pic);
   }
 }
 
@@ -391,11 +391,11 @@ pic_port_binary_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(v) && (pic_port_ptr(v)->flags & PIC_PORT_BINARY) != 0) {
-    return pic_true_value();
+  if (pic_port_p(pic, v) && (pic_port_ptr(v)->flags & PIC_PORT_BINARY) != 0) {
+    return pic_true_value(pic);
   }
   else {
-    return pic_false_value();
+    return pic_false_value(pic);
   }
 }
 
@@ -406,7 +406,7 @@ pic_port_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_port_p(v));
+  return pic_bool_value(pic, pic_port_p(pic, v));
 }
 
 static pic_value
@@ -416,12 +416,7 @@ pic_port_eof_object_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_vtype(v) == PIC_VTYPE_EOF) {
-    return pic_true_value();
-  }
-  else {
-    return pic_false_value();
-  }
+  return pic_bool_value(pic, pic_eof_p(pic, v));
 }
 
 static pic_value
@@ -439,7 +434,7 @@ pic_port_port_open_p(pic_state *pic)
 
   pic_get_args(pic, "p", &port);
 
-  return pic_bool_value(port->flags & PIC_PORT_OPEN);
+  return pic_bool_value(pic, port->flags & PIC_PORT_OPEN);
 }
 
 static pic_value
@@ -451,7 +446,7 @@ pic_port_close_port(pic_state *pic)
 
   pic_close_port(pic, port);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 #define assert_port_profile(port, flgs, caller) do {                    \
@@ -581,7 +576,7 @@ pic_port_read_char(pic_state *pic)
     return pic_eof_object();
   }
   else {
-    return pic_char_value((char)c);
+    return pic_char_value(pic, (char)c);
   }
 }
 
@@ -600,7 +595,7 @@ pic_port_peek_char(pic_state *pic)
   }
   else {
     xungetc(c, port->file);
-    return pic_char_value((char)c);
+    return pic_char_value(pic, (char)c);
   }
 }
 
@@ -622,7 +617,7 @@ pic_port_read_line(pic_state *pic)
   }
 
   str = pic_get_output_string(pic, buf);
-  if (pic_str_len(str) == 0 && c == EOF) {
+  if (pic_str_len(pic, str) == 0 && c == EOF) {
     /* EOF */
   } else {
     res = pic_obj_value(str);
@@ -640,7 +635,7 @@ pic_port_char_ready_p(pic_state *pic)
 
   pic_get_args(pic, "|p", &port);
 
-  return pic_true_value();      /* FIXME: always returns #t */
+  return pic_true_value(pic);      /* FIXME: always returns #t */
 }
 
 static pic_value
@@ -665,7 +660,7 @@ pic_port_read_string(pic_state *pic){
   }
 
   str = pic_get_output_string(pic, buf);
-  if (pic_str_len(str) == 0 && c == EOF) {
+  if (pic_str_len(pic, str) == 0 && c == EOF) {
     /* EOF */
   } else {
     res = pic_obj_value(str);
@@ -685,7 +680,7 @@ pic_port_read_byte(pic_state *pic){
     return pic_eof_object();
   }
 
-  return pic_int_value(c);
+  return pic_int_value(pic, c);
 }
 
 static pic_value
@@ -704,7 +699,7 @@ pic_port_peek_byte(pic_state *pic)
   }
   else {
     xungetc(c, port->file);
-    return pic_int_value(c);
+    return pic_int_value(pic, c);
   }
 }
 
@@ -717,7 +712,7 @@ pic_port_byte_ready_p(pic_state *pic)
 
   assert_port_profile(port, PIC_PORT_IN | PIC_PORT_BINARY, "u8-ready?");
 
-  return pic_true_value();      /* FIXME: always returns #t */
+  return pic_true_value(pic);      /* FIXME: always returns #t */
 }
 
 
@@ -780,7 +775,7 @@ pic_port_read_blob_ip(pic_state *pic)
     return pic_eof_object();
   }
   else {
-    return pic_int_value(i);
+    return pic_int_value(pic, i);
   }
 }
 
@@ -794,7 +789,7 @@ pic_port_newline(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "newline");
 
   xfputs(pic, "\n", port->file);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -808,7 +803,7 @@ pic_port_write_char(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_TEXT, "write-char");
 
   xfputc(pic, c, port->file);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -833,7 +828,7 @@ pic_port_write_string(pic_state *pic)
   for (i = start; i < end && str[i] != '\0'; ++i) {
     xfputc(pic, str[i], port->file);
   }
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -847,7 +842,7 @@ pic_port_write_byte(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT | PIC_PORT_BINARY, "write-u8");
 
   xfputc(pic, i, port->file);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -872,7 +867,7 @@ pic_port_write_blob(pic_state *pic)
   for (i = start; i < end; ++i) {
     xfputc(pic, blob->data[i], port->file);
   }
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -885,7 +880,7 @@ pic_port_flush(pic_state *pic)
   assert_port_profile(port, PIC_PORT_OUT, "flush-output-port");
 
   xfflush(pic, port->file);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 void

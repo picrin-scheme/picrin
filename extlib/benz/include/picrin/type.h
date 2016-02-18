@@ -45,13 +45,13 @@ typedef uint64_t pic_value;
 #define pic_init_value(v,vtype) (v = (0xfff0000000000000ul | ((uint64_t)(vtype) << 48)))
 
 static inline enum pic_vtype
-pic_vtype(pic_value v)
+pic_vtype(pic_state PIC_UNUSED(*pic), pic_value v)
 {
   return 0xfff0 >= (v >> 48) ? PIC_VTYPE_FLOAT : ((v >> 48) & 0xf);
 }
 
 static inline double
-pic_float(pic_value v)
+pic_float(pic_state PIC_UNUSED(*pic), pic_value v)
 {
   union { double f; uint64_t i; } u;
   u.i = v;
@@ -59,7 +59,7 @@ pic_float(pic_value v)
 }
 
 static inline int
-pic_int(pic_value v)
+pic_int(pic_state PIC_UNUSED(*pic), pic_value v)
 {
   union { int i; unsigned u; } u;
   u.u = v & 0xfffffffful;
@@ -67,7 +67,7 @@ pic_int(pic_value v)
 }
 
 static inline char
-pic_char(pic_value v)
+pic_char(pic_state PIC_UNUSED(*pic), pic_value v)
 {
   return v & 0xfffffffful;
 }
@@ -85,23 +85,23 @@ typedef struct {
 } pic_value;
 
 #define pic_ptr(v) ((v).u.data)
-#define pic_vtype(v) ((v).type)
+#define pic_vtype(pic,v) ((v).type)
 #define pic_init_value(v,vtype) ((v).type = (vtype), (v).u.data = NULL)
 
 PIC_INLINE double
-pic_float(pic_value v)
+pic_float(pic_state PIC_UNUSED(*pic), pic_value v)
 {
   return v.u.f;
 }
 
 PIC_INLINE int
-pic_int(pic_value v)
+pic_int(pic_state PIC_UNUSED(*pic), pic_value v)
 {
   return v.u.i;
 }
 
 PIC_INLINE char
-pic_char(pic_value v)
+pic_char(pic_state PIC_UNUSED(*pic), pic_value v)
 {
   return v.u.c;
 }
@@ -163,18 +163,13 @@ typedef struct pic_id pic_id;
 typedef struct pic_pair pic_pair;
 typedef struct pic_vector pic_vec;
 
-#define pic_obj_p(v) (pic_vtype(v) == PIC_VTYPE_HEAP)
+#define pic_obj_p(pic,v) (pic_vtype(pic,v) == PIC_VTYPE_HEAP)
 #define pic_obj_ptr(v) ((struct pic_object *)pic_ptr(v))
 
-#define pic_invalid_p(v) (pic_vtype(v) == PIC_VTYPE_INVALID)
-#define pic_eof_p(v) (pic_vtype(v) == PIC_VTYPE_EOF)
+#define pic_invalid_p(pic, v) (pic_vtype(pic, v) == PIC_VTYPE_INVALID)
+#define pic_eof_p(pic, v) (pic_vtype(pic, v) == PIC_VTYPE_EOF)
 
-#define pic_test(v) (! pic_false_p(v))
-
-#define pic_assert_type(pic, v, type)                           \
-  if (! pic_##type##_p(v)) {                                    \
-    pic_errorf(pic, "expected " #type ", but got ~s", v);       \
-  }
+#define pic_test(pic, v) (! pic_false_p(pic, v))
 
 PIC_INLINE bool
 pic_valid_int(double v)
@@ -186,9 +181,9 @@ PIC_INLINE pic_value pic_invalid_value();
 PIC_INLINE pic_value pic_obj_value(void *);
 
 PIC_INLINE enum pic_tt
-pic_type(pic_value v)
+pic_type(pic_state PIC_UNUSED(*pic), pic_value v)
 {
-  switch (pic_vtype(v)) {
+  switch (pic_vtype(pic, v)) {
   case PIC_VTYPE_NIL:
     return PIC_TT_NIL;
   case PIC_VTYPE_TRUE:
@@ -215,7 +210,7 @@ pic_type(pic_value v)
 }
 
 PIC_INLINE const char *
-pic_type_repr(enum pic_tt tt)
+pic_type_repr(pic_state PIC_UNUSED(*pic), enum pic_tt tt)
 {
   switch (tt) {
   case PIC_TT_NIL:
@@ -271,7 +266,7 @@ pic_type_repr(enum pic_tt tt)
 }
 
 PIC_INLINE pic_value
-pic_nil_value()
+pic_nil_value(pic_state PIC_UNUSED(*pic))
 {
   pic_value v;
 
@@ -280,7 +275,7 @@ pic_nil_value()
 }
 
 PIC_INLINE pic_value
-pic_true_value()
+pic_true_value(pic_state PIC_UNUSED(*pic))
 {
   pic_value v;
 
@@ -289,7 +284,7 @@ pic_true_value()
 }
 
 PIC_INLINE pic_value
-pic_false_value()
+pic_false_value(pic_state PIC_UNUSED(*pic))
 {
   pic_value v;
 
@@ -298,7 +293,7 @@ pic_false_value()
 }
 
 PIC_INLINE pic_value
-pic_bool_value(bool b)
+pic_bool_value(pic_state PIC_UNUSED(*pic), bool b)
 {
   pic_value v;
 
@@ -319,7 +314,7 @@ pic_obj_value(void *ptr)
 }
 
 PIC_INLINE pic_value
-pic_float_value(double f)
+pic_float_value(pic_state PIC_UNUSED(*pic), double f)
 {
   union { double f; uint64_t i; } u;
 
@@ -332,7 +327,7 @@ pic_float_value(double f)
 }
 
 PIC_INLINE pic_value
-pic_int_value(int i)
+pic_int_value(pic_state PIC_UNUSED(*pic), int i)
 {
   union { int i; unsigned u; } u;
   pic_value v;
@@ -345,7 +340,7 @@ pic_int_value(int i)
 }
 
 PIC_INLINE pic_value
-pic_char_value(char c)
+pic_char_value(pic_state PIC_UNUSED(*pic), char c)
 {
   pic_value v;
 
@@ -367,7 +362,7 @@ pic_obj_value(void *ptr)
 }
 
 PIC_INLINE pic_value
-pic_float_value(double f)
+pic_float_value(pic_state PIC_UNUSED(*pic), double f)
 {
   pic_value v;
 
@@ -377,7 +372,7 @@ pic_float_value(double f)
 }
 
 PIC_INLINE pic_value
-pic_int_value(int i)
+pic_int_value(pic_state PIC_UNUSED(*pic), int i)
 {
   pic_value v;
 
@@ -387,7 +382,7 @@ pic_int_value(int i)
 }
 
 PIC_INLINE pic_value
-pic_char_value(char c)
+pic_char_value(pic_state PIC_UNUSED(*pic), char c)
 {
   pic_value v;
 
@@ -399,7 +394,7 @@ pic_char_value(char c)
 #endif
 
 PIC_INLINE pic_value
-pic_undef_value()
+pic_undef_value(pic_state PIC_UNUSED(*pic))
 {
   pic_value v;
 
@@ -419,13 +414,13 @@ pic_invalid_value()
 #if PIC_NAN_BOXING
 
 PIC_INLINE bool
-pic_eq_p(pic_value x, pic_value y)
+pic_eq_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
 {
   return x == y;
 }
 
 PIC_INLINE bool
-pic_eqv_p(pic_value x, pic_value y)
+pic_eqv_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
 {
   return x == y;
 }
@@ -433,36 +428,36 @@ pic_eqv_p(pic_value x, pic_value y)
 #else
 
 PIC_INLINE bool
-pic_eq_p(pic_value x, pic_value y)
+pic_eq_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
 {
-  if (pic_type(x) != pic_type(y))
+  if (pic_type(pic, x) != pic_type(pic, y))
     return false;
 
-  switch (pic_type(x)) {
+  switch (pic_type(pic, x)) {
   case PIC_TT_NIL:
     return true;
   case PIC_TT_BOOL:
-    return pic_vtype(x) == pic_vtype(y);
+    return pic_vtype(pic, x) == pic_vtype(pic, y);
   default:
     return pic_ptr(x) == pic_ptr(y);
   }
 }
 
 PIC_INLINE bool
-pic_eqv_p(pic_value x, pic_value y)
+pic_eqv_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
 {
-  if (pic_type(x) != pic_type(y))
+  if (pic_type(pic, x) != pic_type(pic, y))
     return false;
 
-  switch (pic_type(x)) {
+  switch (pic_type(pic, x)) {
   case PIC_TT_NIL:
     return true;
   case PIC_TT_BOOL:
-    return pic_vtype(x) == pic_vtype(y);
+    return pic_vtype(pic, x) == pic_vtype(pic, y);
   case PIC_TT_FLOAT:
-    return pic_float(x) == pic_float(y);
+    return pic_float(pic, x) == pic_float(pic, y);
   case PIC_TT_INT:
-    return pic_int(x) == pic_int(y);
+    return pic_int(pic, x) == pic_int(pic, y);
   default:
     return pic_ptr(x) == pic_ptr(y);
   }

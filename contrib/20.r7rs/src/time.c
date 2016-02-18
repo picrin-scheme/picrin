@@ -16,7 +16,7 @@ pic_current_second(pic_state *pic)
   pic_get_args(pic, "");
 
   time(&t);
-  return pic_float_value((double)t + UTC_TAI_DIFF);
+  return pic_float_value(pic, (double)t + UTC_TAI_DIFF);
 }
 
 static pic_value
@@ -27,7 +27,7 @@ pic_current_jiffy(pic_state *pic)
   pic_get_args(pic, "");
 
   c = clock();
-  return pic_int_value((int)c); /* The year 2038 problem :-| */
+  return pic_int_value(pic, (int)c); /* The year 2038 problem :-| */
 }
 
 static pic_value
@@ -35,7 +35,7 @@ pic_jiffies_per_second(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_int_value(CLOCKS_PER_SEC);
+  return pic_int_value(pic, CLOCKS_PER_SEC);
 }
 
 void

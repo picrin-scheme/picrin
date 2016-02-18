@@ -43,7 +43,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
 
   msg = pic_str_cstr(pic, err);
 
-  pic_error(pic, msg, pic_nil_value());
+  pic_error(pic, msg, pic_nil_value(pic));
 }
 
 pic_value
@@ -58,7 +58,7 @@ pic_native_exception_handler(pic_state *pic)
 
   cont = pic_proc_ptr(pic_closure_ref(pic, 0));
 
-  pic_call(pic, cont, 1, pic_false_value());
+  pic_call(pic, cont, 1, pic_false_value(pic));
 
   PIC_UNREACHABLE();
 }
@@ -202,7 +202,7 @@ pic_error_error_object_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_error_p(v));
+  return pic_bool_value(pic, pic_error_p(pic, v));
 }
 
 static pic_value

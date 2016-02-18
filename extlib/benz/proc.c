@@ -106,13 +106,13 @@ pic_get_args(pic_state *pic, const char *format, ...)
         e = (c == c2 ? va_arg(ap, bool *) : &dummy);                    \
                                                                         \
         v = GET_OPERAND(pic, i);                                        \
-        switch (pic_type(v)) {                                          \
+        switch (pic_type(pic, v)) {                                     \
         case PIC_TT_FLOAT:                                              \
-          *n = pic_float(v);                                            \
+          *n = pic_float(pic, v);                                       \
           *e = false;                                                   \
           break;                                                        \
         case PIC_TT_INT:                                                \
-          *n = pic_int(v);                                              \
+          *n = pic_int(pic, v);                                         \
           *e = true;                                                    \
           break;                                                        \
         default:                                                        \
@@ -131,7 +131,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
                                                                         \
         ptr = va_arg(ap, ctype *);                                      \
         v = GET_OPERAND(pic, i);                                        \
-        if (pic_## type ##_p(v)) {                                      \
+        if (pic_## type ##_p(pic, v)) {                                 \
           *ptr = conv;                                                  \
         }                                                               \
         else {                                                          \
@@ -140,7 +140,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         break;                                                          \
       }
 
-    VAL_CASE('c', char, char, pic_char(v))
+    VAL_CASE('c', char, char, pic_char(pic, v))
     VAL_CASE('z', str, const char *, pic_str_cstr(pic, pic_str_ptr(v)))
 
 #define PTR_CASE(c, type, ctype)                        \
@@ -371,31 +371,31 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHUNDEF) {
-      PUSH(pic_undef_value());
+      PUSH(pic_undef_value(pic));
       NEXT;
     }
     CASE(OP_PUSHNIL) {
-      PUSH(pic_nil_value());
+      PUSH(pic_nil_value(pic));
       NEXT;
     }
     CASE(OP_PUSHTRUE) {
-      PUSH(pic_true_value());
+      PUSH(pic_true_value(pic));
       NEXT;
     }
     CASE(OP_PUSHFALSE) {
-      PUSH(pic_false_value());
+      PUSH(pic_false_value(pic));
       NEXT;
     }
     CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(pic->ci->irep->ints[c.a]));
+      PUSH(pic_int_value(pic, pic->ci->irep->ints[c.a]));
       NEXT;
     }
     CASE(OP_PUSHFLOAT) {
-      PUSH(pic_float_value(pic->ci->irep->nums[c.a]));
+      PUSH(pic_float_value(pic, pic->ci->irep->nums[c.a]));
       NEXT;
     }
     CASE(OP_PUSHCHAR) {
-      PUSH(pic_char_value(pic->ci->irep->ints[c.a]));
+      PUSH(pic_char_value(pic, pic->ci->irep->ints[c.a]));
       NEXT;
     }
     CASE(OP_PUSHEOF) {
@@ -412,7 +412,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
     }
     CASE(OP_GSET) {
       vm_gset(pic, (pic_sym *)pic->ci->irep->pool[c.a], POP());
-      PUSH(pic_undef_value());
+      PUSH(pic_undef_value(pic));
       NEXT;
     }
     CASE(OP_LREF) {
@@ -435,12 +435,12 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
         if (c.a >= irep->argc + irep->localc) {
           ci->cxt->regs[c.a - (ci->regs - ci->fp)] = POP();
-          PUSH(pic_undef_value());
+          PUSH(pic_undef_value(pic));
           NEXT;
         }
       }
       pic->ci->fp[c.a] = POP();
-      PUSH(pic_undef_value());
+      PUSH(pic_undef_value(pic));
       NEXT;
     }
     CASE(OP_CREF) {
@@ -463,7 +463,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 	cxt = cxt->up;
       }
       cxt->regs[c.b] = POP();
-      PUSH(pic_undef_value());
+      PUSH(pic_undef_value(pic));
       NEXT;
     }
     CASE(OP_JMP) {
@@ -474,7 +474,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       pic_value v;
 
       v = POP();
-      if (! pic_false_p(v)) {
+      if (! pic_false_p(pic, v)) {
 	pic->ip += c.a;
 	JUMP;
       }
@@ -491,7 +491,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 
     L_CALL:
       x = pic->sp[-c.a];
-      if (! pic_proc_p(x)) {
+      if (! pic_proc_p(pic, x)) {
 	pic_errorf(pic, "invalid application: ~s", x);
       }
       proc = pic_proc_ptr(x);
@@ -532,7 +532,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 	}
 	/* prepare rest args */
 	if (irep->varg) {
-	  rest = pic_nil_value();
+	  rest = pic_nil_value(pic);
 	  for (i = 0; i < ci->argc - irep->argc; ++i) {
 	    pic_gc_protect(pic, v = POP());
 	    rest = pic_cons(pic, v, rest);
@@ -546,7 +546,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 	    --l;
 	  }
 	  for (i = 0; i < l; ++i) {
-	    PUSH(pic_undef_value());
+	    PUSH(pic_undef_value(pic));
 	  }
 	}
 
@@ -659,7 +659,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       check_condition(NILP, 1);
       p = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_nil_p(p)));
+      PUSH(pic_bool_value(pic, pic_nil_p(pic, p)));
       NEXT;
     }
     CASE(OP_SYMBOLP) {
@@ -667,7 +667,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       check_condition(SYMBOLP, 1);
       p = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_sym_p(p)));
+      PUSH(pic_bool_value(pic, pic_sym_p(pic, p)));
       NEXT;
     }
     CASE(OP_PAIRP) {
@@ -675,13 +675,13 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       check_condition(PAIRP, 1);
       p = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_pair_p(p)));
+      PUSH(pic_bool_value(pic, pic_pair_p(pic, p)));
       NEXT;
     }
     CASE(OP_NOT) {
       pic_value v;
       check_condition(NOT, 1);
-      v = pic_false_p(POP()) ? pic_true_value() : pic_false_value();
+      v = pic_false_p(pic, POP()) ? pic_true_value(pic) : pic_false_value(pic);
       (void)POP();
       PUSH(v);
       NEXT;
@@ -729,7 +729,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       b = POP();
       a = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_eq(pic, a, b)));
+      PUSH(pic_bool_value(pic, pic_eq(pic, a, b)));
       NEXT;
     }
     CASE(OP_LE) {
@@ -738,7 +738,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       b = POP();
       a = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_le(pic, a, b)));
+      PUSH(pic_bool_value(pic, pic_le(pic, a, b)));
       NEXT;
     }
     CASE(OP_LT) {
@@ -747,7 +747,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       b = POP();
       a = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_lt(pic, a, b)));
+      PUSH(pic_bool_value(pic, pic_lt(pic, a, b)));
       NEXT;
     }
     CASE(OP_GE) {
@@ -756,7 +756,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       b = POP();
       a = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_ge(pic, a, b)));
+      PUSH(pic_bool_value(pic, pic_ge(pic, a, b)));
       NEXT;
     }
     CASE(OP_GT) {
@@ -765,7 +765,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       b = POP();
       a = POP();
       (void)POP();
-      PUSH(pic_bool_value(pic_gt(pic, a, b)));
+      PUSH(pic_bool_value(pic, pic_gt(pic, a, b)));
       NEXT;
     }
 
@@ -801,7 +801,7 @@ pic_applyk(pic_state *pic, struct pic_proc *proc, int argc, pic_value *args)
   ci->retc = (int)argc;
 
   if (ci->retc == 0) {
-    return pic_undef_value();
+    return pic_undef_value(pic);
   } else {
     return args[0];
   }
@@ -1033,7 +1033,7 @@ pic_proc_proc_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_proc_p(v));
+  return pic_bool_value(pic, pic_proc_p(pic, v));
 }
 
 static pic_value

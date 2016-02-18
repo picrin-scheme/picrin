@@ -137,7 +137,7 @@ pic_lib_make_library(pic_state *pic)
 
   pic_make_library(pic, lib);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -147,7 +147,7 @@ pic_lib_find_library(pic_state *pic)
 
   pic_get_args(pic, "z", &lib);
 
-  return pic_bool_value(pic_find_library(pic, lib));
+  return pic_bool_value(pic, pic_find_library(pic, lib));
 }
 
 static pic_value
@@ -164,7 +164,7 @@ pic_lib_current_library(pic_state *pic)
   else {
     pic_in_library(pic, lib);
 
-    return pic_undef_value();
+    return pic_undef_value(pic);
   }
 }
 
@@ -195,7 +195,7 @@ pic_lib_library_import(pic_state *pic)
     pic_put_identifier(pic, (pic_id *)alias, uid, pic->lib->env);
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -211,14 +211,14 @@ pic_lib_library_export(pic_state *pic)
 
   pic_dict_set(pic, pic->lib->exports, alias, pic_obj_value(name));
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
 pic_lib_library_exports(pic_state *pic)
 {
   const char *lib;
-  pic_value exports = pic_nil_value();
+  pic_value exports = pic_nil_value(pic);
   pic_sym *sym;
   khiter_t it;
   struct pic_lib *libp;

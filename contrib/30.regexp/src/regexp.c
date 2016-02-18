@@ -19,7 +19,7 @@ regexp_dtor(pic_state *pic, void *data)
 
 static const pic_data_type regexp_type = { "regexp", regexp_dtor, NULL };
 
-#define pic_regexp_p(o) (pic_data_type_p((o), &regexp_type))
+#define pic_regexp_p(pic, o) (pic_data_type_p(pic, (o), &regexp_type))
 #define pic_regexp_data_ptr(o) ((struct pic_regexp_t *)pic_data_ptr(o)->data)
 
 static pic_value
@@ -72,7 +72,7 @@ pic_regexp_regexp_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(pic_regexp_p(obj));
+  return pic_bool_value(pic, pic_regexp_p(pic, obj));
 }
 
 static pic_value
@@ -89,8 +89,8 @@ pic_regexp_regexp_match(pic_state *pic)
 
   pic_assert_type(pic, reg, regexp);
 
-  matches = pic_nil_value();
-  positions = pic_nil_value();
+  matches = pic_nil_value(pic);
+  positions = pic_nil_value(pic);
 
   if (strchr(pic_regexp_data_ptr(reg)->flags, 'g') != NULL) {
     /* global search */
@@ -98,7 +98,7 @@ pic_regexp_regexp_match(pic_state *pic)
     offset = 0;
     while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, match, 0) != REG_NOMATCH) {
       pic_push(pic, pic_obj_value(pic_make_str(pic, input, match[0].rm_eo - match[0].rm_so)), matches);
-      pic_push(pic, pic_int_value(offset), positions);
+      pic_push(pic, pic_int_value(pic, offset), positions);
 
       offset += match[0].rm_eo;
       input += match[0].rm_eo;
@@ -113,14 +113,14 @@ pic_regexp_regexp_match(pic_state *pic)
         }
         str = pic_make_str(pic, input + match[i].rm_so, match[i].rm_eo - match[i].rm_so);
         pic_push(pic, pic_obj_value(str), matches);
-        pic_push(pic, pic_int_value(match[i].rm_so), positions);
+        pic_push(pic, pic_int_value(pic, match[i].rm_so), positions);
       }
     }
   }
 
-  if (pic_nil_p(matches)) {
-    matches = pic_false_value();
-    positions = pic_false_value();
+  if (pic_nil_p(pic, matches)) {
+    matches = pic_false_value(pic);
+    positions = pic_false_value(pic);
   } else {
     matches = pic_reverse(pic, matches);
     positions = pic_reverse(pic, positions);
@@ -134,7 +134,7 @@ pic_regexp_regexp_split(pic_state *pic)
   pic_value reg;
   const char *input;
   regmatch_t match;
-  pic_value output = pic_nil_value();
+  pic_value output = pic_nil_value(pic);
 
   pic_get_args(pic, "oz", &reg, &input);
 

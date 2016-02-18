@@ -7,7 +7,7 @@ pic_random_real(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_float_value(genrand_real3());
+  return pic_float_value(pic, genrand_real3());
 }
 
 void

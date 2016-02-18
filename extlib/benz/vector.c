@@ -14,7 +14,7 @@ pic_make_vec(pic_state *pic, int len)
   vec->len = len;
   vec->data = (pic_value *)pic_malloc(pic, sizeof(pic_value) * len);
   for (i = 0; i < len; ++i) {
-    vec->data[i] = pic_undef_value();
+    vec->data[i] = pic_undef_value(pic);
   }
   return vec;
 }
@@ -26,7 +26,7 @@ pic_vec_vector_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_vec_p(v));
+  return pic_bool_value(pic, pic_vec_p(pic, v));
 }
 
 static pic_value
@@ -72,7 +72,7 @@ pic_vec_vector_length(pic_state *pic)
 
   pic_get_args(pic, "v", &v);
 
-  return pic_int_value(v->len);
+  return pic_int_value(pic, v->len);
 }
 
 static pic_value
@@ -102,7 +102,7 @@ pic_vec_vector_set(pic_state *pic)
     pic_errorf(pic, "vector-set!: index out of range");
   }
   v->data[k] = o;
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -126,14 +126,14 @@ pic_vec_vector_copy_i(pic_state *pic)
     while (start < end) {
       to->data[--at] = from->data[--end];
     }
-    return pic_undef_value();
+    return pic_undef_value(pic);
   }
 
   while (start < end) {
     to->data[at++] = from->data[start++];
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -211,7 +211,7 @@ pic_vec_vector_fill_i(pic_state *pic)
     vec->data[start++] = obj;
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -236,7 +236,7 @@ pic_vec_vector_map(pic_state *pic)
   vec = pic_make_vec(pic, len);
 
   for (i = 0; i < len; ++i) {
-    vals = pic_nil_value();
+    vals = pic_nil_value(pic);
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
@@ -265,14 +265,14 @@ pic_vec_vector_for_each(pic_state *pic)
   }
 
   for (i = 0; i < len; ++i) {
-    vals = pic_nil_value();
+    vals = pic_nil_value(pic);
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ptr(argv[j])->data[i], vals);
     }
     pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -309,7 +309,7 @@ pic_vec_vector_to_list(pic_state *pic)
     end = vec->len;
   }
 
-  list = pic_nil_value();
+  list = pic_nil_value(pic);
 
   for (i = start; i < end; ++i) {
     pic_push(pic, vec->data[i], list);
@@ -343,7 +343,7 @@ pic_vec_vector_to_string(pic_state *pic)
   for (i = start; i < end; ++i) {
     pic_assert_type(pic, vec->data[i], char);
 
-    buf[i - start] = pic_char(vec->data[i]);
+    buf[i - start] = pic_char(pic, vec->data[i]);
   }
 
   str = pic_make_str(pic, buf, end - start);
@@ -365,7 +365,7 @@ pic_vec_string_to_vector(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_str_len(str);
+    end = pic_str_len(pic, str);
   }
 
   if (end < start) {
@@ -375,7 +375,7 @@ pic_vec_string_to_vector(pic_state *pic)
   vec = pic_make_vec(pic, end - start);
 
   for (i = 0; i < end - start; ++i) {
-    vec->data[i] = pic_char_value(pic_str_ref(pic, str, i + start));
+    vec->data[i] = pic_char_value(pic, pic_str_ref(pic, str, i + start));
   }
   return pic_obj_value(vec);
 }

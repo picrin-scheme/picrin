@@ -11,13 +11,13 @@ optimize_beta(pic_state *pic, pic_value expr)
   size_t ai = pic_gc_arena_preserve(pic);
   pic_value functor, formals, args, tmp, val, it, defs;
 
-  if (! pic_list_p(expr))
+  if (! pic_list_p(pic, expr))
     return expr;
 
-  if (pic_nil_p(expr))
+  if (pic_nil_p(pic, expr))
     return expr;
 
-  if (pic_sym_p(pic_list_ref(pic, expr, 0))) {
+  if (pic_sym_p(pic, pic_list_ref(pic, expr, 0))) {
     pic_sym *sym = pic_sym_ptr(pic_list_ref(pic, expr, 0));
 
     if (sym == pic->sQUOTE) {
@@ -27,7 +27,7 @@ optimize_beta(pic_state *pic, pic_value expr)
     }
   }
 
-  tmp = pic_nil_value();
+  tmp = pic_nil_value(pic);
   pic_for_each (val, expr, it) {
     pic_push(pic, optimize_beta(pic, val), tmp);
   }
@@ -37,14 +37,14 @@ optimize_beta(pic_state *pic, pic_value expr)
   pic_gc_protect(pic, expr);
 
   functor = pic_list_ref(pic, expr, 0);
-  if (pic_pair_p(functor) && pic_eq_p(pic_car(pic, functor), pic_obj_value(pic->sLAMBDA))) {
+  if (pic_pair_p(pic, functor) && pic_eq_p(pic, pic_car(pic, functor), pic_obj_value(pic->sLAMBDA))) {
     formals = pic_list_ref(pic, functor, 1);
-    if (! pic_list_p(formals))
+    if (! pic_list_p(pic, formals))
       goto exit;              /* TODO: support ((lambda args x) 1 2) */
     args = pic_cdr(pic, expr);
     if (pic_length(pic, formals) != pic_length(pic, args))
       goto exit;
-    defs = pic_nil_value();
+    defs = pic_nil_value(pic);
     pic_for_each (val, args, it) {
       pic_push(pic, pic_list3(pic, pic_obj_value(pic->sDEFINE), pic_car(pic, formals), val), defs);
       formals = pic_cdr(pic, formals);
@@ -92,10 +92,10 @@ analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, anal
   kh_init(a, &scope->captures);
 
   /* analyze formal */
-  for (; pic_pair_p(formal); formal = pic_cdr(pic, formal)) {
+  for (; pic_pair_p(pic, formal); formal = pic_cdr(pic, formal)) {
     kh_put(a, &scope->args, pic_sym_ptr(pic_car(pic, formal)), &ret);
   }
-  if (pic_nil_p(formal)) {
+  if (pic_nil_p(pic, formal)) {
     scope->rest = NULL;
   }
   else {
@@ -105,7 +105,7 @@ analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, anal
 
   scope->up = up;
   scope->depth = up ? up->depth + 1 : 0;
-  scope->defer = pic_list1(pic, pic_nil_value());
+  scope->defer = pic_list1(pic, pic_nil_value(pic));
 }
 
 static void
@@ -177,7 +177,7 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_sym *sym)
   } else if (depth == 0) {
     return pic_list2(pic, pic_obj_value(LREF), pic_obj_value(sym));
   } else {
-    return pic_list3(pic, pic_obj_value(CREF), pic_int_value(depth), pic_obj_value(sym));
+    return pic_list3(pic, pic_obj_value(CREF), pic_int_value(pic, depth), pic_obj_value(sym));
   }
 }
 
@@ -215,7 +215,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 {
   analyze_scope s, *scope = &s;
   pic_value formals, body;
-  pic_value rest = pic_undef_value();
+  pic_value rest = pic_undef_value(pic);
   pic_vec *args, *locals, *captures;
   int i, j;
   khiter_t it;
@@ -230,7 +230,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
   analyze_deferred(pic, scope);
 
   args = pic_make_vec(pic, kh_size(&scope->args));
-  for (i = 0; pic_pair_p(formals); formals = pic_cdr(pic, formals), i++) {
+  for (i = 0; pic_pair_p(pic, formals); formals = pic_cdr(pic, formals), i++) {
     args->data[i] = pic_car(pic, formals);
   }
 
@@ -266,7 +266,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 static pic_value
 analyze_list(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  pic_value seq = pic_nil_value(), val, it;
+  pic_value seq = pic_nil_value(pic), val, it;
 
   pic_for_each (val, obj, it) {
     pic_push(pic, analyze(pic, scope, val), seq);
@@ -292,19 +292,19 @@ analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj)
 static pic_value
 analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  switch (pic_type(obj)) {
+  switch (pic_type(pic, obj)) {
   case PIC_TT_SYMBOL: {
     return analyze_var(pic, scope, pic_sym_ptr(obj));
   }
   case PIC_TT_PAIR: {
     pic_value proc;
 
-    if (! pic_list_p(obj)) {
+    if (! pic_list_p(pic, obj)) {
       pic_errorf(pic, "invalid expression given: ~s", obj);
     }
 
     proc = pic_list_ref(pic, obj, 0);
-    if (pic_sym_p(proc)) {
+    if (pic_sym_p(pic, proc)) {
       pic_sym *sym = pic_sym_ptr(proc);
 
       if (sym == pic->sDEFINE) {
@@ -346,7 +346,7 @@ pic_analyze(pic_state *pic, pic_value obj)
 {
   analyze_scope s, *scope = &s;
 
-  analyzer_scope_init(pic, scope, pic_nil_value(), NULL);
+  analyzer_scope_init(pic, scope, pic_nil_value(pic), NULL);
 
   obj = analyze(pic, scope, obj);
 
@@ -562,7 +562,7 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     pic_sym *name;
     int depth;
 
-    depth = pic_int(pic_list_ref(pic, obj, 1));
+    depth = pic_int(pic, pic_list_ref(pic, obj, 1));
     name  = pic_sym_ptr(pic_list_ref(pic, obj, 2));
     emit_r(pic, cxt, OP_CREF, depth, index_capture(cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
@@ -604,7 +604,7 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     pic_sym *name;
     int depth;
 
-    depth = pic_int(pic_list_ref(pic, var, 1));
+    depth = pic_int(pic, pic_list_ref(pic, var, 1));
     name  = pic_sym_ptr(pic_list_ref(pic, var, 2));
     emit_r(pic, cxt, OP_CSET, depth, index_capture(cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
@@ -636,7 +636,7 @@ codegen_lambda(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos
 
   /* extract arguments */
   rest_opt = pic_list_ref(pic, obj, 1);
-  if (pic_sym_p(rest_opt)) {
+  if (pic_sym_p(pic, rest_opt)) {
     rest = pic_sym_ptr(rest_opt);
   }
   args = pic_vec_ptr(pic_list_ref(pic, obj, 2));
@@ -693,23 +693,23 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   int pidx;
 
   obj = pic_list_ref(pic, obj, 1);
-  switch (pic_type(obj)) {
+  switch (pic_type(pic, obj)) {
   case PIC_TT_UNDEF:
     emit_n(pic, cxt, OP_PUSHUNDEF);
     break;
   case PIC_TT_BOOL:
-    emit_n(pic, cxt, (pic_true_p(obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
+    emit_n(pic, cxt, (pic_true_p(pic, obj) ? OP_PUSHTRUE : OP_PUSHFALSE));
     break;
   case PIC_TT_INT:
     check_ints_size(pic, cxt);
     pidx = (int)cxt->klen++;
-    cxt->ints[pidx] = pic_int(obj);
+    cxt->ints[pidx] = pic_int(pic, obj);
     emit_i(pic, cxt, OP_PUSHINT, pidx);
     break;
   case PIC_TT_FLOAT:
     check_nums_size(pic, cxt);
     pidx = (int)cxt->flen++;
-    cxt->nums[pidx] = pic_float(obj);
+    cxt->nums[pidx] = pic_float(pic, obj);
     emit_i(pic, cxt, OP_PUSHFLOAT, pidx);
     break;
   case PIC_TT_NIL:
@@ -721,7 +721,7 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   case PIC_TT_CHAR:
     check_ints_size(pic, cxt);
     pidx = (int)cxt->klen++;
-    cxt->ints[pidx] = pic_char(obj);
+    cxt->ints[pidx] = pic_char(pic, obj);
     emit_i(pic, cxt, OP_PUSHCHAR, pidx);
     break;
   default:

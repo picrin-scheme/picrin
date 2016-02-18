@@ -53,7 +53,7 @@ pic_symbol_name(pic_state *pic, pic_sym *sym)
 const char *
 pic_identifier_name(pic_state *pic, pic_id *id)
 {
-  while (! pic_sym_p(pic_obj_value(id))) {
+  while (! pic_sym_p(pic, pic_obj_value(id))) {
     id = id->u.id.id;
   }
 
@@ -67,7 +67,7 @@ pic_symbol_symbol_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_sym_p(v));
+  return pic_bool_value(pic, pic_sym_p(pic, v));
 }
 
 static pic_value
@@ -79,14 +79,14 @@ pic_symbol_symbol_eq_p(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    if (! pic_sym_p(argv[i])) {
-      return pic_false_value();
+    if (! pic_sym_p(pic, argv[i])) {
+      return pic_false_value(pic);
     }
-    if (! pic_eq_p(argv[i], argv[0])) {
-      return pic_false_value();
+    if (! pic_eq_p(pic, argv[i], argv[0])) {
+      return pic_false_value(pic);
     }
   }
-  return pic_true_value();
+  return pic_true_value(pic);
 }
 
 static pic_value
@@ -116,7 +116,7 @@ pic_symbol_identifier_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(pic_id_p(obj));
+  return pic_bool_value(pic, pic_id_p(pic, obj));
 }
 
 static pic_value
@@ -141,7 +141,7 @@ pic_symbol_identifier_variable(pic_state *pic)
 
   pic_assert_type(pic, id, id);
 
-  if (pic_sym_p(id)) {
+  if (pic_sym_p(pic, id)) {
     pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
   }
 
@@ -157,7 +157,7 @@ pic_symbol_identifier_environment(pic_state *pic)
 
   pic_assert_type(pic, id, id);
 
-  if (pic_sym_p(id)) {
+  if (pic_sym_p(pic, id)) {
     pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
   }
 
@@ -173,14 +173,14 @@ pic_symbol_identifier_eq_p(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    if (! pic_id_p(argv[i])) {
-      return pic_false_value();
+    if (! pic_id_p(pic, argv[i])) {
+      return pic_false_value(pic);
     }
     if (! pic_equal_p(pic, argv[i], argv[0])) {
-      return pic_false_value();
+      return pic_false_value(pic);
     }
   }
-  return pic_true_value();
+  return pic_true_value(pic);
 }
 
 void

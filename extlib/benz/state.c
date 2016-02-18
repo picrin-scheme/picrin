@@ -265,7 +265,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->macros = NULL;
 
   /* features */
-  pic->features = pic_nil_value();
+  pic->features = pic_nil_value(pic);
 
   /* libraries */
   kh_init(ltable, &pic->ltable);
@@ -282,7 +282,7 @@ pic_open(pic_allocf allocf, void *userdata)
   memset(pic->files, 0, sizeof pic->files);
 
   /* parameter table */
-  pic->ptable = pic_nil_value();
+  pic->ptable = pic_nil_value(pic);
 
   /* native stack marker */
   pic->native_stack_start = &t;
@@ -385,7 +385,7 @@ pic_close(pic_state *pic)
   pic->err = pic_invalid_value();
   pic->globals = NULL;
   pic->macros = NULL;
-  pic->features = pic_nil_value();
+  pic->features = pic_nil_value(pic);
 
   /* free all libraries */
   kh_clear(ltable, &pic->ltable);

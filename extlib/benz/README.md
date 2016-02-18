@@ -55,7 +55,7 @@ pic_value factorial(pic_state *pic) {
 
   pic_get_args(pic, "i", &i);
 
-  return pic_int_value(fact(i));
+  return pic_int_value(pic, fact(i));
 }
 
 int

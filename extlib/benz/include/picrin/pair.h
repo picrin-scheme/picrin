@@ -22,7 +22,7 @@ pic_car(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
 
-  if (! pic_pair_p(obj)) {
+  if (! pic_pair_p(pic, obj)) {
     pic_errorf(pic, "car: pair required, but got ~s", obj);
   }
   pair = pic_pair_ptr(obj);
@@ -35,7 +35,7 @@ pic_cdr(pic_state *pic, pic_value obj)
 {
   struct pic_pair *pair;
 
-  if (! pic_pair_p(obj)) {
+  if (! pic_pair_p(pic, obj)) {
     pic_errorf(pic, "cdr: pair required, but got ~s", obj);
   }
   pair = pic_pair_ptr(obj);
@@ -53,8 +53,8 @@ pic_value pic_list7(pic_state *, pic_value, pic_value, pic_value, pic_value, pic
 pic_value pic_list_by_array(pic_state *, int, pic_value *);
 pic_value pic_make_list(pic_state *, int, pic_value);
 
-#define pic_for_each(var, list, it)                             \
-  for (it = (list); ! pic_nil_p(it); it = pic_cdr(pic, it))     \
+#define pic_for_each(var, list, it)                                     \
+  for (it = (list); ! pic_nil_p(pic, it); it = pic_cdr(pic, it))        \
     if ((var = pic_car(pic, it)), true)
 
 #define pic_push(pic, item, place) (place = pic_cons(pic, item, place))

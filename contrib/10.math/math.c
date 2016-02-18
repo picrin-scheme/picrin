@@ -17,13 +17,13 @@ pic_number_floor2(pic_state *pic)
       ? i / j
       : (i / j) - 1;
 
-    return pic_values2(pic, pic_int_value(k), pic_int_value(i - k * j));
+    return pic_values2(pic, pic_int_value(pic, k), pic_int_value(pic, i - k * j));
   } else {
     double q, r;
 
     q = floor((double)i/j);
     r = i - j * q;
-    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
+    return pic_values2(pic, pic_float_value(pic, q), pic_float_value(pic, r));
   }
 }
 
@@ -36,14 +36,14 @@ pic_number_trunc2(pic_state *pic)
   pic_get_args(pic, "II", &i, &e1, &j, &e2);
 
   if (e1 && e2) {
-    return pic_values2(pic, pic_int_value(i/j), pic_int_value(i - (i/j) * j));
+    return pic_values2(pic, pic_int_value(pic, i/j), pic_int_value(pic, i - (i/j) * j));
   } else {
     double q, r;
 
     q = trunc((double)i/j);
     r = i - j * q;
 
-    return pic_values2(pic, pic_float_value(q), pic_float_value(r));
+    return pic_values2(pic, pic_float_value(pic, q), pic_float_value(pic, r));
   }
 }
 
@@ -56,9 +56,9 @@ pic_number_floor(pic_state *pic)
   pic_get_args(pic, "F", &f, &e);
 
   if (e) {
-    return pic_int_value((int)f);
+    return pic_int_value(pic, (int)f);
   } else {
-    return pic_float_value(floor(f));
+    return pic_float_value(pic, floor(f));
   }
 }
 
@@ -71,9 +71,9 @@ pic_number_ceil(pic_state *pic)
   pic_get_args(pic, "F", &f, &e);
 
   if (e) {
-    return pic_int_value((int)f);
+    return pic_int_value(pic, (int)f);
   } else {
-    return pic_float_value(ceil(f));
+    return pic_float_value(pic, ceil(f));
   }
 }
 
@@ -86,9 +86,9 @@ pic_number_trunc(pic_state *pic)
   pic_get_args(pic, "F", &f, &e);
 
   if (e) {
-    return pic_int_value((int)f);
+    return pic_int_value(pic, (int)f);
   } else {
-    return pic_float_value(trunc(f));
+    return pic_float_value(pic, trunc(f));
   }
 }
 
@@ -101,9 +101,9 @@ pic_number_round(pic_state *pic)
   pic_get_args(pic, "F", &f, &e);
 
   if (e) {
-    return pic_int_value((int)f);
+    return pic_int_value(pic, (int)f);
   } else {
-    return pic_float_value(round(f));
+    return pic_float_value(pic, round(f));
   }
 }
 
@@ -114,12 +114,12 @@ pic_number_finite_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_int_p(v))
-    return pic_true_value();
-  if (pic_float_p(v) && ! (isinf(pic_float(v)) || isnan(pic_float(v))))
-    return pic_true_value();
+  if (pic_int_p(pic, v))
+    return pic_true_value(pic);
+  if (pic_float_p(pic, v) && ! (isinf(pic_float(pic, v)) || isnan(pic_float(pic, v))))
+    return pic_true_value(pic);
   else
-    return pic_false_value();
+    return pic_false_value(pic);
 }
 
 static pic_value
@@ -129,10 +129,10 @@ pic_number_infinite_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_float_p(v) && isinf(pic_float(v)))
-    return pic_true_value();
+  if (pic_float_p(pic, v) && isinf(pic_float(pic, v)))
+    return pic_true_value(pic);
   else
-    return pic_false_value();
+    return pic_false_value(pic);
 }
 
 static pic_value
@@ -142,10 +142,10 @@ pic_number_nan_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_float_p(v) && isnan(pic_float(v)))
-    return pic_true_value();
+  if (pic_float_p(pic, v) && isnan(pic_float(pic, v)))
+    return pic_true_value(pic);
   else
-    return pic_false_value();
+    return pic_false_value(pic);
 }
 
 static pic_value
@@ -154,7 +154,7 @@ pic_number_exp(pic_state *pic)
   double f;
 
   pic_get_args(pic, "f", &f);
-  return pic_float_value(exp(f));
+  return pic_float_value(pic, exp(f));
 }
 
 static pic_value
@@ -165,10 +165,10 @@ pic_number_log(pic_state *pic)
 
   argc = pic_get_args(pic, "f|f", &f, &g);
   if (argc == 1) {
-    return pic_float_value(log(f));
+    return pic_float_value(pic, log(f));
   }
   else {
-    return pic_float_value(log(f) / log(g));
+    return pic_float_value(pic, log(f) / log(g));
   }
 }
 
@@ -179,7 +179,7 @@ pic_number_sin(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
   f = sin(f);
-  return pic_float_value(f);
+  return pic_float_value(pic, f);
 }
 
 static pic_value
@@ -189,7 +189,7 @@ pic_number_cos(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
   f = cos(f);
-  return pic_float_value(f);
+  return pic_float_value(pic, f);
 }
 
 static pic_value
@@ -199,7 +199,7 @@ pic_number_tan(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
   f = tan(f);
-  return pic_float_value(f);
+  return pic_float_value(pic, f);
 }
 
 static pic_value
@@ -209,7 +209,7 @@ pic_number_acos(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
   f = acos(f);
-  return pic_float_value(f);
+  return pic_float_value(pic, f);
 }
 
 static pic_value
@@ -219,7 +219,7 @@ pic_number_asin(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
   f = asin(f);
-  return pic_float_value(f);
+  return pic_float_value(pic, f);
 }
 
 static pic_value
@@ -231,10 +231,10 @@ pic_number_atan(pic_state *pic)
   argc = pic_get_args(pic, "f|f", &f, &g);
   if (argc == 1) {
     f = atan(f);
-    return pic_float_value(f);
+    return pic_float_value(pic, f);
   }
   else {
-    return pic_float_value(atan2(f,g));
+    return pic_float_value(pic, atan2(f,g));
   }
 }
 
@@ -245,7 +245,7 @@ pic_number_sqrt(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
 
-  return pic_float_value(sqrt(f));
+  return pic_float_value(pic, sqrt(f));
 }
 
 static pic_value
@@ -257,10 +257,10 @@ pic_number_abs(pic_state *pic)
   pic_get_args(pic, "F", &f, &e);
 
   if (e) {
-    return pic_int_value(f < 0 ? -f : f);
+    return pic_int_value(pic, f < 0 ? -f : f);
   }
   else {
-    return pic_float_value(fabs(f));
+    return pic_float_value(pic, fabs(f));
   }
 }
 
@@ -275,10 +275,10 @@ pic_number_expt(pic_state *pic)
   h = pow(f, g);
   if (e1 && e2) {
     if (h <= INT_MAX) {
-      return pic_int_value((int)h);
+      return pic_int_value(pic, (int)h);
     }
   }
-  return pic_float_value(h);
+  return pic_float_value(pic, h);
 }
 
 void

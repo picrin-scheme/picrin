@@ -29,7 +29,7 @@ pic_rl_history_length(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_int_value(history_get_history_state()->length);
+  return pic_int_value(pic, history_get_history_state()->length);
 }
 
 static pic_value
@@ -41,7 +41,7 @@ pic_rl_add_history(pic_state *pic)
 
   add_history(line);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -53,7 +53,7 @@ pic_rl_stifle_history(pic_state *pic)
 
   stifle_history(i);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -63,7 +63,7 @@ pic_rl_unstifle_history(pic_state *pic)
 
   unstifle_history();
   
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -71,7 +71,7 @@ pic_rl_history_is_stifled(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_bool_value(history_is_stifled());
+  return pic_bool_value(pic, history_is_stifled());
 }
 
 static pic_value
@@ -79,7 +79,7 @@ pic_rl_where_history(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_int_value(where_history());
+  return pic_int_value(pic, where_history());
 }
 
 static pic_value
@@ -101,7 +101,7 @@ pic_rl_history_get(pic_state *pic)
   e = history_get(i);
 
   return e ? pic_obj_value(pic_make_cstr(pic, e->line))
-    : pic_false_value();
+    : pic_false_value(pic);
 }
 
 static pic_value
@@ -115,7 +115,7 @@ pic_rl_remove_history(pic_state *pic)
   e = remove_history(i);
 
   return e ? pic_obj_value(pic_make_cstr(pic, e->line))
-    : pic_false_value();
+    : pic_false_value(pic);
 }
 
 static pic_value
@@ -125,7 +125,7 @@ pic_rl_clear_history(pic_state *pic)
 
   clear_history();
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -136,7 +136,7 @@ pic_rl_history_set_pos(pic_state *pic)
   pic_get_args(pic, "i", &i);
 
 
-  return pic_int_value(history_set_pos(i));
+  return pic_int_value(pic, history_set_pos(i));
 }
 
 static pic_value
@@ -149,7 +149,7 @@ pic_rl_previous_history(pic_state *pic)
   e = previous_history();
 
   return e ? pic_obj_value(pic_make_cstr(pic, e->line))
-    : pic_false_value();
+    : pic_false_value(pic);
 }
 
 static pic_value
@@ -162,7 +162,7 @@ pic_rl_next_history(pic_state *pic)
   e = next_history();
 
   return e ? pic_obj_value(pic_make_cstr(pic, e->line))
-    : pic_false_value();
+    : pic_false_value(pic);
 }
 
 static pic_value
@@ -173,9 +173,9 @@ pic_rl_history_search(pic_state *pic)
 
   argc = pic_get_args(pic, "zi|i", &key, &direction, &pos);
   if(argc == 2)
-    return pic_int_value(history_search(key, direction));
+    return pic_int_value(pic, history_search(key, direction));
   else
-    return pic_int_value(history_search_pos(key, direction, pos));
+    return pic_int_value(pic, history_search_pos(key, direction, pos));
 }
 
 static pic_value
@@ -186,7 +186,7 @@ pic_rl_history_search_prefix(pic_state *pic)
 
   pic_get_args(pic, "zi", &key, &direction);
 
-  return pic_int_value(history_search_prefix(key, direction));
+  return pic_int_value(pic, history_search_prefix(key, direction));
 }
 
 static pic_value
@@ -199,7 +199,7 @@ pic_rl_read_history(pic_state *pic)
   if(read_history(filename))
     pic_errorf(pic, "cannot read history file : %s", filename);
   
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -212,7 +212,7 @@ pic_rl_write_history(pic_state *pic)
   if(write_history(filename))
     pic_errorf(pic, "cannot write history file: %s", filename);
   
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -225,7 +225,7 @@ pic_rl_truncate_file(pic_state *pic)
 
   history_truncate_file(filename, i);
   
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value

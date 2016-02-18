@@ -10,8 +10,8 @@ KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 static bool
 internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m) *h)
 {
-  pic_value localx = pic_nil_value();
-  pic_value localy = pic_nil_value();
+  pic_value localx = pic_nil_value(pic);
+  pic_value localy = pic_nil_value(pic);
   int cx = 0;
   int cy = 0;
 
@@ -19,7 +19,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     if (depth > 200) {
       pic_errorf(pic, "Stack overflow in equal\n");
     }
-    if (pic_pair_p(x) || pic_vec_p(x)) {
+    if (pic_pair_p(pic, x) || pic_vec_p(pic, x)) {
       int ret;
       kh_put(m, h, pic_obj_ptr(x), &ret);
       if (ret != 0) {
@@ -30,14 +30,14 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
 
  LOOP:
 
-  if (pic_eqv_p(x, y)) {
+  if (pic_eqv_p(pic, x, y)) {
     return true;
   }
-  if (pic_type(x) != pic_type(y)) {
+  if (pic_type(pic, x) != pic_type(pic, y)) {
     return false;
   }
 
-  switch (pic_type(x)) {
+  switch (pic_type(pic, x)) {
   case PIC_TT_ID: {
     struct pic_id *id1, *id2;
     pic_sym *s1, *s2;
@@ -74,12 +74,12 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
       return false;
 
     /* Floyd's cycle-finding algorithm */
-    if (pic_nil_p(localx)) {
+    if (pic_nil_p(pic, localx)) {
       localx = x;
     }
     x = pic_cdr(pic, x);
     cx++;
-    if (pic_nil_p(localy)) {
+    if (pic_nil_p(pic, localy)) {
       localy = y;
     }
     y = pic_cdr(pic, y);
@@ -87,7 +87,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     if (cx == 2) {
       cx = 0;
       localx = pic_cdr(pic, localx);
-      if (pic_eq_p(localx, x)) {
+      if (pic_eq_p(pic, localx, x)) {
         if (cy < 0 ) return true; /* both lists circular */
         cx = INT_MIN; /* found a cycle on x */
       }
@@ -95,7 +95,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     if (cy == 2) {
       cy = 0;
       localy = pic_cdr(pic, localy);
-      if (pic_eq_p(localy, y)) {
+      if (pic_eq_p(pic, localy, y)) {
         if (cx < 0 ) return true; /* both lists circular */
         cy = INT_MIN; /* found a cycle on y */
       }
@@ -143,7 +143,7 @@ pic_bool_eq_p(pic_state *pic)
 
   pic_get_args(pic, "oo", &x, &y);
 
-  return pic_bool_value(pic_eq_p(x, y));
+  return pic_bool_value(pic, pic_eq_p(pic, x, y));
 }
 
 static pic_value
@@ -153,7 +153,7 @@ pic_bool_eqv_p(pic_state *pic)
 
   pic_get_args(pic, "oo", &x, &y);
 
-  return pic_bool_value(pic_eqv_p(x, y));
+  return pic_bool_value(pic, pic_eqv_p(pic, x, y));
 }
 
 static pic_value
@@ -163,7 +163,7 @@ pic_bool_equal_p(pic_state *pic)
 
   pic_get_args(pic, "oo", &x, &y);
 
-  return pic_bool_value(pic_equal_p(pic, x, y));
+  return pic_bool_value(pic, pic_equal_p(pic, x, y));
 }
 
 static pic_value
@@ -173,7 +173,7 @@ pic_bool_not(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_false_p(v) ? pic_true_value() : pic_false_value();
+  return pic_false_p(pic, v) ? pic_true_value(pic) : pic_false_value(pic);
 }
 
 static pic_value
@@ -183,7 +183,7 @@ pic_bool_boolean_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return (pic_true_p(v) || pic_false_p(v)) ? pic_true_value() : pic_false_value();
+  return (pic_true_p(pic, v) || pic_false_p(pic, v)) ? pic_true_value(pic) : pic_false_value(pic);
 }
 
 static pic_value
@@ -195,14 +195,14 @@ pic_bool_boolean_eq_p(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    if (! (pic_true_p(argv[i]) || pic_false_p(argv[i]))) {
-      return pic_false_value();
+    if (! (pic_true_p(pic, argv[i]) || pic_false_p(pic, argv[i]))) {
+      return pic_false_value(pic);
     }
-    if (! pic_eq_p(argv[i], argv[0])) {
-      return pic_false_value();
+    if (! pic_eq_p(pic, argv[i], argv[0])) {
+      return pic_false_value(pic);
     }
   }
-  return pic_true_value();
+  return pic_true_value(pic);
 }
 
 void

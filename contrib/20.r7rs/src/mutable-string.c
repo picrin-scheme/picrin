@@ -6,7 +6,7 @@ pic_str_set(pic_state *pic, struct pic_string *str, int i, char c)
   struct pic_string *x, *y, *z, *tmp;
   char buf[1];
 
-  if (pic_str_len(str) <= i) {
+  if (pic_str_len(pic, str) <= i) {
     pic_errorf(pic, "index out of range %d", i);
   }
 
@@ -14,7 +14,7 @@ pic_str_set(pic_state *pic, struct pic_string *str, int i, char c)
 
   x = pic_str_sub(pic, str, 0, i);
   y = pic_make_str(pic, buf, 1);
-  z = pic_str_sub(pic, str, i + 1, pic_str_len(str));
+  z = pic_str_sub(pic, str, i + 1, pic_str_len(pic, str));
 
   tmp = pic_str_cat(pic, x, pic_str_cat(pic, y, z));
 
@@ -33,7 +33,7 @@ pic_str_string_set(pic_state *pic)
   pic_get_args(pic, "sic", &str, &k, &c);
 
   pic_str_set(pic, str, k, c);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -48,7 +48,7 @@ pic_str_string_copy_ip(pic_state *pic)
   case 3:
     start = 0;
   case 4:
-    end = pic_str_len(from);
+    end = pic_str_len(pic, from);
   }
   if (to == from) {
     from = pic_str_sub(pic, from, 0, end);
@@ -57,7 +57,7 @@ pic_str_string_copy_ip(pic_state *pic)
   while (start < end) {
     pic_str_set(pic, to, at++, pic_str_ref(pic, from, start++));
   }
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -73,13 +73,13 @@ pic_str_string_fill_ip(pic_state *pic)
   case 2:
     start = 0;
   case 3:
-    end = pic_str_len(str);
+    end = pic_str_len(pic, str);
   }
 
   while (start < end) {
     pic_str_set(pic, str, start++, c);
   }
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 void

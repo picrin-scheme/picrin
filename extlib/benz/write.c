@@ -92,7 +92,7 @@ write_str(pic_state *pic, struct pic_string *str, xFILE *file, int mode)
     return;
   }
   xfprintf(pic, file, "\"");
-  for (i = 0; i < pic_str_len(str); ++i) {
+  for (i = 0; i < pic_str_len(pic, str); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
       xfputc(pic, '\\', file);
     }
@@ -128,10 +128,10 @@ write_pair_help(struct writer_control *p, struct pic_pair *pair)
 
   write_core(p, pair->car);
 
-  if (pic_nil_p(pair->cdr)) {
+  if (pic_nil_p(pic, pair->cdr)) {
     return;
   }
-  else if (pic_pair_p(pair->cdr)) {
+  else if (pic_pair_p(pic, pair->cdr)) {
 
     /* shared objects */
     if ((it = kh_get(l, lh, pic_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
@@ -171,7 +171,7 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
   xFILE *file = p->file;
   pic_sym *tag;
 
-  if (pic_pair_p(pair->cdr) && pic_nil_p(pic_cdr(pic, pair->cdr)) && pic_sym_p(pair->car)) {
+  if (pic_pair_p(pic, pair->cdr) && pic_nil_p(pic, pic_cdr(pic, pair->cdr)) && pic_sym_p(pic, pair->car)) {
     tag = pic_sym_ptr(pair->car);
     if (tag == pic->sQUOTE) {
       xfprintf(pic, file, "'");
@@ -263,7 +263,7 @@ write_core(struct writer_control *p, pic_value obj)
   int ret;
 
   /* shared objects */
-  if (pic_vtype(obj) == PIC_VTYPE_HEAP && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
+  if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
     kh_put(v, vh, pic_ptr(obj), &ret);
     if (ret == 0) {             /* if exists */
       xfprintf(pic, file, "#%d#", kh_val(lh, it));
@@ -272,7 +272,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, "#%d=", kh_val(lh, it));
   }
 
-  switch (pic_type(obj)) {
+  switch (pic_type(pic, obj)) {
   case PIC_TT_UNDEF:
     xfprintf(pic, file, "#undefined");
     break;
@@ -280,7 +280,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, "()");
     break;
   case PIC_TT_BOOL:
-    xfprintf(pic, file, pic_true_p(obj) ? "#t" : "#f");
+    xfprintf(pic, file, pic_true_p(pic, obj) ? "#t" : "#f");
     break;
   case PIC_TT_ID:
     xfprintf(pic, file, "#<identifier %s>", pic_identifier_name(pic, pic_id_ptr(obj)));
@@ -289,10 +289,10 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, "#.(eof-object)");
     break;
   case PIC_TT_INT:
-    xfprintf(pic, file, "%d", pic_int(obj));
+    xfprintf(pic, file, "%d", pic_int(pic, obj));
     break;
   case PIC_TT_FLOAT:
-    write_float(pic, pic_float(obj), file);
+    write_float(pic, pic_float(pic, obj), file);
     break;
   case PIC_TT_SYMBOL:
     xfprintf(pic, file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
@@ -301,7 +301,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_blob(pic, pic_blob_ptr(obj), file);
     break;
   case PIC_TT_CHAR:
-    write_char(pic, pic_char(obj), file, p->mode);
+    write_char(pic, pic_char(pic, obj), file, p->mode);
     break;
   case PIC_TT_STRING:
     write_str(pic, pic_str_ptr(obj), file, p->mode);
@@ -316,12 +316,12 @@ write_core(struct writer_control *p, pic_value obj)
     write_dict(p, pic_dict_ptr(obj));
     break;
   default:
-    xfprintf(pic, file, "#<%s %p>", pic_type_repr(pic_type(obj)), pic_ptr(obj));
+    xfprintf(pic, file, "#<%s %p>", pic_type_repr(pic, pic_type(pic, obj)), pic_ptr(obj));
     break;
   }
 
   if (p->op == OP_WRITE) {
-    if (pic_obj_p(obj) && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
+    if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
       it = kh_get(v, vh, pic_ptr(obj));
       kh_del(v, vh, it);
     }
@@ -337,7 +337,7 @@ traverse(struct writer_control *p, pic_value obj)
     return;
   }
 
-  switch (pic_type(obj)) {
+  switch (pic_type(pic, obj)) {
   case PIC_TT_PAIR:
   case PIC_TT_VECTOR:
   case PIC_TT_DICT: {
@@ -350,11 +350,11 @@ traverse(struct writer_control *p, pic_value obj)
       /* first time */
       kh_val(h, it) = -1;
 
-      if (pic_pair_p(obj)) {
+      if (pic_pair_p(pic, obj)) {
         /* pair */
         traverse(p, pic_car(pic, obj));
         traverse(p, pic_cdr(pic, obj));
-      } else if (pic_vec_p(obj)) {
+      } else if (pic_vec_p(pic, obj)) {
         /* vector */
         int i;
         for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
@@ -453,7 +453,7 @@ pic_write_write(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write(pic, v, port->file, WRITE_MODE, OP_WRITE);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -464,7 +464,7 @@ pic_write_write_simple(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write(pic, v, port->file, WRITE_MODE, OP_WRITE_SIMPLE);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -475,7 +475,7 @@ pic_write_write_shared(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write(pic, v, port->file, WRITE_MODE, OP_WRITE_SHARED);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -486,7 +486,7 @@ pic_write_display(pic_state *pic)
 
   pic_get_args(pic, "o|p", &v, &port);
   write(pic, v, port->file, DISPLAY_MODE, OP_WRITE);
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 void

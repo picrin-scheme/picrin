@@ -28,7 +28,7 @@ If you want to create a contribution library with C, the only thing you need to 
 
     pic_get_args(pic, "ff", &a, &b);
 
-    return pic_float_value(a + b);
+    return pic_float_value(pic, a + b);
   }
 
   void

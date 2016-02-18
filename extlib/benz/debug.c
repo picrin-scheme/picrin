@@ -35,9 +35,9 @@ pic_get_backtrace(pic_state *pic)
 void
 pic_print_backtrace(pic_state *pic, xFILE *file)
 {
-  assert(! pic_invalid_p(pic->err));
+  assert(! pic_invalid_p(pic, pic->err));
 
-  if (! pic_error_p(pic->err)) {
+  if (! pic_error_p(pic, pic->err)) {
     xfprintf(pic, file, "raise: ");
     pic_fwrite(pic, pic->err, file);
   } else {

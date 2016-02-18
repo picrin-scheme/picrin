@@ -13,7 +13,7 @@ extern char **picrin_envp;
 static pic_value
 pic_system_cmdline(pic_state *pic)
 {
-  pic_value v = pic_nil_value();
+  pic_value v = pic_nil_value(pic);
   int i;
 
   pic_get_args(pic, "");
@@ -36,12 +36,12 @@ pic_system_exit(pic_state *pic)
 
   argc = pic_get_args(pic, "|o", &v);
   if (argc == 1) {
-    switch (pic_type(v)) {
+    switch (pic_type(pic, v)) {
     case PIC_TT_FLOAT:
-      status = (int)pic_float(v);
+      status = (int)pic_float(pic, v);
       break;
     case PIC_TT_INT:
-      status = pic_int(v);
+      status = pic_int(pic, v);
       break;
     default:
       break;
@@ -61,12 +61,12 @@ pic_system_emergency_exit(pic_state *pic)
 
   argc = pic_get_args(pic, "|o", &v);
   if (argc == 1) {
-    switch (pic_type(v)) {
+    switch (pic_type(pic, v)) {
     case PIC_TT_FLOAT:
-      status = (int)pic_float(v);
+      status = (int)pic_float(pic, v);
       break;
     case PIC_TT_INT:
-      status = pic_int(v);
+      status = pic_int(pic, v);
       break;
     default:
       break;
@@ -86,7 +86,7 @@ pic_system_getenv(pic_state *pic)
   val = getenv(str);
 
   if (val == NULL)
-    return pic_nil_value();
+    return pic_nil_value(pic);
   else
     return pic_obj_value(pic_make_cstr(pic, val));
 }
@@ -95,13 +95,13 @@ static pic_value
 pic_system_getenvs(pic_state *pic)
 {
   char **envp;
-  pic_value data = pic_nil_value();
+  pic_value data = pic_nil_value(pic);
   size_t ai = pic_gc_arena_preserve(pic);
 
   pic_get_args(pic, "");
 
   if (! picrin_envp) {
-    return pic_nil_value();
+    return pic_nil_value(pic);
   }
 
   for (envp = picrin_envp; *envp; ++envp) {

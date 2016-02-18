@@ -41,7 +41,7 @@ struct pic_proc {
 
 #define pic_proc_ptr(o) ((struct pic_proc *)pic_ptr(o))
 
-#define pic_context_p(o) (pic_type(o) == PIC_TT_CXT)
+#define pic_context_p(o) (pic_type(pic, o) == PIC_TT_CXT)
 #define pic_context_ptr(o) ((struct pic_context *)pic_ptr(o))
 
 struct pic_proc *pic_make_proc(pic_state *, pic_func_t, int, pic_value *);

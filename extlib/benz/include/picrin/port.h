@@ -23,7 +23,6 @@ struct pic_port {
   int flags;
 };
 
-#define pic_port_p(v) (pic_type(v) == PIC_TT_PORT)
 #define pic_port_ptr(v) ((struct pic_port *)pic_ptr(v))
 
 pic_value pic_eof_object();

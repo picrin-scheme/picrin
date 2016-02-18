@@ -158,7 +158,7 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
   cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
-  cont->results = pic_undef_value();
+  cont->results = pic_undef_value(pic);
 }
 
 static void

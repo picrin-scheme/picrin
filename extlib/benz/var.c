@@ -28,7 +28,7 @@ var_set(pic_state *pic, struct pic_proc *var, pic_value val)
 
   pic_weak_set(pic, weak, var, val);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -46,7 +46,7 @@ var_call(pic_state *pic)
     pic_value conv;
 
     conv = pic_closure_ref(pic, 0);
-    if (! pic_false_p(conv)) {
+    if (! pic_false_p(pic, conv)) {
       val = pic_call(pic, pic_proc_ptr(conv), 1, val);
     }
     return var_set(pic, self, val);
@@ -57,7 +57,7 @@ struct pic_proc *
 pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
 {
   struct pic_proc *var;
-  pic_value c = pic_false_value();
+  pic_value c = pic_false_value(pic);
 
   if (conv != NULL) {
     c = pic_obj_value(conv);

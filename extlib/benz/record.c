@@ -45,7 +45,7 @@ pic_rec_record_p(pic_state *pic)
 
   pic_get_args(pic, "o", &rec);
 
-  return pic_bool_value(pic_rec_p(rec));
+  return pic_bool_value(pic, pic_rec_p(pic, rec));
 }
 
 static pic_value

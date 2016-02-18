@@ -11,7 +11,7 @@ pic_number_number_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_float_p(v) || pic_int_p(v));
+  return pic_bool_value(pic, pic_float_p(pic, v) || pic_int_p(pic, v));
 }
 
 static pic_value
@@ -21,7 +21,7 @@ pic_number_exact_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_int_p(v));
+  return pic_bool_value(pic, pic_int_p(pic, v));
 }
 
 static pic_value
@@ -31,7 +31,7 @@ pic_number_inexact_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_float_p(v));
+  return pic_bool_value(pic, pic_float_p(pic, v));
 }
 
 static pic_value
@@ -41,7 +41,7 @@ pic_number_inexact(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
 
-  return pic_float_value(f);
+  return pic_float_value(pic, f);
 }
 
 static pic_value
@@ -51,7 +51,7 @@ pic_number_exact(pic_state *pic)
 
   pic_get_args(pic, "f", &f);
 
-  return pic_int_value((int)f);
+  return pic_int_value(pic, (int)f);
 }
 
 #define pic_define_aop(name, op, guard)                                 \
@@ -60,17 +60,17 @@ pic_number_exact(pic_state *pic)
   {                                                                     \
     PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);       \
     double f;                                                           \
-    if (pic_int_p(a) && pic_int_p(b)) {                                 \
-      f = (double)pic_int(a) op (double)pic_int(b);                     \
+    if (pic_int_p(pic, a) && pic_int_p(pic, b)) {                       \
+      f = (double)pic_int(pic, a) op (double)pic_int(pic, b);           \
       return (INT_MIN <= f && f <= INT_MAX && guard)                    \
-        ? pic_int_value((int)f)                                         \
-        : pic_float_value(f);                                           \
-    } else if (pic_float_p(a) && pic_float_p(b)) {                      \
-      return pic_float_value(pic_float(a) op pic_float(b));             \
-    } else if (pic_int_p(a) && pic_float_p(b)) {                        \
-      return pic_float_value(pic_int(a) op pic_float(b));               \
-    } else if (pic_float_p(a) && pic_int_p(b)) {                        \
-      return pic_float_value(pic_float(a) op pic_int(b));               \
+        ? pic_int_value(pic, (int)f)                                    \
+        : pic_float_value(pic, f);                                      \
+    } else if (pic_float_p(pic, a) && pic_float_p(pic, b)) {            \
+      return pic_float_value(pic, pic_float(pic, a) op pic_float(pic, b)); \
+    } else if (pic_int_p(pic, a) && pic_float_p(pic, b)) {              \
+      return pic_float_value(pic, pic_int(pic, a) op pic_float(pic, b)); \
+    } else if (pic_float_p(pic, a) && pic_int_p(pic, b)) {              \
+      return pic_float_value(pic, pic_float(pic, a) op pic_int(pic, b)); \
     } else {                                                            \
       pic_errorf(pic, #name ": non-number operand given");              \
     }                                                                   \
@@ -87,14 +87,14 @@ pic_define_aop(pic_div, /, f == (int)f)
   name(pic_state *pic, pic_value a, pic_value b)                        \
   {                                                                     \
     PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);       \
-    if (pic_int_p(a) && pic_int_p(b)) {                                 \
-      return pic_int(a) op pic_int(b);                                  \
-    } else if (pic_float_p(a) && pic_float_p(b)) {                      \
-      return pic_float(a) op pic_float(b);                              \
-    } else if (pic_int_p(a) && pic_float_p(b)) {                        \
-      return pic_int(a) op pic_float(b);                                \
-    } else if (pic_float_p(a) && pic_int_p(b)) {                        \
-      return pic_float(a) op pic_int(b);                                \
+    if (pic_int_p(pic, a) && pic_int_p(pic, b)) {                       \
+      return pic_int(pic, a) op pic_int(pic, b);                        \
+    } else if (pic_float_p(pic, a) && pic_float_p(pic, b)) {            \
+      return pic_float(pic, a) op pic_float(pic, b);                    \
+    } else if (pic_int_p(pic, a) && pic_float_p(pic, b)) {              \
+      return pic_int(pic, a) op pic_float(pic, b);                      \
+    } else if (pic_float_p(pic, a) && pic_int_p(pic, b)) {              \
+      return pic_float(pic, a) op pic_int(pic, b);                      \
     } else {                                                            \
       pic_errorf(pic, #name ": non-number operand given");              \
     }                                                                   \
@@ -117,15 +117,15 @@ pic_define_cmp(pic_ge, >=)
     pic_get_args(pic, "*", &argc, &argv);               \
                                                         \
     if (argc < 2) {                                     \
-      return pic_true_value();                          \
+      return pic_true_value(pic);                          \
     }                                                   \
                                                         \
     for (i = 1; i < argc; ++i) {                        \
       if (! pic_##op(pic, argv[i - 1], argv[i])) {      \
-        return pic_false_value();                       \
+        return pic_false_value(pic);                       \
       }                                                 \
     }                                                   \
-    return pic_true_value();                            \
+    return pic_true_value(pic);                            \
   }
 
 DEFINE_CMP(eq)
@@ -158,15 +158,15 @@ DEFINE_CMP(ge)
   }
 
 DEFINE_AOP(add, argv[0], do {
-    return pic_int_value(0);
+    return pic_int_value(pic, 0);
   } while (0))
 DEFINE_AOP(mul, argv[0], do {
-    return pic_int_value(1);
+    return pic_int_value(pic, 1);
   } while (0))
-DEFINE_AOP(sub, pic_sub(pic, pic_int_value(0), argv[0]), do {
+DEFINE_AOP(sub, pic_sub(pic, pic_int_value(pic, 0), argv[0]), do {
     pic_errorf(pic, "-: at least one argument required");
   } while (0))
-DEFINE_AOP(div, pic_div(pic, pic_int_value(1), argv[0]), do {
+DEFINE_AOP(div, pic_div(pic, pic_int_value(pic, 1), argv[0]), do {
     pic_errorf(pic, "/: at least one argument required");
   } while (0))
 
@@ -265,8 +265,8 @@ pic_number_string_to_number(pic_state *pic)
   num = strtol(str, &eptr, radix);
   if (*eptr == '\0') {
     return pic_valid_int(num)
-      ? pic_int_value((int)num)
-      : pic_float_value(num);
+      ? pic_int_value(pic, (int)num)
+      : pic_float_value(pic, num);
   }
 
   pic_try {
@@ -274,14 +274,14 @@ pic_number_string_to_number(pic_state *pic)
   }
   pic_catch {
     /* swallow error */
-    flo = pic_false_value();
+    flo = pic_false_value(pic);
   }
 
-  if (pic_int_p(flo) || pic_float_p(flo)) {
+  if (pic_int_p(pic, flo) || pic_float_p(pic, flo)) {
     return flo;
   }
 
-  return pic_false_value();
+  return pic_false_value(pic);
 }
 
 void

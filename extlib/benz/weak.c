@@ -38,7 +38,7 @@ pic_weak_rev_ref(pic_state *pic, struct pic_weak *weak, pic_value val)
 
   if (h->n_buckets) {
     khint_t i = 0;
-    while ((i < h->n_buckets) && (ac_iseither(h->flags, i) || !pic_eq_p(h->vals[i], val))) {
+    while ((i < h->n_buckets) && (ac_iseither(h->flags, i) || !pic_eq_p(pic, h->vals[i], val))) {
       i += 1;
     }
     if (i < h->n_buckets) return kh_key(h, i);
@@ -82,7 +82,7 @@ static pic_value
 weak_get(pic_state *pic, struct pic_weak *weak, void *key)
 {
   if (! pic_weak_has(pic, weak, key)) {
-    return pic_false_value();
+    return pic_false_value(pic);
   }
   return pic_cons(pic, pic_obj_value(key), pic_weak_ref(pic, weak, key));
 }
@@ -90,7 +90,7 @@ weak_get(pic_state *pic, struct pic_weak *weak, void *key)
 static pic_value
 weak_set(pic_state *pic, struct pic_weak *weak, void *key, pic_value val)
 {
-  if (pic_undef_p(val)) {
+  if (pic_undef_p(pic, val)) {
     if (pic_weak_has(pic, weak, key)) {
       pic_weak_del(pic, weak, key);
     }
@@ -98,7 +98,7 @@ weak_set(pic_state *pic, struct pic_weak *weak, void *key, pic_value val)
     pic_weak_set(pic, weak, key, val);
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -111,7 +111,7 @@ weak_call(pic_state *pic)
 
   n = pic_get_args(pic, "&o|o", &self, &key, &val);
 
-  if (! pic_obj_p(key)) {
+  if (! pic_obj_p(pic, key)) {
     pic_errorf(pic, "attempted to set a non-object key '~s' in an ephemeron", key);
   }
 

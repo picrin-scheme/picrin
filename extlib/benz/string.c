@@ -253,7 +253,7 @@ pic_make_str(pic_state *pic, const char *str, int len)
 }
 
 int
-pic_str_len(struct pic_string *str)
+pic_str_len(pic_state PIC_UNUSED(*pic), struct pic_string *str)
 {
   return rope_len(str->rope);
 }
@@ -408,7 +408,7 @@ pic_str_string_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_str_p(v));
+  return pic_bool_value(pic, pic_str_p(pic, v));
 }
 
 static pic_value
@@ -425,7 +425,7 @@ pic_str_string(pic_state *pic)
 
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], char);
-    buf[i] = pic_char(argv[i]);
+    buf[i] = pic_char(pic, argv[i]);
   }
 
   str = pic_make_str(pic, buf, argc);
@@ -460,7 +460,7 @@ pic_str_string_length(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_int_value(pic_str_len(str));
+  return pic_int_value(pic, pic_str_len(pic, str));
 }
 
 static pic_value
@@ -471,7 +471,7 @@ pic_str_string_ref(pic_state *pic)
 
   pic_get_args(pic, "si", &str, &k);
 
-  return pic_char_value(pic_str_ref(pic, str, k));
+  return pic_char_value(pic, pic_str_ref(pic, str, k));
 }
 
 #define DEFINE_STRING_CMP(name, op)                                     \
@@ -483,19 +483,19 @@ pic_str_string_ref(pic_state *pic)
                                                                         \
     pic_get_args(pic, "*", &argc, &argv);                               \
                                                                         \
-    if (argc < 1 || ! pic_str_p(argv[0])) {                             \
-      return pic_false_value();                                         \
+    if (argc < 1 || ! pic_str_p(pic, argv[0])) {                             \
+      return pic_false_value(pic);                                         \
     }                                                                   \
                                                                         \
     for (i = 1; i < argc; ++i) {                                        \
-      if (! pic_str_p(argv[i])) {                                       \
-        return pic_false_value();                                       \
+      if (! pic_str_p(pic, argv[i])) {                                       \
+        return pic_false_value(pic);                                       \
       }                                                                 \
       if (! (pic_str_cmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
-        return pic_false_value();                                       \
+        return pic_false_value(pic);                                       \
       }                                                                 \
     }                                                                   \
-    return pic_true_value();                                            \
+    return pic_true_value(pic);                                            \
   }
 
 DEFINE_STRING_CMP(eq, ==)
@@ -512,7 +512,7 @@ pic_str_string_copy(pic_state *pic)
 
   n = pic_get_args(pic, "s|ii", &str, &start, &end);
 
-  len = pic_str_len(str);
+  len = pic_str_len(pic, str);
 
   switch (n) {
   case 1:
@@ -538,7 +538,7 @@ pic_str_string_append(pic_state *pic)
 
   str = pic_make_lit(pic, "");
   for (i = 0; i < argc; ++i) {
-    if (! pic_str_p(argv[i])) {
+    if (! pic_str_p(pic, argv[i])) {
       pic_errorf(pic, "type error");
     }
     str = pic_str_cat(pic, str, pic_str_ptr(argv[i]));
@@ -561,27 +561,27 @@ pic_str_string_map(pic_state *pic)
     pic_errorf(pic, "string-map: one or more strings expected, but got zero");
   } else {
     pic_assert_type(pic, argv[0], str);
-    len = pic_str_len(pic_str_ptr(argv[0]));
+    len = pic_str_len(pic, pic_str_ptr(argv[0]));
   }
   for (i = 1; i < argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
-    len = len < pic_str_len(pic_str_ptr(argv[i]))
+    len = len < pic_str_len(pic, pic_str_ptr(argv[i]))
       ? len
-      : pic_str_len(pic_str_ptr(argv[i]));
+      : pic_str_len(pic, pic_str_ptr(argv[i]));
   }
   buf = pic_malloc(pic, len);
 
   pic_try {
     for (i = 0; i < len; ++i) {
-      vals = pic_nil_value();
+      vals = pic_nil_value(pic);
       for (j = 0; j < argc; ++j) {
-        pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
+        pic_push(pic, pic_char_value(pic, pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
       }
       val = pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
 
       pic_assert_type(pic, val, char);
-      buf[i] = pic_char(val);
+      buf[i] = pic_char(pic, val);
     }
     str = pic_make_str(pic, buf, len);
   }
@@ -608,25 +608,25 @@ pic_str_string_for_each(pic_state *pic)
     pic_errorf(pic, "string-map: one or more strings expected, but got zero");
   } else {
     pic_assert_type(pic, argv[0], str);
-    len = pic_str_len(pic_str_ptr(argv[0]));
+    len = pic_str_len(pic, pic_str_ptr(argv[0]));
   }
   for (i = 1; i < argc; ++i) {
     pic_assert_type(pic, argv[i], str);
 
-    len = len < pic_str_len(pic_str_ptr(argv[i]))
+    len = len < pic_str_len(pic, pic_str_ptr(argv[i]))
       ? len
-      : pic_str_len(pic_str_ptr(argv[i]));
+      : pic_str_len(pic, pic_str_ptr(argv[i]));
   }
 
   for (i = 0; i < len; ++i) {
-    vals = pic_nil_value();
+    vals = pic_nil_value(pic);
     for (j = 0; j < argc; ++j) {
-      pic_push(pic, pic_char_value(pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
+      pic_push(pic, pic_char_value(pic, pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
     }
     pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
@@ -650,7 +650,7 @@ pic_str_list_to_string(pic_state *pic)
     pic_for_each (e, list, it) {
       pic_assert_type(pic, e, char);
 
-      buf[i++] = pic_char(e);
+      buf[i++] = pic_char(pic, e);
     }
 
     str = pic_make_str(pic, buf, i);
@@ -677,13 +677,13 @@ pic_str_string_to_list(pic_state *pic)
   case 1:
     start = 0;
   case 2:
-    end = pic_str_len(str);
+    end = pic_str_len(pic, str);
   }
 
-  list = pic_nil_value();
+  list = pic_nil_value(pic);
 
   for (i = start; i < end; ++i) {
-    pic_push(pic, pic_char_value(pic_str_ref(pic, str, i)), list);
+    pic_push(pic, pic_char_value(pic, pic_str_ref(pic, str, i)), list);
   }
   return pic_reverse(pic, list);
 }

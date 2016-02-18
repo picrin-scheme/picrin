@@ -9,7 +9,7 @@ pic_repl_tty_p(pic_state *pic)
 
   pic_get_args(pic, "");
 
-  return pic_bool_value((isatty(STDIN_FILENO)));
+  return pic_bool_value(pic, (isatty(STDIN_FILENO)));
 }
 
 void

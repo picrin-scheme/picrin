@@ -143,7 +143,7 @@ gc_protect(pic_state *pic, struct pic_object *obj)
 pic_value
 pic_gc_protect(pic_state *pic, pic_value v)
 {
-  if (! pic_obj_p(v))
+  if (! pic_obj_p(pic, v))
     return v;
 
   gc_protect(pic, pic_obj_ptr(v));
@@ -258,7 +258,7 @@ static void gc_mark_object(pic_state *, struct pic_object *);
 static void
 gc_mark(pic_state *pic, pic_value v)
 {
-  if (! pic_obj_p(v))
+  if (! pic_obj_p(pic, v))
     return;
 
   gc_mark_object(pic, pic_obj_ptr(v));
@@ -279,7 +279,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   switch (obj->u.basic.tt) {
   case PIC_TT_PAIR: {
     gc_mark(pic, obj->u.pair.car);
-    if (pic_obj_p(obj->u.pair.cdr)) {
+    if (pic_obj_p(pic, obj->u.pair.cdr)) {
       LOOP(pic_obj_ptr(obj->u.pair.cdr));
     }
     break;
@@ -369,7 +369,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TT_RECORD: {
     gc_mark(pic, obj->u.rec.type);
-    if (pic_obj_p(obj->u.rec.datum)) {
+    if (pic_obj_p(pic, obj->u.rec.datum)) {
       LOOP(pic_obj_ptr(obj->u.rec.datum));
     }
     break;
@@ -515,7 +515,7 @@ gc_mark_phase(pic_state *pic)
         key = kh_key(h, it);
         val = kh_val(h, it);
         if (key->u.basic.gc_mark == PIC_GC_MARK) {
-          if (pic_obj_p(val) && pic_obj_ptr(val)->u.basic.gc_mark == PIC_GC_UNMARK) {
+          if (pic_obj_p(pic, val) && pic_obj_ptr(val)->u.basic.gc_mark == PIC_GC_UNMARK) {
             gc_mark(pic, val);
             ++j;
           }

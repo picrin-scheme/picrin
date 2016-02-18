@@ -19,7 +19,7 @@ pic_load_load(pic_state *pic)
 
   pic_close_port(pic, port);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 void
