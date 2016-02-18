@@ -117,6 +117,36 @@ pic_value pic_vcall(pic_state *, struct pic_proc *proc, int, va_list);
 pic_value pic_apply(pic_state *, struct pic_proc *proc, int n, pic_value *argv);
 pic_value pic_applyk(pic_state *, struct pic_proc *proc, int n, pic_value *argv);
 
+PIC_INLINE int pic_int(pic_state *, pic_value);
+PIC_INLINE double pic_float(pic_state *, pic_value);
+PIC_INLINE char pic_char(pic_state *, pic_value);
+#define pic_bool(pic,v) (! pic_false_p(pic, v))
+const char *pic_str(pic_state *, struct pic_string *);
+unsigned char *pic_blob(pic_state *, struct pic_blob *, int *len);
+void *pic_data(pic_state *, struct pic_data *);
+
+typedef struct {
+  const char *type_name;
+  void (*dtor)(pic_state *, void *);
+  void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
+} pic_data_type;
+
+PIC_INLINE pic_value pic_undef_value(pic_state *);
+PIC_INLINE pic_value pic_int_value(pic_state *, int);
+PIC_INLINE pic_value pic_float_value(pic_state *, double);
+PIC_INLINE pic_value pic_char_value(pic_state *, char);
+PIC_INLINE pic_value pic_true_value(pic_state *);
+PIC_INLINE pic_value pic_false_value(pic_state *);
+PIC_INLINE pic_value pic_bool_value(pic_state *, bool);
+PIC_INLINE pic_value pic_eof_object(pic_state *);
+struct pic_string *pic_str_value(pic_state *, const char *str, int len);
+#define pic_cstr_value(pic, cstr) pic_str_value(pic, (cstr), strlen(cstr))
+#define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
+struct pic_string *pic_strf_value(pic_state *, const char *fmt, ...);
+struct pic_string *pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
+struct pic_blob *pic_blob_value(pic_state *, const unsigned char *buf, int len);
+struct pic_data *pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
+
 #define PIC_TYPE_INVALID 1
 #define PIC_TYPE_FLOAT   2
 #define PIC_TYPE_INT     3
@@ -145,8 +175,6 @@ pic_value pic_applyk(pic_state *, struct pic_proc *proc, int n, pic_value *argv)
 #define PIC_TYPE_CXT     30
 #define PIC_TYPE_CP      31
 
-#include "picrin/type.h"
-
 #define pic_undef_p(pic,v) (pic_type(pic,v) == PIC_TYPE_UNDEF)
 #define pic_int_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INT)
 #define pic_float_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FLOAT)
@@ -166,35 +194,7 @@ pic_value pic_applyk(pic_state *, struct pic_proc *proc, int n, pic_value *argv)
 #define pic_port_p(pic, v) (pic_type(pic, v) == PIC_TYPE_PORT)
 #define pic_sym_p(pic,v) (pic_type(pic,v) == PIC_TYPE_SYMBOL)
 
-int pic_int(pic_state *, pic_value);
-double pic_float(pic_state *, pic_value);
-char pic_char(pic_state *, pic_value);
-bool pic_bool(pic_state *, pic_value);
-const char *pic_str(pic_state *, struct pic_string *);
-unsigned char *pic_blob(pic_state *, struct pic_blob *, int *len);
-void *pic_data(pic_state *, struct pic_data *);
-
-typedef struct {
-  const char *type_name;
-  void (*dtor)(pic_state *, void *);
-  void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
-} pic_data_type;
-
-pic_value pic_undef_value(pic_state *);
-pic_value pic_int_value(pic_state *, int);
-pic_value pic_float_value(pic_state *, double);
-pic_value pic_char_value(pic_state *, char);
-pic_value pic_true_value(pic_state *);
-pic_value pic_false_value(pic_state *);
-pic_value pic_bool_value(pic_state *, bool);
-pic_value pic_eof_object(pic_state *);
-struct pic_string *pic_str_value(pic_state *, const char *str, int len);
-#define pic_cstr_value(pic, cstr) pic_str_value(pic, (cstr), strlen(cstr))
-#define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
-struct pic_string *pic_strf_value(pic_state *, const char *fmt, ...);
-struct pic_string *pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
-struct pic_blob *pic_blob_value(pic_state *, const unsigned char *buf, int len);
-struct pic_data *pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
+#include "picrin/type.h"
 
 int pic_type(pic_state *, pic_value);
 const char *pic_typename(pic_state *, int);
