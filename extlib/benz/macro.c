@@ -64,7 +64,7 @@ pic_put_identifier(pic_state *pic, pic_id *id, pic_sym *uid, struct pic_env *env
 }
 
 pic_sym *
-pic_find_identifier(pic_state PIC_UNUSED(*pic), pic_id *id, struct pic_env *env)
+search_scope(pic_state *pic, pic_id *id, struct pic_env *env)
 {
   khiter_t it;
 
@@ -76,12 +76,12 @@ pic_find_identifier(pic_state PIC_UNUSED(*pic), pic_id *id, struct pic_env *env)
 }
 
 static pic_sym *
-lookup(pic_state *pic, pic_id *id, struct pic_env *env)
+search(pic_state *pic, pic_id *id, struct pic_env *env)
 {
   pic_sym *uid = NULL;
 
   while (env != NULL) {
-    uid = pic_find_identifier(pic, id, env);
+    uid = search_scope(pic, id, env);
     if (uid != NULL) {
       break;
     }
@@ -91,11 +91,11 @@ lookup(pic_state *pic, pic_id *id, struct pic_env *env)
 }
 
 pic_sym *
-pic_lookup_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
+pic_find_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 {
   pic_sym *uid;
 
-  while ((uid = lookup(pic, id, env)) == NULL) {
+  while ((uid = search(pic, id, env)) == NULL) {
     if (pic_sym_p(pic_obj_value(id))) {
       break;
     }
@@ -152,7 +152,7 @@ expand_var(pic_state *pic, pic_id *id, struct pic_env *env, pic_value deferred)
   struct pic_proc *mac;
   pic_sym *functor;
 
-  functor = pic_lookup_identifier(pic, id, env);
+  functor = pic_find_identifier(pic, id, env);
 
   if ((mac = find_macro(pic, functor)) != NULL) {
     return expand(pic, pic_call(pic, mac, 2, pic_obj_value(id), pic_obj_value(env)), env, deferred);
@@ -248,7 +248,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
   pic_value val;
 
   id = pic_id_ptr(pic_cadr(pic, expr));
-  if ((uid = pic_find_identifier(pic, id, env)) == NULL) {
+  if ((uid = search_scope(pic, id, env)) == NULL) {
     uid = pic_add_identifier(pic, id, env);
   } else {
     shadow_macro(pic, uid);
@@ -267,7 +267,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
   pic_sym *uid;
 
   id = pic_id_ptr(pic_cadr(pic, expr));
-  if ((uid = pic_find_identifier(pic, id, env)) == NULL) {
+  if ((uid = search_scope(pic, id, env)) == NULL) {
     uid = pic_add_identifier(pic, id, env);
   }
 
@@ -299,7 +299,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
     if (pic_id_p(pic_car(pic, expr))) {
       pic_sym *functor;
 
-      functor = pic_lookup_identifier(pic, pic_id_ptr(pic_car(pic, expr)), env);
+      functor = pic_find_identifier(pic, pic_id_ptr(pic_car(pic, expr)), env);
 
       if (functor == pic->sDEFINE_MACRO) {
         return expand_defmacro(pic, expr, env);
