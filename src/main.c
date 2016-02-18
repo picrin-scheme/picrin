@@ -4,30 +4,11 @@
 
 #include "picrin.h"
 
-void pic_init_contrib(pic_state *);
-void pic_load_piclib(pic_state *);
-
-static pic_value
-pic_libraries(pic_state *pic)
-{
-  pic_value libs = pic_nil_value(), lib, it;
-
-  pic_get_args(pic, "");
-
-  pic_for_each (lib, pic->libs, it) {
-    libs = pic_cons(pic, pic_car(pic, lib), libs);
-  }
-
-  return libs;
-}
-
 void
 pic_init_picrin(pic_state *pic)
 {
-  pic_add_feature(pic, "r7rs");
-
-  pic_deflibrary(pic, "(picrin library)");
-  pic_defun(pic, "libraries", pic_libraries);
+  void pic_init_contrib(pic_state *);
+  void pic_load_piclib(pic_state *);
 
   pic_init_contrib(pic);
   pic_load_piclib(pic);

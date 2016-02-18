@@ -18,4 +18,6 @@ pic_init_r7rs(pic_state *pic)
   pic_init_mutable_string(pic);
   pic_init_system(pic);
   pic_init_time(pic);
+
+  pic_add_feature(pic, "r7rs");
 }
