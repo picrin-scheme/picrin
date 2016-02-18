@@ -42,9 +42,9 @@ pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
   name = pic_identifier_name(pic, id);
 
   if (env->up == NULL && pic_sym_p(pic, pic_obj_value(id))) { /* toplevel & public */
-    str = pic_format(pic, "%s/%s", pic_str_cstr(pic, env->lib), name);
+    str = pic_strf_value(pic, "%s/%s", pic_str(pic, env->lib), name);
   } else {
-    str = pic_format(pic, ".%s.%d", name, pic->ucnt++);
+    str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
   }
   uid = pic_intern(pic, str);
 

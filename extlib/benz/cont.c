@@ -124,7 +124,7 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
   struct pic_proc *c;
 
   /* save the escape continuation in proc */
-  c = pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
+  c = pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_obj_value(pic_data_value(pic, cont, &cont_type)));
 
   return c;
 }

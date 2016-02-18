@@ -346,7 +346,7 @@ pic_vec_vector_to_string(pic_state *pic)
     buf[i - start] = pic_char(pic, vec->data[i]);
   }
 
-  str = pic_make_str(pic, buf, end - start);
+  str = pic_str_value(pic, buf, end - start);
   pic_free(pic, buf);
 
   return pic_obj_value(str);

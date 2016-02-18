@@ -246,7 +246,7 @@ pic_callcc_full(pic_state *pic, struct pic_proc *proc)
     struct pic_proc *c;
 
     /* save the continuation object in proc */
-    c = pic_lambda(pic, cont_call, 1, pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
+    c = pic_lambda(pic, cont_call, 1, pic_obj_value(pic_data_value(pic, cont, &cont_type)));
 
     return pic_call(pic, proc, 1, pic_obj_value(c));
   }
@@ -269,7 +269,7 @@ pic_callcc_callcc(pic_state *pic)
     pic_value args[1];
 
     /* save the continuation object in proc */
-    c = pic_lambda(pic, cont_call, 1, pic_obj_value(pic_data_alloc(pic, &cont_type, cont)));
+    c = pic_lambda(pic, cont_call, 1, pic_obj_value(pic_data_value(pic, cont, &cont_type)));
 
     args[0] = pic_obj_value(c);
     return pic_applyk(pic, proc, 1, args);

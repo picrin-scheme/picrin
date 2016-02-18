@@ -61,11 +61,11 @@ pic_make_library(pic_state *pic, const char *lib)
     old_lib = pic_current_library(pic);
   }
 
-  name = pic_make_cstr(pic, lib);
+  name = pic_cstr_value(pic, lib);
   env = make_library_env(pic, name);
   exports = pic_make_dict(pic);
 
-  it = kh_put(ltable, h, pic_str_cstr(pic, name), &ret);
+  it = kh_put(ltable, h, pic_str(pic, name), &ret);
   if (ret == 0) {               /* if exists */
     pic_errorf(pic, "library name already in use: %s", lib);
   }
@@ -94,7 +94,7 @@ pic_find_library(pic_state *pic, const char *lib)
 const char *
 pic_current_library(pic_state *pic)
 {
-  return pic_str_cstr(pic, pic->lib->name);
+  return pic_str(pic, pic->lib->name);
 }
 
 struct pic_env *

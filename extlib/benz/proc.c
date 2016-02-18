@@ -141,7 +141,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
 
     VAL_CASE('c', char, char, pic_char(pic, v))
-    VAL_CASE('z', str, const char *, pic_str_cstr(pic, pic_str_ptr(v)))
+    VAL_CASE('z', str, const char *, pic_str(pic, pic_str_ptr(v)))
 
 #define PTR_CASE(c, type, ctype)                        \
       VAL_CASE(c, type, ctype, pic_## type ##_ptr(v))
@@ -179,7 +179,7 @@ static pic_value
 vm_gref(pic_state *pic, pic_sym *uid)
 {
   if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_errorf(pic, "uninitialized global variable: %s", pic_symbol_name(pic, uid));
+    pic_errorf(pic, "uninitialized global variable: %s", pic_str(pic, pic_sym_name(pic, uid)));
   }
   return pic_weak_ref(pic, pic->globals, uid);
 }
@@ -308,12 +308,12 @@ pic_vm_tear_off(pic_state *pic)
     puts(")");                                                          \
     if (! pic_proc_func_p(proc)) {                                      \
       printf("  irep = %p\n", proc->u.i.irep);                          \
-      printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc))); \
+      printf("  name = %s\n", pic_str(pic, pic_sym_name(pic, pic_proc_name(proc)))); \
       pic_dump_irep(proc->u.i.irep);                                    \
     }                                                                   \
     else {                                                              \
       printf("  cfunc = %p\n", (void *)proc->u.f.func);                 \
-      printf("  name = %s\n", pic_symbol_name(pic, pic_proc_name(proc))); \
+      printf("  name = %s\n", pic_str(pic, pic_sym_name(pic, pic_proc_name(proc)))); \
     }                                                                   \
     puts("== end\n");                                                   \
   } while (0)

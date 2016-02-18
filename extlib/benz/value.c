@@ -72,3 +72,21 @@ pic_typename(pic_state *pic, int type)
     pic_errorf(pic, "pic_typename: invalid type given %d", type);
   }
 }
+
+void *
+pic_data(pic_state PIC_UNUSED(*pic), struct pic_data *data)
+{
+  return data->data;
+}
+
+struct pic_data *
+pic_data_value(pic_state *pic, void *userdata, const pic_data_type *type)
+{
+  struct pic_data *data;
+
+  data = (struct pic_data *)pic_obj_alloc(pic, sizeof(struct pic_data), PIC_TYPE_DATA);
+  data->type = type;
+  data->data = userdata;
+
+  return data;
+}

@@ -94,7 +94,7 @@ pic_make_rope(pic_state *pic, struct pic_chunk *c)
 }
 
 static struct pic_string *
-pic_make_string(pic_state *pic, struct pic_rope *rope)
+pic_str_valueing(pic_state *pic, struct pic_rope *rope)
 {
   struct pic_string *str;
 
@@ -237,7 +237,7 @@ rope_cstr(pic_state *pic, struct pic_rope *x)
 }
 
 struct pic_string *
-pic_make_str(pic_state *pic, const char *str, int len)
+pic_str_value(pic_state *pic, const char *str, int len)
 {
   struct pic_chunk *c;
 
@@ -249,7 +249,7 @@ pic_make_str(pic_state *pic, const char *str, int len)
     }
     c = pic_make_chunk_lit(pic, str, -len);
   }
-  return pic_make_string(pic, pic_make_rope(pic, c));
+  return pic_str_valueing(pic, pic_make_rope(pic, c));
 }
 
 int
@@ -273,19 +273,19 @@ pic_str_ref(pic_state *pic, struct pic_string *str, int i)
 struct pic_string *
 pic_str_cat(pic_state *pic, struct pic_string *a, struct pic_string *b)
 {
-  return pic_make_string(pic, rope_cat(pic, a->rope, b->rope));
+  return pic_str_valueing(pic, rope_cat(pic, a->rope, b->rope));
 }
 
 struct pic_string *
 pic_str_sub(pic_state *pic, struct pic_string *str, int s, int e)
 {
-  return pic_make_string(pic, rope_sub(pic, str->rope, s, e));
+  return pic_str_valueing(pic, rope_sub(pic, str->rope, s, e));
 }
 
 int
 pic_str_cmp(pic_state *pic, struct pic_string *str1, struct pic_string *str2)
 {
-  return strcmp(pic_str_cstr(pic, str1), pic_str_cstr(pic, str2));
+  return strcmp(pic_str(pic, str1), pic_str(pic, str2));
 }
 
 int
@@ -294,7 +294,7 @@ pic_str_hash(pic_state *pic, struct pic_string *str)
   const char *s;
   int h = 0;
 
-  s = pic_str_cstr(pic, str);
+  s = pic_str(pic, str);
   while (*s) {
     h = (h << 5) - h + *s++;
   }
@@ -302,7 +302,7 @@ pic_str_hash(pic_state *pic, struct pic_string *str)
 }
 
 const char *
-pic_str_cstr(pic_state *pic, struct pic_string *str)
+pic_str(pic_state *pic, struct pic_string *str)
 {
   return rope_cstr(pic, str->rope);
 }
@@ -374,7 +374,7 @@ pic_vfformat(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
 }
 
 struct pic_string *
-pic_vformat(pic_state *pic, const char *fmt, va_list ap)
+pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 {
   struct pic_port *port;
   struct pic_string *str;
@@ -389,13 +389,13 @@ pic_vformat(pic_state *pic, const char *fmt, va_list ap)
 }
 
 struct pic_string *
-pic_format(pic_state *pic, const char *fmt, ...)
+pic_strf_value(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
   struct pic_string *str;
 
   va_start(ap, fmt);
-  str = pic_vformat(pic, fmt, ap);
+  str = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
 
   return str;
@@ -428,7 +428,7 @@ pic_str_string(pic_state *pic)
     buf[i] = pic_char(pic, argv[i]);
   }
 
-  str = pic_make_str(pic, buf, argc);
+  str = pic_str_value(pic, buf, argc);
   pic_free(pic, buf);
 
   return pic_obj_value(str);
@@ -447,7 +447,7 @@ pic_str_make_string(pic_state *pic)
   buf = pic_malloc(pic, len);
   memset(buf, c, len);
 
-  ret = pic_obj_value(pic_make_str(pic, buf, len));
+  ret = pic_obj_value(pic_str_value(pic, buf, len));
 
   pic_free(pic, buf);
   return ret;
@@ -536,7 +536,7 @@ pic_str_string_append(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  str = pic_make_lit(pic, "");
+  str = pic_lit_value(pic, "");
   for (i = 0; i < argc; ++i) {
     if (! pic_str_p(pic, argv[i])) {
       pic_errorf(pic, "type error");
@@ -583,7 +583,7 @@ pic_str_string_map(pic_state *pic)
       pic_assert_type(pic, val, char);
       buf[i] = pic_char(pic, val);
     }
-    str = pic_make_str(pic, buf, len);
+    str = pic_str_value(pic, buf, len);
   }
   pic_catch {
     pic_free(pic, buf);
@@ -640,7 +640,7 @@ pic_str_list_to_string(pic_state *pic)
   pic_get_args(pic, "o", &list);
 
   if (pic_length(pic, list) == 0) {
-    return pic_obj_value(pic_make_lit(pic, ""));
+    return pic_obj_value(pic_lit_value(pic, ""));
   }
 
   buf = pic_malloc(pic, pic_length(pic, list));
@@ -653,7 +653,7 @@ pic_str_list_to_string(pic_state *pic)
       buf[i++] = pic_char(pic, e);
     }
 
-    str = pic_make_str(pic, buf, i);
+    str = pic_str_value(pic, buf, i);
   }
   pic_catch {
     pic_free(pic, buf);

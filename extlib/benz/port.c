@@ -108,7 +108,7 @@ pic_open_file(pic_state *pic, const char *name, int flags) {
     mode = 'w';
   }
   if ((file = file_open(pic, name, &mode)) == NULL) {
-    file_error(pic, pic_str_cstr(pic, pic_format(pic, "could not open file '%s'", name)));
+    file_error(pic, pic_str(pic, pic_strf_value(pic, "could not open file '%s'", name)));
   }
 
   port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
@@ -298,7 +298,7 @@ pic_get_output_string(pic_state *pic, struct pic_port *port)
 
   s = port->file->vtable.cookie;
 
-  return pic_make_str(pic, s->buf, s->end);
+  return pic_str_value(pic, s->buf, s->end);
 }
 
 void

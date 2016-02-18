@@ -13,7 +13,7 @@ pic_str_set(pic_state *pic, struct pic_string *str, int i, char c)
   buf[0] = c;
 
   x = pic_str_sub(pic, str, 0, i);
-  y = pic_make_str(pic, buf, 1);
+  y = pic_str_value(pic, buf, 1);
   z = pic_str_sub(pic, str, i + 1, pic_str_len(pic, str));
 
   tmp = pic_str_cat(pic, x, pic_str_cat(pic, y, z));

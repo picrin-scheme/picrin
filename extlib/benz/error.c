@@ -24,10 +24,10 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   struct pic_string *err;
 
   va_start(ap, fmt);
-  err = pic_vformat(pic, fmt, ap);
+  err = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
 
-  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, err));
+  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str(pic, err));
 }
 
 void
@@ -38,10 +38,10 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   struct pic_string *err;
 
   va_start(ap, fmt);
-  err = pic_vformat(pic, fmt, ap);
+  err = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
 
-  msg = pic_str_cstr(pic, err);
+  msg = pic_str(pic, err);
 
   pic_error(pic, msg, pic_nil_value(pic));
 }
@@ -100,7 +100,7 @@ pic_make_error(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TYPE_ERROR);
   e->type = type;
-  e->msg = pic_make_cstr(pic, msg);
+  e->msg = pic_cstr_value(pic, msg);
   e->irrs = irrs;
   e->stack = stack;
 

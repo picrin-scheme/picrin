@@ -85,10 +85,10 @@ static void
 write_str(pic_state *pic, struct pic_string *str, xFILE *file, int mode)
 {
   int i;
-  const char *cstr = pic_str_cstr(pic, str);
+  const char *cstr = pic_str(pic, str);
 
   if (mode == DISPLAY_MODE) {
-    xfprintf(pic, file, "%s", pic_str_cstr(pic, str));
+    xfprintf(pic, file, "%s", pic_str(pic, str));
     return;
   }
   xfprintf(pic, file, "\"");
@@ -246,7 +246,7 @@ write_dict(struct writer_control *p, struct pic_dict *dict)
 
   xfprintf(pic, file, "#.(dictionary");
   pic_dict_for_each (sym, dict, it) {
-    xfprintf(pic, file, " '%s ", pic_symbol_name(pic, sym));
+    xfprintf(pic, file, " '%s ", pic_str(pic, pic_sym_name(pic, sym)));
     write_core(p, pic_dict_ref(pic, dict, sym));
   }
   xfprintf(pic, file, ")");
@@ -298,7 +298,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_float(pic, pic_float(pic, obj), file);
     break;
   case PIC_TYPE_SYMBOL:
-    xfprintf(pic, file, "%s", pic_symbol_name(pic, pic_sym_ptr(obj)));
+    xfprintf(pic, file, "%s", pic_str(pic, pic_sym_name(pic, pic_sym_ptr(obj))));
     break;
   case PIC_TYPE_BLOB:
     write_blob(pic, pic_blob_ptr(obj), file);
@@ -440,11 +440,11 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 
   va_start(ap, fmt);
 
-  str = pic_vformat(pic, fmt, ap);
+  str = pic_vstrf_value(pic, fmt, ap);
 
   va_end(ap);
 
-  xfprintf(pic, file, "%s", pic_str_cstr(pic, str));
+  xfprintf(pic, file, "%s", pic_str(pic, str));
   xfflush(pic, file);
 }
 

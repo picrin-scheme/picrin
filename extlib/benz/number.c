@@ -234,7 +234,7 @@ pic_number_number_to_string(pic_state *pic)
 
     number_string(ival, radix, ilen, buf);
 
-    str = pic_make_str(pic, buf, s - 1);
+    str = pic_str_value(pic, buf, s - 1);
 
     pic_free(pic, buf);
   }

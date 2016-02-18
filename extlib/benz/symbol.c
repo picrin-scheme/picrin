@@ -44,10 +44,10 @@ pic_make_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
   return nid;
 }
 
-const char *
-pic_symbol_name(pic_state *pic, pic_sym *sym)
+struct pic_string *
+pic_sym_name(pic_state PIC_UNUSED(*pic), pic_sym *sym)
 {
-  return pic_str_cstr(pic, sym->str);
+  return sym->str;
 }
 
 const char *
@@ -57,7 +57,7 @@ pic_identifier_name(pic_state *pic, pic_id *id)
     id = id->u.id.id;
   }
 
-  return pic_symbol_name(pic, (pic_sym *)id);
+  return pic_str(pic, pic_sym_name(pic, (pic_sym *)id));
 }
 
 static pic_value

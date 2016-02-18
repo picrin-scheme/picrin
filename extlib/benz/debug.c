@@ -11,18 +11,18 @@ pic_get_backtrace(pic_state *pic)
   pic_callinfo *ci;
   struct pic_string *trace;
 
-  trace = pic_make_lit(pic, "");
+  trace = pic_lit_value(pic, "");
 
   for (ci = pic->ci; ci != pic->cibase; --ci) {
     struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
 
-    trace = pic_str_cat(pic, trace, pic_make_lit(pic, "  at "));
-    trace = pic_str_cat(pic, trace, pic_make_lit(pic, "(anonymous lambda)"));
+    trace = pic_str_cat(pic, trace, pic_lit_value(pic, "  at "));
+    trace = pic_str_cat(pic, trace, pic_lit_value(pic, "(anonymous lambda)"));
 
     if (pic_proc_func_p(proc)) {
-      trace = pic_str_cat(pic, trace, pic_make_lit(pic, " (native function)\n"));
+      trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (native function)\n"));
     } else if (pic_proc_irep_p(proc)) {
-      trace = pic_str_cat(pic, trace, pic_make_lit(pic, " (unknown location)\n")); /* TODO */
+      trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (unknown location)\n")); /* TODO */
     }
   }
 
@@ -58,6 +58,6 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
     }
     xfprintf(pic, file, "\n");
 
-    xfputs(pic, pic_str_cstr(pic, e->stack), file);
+    xfputs(pic, pic_str(pic, e->stack), file);
   }
 }

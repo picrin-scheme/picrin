@@ -282,7 +282,7 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
   }
   if (idx >= ATOF_BUF_SIZE)
     read_error(pic, "number too large", 
-                    pic_obj_value(pic_make_str(pic, (const char *)buf, ATOF_BUF_SIZE)));
+                    pic_obj_value(pic_str_value(pic, (const char *)buf, ATOF_BUF_SIZE)));
 
   if (! isdelim(c))
     read_error(pic, "non-delimiter character given after number", pic_list1(pic, pic_char_value(pic, c)));
@@ -321,10 +321,10 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
-    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-inf.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "-inf.0")) {
       return pic_float_value(pic, -(1.0 / 0.0));
     }
-    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "-nan.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "-nan.0")) {
       return pic_float_value(pic, -(0.0 / 0.0));
     }
     return sym;
@@ -341,10 +341,10 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
   }
   else {
     sym = read_symbol(pic, port, c);
-    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+inf.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "+inf.0")) {
       return pic_float_value(pic, 1.0 / 0.0);
     }
-    if (strcaseeq(pic_symbol_name(pic, pic_sym_ptr(sym)), "+nan.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "+nan.0")) {
       return pic_float_value(pic, 0.0 / 0.0);
     }
     return sym;
@@ -444,7 +444,7 @@ read_string(pic_state *pic, struct pic_port *port, int c)
   }
   buf[cnt] = '\0';
 
-  str = pic_make_str(pic, buf, cnt);
+  str = pic_str_value(pic, buf, cnt);
   pic_free(pic, buf);
   return pic_obj_value(str);
 }

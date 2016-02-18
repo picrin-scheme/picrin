@@ -61,6 +61,7 @@ struct pic_proc;
 struct pic_port;
 struct pic_error;
 struct pic_env;
+struct pic_data;
 
 typedef struct pic_symbol pic_sym;
 typedef struct pic_id pic_id;
@@ -165,6 +166,20 @@ pic_value pic_applyk(pic_state *, struct pic_proc *proc, int n, pic_value *argv)
 #define pic_port_p(pic, v) (pic_type(pic, v) == PIC_TYPE_PORT)
 #define pic_sym_p(pic,v) (pic_type(pic,v) == PIC_TYPE_SYMBOL)
 
+int pic_int(pic_state *, pic_value);
+double pic_float(pic_state *, pic_value);
+char pic_char(pic_state *, pic_value);
+bool pic_bool(pic_state *, pic_value);
+const char *pic_str(pic_state *, struct pic_string *);
+unsigned char *pic_blob(pic_state *, struct pic_blob *, int *len);
+void *pic_data(pic_state *, struct pic_data *);
+
+typedef struct {
+  const char *type_name;
+  void (*dtor)(pic_state *, void *);
+  void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
+} pic_data_type;
+
 pic_value pic_undef_value(pic_state *);
 pic_value pic_int_value(pic_state *, int);
 pic_value pic_float_value(pic_state *, double);
@@ -173,14 +188,13 @@ pic_value pic_true_value(pic_state *);
 pic_value pic_false_value(pic_state *);
 pic_value pic_bool_value(pic_state *, bool);
 pic_value pic_eof_object(pic_state *);
-
-int pic_int(pic_state *, pic_value);
-double pic_float(pic_state *, pic_value);
-char pic_char(pic_state *, pic_value);
-bool pic_bool(pic_state *, pic_value);
-/* const char *pic_str(pic_state *, pic_value); */
-/* unsigned char *pic_blob(pic_state *, pic_value, int *len); */
-/* void *pic_data(pic_state *, pic_value); */
+struct pic_string *pic_str_value(pic_state *, const char *str, int len);
+#define pic_cstr_value(pic, cstr) pic_str_value(pic, (cstr), strlen(cstr))
+#define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
+struct pic_string *pic_strf_value(pic_state *, const char *fmt, ...);
+struct pic_string *pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
+struct pic_blob *pic_blob_value(pic_state *, const unsigned char *buf, int len);
+struct pic_data *pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
 
 int pic_type(pic_state *, pic_value);
 const char *pic_typename(pic_state *, int);
@@ -227,10 +241,10 @@ bool pic_weak_has(pic_state *, struct pic_weak *, void *);
 
 /* symbol */
 pic_sym *pic_intern(pic_state *, struct pic_string *);
-#define pic_intern_str(pic,s,i) pic_intern(pic, pic_make_str(pic, (s), (i)))
-#define pic_intern_cstr(pic,s) pic_intern(pic, pic_make_cstr(pic, (s)))
-#define pic_intern_lit(pic,lit) pic_intern(pic, pic_make_lit(pic, lit))
-const char *pic_symbol_name(pic_state *, pic_sym *);
+#define pic_intern_str(pic,s,i) pic_intern(pic, pic_str_value(pic, (s), (i)))
+#define pic_intern_cstr(pic,s) pic_intern(pic, pic_cstr_value(pic, (s)))
+#define pic_intern_lit(pic,lit) pic_intern(pic, pic_lit_value(pic, lit))
+struct pic_string *pic_sym_name(pic_state *, pic_sym *);
 
 /* string */
 int pic_str_len(pic_state *, struct pic_string *);
