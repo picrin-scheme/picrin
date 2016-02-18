@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 KHASH_DECLARE(l, void *, int)
 KHASH_DECLARE(v, void *, int)

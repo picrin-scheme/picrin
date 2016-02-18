@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 #include "picrin/opcode.h"
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))

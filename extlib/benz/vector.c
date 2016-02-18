@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 struct pic_vector *
 pic_make_vec(pic_state *pic, int len)

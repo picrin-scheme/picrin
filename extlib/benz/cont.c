@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 void
 pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)

@@ -9,6 +9,20 @@
 extern "C" {
 #endif
 
+
+/* vector */
+
+struct pic_vector {
+  PIC_OBJECT_HEADER
+  pic_value *data;
+  int len;
+};
+
+#define pic_vec_ptr(o) ((struct pic_vector *)pic_obj_ptr(o))
+
+
+/* weak */
+
 KHASH_DECLARE(weak, void *, pic_value)
 
 struct pic_weak {
