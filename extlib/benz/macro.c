@@ -40,7 +40,7 @@ pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
   pic_sym *uid;
   struct pic_string *str;
 
-  name = pic_identifier_name(pic, id);
+  name = pic_str(pic, pic_id_name(pic, id));
 
   if (env->up == NULL && pic_sym_p(pic, pic_obj_value(id))) { /* toplevel & public */
     str = pic_strf_value(pic, "%s/%s", pic_str(pic, env->lib), name);
@@ -274,7 +274,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 
   val = pic_call(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)), 0);
   if (! pic_proc_p(pic, val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", pic_identifier_name(pic, id));
+    pic_errorf(pic, "macro definition \"%s\" evaluates to non-procedure object", pic_str(pic, pic_id_name(pic, id)));
   }
 
   define_macro(pic, uid, pic_proc_ptr(val));

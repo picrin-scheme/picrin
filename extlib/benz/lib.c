@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 KHASH_DEFINE(ltable, const char *, struct pic_lib, kh_str_hash_func, kh_str_cmp_func)
 

@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 #define kh_pic_str_hash(a) (pic_str_hash(pic, (a)))
 #define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, (a), (b)) == 0)
@@ -50,14 +51,14 @@ pic_sym_name(pic_state PIC_UNUSED(*pic), pic_sym *sym)
   return sym->str;
 }
 
-const char *
-pic_identifier_name(pic_state *pic, pic_id *id)
+struct pic_string *
+pic_id_name(pic_state *pic, pic_id *id)
 {
   while (! pic_sym_p(pic, pic_obj_value(id))) {
     id = id->u.id.id;
   }
 
-  return pic_str(pic, pic_sym_name(pic, (pic_sym *)id));
+  return pic_sym_name(pic, (pic_sym *)id);
 }
 
 static pic_value
