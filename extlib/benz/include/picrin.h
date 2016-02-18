@@ -264,7 +264,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 #include "picrin/macro.h"
 #include "picrin/pair.h"
 #include "picrin/port.h"
-#include "picrin/record.h"
 #include "picrin/symbol.h"
 
 void *pic_default_allocf(void *, void *, size_t);

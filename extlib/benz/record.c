@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 struct pic_record *
 pic_make_rec(pic_state *pic, pic_value type, pic_value datum)
@@ -14,18 +15,6 @@ pic_make_rec(pic_state *pic, pic_value type, pic_value datum)
   rec->datum = datum;
 
   return rec;
-}
-
-pic_value
-pic_rec_type(pic_state PIC_UNUSED(*pic), struct pic_record *rec)
-{
-  return rec->type;
-}
-
-pic_value
-pic_rec_datum(pic_state PIC_UNUSED(*pic), struct pic_record *rec)
-{
-  return rec->datum;
 }
 
 static pic_value
@@ -55,7 +44,7 @@ pic_rec_record_type(pic_state *pic)
 
   pic_get_args(pic, "r", &rec);
 
-  return pic_rec_type(pic, rec);
+  return rec->type;
 }
 
 static pic_value
@@ -65,7 +54,7 @@ pic_rec_record_datum(pic_state *pic)
 
   pic_get_args(pic, "r", &rec);
 
-  return pic_rec_datum(pic, rec);
+  return rec->datum;
 }
 
 void

@@ -122,6 +122,21 @@ struct pic_proc {
 struct pic_proc *pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
 struct pic_proc *pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_context *);
 
+
+/* record */
+
+struct pic_record {
+  PIC_OBJECT_HEADER
+  pic_value type;
+  pic_value datum;
+};
+
+#define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TYPE_RECORD)
+#define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
+
+struct pic_record *pic_make_rec(pic_state *, pic_value, pic_value);
+
+
 #if defined(__cplusplus)
 }
 #endif
