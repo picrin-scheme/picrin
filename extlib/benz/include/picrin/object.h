@@ -36,6 +36,10 @@ struct pic_id {
 
 pic_id *pic_make_identifier(pic_state *, pic_id *, struct pic_env *);
 
+pic_sym *pic_add_identifier(pic_state *, pic_id *, struct pic_env *);
+pic_sym *pic_put_identifier(pic_state *, pic_id *, pic_sym *, struct pic_env *);
+pic_sym *pic_find_identifier(pic_state *, pic_id *, struct pic_env *);
+
 struct pic_string *pic_id_name(pic_state *, pic_id *);
 
 

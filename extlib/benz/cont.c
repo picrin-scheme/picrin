@@ -17,7 +17,8 @@ pic_save_point(pic_state *pic, struct pic_cont *cont)
   cont->ip = pic->ip;
   cont->ptable = pic->ptable;
   cont->prev = pic->cc;
-  cont->results = pic_make_vec(pic, 0, NULL);
+  cont->retc = 0;
+  cont->retv = NULL;
   cont->id = pic->ccnt++;
 
   pic->cc = cont;
@@ -109,7 +110,8 @@ cont_call(pic_state *pic)
   }
 
   cont = pic_data_ptr(pic_closure_ref(pic, CV_ESCAPE))->data;
-  cont->results = pic_make_vec(pic, argc, argv);
+  cont->retc = argc;
+  cont->retv = argv;
 
   pic_load_point(pic, cont);
 
@@ -138,7 +140,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   pic_save_point(pic, &cont);
 
   if (PIC_SETJMP(pic, cont.jmp)) {
-    return pic_valuesk(pic, cont.results->len, cont.results->data);
+    return pic_valuesk(pic, cont.retc, cont.retv);
   }
   else {
     pic_value val;
@@ -239,19 +241,19 @@ static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
   struct pic_proc *producer, *consumer;
-  int argc;
-  pic_vec *args;
+  int retc;
+  pic_value *retv;
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
   pic_call(pic, producer, 0);
 
-  argc = pic_receive(pic, 0, NULL);
-  args = pic_make_vec(pic, argc, NULL);
+  retc = pic_receive(pic, 0, NULL);
+  retv = pic_alloca(pic, sizeof(pic_value) * retc);
 
-  pic_receive(pic, argc, args->data);
+  pic_receive(pic, retc, retv);
 
-  return pic_applyk(pic, consumer, argc, args->data);
+  return pic_applyk(pic, consumer, retc, retv);
 }
 
 void

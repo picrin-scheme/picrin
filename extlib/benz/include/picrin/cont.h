@@ -22,7 +22,8 @@ struct pic_cont {
   pic_value ptable;
   pic_code *ip;
 
-  pic_vec *results;
+  int retc;
+  pic_value *retv;
 
   struct pic_cont *prev;
 };
