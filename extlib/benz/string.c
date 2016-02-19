@@ -94,14 +94,15 @@ pic_make_rope(pic_state *pic, struct pic_chunk *c)
   return x;
 }
 
-static struct pic_string *
-pic_str_valueing(pic_state *pic, struct pic_rope *rope)
+static pic_value
+pic_make_str(pic_state *pic, struct pic_rope *rope)
 {
   struct pic_string *str;
 
   str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TYPE_STRING);
   str->rope = rope;             /* delegate ownership */
-  return str;
+
+  return pic_obj_value(str);
 }
 
 static size_t
@@ -237,7 +238,7 @@ rope_cstr(pic_state *pic, struct pic_rope *x)
   return c->str;
 }
 
-struct pic_string *
+pic_value
 pic_str_value(pic_state *pic, const char *str, int len)
 {
   struct pic_chunk *c;
@@ -250,47 +251,47 @@ pic_str_value(pic_state *pic, const char *str, int len)
     }
     c = pic_make_chunk_lit(pic, str, -len);
   }
-  return pic_str_valueing(pic, pic_make_rope(pic, c));
+  return pic_make_str(pic, pic_make_rope(pic, c));
 }
 
 int
-pic_str_len(pic_state PIC_UNUSED(*pic), struct pic_string *str)
+pic_str_len(pic_state PIC_UNUSED(*pic), pic_value str)
 {
-  return rope_len(str->rope);
+  return rope_len(pic_str_ptr(pic, str)->rope);
 }
 
 char
-pic_str_ref(pic_state *pic, struct pic_string *str, int i)
+pic_str_ref(pic_state *pic, pic_value str, int i)
 {
   int c;
 
-  c = rope_at(str->rope, i);
+  c = rope_at(pic_str_ptr(pic, str)->rope, i);
   if (c == -1) {
     pic_errorf(pic, "index out of range %d", i);
   }
   return (char)c;
 }
 
-struct pic_string *
-pic_str_cat(pic_state *pic, struct pic_string *a, struct pic_string *b)
+pic_value
+pic_str_cat(pic_state *pic, pic_value a, pic_value b)
 {
-  return pic_str_valueing(pic, rope_cat(pic, a->rope, b->rope));
+  return pic_make_str(pic, rope_cat(pic, pic_str_ptr(pic, a)->rope, pic_str_ptr(pic, b)->rope));
 }
 
-struct pic_string *
-pic_str_sub(pic_state *pic, struct pic_string *str, int s, int e)
+pic_value
+pic_str_sub(pic_state *pic, pic_value str, int s, int e)
 {
-  return pic_str_valueing(pic, rope_sub(pic, str->rope, s, e));
+  return pic_make_str(pic, rope_sub(pic, pic_str_ptr(pic, str)->rope, s, e));
 }
 
 int
-pic_str_cmp(pic_state *pic, struct pic_string *str1, struct pic_string *str2)
+pic_str_cmp(pic_state *pic, pic_value str1, pic_value str2)
 {
   return strcmp(pic_str(pic, str1), pic_str(pic, str2));
 }
 
 int
-pic_str_hash(pic_state *pic, struct pic_string *str)
+pic_str_hash(pic_state *pic, pic_value str)
 {
   const char *s;
   int h = 0;
@@ -303,9 +304,9 @@ pic_str_hash(pic_state *pic, struct pic_string *str)
 }
 
 const char *
-pic_str(pic_state *pic, struct pic_string *str)
+pic_str(pic_state *pic, pic_value str)
 {
-  return rope_cstr(pic, str->rope);
+  return rope_cstr(pic, pic_str_ptr(pic, str)->rope);
 }
 
 static void
@@ -374,10 +375,10 @@ vfstrf(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
   return;
 }
 
-struct pic_string *
+pic_value
 pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 {
-  struct pic_string *str;
+  pic_value str;
   xFILE *file;
   const char *buf;
   int len;
@@ -391,11 +392,11 @@ pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
   return str;
 }
 
-struct pic_string *
+pic_value
 pic_strf_value(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;
-  struct pic_string *str;
+  pic_value str;
 
   va_start(ap, fmt);
   str = pic_vstrf_value(pic, fmt, ap);
@@ -419,22 +420,18 @@ pic_str_string(pic_state *pic)
 {
   int argc, i;
   pic_value *argv;
-  struct pic_string *str;
   char *buf;
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  buf = pic_malloc(pic, argc);
+  buf = pic_alloca(pic, argc);
 
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], char);
     buf[i] = pic_char(pic, argv[i]);
   }
 
-  str = pic_str_value(pic, buf, argc);
-  pic_free(pic, buf);
-
-  return pic_obj_value(str);
+  return pic_str_value(pic, buf, argc);
 }
 
 static pic_value
@@ -443,23 +440,24 @@ pic_str_make_string(pic_state *pic)
   int len;
   char c = ' ';
   char *buf;
-  pic_value ret;
 
   pic_get_args(pic, "i|c", &len, &c);
 
-  buf = pic_malloc(pic, len);
+  if (len < 0) {
+    pic_errorf(pic, "make-string: negative length given %d", len);
+  }
+
+  buf = pic_alloca(pic, len);
+
   memset(buf, c, len);
 
-  ret = pic_obj_value(pic_str_value(pic, buf, len));
-
-  pic_free(pic, buf);
-  return ret;
+  return pic_str_value(pic, buf, len);
 }
 
 static pic_value
 pic_str_string_length(pic_state *pic)
 {
-  struct pic_string *str;
+  pic_value str;
 
   pic_get_args(pic, "s", &str);
 
@@ -469,36 +467,38 @@ pic_str_string_length(pic_state *pic)
 static pic_value
 pic_str_string_ref(pic_state *pic)
 {
-  struct pic_string *str;
+  pic_value str;
   int k;
 
   pic_get_args(pic, "si", &str, &k);
 
+  VALID_INDEX(pic, pic_str_len(pic, str), k);
+
   return pic_char_value(pic, pic_str_ref(pic, str, k));
 }
 
-#define DEFINE_STRING_CMP(name, op)                                     \
-  static pic_value                                                      \
-  pic_str_string_##name(pic_state *pic)                                 \
-  {                                                                     \
-    int argc, i;                                                        \
-    pic_value *argv;                                                    \
-                                                                        \
-    pic_get_args(pic, "*", &argc, &argv);                               \
-                                                                        \
-    if (argc < 1 || ! pic_str_p(pic, argv[0])) {                             \
-      return pic_false_value(pic);                                         \
-    }                                                                   \
-                                                                        \
-    for (i = 1; i < argc; ++i) {                                        \
-      if (! pic_str_p(pic, argv[i])) {                                       \
-        return pic_false_value(pic);                                       \
-      }                                                                 \
-      if (! (pic_str_cmp(pic, pic_str_ptr(argv[i-1]), pic_str_ptr(argv[i])) op 0)) { \
-        return pic_false_value(pic);                                       \
-      }                                                                 \
-    }                                                                   \
-    return pic_true_value(pic);                                            \
+#define DEFINE_STRING_CMP(name, op)                             \
+  static pic_value                                              \
+  pic_str_string_##name(pic_state *pic)                         \
+  {                                                             \
+    int argc, i;                                                \
+    pic_value *argv;                                            \
+                                                                \
+    pic_get_args(pic, "*", &argc, &argv);                       \
+                                                                \
+    if (argc < 1 || ! pic_str_p(pic, argv[0])) {                \
+      return pic_false_value(pic);                              \
+    }                                                           \
+                                                                \
+    for (i = 1; i < argc; ++i) {                                \
+      if (! pic_str_p(pic, argv[i])) {                          \
+        return pic_false_value(pic);                            \
+      }                                                         \
+      if (! (pic_str_cmp(pic, argv[i-1], argv[i]) op 0)) {      \
+        return pic_false_value(pic);                            \
+      }                                                         \
+    }                                                           \
+    return pic_true_value(pic);                                 \
   }
 
 DEFINE_STRING_CMP(eq, ==)
@@ -510,7 +510,7 @@ DEFINE_STRING_CMP(ge, >=)
 static pic_value
 pic_str_string_copy(pic_state *pic)
 {
-  struct pic_string *str;
+  pic_value str;
   int n, start, end, len;
 
   n = pic_get_args(pic, "s|ii", &str, &start, &end);
@@ -524,10 +524,9 @@ pic_str_string_copy(pic_state *pic)
     end = len;
   }
 
-  if (start < 0 || end > len || end < start)
-    pic_errorf(pic, "string-copy: invalid index");
+  VALID_RANGE(pic, len, start, end);
 
-  return pic_obj_value(pic_str_sub(pic, str, start, end));
+  return pic_str_sub(pic, str, start, end);
 }
 
 static pic_value
@@ -535,18 +534,15 @@ pic_str_string_append(pic_state *pic)
 {
   int argc, i;
   pic_value *argv;
-  struct pic_string *str;
+  pic_value str = pic_lit_value(pic, "");
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  str = pic_lit_value(pic, "");
   for (i = 0; i < argc; ++i) {
-    if (! pic_str_p(pic, argv[i])) {
-      pic_errorf(pic, "type error");
-    }
-    str = pic_str_cat(pic, str, pic_str_ptr(argv[i]));
+    pic_assert_type(pic, argv[i], str);
+    str = pic_str_cat(pic, str, argv[i]);
   }
-  return pic_obj_value(str);
+  return str;
 }
 
 static pic_value
@@ -554,135 +550,111 @@ pic_str_string_map(pic_state *pic)
 {
   pic_value proc, *argv, vals, val;
   int argc, i, len, j;
-  struct pic_string *str;
   char *buf;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   if (argc == 0) {
     pic_errorf(pic, "string-map: one or more strings expected, but got zero");
-  } else {
-    pic_assert_type(pic, argv[0], str);
-    len = pic_str_len(pic, pic_str_ptr(argv[0]));
   }
-  for (i = 1; i < argc; ++i) {
+
+  len = INT_MAX;
+  for (i = 0; i < argc; ++i) {
+    int l;
     pic_assert_type(pic, argv[i], str);
-
-    len = len < pic_str_len(pic, pic_str_ptr(argv[i]))
-      ? len
-      : pic_str_len(pic, pic_str_ptr(argv[i]));
+    l = pic_str_len(pic, argv[i]);
+    len = len < l ? len : l;
   }
-  buf = pic_malloc(pic, len);
 
-  pic_try {
-    for (i = 0; i < len; ++i) {
-      vals = pic_nil_value(pic);
-      for (j = 0; j < argc; ++j) {
-        pic_push(pic, pic_char_value(pic, pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
-      }
-      val = pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
+  buf = pic_alloca(pic, len);
 
-      pic_assert_type(pic, val, char);
-      buf[i] = pic_char(pic, val);
+  for (i = 0; i < len; ++i) {
+    vals = pic_nil_value(pic);
+    for (j = 0; j < argc; ++j) {
+      pic_push(pic, pic_char_value(pic, pic_str_ref(pic, argv[j], i)), vals);
     }
-    str = pic_str_value(pic, buf, len);
-  }
-  pic_catch {
-    pic_free(pic, buf);
-    pic_raise(pic, pic->err);
-  }
+    vals = pic_reverse(pic, vals);
+    val = pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
 
-  pic_free(pic, buf);
+    pic_assert_type(pic, val, char);
 
-  return pic_obj_value(str);
+    buf[i] = pic_char(pic, val);
+  }
+  return pic_str_value(pic, buf, len);
 }
 
 static pic_value
 pic_str_string_for_each(pic_state *pic)
 {
-  int argc, len, i, j;
   pic_value proc, *argv, vals;
+  int argc, i, len, j;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   if (argc == 0) {
     pic_errorf(pic, "string-map: one or more strings expected, but got zero");
-  } else {
-    pic_assert_type(pic, argv[0], str);
-    len = pic_str_len(pic, pic_str_ptr(argv[0]));
   }
-  for (i = 1; i < argc; ++i) {
-    pic_assert_type(pic, argv[i], str);
 
-    len = len < pic_str_len(pic, pic_str_ptr(argv[i]))
-      ? len
-      : pic_str_len(pic, pic_str_ptr(argv[i]));
+  len = INT_MAX;
+  for (i = 0; i < argc; ++i) {
+    int l;
+    pic_assert_type(pic, argv[i], str);
+    l = pic_str_len(pic, argv[i]);
+    len = len < l ? len : l;
   }
 
   for (i = 0; i < len; ++i) {
     vals = pic_nil_value(pic);
     for (j = 0; j < argc; ++j) {
-      pic_push(pic, pic_char_value(pic, pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
+      pic_push(pic, pic_char_value(pic, pic_str_ref(pic, argv[j], i)), vals);
     }
+    vals = pic_reverse(pic, vals);
     pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
   }
-
   return pic_undef_value(pic);
 }
 
 static pic_value
 pic_str_list_to_string(pic_state *pic)
 {
-  struct pic_string *str;
   pic_value list, e, it;
   int i;
   char *buf;
 
   pic_get_args(pic, "o", &list);
 
-  if (pic_length(pic, list) == 0) {
-    return pic_obj_value(pic_lit_value(pic, ""));
+  buf = pic_alloca(pic, pic_length(pic, list));
+
+  i = 0;
+  pic_for_each (e, list, it) {
+    pic_assert_type(pic, e, char);
+
+    buf[i++] = pic_char(pic, e);
   }
 
-  buf = pic_malloc(pic, pic_length(pic, list));
-
-  pic_try {
-    i = 0;
-    pic_for_each (e, list, it) {
-      pic_assert_type(pic, e, char);
-
-      buf[i++] = pic_char(pic, e);
-    }
-
-    str = pic_str_value(pic, buf, i);
-  }
-  pic_catch {
-    pic_free(pic, buf);
-    pic_raise(pic, pic->err);
-  }
-  pic_free(pic, buf);
-
-  return pic_obj_value(str);
+  return pic_str_value(pic, buf, i);
 }
 
 static pic_value
 pic_str_string_to_list(pic_state *pic)
 {
-  struct pic_string *str;
-  pic_value list;
-  int n, start, end, i;
+  pic_value str, list;
+  int n, start, end, len, i;
 
   n = pic_get_args(pic, "s|ii", &str, &start, &end);
+
+  len = pic_str_len(pic, str);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = pic_str_len(pic, str);
+    end = len;
   }
 
-  list = pic_nil_value(pic);
+  VALID_RANGE(pic, len, start, end);
 
+  list = pic_nil_value(pic);
   for (i = start; i < end; ++i) {
     pic_push(pic, pic_char_value(pic, pic_str_ref(pic, str, i)), list);
   }

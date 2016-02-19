@@ -106,7 +106,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     return s1 == s2;
   }
   case PIC_TYPE_STRING: {
-    return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;
+    return pic_str_cmp(pic, x, y) == 0;
   }
   case PIC_TYPE_BLOB: {
     int xlen, ylen;

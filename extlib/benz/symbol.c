@@ -5,20 +5,20 @@
 #include "picrin.h"
 #include "picrin/object.h"
 
-#define kh_pic_str_hash(a) (pic_str_hash(pic, (a)))
-#define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, (a), (b)) == 0)
+#define kh_pic_str_hash(a) (pic_str_hash(pic, pic_obj_value(a)))
+#define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, pic_obj_value(a), pic_obj_value(b)) == 0)
 
 KHASH_DEFINE(oblist, struct pic_string *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
 
 pic_sym *
-pic_intern(pic_state *pic, struct pic_string *str)
+pic_intern(pic_state *pic, pic_value str)
 {
   khash_t(oblist) *h = &pic->oblist;
   pic_sym *sym;
   khiter_t it;
   int ret;
 
-  it = kh_put(oblist, h, str, &ret);
+  it = kh_put(oblist, h, pic_str_ptr(pic, str), &ret);
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
     pic_protect(pic, pic_obj_value(sym));
@@ -28,7 +28,7 @@ pic_intern(pic_state *pic, struct pic_string *str)
   kh_val(h, it) = pic->sQUOTE;  /* dummy */
 
   sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TYPE_SYMBOL);
-  sym->str = str;
+  sym->str = pic_str_ptr(pic, str);
   kh_val(h, it) = sym;
 
   return sym;
@@ -45,13 +45,13 @@ pic_make_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
   return nid;
 }
 
-struct pic_string *
+pic_value
 pic_sym_name(pic_state PIC_UNUSED(*pic), pic_sym *sym)
 {
-  return sym->str;
+  return pic_obj_value(sym->str);
 }
 
-struct pic_string *
+pic_value
 pic_id_name(pic_state *pic, pic_id *id)
 {
   while (! pic_sym_p(pic, pic_obj_value(id))) {
@@ -103,7 +103,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
 static pic_value
 pic_symbol_string_to_symbol(pic_state *pic)
 {
-  struct pic_string *str;
+  pic_value str;
 
   pic_get_args(pic, "s", &str);
 

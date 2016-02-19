@@ -81,7 +81,7 @@ pic_blob_make_bytevector(pic_state *pic)
 
   blob = pic_blob_value(pic, 0, k);
 
-  memset(pic_blob(pic, blob, NULL), k, (unsigned char)b);
+  memset(pic_blob(pic, blob, NULL), (unsigned char)b, k);
 
   return blob;
 }

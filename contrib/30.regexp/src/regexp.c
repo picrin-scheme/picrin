@@ -81,8 +81,7 @@ pic_regexp_regexp_match(pic_state *pic)
   pic_value reg;
   const char *input;
   regmatch_t match[100];
-  pic_value matches, positions;
-  struct pic_string *str;
+  pic_value str, matches, positions;
   int i, offset;
 
   pic_get_args(pic, "oz", &reg, &input);
@@ -97,7 +96,7 @@ pic_regexp_regexp_match(pic_state *pic)
 
     offset = 0;
     while (regexec(&pic_regexp_data(pic, reg)->reg, input, 1, match, 0) != REG_NOMATCH) {
-      pic_push(pic, pic_obj_value(pic_str_value(pic, input, match[0].rm_eo - match[0].rm_so)), matches);
+      pic_push(pic, pic_str_value(pic, input, match[0].rm_eo - match[0].rm_so), matches);
       pic_push(pic, pic_int_value(pic, offset), positions);
 
       offset += match[0].rm_eo;
@@ -112,7 +111,7 @@ pic_regexp_regexp_match(pic_state *pic)
           break;
         }
         str = pic_str_value(pic, input + match[i].rm_so, match[i].rm_eo - match[i].rm_so);
-        pic_push(pic, pic_obj_value(str), matches);
+        pic_push(pic, str, matches);
         pic_push(pic, pic_int_value(pic, match[i].rm_so), positions);
       }
     }
@@ -141,12 +140,12 @@ pic_regexp_regexp_split(pic_state *pic)
   pic_assert_type(pic, reg, regexp);
 
   while (regexec(&pic_regexp_data(pic, reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
-    pic_push(pic, pic_obj_value(pic_str_value(pic, input, match.rm_so)), output);
+    pic_push(pic, pic_str_value(pic, input, match.rm_so), output);
 
     input += match.rm_eo;
   }
 
-  pic_push(pic, pic_obj_value(pic_cstr_value(pic, input)), output);
+  pic_push(pic, pic_cstr_value(pic, input), output);
 
   return pic_reverse(pic, output);
 }
@@ -157,7 +156,7 @@ pic_regexp_regexp_replace(pic_state *pic)
   pic_value reg;
   const char *input;
   regmatch_t match;
-  struct pic_string *txt, *output = pic_lit_value(pic, "");
+  pic_value txt, output = pic_lit_value(pic, "");
 
   pic_get_args(pic, "ozs", &reg, &input, &txt);
 
@@ -170,9 +169,7 @@ pic_regexp_regexp_replace(pic_state *pic)
     input += match.rm_eo;
   }
 
-  output = pic_str_cat(pic, output, pic_str_value(pic, input, strlen(input)));
-
-  return pic_obj_value(output);
+  return pic_str_cat(pic, output, pic_str_value(pic, input, strlen(input)));
 }
 
 void

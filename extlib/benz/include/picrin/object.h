@@ -120,15 +120,15 @@ struct pic_port {
   xFILE *file;
 };
 
+#define pic_str_ptr(pic, o) ((struct pic_string *)pic_obj_ptr(o))
+#define pic_blob_ptr(pic, o) ((struct pic_blob *)pic_obj_ptr(o))
 #define pic_pair_ptr(pic, o) ((struct pic_pair *)pic_obj_ptr(o))
-#define pic_blob_ptr(pic, v) ((struct pic_blob *)pic_obj_ptr(v))
 #define pic_vec_ptr(pic, o) ((struct pic_vector *)pic_obj_ptr(o))
 #define pic_dict_ptr(pic, o) ((struct pic_dict *)pic_obj_ptr(o))
 #define pic_data_ptr(pic, o) ((struct pic_data *)pic_obj_ptr(o))
 #define pic_proc_ptr(pic, o) ((struct pic_proc *)pic_obj_ptr(o))
 #define pic_sym_ptr(v) ((pic_sym *)pic_obj_ptr(v))
 #define pic_id_ptr(v) ((pic_id *)pic_obj_ptr(v))
-#define pic_str_ptr(o) ((struct pic_string *)pic_obj_ptr(o))
 #define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))
 #define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
 #define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
@@ -166,7 +166,7 @@ struct pic_env *pic_make_env(pic_state *, struct pic_env *);
 pic_sym *pic_add_identifier(pic_state *, pic_id *, struct pic_env *);
 pic_sym *pic_put_identifier(pic_state *, pic_id *, pic_sym *, struct pic_env *);
 pic_sym *pic_find_identifier(pic_state *, pic_id *, struct pic_env *);
-struct pic_string *pic_id_name(pic_state *, pic_id *);
+pic_value pic_id_name(pic_state *, pic_id *);
 
 void pic_rope_incref(pic_state *, struct pic_rope *);
 void pic_rope_decref(pic_state *, struct pic_rope *);

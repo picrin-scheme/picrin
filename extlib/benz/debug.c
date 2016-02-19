@@ -5,12 +5,12 @@
 #include "picrin.h"
 #include "picrin/object.h"
 
-struct pic_string *
+pic_value
 pic_get_backtrace(pic_state *pic)
 {
   size_t ai = pic_enter(pic);
   pic_callinfo *ci;
-  struct pic_string *trace;
+  pic_value trace;
 
   trace = pic_lit_value(pic, "");
 
@@ -28,7 +28,7 @@ pic_get_backtrace(pic_state *pic)
   }
 
   pic_leave(pic, ai);
-  pic_protect(pic, pic_obj_value(trace));
+  pic_protect(pic, trace);
 
   return trace;
 }
@@ -59,6 +59,6 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
     }
     xfprintf(pic, file, "\n");
 
-    xfputs(pic, pic_str(pic, e->stack), file);
+    xfputs(pic, pic_str(pic, pic_obj_value(e->stack)), file);
   }
 }

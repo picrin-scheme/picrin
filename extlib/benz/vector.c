@@ -248,6 +248,7 @@ pic_vec_vector_map(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ref(pic, argv[j], i), vals);
     }
+    vals = pic_reverse(pic, vals);
     pic_vec_set(pic, vec, i, pic_funcall(pic, "picrin.base", "apply", 2, proc, vals));
   }
 
@@ -279,6 +280,7 @@ pic_vec_vector_for_each(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ref(pic, argv[j], i), vals);
     }
+    vals = pic_reverse(pic, vals);
     pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
   }
 
@@ -335,7 +337,6 @@ pic_vec_vector_to_string(pic_state *pic)
   pic_value vec, t;
   char *buf;
   int n, start, end, i, len;
-  struct pic_string *str;
 
   n = pic_get_args(pic, "v|ii", &vec, &start, &end);
 
@@ -350,7 +351,7 @@ pic_vec_vector_to_string(pic_state *pic)
 
   VALID_RANGE(pic, len, start, end);
 
-  buf = pic_malloc(pic, end - start);
+  buf = pic_alloca(pic, end - start);
   for (i = start; i < end; ++i) {
     t = pic_vec_ref(pic, vec, i);
 
@@ -359,29 +360,27 @@ pic_vec_vector_to_string(pic_state *pic)
     buf[i - start] = pic_char(pic, t);
   }
 
-  str = pic_str_value(pic, buf, end - start);
-  pic_free(pic, buf);
-
-  return pic_obj_value(str);
+  return pic_str_value(pic, buf, end - start);
 }
 
 static pic_value
 pic_vec_string_to_vector(pic_state *pic)
 {
-  struct pic_string *str;
-  int n, start, end, i;
-  pic_value vec;
+  pic_value str, vec;
+  int n, start, end, len, i;
 
   n = pic_get_args(pic, "s|ii", &str, &start, &end);
+
+  len = pic_str_len(pic, str);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = pic_str_len(pic, str);
+    end = len;
   }
 
-  VALID_RANGE(pic, pic_str_len(pic, str), start, end);
+  VALID_RANGE(pic, len, start, end);
 
   vec = pic_make_vec(pic, end - start, NULL);
 

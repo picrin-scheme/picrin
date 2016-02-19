@@ -19,12 +19,8 @@ pic_system_cmdline(pic_state *pic)
   pic_get_args(pic, "");
 
   for (i = 0; i < picrin_argc; ++i) {
-    size_t ai = pic_enter(pic);
-
-    v = pic_cons(pic, pic_obj_value(pic_cstr_value(pic, picrin_argv[i])), v);
-    pic_leave(pic, ai);
+    pic_push(pic, pic_cstr_value(pic, picrin_argv[i]), v);
   }
-
   return pic_reverse(pic, v);
 }
 
@@ -88,7 +84,7 @@ pic_system_getenv(pic_state *pic)
   if (val == NULL)
     return pic_nil_value(pic);
   else
-    return pic_obj_value(pic_cstr_value(pic, val));
+    return pic_cstr_value(pic, val);
 }
 
 static pic_value
@@ -105,7 +101,7 @@ pic_system_getenvs(pic_state *pic)
   }
 
   for (envp = picrin_envp; *envp; ++envp) {
-    struct pic_string *key, *val;
+    pic_value key, val;
     int i;
 
     for (i = 0; (*envp)[i] != '='; ++i)
@@ -115,7 +111,7 @@ pic_system_getenvs(pic_state *pic)
     val = pic_cstr_value(pic, getenv(pic_str(pic, key)));
 
     /* push */
-    data = pic_cons(pic, pic_cons(pic, pic_obj_value(key), pic_obj_value(val)), data);
+    data = pic_cons(pic, pic_cons(pic, key, val), data);
 
     pic_leave(pic, ai);
     pic_protect(pic, data);

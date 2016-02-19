@@ -53,7 +53,6 @@ typedef struct {
 
 struct pic_object;
 struct pic_symbol;
-struct pic_string;
 struct pic_port;
 struct pic_error;
 struct pic_env;
@@ -121,7 +120,7 @@ PIC_INLINE int pic_int(pic_state *, pic_value i);
 PIC_INLINE double pic_float(pic_state *, pic_value f);
 PIC_INLINE char pic_char(pic_state *, pic_value c);
 #define pic_bool(pic,b) (! pic_false_p(pic, b))
-const char *pic_str(pic_state *, struct pic_string *);
+const char *pic_str(pic_state *, pic_value str);
 unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
 void *pic_data(pic_state *, pic_value data);
 
@@ -139,11 +138,11 @@ PIC_INLINE pic_value pic_true_value(pic_state *);
 PIC_INLINE pic_value pic_false_value(pic_state *);
 PIC_INLINE pic_value pic_bool_value(pic_state *, bool);
 PIC_INLINE pic_value pic_eof_object(pic_state *);
-struct pic_string *pic_str_value(pic_state *, const char *str, int len);
+pic_value pic_str_value(pic_state *, const char *str, int len);
 #define pic_cstr_value(pic, cstr) pic_str_value(pic, (cstr), strlen(cstr))
 #define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
-struct pic_string *pic_strf_value(pic_state *, const char *fmt, ...);
-struct pic_string *pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
+pic_value pic_strf_value(pic_state *, const char *fmt, ...);
+pic_value pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
 pic_value pic_blob_value(pic_state *, const unsigned char *buf, int len);
 pic_value pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
 
@@ -250,19 +249,19 @@ void pic_weak_del(pic_state *, struct pic_weak *, void *);
 bool pic_weak_has(pic_state *, struct pic_weak *, void *);
 
 /* symbol */
-pic_sym *pic_intern(pic_state *, struct pic_string *);
+pic_sym *pic_intern(pic_state *, pic_value str);
 #define pic_intern_str(pic,s,i) pic_intern(pic, pic_str_value(pic, (s), (i)))
 #define pic_intern_cstr(pic,s) pic_intern(pic, pic_cstr_value(pic, (s)))
 #define pic_intern_lit(pic,lit) pic_intern(pic, pic_lit_value(pic, lit))
-struct pic_string *pic_sym_name(pic_state *, pic_sym *);
+pic_value pic_sym_name(pic_state *, pic_sym *);
 
 /* string */
-int pic_str_len(pic_state *, struct pic_string *);
-char pic_str_ref(pic_state *, struct pic_string *, int);
-struct pic_string *pic_str_cat(pic_state *, struct pic_string *, struct pic_string *);
-struct pic_string *pic_str_sub(pic_state *, struct pic_string *, int, int);
-int pic_str_cmp(pic_state *, struct pic_string *, struct pic_string *);
-int pic_str_hash(pic_state *, struct pic_string *);
+int pic_str_len(pic_state *, pic_value str);
+char pic_str_ref(pic_state *, pic_value str, int i);
+pic_value pic_str_cat(pic_state *, pic_value str1, pic_value str2);
+pic_value pic_str_sub(pic_state *, pic_value str, int i, int j);
+int pic_str_cmp(pic_state *, pic_value str1, pic_value str2);
+int pic_str_hash(pic_state *, pic_value str);
 
 
 /* extra stuff */
@@ -348,7 +347,7 @@ bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
 #define pic_pop(pic, place) (place = pic_cdr(pic, place))
 
 void pic_warnf(pic_state *, const char *, ...);
-struct pic_string *pic_get_backtrace(pic_state *);
+pic_value pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
 
 #define pic_stdin(pic) pic_port_ptr(pic_funcall(pic, "picrin.base", "current-input-port", 0))

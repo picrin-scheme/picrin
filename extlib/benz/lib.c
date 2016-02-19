@@ -32,13 +32,13 @@ get_library(pic_state *pic, const char *lib)
 }
 
 static struct pic_env *
-make_library_env(pic_state *pic, struct pic_string *name)
+make_library_env(pic_state *pic, pic_value name)
 {
   struct pic_env *env;
 
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
   env->up = NULL;
-  env->lib = name;
+  env->lib = pic_str_ptr(pic, name);
   kh_init(env, &env->map);
 
   /* set up default environment */
@@ -55,9 +55,8 @@ pic_make_library(pic_state *pic, const char *lib)
 {
   khash_t(ltable) *h = &pic->ltable;
   const char *old_lib;
-  struct pic_string *name;
   struct pic_env *env;
-  pic_value exports;
+  pic_value name, exports;
   khiter_t it;
   int ret;
 
@@ -74,7 +73,7 @@ pic_make_library(pic_state *pic, const char *lib)
     pic_errorf(pic, "library name already in use: %s", lib);
   }
 
-  kh_val(h, it).name = name;
+  kh_val(h, it).name = pic_str_ptr(pic, name);
   kh_val(h, it).env = env;
   kh_val(h, it).exports = pic_dict_ptr(pic, exports);
 
@@ -98,7 +97,7 @@ pic_find_library(pic_state *pic, const char *lib)
 const char *
 pic_current_library(pic_state *pic)
 {
-  return pic_str(pic, pic->lib->name);
+  return pic_str(pic, pic_obj_value(pic->lib->name));
 }
 
 struct pic_env *

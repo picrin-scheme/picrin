@@ -281,8 +281,7 @@ read_unsigned(pic_state *pic, xFILE *file, int c)
     }
   }
   if (idx >= ATOF_BUF_SIZE)
-    read_error(pic, "number too large", 
-                    pic_obj_value(pic_str_value(pic, (const char *)buf, ATOF_BUF_SIZE)));
+    read_error(pic, "number too large", pic_list(pic, 1, pic_str_value(pic, (const char *)buf, ATOF_BUF_SIZE)));
 
   if (! isdelim(c))
     read_error(pic, "non-delimiter character given after number", pic_list(pic, 1, pic_char_value(pic, c)));
@@ -419,7 +418,7 @@ read_string(pic_state *pic, xFILE *file, int c)
 {
   char *buf;
   int size, cnt;
-  struct pic_string *str;
+  pic_value str;
 
   size = 256;
   buf = pic_malloc(pic, size);
@@ -446,7 +445,7 @@ read_string(pic_state *pic, xFILE *file, int c)
 
   str = pic_str_value(pic, buf, cnt);
   pic_free(pic, buf);
-  return pic_obj_value(str);
+  return str;
 }
 
 static pic_value

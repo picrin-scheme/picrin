@@ -218,7 +218,7 @@ pic_number_number_to_string(pic_state *pic)
   double f;
   bool e;
   int radix = 10;
-  struct pic_string *str;
+  pic_value str;
 
   pic_get_args(pic, "F|i", &f, &e, &radix);
 
@@ -229,14 +229,11 @@ pic_number_number_to_string(pic_state *pic)
   if (e) {
     int ival = (int) f;
     int ilen = number_string_length(ival, radix);
-    int s = ilen + 1;
-    char *buf = pic_malloc(pic, s);
+    char *buf = pic_alloca(pic, ilen + 1);
 
     number_string(ival, radix, ilen, buf);
 
-    str = pic_str_value(pic, buf, s - 1);
-
-    pic_free(pic, buf);
+    str = pic_str_value(pic, buf, ilen);
   }
   else {
     xFILE *file = xfopen_buf(pic, NULL, 0, "w");
@@ -249,7 +246,7 @@ pic_number_number_to_string(pic_state *pic)
     xfclose(pic, file);
   }
 
-  return pic_obj_value(str);
+  return str;
 }
 
 static pic_value

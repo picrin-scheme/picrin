@@ -26,12 +26,12 @@ pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 {
   const char *name;
   pic_sym *uid;
-  struct pic_string *str;
+  pic_value str;
 
   name = pic_str(pic, pic_id_name(pic, id));
 
   if (env->up == NULL && pic_sym_p(pic, pic_obj_value(id))) { /* toplevel & public */
-    str = pic_strf_value(pic, "%s/%s", pic_str(pic, env->lib), name);
+    str = pic_strf_value(pic, "%s/%s", pic_str(pic, pic_obj_value(env->lib)), name);
   } else {
     str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
   }

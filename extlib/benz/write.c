@@ -86,7 +86,7 @@ write_char(pic_state *pic, char c, xFILE *file, int mode)
 }
 
 static void
-write_str(pic_state *pic, struct pic_string *str, xFILE *file, int mode)
+write_str(pic_state *pic, pic_value str, xFILE *file, int mode)
 {
   int i;
   const char *cstr = pic_str(pic, str);
@@ -312,7 +312,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_char(pic, pic_char(pic, obj), file, p->mode);
     break;
   case PIC_TYPE_STRING:
-    write_str(pic, pic_str_ptr(obj), file, p->mode);
+    write_str(pic, obj, file, p->mode);
     break;
   case PIC_TYPE_PAIR:
     write_pair(p, obj);
@@ -442,7 +442,7 @@ pic_printf(pic_state *pic, const char *fmt, ...)
 {
   xFILE *file = pic_stdout(pic)->file;
   va_list ap;
-  struct pic_string *str;
+  pic_value str;
 
   va_start(ap, fmt);
 
