@@ -622,8 +622,8 @@ read_label_set(pic_state *pic, xFILE *file, int i)
       kh_val(h, it) = val = pic_cons(pic, pic_undef_value(pic), pic_undef_value(pic));
 
       tmp = read(pic, file, c);
-      pic_pair_ptr(val)->car = pic_car(pic, tmp);
-      pic_pair_ptr(val)->cdr = pic_cdr(pic, tmp);
+      pic_pair_ptr(pic, val)->car = pic_car(pic, tmp);
+      pic_pair_ptr(pic, val)->cdr = pic_cdr(pic, tmp);
 
       return val;
     }

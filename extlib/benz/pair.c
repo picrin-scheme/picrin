@@ -20,53 +20,37 @@ pic_cons(pic_state *pic, pic_value car, pic_value cdr)
 pic_value
 pic_car(pic_state *pic, pic_value obj)
 {
-  struct pic_pair *pair;
-
   if (! pic_pair_p(pic, obj)) {
     pic_errorf(pic, "car: pair required, but got ~s", obj);
   }
-  pair = pic_pair_ptr(obj);
-
-  return pair->car;
+  return pic_pair_ptr(pic, obj)->car;
 }
 
 pic_value
 pic_cdr(pic_state *pic, pic_value obj)
 {
-  struct pic_pair *pair;
-
   if (! pic_pair_p(pic, obj)) {
     pic_errorf(pic, "cdr: pair required, but got ~s", obj);
   }
-  pair = pic_pair_ptr(obj);
-
-  return pair->cdr;
+  return pic_pair_ptr(pic, obj)->cdr;
 }
 
 void
 pic_set_car(pic_state *pic, pic_value obj, pic_value val)
 {
-  struct pic_pair *pair;
-
   if (! pic_pair_p(pic, obj)) {
     pic_errorf(pic, "pair required");
   }
-  pair = pic_pair_ptr(obj);
-
-  pair->car = val;
+  pic_pair_ptr(pic, obj)->car = val;
 }
 
 void
 pic_set_cdr(pic_state *pic, pic_value obj, pic_value val)
 {
-  struct pic_pair *pair;
-
   if (! pic_pair_p(pic, obj)) {
     pic_errorf(pic, "pair required");
   }
-  pair = pic_pair_ptr(obj);
-
-  pair->cdr = val;
+  pic_pair_ptr(pic, obj)->cdr = val;
 }
 
 pic_value
@@ -107,7 +91,7 @@ pic_list_p(pic_state *pic, pic_value obj)
     /* advance rapid fast-forward; runs 2x faster than local */
     for (i = 0; i < 2; ++i) {
       if (pic_pair_p(pic, rapid)) {
-        rapid = pic_pair_ptr(rapid)->cdr;
+        rapid = pic_pair_ptr(pic, rapid)->cdr;
       }
       else {
         return pic_nil_p(pic, rapid);
@@ -115,7 +99,7 @@ pic_list_p(pic_state *pic, pic_value obj)
     }
 
     /* advance local */
-    local = pic_pair_ptr(local)->cdr;
+    local = pic_pair_ptr(pic, local)->cdr;
 
     if (pic_eq_p(pic, local, rapid)) {
       return false;
@@ -169,7 +153,7 @@ pic_list_ref(pic_state *pic, pic_value list, int i)
 void
 pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
 {
-  pic_pair_ptr(pic_list_tail(pic, list, i))->car = obj;
+  pic_pair_ptr(pic, pic_list_tail(pic, list, i))->car = obj;
 }
 
 pic_value

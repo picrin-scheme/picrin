@@ -119,7 +119,7 @@ write_float(pic_state *pic, double f, xFILE *file)
 static void write_core(struct writer_control *p, pic_value);
 
 static void
-write_pair_help(struct writer_control *p, struct pic_pair *pair)
+write_pair_help(struct writer_control *p, pic_value pair)
 {
   pic_state *pic = p->pic;
   khash_t(l) *lh = &p->labels;
@@ -127,18 +127,18 @@ write_pair_help(struct writer_control *p, struct pic_pair *pair)
   khiter_t it;
   int ret;
 
-  write_core(p, pair->car);
+  write_core(p, pic_car(pic, pair));
 
-  if (pic_nil_p(pic, pair->cdr)) {
+  if (pic_nil_p(pic, pic_cdr(pic, pair))) {
     return;
   }
-  else if (pic_pair_p(pic, pair->cdr)) {
+  else if (pic_pair_p(pic, pic_cdr(pic, pair))) {
 
     /* shared objects */
-    if ((it = kh_get(l, lh, pic_obj_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
+    if ((it = kh_get(l, lh, pic_obj_ptr(pic_cdr(pic, pair)))) != kh_end(lh) && kh_val(lh, it) != -1) {
       xfprintf(pic, p->file, " . ");
 
-      kh_put(v, vh, pic_obj_ptr(pair->cdr), &ret);
+      kh_put(v, vh, pic_obj_ptr(pic_cdr(pic, pair)), &ret);
       if (ret == 0) {           /* if exists */
         xfprintf(pic, p->file, "#%d#", kh_val(lh, it));
         return;
@@ -149,11 +149,11 @@ write_pair_help(struct writer_control *p, struct pic_pair *pair)
       xfprintf(pic, p->file, " ");
     }
 
-    write_pair_help(p, pic_pair_ptr(pair->cdr));
+    write_pair_help(p, pic_cdr(pic, pair));
 
     if (p->op == OP_WRITE) {
-      if ((it = kh_get(l, lh, pic_obj_ptr(pair->cdr))) != kh_end(lh) && kh_val(lh, it) != -1) {
-        it = kh_get(v, vh, pic_obj_ptr(pair->cdr));
+      if ((it = kh_get(l, lh, pic_obj_ptr(pic_cdr(pic, pair)))) != kh_end(lh) && kh_val(lh, it) != -1) {
+        it = kh_get(v, vh, pic_obj_ptr(pic_cdr(pic, pair)));
         kh_del(v, vh, it);
       }
     }
@@ -161,57 +161,57 @@ write_pair_help(struct writer_control *p, struct pic_pair *pair)
   }
   else {
     xfprintf(pic, p->file, " . ");
-    write_core(p, pair->cdr);
+    write_core(p, pic_cdr(pic, pair));
   }
 }
 
 static void
-write_pair(struct writer_control *p, struct pic_pair *pair)
+write_pair(struct writer_control *p, pic_value pair)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
   pic_sym *tag;
 
-  if (pic_pair_p(pic, pair->cdr) && pic_nil_p(pic, pic_cdr(pic, pair->cdr)) && pic_sym_p(pic, pair->car)) {
-    tag = pic_sym_ptr(pair->car);
+  if (pic_pair_p(pic, pic_cdr(pic, pair)) && pic_nil_p(pic, pic_cddr(pic, pair)) && pic_sym_p(pic, pic_car(pic, pair))) {
+    tag = pic_sym_ptr(pic_car(pic, pair));
     if (tag == pic->sQUOTE) {
       xfprintf(pic, file, "'");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
     else if (tag == pic->sUNQUOTE) {
       xfprintf(pic, file, ",");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
     else if (tag == pic->sUNQUOTE_SPLICING) {
       xfprintf(pic, file, ",@");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
     else if (tag == pic->sQUASIQUOTE) {
       xfprintf(pic, file, "`");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
     else if (tag == pic->sSYNTAX_QUOTE) {
       xfprintf(pic, file, "#'");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
     else if (tag == pic->sSYNTAX_UNQUOTE) {
       xfprintf(pic, file, "#,");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
     else if (tag == pic->sSYNTAX_UNQUOTE_SPLICING) {
       xfprintf(pic, file, "#,@");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
     else if (tag == pic->sSYNTAX_QUASIQUOTE) {
       xfprintf(pic, file, "#`");
-      write_core(p, pic_car(pic, pair->cdr));
+      write_core(p, pic_cadr(pic, pair));
       return;
     }
   }
@@ -312,7 +312,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_str(pic, pic_str_ptr(obj), file, p->mode);
     break;
   case PIC_TYPE_PAIR:
-    write_pair(p, pic_pair_ptr(obj));
+    write_pair(p, obj);
     break;
   case PIC_TYPE_VECTOR:
     write_vec(p, obj);

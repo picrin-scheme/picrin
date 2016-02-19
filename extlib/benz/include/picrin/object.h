@@ -120,11 +120,11 @@ struct pic_port {
   xFILE *file;
 };
 
+#define pic_pair_ptr(pic, o) ((struct pic_pair *)pic_obj_ptr(o))
 #define pic_vec_ptr(pic, o) ((struct pic_vector *)pic_obj_ptr(o))
 #define pic_dict_ptr(pic, v) ((struct pic_dict *)pic_obj_ptr(v))
 #define pic_sym_ptr(v) ((pic_sym *)pic_obj_ptr(v))
 #define pic_id_ptr(v) ((pic_id *)pic_obj_ptr(v))
-#define pic_pair_ptr(o) ((struct pic_pair *)pic_obj_ptr(o))
 #define pic_blob_ptr(v) ((struct pic_blob *)pic_obj_ptr(v))
 #define pic_str_ptr(o) ((struct pic_string *)pic_obj_ptr(o))
 #define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))

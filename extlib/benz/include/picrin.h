@@ -53,7 +53,6 @@ typedef struct {
 
 struct pic_object;
 struct pic_symbol;
-struct pic_pair;
 struct pic_string;
 struct pic_blob;
 struct pic_proc;
@@ -64,7 +63,6 @@ struct pic_data;
 
 typedef struct pic_symbol pic_sym;
 typedef struct pic_id pic_id;
-typedef struct pic_pair pic_pair;
 
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 
