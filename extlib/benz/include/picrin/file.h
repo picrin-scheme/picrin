@@ -5,10 +5,6 @@
 extern "C" {
 #endif
 
-#ifndef EOF
-# define EOF (-1)
-#endif
-
 #define XBUFSIZ 1024
 #define XOPEN_MAX 1024
 
@@ -33,7 +29,7 @@ typedef struct {
 #define xstdout (&pic->files[1])
 #define xstderr (&pic->files[2])
 
-enum _flags {
+enum {
   X_READ  = 01,
   X_WRITE = 02,
   X_UNBUF = 04,
@@ -45,38 +41,8 @@ enum _flags {
 #define xclearerr(p) ((p)->flag &= ~(X_EOF | X_ERR))
 #define xfeof(p)     (((p)->flag & X_EOF) != 0)
 #define xferror(p)   (((p)->flag & X_ERR) != 0)
-#define xfileno(p)   ((p)->fd)
 
-#define xgetc(pic, p)                                           \
-  ((--(p)->cnt >= 0)                                            \
-   ? (unsigned char) *(p)->ptr++                                \
-   : x_fillbuf((pic), p))
-#define xputc(pic, x, p)                                        \
-  ((--(p)->cnt >= 0 && !(((p)->flag & X_LNBUF) && (x) == '\n')) \
-   ? *(p)->ptr++ = (x)                                          \
-   : x_flushbuf((pic), (x), (p)))
-#define xgetchar(pic)   xgetc((pic), xstdin)
-#define xputchar(pic, x)  xputc((pic), (x), xstdout)
-
-/* resource aquisition */
 xFILE *xfunopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
-int xfclose(pic_state *, xFILE *);
-
-#if PIC_ENABLE_STDIO
-xFILE *xfopen_file(pic_state *, FILE *, const char *mode);
-#endif
-xFILE *xfopen_buf(pic_state *, const char *buf, int len, const char *mode);
-int xfget_buf(pic_state *, xFILE *file, const char **buf, int *len);
-xFILE *xfopen_null(pic_state *, const char *mode);
-
-/* buffer management */
-int x_fillbuf(pic_state *, xFILE *);
-int x_flushbuf(pic_state *, int, xFILE *);
-int xfflush(pic_state *, xFILE *);
-
-/* direct IO */
-size_t xfread(pic_state *, void *, size_t, size_t, xFILE *);
-size_t xfwrite(pic_state *, const void *, size_t, size_t, xFILE *);
 
 enum {
   XSEEK_CUR,
@@ -84,23 +50,26 @@ enum {
   XSEEK_SET
 };
 
-/* indicator positioning */
+size_t xfread(pic_state *, void *, size_t, size_t, xFILE *);
+size_t xfwrite(pic_state *, const void *, size_t, size_t, xFILE *);
 long xfseek(pic_state *, xFILE *, long, int);
-long xftell(pic_state *, xFILE *);
-void xrewind(pic_state *, xFILE *);
+int xfflush(pic_state *, xFILE *);
+int xfclose(pic_state *, xFILE *);
 
-/* character IO */
 int xfputc(pic_state *, int, xFILE *);
 int xfgetc(pic_state *, xFILE *);
 int xfputs(pic_state *, const char *, xFILE *);
 char *xfgets(pic_state *, char *, int, xFILE *);
-int xputs(pic_state *, const char *);
 int xungetc(int, xFILE *);
-
-/* formatted I/O */
-int xprintf(pic_state *, const char *, ...);
 int xfprintf(pic_state *, xFILE *, const char *, ...);
 int xvfprintf(pic_state *, xFILE *, const char *, va_list);
+
+#if PIC_ENABLE_STDIO
+xFILE *xfopen_file(pic_state *, FILE *, const char *mode);
+#endif
+xFILE *xfopen_buf(pic_state *, const char *buf, int len, const char *mode);
+int xfget_buf(pic_state *, xFILE *file, const char **buf, int *len);
+xFILE *xfopen_null(pic_state *, const char *mode);
 
 #if defined(__cplusplus)
 }

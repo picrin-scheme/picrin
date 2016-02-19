@@ -5,6 +5,9 @@
 #include "picrin.h"
 #include "picrin/object.h"
 
+#undef EOF
+#define EOF (-1)
+
 KHASH_DEFINE(read, int, pic_value, kh_int_hash_func, kh_int_hash_equal)
 
 static pic_value read(pic_state *pic, struct pic_port *port, int c);

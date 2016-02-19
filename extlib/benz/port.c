@@ -5,6 +5,9 @@
 #include "picrin.h"
 #include "picrin/object.h"
 
+#undef EOF
+#define EOF (-1)
+
 struct pic_port *
 pic_make_port(pic_state *pic, xFILE *file)
 {

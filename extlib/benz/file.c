@@ -1,5 +1,9 @@
 #include "picrin.h"
 
+#ifndef EOF
+# define EOF (-1)
+#endif
+
 xFILE *xfunopen(pic_state *pic, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *)) {
   xFILE *fp;
 
@@ -137,6 +141,15 @@ int xfflush(pic_state *pic, xFILE *f) {
   return retval;
 }
 
+#define xgetc(pic, p)                                           \
+  ((--(p)->cnt >= 0)                                            \
+   ? (unsigned char) *(p)->ptr++                                \
+   : x_fillbuf((pic), p))
+#define xputc(pic, x, p)                                        \
+  ((--(p)->cnt >= 0 && !(((p)->flag & X_LNBUF) && (x) == '\n')) \
+   ? *(p)->ptr++ = (x)                                          \
+   : x_flushbuf((pic), (x), (p)))
+
 int xfputc(pic_state *pic, int x, xFILE *fp) {
   return xputc(pic, x, fp);
 }
@@ -168,35 +181,6 @@ char *xfgets(pic_state *pic, char *s, int size, xFILE *stream) {
   while (--size > 0 && (c = xgetc(pic, stream)) != EOF) {
     if ((*buf++ = c) == '\n')
       break;
-  }
-  *buf = '\0';
-
-  return (c == EOF && buf == s) ? NULL : s;
-}
-
-int xputs(pic_state *pic, const char *s) {
-  int i = 1;
-
-  while(*s != '\0') {
-    if (xputchar(pic, *s++) == EOF)
-      return EOF;
-    i++;
-  }
-  if (xputchar(pic, '\n') == EOF) {
-    return EOF;
-  }
-  return i;
-}
-
-char *xgets(pic_state *pic, char *s) {
-  int c;
-  char *buf;
-
-  xfflush(pic, NULL);
-
-  buf = s;
-  while ((c = xgetchar(pic)) != EOF && c != '\n') {
-    *buf++ = c;
   }
   *buf = '\0';
 
@@ -268,25 +252,6 @@ long xfseek(pic_state *pic, xFILE *fp, long offset, int whence) {
     return s;
   fp->flag &= ~X_EOF;
   return 0;
-}
-
-long xftell(pic_state *pic, xFILE *fp) {
-  return xfseek(pic, fp, 0, XSEEK_CUR);
-}
-
-void xrewind(pic_state *pic, xFILE *fp) {
-  xfseek(pic, fp, 0, XSEEK_SET);
-  xclearerr(fp);
-}
-
-int xprintf(pic_state *pic, const char *fmt, ...) {
-  va_list ap;
-  int n;
-
-  va_start(ap, fmt);
-  n = xvfprintf(pic, xstdout, fmt, ap);
-  va_end(ap);
-  return n;
 }
 
 int xfprintf(pic_state *pic, xFILE *stream, const char *fmt, ...) {
@@ -435,12 +400,13 @@ file_close(pic_state PIC_UNUSED(*pic), void *cookie) {
 }
 
 xFILE *xfopen_file(pic_state *pic, FILE *fp, const char *mode) {
-  switch (*mode) {
-  case 'r':
-    return xfunopen(pic, fp, file_read, 0, file_seek, file_close);
-  default:
-    return xfunopen(pic, fp, 0, file_write, file_seek, file_close);
+  xFILE *f;
+  if (*mode == 'r') {
+    f = xfunopen(pic, fp, file_read, 0, file_seek, file_close);
+  } else {
+    f = xfunopen(pic, fp, 0, file_write, file_seek, file_close);
   }
+  return f;
 }
 
 #endif

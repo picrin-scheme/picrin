@@ -149,33 +149,35 @@ struct pic_string *pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
 struct pic_blob *pic_blob_value(pic_state *, const unsigned char *buf, int len);
 struct pic_data *pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
 
-#define PIC_TYPE_INVALID 1
-#define PIC_TYPE_FLOAT   2
-#define PIC_TYPE_INT     3
-#define PIC_TYPE_CHAR    4
-#define PIC_TYPE_EOF     5
-#define PIC_TYPE_UNDEF   6
-#define PIC_TYPE_TRUE    8
-#define PIC_TYPE_NIL     7
-#define PIC_TYPE_FALSE   9
-#define PIC_IVAL_END     10
-/* --------------------- */
-#define PIC_TYPE_STRING  16
-#define PIC_TYPE_VECTOR  17
-#define PIC_TYPE_BLOB    18
-#define PIC_TYPE_PROC    19
-#define PIC_TYPE_PORT    20
-#define PIC_TYPE_ERROR   21
-#define PIC_TYPE_ID      22
-#define PIC_TYPE_ENV     23
-#define PIC_TYPE_DATA    24
-#define PIC_TYPE_DICT    25
-#define PIC_TYPE_WEAK    26
-#define PIC_TYPE_RECORD  27
-#define PIC_TYPE_SYMBOL  28
-#define PIC_TYPE_PAIR    29
-#define PIC_TYPE_CXT     30
-#define PIC_TYPE_CP      31
+enum {
+  PIC_TYPE_INVALID = 1,
+  PIC_TYPE_FLOAT   = 2,
+  PIC_TYPE_INT     = 3,
+  PIC_TYPE_CHAR    = 4,
+  PIC_TYPE_EOF     = 5,
+  PIC_TYPE_UNDEF   = 6,
+  PIC_TYPE_TRUE    = 8,
+  PIC_TYPE_NIL     = 7,
+  PIC_TYPE_FALSE   = 9,
+  PIC_IVAL_END     = 10,
+/* -------------------- */
+  PIC_TYPE_STRING  = 16,
+  PIC_TYPE_VECTOR  = 17,
+  PIC_TYPE_BLOB    = 18,
+  PIC_TYPE_PROC    = 19,
+  PIC_TYPE_PORT    = 20,
+  PIC_TYPE_ERROR   = 21,
+  PIC_TYPE_ID      = 22,
+  PIC_TYPE_ENV     = 23,
+  PIC_TYPE_DATA    = 24,
+  PIC_TYPE_DICT    = 25,
+  PIC_TYPE_WEAK    = 26,
+  PIC_TYPE_RECORD  = 27,
+  PIC_TYPE_SYMBOL  = 28,
+  PIC_TYPE_PAIR    = 29,
+  PIC_TYPE_CXT     = 30,
+  PIC_TYPE_CP      = 31
+};
 
 #define pic_undef_p(pic,v) (pic_type(pic,v) == PIC_TYPE_UNDEF)
 #define pic_int_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INT)
