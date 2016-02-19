@@ -21,7 +21,7 @@ pic_intern(pic_state *pic, struct pic_string *str)
   it = kh_put(oblist, h, str, &ret);
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
-    pic_gc_protect(pic, pic_obj_value(sym));
+    pic_protect(pic, pic_obj_value(sym));
     return sym;
   }
 

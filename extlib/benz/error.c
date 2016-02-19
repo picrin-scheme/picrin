@@ -117,7 +117,7 @@ pic_raise_continuable(pic_state *pic, pic_value err)
 
   handler = pic_pop_handler(pic);
 
-  pic_gc_protect(pic, pic_obj_value(handler));
+  pic_protect(pic, pic_obj_value(handler));
 
   v = pic_call(pic, handler, 1, err);
 

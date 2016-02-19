@@ -83,9 +83,9 @@ void pic_free(pic_state *, void *);
 typedef pic_value (*pic_func_t)(pic_state *);
 
 void *pic_alloca(pic_state *, size_t);
-pic_value pic_gc_protect(pic_state *, pic_value);
-size_t pic_gc_arena_preserve(pic_state *);
-void pic_gc_arena_restore(pic_state *, size_t);
+size_t pic_enter(pic_state *);
+void pic_leave(pic_state *, size_t);
+pic_value pic_protect(pic_state *, pic_value);
 void pic_gc(pic_state *);
 
 void pic_add_feature(pic_state *, const char *feature);
@@ -289,9 +289,9 @@ void pic_close_port(pic_state *, struct pic_port *port);
 #define pic_void(exec)                          \
   pic_void_(PIC_GENSYM(ai), exec)
 #define pic_void_(ai,exec) do {                 \
-    size_t ai = pic_gc_arena_preserve(pic);     \
+    size_t ai = pic_enter(pic);     \
     exec;                                       \
-    pic_gc_arena_restore(pic, ai);              \
+    pic_leave(pic, ai);              \
   } while (0)
 
 pic_value pic_read(pic_state *, struct pic_port *);

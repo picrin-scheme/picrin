@@ -19,10 +19,10 @@ pic_system_cmdline(pic_state *pic)
   pic_get_args(pic, "");
 
   for (i = 0; i < picrin_argc; ++i) {
-    size_t ai = pic_gc_arena_preserve(pic);
+    size_t ai = pic_enter(pic);
 
     v = pic_cons(pic, pic_obj_value(pic_cstr_value(pic, picrin_argv[i])), v);
-    pic_gc_arena_restore(pic, ai);
+    pic_leave(pic, ai);
   }
 
   return pic_reverse(pic, v);
@@ -96,7 +96,7 @@ pic_system_getenvs(pic_state *pic)
 {
   char **envp;
   pic_value data = pic_nil_value(pic);
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
 
   pic_get_args(pic, "");
 
@@ -117,8 +117,8 @@ pic_system_getenvs(pic_state *pic)
     /* push */
     data = pic_cons(pic, pic_cons(pic, pic_obj_value(key), pic_obj_value(val)), data);
 
-    pic_gc_arena_restore(pic, ai);
-    pic_gc_protect(pic, data);
+    pic_leave(pic, ai);
+    pic_protect(pic, data);
   }
 
   return data;

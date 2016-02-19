@@ -142,7 +142,7 @@ gc_protect(pic_state *pic, struct pic_object *obj)
 }
 
 pic_value
-pic_gc_protect(pic_state *pic, pic_value v)
+pic_protect(pic_state *pic, pic_value v)
 {
   if (! pic_obj_p(pic, v))
     return v;
@@ -153,13 +153,13 @@ pic_gc_protect(pic_state *pic, pic_value v)
 }
 
 size_t
-pic_gc_arena_preserve(pic_state *pic)
+pic_enter(pic_state *pic)
 {
   return pic->arena_idx;
 }
 
 void
-pic_gc_arena_restore(pic_state *pic, size_t state)
+pic_leave(pic_state *pic, size_t state)
 {
   pic->arena_idx = state;
 }

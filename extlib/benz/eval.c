@@ -9,7 +9,7 @@
 static pic_value
 optimize_beta(pic_state *pic, pic_value expr)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
   pic_value functor, formals, args, tmp, val, it, defs;
 
   if (! pic_list_p(pic, expr))
@@ -34,8 +34,8 @@ optimize_beta(pic_state *pic, pic_value expr)
   }
   expr = pic_reverse(pic, tmp);
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, expr);
+  pic_leave(pic, ai);
+  pic_protect(pic, expr);
 
   functor = pic_list_ref(pic, expr, 0);
   if (pic_pair_p(pic, functor) && pic_eq_p(pic, pic_car(pic, functor), pic_obj_value(pic->sLAMBDA))) {
@@ -57,8 +57,8 @@ optimize_beta(pic_state *pic, pic_value expr)
   }
  exit:
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, expr);
+  pic_leave(pic, ai);
+  pic_protect(pic, expr);
   return expr;
 }
 
@@ -332,13 +332,13 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
 static pic_value
 analyze(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
   pic_value res;
 
   res = analyze_node(pic, scope, obj);
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, res);
+  pic_leave(pic, ai);
+  pic_protect(pic, res);
   return res;
 }
 
@@ -828,23 +828,23 @@ pic_codegen(pic_state *pic, pic_value obj)
   return codegen_context_destroy(pic, cxt);
 }
 
-#define SAVE(pic, ai, obj) pic_gc_arena_restore(pic, ai); pic_gc_protect(pic, obj)
+#define SAVE(pic, ai, obj) pic_leave(pic, ai); pic_protect(pic, obj)
 
 struct pic_proc *
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct pic_irep *irep;
   struct pic_proc *proc;
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
 
 #if DEBUG
-  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
 
   fprintf(stdout, "# input expression\n");
   pic_write(pic, obj);
   fprintf(stdout, "\n");
 
-  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
 #endif
 
   /* optimize */
@@ -853,7 +853,7 @@ pic_compile(pic_state *pic, pic_value obj)
   fprintf(stdout, "## optimize completed\n");
   pic_write(pic, obj);
   fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
 #endif
 
   SAVE(pic, ai, obj);
@@ -864,7 +864,7 @@ pic_compile(pic_state *pic, pic_value obj)
   fprintf(stdout, "## analyzer completed\n");
   pic_write(pic, obj);
   fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %zu\n", pic_gc_arena_preserve(pic));
+  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
 #endif
 
   SAVE(pic, ai, obj);

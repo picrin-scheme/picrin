@@ -170,7 +170,7 @@ expand_quote(pic_state *pic, pic_value expr)
 static pic_value
 expand_list(pic_state *pic, pic_value obj, struct pic_env *env, pic_value deferred)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
   pic_value x, head, tail;
 
   if (pic_pair_p(pic, obj)) {
@@ -181,8 +181,8 @@ expand_list(pic_state *pic, pic_value obj, struct pic_env *env, pic_value deferr
     x = expand(pic, obj, env, deferred);
   }
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, x);
+  pic_leave(pic, ai);
+  pic_protect(pic, x);
   return x;
 }
 
@@ -329,13 +329,13 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
 static pic_value
 expand(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
   pic_value v;
 
   v = expand_node(pic, expr, env, deferred);
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, v);
+  pic_leave(pic, ai);
+  pic_protect(pic, v);
   return v;
 }
 

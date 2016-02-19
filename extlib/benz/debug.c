@@ -8,7 +8,7 @@
 struct pic_string *
 pic_get_backtrace(pic_state *pic)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
   pic_callinfo *ci;
   struct pic_string *trace;
 
@@ -27,8 +27,8 @@ pic_get_backtrace(pic_state *pic)
     }
   }
 
-  pic_gc_arena_restore(pic, ai);
-  pic_gc_protect(pic, pic_obj_value(trace));
+  pic_leave(pic, ai);
+  pic_protect(pic, pic_obj_value(trace));
 
   return trace;
 }

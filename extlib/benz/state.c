@@ -123,9 +123,9 @@ pic_init_core(pic_state *pic)
 
   pic_deflibrary(pic, "picrin.base");
 
-  ai = pic_gc_arena_preserve(pic);
+  ai = pic_enter(pic);
 
-#define DONE pic_gc_arena_restore(pic, ai);
+#define DONE pic_leave(pic, ai);
 
   import_builtin_syntax("define");
   import_builtin_syntax("set!");
@@ -298,7 +298,7 @@ pic_open(pic_allocf allocf, void *userdata)
   /* native stack marker */
   pic->native_stack_start = &t;
 
-  ai = pic_gc_arena_preserve(pic);
+  ai = pic_enter(pic);
 
 #define S(slot,name) pic->slot = pic_intern_lit(pic, name)
 
@@ -338,7 +338,7 @@ pic_open(pic_allocf allocf, void *userdata)
   S(sGE, ">=");
   S(sNOT, "not");
 
-  pic_gc_arena_restore(pic, ai);
+  pic_leave(pic, ai);
 
   /* root tables */
   pic->globals = pic_make_weak(pic);
@@ -360,14 +360,14 @@ pic_open(pic_allocf allocf, void *userdata)
   pic_make_library(pic, "picrin.user");
   pic_in_library(pic, "picrin.user");
 
-  pic_gc_arena_restore(pic, ai);
+  pic_leave(pic, ai);
 
   /* turn on GC */
   pic->gc_enable = true;
 
   pic_init_core(pic);
 
-  pic_gc_arena_restore(pic, ai);
+  pic_leave(pic, ai);
 
   return pic;
 

@@ -822,7 +822,7 @@ pic_reader_destroy(pic_state *pic)
 pic_value
 pic_read(pic_state *pic, struct pic_port *port)
 {
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
   pic_value val;
   int c;
 
@@ -832,14 +832,14 @@ pic_read(pic_state *pic, struct pic_port *port)
     if (! pic_invalid_p(pic, val)) {
       break;
     }
-    pic_gc_arena_restore(pic, ai);
+    pic_leave(pic, ai);
   }
   if (c == EOF) {
     return pic_eof_object(pic);
   }
 
-  pic_gc_arena_restore(pic, ai);
-  return pic_gc_protect(pic, val);
+  pic_leave(pic, ai);
+  return pic_protect(pic, val);
 }
 
 pic_value

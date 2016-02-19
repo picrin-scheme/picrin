@@ -337,7 +337,7 @@ pic_value
 pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 {
   pic_code c;
-  size_t ai = pic_gc_arena_preserve(pic);
+  size_t ai = pic_enter(pic);
   pic_code boot[2];
   int i;
 
@@ -528,7 +528,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         pic->sp[0] = v;
         pic->sp += pic->ci->retc;
 
-        pic_gc_arena_restore(pic, ai);
+        pic_leave(pic, ai);
         goto L_RET;
       }
       else {
@@ -546,7 +546,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 	if (irep->varg) {
 	  rest = pic_nil_value(pic);
 	  for (i = 0; i < ci->argc - irep->argc; ++i) {
-	    pic_gc_protect(pic, v = POP());
+	    pic_protect(pic, v = POP());
 	    rest = pic_cons(pic, v, rest);
 	  }
 	  PUSH(rest);
@@ -568,7 +568,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         ci->regs = ci->fp + irep->argc + irep->localc;
 
 	pic->ip = irep->code;
-	pic_gc_arena_restore(pic, ai);
+	pic_leave(pic, ai);
 	JUMP;
       }
     }
@@ -631,7 +631,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 
       proc = pic_make_proc_irep(pic, pic->ci->irep->irep[c.a], pic->ci->cxt);
       PUSH(pic_obj_value(proc));
-      pic_gc_arena_restore(pic, ai);
+      pic_leave(pic, ai);
       NEXT;
     }
 
@@ -643,11 +643,11 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
     CASE(OP_CONS) {
       pic_value a, b;
       check_condition(CONS, 2);
-      pic_gc_protect(pic, b = POP());
-      pic_gc_protect(pic, a = POP());
+      pic_protect(pic, b = POP());
+      pic_protect(pic, a = POP());
       (void)POP();
       PUSH(pic_cons(pic, a, b));
-      pic_gc_arena_restore(pic, ai);
+      pic_leave(pic, ai);
       NEXT;
     }
     CASE(OP_CAR) {
@@ -785,7 +785,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 
       VM_END_PRINT;
 
-      return pic_gc_protect(pic, POP());
+      return pic_protect(pic, POP());
     }
   } VM_LOOP_END;
 }
