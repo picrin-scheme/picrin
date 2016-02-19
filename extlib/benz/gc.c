@@ -20,7 +20,7 @@ struct heap_page {
 struct pic_object {
   union {
     struct pic_basic basic;
-    struct pic_symbol sym;
+    struct pic_identifier id;
     struct pic_string str;
     struct pic_blob blob;
     struct pic_pair pair;
@@ -29,7 +29,6 @@ struct pic_object {
     struct pic_weak weak;
     struct pic_data data;
     struct pic_record rec;
-    struct pic_id id;
     struct pic_env env;
     struct pic_proc proc;
     struct pic_context cxt;
@@ -333,8 +332,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TYPE_ID: {
-    gc_mark_object(pic, (struct pic_object *)obj->u.id.u.id.id);
-    LOOP(obj->u.id.u.id.env);
+    gc_mark_object(pic, (struct pic_object *)obj->u.id.u.id);
+    LOOP(obj->u.id.env);
     break;
   }
   case PIC_TYPE_ENV: {
@@ -377,7 +376,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TYPE_SYMBOL: {
-    LOOP(obj->u.sym.str);
+    LOOP(obj->u.id.u.str);
     break;
   }
   case PIC_TYPE_WEAK: {

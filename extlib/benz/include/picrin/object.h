@@ -13,18 +13,13 @@ KHASH_DECLARE(env, pic_id *, pic_sym *)
 KHASH_DECLARE(dict, pic_sym *, pic_value)
 KHASH_DECLARE(weak, struct pic_object *, pic_value)
 
-struct pic_id {
+struct pic_identifier {
+  PIC_OBJECT_HEADER
   union {
-    struct pic_symbol {
-      PIC_OBJECT_HEADER
-      struct pic_string *str;
-    } sym;
-    struct {
-      PIC_OBJECT_HEADER
-      struct pic_id *id;
-      struct pic_env *env;
-    } id;
+    struct pic_string *str;
+    struct pic_identifier *id;
   } u;
+  struct pic_env *env;
 };
 
 struct pic_env {

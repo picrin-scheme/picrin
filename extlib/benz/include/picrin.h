@@ -57,8 +57,8 @@ struct pic_port;
 struct pic_error;
 struct pic_env;
 
-typedef struct pic_symbol pic_sym;
-typedef struct pic_id pic_id;
+typedef struct pic_identifier pic_id;
+typedef pic_id pic_sym;
 
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 

@@ -88,8 +88,8 @@ pic_find_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
     if (pic_sym_p(pic, pic_obj_value(id))) {
       break;
     }
-    env = id->u.id.env;         /* do not overwrite id first */
-    id = id->u.id.id;
+    env = id->env;              /* do not overwrite id first */
+    id = id->u.id;
   }
   if (uid == NULL) {
     while (env->up != NULL) {

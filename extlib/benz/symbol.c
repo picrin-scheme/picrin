@@ -27,8 +27,8 @@ pic_intern(pic_state *pic, pic_value str)
 
   kh_val(h, it) = pic->sQUOTE;  /* dummy */
 
-  sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TYPE_SYMBOL);
-  sym->str = pic_str_ptr(pic, str);
+  sym = (pic_sym *)pic_obj_alloc(pic, offsetof(pic_sym, env), PIC_TYPE_SYMBOL);
+  sym->u.str = pic_str_ptr(pic, str);
   kh_val(h, it) = sym;
 
   return sym;
@@ -40,22 +40,22 @@ pic_make_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
   pic_id *nid;
 
   nid = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TYPE_ID);
-  nid->u.id.id = id;
-  nid->u.id.env = env;
+  nid->u.id = id;
+  nid->env = env;
   return nid;
 }
 
 pic_value
 pic_sym_name(pic_state PIC_UNUSED(*pic), pic_sym *sym)
 {
-  return pic_obj_value(sym->str);
+  return pic_obj_value(sym->u.str);
 }
 
 pic_value
 pic_id_name(pic_state *pic, pic_id *id)
 {
   while (! pic_sym_p(pic, pic_obj_value(id))) {
-    id = id->u.id.id;
+    id = id->u.id;
   }
 
   return pic_sym_name(pic, (pic_sym *)id);
@@ -97,7 +97,7 @@ pic_symbol_symbol_to_string(pic_state *pic)
 
   pic_get_args(pic, "m", &sym);
 
-  return pic_obj_value(sym->str);
+  return pic_obj_value(sym->u.str);
 }
 
 static pic_value
@@ -146,7 +146,7 @@ pic_symbol_identifier_variable(pic_state *pic)
     pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
   }
 
-  return pic_obj_value(pic_id_ptr(id)->u.id.id);
+  return pic_obj_value(pic_id_ptr(id)->u.id);
 }
 
 static pic_value
@@ -162,7 +162,7 @@ pic_symbol_identifier_environment(pic_state *pic)
     pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
   }
 
-  return pic_obj_value(pic_id_ptr(id)->u.id.env);
+  return pic_obj_value(pic_id_ptr(id)->env);
 }
 
 static pic_value
