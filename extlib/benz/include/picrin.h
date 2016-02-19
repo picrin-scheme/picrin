@@ -58,7 +58,6 @@ struct pic_proc;
 struct pic_port;
 struct pic_error;
 struct pic_env;
-struct pic_data;
 
 typedef struct pic_symbol pic_sym;
 typedef struct pic_id pic_id;
@@ -125,7 +124,7 @@ PIC_INLINE char pic_char(pic_state *, pic_value c);
 #define pic_bool(pic,b) (! pic_false_p(pic, b))
 const char *pic_str(pic_state *, struct pic_string *);
 unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
-void *pic_data(pic_state *, pic_value str);
+void *pic_data(pic_state *, pic_value data);
 
 typedef struct {
   const char *type_name;
@@ -147,7 +146,7 @@ struct pic_string *pic_str_value(pic_state *, const char *str, int len);
 struct pic_string *pic_strf_value(pic_state *, const char *fmt, ...);
 struct pic_string *pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
 pic_value pic_blob_value(pic_state *, const unsigned char *buf, int len);
-struct pic_data *pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
+pic_value pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
 
 enum {
   PIC_TYPE_INVALID = 1,

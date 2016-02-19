@@ -704,7 +704,7 @@ pic_alloca(pic_state *pic, size_t n)
   static const pic_data_type t = { "pic_alloca", pic_free, 0 };
 
   /* TODO: optimize */
-  return pic_data_value(pic, pic_malloc(pic, n), &t)->data;
+  return pic_data(pic, pic_data_value(pic, pic_malloc(pic, n), &t));
 }
 
 struct pic_object *

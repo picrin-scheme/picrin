@@ -62,7 +62,7 @@ pic_regexp_regexp(pic_state *pic)
     pic_errorf(pic, "regexp compilation error: %s", errbuf);
   }
 
-  return pic_obj_value(pic_data_value(pic, reg, &regexp_type));
+  return pic_data_value(pic, reg, &regexp_type);
 }
 
 static pic_value

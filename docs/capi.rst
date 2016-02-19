@@ -83,15 +83,12 @@ When you use dynamic memory allocation inside C APIs, you must be caseful about 
   pic_create_foo(pic_state *pic)
   {
     struct foo *f;
-    struct pic_data *dat;
 
     pic_get_args(pic, ""); // no args here
 
     f = create_foo();
 
-    data = pic_data_value(pic, md, &foo_type);
-
-    return pic_obj_value(data);
+    return pic_data_value(pic, md, &foo_type);
   }
 
   void

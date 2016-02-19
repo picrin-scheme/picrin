@@ -141,7 +141,7 @@ pic_socket_make_socket(pic_state *pic)
     pic_errorf(pic, "%s", strerror(errno));
   }
 
-  return pic_obj_value(pic_data_value(pic, sock, &socket_type));
+  return pic_data_value(pic, sock, &socket_type);
 }
 
 static pic_value
@@ -179,7 +179,7 @@ pic_socket_socket_accept(pic_state *pic)
 
   new_sock = pic_malloc(pic, sizeof(struct pic_socket_t));
   new_sock->fd = fd;
-  return pic_obj_value(pic_data_value(pic, new_sock, &socket_type));
+  return pic_data_value(pic, new_sock, &socket_type);
 }
 
 static pic_value

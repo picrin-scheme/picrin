@@ -109,7 +109,7 @@ cont_call(pic_state *pic)
     pic_errorf(pic, "calling dead escape continuation");
   }
 
-  cont = pic_data_ptr(pic_closure_ref(pic, CV_ESCAPE))->data;
+  cont = pic_data(pic, pic_closure_ref(pic, CV_ESCAPE));
   cont->retc = argc;
   cont->retv = argv;
 
@@ -127,7 +127,7 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
   struct pic_proc *c;
 
   /* save the escape continuation in proc */
-  c = pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_obj_value(pic_data_value(pic, cont, &cont_type)));
+  c = pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_data_value(pic, cont, &cont_type));
 
   return c;
 }
