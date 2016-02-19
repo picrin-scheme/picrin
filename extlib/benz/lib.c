@@ -57,7 +57,7 @@ pic_make_library(pic_state *pic, const char *lib)
   const char *old_lib;
   struct pic_string *name;
   struct pic_env *env;
-  struct pic_dict *exports;
+  pic_value exports;
   khiter_t it;
   int ret;
 
@@ -76,7 +76,7 @@ pic_make_library(pic_state *pic, const char *lib)
 
   kh_val(h, it).name = name;
   kh_val(h, it).env = env;
-  kh_val(h, it).exports = exports;
+  kh_val(h, it).exports = pic_dict_ptr(pic, exports);
 
   if (pic->lib) {
     pic->lib = get_library(pic, old_lib); /* ltable might be rehashed */
@@ -117,7 +117,7 @@ pic_import(pic_state *pic, const char *lib)
 
   libp = get_library(pic, lib);
 
-  while (pic_dict_next(pic, libp->exports, &it, &name, &val)) {
+  while (pic_dict_next(pic, pic_obj_value(libp->exports), &it, &name, &val)) {
     realname = pic_sym_ptr(val);
 
     if ((uid = pic_find_identifier(pic, (pic_id *)realname, libp->env)) == NULL) {
@@ -130,7 +130,7 @@ pic_import(pic_state *pic, const char *lib)
 void
 pic_export(pic_state *pic, pic_sym *name)
 {
-  pic_dict_set(pic, pic->lib->exports, name, pic_obj_value(name));
+  pic_dict_set(pic, pic_obj_value(pic->lib->exports), name, pic_obj_value(name));
 }
 
 static pic_value
@@ -188,10 +188,10 @@ pic_lib_library_import(pic_state *pic)
 
   libp = get_library(pic, lib);
 
-  if (! pic_dict_has(pic, libp->exports, name)) {
+  if (! pic_dict_has(pic, pic_obj_value(libp->exports), name)) {
     pic_errorf(pic, "attempted to import undefined variable '~s'", pic_obj_value(name));
   } else {
-    realname = pic_sym_ptr(pic_dict_ref(pic, libp->exports, name));
+    realname = pic_sym_ptr(pic_dict_ref(pic, pic_obj_value(libp->exports), name));
   }
 
   if ((uid = pic_find_identifier(pic, (pic_id *)realname, libp->env)) == NULL) {
@@ -214,7 +214,7 @@ pic_lib_library_export(pic_state *pic)
     alias = name;
   }
 
-  pic_dict_set(pic, pic->lib->exports, alias, pic_obj_value(name));
+  pic_dict_set(pic, pic_obj_value(pic->lib->exports), alias, pic_obj_value(name));
 
   return pic_undef_value(pic);
 }
@@ -232,7 +232,7 @@ pic_lib_library_exports(pic_state *pic)
 
   libp = get_library(pic, lib);
 
-  while (pic_dict_next(pic, libp->exports, &it, &sym, NULL)) {
+  while (pic_dict_next(pic, pic_obj_value(libp->exports), &it, &sym, NULL)) {
     pic_push(pic, pic_obj_value(sym), exports);
   }
 

@@ -238,7 +238,7 @@ write_vec(struct writer_control *p, pic_vec *vec)
 }
 
 static void
-write_dict(struct writer_control *p, struct pic_dict *dict)
+write_dict(struct writer_control *p, pic_value dict)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
@@ -318,7 +318,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_vec(p, pic_vec_ptr(obj));
     break;
   case PIC_TYPE_DICT:
-    write_dict(p, pic_dict_ptr(obj));
+    write_dict(p, obj);
     break;
   default:
     xfprintf(pic, file, "#<%s %p>", pic_typename(pic, pic_type(pic, obj)), pic_obj_ptr(obj));
@@ -369,7 +369,7 @@ traverse(struct writer_control *p, pic_value obj)
         /* dictionary */
         int it = 0;
         pic_value val;
-        while (pic_dict_next(pic, pic_dict_ptr(obj), &it, NULL, &val)) {
+        while (pic_dict_next(pic, obj, &it, NULL, &val)) {
           traverse(p, val);
         }
       }

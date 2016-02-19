@@ -26,7 +26,7 @@
  *  b   struct pic_blob **      bytevector object
  *  l   struct pic_proc **      lambda object
  *  p   struct pic_port **      port object
- *  d   struct pic_dict **      dictionary object
+ *  d   pic_value *             dictionary object
  *  e   struct pic_error **     error object
  *  r   struct pic_record **    record object
  *
@@ -153,9 +153,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
     PTR_CASE('b', blob, struct pic_blob *)
     PTR_CASE('l', proc, struct pic_proc *)
     PTR_CASE('p', port, struct pic_port *)
-    PTR_CASE('d', dict, struct pic_dict *)
     PTR_CASE('e', error, struct pic_error *)
     PTR_CASE('r', rec, struct pic_record *)
+
+#define OBJ_CASE(c, type) VAL_CASE(c, type, pic_value, v)
+
+    OBJ_CASE('d', dict)
 
     default:
       pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);

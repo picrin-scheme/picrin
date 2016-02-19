@@ -241,13 +241,13 @@ void pic_vec_set(pic_state *, pic_vec *, int, pic_value);
 int pic_vec_len(pic_state *, pic_vec *);
 
 /* dictionary */
-struct pic_dict *pic_make_dict(pic_state *);
-pic_value pic_dict_ref(pic_state *, struct pic_dict *, pic_sym *);
-void pic_dict_set(pic_state *, struct pic_dict *, pic_sym *, pic_value);
-void pic_dict_del(pic_state *, struct pic_dict *, pic_sym *);
-bool pic_dict_has(pic_state *, struct pic_dict *, pic_sym *);
-int pic_dict_size(pic_state *, struct pic_dict *);
-bool pic_dict_next(pic_state *, struct pic_dict *, int *iter, pic_sym **key, pic_value *val);
+pic_value pic_make_dict(pic_state *);
+pic_value pic_dict_ref(pic_state *, pic_value dict, pic_sym *);
+void pic_dict_set(pic_state *, pic_value dict, pic_sym *, pic_value);
+void pic_dict_del(pic_state *, pic_value dict, pic_sym *);
+bool pic_dict_has(pic_state *, pic_value dict, pic_sym *);
+int pic_dict_size(pic_state *, pic_value dict);
+bool pic_dict_next(pic_state *, pic_value dict, int *iter, pic_sym **key, pic_value *val);
 
 /* ephemeron */
 struct pic_weak *pic_make_weak(pic_state *);
