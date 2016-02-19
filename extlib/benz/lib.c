@@ -36,7 +36,10 @@ make_library_env(pic_state *pic, struct pic_string *name)
 {
   struct pic_env *env;
 
-  env = pic_make_topenv(pic, name);
+  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
+  env->up = NULL;
+  env->lib = name;
+  kh_init(env, &env->map);
 
   /* set up default environment */
   pic_put_identifier(pic, (pic_id *)pic->sDEFINE_LIBRARY, pic->sDEFINE_LIBRARY, env);

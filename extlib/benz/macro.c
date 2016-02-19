@@ -21,18 +21,6 @@ pic_make_env(pic_state *pic, struct pic_env *up)
   return env;
 }
 
-struct pic_env *
-pic_make_topenv(pic_state *pic, struct pic_string *lib)
-{
-  struct pic_env *env;
-
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
-  env->up = NULL;
-  env->lib = lib;
-  kh_init(env, &env->map);
-  return env;
-}
-
 pic_sym *
 pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 {

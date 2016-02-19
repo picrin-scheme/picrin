@@ -203,6 +203,23 @@ struct pic_port {
 #define pic_port_ptr(v) ((struct pic_port *)pic_obj_ptr(v))
 
 
+/* environment */
+
+KHASH_DECLARE(env, pic_id *, pic_sym *)
+
+struct pic_env {
+  PIC_OBJECT_HEADER
+  khash_t(env) map;
+  struct pic_env *up;
+  struct pic_string *lib;
+};
+
+#define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
+#define pic_env_ptr(v) ((struct pic_env *)pic_obj_ptr(v))
+
+struct pic_env *pic_make_env(pic_state *, struct pic_env *);
+
+
 #if defined(__cplusplus)
 }
 #endif

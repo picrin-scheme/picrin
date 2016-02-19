@@ -274,7 +274,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 #include "picrin/state.h"
 
 #include "picrin/cont.h"
-#include "picrin/macro.h"
 
 void *pic_default_allocf(void *, void *, size_t);
 
@@ -294,13 +293,19 @@ void pic_close_port(pic_state *, struct pic_port *port);
     pic_leave(pic, ai);              \
   } while (0)
 
+pic_sym *pic_add_identifier(pic_state *, pic_id *, struct pic_env *);
+pic_sym *pic_put_identifier(pic_state *, pic_id *, pic_sym *, struct pic_env *);
+pic_sym *pic_find_identifier(pic_state *, pic_id *, struct pic_env *);
+
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
 
-void pic_load(pic_state *, struct pic_port *);
-void pic_load_cstr(pic_state *, const char *);
+pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
 
 pic_value pic_eval(pic_state *, pic_value, const char *);
+
+void pic_load(pic_state *, struct pic_port *);
+void pic_load_cstr(pic_state *, const char *);
 
 struct pic_proc *pic_make_var(pic_state *, pic_value, struct pic_proc *);
 
