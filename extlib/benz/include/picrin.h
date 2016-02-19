@@ -196,8 +196,6 @@ struct pic_data *pic_data_value(pic_state *, void *ptr, const pic_data_type *typ
 #define pic_port_p(pic, v) (pic_type(pic, v) == PIC_TYPE_PORT)
 #define pic_sym_p(pic,v) (pic_type(pic,v) == PIC_TYPE_SYMBOL)
 
-#include "picrin/type.h"
-
 int pic_type(pic_state *, pic_value);
 const char *pic_typename(pic_state *, int);
 
@@ -217,7 +215,7 @@ pic_value pic_cdar(pic_state *, pic_value);
 pic_value pic_cddr(pic_state *, pic_value);
 
 /* list */
-pic_value pic_nil_value(pic_state *);
+PIC_INLINE pic_value pic_nil_value(pic_state *);
 bool pic_list_p(pic_state *, pic_value);
 pic_value pic_make_list(pic_state *, int n, pic_value *argv);
 pic_value pic_list(pic_state *, int n, ...);
@@ -266,8 +264,11 @@ struct pic_string *pic_str_sub(pic_state *, struct pic_string *, int, int);
 int pic_str_cmp(pic_state *, struct pic_string *, struct pic_string *);
 int pic_str_hash(pic_state *, struct pic_string *);
 
+
 /* extra stuff */
 
+
+#include "picrin/type.h"
 #include "picrin/state.h"
 
 #include "picrin/cont.h"
@@ -279,8 +280,6 @@ void *pic_default_allocf(void *, void *, size_t);
   if (! pic_##type##_p(pic, v)) {                               \
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
-
-struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
 
 struct pic_port *pic_make_port(pic_state *, xFILE *file);
 void pic_close_port(pic_state *, struct pic_port *port);

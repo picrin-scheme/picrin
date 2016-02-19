@@ -10,6 +10,9 @@ extern "C" {
 #endif
 
 
+struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
+
+
 /* symbol & identifier */
 
 struct pic_id {
