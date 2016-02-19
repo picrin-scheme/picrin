@@ -1,5 +1,4 @@
 #include "picrin.h"
-#include "picrin/object.h"
 
 struct pic_fullcont {
   jmp_buf jmp;
@@ -30,7 +29,8 @@ struct pic_fullcont {
   struct pic_object **arena;
   size_t arena_size, arena_idx;
 
-  pic_vec *results;
+  int retc;
+  pic_value *retv;
 };
 
 static void
@@ -90,9 +90,6 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 
   /* parameter table */
   mark(pic, cont->ptable);
-
-  /* result values */
-  mark(pic, pic_obj_value(cont->results));
 }
 
 static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
@@ -159,7 +156,8 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
   cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
-  cont->results = pic_make_vec(pic, 0, NULL);
+  cont->retc = 0;
+  cont->retv = NULL;
 }
 
 static void
@@ -219,14 +217,20 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
 PIC_NORETURN static pic_value
 cont_call(pic_state *pic)
 {
-  int argc;
-  pic_value *argv;
+  int argc, i;
+  pic_value *argv, *retv;
   struct pic_fullcont *cont;
 
   pic_get_args(pic, "*", &argc, &argv);
 
+  retv = pic_alloca(pic, sizeof(pic_value) * argc);
+  for (i = 0; i < argc; ++i) {
+    retv[i] = argv[i];
+  }
+
   cont = pic_data(pic, pic_closure_ref(pic, 0));
-  cont->results = pic_make_vec(pic, argc, argv);
+  cont->retc = argc;
+  cont->retv = retv;
 
   /* execute guard handlers */
   pic_wind(pic, pic->cp, cont->cp);
@@ -241,7 +245,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
-    return pic_valuesk(pic, cont->results->len, cont->results->data);
+    return pic_valuesk(pic, cont->retc, cont->retv);
   }
   else {
     struct pic_proc *c;
