@@ -54,7 +54,6 @@ typedef struct {
 struct pic_object;
 struct pic_symbol;
 struct pic_string;
-struct pic_blob;
 struct pic_proc;
 struct pic_port;
 struct pic_error;
@@ -120,13 +119,13 @@ pic_value pic_vcall(pic_state *, struct pic_proc *proc, int, va_list);
 pic_value pic_apply(pic_state *, struct pic_proc *proc, int n, pic_value *argv);
 pic_value pic_applyk(pic_state *, struct pic_proc *proc, int n, pic_value *argv);
 
-PIC_INLINE int pic_int(pic_state *, pic_value);
-PIC_INLINE double pic_float(pic_state *, pic_value);
-PIC_INLINE char pic_char(pic_state *, pic_value);
-#define pic_bool(pic,v) (! pic_false_p(pic, v))
+PIC_INLINE int pic_int(pic_state *, pic_value i);
+PIC_INLINE double pic_float(pic_state *, pic_value f);
+PIC_INLINE char pic_char(pic_state *, pic_value c);
+#define pic_bool(pic,b) (! pic_false_p(pic, b))
 const char *pic_str(pic_state *, struct pic_string *);
-unsigned char *pic_blob(pic_state *, struct pic_blob *, int *len);
-void *pic_data(pic_state *, pic_value);
+unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
+void *pic_data(pic_state *, pic_value str);
 
 typedef struct {
   const char *type_name;
@@ -147,7 +146,7 @@ struct pic_string *pic_str_value(pic_state *, const char *str, int len);
 #define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
 struct pic_string *pic_strf_value(pic_state *, const char *fmt, ...);
 struct pic_string *pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
-struct pic_blob *pic_blob_value(pic_state *, const unsigned char *buf, int len);
+pic_value pic_blob_value(pic_state *, const unsigned char *buf, int len);
 struct pic_data *pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
 
 enum {

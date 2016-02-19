@@ -499,7 +499,7 @@ read_blob(pic_state *pic, xFILE *file, int c)
   int nbits, n;
   int len;
   unsigned char *dat;
-  struct pic_blob *blob;
+  pic_value blob;
 
   nbits = 0;
 
@@ -532,7 +532,7 @@ read_blob(pic_state *pic, xFILE *file, int c)
   blob = pic_blob_value(pic, dat, len);
 
   pic_free(pic, dat);
-  return pic_obj_value(blob);
+  return blob;
 }
 
 static pic_value

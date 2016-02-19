@@ -185,8 +185,7 @@ pic_socket_socket_accept(pic_state *pic)
 static pic_value
 pic_socket_socket_send(pic_state *pic)
 {
-  pic_value obj;
-  struct pic_blob *bv;
+  pic_value obj, bv;
   const unsigned char *cursor;
   int flags = 0, remain, written;
   struct pic_socket_t *sock;
@@ -223,7 +222,6 @@ static pic_value
 pic_socket_socket_recv(pic_state *pic)
 {
   pic_value obj;
-  struct pic_blob *bv;
   void *buf;
   int size;
   int flags = 0;
@@ -239,7 +237,7 @@ pic_socket_socket_recv(pic_state *pic)
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
-  buf = malloc(size);
+  buf = pic_blob(pic, pic_blob_value(pic, NULL, size), NULL);
   if (buf == NULL && size > 0) {
     /* XXX: Is it really OK? */
     pic_panic(pic, "memory exhausted");
@@ -251,14 +249,10 @@ pic_socket_socket_recv(pic_state *pic)
   } while (len < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
 
   if (len < 0) {
-    free(buf);
     pic_errorf(pic, "%s", strerror(errno));
   }
 
-  bv = pic_blob_value(pic, buf, len);
-  free(buf);
-
-  return pic_obj_value(bv);
+  return pic_blob_value(pic, buf, len);
 }
 
 static pic_value

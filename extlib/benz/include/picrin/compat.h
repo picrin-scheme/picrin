@@ -221,6 +221,18 @@ memmove(void *dst, const void *src, size_t n)
   return d;
 }
 
+PIC_INLINE int
+memcmp(const void *b1, const void *b2, size_t n)
+{
+  const char *s1 = b1, *s2 = b2;
+
+  while (*s1 == *s2 && n-- > 0) {
+    s1++;
+    s2++;
+  }
+  return (unsigned)*s1 - (unsigned)*s2;
+}
+
 PIC_INLINE char *
 strcpy(char *dst, const char *src)
 {

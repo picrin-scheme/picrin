@@ -125,14 +125,15 @@ pic_port_close_port(pic_state *pic)
 static pic_value
 pic_port_open_input_bytevector(pic_state *pic)
 {
-  struct pic_blob *blob;
-  xFILE *file;
+  pic_value blob;
+  unsigned char *buf;
+  int len;
 
   pic_get_args(pic, "b", &blob);
 
-  file = xfopen_buf(pic, (const char *)blob->data, blob->len, "r");
+  buf = pic_blob(pic, blob, &len);
 
-  return pic_obj_value(pic_make_port(pic, file));
+  return pic_obj_value(pic_make_port(pic, xfopen_buf(pic, (char *)buf, len, "r")));
 }
 
 static pic_value
@@ -157,7 +158,7 @@ pic_port_get_output_bytevector(pic_state *pic)
   if (xfget_buf(pic, port->file, &buf, &len) < 0) {
     pic_errorf(pic, "port was not created by open-output-bytevector");
   }
-  return pic_obj_value(pic_blob_value(pic, (unsigned char *)buf, len));
+  return pic_blob_value(pic, (unsigned char *)buf, len);
 }
 
 static pic_value
@@ -211,63 +212,51 @@ static pic_value
 pic_port_read_bytevector(pic_state *pic)
 {
   struct pic_port *port = pic_stdin(pic);
-  struct pic_blob *blob;
+  unsigned char *buf;
   int k, i;
 
   pic_get_args(pic, "i|p", &k, &port);
 
   assert_port_profile(port, X_READ, "read-bytevector");
 
-  blob = pic_blob_value(pic, 0, k);
+  buf = pic_blob(pic, pic_blob_value(pic, NULL, k), NULL);
 
-  i = xfread(pic, blob->data, sizeof(char), k, port->file);
+  i = xfread(pic, buf, sizeof(char), k, port->file);
   if (i == 0) {
     return pic_eof_object(pic);
   }
-  else {
-    pic_realloc(pic, blob->data, i);
-    blob->len = i;
-    return pic_obj_value(blob);
-  }
+  return pic_blob_value(pic, buf, i);
 }
 
 static pic_value
 pic_port_read_bytevector_ip(pic_state *pic)
 {
   struct pic_port *port;
-  struct pic_blob *bv;
-  char *buf;
+  pic_value bv;
+  unsigned char *buf;
   int n, start, end, i, len;
 
   n = pic_get_args(pic, "b|pii", &bv, &port, &start, &end);
+
+  buf = pic_blob(pic, bv, &len);
+
   switch (n) {
   case 1:
     port = pic_stdin(pic);
   case 2:
     start = 0;
   case 3:
-    end = bv->len;
+    end = len;
   }
 
+  VALID_RANGE(pic, len, start, end);
   assert_port_profile(port, X_READ, "read-bytevector!");
 
-  if (end < start) {
-    pic_errorf(pic, "read-bytevector!: end index must be greater than or equal to start index");
-  }
-
-  len = end - start;
-
-  buf = pic_calloc(pic, len, sizeof(char));
-  i = xfread(pic, buf, sizeof(char), len, port->file);
-  memcpy(bv->data + start, buf, i);
-  pic_free(pic, buf);
-
+  i = xfread(pic, buf + start, 1, end - start, port->file);
   if (i == 0) {
     return pic_eof_object(pic);
   }
-  else {
-    return pic_int_value(pic, i);
-  }
+  return pic_int_value(pic, i);
 }
 
 static pic_value
@@ -287,24 +276,31 @@ pic_port_write_u8(pic_state *pic)
 static pic_value
 pic_port_write_bytevector(pic_state *pic)
 {
-  struct pic_blob *blob;
+  pic_value blob;
   struct pic_port *port;
-  int n, start, end, i;
+  unsigned char *buf;
+  int n, start, end, len, done;
 
   n = pic_get_args(pic, "b|pii", &blob, &port, &start, &end);
+
+  buf = pic_blob(pic, blob, &len);
+
   switch (n) {
   case 1:
     port = pic_stdout(pic);
   case 2:
     start = 0;
   case 3:
-    end = blob->len;
+    end = len;
   }
 
+  VALID_RANGE(pic, len, start, end);
   assert_port_profile(port, X_WRITE, "write-bytevector");
 
-  for (i = start; i < end; ++i) {
-    xfputc(pic, blob->data[i], port->file);
+  done = 0;
+  while (done < end - start) {
+    done += xfwrite(pic, buf + start + done, 1, end - start - done, port->file);
+    /* FIXME: error check... */
   }
   return pic_undef_value(pic);
 }

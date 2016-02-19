@@ -48,14 +48,17 @@ writer_control_destroy(struct writer_control *p)
 }
 
 static void
-write_blob(pic_state *pic, struct pic_blob *blob, xFILE *file)
+write_blob(pic_state *pic, pic_value blob, xFILE *file)
 {
-  int i;
+  const unsigned char *buf;
+  int len, i;
+
+  buf = pic_blob(pic, blob, &len);
 
   xfprintf(pic, file, "#u8(");
-  for (i = 0; i < blob->len; ++i) {
-    xfprintf(pic, file, "%d", blob->data[i]);
-    if (i + 1 < blob->len) {
+  for (i = 0; i < len; ++i) {
+    xfprintf(pic, file, "%d", buf[i]);
+    if (i + 1 < len) {
       xfprintf(pic, file, " ");
     }
   }
@@ -303,7 +306,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, "%s", pic_str(pic, pic_sym_name(pic, pic_sym_ptr(obj))));
     break;
   case PIC_TYPE_BLOB:
-    write_blob(pic, pic_blob_ptr(obj), file);
+    write_blob(pic, obj, file);
     break;
   case PIC_TYPE_CHAR:
     write_char(pic, pic_char(pic, obj), file, p->mode);

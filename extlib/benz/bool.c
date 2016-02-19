@@ -109,18 +109,17 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;
   }
   case PIC_TYPE_BLOB: {
-    struct pic_blob *blob1, *blob2;
-    int i;
+    int xlen, ylen;
+    const unsigned char *xbuf, *ybuf;
 
-    blob1 = pic_blob_ptr(x);
-    blob2 = pic_blob_ptr(y);
+    xbuf = pic_blob(pic, x, &xlen);
+    ybuf = pic_blob(pic, y, &ylen);
 
-    if (blob1->len != blob2->len) {
+    if (xlen != ylen) {
       return false;
     }
-    for (i = 0; i < blob1->len; ++i) {
-      if (blob1->data[i] != blob2->data[i])
-        return false;
+    if (memcmp(xbuf, ybuf, xlen) != 0) {
+      return false;
     }
     return true;
   }
