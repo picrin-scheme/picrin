@@ -203,6 +203,24 @@ memcpy(void *dst, const void *src, size_t n)
   return d;
 }
 
+PIC_INLINE void *
+memmove(void *dst, const void *src, size_t n)
+{
+  const char *s = src;
+  char *d = dst;
+
+  if (d <= s || d >= s + n) {
+    memcpy(dst, src, n);
+  } else {
+    s += n;
+    d += n;
+    while (n-- > 0) {
+      *--d = *--s;
+    }
+  }
+  return d;
+}
+
 PIC_INLINE char *
 strcpy(char *dst, const char *src)
 {

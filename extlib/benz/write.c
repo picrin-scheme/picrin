@@ -221,16 +221,16 @@ write_pair(struct writer_control *p, struct pic_pair *pair)
 }
 
 static void
-write_vec(struct writer_control *p, pic_vec *vec)
+write_vec(struct writer_control *p, pic_value vec)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
-  int i;
+  int i, len = pic_vec_len(pic, vec);
 
   xfprintf(pic, file, "#(");
-  for (i = 0; i < vec->len; ++i) {
-    write_core(p, vec->data[i]);
-    if (i + 1 < vec->len) {
+  for (i = 0; i < len; ++i) {
+    write_core(p, pic_vec_ref(pic, vec, i));
+    if (i + 1 < len) {
       xfprintf(pic, file, " ");
     }
   }
@@ -315,7 +315,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_pair(p, pic_pair_ptr(obj));
     break;
   case PIC_TYPE_VECTOR:
-    write_vec(p, pic_vec_ptr(obj));
+    write_vec(p, obj);
     break;
   case PIC_TYPE_DICT:
     write_dict(p, obj);
@@ -361,9 +361,9 @@ traverse(struct writer_control *p, pic_value obj)
         traverse(p, pic_cdr(pic, obj));
       } else if (pic_vec_p(pic, obj)) {
         /* vector */
-        int i;
-        for (i = 0; i < pic_vec_ptr(obj)->len; ++i) {
-          traverse(p, pic_vec_ptr(obj)->data[i]);
+        int i, len = pic_vec_len(pic, obj);
+        for (i = 0; i < len; ++i) {
+          traverse(p, pic_vec_ref(pic, obj, i));
         }
       } else {
         /* dictionary */

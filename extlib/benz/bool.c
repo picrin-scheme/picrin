@@ -158,17 +158,16 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     goto LOOP;                  /* tail-call optimization */
   }
   case PIC_TYPE_VECTOR: {
-    int i;
-    struct pic_vector *u, *v;
+    int i, xlen, ylen;
 
-    u = pic_vec_ptr(x);
-    v = pic_vec_ptr(y);
+    xlen = pic_vec_len(pic, x);
+    ylen = pic_vec_len(pic, y);
 
-    if (u->len != v->len) {
+    if (xlen != ylen) {
       return false;
     }
-    for (i = 0; i < u->len; ++i) {
-      if (! internal_equal_p(pic, u->data[i], v->data[i], depth + 1, h))
+    for (i = 0; i < xlen; ++i) {
+      if (! internal_equal_p(pic, pic_vec_ref(pic, x, i), pic_vec_ref(pic, y, i), depth + 1, h))
         return false;
     }
     return true;

@@ -55,7 +55,6 @@ struct pic_object;
 struct pic_symbol;
 struct pic_pair;
 struct pic_string;
-struct pic_vector;
 struct pic_blob;
 struct pic_proc;
 struct pic_port;
@@ -66,7 +65,6 @@ struct pic_data;
 typedef struct pic_symbol pic_sym;
 typedef struct pic_id pic_id;
 typedef struct pic_pair pic_pair;
-typedef struct pic_vector pic_vec;
 
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 
@@ -235,10 +233,10 @@ pic_value pic_reverse(pic_state *, pic_value list);
 pic_value pic_append(pic_state *, pic_value xs, pic_value ys);
 
 /* vector */
-pic_vec *pic_make_vec(pic_state *, int, pic_value *);
-pic_value pic_vec_ref(pic_state *, pic_vec *, int);
-void pic_vec_set(pic_state *, pic_vec *, int, pic_value);
-int pic_vec_len(pic_state *, pic_vec *);
+pic_value pic_make_vec(pic_state *, int n, pic_value *argv);
+pic_value pic_vec_ref(pic_state *, pic_value vec, int i);
+void pic_vec_set(pic_state *, pic_value vec, int i, pic_value v);
+int pic_vec_len(pic_state *, pic_value vec);
 
 /* dictionary */
 pic_value pic_make_dict(pic_state *);

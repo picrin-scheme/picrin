@@ -21,7 +21,7 @@
  *  c   char *                  char
  *  z   char **                 c string
  *  m   pic_sym **              symbol
- *  v   pic_vec **              vector object
+ *  v   pic_value *             vector object
  *  s   struct pic_str **       string object
  *  b   struct pic_blob **      bytevector object
  *  l   struct pic_proc **      lambda object
@@ -148,7 +148,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
       VAL_CASE(c, type, ctype, pic_## type ##_ptr(v))
 
     PTR_CASE('m', sym, pic_sym *)
-    PTR_CASE('v', vec, pic_vec *)
     PTR_CASE('s', str, struct pic_string *)
     PTR_CASE('b', blob, struct pic_blob *)
     PTR_CASE('l', proc, struct pic_proc *)
@@ -158,6 +157,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
 #define OBJ_CASE(c, type) VAL_CASE(c, type, pic_value, v)
 
+    OBJ_CASE('v', vec)
     OBJ_CASE('d', dict)
 
     default:

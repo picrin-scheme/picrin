@@ -590,8 +590,7 @@ read_pair(pic_state *pic, xFILE *file, int c)
 static pic_value
 read_vector(pic_state *pic, xFILE *file, int c)
 {
-  pic_value list, it, elem;
-  pic_vec *vec;
+  pic_value list, it, elem, vec;
   int i = 0;
 
   list = read(pic, file, c);
@@ -599,10 +598,10 @@ read_vector(pic_state *pic, xFILE *file, int c)
   vec = pic_make_vec(pic, pic_length(pic, list), NULL);
 
   pic_for_each (elem, list, it) {
-    vec->data[i++] = elem;
+    pic_vec_set(pic, vec, i++, elem);
   }
 
-  return pic_obj_value(vec);
+  return vec;
 }
 
 static pic_value
@@ -639,13 +638,13 @@ read_label_set(pic_state *pic, xFILE *file, int i)
       }
 
       if (vect) {
-        pic_vec *tmp;
+        pic_value tmp;
 
-        kh_val(h, it) = val = pic_obj_value(pic_make_vec(pic, 0, NULL));
+        kh_val(h, it) = val = pic_make_vec(pic, 0, NULL);
 
-        tmp = pic_vec_ptr(read(pic, file, c));
-        PIC_SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
-        PIC_SWAP(int, tmp->len, pic_vec_ptr(val)->len);
+        tmp = read(pic, file, c);
+        PIC_SWAP(pic_value *, pic_vec_ptr(pic, tmp)->data, pic_vec_ptr(pic, val)->data);
+        PIC_SWAP(int, pic_vec_ptr(pic, tmp)->len, pic_vec_ptr(pic, val)->len);
 
         return val;
       }

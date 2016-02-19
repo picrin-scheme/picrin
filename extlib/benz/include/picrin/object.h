@@ -120,13 +120,13 @@ struct pic_port {
   xFILE *file;
 };
 
+#define pic_vec_ptr(pic, o) ((struct pic_vector *)pic_obj_ptr(o))
 #define pic_dict_ptr(pic, v) ((struct pic_dict *)pic_obj_ptr(v))
 #define pic_sym_ptr(v) ((pic_sym *)pic_obj_ptr(v))
 #define pic_id_ptr(v) ((pic_id *)pic_obj_ptr(v))
 #define pic_pair_ptr(o) ((struct pic_pair *)pic_obj_ptr(o))
 #define pic_blob_ptr(v) ((struct pic_blob *)pic_obj_ptr(v))
 #define pic_str_ptr(o) ((struct pic_string *)pic_obj_ptr(o))
-#define pic_vec_ptr(o) ((struct pic_vector *)pic_obj_ptr(o))
 #define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))
 #define pic_data_ptr(o) ((struct pic_data *)pic_obj_ptr(o))
 #define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
@@ -142,6 +142,19 @@ struct pic_port {
 #define pic_id_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ID || pic_type(pic, v) == PIC_TYPE_SYMBOL)
 
 struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
+
+#define VALID_INDEX(pic, len, i) do {                                   \
+    if (i < 0 || len <= i) pic_errorf(pic, "index out of range: %d", i); \
+  } while (0)
+#define VALID_RANGE(pic, len, s, e) do {                                \
+    if (s < 0 || len < s) pic_errorf(pic, "invalid start index: %d", s); \
+    if (e < s || len < e) pic_errorf(pic, "invalid end index: %d", e);  \
+  } while (0)
+#define VALID_ATRANGE(pic, tolen, at, fromlen, s, e) do {       \
+    VALID_INDEX(pic, tolen, at);                                \
+    VALID_RANGE(pic, fromlen, s, e);                            \
+    if (tolen - at < e - s) pic_errorf(pic, "invalid range");   \
+  } while (0)
 
 pic_id *pic_make_identifier(pic_state *, pic_id *, struct pic_env *);
 struct pic_proc *pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
