@@ -11,7 +11,7 @@ extern "C" {
 
 KHASH_DECLARE(read, int, pic_value)
 
-typedef pic_value (*pic_reader_t)(pic_state *, struct pic_port *port, int c);
+typedef pic_value (*pic_reader_t)(pic_state *, xFILE *file, int c);
 
 typedef struct {
   enum pic_typecase {

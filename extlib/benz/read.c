@@ -10,8 +10,8 @@
 
 KHASH_DEFINE(read, int, pic_value, kh_int_hash_func, kh_int_hash_equal)
 
-static pic_value read(pic_state *pic, struct pic_port *port, int c);
-static pic_value read_nullable(pic_state *pic, struct pic_port *port, int c);
+static pic_value read(pic_state *pic, xFILE *file, int c);
+static pic_value read_nullable(pic_state *pic, xFILE *file, int c);
 
 PIC_NORETURN static void
 read_error(pic_state *pic, const char *msg, pic_value irritants)
@@ -20,39 +20,39 @@ read_error(pic_state *pic, const char *msg, pic_value irritants)
 }
 
 static int
-skip(pic_state *pic, struct pic_port *port, int c)
+skip(pic_state *pic, xFILE *file, int c)
 {
   while (isspace(c)) {
-    c = xfgetc(pic, port->file);
+    c = xfgetc(pic, file);
   }
   return c;
 }
 
 static int
-next(pic_state *pic, struct pic_port *port)
+next(pic_state *pic, xFILE *file)
 {
-  return xfgetc(pic, port->file);
+  return xfgetc(pic, file);
 }
 
 static int
-peek(pic_state *pic, struct pic_port *port)
+peek(pic_state *pic, xFILE *file)
 {
   int c;
 
-  xungetc((c = xfgetc(pic, port->file)), port->file);
+  xungetc((c = xfgetc(pic, file)), file);
 
   return c;
 }
 
 static bool
-expect(pic_state *pic, struct pic_port *port, const char *str)
+expect(pic_state *pic, xFILE *file, const char *str)
 {
   int c;
 
   while ((c = (int)*str++) != 0) {
-    if (c != peek(pic, port))
+    if (c != peek(pic, file))
       return false;
-    next(pic, port);
+    next(pic, file);
   }
 
   return true;
@@ -86,26 +86,26 @@ case_fold(pic_state *pic, int c)
 }
 
 static pic_value
-read_comment(pic_state PIC_UNUSED(*pic), struct pic_port *port, int c)
+read_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int c)
 {
   do {
-    c = next(pic, port);
+    c = next(pic, file);
   } while (! (c == EOF || c == '\n'));
 
   return pic_invalid_value();
 }
 
 static pic_value
-read_block_comment(pic_state PIC_UNUSED(*pic), struct pic_port *port, int PIC_UNUSED(c))
+read_block_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int PIC_UNUSED(c))
 {
   int x, y;
   int i = 1;
 
-  y = next(pic, port);
+  y = next(pic, file);
 
   while (y != EOF && i > 0) {
     x = y;
-    y = next(pic, port);
+    y = next(pic, file);
     if (x == '|' && y == '#') {
       i--;
     }
@@ -118,84 +118,84 @@ read_block_comment(pic_state PIC_UNUSED(*pic), struct pic_port *port, int PIC_UN
 }
 
 static pic_value
-read_datum_comment(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+read_datum_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  read(pic, port, next(pic, port));
+  read(pic, file, next(pic, file));
 
   return pic_invalid_value();
 }
 
 static pic_value
-read_directive(pic_state *pic, struct pic_port *port, int c)
+read_directive(pic_state *pic, xFILE *file, int c)
 {
-  switch (peek(pic, port)) {
+  switch (peek(pic, file)) {
   case 'n':
-    if (expect(pic, port, "no-fold-case")) {
+    if (expect(pic, file, "no-fold-case")) {
       pic->reader.typecase = PIC_CASE_DEFAULT;
       return pic_invalid_value();
     }
     break;
   case 'f':
-    if (expect(pic, port, "fold-case")) {
+    if (expect(pic, file, "fold-case")) {
       pic->reader.typecase = PIC_CASE_FOLD;
       return pic_invalid_value();
     }
     break;
   }
 
-  return read_comment(pic, port, c);
+  return read_comment(pic, file, c);
 }
 
 static pic_value
-read_quote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+read_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sQUOTE), read(pic, port, next(pic, port)));
+  return pic_list(pic, 2, pic_obj_value(pic->sQUOTE), read(pic, file, next(pic, file)));
 }
 
 static pic_value
-read_quasiquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+read_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sQUASIQUOTE), read(pic, port, next(pic, port)));
+  return pic_list(pic, 2, pic_obj_value(pic->sQUASIQUOTE), read(pic, file, next(pic, file)));
 }
 
 static pic_value
-read_unquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
   pic_sym *tag = pic->sUNQUOTE;
 
-  if (peek(pic, port) == '@') {
+  if (peek(pic, file) == '@') {
     tag = pic->sUNQUOTE_SPLICING;
-    next(pic, port);
+    next(pic, file);
   }
-  return pic_list(pic, 2, pic_obj_value(tag), read(pic, port, next(pic, port)));
+  return pic_list(pic, 2, pic_obj_value(tag), read(pic, file, next(pic, file)));
 }
 
 static pic_value
-read_syntax_quote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+read_syntax_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sSYNTAX_QUOTE), read(pic, port, next(pic, port)));
+  return pic_list(pic, 2, pic_obj_value(pic->sSYNTAX_QUOTE), read(pic, file, next(pic, file)));
 }
 
 static pic_value
-read_syntax_quasiquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+read_syntax_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sSYNTAX_QUASIQUOTE), read(pic, port, next(pic, port)));
+  return pic_list(pic, 2, pic_obj_value(pic->sSYNTAX_QUASIQUOTE), read(pic, file, next(pic, file)));
 }
 
 static pic_value
-read_syntax_unquote(pic_state *pic, struct pic_port *port, int PIC_UNUSED(c))
+read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
   pic_sym *tag = pic->sSYNTAX_UNQUOTE;
 
-  if (peek(pic, port) == '@') {
+  if (peek(pic, file) == '@') {
     tag = pic->sSYNTAX_UNQUOTE_SPLICING;
-    next(pic, port);
+    next(pic, file);
   }
-  return pic_list(pic, 2, pic_obj_value(tag), read(pic, port, next(pic, port)));
+  return pic_list(pic, 2, pic_obj_value(tag), read(pic, file, next(pic, file)));
 }
 
 static pic_value
-read_symbol(pic_state *pic, struct pic_port *port, int c)
+read_symbol(pic_state *pic, xFILE *file, int c)
 {
   int len;
   char *buf;
@@ -206,8 +206,8 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
   buf[0] = case_fold(pic, c);
   buf[1] = 0;
 
-  while (! isdelim(peek(pic, port))) {
-    c = next(pic, port);
+  while (! isdelim(peek(pic, file))) {
+    c = next(pic, file);
     len += 1;
     buf = pic_realloc(pic, buf, len + 1);
     buf[len - 1] = case_fold(pic, c);
@@ -221,7 +221,7 @@ read_symbol(pic_state *pic, struct pic_port *port, int c)
 }
 
 static unsigned
-read_uinteger(pic_state *pic, struct pic_port *port, int c)
+read_uinteger(pic_state *pic, xFILE *file, int c)
 {
   unsigned u = 0;
 
@@ -230,15 +230,15 @@ read_uinteger(pic_state *pic, struct pic_port *port, int c)
   }
 
   u = c - '0';
-  while (isdigit(c = peek(pic, port))) {
-    u = u * 10 + next(pic, port) - '0';
+  while (isdigit(c = peek(pic, file))) {
+    u = u * 10 + next(pic, file) - '0';
   }
 
   return u;
 }
 
 static pic_value
-read_unsigned(pic_state *pic, struct pic_port *port, int c)
+read_unsigned(pic_state *pic, xFILE *file, int c)
 {
 #define ATOF_BUF_SIZE (64)
   char buf[ATOF_BUF_SIZE];
@@ -250,34 +250,34 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "expected one or more digits", pic_list(pic, 1, pic_char_value(pic, c)));
   }
   buf[idx++] = (char )c;
-  while (isdigit(c = peek(pic, port)) && idx < ATOF_BUF_SIZE) {
-    buf[idx++] = (char )next(pic, port);
+  while (isdigit(c = peek(pic, file)) && idx < ATOF_BUF_SIZE) {
+    buf[idx++] = (char )next(pic, file);
   }
-  if ('.' == peek(pic, port) && idx < ATOF_BUF_SIZE) {
+  if ('.' == peek(pic, file) && idx < ATOF_BUF_SIZE) {
     dpe++;
-    buf[idx++] = (char )next(pic, port);
-    while (isdigit(c = peek(pic, port)) && idx < ATOF_BUF_SIZE) {
-      buf[idx++] = (char )next(pic, port);
+    buf[idx++] = (char )next(pic, file);
+    while (isdigit(c = peek(pic, file)) && idx < ATOF_BUF_SIZE) {
+      buf[idx++] = (char )next(pic, file);
     }
   }
-  c = peek(pic, port);
+  c = peek(pic, file);
 
   if ((c == 'e' || c == 'E') && idx < (ATOF_BUF_SIZE - 2)) {
     dpe++;
-    buf[idx++] = (char )next(pic, port);
-    switch ((c = peek(pic, port))) {
+    buf[idx++] = (char )next(pic, file);
+    switch ((c = peek(pic, file))) {
     case '-':
     case '+':
-      buf[idx++] = (char )next(pic, port);
+      buf[idx++] = (char )next(pic, file);
       break;
     default:
       break;
     }
-    if (! isdigit(peek(pic, port))) {
+    if (! isdigit(peek(pic, file))) {
       read_error(pic, "expected one or more digits", pic_list(pic, 1, pic_char_value(pic, c)));
     }
-    while (isdigit(c = peek(pic, port)) && idx < ATOF_BUF_SIZE) {
-      buf[idx++] = (char )next(pic, port);
+    while (isdigit(c = peek(pic, file)) && idx < ATOF_BUF_SIZE) {
+      buf[idx++] = (char )next(pic, file);
     }
   }
   if (idx >= ATOF_BUF_SIZE)
@@ -296,9 +296,9 @@ read_unsigned(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_number(pic_state *pic, struct pic_port *port, int c)
+read_number(pic_state *pic, xFILE *file, int c)
 {
-  return read_unsigned(pic, port, c);
+  return read_unsigned(pic, file, c);
 }
 
 static pic_value
@@ -312,15 +312,15 @@ negate(pic_state *pic, pic_value n)
 }
 
 static pic_value
-read_minus(pic_state *pic, struct pic_port *port, int c)
+read_minus(pic_state *pic, xFILE *file, int c)
 {
   pic_value sym;
 
-  if (isdigit(peek(pic, port))) {
-    return negate(pic, read_unsigned(pic, port, next(pic, port)));
+  if (isdigit(peek(pic, file))) {
+    return negate(pic, read_unsigned(pic, file, next(pic, file)));
   }
   else {
-    sym = read_symbol(pic, port, c);
+    sym = read_symbol(pic, file, c);
     if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "-inf.0")) {
       return pic_float_value(pic, -(1.0 / 0.0));
     }
@@ -332,15 +332,15 @@ read_minus(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_plus(pic_state *pic, struct pic_port *port, int c)
+read_plus(pic_state *pic, xFILE *file, int c)
 {
   pic_value sym;
 
-  if (isdigit(peek(pic, port))) {
-    return read_unsigned(pic, port, next(pic, port));
+  if (isdigit(peek(pic, file))) {
+    return read_unsigned(pic, file, next(pic, file));
   }
   else {
-    sym = read_symbol(pic, port, c);
+    sym = read_symbol(pic, file, c);
     if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "+inf.0")) {
       return pic_float_value(pic, 1.0 / 0.0);
     }
@@ -352,10 +352,10 @@ read_plus(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_true(pic_state *pic, struct pic_port *port, int c)
+read_true(pic_state *pic, xFILE *file, int c)
 {
-  if ((c = peek(pic, port)) == 'r') {
-    if (! expect(pic, port, "rue")) {
+  if ((c = peek(pic, file)) == 'r') {
+    if (! expect(pic, file, "rue")) {
       read_error(pic, "unexpected character while reading #true", pic_nil_value(pic));
     }
   } else if (! isdelim(c)) {
@@ -366,10 +366,10 @@ read_true(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_false(pic_state *pic, struct pic_port *port, int c)
+read_false(pic_state *pic, xFILE *file, int c)
 {
-  if ((c = peek(pic, port)) == 'a') {
-    if (! expect(pic, port, "alse")) {
+  if ((c = peek(pic, file)) == 'a') {
+    if (! expect(pic, file, "alse")) {
       read_error(pic, "unexpected character while reading #false", pic_nil_value(pic));
     }
   } else if (! isdelim(c)) {
@@ -380,31 +380,31 @@ read_false(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_char(pic_state *pic, struct pic_port *port, int c)
+read_char(pic_state *pic, xFILE *file, int c)
 {
-  c = next(pic, port);
+  c = next(pic, file);
 
-  if (! isdelim(peek(pic, port))) {
+  if (! isdelim(peek(pic, file))) {
     switch (c) {
     default: read_error(pic, "unexpected character after char literal", pic_list(pic, 1, pic_char_value(pic, c)));
-    case 'a': c = '\a'; if (! expect(pic, port, "larm")) goto fail; break;
-    case 'b': c = '\b'; if (! expect(pic, port, "ackspace")) goto fail; break;
-    case 'd': c = 0x7F; if (! expect(pic, port, "elete")) goto fail; break;
-    case 'e': c = 0x1B; if (! expect(pic, port, "scape")) goto fail; break;
+    case 'a': c = '\a'; if (! expect(pic, file, "larm")) goto fail; break;
+    case 'b': c = '\b'; if (! expect(pic, file, "ackspace")) goto fail; break;
+    case 'd': c = 0x7F; if (! expect(pic, file, "elete")) goto fail; break;
+    case 'e': c = 0x1B; if (! expect(pic, file, "scape")) goto fail; break;
     case 'n':
-      if ((c = peek(pic, port)) == 'e') {
+      if ((c = peek(pic, file)) == 'e') {
         c = '\n';
-        if (! expect(pic, port, "ewline"))
+        if (! expect(pic, file, "ewline"))
           goto fail;
       } else {
         c = '\0';
-        if (! expect(pic, port, "ull"))
+        if (! expect(pic, file, "ull"))
           goto fail;
       }
       break;
-    case 'r': c = '\r'; if (! expect(pic, port, "eturn")) goto fail; break;
-    case 's': c = ' '; if (! expect(pic, port, "pace")) goto fail; break;
-    case 't': c = '\t'; if (! expect(pic, port, "ab")) goto fail; break;
+    case 'r': c = '\r'; if (! expect(pic, file, "eturn")) goto fail; break;
+    case 's': c = ' '; if (! expect(pic, file, "pace")) goto fail; break;
+    case 't': c = '\t'; if (! expect(pic, file, "ab")) goto fail; break;
     }
   }
 
@@ -415,7 +415,7 @@ read_char(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_string(pic_state *pic, struct pic_port *port, int c)
+read_string(pic_state *pic, xFILE *file, int c)
 {
   char *buf;
   int size, cnt;
@@ -427,9 +427,9 @@ read_string(pic_state *pic, struct pic_port *port, int c)
 
   /* TODO: intraline whitespaces */
 
-  while ((c = next(pic, port)) != '"') {
+  while ((c = next(pic, file)) != '"') {
     if (c == '\\') {
-      switch (c = next(pic, port)) {
+      switch (c = next(pic, file)) {
       case 'a': c = '\a'; break;
       case 'b': c = '\b'; break;
       case 't': c = '\t'; break;
@@ -450,7 +450,7 @@ read_string(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_pipe(pic_state *pic, struct pic_port *port, int c)
+read_pipe(pic_state *pic, xFILE *file, int c)
 {
   char *buf;
   int size, cnt;
@@ -462,9 +462,9 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
   size = 256;
   buf = pic_malloc(pic, size);
   cnt = 0;
-  while ((c = next(pic, port)) != '|') {
+  while ((c = next(pic, file)) != '|') {
     if (c == '\\') {
-      switch ((c = next(pic, port))) {
+      switch ((c = next(pic, file))) {
       case 'a': c = '\a'; break;
       case 'b': c = '\b'; break;
       case 't': c = '\t'; break;
@@ -472,7 +472,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
       case 'r': c = '\r'; break;
       case 'x':
         i = 0;
-        while ((HEX_BUF[i++] = (char)next(pic, port)) != ';') {
+        while ((HEX_BUF[i++] = (char)next(pic, file)) != ';') {
           if (i >= sizeof HEX_BUF)
             read_error(pic, "expected ';'", pic_list(pic, 1, pic_char_value(pic, HEX_BUF[sizeof(HEX_BUF) - 1])));
         }
@@ -494,7 +494,7 @@ read_pipe(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_blob(pic_state *pic, struct pic_port *port, int c)
+read_blob(pic_state *pic, xFILE *file, int c)
 {
   int nbits, n;
   int len;
@@ -503,7 +503,7 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 
   nbits = 0;
 
-  while (isdigit(c = next(pic, port))) {
+  while (isdigit(c = next(pic, file))) {
     nbits = 10 * nbits + c - '0';
   }
 
@@ -517,16 +517,16 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 
   len = 0;
   dat = NULL;
-  c = next(pic, port);
-  while ((c = skip(pic, port, c)) != ')') {
-    n = read_uinteger(pic, port, c);
+  c = next(pic, file);
+  while ((c = skip(pic, file, c)) != ')') {
+    n = read_uinteger(pic, file, c);
     if (n < 0 || (1 << nbits) <= n) {
       read_error(pic, "invalid element in bytevector literal", pic_list(pic, 1, pic_int_value(pic, n)));
     }
     len += 1;
     dat = pic_realloc(pic, dat, len);
     dat[len - 1] = (unsigned char)n;
-    c = next(pic, port);
+    c = next(pic, file);
   }
 
   blob = pic_blob_value(pic, dat, len);
@@ -536,10 +536,10 @@ read_blob(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_undef_or_blob(pic_state *pic, struct pic_port *port, int c)
+read_undef_or_blob(pic_state *pic, xFILE *file, int c)
 {
-  if ((c = peek(pic, port)) == 'n') {
-    if (! expect(pic, port, "ndefined")) {
+  if ((c = peek(pic, file)) == 'n') {
+    if (! expect(pic, file, "ndefined")) {
       read_error(pic, "unexpected character while reading #undefined", pic_nil_value(pic));
     }
     return pic_undef_value(pic);
@@ -547,28 +547,28 @@ read_undef_or_blob(pic_state *pic, struct pic_port *port, int c)
   if (! isdigit(c)) {
     read_error(pic, "expect #undefined or #u8(...), but illegal character given", pic_list(pic, 1, pic_char_value(pic, c)));
   }
-  return read_blob(pic, port, 'u');
+  return read_blob(pic, file, 'u');
 }
 
 static pic_value
-read_pair(pic_state *pic, struct pic_port *port, int c)
+read_pair(pic_state *pic, xFILE *file, int c)
 {
   static const int tCLOSE = ')';
   pic_value car, cdr;
 
  retry:
 
-  c = skip(pic, port, ' ');
+  c = skip(pic, file, ' ');
 
   if (c == tCLOSE) {
     return pic_nil_value(pic);
   }
-  if (c == '.' && isdelim(peek(pic, port))) {
-    cdr = read(pic, port, next(pic, port));
+  if (c == '.' && isdelim(peek(pic, file))) {
+    cdr = read(pic, file, next(pic, file));
 
   closing:
-    if ((c = skip(pic, port, ' ')) != tCLOSE) {
-      if (pic_invalid_p(pic, read_nullable(pic, port, c))) {
+    if ((c = skip(pic, file, ' ')) != tCLOSE) {
+      if (pic_invalid_p(pic, read_nullable(pic, file, c))) {
         goto closing;
       }
       read_error(pic, "unmatched parenthesis", pic_nil_value(pic));
@@ -576,25 +576,25 @@ read_pair(pic_state *pic, struct pic_port *port, int c)
     return cdr;
   }
   else {
-    car = read_nullable(pic, port, c);
+    car = read_nullable(pic, file, c);
 
     if (pic_invalid_p(pic, car)) {
       goto retry;
     }
 
-    cdr = read_pair(pic, port, '(');
+    cdr = read_pair(pic, file, '(');
     return pic_cons(pic, car, cdr);
   }
 }
 
 static pic_value
-read_vector(pic_state *pic, struct pic_port *port, int c)
+read_vector(pic_state *pic, xFILE *file, int c)
 {
   pic_value list, it, elem;
   pic_vec *vec;
   int i = 0;
 
-  list = read(pic, port, c);
+  list = read(pic, file, c);
 
   vec = pic_make_vec(pic, pic_length(pic, list));
 
@@ -606,7 +606,7 @@ read_vector(pic_state *pic, struct pic_port *port, int c)
 }
 
 static pic_value
-read_label_set(pic_state *pic, struct pic_port *port, int i)
+read_label_set(pic_state *pic, xFILE *file, int i)
 {
   khash_t(read) *h = &pic->reader.labels;
   pic_value val;
@@ -615,14 +615,14 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 
   it = kh_put(read, h, i, &ret);
 
-  switch ((c = skip(pic, port, ' '))) {
+  switch ((c = skip(pic, file, ' '))) {
   case '(':
     {
       pic_value tmp;
 
       kh_val(h, it) = val = pic_cons(pic, pic_undef_value(pic), pic_undef_value(pic));
 
-      tmp = read(pic, port, c);
+      tmp = read(pic, file, c);
       pic_pair_ptr(val)->car = pic_car(pic, tmp);
       pic_pair_ptr(val)->cdr = pic_cdr(pic, tmp);
 
@@ -632,7 +632,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
     {
       bool vect;
 
-      if (peek(pic, port) == '(') {
+      if (peek(pic, file) == '(') {
         vect = true;
       } else {
         vect = false;
@@ -643,7 +643,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 
         kh_val(h, it) = val = pic_obj_value(pic_make_vec(pic, 0));
 
-        tmp = pic_vec_ptr(read(pic, port, c));
+        tmp = pic_vec_ptr(read(pic, file, c));
         PIC_SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);
         PIC_SWAP(int, tmp->len, pic_vec_ptr(val)->len);
 
@@ -654,7 +654,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
     }
   default:
     {
-      kh_val(h, it) = val = read(pic, port, c);
+      kh_val(h, it) = val = read(pic, file, c);
 
       return val;
     }
@@ -662,7 +662,7 @@ read_label_set(pic_state *pic, struct pic_port *port, int i)
 }
 
 static pic_value
-read_label_ref(pic_state *pic, struct pic_port PIC_UNUSED(*port), int i)
+read_label_ref(pic_state *pic, xFILE PIC_UNUSED(*file), int i)
 {
   khash_t(read) *h = &pic->reader.labels;
   khiter_t it;
@@ -675,34 +675,34 @@ read_label_ref(pic_state *pic, struct pic_port PIC_UNUSED(*port), int i)
 }
 
 static pic_value
-read_label(pic_state *pic, struct pic_port *port, int c)
+read_label(pic_state *pic, xFILE *file, int c)
 {
   int i;
 
   i = 0;
   do {
     i = i * 10 + c - '0';
-  } while (isdigit(c = next(pic, port)));
+  } while (isdigit(c = next(pic, file)));
 
   if (c == '=') {
-    return read_label_set(pic, port, i);
+    return read_label_set(pic, file, i);
   }
   if (c == '#') {
-    return read_label_ref(pic, port, i);
+    return read_label_ref(pic, file, i);
   }
   read_error(pic, "broken label expression", pic_nil_value(pic));
 }
 
 static pic_value
-read_unmatch(pic_state *pic, struct pic_port PIC_UNUSED(*port), int PIC_UNUSED(c))
+read_unmatch(pic_state *pic, xFILE PIC_UNUSED(*file), int PIC_UNUSED(c))
 {
   read_error(pic, "unmatched parenthesis", pic_nil_value(pic));
 }
 
 static pic_value
-read_dispatch(pic_state *pic, struct pic_port *port, int c)
+read_dispatch(pic_state *pic, xFILE *file, int c)
 {
-  c = next(pic, port);
+  c = next(pic, file);
 
   if (c == EOF) {
     read_error(pic, "unexpected EOF", pic_nil_value(pic));
@@ -712,13 +712,13 @@ read_dispatch(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "invalid character at the seeker head", pic_list(pic, 1, pic_char_value(pic, c)));
   }
 
-  return pic->reader.dispatch[c](pic, port, c);
+  return pic->reader.dispatch[c](pic, file, c);
 }
 
 static pic_value
-read_nullable(pic_state *pic, struct pic_port *port, int c)
+read_nullable(pic_state *pic, xFILE *file, int c)
 {
-  c = skip(pic, port, c);
+  c = skip(pic, file, c);
 
   if (c == EOF) {
     read_error(pic, "unexpected EOF", pic_nil_value(pic));
@@ -728,19 +728,19 @@ read_nullable(pic_state *pic, struct pic_port *port, int c)
     read_error(pic, "invalid character at the seeker head", pic_list(pic, 1, pic_char_value(pic, c)));
   }
 
-  return pic->reader.table[c](pic, port, c);
+  return pic->reader.table[c](pic, file, c);
 }
 
 static pic_value
-read(pic_state *pic, struct pic_port *port, int c)
+read(pic_state *pic, xFILE *file, int c)
 {
   pic_value val;
 
  retry:
-  val = read_nullable(pic, port, c);
+  val = read_nullable(pic, file, c);
 
   if (pic_invalid_p(pic, val)) {
-    c = next(pic, port);
+    c = next(pic, file);
     goto retry;
   }
 
@@ -824,10 +824,11 @@ pic_read(pic_state *pic, struct pic_port *port)
 {
   size_t ai = pic_enter(pic);
   pic_value val;
+  xFILE *file = port->file;
   int c;
 
-  while ((c = skip(pic, port, next(pic, port))) != EOF) {
-    val = read_nullable(pic, port, c);
+  while ((c = skip(pic, file, next(pic, file))) != EOF) {
+    val = read_nullable(pic, file, c);
 
     if (! pic_invalid_p(pic, val)) {
       break;
