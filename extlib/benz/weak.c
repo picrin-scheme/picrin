@@ -5,9 +5,9 @@
 #include "picrin.h"
 #include "picrin/object.h"
 
-KHASH_DEFINE(weak, void *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
+KHASH_DEFINE(weak, struct pic_object *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
 
-struct pic_weak *
+pic_value
 pic_make_weak(pic_state *pic)
 {
   struct pic_weak *weak;
@@ -16,97 +16,59 @@ pic_make_weak(pic_state *pic)
   weak->prev = NULL;
   kh_init(weak, &weak->hash);
 
-  return weak;
+  return pic_obj_value(weak);
 }
 
 pic_value
-pic_weak_ref(pic_state *pic, struct pic_weak *weak, void *key)
+pic_weak_ref(pic_state *pic, pic_value weak, pic_value key)
 {
-  khash_t(weak) *h = &weak->hash;
+  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
   khiter_t it;
 
-  it = kh_get(weak, h, key);
+  it = kh_get(weak, h, pic_obj_ptr(key));
   if (it == kh_end(h)) {
-    pic_errorf(pic, "element not found for a key: ~s", pic_obj_value(key));
+    pic_errorf(pic, "element not found for a key: ~s", key);
   }
   return kh_val(h, it);
 }
 
-void *
-pic_weak_rev_ref(pic_state *pic, struct pic_weak *weak, pic_value val)
-{
-  khash_t(weak) *h = &weak->hash;
-
-  if (h->n_buckets) {
-    khint_t i = 0;
-    while ((i < h->n_buckets) && (ac_iseither(h->flags, i) || !pic_eq_p(pic, h->vals[i], val))) {
-      i += 1;
-    }
-    if (i < h->n_buckets) return kh_key(h, i);
-  }
-  pic_errorf(pic, "key not found for an element: ~s", val);
-  return NULL;
-}
-
 void
-pic_weak_set(pic_state PIC_UNUSED(*pic), struct pic_weak *weak, void *key, pic_value val)
+pic_weak_set(pic_state *pic, pic_value weak, pic_value key, pic_value val)
 {
-  khash_t(weak) *h = &weak->hash;
+  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
   int ret;
   khiter_t it;
 
-  it = kh_put(weak, h, key, &ret);
+  it = kh_put(weak, h, pic_obj_ptr(key), &ret);
   kh_val(h, it) = val;
 }
 
 bool
-pic_weak_has(pic_state PIC_UNUSED(*pic), struct pic_weak *weak, void *key)
+pic_weak_has(pic_state *pic, pic_value weak, pic_value key)
 {
-  return kh_get(weak, &weak->hash, key) != kh_end(&weak->hash);
+  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
+
+  return kh_get(weak, h, pic_obj_ptr(key)) != kh_end(h);
 }
 
 void
-pic_weak_del(pic_state *pic, struct pic_weak *weak, void *key)
+pic_weak_del(pic_state *pic, pic_value weak, pic_value key)
 {
-  khash_t(weak) *h = &weak->hash;
+  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
   khiter_t it;
 
-  it = kh_get(weak, h, key);
+  it = kh_get(weak, h, pic_obj_ptr(key));
   if (it == kh_end(h)) {
-    pic_errorf(pic, "no slot named ~s found in ephemeron", pic_obj_value(key));
+    pic_errorf(pic, "no slot named ~s found in ephemeron", key);
   }
   kh_del(weak, h, it);
 }
 
 
 static pic_value
-weak_get(pic_state *pic, struct pic_weak *weak, void *key)
-{
-  if (! pic_weak_has(pic, weak, key)) {
-    return pic_false_value(pic);
-  }
-  return pic_cons(pic, pic_obj_value(key), pic_weak_ref(pic, weak, key));
-}
-
-static pic_value
-weak_set(pic_state *pic, struct pic_weak *weak, void *key, pic_value val)
-{
-  if (pic_undef_p(pic, val)) {
-    if (pic_weak_has(pic, weak, key)) {
-      pic_weak_del(pic, weak, key);
-    }
-  } else {
-    pic_weak_set(pic, weak, key, val);
-  }
-
-  return pic_undef_value(pic);
-}
-
-static pic_value
 weak_call(pic_state *pic)
 {
-  struct pic_weak *weak;
-  pic_value key, val;
+  pic_value key, val, weak;
   int n;
 
   n = pic_get_args(pic, "o|o", &key, &val);
@@ -115,12 +77,22 @@ weak_call(pic_state *pic)
     pic_errorf(pic, "attempted to set a non-object key '~s' in an ephemeron", key);
   }
 
-  weak = pic_weak_ptr(pic_closure_ref(pic, 0));
+  weak = pic_closure_ref(pic, 0);
 
   if (n == 1) {
-    return weak_get(pic, weak, pic_obj_ptr(key));
+    if (! pic_weak_has(pic, weak, key)) {
+      return pic_false_value(pic);
+    }
+    return pic_cons(pic, key, pic_weak_ref(pic, weak, key));
   } else {
-    return weak_set(pic, weak, pic_obj_ptr(key), val);
+    if (pic_undef_p(pic, val)) {
+      if (pic_weak_has(pic, weak, key)) {
+        pic_weak_del(pic, weak, key);
+      }
+    } else {
+      pic_weak_set(pic, weak, key, val);
+    }
+    return pic_undef_value(pic);
   }
 }
 
@@ -129,7 +101,7 @@ pic_weak_make_ephemeron(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_lambda(pic, weak_call, 1, pic_obj_value(pic_make_weak(pic)));
+  return pic_lambda(pic, weak_call, 1, pic_make_weak(pic));
 }
 
 void

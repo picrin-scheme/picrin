@@ -242,11 +242,11 @@ int pic_dict_size(pic_state *, pic_value dict);
 bool pic_dict_next(pic_state *, pic_value dict, int *iter, pic_sym **key, pic_value *val);
 
 /* ephemeron */
-struct pic_weak *pic_make_weak(pic_state *);
-pic_value pic_weak_ref(pic_state *, struct pic_weak *, void *);
-void pic_weak_set(pic_state *, struct pic_weak *, void *, pic_value);
-void pic_weak_del(pic_state *, struct pic_weak *, void *);
-bool pic_weak_has(pic_state *, struct pic_weak *, void *);
+pic_value pic_make_weak(pic_state *);
+pic_value pic_weak_ref(pic_state *, pic_value weak, pic_value key);
+void pic_weak_set(pic_state *, pic_value weak, pic_value key, pic_value val);
+void pic_weak_del(pic_state *, pic_value weak, pic_value key);
+bool pic_weak_has(pic_state *, pic_value weak, pic_value key);
 
 /* symbol */
 pic_sym *pic_intern(pic_state *, pic_value str);

@@ -11,7 +11,7 @@ extern "C" {
 
 KHASH_DECLARE(env, pic_id *, pic_sym *)
 KHASH_DECLARE(dict, pic_sym *, pic_value)
-KHASH_DECLARE(weak, void *, pic_value)
+KHASH_DECLARE(weak, struct pic_object *, pic_value)
 
 struct pic_id {
   union {
@@ -125,11 +125,11 @@ struct pic_port {
 #define pic_pair_ptr(pic, o) ((struct pic_pair *)pic_obj_ptr(o))
 #define pic_vec_ptr(pic, o) ((struct pic_vector *)pic_obj_ptr(o))
 #define pic_dict_ptr(pic, o) ((struct pic_dict *)pic_obj_ptr(o))
+#define pic_weak_ptr(pic, o) ((struct pic_weak *)pic_obj_ptr(o))
 #define pic_data_ptr(pic, o) ((struct pic_data *)pic_obj_ptr(o))
 #define pic_proc_ptr(pic, o) ((struct pic_proc *)pic_obj_ptr(o))
 #define pic_sym_ptr(v) ((pic_sym *)pic_obj_ptr(v))
 #define pic_id_ptr(v) ((pic_id *)pic_obj_ptr(v))
-#define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))
 #define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
 #define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
 #define pic_error_ptr(v) ((struct pic_error *)pic_obj_ptr(v))

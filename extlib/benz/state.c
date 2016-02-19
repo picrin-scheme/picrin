@@ -259,10 +259,10 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->ucnt = 0;
 
   /* global variables */
-  pic->globals = NULL;
+  pic->globals = pic_make_weak(pic);
 
   /* macros */
-  pic->macros = NULL;
+  pic->macros = pic_make_weak(pic);
 
   /* features */
   pic->features = pic_nil_value(pic);
@@ -354,7 +354,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic_reader_init(pic);
 
   /* parameter table */
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_weak(pic)), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_make_weak(pic), pic->ptable);
 
   /* standard libraries */
   pic_make_library(pic, "picrin.user");
@@ -394,8 +394,8 @@ pic_close(pic_state *pic)
   pic->xp = pic->xpbase;
   pic->arena_idx = 0;
   pic->err = pic_invalid_value();
-  pic->globals = NULL;
-  pic->macros = NULL;
+  pic->globals = pic_invalid_value();
+  pic->macros = pic_invalid_value();
   pic->features = pic_nil_value(pic);
 
   /* free all libraries */

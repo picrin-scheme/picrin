@@ -109,26 +109,26 @@ pic_find_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 static void
 define_macro(pic_state *pic, pic_sym *uid, pic_value mac)
 {
-  if (pic_weak_has(pic, pic->macros, uid)) {
+  if (pic_weak_has(pic, pic->macros, pic_obj_value(uid))) {
     pic_warnf(pic, "redefining syntax variable: ~s", pic_obj_value(uid));
   }
-  pic_weak_set(pic, pic->macros, uid, mac);
+  pic_weak_set(pic, pic->macros, pic_obj_value(uid), mac);
 }
 
 static pic_value
 find_macro(pic_state *pic, pic_sym *uid)
 {
-  if (! pic_weak_has(pic, pic->macros, uid)) {
+  if (! pic_weak_has(pic, pic->macros, pic_obj_value(uid))) {
     return pic_false_value(pic);
   }
-  return pic_weak_ref(pic, pic->macros, uid);
+  return pic_weak_ref(pic, pic->macros, pic_obj_value(uid));
 }
 
 static void
 shadow_macro(pic_state *pic, pic_sym *uid)
 {
-  if (pic_weak_has(pic, pic->macros, uid)) {
-    pic_weak_del(pic, pic->macros, uid);
+  if (pic_weak_has(pic, pic->macros, pic_obj_value(uid))) {
+    pic_weak_del(pic, pic->macros, pic_obj_value(uid));
   }
 }
 

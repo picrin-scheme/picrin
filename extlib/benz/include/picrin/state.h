@@ -79,8 +79,8 @@ struct pic_state {
 
   khash_t(oblist) oblist;       /* string to symbol */
   int ucnt;
-  struct pic_weak *globals;
-  struct pic_weak *macros;
+  pic_value globals;            /* weak */
+  pic_value macros;             /* weak */
   khash_t(ltable) ltable;
   struct pic_list ireps;        /* chain */
 

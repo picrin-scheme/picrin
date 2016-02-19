@@ -471,14 +471,10 @@ gc_mark_phase(pic_state *pic)
   M(sADD); M(sSUB); M(sMUL); M(sDIV); M(sEQ); M(sLT); M(sLE); M(sGT); M(sGE); M(sNOT);
 
   /* global variables */
-  if (pic->globals) {
-    gc_mark_object(pic, (struct pic_object *)pic->globals);
-  }
+  gc_mark(pic, pic->globals);
 
   /* macro objects */
-  if (pic->macros) {
-    gc_mark_object(pic, (struct pic_object *)pic->macros);
-  }
+  gc_mark(pic, pic->macros);
 
   /* error object */
   gc_mark(pic, pic->err);
