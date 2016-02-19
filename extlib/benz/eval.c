@@ -831,11 +831,11 @@ pic_codegen(pic_state *pic, pic_value obj)
 
 #define SAVE(pic, ai, obj) pic_leave(pic, ai); pic_protect(pic, obj)
 
-struct pic_proc *
+pic_value
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct pic_irep *irep;
-  struct pic_proc *proc;
+  pic_value proc;
   size_t ai = pic_enter(pic);
 
 #if DEBUG

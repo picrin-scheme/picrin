@@ -105,12 +105,11 @@ weak_set(pic_state *pic, struct pic_weak *weak, void *key, pic_value val)
 static pic_value
 weak_call(pic_state *pic)
 {
-  struct pic_proc *self;
   struct pic_weak *weak;
   pic_value key, val;
   int n;
 
-  n = pic_get_args(pic, "&o|o", &self, &key, &val);
+  n = pic_get_args(pic, "o|o", &key, &val);
 
   if (! pic_obj_p(pic, key)) {
     pic_errorf(pic, "attempted to set a non-object key '~s' in an ephemeron", key);
@@ -128,13 +127,9 @@ weak_call(pic_state *pic)
 static pic_value
 pic_weak_make_ephemeron(pic_state *pic)
 {
-  struct pic_proc *proc;
-
   pic_get_args(pic, "");
 
-  proc = pic_lambda(pic, weak_call, 1, pic_obj_value(pic_make_weak(pic)));
-
-  return pic_obj_value(proc);
+  return pic_lambda(pic, weak_call, 1, pic_obj_value(pic_make_weak(pic)));
 }
 
 void

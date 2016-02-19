@@ -125,12 +125,12 @@ struct pic_port {
 #define pic_vec_ptr(pic, o) ((struct pic_vector *)pic_obj_ptr(o))
 #define pic_dict_ptr(pic, o) ((struct pic_dict *)pic_obj_ptr(o))
 #define pic_data_ptr(pic, o) ((struct pic_data *)pic_obj_ptr(o))
+#define pic_proc_ptr(pic, o) ((struct pic_proc *)pic_obj_ptr(o))
 #define pic_sym_ptr(v) ((pic_sym *)pic_obj_ptr(v))
 #define pic_id_ptr(v) ((pic_id *)pic_obj_ptr(v))
 #define pic_str_ptr(o) ((struct pic_string *)pic_obj_ptr(o))
 #define pic_weak_ptr(v) ((struct pic_weak *)pic_obj_ptr(v))
 #define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
-#define pic_proc_ptr(o) ((struct pic_proc *)pic_obj_ptr(o))
 #define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
 #define pic_error_ptr(v) ((struct pic_error *)pic_obj_ptr(v))
 #define pic_port_ptr(v) ((struct pic_port *)pic_obj_ptr(v))
@@ -157,8 +157,8 @@ struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
   } while (0)
 
 pic_id *pic_make_identifier(pic_state *, pic_id *, struct pic_env *);
-struct pic_proc *pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
-struct pic_proc *pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_context *);
+pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
+pic_value pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_context *);
 struct pic_record *pic_make_rec(pic_state *, pic_value, pic_value);
 struct pic_error *pic_make_error(pic_state *, const char *, const char *, pic_value);
 struct pic_env *pic_make_env(pic_state *, struct pic_env *);

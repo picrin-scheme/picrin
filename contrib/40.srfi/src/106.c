@@ -367,8 +367,7 @@ pic_socket_socket_output_port(pic_state *pic)
 static pic_value
 pic_socket_call_with_socket(pic_state *pic)
 {
-  pic_value obj, result;
-  struct pic_proc *proc;
+  pic_value obj, proc, result;
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "ol", &obj, &proc);
@@ -389,7 +388,7 @@ pic_init_srfi_106(pic_state *pic)
 {
   pic_deflibrary(pic, "srfi.106");
 
-#define pic_defun_(pic, name, f) pic_define(pic, "srfi.106", name, pic_obj_value(pic_lambda(pic, f, 0)))
+#define pic_defun_(pic, name, f) pic_define(pic, "srfi.106", name, pic_lambda(pic, f, 0))
 #define pic_define_(pic, name, v) pic_define(pic, "srfi.106", name, v)
 
   pic_defun_(pic, "socket?", pic_socket_socket_p);

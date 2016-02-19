@@ -15,14 +15,14 @@ pic_get_backtrace(pic_state *pic)
   trace = pic_lit_value(pic, "");
 
   for (ci = pic->ci; ci != pic->cibase; --ci) {
-    struct pic_proc *proc = pic_proc_ptr(ci->fp[0]);
+    pic_value proc = ci->fp[0];
 
     trace = pic_str_cat(pic, trace, pic_lit_value(pic, "  at "));
     trace = pic_str_cat(pic, trace, pic_lit_value(pic, "(anonymous lambda)"));
 
-    if (pic_proc_func_p(proc)) {
+    if (pic_proc_func_p(pic_proc_ptr(pic, proc))) {
       trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (native function)\n"));
-    } else if (pic_proc_irep_p(proc)) {
+    } else {
       trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (unknown location)\n")); /* TODO */
     }
   }

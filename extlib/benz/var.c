@@ -6,28 +6,28 @@
 #include "picrin/object.h"
 
 static pic_value
-var_get(pic_state *pic, struct pic_proc *var)
+var_get(pic_state *pic, pic_value var)
 {
   pic_value elem, it;
   struct pic_weak *weak;
 
   pic_for_each (elem, pic->ptable, it) {
     weak = pic_weak_ptr(elem);
-    if (pic_weak_has(pic, weak, var)) {
-      return pic_weak_ref(pic, weak, var);
+    if (pic_weak_has(pic, weak, pic_obj_ptr(var))) {
+      return pic_weak_ref(pic, weak, pic_obj_ptr(var));
     }
   }
   pic_panic(pic, "logic flaw");
 }
 
 static pic_value
-var_set(pic_state *pic, struct pic_proc *var, pic_value val)
+var_set(pic_state *pic, pic_value var, pic_value val)
 {
   struct pic_weak *weak;
 
   weak = pic_weak_ptr(pic_car(pic, pic->ptable));
 
-  pic_weak_set(pic, weak, var, val);
+  pic_weak_set(pic, weak, pic_obj_ptr(var), val);
 
   return pic_undef_value(pic);
 }
@@ -35,8 +35,7 @@ var_set(pic_state *pic, struct pic_proc *var, pic_value val)
 static pic_value
 var_call(pic_state *pic)
 {
-  struct pic_proc *self;
-  pic_value val;
+  pic_value self, val;
   int n;
 
   n = pic_get_args(pic, "&|o", &self, &val);
@@ -48,22 +47,18 @@ var_call(pic_state *pic)
 
     conv = pic_closure_ref(pic, 0);
     if (! pic_false_p(pic, conv)) {
-      val = pic_call(pic, pic_proc_ptr(conv), 1, val);
+      val = pic_call(pic, conv, 1, val);
     }
     return var_set(pic, self, val);
   }
 }
 
-struct pic_proc *
-pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
+pic_value
+pic_make_var(pic_state *pic, pic_value init, pic_value conv)
 {
-  struct pic_proc *var;
-  pic_value c = pic_false_value(pic);
+  pic_value var;
 
-  if (conv != NULL) {
-    c = pic_obj_value(conv);
-  }
-  var = pic_lambda(pic, var_call, 1, c);
+  var = pic_lambda(pic, var_call, 1, conv);
 
   pic_call(pic, var, 1, init);
 
@@ -73,19 +68,17 @@ pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
 static pic_value
 pic_var_make_parameter(pic_state *pic)
 {
-  struct pic_proc *conv = NULL;
-  pic_value init;
+  pic_value init, conv = pic_false_value(pic);
 
   pic_get_args(pic, "o|l", &init, &conv);
 
-  return pic_obj_value(pic_make_var(pic, init, conv));
+  return pic_make_var(pic, init, conv);
 }
 
 static pic_value
 pic_var_with_parameter(pic_state *pic)
 {
-  struct pic_proc *body;
-  pic_value val;
+  pic_value body, val;
 
   pic_get_args(pic, "l", &body);
 

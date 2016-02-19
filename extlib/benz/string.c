@@ -552,8 +552,7 @@ pic_str_string_append(pic_state *pic)
 static pic_value
 pic_str_string_map(pic_state *pic)
 {
-  struct pic_proc *proc;
-  pic_value *argv, vals, val;
+  pic_value proc, *argv, vals, val;
   int argc, i, len, j;
   struct pic_string *str;
   char *buf;
@@ -581,7 +580,7 @@ pic_str_string_map(pic_state *pic)
       for (j = 0; j < argc; ++j) {
         pic_push(pic, pic_char_value(pic, pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
       }
-      val = pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
+      val = pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
 
       pic_assert_type(pic, val, char);
       buf[i] = pic_char(pic, val);
@@ -601,9 +600,8 @@ pic_str_string_map(pic_state *pic)
 static pic_value
 pic_str_string_for_each(pic_state *pic)
 {
-  struct pic_proc *proc;
   int argc, len, i, j;
-  pic_value *argv, vals;
+  pic_value proc, *argv, vals;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
@@ -626,7 +624,7 @@ pic_str_string_for_each(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_char_value(pic, pic_str_ref(pic, pic_str_ptr(argv[j]), i)), vals);
     }
-    pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
+    pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
   }
 
   return pic_undef_value(pic);

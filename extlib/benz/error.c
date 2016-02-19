@@ -51,21 +51,18 @@ pic_value
 pic_native_exception_handler(pic_state *pic)
 {
   pic_value err;
-  struct pic_proc *self, *cont;
 
-  pic_get_args(pic, "&o", &self, &err);
+  pic_get_args(pic, "o", &err);
 
   pic->err = err;
 
-  cont = pic_proc_ptr(pic_closure_ref(pic, 0));
-
-  pic_call(pic, cont, 1, pic_false_value(pic));
+  pic_call(pic, pic_closure_ref(pic, 0), 1, pic_false_value(pic));
 
   PIC_UNREACHABLE();
 }
 
 void
-pic_push_handler(pic_state *pic, struct pic_proc *handler)
+pic_push_handler(pic_state *pic, pic_value handler)
 {
   size_t xp_len;
   ptrdiff_t xp_offset;
@@ -78,17 +75,17 @@ pic_push_handler(pic_state *pic, struct pic_proc *handler)
     pic->xpend = pic->xpbase + xp_len;
   }
 
-  *pic->xp++ = handler;
+  *pic->xp++ = pic_proc_ptr(pic, handler);
 }
 
-struct pic_proc *
+pic_value
 pic_pop_handler(pic_state *pic)
 {
   if (pic->xp == pic->xpbase) {
     pic_panic(pic, "no exception handler registered");
   }
 
-  return *--pic->xp;
+  return pic_obj_value(*--pic->xp);
 }
 
 struct pic_error *
@@ -112,12 +109,11 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
 pic_value
 pic_raise_continuable(pic_state *pic, pic_value err)
 {
-  struct pic_proc *handler;
-  pic_value v;
+  pic_value handler, v;
 
   handler = pic_pop_handler(pic);
 
-  pic_protect(pic, pic_obj_value(handler));
+  pic_protect(pic, handler);
 
   v = pic_call(pic, handler, 1, err);
 
@@ -151,8 +147,7 @@ pic_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
-  struct pic_proc *handler, *thunk;
-  pic_value val;
+  pic_value handler, thunk, val;
 
   pic_get_args(pic, "ll", &handler, &thunk);
 

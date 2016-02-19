@@ -239,7 +239,7 @@ cont_call(pic_state *pic)
 }
 
 static pic_value
-pic_callcc(pic_state *pic, struct pic_proc *proc)
+pic_callcc(pic_state *pic, pic_value proc)
 {
   struct pic_fullcont *cont;
 
@@ -248,13 +248,12 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
     return pic_valuesk(pic, cont->retc, cont->retv);
   }
   else {
-    struct pic_proc *c;
-    pic_value args[1];
+    pic_value c, args[1];
 
     /* save the continuation object in proc */
     c = pic_lambda(pic, cont_call, 1, pic_data_value(pic, cont, &cont_type));
 
-    args[0] = pic_obj_value(c);
+    args[0] = c;
     return pic_applyk(pic, proc, 1, args);
   }
 }
@@ -262,15 +261,15 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
 static pic_value
 pic_callcc_callcc(pic_state *pic)
 {
-  struct pic_proc *proc;
+  pic_value proc;
 
   pic_get_args(pic, "l", &proc);
 
   return pic_callcc(pic, proc);
 }
 
-#define pic_redefun(pic, lib, name, func)                               \
-  pic_set(pic, lib, name, pic_obj_value(pic_lambda(pic, func, 0)))
+#define pic_redefun(pic, lib, name, func)               \
+  pic_set(pic, lib, name, pic_lambda(pic, func, 0))
 
 void
 pic_init_callcc(pic_state *pic)

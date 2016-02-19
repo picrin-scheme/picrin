@@ -48,38 +48,34 @@ pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)
 
   if (here->depth < there->depth) {
     pic_wind(pic, here, there->prev);
-    pic_call(pic, there->in, 0);
+    pic_call(pic, pic_obj_value(there->in), 0);
   }
   else {
-    pic_call(pic, there->out, 0);
+    pic_call(pic, pic_obj_value(there->out), 0);
     pic_wind(pic, here->prev, there);
   }
 }
 
 static pic_value
-pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
+pic_dynamic_wind(pic_state *pic, pic_value in, pic_value thunk, pic_value out)
 {
   pic_checkpoint *here;
   pic_value val;
 
-  if (in != NULL) {
-    pic_call(pic, in, 0);       /* enter */
-  }
+  pic_call(pic, in, 0);       /* enter */
 
   here = pic->cp;
   pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TYPE_CP);
   pic->cp->prev = here;
   pic->cp->depth = here->depth + 1;
-  pic->cp->in = in;
-  pic->cp->out = out;
+  pic->cp->in = pic_proc_ptr(pic, in);
+  pic->cp->out = pic_proc_ptr(pic, out);
 
   val = pic_call(pic, thunk, 0);
 
   pic->cp = here;
 
-  if (out != NULL) {
-    pic_call(pic, out, 0);      /* exit */
-  }
+  pic_call(pic, out, 0);      /* exit */
 
   return val;
 }
@@ -120,20 +116,17 @@ cont_call(pic_state *pic)
   PIC_UNREACHABLE();
 }
 
-struct pic_proc *
+pic_value
 pic_make_cont(pic_state *pic, struct pic_cont *cont)
 {
   static const pic_data_type cont_type = { "cont", NULL, NULL };
-  struct pic_proc *c;
 
   /* save the escape continuation in proc */
-  c = pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_data_value(pic, cont, &cont_type));
-
-  return c;
+  return pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_data_value(pic, cont, &cont_type));
 }
 
 static pic_value
-pic_callcc(pic_state *pic, struct pic_proc *proc)
+pic_callcc(pic_state *pic, pic_value proc)
 {
   struct pic_cont cont;
 
@@ -145,7 +138,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   else {
     pic_value val;
 
-    val = pic_call(pic, proc, 1, pic_obj_value(pic_make_cont(pic, &cont)));
+    val = pic_call(pic, proc, 1, pic_make_cont(pic, &cont));
 
     pic->cc = pic->cc->prev;
 
@@ -209,17 +202,17 @@ pic_receive(pic_state *pic, int n, pic_value *argv)
 static pic_value
 pic_cont_callcc(pic_state *pic)
 {
-  struct pic_proc *cb;
+  pic_value f;
 
-  pic_get_args(pic, "l", &cb);
+  pic_get_args(pic, "l", &f);
 
-  return pic_callcc(pic, cb);
+  return pic_callcc(pic, f);
 }
 
 static pic_value
 pic_cont_dynamic_wind(pic_state *pic)
 {
-  struct pic_proc *in, *thunk, *out;
+  pic_value in, thunk, out;
 
   pic_get_args(pic, "lll", &in, &thunk, &out);
 
@@ -240,9 +233,8 @@ pic_cont_values(pic_state *pic)
 static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
-  struct pic_proc *producer, *consumer;
+  pic_value producer, consumer, *retv;
   int retc;
-  pic_value *retv;
 
   pic_get_args(pic, "ll", &producer, &consumer);
 

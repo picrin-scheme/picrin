@@ -31,7 +31,7 @@ struct pic_cont {
 void pic_save_point(pic_state *, struct pic_cont *);
 void pic_load_point(pic_state *, struct pic_cont *);
 
-struct pic_proc *pic_make_cont(pic_state *, struct pic_cont *);
+pic_value pic_make_cont(pic_state *, struct pic_cont *);
 
 void pic_wind(pic_state *, pic_checkpoint *, pic_checkpoint *);
 

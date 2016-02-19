@@ -24,7 +24,7 @@
  *  v   pic_value *             vector object
  *  s   struct pic_str **       string object
  *  b   pic_value *             bytevector object
- *  l   struct pic_proc **      lambda object
+ *  l   pic_value *             lambda object
  *  p   struct pic_port **      port object
  *  d   pic_value *             dictionary object
  *  e   struct pic_error **     error object
@@ -76,10 +76,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
   /* dispatch */
   if (proc) {
-    struct pic_proc **proc;
+    pic_value *proc;
 
-    proc = va_arg(ap, struct pic_proc **);
-    *proc = pic_proc_ptr(GET_OPERAND(pic, 0));
+    proc = va_arg(ap, pic_value *);
+    *proc = GET_OPERAND(pic, 0);
   }
   for (i = 1; i <= MIN(paramc + optc, argc); ++i) {
 
@@ -149,13 +149,13 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
     PTR_CASE('m', sym, pic_sym *)
     PTR_CASE('s', str, struct pic_string *)
-    PTR_CASE('l', proc, struct pic_proc *)
     PTR_CASE('p', port, struct pic_port *)
     PTR_CASE('e', error, struct pic_error *)
     PTR_CASE('r', rec, struct pic_record *)
 
 #define OBJ_CASE(c, type) VAL_CASE(c, type, pic_value, v)
 
+    OBJ_CASE('l', proc)
     OBJ_CASE('b', blob)
     OBJ_CASE('v', vec)
     OBJ_CASE('d', dict)
@@ -337,7 +337,7 @@ bool pic_gt(pic_state *, pic_value, pic_value);
 bool pic_ge(pic_state *, pic_value, pic_value);
 
 pic_value
-pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
+pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
   pic_code c;
   size_t ai = pic_enter(pic);
@@ -363,7 +363,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
   pic_callinfo *cibase;
 #endif
 
-  PUSH(pic_obj_value(proc));
+  PUSH(proc);
 
   for (i = 0; i < argc; ++i) {
     PUSH(argv[i]);
@@ -498,6 +498,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
     CASE(OP_CALL) {
       pic_value x, v;
       pic_callinfo *ci;
+      struct pic_proc *proc;
 
       if (c.a == -1) {
         pic->sp += pic->ci[1].retc - 1;
@@ -509,7 +510,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
       if (! pic_proc_p(pic, x)) {
 	pic_errorf(pic, "invalid application: ~s", x);
       }
-      proc = pic_proc_ptr(x);
+      proc = pic_proc_ptr(pic, x);
 
       VM_CALL_PRINT;
 
@@ -632,8 +633,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
         vm_push_cxt(pic);
       }
 
-      proc = pic_make_proc_irep(pic, pic->ci->irep->irep[c.a], pic->ci->cxt);
-      PUSH(pic_obj_value(proc));
+      PUSH(pic_make_proc_irep(pic, pic->ci->irep->irep[c.a], pic->ci->cxt));
       pic_leave(pic, ai);
       NEXT;
     }
@@ -794,7 +794,7 @@ pic_apply(pic_state *pic, struct pic_proc *proc, int argc, pic_value *argv)
 }
 
 pic_value
-pic_applyk(pic_state *pic, struct pic_proc *proc, int argc, pic_value *args)
+pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
 {
   pic_value *sp;
   pic_callinfo *ci;
@@ -803,7 +803,7 @@ pic_applyk(pic_state *pic, struct pic_proc *proc, int argc, pic_value *args)
   PIC_INIT_CODE_I(pic->iseq[0], OP_NOP, 0);
   PIC_INIT_CODE_I(pic->iseq[1], OP_TAILCALL, -1);
 
-  *pic->sp++ = pic_obj_value(proc);
+  *pic->sp++ = proc;
 
   sp = pic->sp;
   for (i = 0; i < argc; ++i) {
@@ -823,7 +823,7 @@ pic_applyk(pic_state *pic, struct pic_proc *proc, int argc, pic_value *args)
 }
 
 pic_value
-pic_call(pic_state *pic, struct pic_proc *proc, int n, ...)
+pic_call(pic_state *pic, pic_value proc, int n, ...)
 {
   pic_value r;
   va_list ap;
@@ -835,7 +835,7 @@ pic_call(pic_state *pic, struct pic_proc *proc, int n, ...)
 }
 
 pic_value
-pic_vcall(pic_state *pic, struct pic_proc *proc, int n, va_list ap)
+pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
 {
   pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
   int i;
@@ -846,10 +846,10 @@ pic_vcall(pic_state *pic, struct pic_proc *proc, int n, va_list ap)
   return pic_apply(pic, proc, n, args);
 }
 
-struct pic_proc *
+pic_value
 pic_lambda(pic_state *pic, pic_func_t f, int n, ...)
 {
-  struct pic_proc *proc;
+  pic_value proc;
   va_list ap;
 
   va_start(ap, n);
@@ -858,7 +858,7 @@ pic_lambda(pic_state *pic, pic_func_t f, int n, ...)
   return proc;
 }
 
-struct pic_proc *
+pic_value
 pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
 {
   pic_value *env = pic_alloca(pic, sizeof(pic_value) * n);
@@ -873,14 +873,14 @@ pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t f)
 {
-  pic_define(pic, pic_current_library(pic), name, pic_obj_value(pic_make_proc(pic, f, 0, NULL)));
+  pic_define(pic, pic_current_library(pic), name, pic_make_proc(pic, f, 0, NULL));
   pic_export(pic, pic_intern_cstr(pic, name));
 }
 
 void
-pic_defvar(pic_state *pic, const char *name, pic_value init, struct pic_proc *conv)
+pic_defvar(pic_state *pic, const char *name, pic_value init, pic_value conv)
 {
-  pic_define(pic, pic_current_library(pic), name, pic_obj_value(pic_make_var(pic, init, conv)));
+  pic_define(pic, pic_current_library(pic), name, pic_make_var(pic, init, conv));
   pic_export(pic, pic_intern_cstr(pic, name));
 }
 
@@ -939,31 +939,27 @@ pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 pic_value
 pic_closure_ref(pic_state *pic, int n)
 {
-  struct pic_proc *self;
-
-  self = pic_proc_ptr(GET_OPERAND(pic, 0));
+  struct pic_proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
 
   assert(pic_proc_func_p(self));
 
   if (n < 0 || self->u.f.localc <= n) {
     pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
   }
-  return pic_proc_ptr(GET_OPERAND(pic, 0))->locals[n];
+  return self->locals[n];
 }
 
 void
 pic_closure_set(pic_state *pic, int n, pic_value v)
 {
-  struct pic_proc *self;
-
-  self = pic_proc_ptr(GET_OPERAND(pic, 0));
+  struct pic_proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
 
   assert(pic_proc_func_p(self));
 
   if (n < 0 || self->u.f.localc <= n) {
     pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
   }
-  pic_proc_ptr(GET_OPERAND(pic, 0))->locals[n] = v;
+  self->locals[n] = v;
 }
 
 pic_value
@@ -977,7 +973,7 @@ pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
   pic_assert_type(pic, proc, proc);
 
   va_start(ap, n);
-  r = pic_vcall(pic, pic_proc_ptr(proc), n, ap);
+  r = pic_vcall(pic, proc, n, ap);
   va_end(ap);
 
   return r;
@@ -1012,7 +1008,7 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
   }
 }
 
-struct pic_proc *
+pic_value
 pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
 {
   struct pic_proc *proc;
@@ -1025,10 +1021,10 @@ pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
   for (i = 0; i < n; ++i) {
     proc->locals[i] = env[i];
   }
-  return proc;
+  return pic_obj_value(proc);
 }
 
-struct pic_proc *
+pic_value
 pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cxt)
 {
   struct pic_proc *proc;
@@ -1038,7 +1034,7 @@ pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cx
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
   pic_irep_incref(pic, irep);
-  return proc;
+  return pic_obj_value(proc);
 }
 
 static pic_value
@@ -1054,8 +1050,7 @@ pic_proc_proc_p(pic_state *pic)
 static pic_value
 pic_proc_apply(pic_state *pic)
 {
-  struct pic_proc *proc;
-  pic_value *args, *arg_list;
+  pic_value proc, *args, *arg_list;
   int argc, n, i;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);

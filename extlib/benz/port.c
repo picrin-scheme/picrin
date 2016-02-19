@@ -334,7 +334,7 @@ coerce_port(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
-  struct pic_proc *coerce = pic_lambda(pic, coerce_port, 0);
+  pic_value coerce = pic_lambda(pic, coerce_port, 0);
 
   DEFINE_PORT(pic, "current-input-port", xstdin);
   DEFINE_PORT(pic, "current-output-port", xstdout);

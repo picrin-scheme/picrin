@@ -470,9 +470,8 @@ pic_pair_list_copy(pic_state *pic)
 static pic_value
 pic_pair_map(pic_state *pic)
 {
-  struct pic_proc *proc;
   int argc, i;
-  pic_value *args, *arg_list, ret;
+  pic_value proc, *args, *arg_list, ret;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
@@ -503,9 +502,8 @@ pic_pair_map(pic_state *pic)
 static pic_value
 pic_pair_for_each(pic_state *pic)
 {
-  struct pic_proc *proc;
   int argc, i;
-  pic_value *args, *arg_list;
+  pic_value proc, *args, *arg_list;
 
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
@@ -563,13 +561,12 @@ pic_pair_memv(pic_state *pic)
 static pic_value
 pic_pair_member(pic_state *pic)
 {
-  struct pic_proc *proc = NULL;
-  pic_value key, list;
+  pic_value key, list, proc = pic_false_value(pic);
 
   pic_get_args(pic, "oo|l", &key, &list, &proc);
 
   while (! pic_nil_p(pic, list)) {
-    if (proc == NULL) {
+    if (pic_false_p(pic, proc)) {
       if (pic_equal_p(pic, key, pic_car(pic, list)))
         return list;
     } else {
@@ -618,14 +615,13 @@ pic_pair_assv(pic_state *pic)
 static pic_value
 pic_pair_assoc(pic_state *pic)
 {
-  struct pic_proc *proc = NULL;
-  pic_value key, alist, cell;
+  pic_value key, alist, proc = pic_false_value(pic), cell;
 
   pic_get_args(pic, "oo|l", &key, &alist, &proc);
 
   while (! pic_nil_p(pic, alist)) {
     cell = pic_car(pic, alist);
-    if (proc == NULL) {
+    if (pic_false_p(pic, proc)) {
       if (pic_equal_p(pic, key, pic_car(pic, cell)))
         return cell;
     } else {

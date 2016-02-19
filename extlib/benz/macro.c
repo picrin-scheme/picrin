@@ -107,21 +107,21 @@ pic_find_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 
 
 static void
-define_macro(pic_state *pic, pic_sym *uid, struct pic_proc *mac)
+define_macro(pic_state *pic, pic_sym *uid, pic_value mac)
 {
   if (pic_weak_has(pic, pic->macros, uid)) {
     pic_warnf(pic, "redefining syntax variable: ~s", pic_obj_value(uid));
   }
-  pic_weak_set(pic, pic->macros, uid, pic_obj_value(mac));
+  pic_weak_set(pic, pic->macros, uid, mac);
 }
 
-static struct pic_proc *
+static pic_value
 find_macro(pic_state *pic, pic_sym *uid)
 {
   if (! pic_weak_has(pic, pic->macros, uid)) {
-    return NULL;
+    return pic_false_value(pic);
   }
-  return pic_proc_ptr(pic_weak_ref(pic, pic->macros, uid));
+  return pic_weak_ref(pic, pic->macros, uid);
 }
 
 static void
@@ -138,12 +138,12 @@ static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 static pic_value
 expand_var(pic_state *pic, pic_id *id, struct pic_env *env, pic_value deferred)
 {
-  struct pic_proc *mac;
+  pic_value mac;
   pic_sym *functor;
 
   functor = pic_find_identifier(pic, id, env);
 
-  if ((mac = find_macro(pic, functor)) != NULL) {
+  if (! pic_false_p(pic, mac = find_macro(pic, functor))) {
     return expand(pic, pic_call(pic, mac, 2, pic_obj_value(id), pic_obj_value(env)), env, deferred);
   }
   return pic_obj_value(functor);
@@ -250,7 +250,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
 static pic_value
 expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 {
-  struct pic_proc *pic_compile(pic_state *, pic_value);
+  pic_value pic_compile(pic_state *, pic_value);
   pic_id *id;
   pic_value val;
   pic_sym *uid;
@@ -265,7 +265,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
     pic_errorf(pic, "macro definition \"%s\" evaluates to non-procedure object", pic_str(pic, pic_id_name(pic, id)));
   }
 
-  define_macro(pic, uid, pic_proc_ptr(val));
+  define_macro(pic, uid, val);
 
   return pic_undef_value(pic);
 }
@@ -279,7 +279,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
     return expand_var(pic, pic_id_ptr(expr), env, deferred);
   }
   case PIC_TYPE_PAIR: {
-    struct pic_proc *mac;
+    pic_value mac;
 
     if (! pic_list_p(pic, expr)) {
       pic_errorf(pic, "cannot expand improper list: ~s", expr);
@@ -303,7 +303,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
         return expand_quote(pic, expr);
       }
 
-      if ((mac = find_macro(pic, functor)) != NULL) {
+      if (! pic_false_p(pic, mac = find_macro(pic, functor))) {
         return expand(pic, pic_call(pic, mac, 2, expr, pic_obj_value(env)), env, deferred);
       }
     }

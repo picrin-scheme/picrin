@@ -168,8 +168,7 @@ pic_dict_dictionary_size(pic_state *pic)
 static pic_value
 pic_dict_dictionary_map(pic_state *pic)
 {
-  struct pic_proc *proc;
-  pic_value dict, ret = pic_nil_value(pic);
+  pic_value dict, proc, ret = pic_nil_value(pic);
   pic_sym *key;
   int it = 0;
 
@@ -184,8 +183,7 @@ pic_dict_dictionary_map(pic_state *pic)
 static pic_value
 pic_dict_dictionary_for_each(pic_state *pic)
 {
-  struct pic_proc *proc;
-  pic_value dict;
+  pic_value dict, proc;
   pic_sym *key;
   int it;
 

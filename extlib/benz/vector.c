@@ -224,9 +224,8 @@ pic_vec_vector_fill_i(pic_state *pic)
 static pic_value
 pic_vec_vector_map(pic_state *pic)
 {
-  struct pic_proc *proc;
   int argc, i, len, j;
-  pic_value *argv, vec, vals;
+  pic_value proc, *argv, vec, vals;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
@@ -249,7 +248,7 @@ pic_vec_vector_map(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ref(pic, argv[j], i), vals);
     }
-    pic_vec_set(pic, vec, i, pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals));
+    pic_vec_set(pic, vec, i, pic_funcall(pic, "picrin.base", "apply", 2, proc, vals));
   }
 
   return vec;
@@ -258,9 +257,8 @@ pic_vec_vector_map(pic_state *pic)
 static pic_value
 pic_vec_vector_for_each(pic_state *pic)
 {
-  struct pic_proc *proc;
   int argc, i, len, j;
-  pic_value *argv, vals;
+  pic_value proc, *argv, vals;
 
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
@@ -281,7 +279,7 @@ pic_vec_vector_for_each(pic_state *pic)
     for (j = 0; j < argc; ++j) {
       pic_push(pic, pic_vec_ref(pic, argv[j], i), vals);
     }
-    pic_funcall(pic, "picrin.base", "apply", 2, pic_obj_value(proc), vals);
+    pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
   }
 
   return pic_undef_value(pic);
