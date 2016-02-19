@@ -6,6 +6,40 @@
 #include "picrin/object.h"
 
 void
+pic_save_point(pic_state *pic, struct pic_cont *cont)
+{
+  /* save runtime context */
+  cont->cp = pic->cp;
+  cont->sp_offset = pic->sp - pic->stbase;
+  cont->ci_offset = pic->ci - pic->cibase;
+  cont->xp_offset = pic->xp - pic->xpbase;
+  cont->arena_idx = pic->arena_idx;
+  cont->ip = pic->ip;
+  cont->ptable = pic->ptable;
+  cont->prev = pic->cc;
+  cont->results = pic_make_vec(pic, 0, NULL);
+  cont->id = pic->ccnt++;
+
+  pic->cc = cont;
+}
+
+void
+pic_load_point(pic_state *pic, struct pic_cont *cont)
+{
+  pic_wind(pic, pic->cp, cont->cp);
+
+  /* load runtime context */
+  pic->cp = cont->cp;
+  pic->sp = pic->stbase + cont->sp_offset;
+  pic->ci = pic->cibase + cont->ci_offset;
+  pic->xp = pic->xpbase + cont->xp_offset;
+  pic->arena_idx = cont->arena_idx;
+  pic->ip = cont->ip;
+  pic->ptable = cont->ptable;
+  pic->cc = cont->prev;
+}
+
+void
 pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)
 {
   if (here == there)
@@ -21,7 +55,7 @@ pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)
   }
 }
 
-pic_value
+static pic_value
 pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, struct pic_proc *out)
 {
   pic_checkpoint *here;
@@ -47,40 +81,6 @@ pic_dynamic_wind(pic_state *pic, struct pic_proc *in, struct pic_proc *thunk, st
   }
 
   return val;
-}
-
-void
-pic_save_point(pic_state *pic, struct pic_cont *cont)
-{
-  /* save runtime context */
-  cont->cp = pic->cp;
-  cont->sp_offset = pic->sp - pic->stbase;
-  cont->ci_offset = pic->ci - pic->cibase;
-  cont->xp_offset = pic->xp - pic->xpbase;
-  cont->arena_idx = pic->arena_idx;
-  cont->ip = pic->ip;
-  cont->ptable = pic->ptable;
-  cont->prev = pic->cc;
-  cont->results = pic_undef_value(pic);
-  cont->id = pic->ccnt++;
-
-  pic->cc = cont;
-}
-
-void
-pic_load_point(pic_state *pic, struct pic_cont *cont)
-{
-  pic_wind(pic, pic->cp, cont->cp);
-
-  /* load runtime context */
-  pic->cp = cont->cp;
-  pic->sp = pic->stbase + cont->sp_offset;
-  pic->ci = pic->cibase + cont->ci_offset;
-  pic->xp = pic->xpbase + cont->xp_offset;
-  pic->arena_idx = cont->arena_idx;
-  pic->ip = cont->ip;
-  pic->ptable = cont->ptable;
-  pic->cc = cont->prev;
 }
 
 #define CV_ID 0
@@ -109,7 +109,7 @@ cont_call(pic_state *pic)
   }
 
   cont = pic_data_ptr(pic_closure_ref(pic, CV_ESCAPE))->data;
-  cont->results = pic_make_list(pic, argc, argv);
+  cont->results = pic_make_vec(pic, argc, argv);
 
   pic_load_point(pic, cont);
 
@@ -130,7 +130,7 @@ pic_make_cont(pic_state *pic, struct pic_cont *cont)
   return c;
 }
 
-pic_value
+static pic_value
 pic_callcc(pic_state *pic, struct pic_proc *proc)
 {
   struct pic_cont cont;
@@ -138,7 +138,7 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   pic_save_point(pic, &cont);
 
   if (PIC_SETJMP(pic, cont.jmp)) {
-    return pic_values_by_list(pic, cont.results);
+    return pic_valuesk(pic, cont.results->len, cont.results->data);
   }
   else {
     pic_value val;
@@ -151,86 +151,41 @@ pic_callcc(pic_state *pic, struct pic_proc *proc)
   }
 }
 
-static pic_value
-pic_va_values(pic_state *pic, int n, ...)
+pic_value
+pic_return(pic_state *pic, int n, ...)
 {
-  pic_vec *args = pic_make_vec(pic, n);
   va_list ap;
-  int i = 0;
+  pic_value ret;
 
   va_start(ap, n);
-
-  while (i < n) {
-    args->data[i++] = va_arg(ap, pic_value);
-  }
-
+  ret = pic_vreturn(pic, n, ap);
   va_end(ap);
-
-  return pic_values(pic, n, args->data);
+  return ret;
 }
 
 pic_value
-pic_values0(pic_state *pic)
+pic_vreturn(pic_state *pic, int n, va_list ap)
 {
-  return pic_va_values(pic, 0);
+  pic_value *retv = pic_alloca(pic, sizeof(pic_value) * n);
+  int i;
+
+  for (i = 0; i < n; ++i) {
+    retv[i] = va_arg(ap, pic_value);
+  }
+  return pic_valuesk(pic, n, retv);
 }
 
 pic_value
-pic_values1(pic_state *pic, pic_value arg1)
-{
-  return pic_va_values(pic, 1, arg1);
-}
-
-pic_value
-pic_values2(pic_state *pic, pic_value arg1, pic_value arg2)
-{
-  return pic_va_values(pic, 2, arg1, arg2);
-}
-
-pic_value
-pic_values3(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3)
-{
-  return pic_va_values(pic, 3, arg1, arg2, arg3);
-}
-
-pic_value
-pic_values4(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4)
-{
-  return pic_va_values(pic, 4, arg1, arg2, arg3, arg4);
-}
-
-pic_value
-pic_values5(pic_state *pic, pic_value arg1, pic_value arg2, pic_value arg3, pic_value arg4, pic_value arg5)
-{
-  return pic_va_values(pic, 5, arg1, arg2, arg3, arg4, arg5);
-}
-
-pic_value
-pic_values(pic_state *pic, int argc, pic_value *argv)
+pic_valuesk(pic_state *pic, int argc, pic_value *argv)
 {
   int i;
 
   for (i = 0; i < argc; ++i) {
     pic->sp[i] = argv[i];
   }
-  pic->ci->retc = (int)argc;
+  pic->ci->retc = argc;
 
   return argc == 0 ? pic_undef_value(pic) : pic->sp[0];
-}
-
-pic_value
-pic_values_by_list(pic_state *pic, pic_value list)
-{
-  pic_value v, it;
-  int i;
-
-  i = 0;
-  pic_for_each (v, list, it) {
-    pic->sp[i++] = v;
-  }
-  pic->ci->retc = i;
-
-  return pic_nil_p(pic, list) ? pic_undef_value(pic) : pic->sp[0];
 }
 
 int
@@ -246,7 +201,6 @@ pic_receive(pic_state *pic, int n, pic_value *argv)
   for (i = 0; i < retc && i < n; ++i) {
     argv[i] = ci->fp[i];
   }
-
   return retc;
 }
 
@@ -278,7 +232,7 @@ pic_cont_values(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  return pic_values(pic, argc, argv);
+  return pic_valuesk(pic, argc, argv);
 }
 
 static pic_value
@@ -293,7 +247,7 @@ pic_cont_call_with_values(pic_state *pic)
   pic_call(pic, producer, 0);
 
   argc = pic_receive(pic, 0, NULL);
-  args = pic_make_vec(pic, argc);
+  args = pic_make_vec(pic, argc, NULL);
 
   pic_receive(pic, argc, args->data);
 

@@ -596,7 +596,7 @@ read_vector(pic_state *pic, xFILE *file, int c)
 
   list = read(pic, file, c);
 
-  vec = pic_make_vec(pic, pic_length(pic, list));
+  vec = pic_make_vec(pic, pic_length(pic, list), NULL);
 
   pic_for_each (elem, list, it) {
     vec->data[i++] = elem;
@@ -641,7 +641,7 @@ read_label_set(pic_state *pic, xFILE *file, int i)
       if (vect) {
         pic_vec *tmp;
 
-        kh_val(h, it) = val = pic_obj_value(pic_make_vec(pic, 0));
+        kh_val(h, it) = val = pic_obj_value(pic_make_vec(pic, 0, NULL));
 
         tmp = pic_vec_ptr(read(pic, file, c));
         PIC_SWAP(pic_value *, tmp->data, pic_vec_ptr(val)->data);

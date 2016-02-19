@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include "picrin/object.h"
 
 struct pic_fullcont {
   jmp_buf jmp;
@@ -29,7 +30,7 @@ struct pic_fullcont {
   struct pic_object **arena;
   size_t arena_size, arena_idx;
 
-  pic_value results;
+  pic_vec *results;
 };
 
 static void
@@ -91,7 +92,7 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
   mark(pic, cont->ptable);
 
   /* result values */
-  mark(pic, cont->results);
+  mark(pic, pic_obj_value(cont->results));
 }
 
 static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
@@ -158,7 +159,7 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
   cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
   memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
 
-  cont->results = pic_undef_value(pic);
+  cont->results = pic_make_vec(pic, 0, NULL);
 }
 
 static void
@@ -225,7 +226,7 @@ cont_call(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   cont = pic_data(pic, pic_closure_ref(pic, 0));
-  cont->results = pic_make_list(pic, argc, argv);
+  cont->results = pic_make_vec(pic, argc, argv);
 
   /* execute guard handlers */
   pic_wind(pic, pic->cp, cont->cp);
@@ -233,36 +234,14 @@ cont_call(pic_state *pic)
   restore_cont(pic, cont);
 }
 
-pic_value
-pic_callcc_full(pic_state *pic, struct pic_proc *proc)
-{
-  struct pic_fullcont *cont;
-
-  save_cont(pic, &cont);
-  if (setjmp(cont->jmp)) {
-    return pic_values_by_list(pic, cont->results);
-  }
-  else {
-    struct pic_proc *c;
-
-    /* save the continuation object in proc */
-    c = pic_lambda(pic, cont_call, 1, pic_obj_value(pic_data_value(pic, cont, &cont_type)));
-
-    return pic_call(pic, proc, 1, pic_obj_value(c));
-  }
-}
-
 static pic_value
-pic_callcc_callcc(pic_state *pic)
+pic_callcc(pic_state *pic, struct pic_proc *proc)
 {
-  struct pic_proc *proc;
   struct pic_fullcont *cont;
-
-  pic_get_args(pic, "l", &proc);
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {
-    return pic_values_by_list(pic, cont->results);
+    return pic_valuesk(pic, cont->results->len, cont->results->data);
   }
   else {
     struct pic_proc *c;
@@ -274,6 +253,16 @@ pic_callcc_callcc(pic_state *pic)
     args[0] = pic_obj_value(c);
     return pic_applyk(pic, proc, 1, args);
   }
+}
+
+static pic_value
+pic_callcc_callcc(pic_state *pic)
+{
+  struct pic_proc *proc;
+
+  pic_get_args(pic, "l", &proc);
+
+  return pic_callcc(pic, proc);
 }
 
 #define pic_redefun(pic, lib, name, func)                               \

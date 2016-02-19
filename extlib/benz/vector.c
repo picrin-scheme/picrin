@@ -6,7 +6,7 @@
 #include "picrin/object.h"
 
 struct pic_vector *
-pic_make_vec(pic_state *pic, int len)
+pic_make_vec(pic_state *pic, int len, pic_value *argv)
 {
   struct pic_vector *vec;
   int i;
@@ -14,8 +14,12 @@ pic_make_vec(pic_state *pic, int len)
   vec = (struct pic_vector *)pic_obj_alloc(pic, sizeof(struct pic_vector), PIC_TYPE_VECTOR);
   vec->len = len;
   vec->data = (pic_value *)pic_malloc(pic, sizeof(pic_value) * len);
-  for (i = 0; i < len; ++i) {
-    vec->data[i] = pic_undef_value(pic);
+  if (argv == NULL) {
+    for (i = 0; i < len; ++i) {
+      vec->data[i] = pic_undef_value(pic);
+    }
+  } else {
+    memcpy(vec->data, argv, sizeof(pic_value) * len);
   }
   return vec;
 }
@@ -33,17 +37,13 @@ pic_vec_vector_p(pic_state *pic)
 static pic_value
 pic_vec_vector(pic_state *pic)
 {
-  int argc, i;
+  int argc;
   pic_value *argv;
   pic_vec *vec;
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  vec = pic_make_vec(pic, argc);
-
-  for (i = 0; i < argc; ++i) {
-    vec->data[i] = argv[i];
-  }
+  vec = pic_make_vec(pic, argc, argv);
 
   return pic_obj_value(vec);
 }
@@ -57,7 +57,7 @@ pic_vec_make_vector(pic_state *pic)
 
   n = pic_get_args(pic, "i|o", &k, &v);
 
-  vec = pic_make_vec(pic, k);
+  vec = pic_make_vec(pic, k, NULL);
   if (n == 2) {
     for (i = 0; i < k; ++i) {
       vec->data[i] = v;
@@ -140,26 +140,23 @@ pic_vec_vector_copy_i(pic_state *pic)
 static pic_value
 pic_vec_vector_copy(pic_state *pic)
 {
-  pic_vec *vec, *to;
-  int n, start, end, i = 0;
+  pic_vec *from, *to;
+  int n, start, end;
 
-  n = pic_get_args(pic, "v|ii", &vec, &start, &end);
+  n = pic_get_args(pic, "v|ii", &from, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = vec->len;
+    end = from->len;
   }
 
   if (end < start) {
     pic_errorf(pic, "vector-copy: end index must not be less than start index");
   }
 
-  to = pic_make_vec(pic, end - start);
-  while (start < end) {
-    to->data[i++] = vec->data[start++];
-  }
+  to = pic_make_vec(pic, end - start, from->data + start);
 
   return pic_obj_value(to);
 }
@@ -179,7 +176,7 @@ pic_vec_vector_append(pic_state *pic)
     len += pic_vec_ptr(argv[i])->len;
   }
 
-  vec = pic_make_vec(pic, len);
+  vec = pic_make_vec(pic, len, NULL);
 
   len = 0;
   for (i = 0; i < argc; ++i) {
@@ -234,7 +231,7 @@ pic_vec_vector_map(pic_state *pic)
       : pic_vec_ptr(argv[i])->len;
   }
 
-  vec = pic_make_vec(pic, len);
+  vec = pic_make_vec(pic, len, NULL);
 
   for (i = 0; i < len; ++i) {
     vals = pic_nil_value(pic);
@@ -284,7 +281,7 @@ pic_vec_list_to_vector(pic_state *pic)
 
   pic_get_args(pic, "o", &list);
 
-  vec = pic_make_vec(pic, pic_length(pic, list));
+  vec = pic_make_vec(pic, pic_length(pic, list), NULL);
 
   data = vec->data;
 
@@ -373,7 +370,7 @@ pic_vec_string_to_vector(pic_state *pic)
     pic_errorf(pic, "string->vector: end index must not be less than start index");
   }
 
-  vec = pic_make_vec(pic, end - start);
+  vec = pic_make_vec(pic, end - start, NULL);
 
   for (i = 0; i < end - start; ++i) {
     vec->data[i] = pic_char_value(pic, pic_str_ref(pic, str, i + start));

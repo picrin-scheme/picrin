@@ -230,7 +230,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
   body = analyze(pic, scope, body);
   analyze_deferred(pic, scope);
 
-  args = pic_make_vec(pic, kh_size(&scope->args));
+  args = pic_make_vec(pic, kh_size(&scope->args), NULL);
   for (i = 0; pic_pair_p(pic, formals); formals = pic_cdr(pic, formals), i++) {
     args->data[i] = pic_car(pic, formals);
   }
@@ -239,7 +239,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
     rest = pic_obj_value(scope->rest);
   }
 
-  locals = pic_make_vec(pic, kh_size(&scope->locals));
+  locals = pic_make_vec(pic, kh_size(&scope->locals), NULL);
   j = 0;
   if (scope->rest != NULL) {
     locals->data[j++] = pic_obj_value(scope->rest);
@@ -252,7 +252,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
     }
   }
 
-  captures = pic_make_vec(pic, kh_size(&scope->captures));
+  captures = pic_make_vec(pic, kh_size(&scope->captures), NULL);
   for (it = kh_begin(&scope->captures), j = 0; it < kh_end(&scope->captures); ++it) {
     if (kh_exist(&scope->captures, it)) {
       captures->data[j++] = pic_obj_value(kh_key(&scope->captures, it));
@@ -818,7 +818,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 static struct pic_irep *
 pic_codegen(pic_state *pic, pic_value obj)
 {
-  pic_vec *empty = pic_make_vec(pic, 0);
+  pic_vec *empty = pic_make_vec(pic, 0, NULL);
   codegen_context c, *cxt = &c;
 
   codegen_context_init(pic, cxt, NULL, NULL, empty, empty, empty);

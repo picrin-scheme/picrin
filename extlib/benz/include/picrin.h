@@ -100,6 +100,11 @@ pic_value pic_closure_ref(pic_state *, int i);
 void pic_closure_set(pic_state *, int i, pic_value v);
 pic_value pic_funcall(pic_state *, const char *lib, const char *name, int n, ...);
 
+pic_value pic_return(pic_state *, int n, ...);
+pic_value pic_vreturn(pic_state *, int n, va_list);
+pic_value pic_valuesk(pic_state *, int n, pic_value *retv);
+int pic_receive(pic_state *, int n, pic_value *retv);
+
 void pic_make_library(pic_state *, const char *lib);
 void pic_in_library(pic_state *, const char *lib);
 bool pic_find_library(pic_state *, const char *lib);
@@ -230,7 +235,7 @@ pic_value pic_reverse(pic_state *, pic_value list);
 pic_value pic_append(pic_state *, pic_value xs, pic_value ys);
 
 /* vector */
-pic_vec *pic_make_vec(pic_state *, int);
+pic_vec *pic_make_vec(pic_state *, int, pic_value *);
 pic_value pic_vec_ref(pic_state *, pic_vec *, int);
 void pic_vec_set(pic_state *, pic_vec *, int, pic_value);
 int pic_vec_len(pic_state *, pic_vec *);
@@ -272,7 +277,6 @@ int pic_str_hash(pic_state *, struct pic_string *);
 
 #include "picrin/type.h"
 #include "picrin/state.h"
-
 #include "picrin/cont.h"
 
 void *pic_default_allocf(void *, void *, size_t);

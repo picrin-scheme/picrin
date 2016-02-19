@@ -125,7 +125,7 @@ pic_regexp_regexp_match(pic_state *pic)
     matches = pic_reverse(pic, matches);
     positions = pic_reverse(pic, positions);
   }
-  return pic_values2(pic, matches, positions);
+  return pic_return(pic, 2, matches, positions);
 }
 
 static pic_value
