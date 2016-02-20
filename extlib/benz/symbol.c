@@ -35,15 +35,15 @@ pic_intern(pic_state *pic, pic_value str)
 }
 
 pic_value
-pic_make_identifier(pic_state *pic, pic_value id, struct pic_env *env)
+pic_make_identifier(pic_state *pic, pic_value base, struct pic_env *env)
 {
-  pic_id *nid;
+  pic_id *id;
 
-  nid = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TYPE_ID);
-  nid->u.id = pic_id_ptr(pic, id);
-  nid->env = env;
+  id = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TYPE_ID);
+  id->u.id = pic_id_ptr(pic, base);
+  id->env = env;
 
-  return pic_obj_value(nid);
+  return pic_obj_value(id);
 }
 
 pic_value
@@ -135,7 +135,7 @@ pic_symbol_make_identifier(pic_state *pic)
 }
 
 static pic_value
-pic_symbol_identifier_variable(pic_state *pic)
+pic_symbol_identifier_base(pic_state *pic)
 {
   pic_value id;
 
@@ -196,6 +196,6 @@ pic_init_symbol(pic_state *pic)
   pic_defun(pic, "make-identifier", pic_symbol_make_identifier);
   pic_defun(pic, "identifier?", pic_symbol_identifier_p);
   pic_defun(pic, "identifier=?", pic_symbol_identifier_eq_p);
-  pic_defun(pic, "identifier-variable", pic_symbol_identifier_variable);
+  pic_defun(pic, "identifier-base", pic_symbol_identifier_base);
   pic_defun(pic, "identifier-environment", pic_symbol_identifier_environment);
 }

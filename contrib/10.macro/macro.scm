@@ -7,7 +7,7 @@
           make-identifier
           identifier?
           identifier=?
-          identifier-variable
+          identifier-base
           identifier-environment)
 
   ;; simple macro
@@ -74,7 +74,7 @@
   (define (strip-syntax form)
     (letrec
         ((unwrap (lambda (var)
-                   (identifier-variable var)))
+                   (identifier-base var)))
          (walk (lambda (f form)
                  (cond
                   ((identifier? form)
