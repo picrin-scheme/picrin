@@ -174,12 +174,13 @@ static pic_value
 pic_lib_library_import(pic_state *pic)
 {
   const char *lib;
-  pic_value name, alias = pic_false_value(pic), realname, uid;
+  pic_value name, alias, realname, uid;
   struct pic_lib *libp;
+  int n;
 
-  pic_get_args(pic, "zm|m", &lib, &name, &alias);
+  n = pic_get_args(pic, "zm|m", &lib, &name, &alias);
 
-  if (pic_false_p(pic, alias)) {
+  if (n == 2) {
     alias = name;
   }
 
@@ -205,10 +206,11 @@ static pic_value
 pic_lib_library_export(pic_state *pic)
 {
   pic_value name, alias = pic_false_value(pic);
+  int n;
 
-  pic_get_args(pic, "m|m", &name, &alias);
+  n = pic_get_args(pic, "m|m", &name, &alias);
 
-  if (pic_false_p(pic, alias)) {
+  if (n == 1) {
     alias = name;
   }
 
