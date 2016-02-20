@@ -52,7 +52,7 @@ typedef struct {
   struct pic_context *up;
 } pic_callinfo;
 
-KHASH_DECLARE(oblist, struct pic_string *, pic_sym *)
+KHASH_DECLARE(oblist, struct pic_string *, struct pic_identifier *)
 KHASH_DECLARE(ltable, const char *, struct pic_lib)
 
 struct pic_state {

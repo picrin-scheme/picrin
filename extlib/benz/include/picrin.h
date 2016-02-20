@@ -295,9 +295,6 @@ int xvfprintf(pic_state *, xFILE *fp, const char *fmt, va_list);
 /* extra stuff */
 
 
-typedef struct pic_identifier pic_id;
-typedef pic_id pic_sym;
-
 #include "picrin/state.h"
 
 void *pic_default_allocf(void *, void *, size_t);

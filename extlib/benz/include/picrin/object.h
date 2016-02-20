@@ -9,6 +9,9 @@
 extern "C" {
 #endif
 
+typedef struct pic_identifier pic_id;
+typedef pic_id pic_sym;
+
 KHASH_DECLARE(env, pic_id *, pic_sym *)
 KHASH_DECLARE(dict, pic_sym *, pic_value)
 KHASH_DECLARE(weak, struct pic_object *, pic_value)
