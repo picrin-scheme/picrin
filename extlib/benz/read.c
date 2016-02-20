@@ -151,23 +151,25 @@ read_directive(pic_state *pic, xFILE *file, int c)
 static pic_value
 read_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic->sQUOTE, read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "quote"), read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic->sQUASIQUOTE, read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "quasiquote"), read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  pic_value tag = pic->sUNQUOTE;
+  pic_value tag;
 
   if (peek(pic, file) == '@') {
-    tag = pic->sUNQUOTE_SPLICING;
+    tag = pic_intern_lit(pic, "unquote-splicing");
     next(pic, file);
+  } else {
+    tag = pic_intern_lit(pic, "unquote");
   }
   return pic_list(pic, 2, tag, read(pic, file, next(pic, file)));
 }
@@ -175,23 +177,25 @@ read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 static pic_value
 read_syntax_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic->sSYNTAX_QUOTE, read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quote"), read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_syntax_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic->sSYNTAX_QUASIQUOTE, read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quasiquote"), read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  pic_value tag = pic->sSYNTAX_UNQUOTE;
+  pic_value tag;
 
   if (peek(pic, file) == '@') {
-    tag = pic->sSYNTAX_UNQUOTE_SPLICING;
+    tag = pic_intern_lit(pic, "syntax-unquote-splicing");
     next(pic, file);
+  } else {
+    tag = pic_intern_lit(pic, "syntax-unquote");
   }
   return pic_list(pic, 2, tag, read(pic, file, next(pic, file)));
 }

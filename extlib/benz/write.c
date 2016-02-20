@@ -5,7 +5,6 @@
 #include "picrin.h"
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
-#include "picrin/private/state.h"
 
 KHASH_DECLARE(l, void *, int)
 KHASH_DECLARE(v, void *, int)
@@ -170,6 +169,8 @@ write_pair_help(struct writer_control *p, pic_value pair)
   }
 }
 
+#define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym)), lit) == 0)
+
 static void
 write_pair(struct writer_control *p, pic_value pair)
 {
@@ -179,42 +180,42 @@ write_pair(struct writer_control *p, pic_value pair)
 
   if (pic_pair_p(pic, pic_cdr(pic, pair)) && pic_nil_p(pic, pic_cddr(pic, pair)) && pic_sym_p(pic, pic_car(pic, pair))) {
     tag = pic_car(pic, pair);
-    if (pic_eq_p(pic, tag, pic->sQUOTE)) {
+    if (EQ(tag, "quote")) {
       xfprintf(pic, file, "'");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (pic_eq_p(pic, tag, pic->sUNQUOTE)) {
+    else if (EQ(tag, "unquote")) {
       xfprintf(pic, file, ",");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (pic_eq_p(pic, tag, pic->sUNQUOTE_SPLICING)) {
+    else if (EQ(tag, "unquote-splicing")) {
       xfprintf(pic, file, ",@");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (pic_eq_p(pic, tag, pic->sQUASIQUOTE)) {
+    else if (EQ(tag, "quasiquote")) {
       xfprintf(pic, file, "`");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (pic_eq_p(pic, tag, pic->sSYNTAX_QUOTE)) {
+    else if (EQ(tag, "syntax-quote")) {
       xfprintf(pic, file, "#'");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (pic_eq_p(pic, tag, pic->sSYNTAX_UNQUOTE)) {
+    else if (EQ(tag, "syntax-unquote")) {
       xfprintf(pic, file, "#,");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (pic_eq_p(pic, tag, pic->sSYNTAX_UNQUOTE_SPLICING)) {
+    else if (EQ(tag, "syntax-unquote-splicing")) {
       xfprintf(pic, file, "#,@");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (pic_eq_p(pic, tag, pic->sSYNTAX_QUASIQUOTE)) {
+    else if (EQ(tag, "syntax-quasiquote")) {
       xfprintf(pic, file, "#`");
       write_core(p, pic_cadr(pic, pair));
       return;

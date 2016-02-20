@@ -139,6 +139,9 @@ shadow_macro(pic_state *pic, pic_value uid)
 static pic_value expand(pic_state *, pic_value expr, pic_value env, pic_value deferred);
 static pic_value expand_lambda(pic_state *, pic_value expr, pic_value env);
 
+#define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym)), lit) == 0)
+#define S(lit) (pic_intern_lit(pic, lit))
+
 static pic_value
 expand_var(pic_state *pic, pic_value id, pic_value env, pic_value deferred)
 {
@@ -155,7 +158,7 @@ expand_var(pic_state *pic, pic_value id, pic_value env, pic_value deferred)
 static pic_value
 expand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, pic->sQUOTE, pic_cdr(pic, expr));
+  return pic_cons(pic, S("quote"), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -229,7 +232,7 @@ expand_lambda(pic_state *pic, pic_value expr, pic_value env)
 
   expand_deferred(pic, deferred, in);
 
-  return pic_list(pic, 3, pic->sLAMBDA, formal, body);
+  return pic_list(pic, 3, S("lambda"), formal, body);
 }
 
 static pic_value
@@ -245,7 +248,7 @@ expand_define(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
   }
   val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
 
-  return pic_list(pic, 3, pic->sDEFINE, uid, val);
+  return pic_list(pic, 3, S("define"), uid, val);
 }
 
 static pic_value
@@ -289,16 +292,16 @@ expand_node(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 
       functor = pic_find_identifier(pic, pic_car(pic, expr), env);
 
-      if (pic_eq_p(pic, functor, pic->sDEFINE_MACRO)) {
+      if (EQ(functor, "define-macro")) {
         return expand_defmacro(pic, expr, env);
       }
-      else if (pic_eq_p(pic, functor, pic->sLAMBDA)) {
+      else if (EQ(functor, "lambda")) {
         return expand_defer(pic, expr, deferred);
       }
-      else if (pic_eq_p(pic, functor, pic->sDEFINE)) {
+      else if (EQ(functor, "define")) {
         return expand_define(pic, expr, env, deferred);
       }
-      else if (pic_eq_p(pic, functor, pic->sQUOTE)) {
+      else if (EQ(functor, "quote")) {
         return expand_quote(pic, expr);
       }
 

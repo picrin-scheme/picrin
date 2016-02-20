@@ -27,7 +27,7 @@ pic_intern(pic_state *pic, pic_value str)
     return pic_obj_value(sym);
   }
 
-  kh_val(h, it) = pic_sym_ptr(pic, pic->sQUOTE); /* dummy */
+  kh_val(h, it) = NULL;         /* dummy */
 
   sym = (pic_sym *)pic_obj_alloc(pic, offsetof(pic_sym, env), PIC_TYPE_SYMBOL);
   sym->u.str = pic_str_ptr(pic, str);

@@ -416,8 +416,6 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
 }
 
-#define M(x) gc_mark(pic, pic->x)
-
 static void
 gc_mark_phase(pic_state *pic)
 {
@@ -464,15 +462,6 @@ gc_mark_phase(pic_state *pic)
       gc_mark_object(pic, irep->pool[j]);
     }
   }
-
-  /* mark reserved symbols */
-  M(sDEFINE); M(sDEFINE_MACRO); M(sLAMBDA); M(sIF); M(sBEGIN); M(sSETBANG);
-  M(sQUOTE); M(sQUASIQUOTE); M(sUNQUOTE); M(sUNQUOTE_SPLICING);
-  M(sSYNTAX_QUOTE); M(sSYNTAX_QUASIQUOTE); M(sSYNTAX_UNQUOTE); M(sSYNTAX_UNQUOTE_SPLICING);
-  M(sDEFINE_LIBRARY); M(sIMPORT); M(sEXPORT); M(sCOND_EXPAND);
-
-  M(sCONS); M(sCAR); M(sCDR); M(sNILP); M(sSYMBOLP); M(sPAIRP);
-  M(sADD); M(sSUB); M(sMUL); M(sDIV); M(sEQ); M(sLT); M(sLE); M(sGT); M(sGE); M(sNOT);
 
   /* global variables */
   gc_mark(pic, pic->globals);
@@ -670,7 +659,7 @@ gc_sweep_phase(pic_state *pic)
     if (! kh_exist(s, it))
       continue;
     sym = kh_val(s, it);
-    if (sym->gc_mark == WHITE) {
+    if (sym && sym->gc_mark == WHITE) {
       kh_del(oblist, s, it);
     }
   }

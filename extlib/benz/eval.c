@@ -8,6 +8,9 @@
 #include "picrin/private/opcode.h"
 #include "picrin/private/state.h"
 
+#define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym)), lit) == 0)
+#define S(lit) (pic_intern_lit(pic, lit))
+
 static pic_value
 optimize_beta(pic_state *pic, pic_value expr)
 {
@@ -23,10 +26,10 @@ optimize_beta(pic_state *pic, pic_value expr)
   if (pic_sym_p(pic, pic_list_ref(pic, expr, 0))) {
     pic_value sym = pic_list_ref(pic, expr, 0);
 
-    if (pic_eq_p(pic, sym, pic->sQUOTE)) {
+    if (EQ(sym, "quote")) {
       return expr;
-    } else if (pic_eq_p(pic, sym, pic->sLAMBDA)) {
-      return pic_list(pic, 3, pic->sLAMBDA, pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
+    } else if (EQ(sym, "lambda")) {
+      return pic_list(pic, 3, S("lambda"), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
     }
   }
 
@@ -40,7 +43,7 @@ optimize_beta(pic_state *pic, pic_value expr)
   pic_protect(pic, expr);
 
   functor = pic_list_ref(pic, expr, 0);
-  if (pic_pair_p(pic, functor) && pic_eq_p(pic, pic_car(pic, functor), pic->sLAMBDA)) {
+  if (pic_pair_p(pic, functor) && EQ(pic_car(pic, functor), "lambda")) {
     formals = pic_list_ref(pic, functor, 1);
     if (! pic_list_p(pic, formals))
       goto exit;              /* TODO: support ((lambda args x) 1 2) */
@@ -49,12 +52,12 @@ optimize_beta(pic_state *pic, pic_value expr)
       goto exit;
     defs = pic_nil_value(pic);
     pic_for_each (val, args, it) {
-      pic_push(pic, pic_list(pic, 3, pic->sDEFINE, pic_car(pic, formals), val), defs);
+      pic_push(pic, pic_list(pic, 3, S("define"), pic_car(pic, formals), val), defs);
       formals = pic_cdr(pic, formals);
     }
     expr = pic_list_ref(pic, functor, 2);
     pic_for_each (val, defs, it) {
-      expr = pic_list(pic, 3, pic->sBEGIN, val, expr);
+      expr = pic_list(pic, 3, S("begin"), val, expr);
     }
   }
  exit:
@@ -159,11 +162,6 @@ define_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 static pic_value analyze(pic_state *, analyze_scope *, pic_value);
 static pic_value analyze_lambda(pic_state *, analyze_scope *, pic_value);
 
-#define GREF pic_intern_lit(pic, "gref")
-#define LREF pic_intern_lit(pic, "lref")
-#define CREF pic_intern_lit(pic, "cref")
-#define CALL pic_intern_lit(pic, "call")
-
 static pic_value
 analyze_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 {
@@ -172,11 +170,11 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_value sym)
   depth = find_var(pic, scope, sym);
 
   if (depth == scope->depth) {
-    return pic_list(pic, 2, GREF, sym);
+    return pic_list(pic, 2, S("gref"), sym);
   } else if (depth == 0) {
-    return pic_list(pic, 2, LREF, sym);
+    return pic_list(pic, 2, S("lref"), sym);
   } else {
-    return pic_list(pic, 3, CREF, pic_int_value(pic, depth), sym);
+    return pic_list(pic, 3, S("cref"), pic_int_value(pic, depth), sym);
   }
 }
 
@@ -255,7 +253,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 
   analyzer_scope_destroy(pic, scope);
 
-  return pic_list(pic, 6, pic->sLAMBDA, rest, args, locals, captures, body);
+  return pic_list(pic, 6, S("lambda"), rest, args, locals, captures, body);
 }
 
 static pic_value
@@ -281,7 +279,7 @@ analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
 static pic_value
 analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  return pic_cons(pic, CALL, analyze_list(pic, scope, obj));
+  return pic_cons(pic, S("call"), analyze_list(pic, scope, obj));
 }
 
 static pic_value
@@ -302,16 +300,16 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     if (pic_sym_p(pic, proc)) {
       pic_value sym = proc;
 
-      if (pic_eq_p(pic, sym, pic->sDEFINE)) {
+      if (EQ(sym, "define")) {
         return analyze_define(pic, scope, obj);
       }
-      else if (pic_eq_p(pic, sym, pic->sLAMBDA)) {
+      else if (EQ(sym, "lambda")) {
         return analyze_defer(pic, scope, obj);
       }
-      else if (pic_eq_p(pic, sym, pic->sQUOTE)) {
+      else if (EQ(sym, "quote")) {
         return obj;
       }
-      else if (pic_eq_p(pic, sym, pic->sBEGIN) || pic_eq_p(pic, sym, pic->sSETBANG) || pic_eq_p(pic, sym, pic->sIF)) {
+      else if (EQ(sym, "begin") || EQ(sym, "set!") || EQ(sym, "if")) {
         return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
       }
     }
@@ -319,7 +317,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list(pic, 2, pic->sQUOTE, obj);
+    return pic_list(pic, 2, S("quote"), obj);
   }
 }
 
@@ -547,14 +545,14 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   pic_value sym;
 
   sym = pic_car(pic, obj);
-  if (pic_eq_p(pic, sym, GREF)) {
+  if (EQ(sym, "gref")) {
     pic_value name;
 
     name = pic_list_ref(pic, obj, 1);
     emit_i(pic, cxt, OP_GREF, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (pic_eq_p(pic, sym, CREF)) {
+  else if (EQ(sym, "cref")) {
     pic_value name;
     int depth;
 
@@ -563,7 +561,7 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_r(pic, cxt, OP_CREF, depth, index_capture(pic, cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (pic_eq_p(pic, sym, LREF)) {
+  else if (EQ(sym, "lref")) {
     pic_value name;
     int i;
 
@@ -589,14 +587,14 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   var = pic_list_ref(pic, obj, 1);
   type = pic_list_ref(pic, var, 0);
-  if (pic_eq_p(pic, type, GREF)) {
+  if (EQ(type, "gref")) {
     pic_value name;
 
     name = pic_list_ref(pic, var, 1);
     emit_i(pic, cxt, OP_GSET, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (pic_eq_p(pic, type, CREF)) {
+  else if (EQ(type, "cref")) {
     pic_value name;
     int depth;
 
@@ -605,7 +603,7 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_r(pic, cxt, OP_CSET, depth, index_capture(pic, cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (pic_eq_p(pic, type, LREF)) {
+  else if (EQ(type, "lref")) {
     pic_value name;
     int i;
 
@@ -730,8 +728,8 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   emit_ret(pic, cxt, tailpos);
 }
 
-#define VM(uid, op)                             \
-  if (pic_eq_p(pic, sym, uid)) {                \
+#define VM(name, op)                            \
+  if (EQ(sym, name)) {                          \
     emit_i(pic, cxt, op, len - 1);              \
     emit_ret(pic, cxt, tailpos);                \
     return;                                     \
@@ -748,27 +746,27 @@ codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   }
 
   functor = pic_list_ref(pic, obj, 1);
-  if (pic_eq_p(pic, pic_list_ref(pic, functor, 0), GREF)) {
+  if (EQ(pic_list_ref(pic, functor, 0), "gref")) {
     pic_value sym;
 
     sym = pic_list_ref(pic, functor, 1);
 
-    VM(pic->sCONS, OP_CONS)
-    VM(pic->sCAR, OP_CAR)
-    VM(pic->sCDR, OP_CDR)
-    VM(pic->sNILP, OP_NILP)
-    VM(pic->sSYMBOLP, OP_SYMBOLP)
-    VM(pic->sPAIRP, OP_PAIRP)
-    VM(pic->sNOT, OP_NOT)
-    VM(pic->sEQ, OP_EQ)
-    VM(pic->sLT, OP_LT)
-    VM(pic->sLE, OP_LE)
-    VM(pic->sGT, OP_GT)
-    VM(pic->sGE, OP_GE)
-    VM(pic->sADD, OP_ADD)
-    VM(pic->sSUB, OP_SUB)
-    VM(pic->sMUL, OP_MUL)
-    VM(pic->sDIV, OP_DIV)
+    VM("cons", OP_CONS)
+    VM("car", OP_CAR)
+    VM("cdr", OP_CDR)
+    VM("null?", OP_NILP)
+    VM("symbol?", OP_SYMBOLP)
+    VM("pair?", OP_PAIRP)
+    VM("not", OP_NOT)
+    VM("=", OP_EQ)
+    VM("<", OP_LT)
+    VM("<=", OP_LE)
+    VM(">", OP_GT)
+    VM(">=", OP_GE)
+    VM("+", OP_ADD)
+    VM("-", OP_SUB)
+    VM("*", OP_MUL)
+    VM("/", OP_DIV)
   }
 
   emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);
@@ -780,25 +778,25 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   pic_value sym;
 
   sym = pic_car(pic, obj);
-  if (pic_eq_p(pic, sym, GREF) || pic_eq_p(pic, sym, CREF) || pic_eq_p(pic, sym, LREF)) {
+  if (EQ(sym, "gref") || EQ(sym, "cref") || EQ(sym, "lref")) {
     codegen_ref(pic, cxt, obj, tailpos);
   }
-  else if (pic_eq_p(pic, sym, pic->sSETBANG) || pic_eq_p(pic, sym, pic->sDEFINE)) {
+  else if (EQ(sym, "set!") || EQ(sym, "define")) {
     codegen_set(pic, cxt, obj, tailpos);
   }
-  else if (pic_eq_p(pic, sym, pic->sLAMBDA)) {
+  else if (EQ(sym, "lambda")) {
     codegen_lambda(pic, cxt, obj, tailpos);
   }
-  else if (pic_eq_p(pic, sym, pic->sIF)) {
+  else if (EQ(sym, "if")) {
     codegen_if(pic, cxt, obj, tailpos);
   }
-  else if (pic_eq_p(pic, sym, pic->sBEGIN)) {
+  else if (EQ(sym, "begin")) {
     codegen_begin(pic, cxt, obj, tailpos);
   }
-  else if (pic_eq_p(pic, sym, pic->sQUOTE)) {
+  else if (EQ(sym, "quote")) {
     codegen_quote(pic, cxt, obj, tailpos);
   }
-  else if (pic_eq_p(pic, sym, CALL)) {
+  else if (EQ(sym, "call")) {
     codegen_call(pic, cxt, obj, tailpos);
   }
   else {

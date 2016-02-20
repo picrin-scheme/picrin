@@ -46,11 +46,13 @@ make_library_env(pic_state *pic, pic_value name)
 
   e = pic_obj_value(env);
 
+#define REGISTER(name) pic_put_identifier(pic, pic_intern_lit(pic, name), pic_intern_lit(pic, name), e)
+
   /* set up default environment */
-  pic_put_identifier(pic, pic->sDEFINE_LIBRARY, pic->sDEFINE_LIBRARY, e);
-  pic_put_identifier(pic, pic->sIMPORT, pic->sIMPORT, e);
-  pic_put_identifier(pic, pic->sEXPORT, pic->sEXPORT, e);
-  pic_put_identifier(pic, pic->sCOND_EXPAND, pic->sCOND_EXPAND, e);
+  REGISTER("define-library");
+  REGISTER("import");
+  REGISTER("export");
+  REGISTER("cond-expand");
 
   return e;
 }

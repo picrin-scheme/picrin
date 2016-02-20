@@ -193,7 +193,6 @@ pic_open(pic_allocf allocf, void *userdata)
   char t;
 
   pic_state *pic;
-  size_t ai;
 
   pic = allocf(userdata, NULL, sizeof(pic_state));
 
@@ -260,10 +259,10 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->ucnt = 0;
 
   /* global variables */
-  pic->globals = pic_make_weak(pic);
+  pic->globals = pic_invalid_value(pic);
 
   /* macros */
-  pic->macros = pic_make_weak(pic);
+  pic->macros = pic_invalid_value(pic);
 
   /* features */
   pic->features = pic_nil_value(pic);
@@ -299,48 +298,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* native stack marker */
   pic->native_stack_start = &t;
 
-  ai = pic_enter(pic);
-
-#define S(slot,name) pic->slot = pic_intern_lit(pic, name)
-
-  S(sDEFINE, "define");
-  S(sDEFINE_MACRO, "define-macro");
-  S(sLAMBDA, "lambda");
-  S(sIF, "if");
-  S(sBEGIN, "begin");
-  S(sSETBANG, "set!");
-  S(sQUOTE, "quote");
-  S(sQUASIQUOTE, "quasiquote");
-  S(sUNQUOTE, "unquote");
-  S(sUNQUOTE_SPLICING, "unquote-splicing");
-  S(sSYNTAX_QUOTE, "syntax-quote");
-  S(sSYNTAX_QUASIQUOTE, "syntax-quasiquote");
-  S(sSYNTAX_UNQUOTE, "syntax-unquote");
-  S(sSYNTAX_UNQUOTE_SPLICING, "syntax-unquote-splicing");
-  S(sIMPORT, "import");
-  S(sEXPORT, "export");
-  S(sDEFINE_LIBRARY, "define-library");
-  S(sCOND_EXPAND, "cond-expand");
-
-  S(sCONS, "cons");
-  S(sCAR, "car");
-  S(sCDR, "cdr");
-  S(sNILP, "null?");
-  S(sSYMBOLP, "symbol?");
-  S(sPAIRP, "pair?");
-  S(sADD, "+");
-  S(sSUB, "-");
-  S(sMUL, "*");
-  S(sDIV, "/");
-  S(sEQ, "=");
-  S(sLT, "<");
-  S(sLE, "<=");
-  S(sGT, ">");
-  S(sGE, ">=");
-  S(sNOT, "not");
-
-  pic_leave(pic, ai);
-
   /* root tables */
   pic->globals = pic_make_weak(pic);
   pic->macros = pic_make_weak(pic);
@@ -355,20 +312,18 @@ pic_open(pic_allocf allocf, void *userdata)
   pic_reader_init(pic);
 
   /* parameter table */
-  pic->ptable = pic_cons(pic, pic_make_weak(pic), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_make_weak(pic), pic_nil_value(pic));
 
   /* standard libraries */
   pic_make_library(pic, "picrin.user");
   pic_in_library(pic, "picrin.user");
-
-  pic_leave(pic, ai);
 
   /* turn on GC */
   pic->gc_enable = true;
 
   pic_init_core(pic);
 
-  pic_leave(pic, ai);
+  pic_leave(pic, 0);            /* empty arena */
 
   return pic;
 

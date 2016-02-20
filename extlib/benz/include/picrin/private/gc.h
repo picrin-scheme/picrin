@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-struct pic_heap;
-
 struct pic_heap *pic_heap_open(pic_state *);
 void pic_heap_close(pic_state *, struct pic_heap *);
 
