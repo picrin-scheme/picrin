@@ -275,7 +275,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->ireps.prev = &pic->ireps;
 
   /* raised error object */
-  pic->err = pic_invalid_value();
+  pic->err = pic_invalid_value(pic);
 
   /* file pool */
   memset(pic->files, 0, sizeof pic->files);
@@ -392,9 +392,9 @@ pic_close(pic_state *pic)
   pic->ci = pic->cibase;
   pic->xp = pic->xpbase;
   pic->arena_idx = 0;
-  pic->err = pic_invalid_value();
-  pic->globals = pic_invalid_value();
-  pic->macros = pic_invalid_value();
+  pic->err = pic_invalid_value(pic);
+  pic->globals = pic_invalid_value(pic);
+  pic->macros = pic_invalid_value(pic);
   pic->features = pic_nil_value(pic);
 
   /* free all libraries */

@@ -178,7 +178,7 @@ expand_list(pic_state *pic, pic_value obj, pic_value env, pic_value deferred)
 static pic_value
 expand_defer(pic_state *pic, pic_value expr, pic_value deferred)
 {
-  pic_value skel = pic_cons(pic, pic_invalid_value(), pic_invalid_value());
+  pic_value skel = pic_cons(pic, pic_invalid_value(pic), pic_invalid_value(pic));
 
   pic_set_car(pic, deferred, pic_cons(pic, pic_cons(pic, expr, skel), pic_car(pic, deferred)));
 

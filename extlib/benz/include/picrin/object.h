@@ -133,6 +133,8 @@ struct pic_checkpoint {
   struct pic_checkpoint *prev;
 };
 
+struct pic_object *pic_obj_ptr(pic_value);
+
 #define pic_id_ptr(pic, o) ((pic_id *)pic_obj_ptr(o))
 #define pic_sym_ptr(pic, o) ((pic_sym *)pic_obj_ptr(o))
 #define pic_str_ptr(pic, o) ((struct pic_string *)pic_obj_ptr(o))
@@ -148,12 +150,13 @@ struct pic_checkpoint {
 #define pic_error_ptr(pic, o) ((struct pic_error *)pic_obj_ptr(o))
 #define pic_rec_ptr(pic, o) ((struct pic_record *)pic_obj_ptr(o))
 
-#define pic_obj_p(pic,v) (pic_vtype(pic,v) == PIC_IVAL_END)
+#define pic_obj_p(pic,v) (pic_type(pic,v) > PIC_IVAL_END)
 #define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
 #define pic_error_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ERROR)
 #define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TYPE_RECORD)
 #define pic_id_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ID || pic_type(pic, v) == PIC_TYPE_SYMBOL)
 
+pic_value pic_obj_value(void *ptr);
 struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
 
 #define VALID_INDEX(pic, len, i) do {                                   \

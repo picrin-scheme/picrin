@@ -92,7 +92,7 @@ read_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int c)
     c = next(pic, file);
   } while (! (c == EOF || c == '\n'));
 
-  return pic_invalid_value();
+  return pic_invalid_value(pic);
 }
 
 static pic_value
@@ -114,7 +114,7 @@ read_block_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int PIC_UNUSED(c))
     }
   }
 
-  return pic_invalid_value();
+  return pic_invalid_value(pic);
 }
 
 static pic_value
@@ -122,7 +122,7 @@ read_datum_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
   read(pic, file, next(pic, file));
 
-  return pic_invalid_value();
+  return pic_invalid_value(pic);
 }
 
 static pic_value
@@ -132,13 +132,13 @@ read_directive(pic_state *pic, xFILE *file, int c)
   case 'n':
     if (expect(pic, file, "no-fold-case")) {
       pic->reader.typecase = PIC_CASE_DEFAULT;
-      return pic_invalid_value();
+      return pic_invalid_value(pic);
     }
     break;
   case 'f':
     if (expect(pic, file, "fold-case")) {
       pic->reader.typecase = PIC_CASE_FOLD;
-      return pic_invalid_value();
+      return pic_invalid_value(pic);
     }
     break;
   }
@@ -289,8 +289,8 @@ read_unsigned(pic_state *pic, xFILE *file, int c)
   buf[idx] = 0;
   flt = PIC_CSTRING_TO_DOUBLE(buf);
 
-  if (dpe == 0 && pic_valid_int(flt))
-    return pic_int_value(pic, (int )flt);
+  if (dpe == 0 && INT_MIN <= flt && flt <= INT_MAX)
+    return pic_int_value(pic, flt);
   return pic_float_value(pic, flt);
 }
 

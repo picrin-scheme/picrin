@@ -262,8 +262,8 @@ pic_number_string_to_number(pic_state *pic)
 
   num = strtol(str, &eptr, radix);
   if (*eptr == '\0') {
-    return pic_valid_int(num)
-      ? pic_int_value(pic, (int)num)
+    return INT_MIN <= num && num <= INT_MAX
+      ? pic_int_value(pic, num)
       : pic_float_value(pic, num);
   }
 

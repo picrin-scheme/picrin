@@ -113,9 +113,9 @@ pic_value pic_open_port(pic_state *, xFILE *file);
 xFILE *pic_fileno(pic_state *, pic_value port);
 void pic_close_port(pic_state *, pic_value port);
 
-PIC_INLINE int pic_int(pic_state *, pic_value i);
-PIC_INLINE double pic_float(pic_state *, pic_value f);
-PIC_INLINE char pic_char(pic_state *, pic_value c);
+int pic_int(pic_state *, pic_value i);
+double pic_float(pic_state *, pic_value f);
+char pic_char(pic_state *, pic_value c);
 #define pic_bool(pic,b) (! pic_false_p(pic, b))
 const char *pic_str(pic_state *, pic_value str);
 unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
@@ -127,14 +127,15 @@ typedef struct {
   void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
 } pic_data_type;
 
-PIC_INLINE pic_value pic_undef_value(pic_state *);
-PIC_INLINE pic_value pic_int_value(pic_state *, int);
-PIC_INLINE pic_value pic_float_value(pic_state *, double);
-PIC_INLINE pic_value pic_char_value(pic_state *, char);
-PIC_INLINE pic_value pic_true_value(pic_state *);
-PIC_INLINE pic_value pic_false_value(pic_state *);
-PIC_INLINE pic_value pic_bool_value(pic_state *, bool);
-PIC_INLINE pic_value pic_eof_object(pic_state *);
+pic_value pic_invalid_value(pic_state *);
+pic_value pic_undef_value(pic_state *);
+pic_value pic_int_value(pic_state *, int);
+pic_value pic_float_value(pic_state *, double);
+pic_value pic_char_value(pic_state *, char);
+pic_value pic_true_value(pic_state *);
+pic_value pic_false_value(pic_state *);
+#define pic_bool_value(pic, b) ((b) ? pic_true_value(pic) : pic_false_value(pic))
+pic_value pic_eof_object(pic_state *);
 pic_value pic_str_value(pic_state *, const char *str, int len);
 #define pic_cstr_value(pic, cstr) pic_str_value(pic, (cstr), strlen(cstr))
 #define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
@@ -173,11 +174,12 @@ enum {
   PIC_TYPE_CP      = 31
 };
 
+#define pic_invalid_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INVALID)
 #define pic_undef_p(pic,v) (pic_type(pic,v) == PIC_TYPE_UNDEF)
 #define pic_int_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INT)
 #define pic_float_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FLOAT)
 #define pic_char_p(pic,v) (pic_type(pic,v) == PIC_TYPE_CHAR)
-#define pic_eof_p(pic, v) (pic_vtype(pic, v) == PIC_TYPE_EOF)
+#define pic_eof_p(pic, v) (pic_type(pic, v) == PIC_TYPE_EOF)
 #define pic_true_p(pic,v) (pic_type(pic,v) == PIC_TYPE_TRUE)
 #define pic_false_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FALSE)
 #define pic_str_p(pic,v) (pic_type(pic,v) == PIC_TYPE_STRING)
@@ -211,7 +213,7 @@ pic_value pic_cdar(pic_state *, pic_value);
 pic_value pic_cddr(pic_state *, pic_value);
 
 /* list */
-PIC_INLINE pic_value pic_nil_value(pic_state *);
+pic_value pic_nil_value(pic_state *);
 bool pic_list_p(pic_state *, pic_value);
 pic_value pic_make_list(pic_state *, int n, pic_value *argv);
 pic_value pic_list(pic_state *, int n, ...);
@@ -296,9 +298,7 @@ int xvfprintf(pic_state *, xFILE *fp, const char *fmt, va_list);
 typedef struct pic_identifier pic_id;
 typedef pic_id pic_sym;
 
-#include "picrin/type.h"
 #include "picrin/state.h"
-#include "picrin/cont.h"
 
 void *pic_default_allocf(void *, void *, size_t);
 
@@ -346,6 +346,13 @@ bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
     }                                           \
     pic_in_library(pic, lib);                   \
   } while (0)
+
+void pic_save_point(pic_state *, struct pic_cont *);
+void pic_load_point(pic_state *, struct pic_cont *);
+
+pic_value pic_make_cont(pic_state *, struct pic_cont *);
+
+void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
 
 /* do not return from try block! */
 
