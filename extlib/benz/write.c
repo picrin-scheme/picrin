@@ -290,7 +290,7 @@ write_core(struct writer_control *p, pic_value obj)
     xfprintf(pic, file, "#f");
     break;
   case PIC_TYPE_ID:
-    xfprintf(pic, file, "#<identifier %s>", pic_str(pic, pic_id_name(pic, pic_id_ptr(obj))));
+    xfprintf(pic, file, "#<identifier %s>", pic_str(pic, pic_id_name(pic, obj)));
     break;
   case PIC_TYPE_EOF:
     xfprintf(pic, file, "#.(eof-object)");

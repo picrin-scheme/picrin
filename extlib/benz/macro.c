@@ -22,14 +22,14 @@ pic_make_env(pic_state *pic, struct pic_env *up)
 }
 
 pic_value
-pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
+pic_add_identifier(pic_state *pic, pic_value id, struct pic_env *env)
 {
   const char *name;
   pic_value uid, str;
 
   name = pic_str(pic, pic_id_name(pic, id));
 
-  if (env->up == NULL && pic_sym_p(pic, pic_obj_value(id))) { /* toplevel & public */
+  if (env->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
     str = pic_strf_value(pic, "%s/%s", pic_str(pic, pic_obj_value(env->lib)), name);
   } else {
     str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
@@ -40,23 +40,23 @@ pic_add_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 }
 
 pic_value
-pic_put_identifier(pic_state *pic, pic_id *id, pic_value uid, struct pic_env *env)
+pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, struct pic_env *env)
 {
   khiter_t it;
   int ret;
 
-  it = kh_put(env, &env->map, id, &ret);
+  it = kh_put(env, &env->map, pic_id_ptr(pic, id), &ret);
   kh_val(&env->map, it) = pic_sym_ptr(pic, uid);
 
   return uid;
 }
 
 static bool
-search_scope(pic_state *pic, pic_id *id, struct pic_env *env, pic_value *uid)
+search_scope(pic_state *pic, pic_value id, struct pic_env *env, pic_value *uid)
 {
   khiter_t it;
 
-  it = kh_get(env, &env->map, id);
+  it = kh_get(env, &env->map, pic_id_ptr(pic, id));
   if (it == kh_end(&env->map)) {
     return false;
   }
@@ -65,7 +65,7 @@ search_scope(pic_state *pic, pic_id *id, struct pic_env *env, pic_value *uid)
 }
 
 static bool
-search(pic_state *pic, pic_id *id, struct pic_env *env, pic_value *uid)
+search(pic_state *pic, pic_value id, struct pic_env *env, pic_value *uid)
 {
   while (env != NULL) {
     if (search_scope(pic, id, env, uid)) {
@@ -77,19 +77,19 @@ search(pic_state *pic, pic_id *id, struct pic_env *env, pic_value *uid)
 }
 
 pic_value
-pic_find_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
+pic_find_identifier(pic_state *pic, pic_value id, struct pic_env *env)
 {
   pic_value uid;
 
   while (! search(pic, id, env, &uid)) {
-    if (pic_sym_p(pic, pic_obj_value(id))) {
+    if (pic_sym_p(pic, id)) {
       while (env->up != NULL) {
         env = env->up;
       }
       return pic_add_identifier(pic, id, env);
     }
-    env = id->env;              /* do not overwrite id first */
-    id = id->u.id;
+    env = pic_id_ptr(pic, id)->env;              /* do not overwrite id first */
+    id = pic_obj_value(pic_id_ptr(pic, id)->u.id);
   }
   return uid;
 }
@@ -131,14 +131,14 @@ static pic_value expand(pic_state *, pic_value, struct pic_env *, pic_value);
 static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
 
 static pic_value
-expand_var(pic_state *pic, pic_id *id, struct pic_env *env, pic_value deferred)
+expand_var(pic_state *pic, pic_value id, struct pic_env *env, pic_value deferred)
 {
   pic_value mac, functor;
 
   functor = pic_find_identifier(pic, id, env);
 
   if (find_macro(pic, functor, &mac)) {
-    return expand(pic, pic_call(pic, mac, 2, pic_obj_value(id), pic_obj_value(env)), env, deferred);
+    return expand(pic, pic_call(pic, mac, 2, id, pic_obj_value(env)), env, deferred);
   }
   return functor;
 }
@@ -207,10 +207,10 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
   in = pic_make_env(pic, env);
 
   for (a = pic_cadr(pic, expr); pic_pair_p(pic, a); a = pic_cdr(pic, a)) {
-    pic_add_identifier(pic, pic_id_ptr(pic_car(pic, a)), in);
+    pic_add_identifier(pic, pic_car(pic, a), in);
   }
   if (pic_id_p(pic, a)) {
-    pic_add_identifier(pic, pic_id_ptr(a), in);
+    pic_add_identifier(pic, a, in);
   }
 
   deferred = pic_list(pic, 1, pic_nil_value(pic));
@@ -226,10 +226,9 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 static pic_value
 expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
 {
-  pic_value uid, val;
-  pic_id *id;
+  pic_value id, uid, val;
 
-  id = pic_id_ptr(pic_cadr(pic, expr));
+  id = pic_cadr(pic, expr);
   if (! search_scope(pic, id, env, &uid)) {
     uid = pic_add_identifier(pic, id, env);
   } else {
@@ -244,10 +243,9 @@ static pic_value
 expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 {
   pic_value pic_compile(pic_state *, pic_value);
-  pic_id *id;
-  pic_value uid, val;
+  pic_value id, uid, val;
 
-  id = pic_id_ptr(pic_cadr(pic, expr));
+  id = pic_cadr(pic, expr);
   if (! search_scope(pic, id, env, &uid)) {
     uid = pic_add_identifier(pic, id, env);
   }
@@ -268,7 +266,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
   switch (pic_type(pic, expr)) {
   case PIC_TYPE_ID:
   case PIC_TYPE_SYMBOL: {
-    return expand_var(pic, pic_id_ptr(expr), env, deferred);
+    return expand_var(pic, expr, env, deferred);
   }
   case PIC_TYPE_PAIR: {
     pic_value mac;
@@ -280,7 +278,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
     if (pic_id_p(pic, pic_car(pic, expr))) {
       pic_value functor;
 
-      functor = pic_find_identifier(pic, pic_id_ptr(pic_car(pic, expr)), env);
+      functor = pic_find_identifier(pic, pic_car(pic, expr), env);
 
       if (pic_eq_p(pic, functor, pic->sDEFINE_MACRO)) {
         return expand_defmacro(pic, expr, env);

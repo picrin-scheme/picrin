@@ -77,17 +77,17 @@ pic_features(pic_state *pic)
   return pic->features;
 }
 
-#define import_builtin_syntax(name) do {                                \
-    pic_value nick, real;                                               \
-    nick = pic_intern_lit(pic, "builtin:" name);                        \
-    real = pic_intern_lit(pic, name);                                   \
-    pic_put_identifier(pic, pic_id_ptr(nick), real, pic->lib->env);     \
+#define import_builtin_syntax(name) do {                \
+    pic_value nick, real;                               \
+    nick = pic_intern_lit(pic, "builtin:" name);        \
+    real = pic_intern_lit(pic, name);                   \
+    pic_put_identifier(pic, nick, real, pic->lib->env); \
   } while (0)
 
-#define declare_vm_procedure(name) do {                                 \
-    pic_value sym;                                                      \
-    sym = pic_intern_lit(pic, name);                                    \
-    pic_put_identifier(pic, pic_id_ptr(sym), sym, pic->lib->env);       \
+#define declare_vm_procedure(name) do {                 \
+    pic_value sym;                                      \
+    sym = pic_intern_lit(pic, name);                    \
+    pic_put_identifier(pic, sym, sym, pic->lib->env);   \
   } while (0)
 
 void pic_init_bool(pic_state *);

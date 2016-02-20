@@ -897,7 +897,7 @@ pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 
   env = pic_library_environment(pic, lib);
 
-  uid = pic_find_identifier(pic, pic_id_ptr(sym), env);
+  uid = pic_find_identifier(pic, sym, env);
   if (pic_weak_has(pic, pic->globals, uid)) {
     pic_warnf(pic, "redefining variable: ~s", uid);
   }
@@ -914,7 +914,7 @@ pic_ref(pic_state *pic, const char *lib, const char *name)
 
   env = pic_library_environment(pic, lib);
 
-  uid = pic_find_identifier(pic, pic_id_ptr(sym), env);
+  uid = pic_find_identifier(pic, sym, env);
   if (! pic_weak_has(pic, pic->globals, uid)) {
     pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
   }
@@ -932,7 +932,7 @@ pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 
   env = pic_library_environment(pic, lib);
 
-  uid = pic_find_identifier(pic, pic_id_ptr(sym), env);
+  uid = pic_find_identifier(pic, sym, env);
   if (! pic_weak_has(pic, pic->globals, uid)) {
     pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
   }
