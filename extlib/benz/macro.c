@@ -252,7 +252,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 
   val = pic_call(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)), 0);
   if (! pic_proc_p(pic, val)) {
-    pic_errorf(pic, "macro definition \"%s\" evaluates to non-procedure object", pic_str(pic, pic_id_name(pic, id)));
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", id);
   }
 
   define_macro(pic, uid, val);
