@@ -115,6 +115,7 @@ struct pic_port {
   xFILE *file;
 };
 
+#define pic_sym_ptr(pic, o) ((pic_sym *)pic_obj_ptr(o))
 #define pic_str_ptr(pic, o) ((struct pic_string *)pic_obj_ptr(o))
 #define pic_blob_ptr(pic, o) ((struct pic_blob *)pic_obj_ptr(o))
 #define pic_pair_ptr(pic, o) ((struct pic_pair *)pic_obj_ptr(o))
@@ -123,7 +124,6 @@ struct pic_port {
 #define pic_weak_ptr(pic, o) ((struct pic_weak *)pic_obj_ptr(o))
 #define pic_data_ptr(pic, o) ((struct pic_data *)pic_obj_ptr(o))
 #define pic_proc_ptr(pic, o) ((struct pic_proc *)pic_obj_ptr(o))
-#define pic_sym_ptr(v) ((pic_sym *)pic_obj_ptr(v))
 #define pic_id_ptr(v) ((pic_id *)pic_obj_ptr(v))
 #define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
 #define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
@@ -158,9 +158,9 @@ struct pic_record *pic_make_rec(pic_state *, pic_value, pic_value);
 struct pic_error *pic_make_error(pic_state *, const char *, const char *, pic_value);
 struct pic_env *pic_make_env(pic_state *, struct pic_env *);
 
-pic_sym *pic_add_identifier(pic_state *, pic_id *, struct pic_env *);
-pic_sym *pic_put_identifier(pic_state *, pic_id *, pic_sym *, struct pic_env *);
-pic_sym *pic_find_identifier(pic_state *, pic_id *, struct pic_env *);
+pic_value pic_add_identifier(pic_state *, pic_id *, struct pic_env *);
+pic_value pic_put_identifier(pic_state *, pic_id *, pic_value uid, struct pic_env *);
+pic_value pic_find_identifier(pic_state *, pic_id *, struct pic_env *);
 pic_value pic_id_name(pic_state *, pic_id *);
 
 void pic_rope_incref(pic_state *, struct pic_rope *);

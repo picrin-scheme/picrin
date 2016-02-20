@@ -20,7 +20,7 @@
  *  F   double *, bool *        float with exactness
  *  c   char *                  char
  *  z   char **                 c string
- *  m   pic_sym **              symbol
+ *  m   pic_value *             symbol
  *  v   pic_value *             vector object
  *  s   pic_value *             string object
  *  b   pic_value *             bytevector object
@@ -147,13 +147,13 @@ pic_get_args(pic_state *pic, const char *format, ...)
 #define PTR_CASE(c, type, ctype)                        \
       VAL_CASE(c, type, ctype, pic_## type ##_ptr(v))
 
-    PTR_CASE('m', sym, pic_sym *)
     PTR_CASE('p', port, struct pic_port *)
     PTR_CASE('e', error, struct pic_error *)
     PTR_CASE('r', rec, struct pic_record *)
 
 #define OBJ_CASE(c, type) VAL_CASE(c, type, pic_value, v)
 
+    OBJ_CASE('m', sym)
     OBJ_CASE('s', str)
     OBJ_CASE('l', proc)
     OBJ_CASE('b', blob)
@@ -180,18 +180,21 @@ pic_get_args(pic_state *pic, const char *format, ...)
 }
 
 static pic_value
-vm_gref(pic_state *pic, pic_sym *uid)
+vm_gref(pic_state *pic, pic_value uid)
 {
-  if (! pic_weak_has(pic, pic->globals, pic_obj_value(uid))) {
-    pic_errorf(pic, "uninitialized global variable: %s", pic_str(pic, pic_sym_name(pic, uid)));
+  pic_value val;
+
+  val = pic_weak_ref(pic, pic->globals, uid);;
+  if (pic_invalid_p(pic, val)) {
+    pic_errorf(pic, "uninitialized global variable: ~s", uid);
   }
-  return pic_weak_ref(pic, pic->globals, pic_obj_value(uid));
+  return val;
 }
 
 static void
-vm_gset(pic_state *pic, pic_sym *uid, pic_value value)
+vm_gset(pic_state *pic, pic_value uid, pic_value value)
 {
-  pic_weak_set(pic, pic->globals, pic_obj_value(uid), value);
+  pic_weak_set(pic, pic->globals, uid, value);
 }
 
 static void
@@ -422,11 +425,11 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(vm_gref(pic, (pic_sym *)pic->ci->irep->pool[c.a]));
+      PUSH(vm_gref(pic, pic_obj_value(pic->ci->irep->pool[c.a])));
       NEXT;
     }
     CASE(OP_GSET) {
-      vm_gset(pic, (pic_sym *)pic->ci->irep->pool[c.a], POP());
+      vm_gset(pic, pic_obj_value(pic->ci->irep->pool[c.a]), POP());
       PUSH(pic_undef_value(pic));
       NEXT;
     }
@@ -887,33 +890,32 @@ pic_defvar(pic_state *pic, const char *name, pic_value init, pic_value conv)
 void
 pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 {
-  pic_sym *sym, *uid;
+  pic_value sym, uid;
   struct pic_env *env;
 
   sym = pic_intern_cstr(pic, name);
 
   env = pic_library_environment(pic, lib);
-  if ((uid = pic_find_identifier(pic, (pic_id *)sym, env)) == NULL) {
-    uid = pic_add_identifier(pic, (pic_id *)sym, env);
-  } else {
-    if (pic_weak_has(pic, pic->globals, pic_obj_value(uid))) {
-      pic_warnf(pic, "redefining variable: ~s", pic_obj_value(uid));
-    }
-  }
 
-  pic_set(pic, lib, name, val);
+  uid = pic_find_identifier(pic, pic_id_ptr(sym), env);
+  if (pic_weak_has(pic, pic->globals, uid)) {
+    pic_warnf(pic, "redefining variable: ~s", uid);
+  }
+  pic_weak_set(pic, pic->globals, uid, val);
 }
 
 pic_value
 pic_ref(pic_state *pic, const char *lib, const char *name)
 {
-  pic_sym *sym, *uid;
+  pic_value sym, uid;
   struct pic_env *env;
 
   sym = pic_intern_cstr(pic, name);
 
   env = pic_library_environment(pic, lib);
-  if ((uid = pic_find_identifier(pic, (pic_id *)sym, env)) == NULL) {
+
+  uid = pic_find_identifier(pic, pic_id_ptr(sym), env);
+  if (! pic_weak_has(pic, pic->globals, uid)) {
     pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
   }
 
@@ -923,13 +925,15 @@ pic_ref(pic_state *pic, const char *lib, const char *name)
 void
 pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 {
-  pic_sym *sym, *uid;
+  pic_value sym, uid;
   struct pic_env *env;
 
   sym = pic_intern_cstr(pic, name);
 
   env = pic_library_environment(pic, lib);
-  if ((uid = pic_find_identifier(pic, (pic_id *)sym, env)) == NULL) {
+
+  uid = pic_find_identifier(pic, pic_id_ptr(sym), env);
+  if (! pic_weak_has(pic, pic->globals, uid)) {
     pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
   }
 

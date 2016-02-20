@@ -66,7 +66,7 @@ pic_init_features(pic_state *pic)
 void
 pic_add_feature(pic_state *pic, const char *feature)
 {
-  pic_push(pic, pic_obj_value(pic_intern_cstr(pic, feature)), pic->features);
+  pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
 }
 
 static pic_value
@@ -78,16 +78,16 @@ pic_features(pic_state *pic)
 }
 
 #define import_builtin_syntax(name) do {                                \
-    pic_sym *nick, *real;                                               \
+    pic_value nick, real;                                               \
     nick = pic_intern_lit(pic, "builtin:" name);                        \
     real = pic_intern_lit(pic, name);                                   \
-    pic_put_identifier(pic, (pic_id *)nick, real, pic->lib->env);       \
+    pic_put_identifier(pic, pic_id_ptr(nick), real, pic->lib->env);     \
   } while (0)
 
 #define declare_vm_procedure(name) do {                                 \
-    pic_sym *sym;                                                       \
+    pic_value sym;                                                      \
     sym = pic_intern_lit(pic, name);                                    \
-    pic_put_identifier(pic, (pic_id *)sym, sym, pic->lib->env);         \
+    pic_put_identifier(pic, pic_id_ptr(sym), sym, pic->lib->env);       \
   } while (0)
 
 void pic_init_bool(pic_state *);
@@ -116,7 +116,6 @@ extern const char pic_boot[][80];
 static void
 pic_init_core(pic_state *pic)
 {
-  struct pic_box *pic_vm_gref_slot(pic_state *, pic_sym *);
   size_t ai;
 
   pic_init_features(pic);

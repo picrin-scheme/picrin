@@ -173,46 +173,46 @@ write_pair(struct writer_control *p, pic_value pair)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
-  pic_sym *tag;
+  pic_value tag;
 
   if (pic_pair_p(pic, pic_cdr(pic, pair)) && pic_nil_p(pic, pic_cddr(pic, pair)) && pic_sym_p(pic, pic_car(pic, pair))) {
-    tag = pic_sym_ptr(pic_car(pic, pair));
-    if (tag == pic->sQUOTE) {
+    tag = pic_car(pic, pair);
+    if (pic_eq_p(pic, tag, pic->sQUOTE)) {
       xfprintf(pic, file, "'");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (tag == pic->sUNQUOTE) {
+    else if (pic_eq_p(pic, tag, pic->sUNQUOTE)) {
       xfprintf(pic, file, ",");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (tag == pic->sUNQUOTE_SPLICING) {
+    else if (pic_eq_p(pic, tag, pic->sUNQUOTE_SPLICING)) {
       xfprintf(pic, file, ",@");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (tag == pic->sQUASIQUOTE) {
+    else if (pic_eq_p(pic, tag, pic->sQUASIQUOTE)) {
       xfprintf(pic, file, "`");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (tag == pic->sSYNTAX_QUOTE) {
+    else if (pic_eq_p(pic, tag, pic->sSYNTAX_QUOTE)) {
       xfprintf(pic, file, "#'");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (tag == pic->sSYNTAX_UNQUOTE) {
+    else if (pic_eq_p(pic, tag, pic->sSYNTAX_UNQUOTE)) {
       xfprintf(pic, file, "#,");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (tag == pic->sSYNTAX_UNQUOTE_SPLICING) {
+    else if (pic_eq_p(pic, tag, pic->sSYNTAX_UNQUOTE_SPLICING)) {
       xfprintf(pic, file, "#,@");
       write_core(p, pic_cadr(pic, pair));
       return;
     }
-    else if (tag == pic->sSYNTAX_QUASIQUOTE) {
+    else if (pic_eq_p(pic, tag, pic->sSYNTAX_QUASIQUOTE)) {
       xfprintf(pic, file, "#`");
       write_core(p, pic_cadr(pic, pair));
       return;
@@ -245,8 +245,7 @@ write_dict(struct writer_control *p, pic_value dict)
 {
   pic_state *pic = p->pic;
   xFILE *file = p->file;
-  pic_sym *key;
-  pic_value val;
+  pic_value key, val;
   int it = 0;
 
   xfprintf(pic, file, "#.(dictionary");
@@ -303,7 +302,7 @@ write_core(struct writer_control *p, pic_value obj)
     write_float(pic, pic_float(pic, obj), file);
     break;
   case PIC_TYPE_SYMBOL:
-    xfprintf(pic, file, "%s", pic_str(pic, pic_sym_name(pic, pic_sym_ptr(obj))));
+    xfprintf(pic, file, "%s", pic_str(pic, pic_sym_name(pic, obj)));
     break;
   case PIC_TYPE_BLOB:
     write_blob(pic, obj, file);

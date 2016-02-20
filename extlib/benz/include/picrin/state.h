@@ -67,13 +67,13 @@ struct pic_state {
 
   struct pic_lib *lib;
 
-  pic_sym *sDEFINE, *sDEFINE_MACRO, *sLAMBDA, *sIF, *sBEGIN, *sSETBANG;
-  pic_sym *sQUOTE, *sQUASIQUOTE, *sUNQUOTE, *sUNQUOTE_SPLICING;
-  pic_sym *sSYNTAX_QUOTE, *sSYNTAX_QUASIQUOTE;
-  pic_sym *sSYNTAX_UNQUOTE, *sSYNTAX_UNQUOTE_SPLICING;
-  pic_sym *sDEFINE_LIBRARY, *sIMPORT, *sEXPORT, *sCOND_EXPAND;
-  pic_sym *sCONS, *sCAR, *sCDR, *sNILP, *sSYMBOLP, *sPAIRP;
-  pic_sym *sADD, *sSUB, *sMUL, *sDIV, *sEQ, *sLT, *sLE, *sGT, *sGE, *sNOT;
+  pic_value sDEFINE, sDEFINE_MACRO, sLAMBDA, sIF, sBEGIN, sSETBANG;
+  pic_value sQUOTE, sQUASIQUOTE, sUNQUOTE, sUNQUOTE_SPLICING;
+  pic_value sSYNTAX_QUOTE, sSYNTAX_QUASIQUOTE;
+  pic_value sSYNTAX_UNQUOTE, sSYNTAX_UNQUOTE_SPLICING;
+  pic_value sDEFINE_LIBRARY, sIMPORT, sEXPORT, sCOND_EXPAND;
+  pic_value sCONS, sCAR, sCDR, sNILP, sSYMBOLP, sPAIRP;
+  pic_value sADD, sSUB, sMUL, sDIV, sEQ, sLT, sLE, sGT, sGE, sNOT;
 
   pic_value features;
 

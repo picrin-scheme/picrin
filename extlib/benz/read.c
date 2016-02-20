@@ -149,49 +149,49 @@ read_directive(pic_state *pic, xFILE *file, int c)
 static pic_value
 read_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sQUOTE), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic->sQUOTE, read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sQUASIQUOTE), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic->sQUASIQUOTE, read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  pic_sym *tag = pic->sUNQUOTE;
+  pic_value tag = pic->sUNQUOTE;
 
   if (peek(pic, file) == '@') {
     tag = pic->sUNQUOTE_SPLICING;
     next(pic, file);
   }
-  return pic_list(pic, 2, pic_obj_value(tag), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, tag, read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_syntax_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sSYNTAX_QUOTE), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic->sSYNTAX_QUOTE, read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_syntax_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  return pic_list(pic, 2, pic_obj_value(pic->sSYNTAX_QUASIQUOTE), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic->sSYNTAX_QUASIQUOTE, read(pic, file, next(pic, file)));
 }
 
 static pic_value
 read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
 {
-  pic_sym *tag = pic->sSYNTAX_UNQUOTE;
+  pic_value tag = pic->sSYNTAX_UNQUOTE;
 
   if (peek(pic, file) == '@') {
     tag = pic->sSYNTAX_UNQUOTE_SPLICING;
     next(pic, file);
   }
-  return pic_list(pic, 2, pic_obj_value(tag), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, tag, read(pic, file, next(pic, file)));
 }
 
 static pic_value
@@ -199,7 +199,7 @@ read_symbol(pic_state *pic, xFILE *file, int c)
 {
   int len;
   char *buf;
-  pic_sym *sym;
+  pic_value sym;
 
   len = 1;
   buf = pic_malloc(pic, len + 1);
@@ -217,7 +217,7 @@ read_symbol(pic_state *pic, xFILE *file, int c)
   sym = pic_intern_cstr(pic, buf);
   pic_free(pic, buf);
 
-  return pic_obj_value(sym);
+  return sym;
 }
 
 static unsigned
@@ -320,10 +320,10 @@ read_minus(pic_state *pic, xFILE *file, int c)
   }
   else {
     sym = read_symbol(pic, file, c);
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "-inf.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "-inf.0")) {
       return pic_float_value(pic, -(1.0 / 0.0));
     }
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "-nan.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "-nan.0")) {
       return pic_float_value(pic, -(0.0 / 0.0));
     }
     return sym;
@@ -340,10 +340,10 @@ read_plus(pic_state *pic, xFILE *file, int c)
   }
   else {
     sym = read_symbol(pic, file, c);
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "+inf.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "+inf.0")) {
       return pic_float_value(pic, 1.0 / 0.0);
     }
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, pic_sym_ptr(sym))), "+nan.0")) {
+    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "+nan.0")) {
       return pic_float_value(pic, 0.0 / 0.0);
     }
     return sym;
@@ -453,7 +453,7 @@ read_pipe(pic_state *pic, xFILE *file, int c)
 {
   char *buf;
   int size, cnt;
-  pic_sym *sym;
+  pic_value sym;
   /* Currently supports only ascii chars */
   char HEX_BUF[3];
   size_t i = 0;
@@ -489,7 +489,7 @@ read_pipe(pic_state *pic, xFILE *file, int c)
   sym = pic_intern_cstr(pic, buf);
   pic_free(pic, buf);
 
-  return pic_obj_value(sym);
+  return sym;
 }
 
 static pic_value

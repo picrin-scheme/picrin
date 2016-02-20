@@ -10,7 +10,7 @@
 
 KHASH_DEFINE(oblist, struct pic_string *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
 
-pic_sym *
+pic_value
 pic_intern(pic_state *pic, pic_value str)
 {
   khash_t(oblist) *h = &pic->oblist;
@@ -22,16 +22,16 @@ pic_intern(pic_state *pic, pic_value str)
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
     pic_protect(pic, pic_obj_value(sym));
-    return sym;
+    return pic_obj_value(sym);
   }
 
-  kh_val(h, it) = pic->sQUOTE;  /* dummy */
+  kh_val(h, it) = pic_sym_ptr(pic, pic->sQUOTE); /* dummy */
 
   sym = (pic_sym *)pic_obj_alloc(pic, offsetof(pic_sym, env), PIC_TYPE_SYMBOL);
   sym->u.str = pic_str_ptr(pic, str);
   kh_val(h, it) = sym;
 
-  return sym;
+  return pic_obj_value(sym);
 }
 
 pic_id *
@@ -46,9 +46,9 @@ pic_make_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
 }
 
 pic_value
-pic_sym_name(pic_state PIC_UNUSED(*pic), pic_sym *sym)
+pic_sym_name(pic_state PIC_UNUSED(*pic), pic_value sym)
 {
-  return pic_obj_value(sym->u.str);
+  return pic_obj_value(pic_sym_ptr(pic, sym)->u.str);
 }
 
 pic_value
@@ -58,7 +58,7 @@ pic_id_name(pic_state *pic, pic_id *id)
     id = id->u.id;
   }
 
-  return pic_sym_name(pic, (pic_sym *)id);
+  return pic_sym_name(pic, pic_obj_value(id));
 }
 
 static pic_value
@@ -93,11 +93,11 @@ pic_symbol_symbol_eq_p(pic_state *pic)
 static pic_value
 pic_symbol_symbol_to_string(pic_state *pic)
 {
-  pic_sym *sym;
+  pic_value sym;
 
   pic_get_args(pic, "m", &sym);
 
-  return pic_obj_value(sym->u.str);
+  return pic_sym_name(pic, sym);
 }
 
 static pic_value
@@ -107,7 +107,7 @@ pic_symbol_string_to_symbol(pic_state *pic)
 
   pic_get_args(pic, "s", &str);
 
-  return pic_obj_value(pic_intern(pic, str));
+  return pic_intern(pic, str);
 }
 
 static pic_value

@@ -92,13 +92,12 @@ struct pic_error *
 pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
-  pic_value stack;
-  pic_sym *ty = pic_intern_cstr(pic, type);
+  pic_value stack, ty = pic_intern_cstr(pic, type);
 
   stack = pic_get_backtrace(pic);
 
   e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TYPE_ERROR);
-  e->type = ty;
+  e->type = pic_sym_ptr(pic, ty);
   e->msg = pic_str_ptr(pic, pic_cstr_value(pic, msg));
   e->irrs = irrs;
   e->stack = pic_str_ptr(pic, stack);
