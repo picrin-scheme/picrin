@@ -35,6 +35,18 @@ int xfclose(pic_state *pic, xFILE *fp) {
   return fp->vtable.close(pic, fp->vtable.cookie);
 }
 
+void xclearerr(pic_state PIC_UNUSED(*pic), xFILE *fp) {
+  fp->flag &= ~(X_EOF | X_ERR);
+}
+
+int xfeof(pic_state PIC_UNUSED(*pic), xFILE *fp) {
+  return (fp->flag & X_EOF) != 0;
+}
+
+int xferror(pic_state PIC_UNUSED(*pic), xFILE *fp) {
+  return (fp->flag & X_ERR) != 0;
+}
+
 int x_fillbuf(pic_state *pic, xFILE *fp) {
   int bufsize;
 
@@ -187,7 +199,7 @@ char *xfgets(pic_state *pic, char *s, int size, xFILE *stream) {
   return (c == EOF && buf == s) ? NULL : s;
 }
 
-int xungetc(int c, xFILE *fp) {
+int xungetc(pic_state PIC_UNUSED(*pic), int c, xFILE *fp) {
   unsigned char uc = c;
 
   if (c == EOF || fp->base == fp->ptr) {
@@ -211,7 +223,7 @@ size_t xfread(pic_state *pic, void *ptr, size_t size, size_t count, xFILE *fp) {
     if ((c = x_fillbuf(pic, fp)) == EOF) {
       return (size * count - nbytes) / size;
     } else {
-      xungetc(c, fp);
+      xungetc(pic, c, fp);
     }
   }
   memcpy(bptr, fp->ptr, nbytes);
@@ -239,6 +251,10 @@ size_t xfwrite(pic_state *pic, const void *ptr, size_t size, size_t count, xFILE
   fp->cnt -= nbytes;
   return count;
 }
+
+#define XSEEK_CUR 0
+#define XSEEK_END 1
+#define XSEEK_SET 2
 
 long xfseek(pic_state *pic, xFILE *fp, long offset, int whence) {
   long s;
@@ -535,17 +551,3 @@ xFILE *xfopen_null(pic_state PIC_UNUSED(*pic), const char *mode) {
     return xfunopen(pic, 0, 0, null_write, null_seek, null_close);
   }
 }
-
-#if 0
-int main()
-{
-  char buf[256];
-
-  xgets(buf);
-
-  xprintf("%s\n", buf);
-  xprintf("hello\n");
-  xprintf("hello\n");
-  //  xfflush(0);
-}
-#endif

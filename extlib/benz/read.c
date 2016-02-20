@@ -39,7 +39,7 @@ peek(pic_state *pic, xFILE *file)
 {
   int c;
 
-  xungetc((c = xfgetc(pic, file)), file);
+  xungetc(pic, (c = xfgetc(pic, file)), file);
 
   return c;
 }

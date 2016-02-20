@@ -199,7 +199,7 @@ pic_port_peek_u8(pic_state *pic)
     return pic_eof_object(pic);
   }
   else {
-    xungetc(c, pic_fileno(pic, port));
+    xungetc(pic, c, pic_fileno(pic, port));
     return pic_int_value(pic, c);
   }
 }
