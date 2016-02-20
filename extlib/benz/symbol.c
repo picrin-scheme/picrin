@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 #define kh_pic_str_hash(a) (pic_str_hash(pic, pic_obj_value(a)))
 #define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, pic_obj_value(a), pic_obj_value(b)) == 0)

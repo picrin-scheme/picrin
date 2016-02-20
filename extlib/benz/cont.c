@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 struct pic_cont {
   PIC_JMPBUF *jmp;

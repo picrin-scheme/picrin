@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 KHASH_DEFINE(env, pic_id *, pic_sym *, kh_ptr_hash_func, kh_ptr_hash_equal)
 

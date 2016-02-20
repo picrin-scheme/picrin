@@ -27,7 +27,7 @@ pic_load_cstr(pic_state *pic, const char *str)
   }
   pic_catch {
     pic_close_port(pic, port);
-    pic_raise(pic, pic->err);
+    pic_raise(pic, pic_err(pic));
   }
 
   pic_close_port(pic, port);

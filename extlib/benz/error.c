@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 void
 pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)
@@ -96,6 +97,12 @@ pic_pop_handler(pic_state *pic)
   }
 
   return pic_obj_value(*--pic->xp);
+}
+
+pic_value
+pic_err(pic_state *pic)
+{
+  return pic->err;
 }
 
 pic_value

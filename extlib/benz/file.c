@@ -1,4 +1,9 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #include "picrin.h"
+#include "picrin/state.h"
 
 #ifndef EOF
 # define EOF (-1)

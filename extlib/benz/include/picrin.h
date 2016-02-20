@@ -98,7 +98,6 @@ void pic_export(pic_state *, pic_value sym);
 
 PIC_NORETURN void pic_panic(pic_state *, const char *msg);
 PIC_NORETURN void pic_errorf(pic_state *, const char *fmt, ...);
-PIC_NORETURN void pic_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 PIC_NORETURN void pic_raise(pic_state *, pic_value v);
 
 pic_value pic_lambda(pic_state *, pic_func_t f, int n, ...);
@@ -296,8 +295,6 @@ int xvfprintf(pic_state *, xFILE *fp, const char *fmt, va_list);
 /* extra stuff */
 
 
-#include "picrin/state.h"
-
 void *pic_default_allocf(void *, void *, size_t);
 
 #define pic_assert_type(pic, v, type)                           \
@@ -355,6 +352,8 @@ void pic_exit_point(pic_state *);
 
 /* do not return from try block! */
 
+pic_value pic_err(pic_state *);
+
 #define pic_try                                 \
   pic_try_(PIC_GENSYM(cont), PIC_GENSYM(handler))
 #define pic_catch                               \
@@ -375,6 +374,8 @@ void pic_exit_point(pic_state *);
   } while (0);                                            \
   if (0)                                                  \
   label:
+
+PIC_NORETURN void pic_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 
 #define pic_for_each(var, list, it)                                     \
   for (it = (list); ! pic_nil_p(pic, it); it = pic_cdr(pic, it))        \

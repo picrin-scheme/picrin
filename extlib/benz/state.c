@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 static void
 pic_init_features(pic_state *pic)

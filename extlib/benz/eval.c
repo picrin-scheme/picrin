@@ -5,6 +5,7 @@
 #include "picrin.h"
 #include "picrin/object.h"
 #include "picrin/opcode.h"
+#include "picrin/state.h"
 
 static pic_value
 optimize_beta(pic_state *pic, pic_value expr)
@@ -891,7 +892,7 @@ pic_eval(pic_state *pic, pic_value program, const char *lib)
   }
   pic_catch {
     pic_in_library(pic, prev_lib);
-    pic_raise(pic, pic->err);
+    pic_raise(pic, pic_err(pic));
   }
   pic_in_library(pic, prev_lib);
 

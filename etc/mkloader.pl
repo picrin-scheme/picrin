@@ -53,7 +53,7 @@ EOL
   pic_catch {
     /* error! */
     xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
-    pic_raise(pic, pic->err);
+    pic_raise(pic, pic_err(pic));
   }
 EOL
 }

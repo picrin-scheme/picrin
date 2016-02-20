@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 static pic_value
 var_get(pic_state *pic, pic_value var)

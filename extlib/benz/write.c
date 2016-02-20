@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 KHASH_DECLARE(l, void *, int)
 KHASH_DECLARE(v, void *, int)

@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/object.h"
+#include "picrin/state.h"
 
 pic_value
 pic_get_backtrace(pic_state *pic)
@@ -36,16 +37,18 @@ pic_get_backtrace(pic_state *pic)
 void
 pic_print_backtrace(pic_state *pic, xFILE *file)
 {
-  assert(! pic_invalid_p(pic, pic->err));
+  pic_value err = pic_err(pic);
 
-  if (! pic_error_p(pic, pic->err)) {
+  assert(! pic_invalid_p(pic, err));
+
+  if (! pic_error_p(pic, err)) {
     xfprintf(pic, file, "raise: ");
-    pic_fwrite(pic, pic->err, file);
+    pic_fwrite(pic, err, file);
   } else {
     struct pic_error *e;
     pic_value elem, it;
 
-    e = pic_error_ptr(pic, pic->err);
+    e = pic_error_ptr(pic, err);
     if (! pic_eq_p(pic, pic_obj_value(e->type), pic_intern_lit(pic, ""))) {
       pic_fwrite(pic, pic_obj_value(e->type), file);
       xfprintf(pic, file, " ");
