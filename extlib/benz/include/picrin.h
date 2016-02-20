@@ -51,8 +51,6 @@ typedef struct {
 } pic_value;
 #endif
 
-struct pic_error;
-
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 
 pic_state *pic_open(pic_allocf f, void *userdata);

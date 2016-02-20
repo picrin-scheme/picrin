@@ -88,7 +88,7 @@ pic_pop_handler(pic_state *pic)
   return pic_obj_value(*--pic->xp);
 }
 
-struct pic_error *
+pic_value
 pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
 {
   struct pic_error *e;
@@ -102,7 +102,7 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
   e->irrs = irrs;
   e->stack = pic_str_ptr(pic, stack);
 
-  return e;
+  return pic_obj_value(e);
 }
 
 pic_value
@@ -136,11 +136,7 @@ pic_raise(pic_state *pic, pic_value err)
 void
 pic_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
 {
-  struct pic_error *e;
-
-  e = pic_make_error(pic, type, msg, irrs);
-
-  pic_raise(pic, pic_obj_value(e));
+  pic_raise(pic, pic_make_error(pic, type, msg, irrs));
 }
 
 static pic_value
@@ -204,31 +200,37 @@ pic_error_error_object_p(pic_state *pic)
 static pic_value
 pic_error_error_object_message(pic_state *pic)
 {
-  struct pic_error *e;
+  pic_value e;
 
-  pic_get_args(pic, "e", &e);
+  pic_get_args(pic, "o", &e);
 
-  return pic_obj_value(e->msg);
+  pic_assert_type(pic, e, error);
+
+  return pic_obj_value(pic_error_ptr(pic, e)->msg);
 }
 
 static pic_value
 pic_error_error_object_irritants(pic_state *pic)
 {
-  struct pic_error *e;
+  pic_value e;
 
-  pic_get_args(pic, "e", &e);
+  pic_get_args(pic, "o", &e);
 
-  return e->irrs;
+  pic_assert_type(pic, e, error);
+
+  return pic_error_ptr(pic, e)->irrs;
 }
 
 static pic_value
 pic_error_error_object_type(pic_state *pic)
 {
-  struct pic_error *e;
+  pic_value e;
 
-  pic_get_args(pic, "e", &e);
+  pic_get_args(pic, "o", &e);
 
-  return pic_obj_value(e->type);
+  pic_assert_type(pic, e, error);
+
+  return pic_obj_value(pic_error_ptr(pic, e)->type);
 }
 
 void

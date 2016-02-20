@@ -45,7 +45,7 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
     struct pic_error *e;
     pic_value elem, it;
 
-    e = pic_error_ptr(pic->err);
+    e = pic_error_ptr(pic, pic->err);
     if (! pic_eq_p(pic, pic_obj_value(e->type), pic_intern_lit(pic, ""))) {
       pic_fwrite(pic, pic_obj_value(e->type), file);
       xfprintf(pic, file, " ");
