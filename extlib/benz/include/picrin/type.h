@@ -14,6 +14,8 @@ extern "C" {
  *  it is only used for repsenting internal special state
  */
 
+#define pic_invalid_p(pic, v) (pic_vtype(pic, v) == PIC_TYPE_INVALID)
+
 #if PIC_NAN_BOXING
 
 /**
@@ -95,19 +97,6 @@ pic_obj_ptr(pic_value v)
 }
 
 #endif
-
-#define PIC_OBJECT_HEADER			\
-  unsigned char tt;                             \
-  char gc_mark;
-
-struct pic_basic {
-  PIC_OBJECT_HEADER
-};
-
-#define pic_obj_p(pic,v) (pic_vtype(pic,v) == PIC_IVAL_END)
-#define pic_invalid_p(pic, v) (pic_vtype(pic, v) == PIC_TYPE_INVALID)
-
-#define pic_test(pic, v) (! pic_false_p(pic, v))
 
 PIC_INLINE bool
 pic_valid_int(double v)

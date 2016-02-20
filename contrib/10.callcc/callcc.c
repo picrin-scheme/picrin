@@ -1,11 +1,12 @@
 #include "picrin.h"
+#include "picrin/object.h"
 
 struct pic_fullcont {
   jmp_buf jmp;
 
   struct pic_cont *prev_jmp;
 
-  pic_checkpoint *cp;
+  struct pic_checkpoint *cp;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;
@@ -50,7 +51,7 @@ static void
 cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 {
   struct pic_fullcont *cont = data;
-  pic_checkpoint *cp;
+  struct pic_checkpoint *cp;
   pic_value *stack;
   pic_callinfo *ci;
   struct pic_proc **xp;

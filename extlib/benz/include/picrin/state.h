@@ -22,14 +22,6 @@ struct pic_lib {
   struct pic_dict *exports;
 };
 
-typedef struct pic_checkpoint {
-  PIC_OBJECT_HEADER
-  struct pic_proc *in;
-  struct pic_proc *out;
-  int depth;
-  struct pic_checkpoint *prev;
-} pic_checkpoint;
-
 typedef struct {
   int argc, retc;
   pic_code *ip;
@@ -48,7 +40,7 @@ struct pic_state {
   pic_allocf allocf;
   void *userdata;
 
-  pic_checkpoint *cp;
+  struct pic_checkpoint *cp;
   struct pic_cont *cc;
   int ccnt;
 

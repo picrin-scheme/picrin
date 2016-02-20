@@ -56,9 +56,6 @@ struct pic_port;
 struct pic_error;
 struct pic_env;
 
-typedef struct pic_identifier pic_id;
-typedef pic_id pic_sym;
-
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 
 pic_state *pic_open(pic_allocf f, void *userdata);
@@ -265,6 +262,9 @@ int pic_str_hash(pic_state *, pic_value str);
 
 /* extra stuff */
 
+
+typedef struct pic_identifier pic_id;
+typedef pic_id pic_sym;
 
 #include "picrin/type.h"
 #include "picrin/state.h"

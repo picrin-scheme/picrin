@@ -41,7 +41,7 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
 }
 
 void
-pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)
+pic_wind(pic_state *pic, struct pic_checkpoint *here, struct pic_checkpoint *there)
 {
   if (here == there)
     return;
@@ -59,13 +59,13 @@ pic_wind(pic_state *pic, pic_checkpoint *here, pic_checkpoint *there)
 static pic_value
 pic_dynamic_wind(pic_state *pic, pic_value in, pic_value thunk, pic_value out)
 {
-  pic_checkpoint *here;
+  struct pic_checkpoint *here;
   pic_value val;
 
   pic_call(pic, in, 0);       /* enter */
 
   here = pic->cp;
-  pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TYPE_CP);
+  pic->cp = (struct pic_checkpoint *)pic_obj_alloc(pic, sizeof(struct pic_checkpoint), PIC_TYPE_CP);
   pic->cp->prev = here;
   pic->cp->depth = here->depth + 1;
   pic->cp->in = pic_proc_ptr(pic, in);

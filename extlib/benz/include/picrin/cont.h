@@ -14,7 +14,7 @@ struct pic_cont {
 
   int id;
 
-  pic_checkpoint *cp;
+  struct pic_checkpoint *cp;
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
   ptrdiff_t xp_offset;
@@ -33,7 +33,7 @@ void pic_load_point(pic_state *, struct pic_cont *);
 
 pic_value pic_make_cont(pic_state *, struct pic_cont *);
 
-void pic_wind(pic_state *, pic_checkpoint *, pic_checkpoint *);
+void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
 
 #if defined(__cplusplus)
 }

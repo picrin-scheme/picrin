@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/object.h"
 
 int
 pic_type(pic_state PIC_UNUSED(*pic), pic_value v)

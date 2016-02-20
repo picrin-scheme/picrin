@@ -13,6 +13,14 @@ KHASH_DECLARE(env, pic_id *, pic_sym *)
 KHASH_DECLARE(dict, pic_sym *, pic_value)
 KHASH_DECLARE(weak, struct pic_object *, pic_value)
 
+#define PIC_OBJECT_HEADER			\
+  unsigned char tt;                             \
+  char gc_mark;
+
+struct pic_basic {
+  PIC_OBJECT_HEADER
+};
+
 struct pic_identifier {
   PIC_OBJECT_HEADER
   union {
@@ -115,6 +123,14 @@ struct pic_port {
   xFILE *file;
 };
 
+struct pic_checkpoint {
+  PIC_OBJECT_HEADER
+  struct pic_proc *in;
+  struct pic_proc *out;
+  int depth;
+  struct pic_checkpoint *prev;
+};
+
 #define pic_id_ptr(pic, o) ((pic_id *)pic_obj_ptr(o))
 #define pic_sym_ptr(pic, o) ((pic_sym *)pic_obj_ptr(o))
 #define pic_str_ptr(pic, o) ((struct pic_string *)pic_obj_ptr(o))
@@ -131,6 +147,7 @@ struct pic_port {
 #define pic_port_ptr(v) ((struct pic_port *)pic_obj_ptr(v))
 #define pic_env_ptr(v) ((struct pic_env *)pic_obj_ptr(v))
 
+#define pic_obj_p(pic,v) (pic_vtype(pic,v) == PIC_IVAL_END)
 #define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
 #define pic_error_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ERROR)
 #define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TYPE_RECORD)

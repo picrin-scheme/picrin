@@ -344,7 +344,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->macros = pic_make_weak(pic);
 
   /* root block */
-  pic->cp = (pic_checkpoint *)pic_obj_alloc(pic, sizeof(pic_checkpoint), PIC_TYPE_CP);
+  pic->cp = (struct pic_checkpoint *)pic_obj_alloc(pic, sizeof(struct pic_checkpoint), PIC_TYPE_CP);
   pic->cp->prev = NULL;
   pic->cp->depth = 0;
   pic->cp->in = pic->cp->out = NULL;

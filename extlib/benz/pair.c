@@ -571,7 +571,7 @@ pic_pair_member(pic_state *pic)
       if (pic_equal_p(pic, key, pic_car(pic, list)))
         return list;
     } else {
-      if (pic_test(pic, pic_call(pic, proc, 2, key, pic_car(pic, list))))
+      if (! pic_false_p(pic, pic_call(pic, proc, 2, key, pic_car(pic, list))))
         return list;
     }
     list = pic_cdr(pic, list);
@@ -627,7 +627,7 @@ pic_pair_assoc(pic_state *pic)
       if (pic_equal_p(pic, key, pic_car(pic, cell)))
         return cell;
     } else {
-      if (pic_test(pic, pic_call(pic, proc, 2, key, pic_car(pic, cell))))
+      if (! pic_false_p(pic, pic_call(pic, proc, 2, key, pic_car(pic, cell))))
         return cell;
     }
     alist = pic_cdr(pic, alist);
