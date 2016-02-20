@@ -13,7 +13,6 @@
                 nan?
                 infinite?)
           (picrin macro)
-          (picrin string)
           (scheme file))
 
   ;; 4.1.2. Literal expressions
