@@ -47,8 +47,8 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
   pic_error(pic, "", msg, pic_nil_value(pic));
 }
 
-pic_value
-pic_native_exception_handler(pic_state *pic)
+static pic_value
+native_exception_handler(pic_state *pic)
 {
   pic_value err;
 
@@ -59,6 +59,16 @@ pic_native_exception_handler(pic_state *pic)
   pic_call(pic, pic_closure_ref(pic, 0), 1, pic_false_value(pic));
 
   PIC_UNREACHABLE();
+}
+
+void
+pic_push_native_handler(pic_state *pic, struct pic_cont *cont)
+{
+  pic_value handler;
+
+  handler = pic_lambda(pic, native_exception_handler, 1, pic_make_cont(pic, cont));
+
+  pic_push_handler(pic, handler);
 }
 
 void

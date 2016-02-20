@@ -22,25 +22,6 @@ struct pic_lib {
   struct pic_dict *exports;
 };
 
-struct pic_cont {
-  PIC_JMPBUF jmp;
-
-  int id;
-
-  struct pic_checkpoint *cp;
-  ptrdiff_t sp_offset;
-  ptrdiff_t ci_offset;
-  ptrdiff_t xp_offset;
-  size_t arena_idx;
-  pic_value ptable;
-  pic_code *ip;
-
-  int retc;
-  pic_value *retv;
-
-  struct pic_cont *prev;
-};
-
 typedef struct {
   int argc, retc;
   pic_code *ip;

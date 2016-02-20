@@ -345,6 +345,14 @@ void pic_load_cstr(pic_state *, const char *);
     pic_in_library(pic, lib);                   \
   } while (0)
 
+struct pic_cont *pic_alloca_cont(pic_state *);
+pic_value pic_make_cont(pic_state *, struct pic_cont *);
+void pic_push_native_handler(pic_state *, struct pic_cont *);
+void pic_push_handler(pic_state *, pic_value);
+pic_value pic_pop_handler(pic_state *);
+void pic_save_point(pic_state *, struct pic_cont *, PIC_JMPBUF *);
+void pic_exit_point(pic_state *);
+
 /* do not return from try block! */
 
 #define pic_try                                 \
@@ -353,22 +361,13 @@ void pic_load_cstr(pic_state *, const char *);
   pic_catch_(PIC_GENSYM(label))
 #define pic_try_(cont, handler)                                         \
   do {                                                                  \
-    extern pic_value pic_make_cont(pic_state *, struct pic_cont *);     \
-    extern void pic_push_handler(pic_state *, pic_value proc);          \
-    extern pic_value pic_pop_handler(pic_state *);                      \
-    extern pic_value pic_native_exception_handler(pic_state *);         \
-    extern void pic_save_point(pic_state *, struct pic_cont *);         \
-    extern void pic_exit_point(pic_state *);                            \
-    struct pic_cont cont;                                               \
-    pic_save_point(pic, &cont);                                         \
-    if (PIC_SETJMP(pic, cont.jmp) == 0) {                               \
-      pic_value handler;                                                \
-      handler = pic_lambda(pic, pic_native_exception_handler, 1, pic_make_cont(pic, &cont)); \
-      do {                                                              \
-        pic_push_handler(pic, handler);
+    PIC_JMPBUF jmp;                                                     \
+    struct pic_cont *cont = pic_alloca_cont(pic);                       \
+    if (PIC_SETJMP(pic, jmp) == 0) {                                    \
+      pic_save_point(pic, cont, &jmp);                                  \
+      pic_push_native_handler(pic, cont);
 #define pic_catch_(label)                                 \
-        pic_pop_handler(pic);                             \
-      } while (0);                                        \
+      pic_pop_handler(pic);                               \
       pic_exit_point(pic);                                \
     } else {                                              \
       goto label;                                         \

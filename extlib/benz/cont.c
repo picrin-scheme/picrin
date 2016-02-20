@@ -5,9 +5,32 @@
 #include "picrin.h"
 #include "picrin/object.h"
 
+struct pic_cont {
+  PIC_JMPBUF *jmp;
+
+  int id;
+
+  struct pic_checkpoint *cp;
+  ptrdiff_t sp_offset;
+  ptrdiff_t ci_offset;
+  ptrdiff_t xp_offset;
+  size_t arena_idx;
+  pic_value ptable;
+  pic_code *ip;
+
+  int retc;
+  pic_value *retv;
+
+  struct pic_cont *prev;
+};
+
+static const pic_data_type cont_type = { "pic_cont", NULL, NULL };
+
 void
-pic_save_point(pic_state *pic, struct pic_cont *cont)
+pic_save_point(pic_state *pic, struct pic_cont *cont, PIC_JMPBUF *jmp)
 {
+  cont->jmp = jmp;
+
   /* save runtime context */
   cont->cp = pic->cp;
   cont->sp_offset = pic->sp - pic->stbase;
@@ -86,9 +109,6 @@ pic_dynamic_wind(pic_state *pic, pic_value in, pic_value thunk, pic_value out)
   return val;
 }
 
-#define CV_ID 0
-#define CV_ESCAPE 1
-
 static pic_value
 cont_call(pic_state *pic)
 {
@@ -99,7 +119,9 @@ cont_call(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  id = pic_int(pic, pic_closure_ref(pic, CV_ID));
+  cont = pic_data(pic, pic_closure_ref(pic, 0));
+
+  id = cont->id;
 
   /* check if continuation is alive */
   for (cc = pic->cc; cc != NULL; cc = cc->prev) {
@@ -111,13 +133,12 @@ cont_call(pic_state *pic)
     pic_errorf(pic, "calling dead escape continuation");
   }
 
-  cont = pic_data(pic, pic_closure_ref(pic, CV_ESCAPE));
   cont->retc = argc;
   cont->retv = argv;
 
   pic_load_point(pic, cont);
 
-  PIC_LONGJMP(pic, cont->jmp, 1);
+  PIC_LONGJMP(pic, *cont->jmp, 1);
 
   PIC_UNREACHABLE();
 }
@@ -125,26 +146,30 @@ cont_call(pic_state *pic)
 pic_value
 pic_make_cont(pic_state *pic, struct pic_cont *cont)
 {
-  static const pic_data_type cont_type = { "cont", NULL, NULL };
+  return pic_lambda(pic, cont_call, 1, pic_data_value(pic, cont, &cont_type));
+}
 
-  /* save the escape continuation in proc */
-  return pic_lambda(pic, cont_call, 2, pic_int_value(pic, cont->id), pic_data_value(pic, cont, &cont_type));
+struct pic_cont *
+pic_alloca_cont(pic_state *pic)
+{
+  return pic_alloca(pic, sizeof(struct pic_cont));
 }
 
 static pic_value
 pic_callcc(pic_state *pic, pic_value proc)
 {
-  struct pic_cont cont;
+  PIC_JMPBUF jmp;
+  struct pic_cont *cont = pic_alloca_cont(pic);
 
-  pic_save_point(pic, &cont);
-
-  if (PIC_SETJMP(pic, cont.jmp)) {
-    return pic_valuesk(pic, cont.retc, cont.retv);
+  if (PIC_SETJMP(pic, jmp)) {
+    return pic_valuesk(pic, cont->retc, cont->retv);
   }
   else {
     pic_value val;
 
-    val = pic_call(pic, proc, 1, pic_make_cont(pic, &cont));
+    pic_save_point(pic, cont, &jmp);
+
+    val = pic_call(pic, proc, 1, pic_make_cont(pic, cont));
 
     pic_exit_point(pic);
 
