@@ -17,7 +17,7 @@ pic_intern(pic_state *pic, pic_value str)
 {
   khash_t(oblist) *h = &pic->oblist;
   pic_sym *sym;
-  khiter_t it;
+  int it;
   int ret;
 
   it = kh_put(oblist, h, pic_str_ptr(pic, str), &ret);

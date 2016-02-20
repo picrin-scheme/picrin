@@ -43,7 +43,7 @@ pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
 pic_value
 pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
 {
-  khiter_t it;
+  int it;
   int ret;
 
   it = kh_put(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id), &ret);
@@ -55,7 +55,7 @@ pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
 static bool
 search_scope(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
 {
-  khiter_t it;
+  int it;
 
   it = kh_get(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id));
   if (it == kh_end(&pic_env_ptr(pic, env)->map)) {

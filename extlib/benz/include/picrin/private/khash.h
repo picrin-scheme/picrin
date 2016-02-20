@@ -24,13 +24,8 @@
    SOFTWARE.
 */
 
-#ifndef AC_KHASH_H
-#define AC_KHASH_H
-
-#include <stddef.h>
-
-typedef int khint_t;
-typedef khint_t khiter_t;
+#ifndef PICRIN_KHASH_H
+#define PICRIN_KHASH_H
 
 #define ac_isempty(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&2)
 #define ac_isdel(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&1)
@@ -48,18 +43,18 @@ typedef khint_t khiter_t;
 
 #define KHASH_DECLARE(name, khkey_t, khval_t)                           \
   typedef struct {                                                      \
-    khint_t n_buckets, size, n_occupied, upper_bound;                   \
+    int n_buckets, size, n_occupied, upper_bound;                       \
     int *flags;                                                         \
     khkey_t *keys;                                                      \
     khval_t *vals;                                                      \
   } kh_##name##_t;                                                      \
   void kh_init_##name(kh_##name##_t *h);                                \
-  void kh_destroy_##name(pic_state *, kh_##name##_t *h);                 \
+  void kh_destroy_##name(pic_state *, kh_##name##_t *h);                \
   void kh_clear_##name(kh_##name##_t *h);                               \
-  khint_t kh_get_##name(pic_state *, const kh_##name##_t *h, khkey_t key); \
-  void kh_resize_##name(pic_state *, kh_##name##_t *h, khint_t new_n_buckets); \
-  khint_t kh_put_##name(pic_state *, kh_##name##_t *h, khkey_t key, int *ret); \
-  void kh_del_##name(kh_##name##_t *h, khint_t x);
+  int kh_get_##name(pic_state *, const kh_##name##_t *h, khkey_t key);  \
+  void kh_resize_##name(pic_state *, kh_##name##_t *h, int new_n_buckets); \
+  int kh_put_##name(pic_state *, kh_##name##_t *h, khkey_t key, int *ret); \
+  void kh_del_##name(kh_##name##_t *h, int x);
 
 #define KHASH_DEFINE(name, khkey_t, khval_t, hash_func, hash_equal)     \
   KHASH_DEFINE2(name, khkey_t, khval_t, 1, hash_func, hash_equal)
@@ -80,11 +75,11 @@ typedef khint_t khiter_t;
       h->size = h->n_occupied = 0;                                      \
     }                                                                   \
   }                                                                     \
-  khint_t kh_get_##name(pic_state *pic, const kh_##name##_t *h, khkey_t key) \
+  int kh_get_##name(pic_state *pic, const kh_##name##_t *h, khkey_t key) \
   {                                                                     \
     (void)pic;                                                          \
     if (h->n_buckets) {                                                 \
-      khint_t k, i, last, mask, step = 0;                               \
+      int k, i, last, mask, step = 0;                                   \
       mask = h->n_buckets - 1;                                          \
       k = hash_func(key); i = k & mask;                                 \
       last = i;                                                         \
@@ -95,10 +90,10 @@ typedef khint_t khiter_t;
       return ac_iseither(h->flags, i)? h->n_buckets : i;		\
     } else return 0;                                                    \
   }                                                                     \
-  void kh_resize_##name(pic_state *pic, kh_##name##_t *h, khint_t new_n_buckets) \
+  void kh_resize_##name(pic_state *pic, kh_##name##_t *h, int new_n_buckets) \
   { /* This function uses 0.25*n_buckets bytes of working space instead of [sizeof(key_t+val_t)+.25]*n_buckets. */ \
     int *new_flags = 0;                                                 \
-    khint_t j = 1;                                                      \
+    int j = 1;                                                          \
     {                                                                   \
       ac_roundup32(new_n_buckets);                                      \
       if (new_n_buckets < 4) new_n_buckets = 4;                         \
@@ -119,12 +114,12 @@ typedef khint_t khiter_t;
         if (ac_iseither(h->flags, j) == 0) {                            \
           khkey_t key = h->keys[j];                                     \
           khval_t val;                                                  \
-          khint_t new_mask;                                             \
+          int new_mask;                                                 \
           new_mask = new_n_buckets - 1;                                 \
           if (kh_is_map) val = h->vals[j];                              \
           ac_set_isdel_true(h->flags, j);                               \
           while (1) { /* kick-out process; sort of like in Cuckoo hashing */ \
-            khint_t k, i, step = 0;                                     \
+            int k, i, step = 0;                                         \
             k = hash_func(key);                                         \
             i = k & new_mask;                                           \
             while (!ac_isempty(new_flags, i)) i = (i + (++step)) & new_mask; \
@@ -152,9 +147,9 @@ typedef khint_t khiter_t;
       h->upper_bound = ac_hash_upper(h->n_buckets);                     \
     }                                                                   \
   }                                                                     \
-  khint_t kh_put_##name(pic_state *pic, kh_##name##_t *h, khkey_t key, int *ret) \
+  int kh_put_##name(pic_state *pic, kh_##name##_t *h, khkey_t key, int *ret) \
   {                                                                     \
-    khint_t x;                                                          \
+    int x;                                                              \
     if (h->n_occupied >= h->upper_bound) { /* update the hash table */  \
       if (h->n_buckets > (h->size<<1)) {                                \
         kh_resize_##name(pic, h, h->n_buckets - 1); /* clear "deleted" elements */ \
@@ -163,7 +158,7 @@ typedef khint_t khiter_t;
       }                                                                 \
     } /* TODO: to implement automatically shrinking; resize() already support shrinking */ \
     {                                                                   \
-      khint_t k, i, site, last, mask = h->n_buckets - 1, step = 0;      \
+      int k, i, site, last, mask = h->n_buckets - 1, step = 0;          \
       x = site = h->n_buckets; k = hash_func(key); i = k & mask;        \
       if (ac_isempty(h->flags, i)) x = i; /* for speed up */            \
       else {                                                            \
@@ -192,7 +187,7 @@ typedef khint_t khiter_t;
     } else *ret = 0; /* Don't touch h->keys[x] if present and not deleted */ \
     return x;                                                           \
   }                                                                     \
-  void kh_del_##name(kh_##name##_t *h, khint_t x)                       \
+  void kh_del_##name(kh_##name##_t *h, int x)                           \
   {                                                                     \
     if (x != h->n_buckets && !ac_iseither(h->flags, x)) {               \
       ac_set_isdel_true(h->flags, x);                                   \
@@ -231,7 +226,7 @@ PIC_INLINE int kh_str_hash_func(const char *s) {
 #define kh_key(h, x) ((h)->keys[x])
 #define kh_val(h, x) ((h)->vals[x])
 #define kh_value(h, x) ((h)->vals[x])
-#define kh_begin(h) (khint_t)(0)
+#define kh_begin(h) (0)
 #define kh_end(h) ((h)->n_buckets)
 #define kh_size(h) ((h)->size)
 #define kh_n_buckets(h) ((h)->n_buckets)

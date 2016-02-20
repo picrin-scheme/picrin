@@ -611,7 +611,7 @@ read_label_set(pic_state *pic, xFILE *file, int i)
   khash_t(read) *h = &pic->reader.labels;
   pic_value val;
   int c, ret;
-  khiter_t it;
+  int it;
 
   it = kh_put(read, h, i, &ret);
 
@@ -665,7 +665,7 @@ static pic_value
 read_label_ref(pic_state *pic, xFILE PIC_UNUSED(*file), int i)
 {
   khash_t(read) *h = &pic->reader.labels;
-  khiter_t it;
+  int it;
 
   it = kh_get(read, h, i);
   if (it == kh_end(h)) {

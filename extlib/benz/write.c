@@ -129,7 +129,7 @@ write_pair_help(struct writer_control *p, pic_value pair)
   pic_state *pic = p->pic;
   khash_t(l) *lh = &p->labels;
   khash_t(v) *vh = &p->visited;
-  khiter_t it;
+  int it;
   int ret;
 
   write_core(p, pic_car(pic, pair));
@@ -265,7 +265,7 @@ write_core(struct writer_control *p, pic_value obj)
   khash_t(l) *lh = &p->labels;
   khash_t(v) *vh = &p->visited;
   xFILE *file = p->file;
-  khiter_t it;
+  int it;
   int ret;
 
   /* shared objects */
@@ -351,7 +351,7 @@ traverse(struct writer_control *p, pic_value obj)
   case PIC_TYPE_VECTOR:
   case PIC_TYPE_DICT: {
     khash_t(l) *h = &p->labels;
-    khiter_t it;
+    int it;
     int ret;
 
     it = kh_put(l, h, pic_obj_ptr(obj), &ret);

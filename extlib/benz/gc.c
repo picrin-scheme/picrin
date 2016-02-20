@@ -344,7 +344,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TYPE_ENV: {
     khash_t(env) *h = &obj->u.env.map;
-    khiter_t it;
+    int it;
 
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (kh_exist(h, it)) {
@@ -425,7 +425,7 @@ gc_mark_phase(pic_state *pic)
   pic_callinfo *ci;
   struct pic_proc **xhandler;
   struct pic_list *list;
-  khiter_t it;
+  int it;
   size_t j;
 
   assert(pic->heap->weaks == NULL);
@@ -503,7 +503,7 @@ gc_mark_phase(pic_state *pic)
   do {
     struct pic_object *key;
     pic_value val;
-    khiter_t it;
+    int it;
     khash_t(weak) *h;
     struct pic_weak *weak;
 
@@ -644,7 +644,7 @@ static void
 gc_sweep_phase(pic_state *pic)
 {
   struct heap_page *page;
-  khiter_t it;
+  int it;
   khash_t(weak) *h;
   khash_t(oblist) *s = &pic->oblist;
   pic_sym *sym;

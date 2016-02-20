@@ -22,7 +22,7 @@ pic_value
 pic_dict_ref(pic_state *pic, pic_value dict, pic_value key)
 {
   khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
-  khiter_t it;
+  int it;
 
   it = kh_get(dict, h, pic_sym_ptr(pic, key));
   if (it == kh_end(h)) {
@@ -36,7 +36,7 @@ pic_dict_set(pic_state *pic, pic_value dict, pic_value key, pic_value val)
 {
   khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
   int ret;
-  khiter_t it;
+  int it;
 
   it = kh_put(dict, h, pic_sym_ptr(pic, key), &ret);
   kh_val(h, it) = val;
@@ -60,7 +60,7 @@ void
 pic_dict_del(pic_state *pic, pic_value dict, pic_value key)
 {
   khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
-  khiter_t it;
+  int it;
 
   it = kh_get(dict, h, pic_sym_ptr(pic, key));
   if (it == kh_end(h)) {

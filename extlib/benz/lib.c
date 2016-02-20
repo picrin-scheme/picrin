@@ -13,7 +13,7 @@ static struct pic_lib *
 get_library_opt(pic_state *pic, const char *lib)
 {
   khash_t(ltable) *h = &pic->ltable;
-  khiter_t it;
+  int it;
 
   it = kh_get(ltable, h, lib);
   if (it == kh_end(h)) {
@@ -61,7 +61,7 @@ pic_make_library(pic_state *pic, const char *lib)
   khash_t(ltable) *h = &pic->ltable;
   const char *old_lib;
   pic_value name, env, exports;
-  khiter_t it;
+  int it;
   int ret;
 
   if (pic->lib) {
