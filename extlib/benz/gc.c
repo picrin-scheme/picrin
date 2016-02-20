@@ -5,6 +5,11 @@
 #include "picrin.h"
 #include "picrin/object.h"
 
+enum {
+  WHITE = 0,
+  BLACK = 1
+};
+
 union header {
   struct {
     union header *ptr;
@@ -269,10 +274,10 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 {
  loop:
 
-  if (obj->u.basic.gc_mark == PIC_GC_MARK)
+  if (obj->u.basic.gc_mark == BLACK)
     return;
 
-  obj->u.basic.gc_mark = PIC_GC_MARK;
+  obj->u.basic.gc_mark = BLACK;
 
 #define LOOP(o) obj = (struct pic_object *)(o); goto loop
 
@@ -511,8 +516,8 @@ gc_mark_phase(pic_state *pic)
           continue;
         key = kh_key(h, it);
         val = kh_val(h, it);
-        if (key->u.basic.gc_mark == PIC_GC_MARK) {
-          if (pic_obj_p(pic, val) && pic_obj_ptr(val)->u.basic.gc_mark == PIC_GC_UNMARK) {
+        if (key->u.basic.gc_mark == BLACK) {
+          if (pic_obj_p(pic, val) && pic_obj_ptr(val)->u.basic.gc_mark == WHITE) {
             gc_mark(pic, val);
             ++j;
           }
@@ -606,8 +611,8 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
         goto escape;
       }
       obj = (struct pic_object *)(p + 1);
-      if (obj->u.basic.gc_mark == PIC_GC_MARK) {
-        obj->u.basic.gc_mark = PIC_GC_UNMARK;
+      if (obj->u.basic.gc_mark == BLACK) {
+        obj->u.basic.gc_mark = WHITE;
         alive += p->s.size;
       } else {
         if (head == NULL) {
@@ -652,7 +657,7 @@ gc_sweep_phase(pic_state *pic)
       if (! kh_exist(h, it))
         continue;
       obj = kh_key(h, it);
-      if (obj->u.basic.gc_mark == PIC_GC_UNMARK) {
+      if (obj->u.basic.gc_mark == WHITE) {
         kh_del(weak, h, it);
       }
     }
@@ -664,7 +669,7 @@ gc_sweep_phase(pic_state *pic)
     if (! kh_exist(s, it))
       continue;
     sym = kh_val(s, it);
-    if (sym->gc_mark == PIC_GC_UNMARK) {
+    if (sym->gc_mark == WHITE) {
       kh_del(oblist, s, it);
     }
   }
@@ -721,7 +726,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
 	pic_panic(pic, "GC memory exhausted");
     }
   }
-  obj->u.basic.gc_mark = PIC_GC_UNMARK;
+  obj->u.basic.gc_mark = WHITE;
   obj->u.basic.tt = type;
 
   return obj;
