@@ -4,8 +4,8 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/object.h"
-#include "picrin/state.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
 KHASH_DECLARE(l, void *, int)
 KHASH_DECLARE(v, void *, int)

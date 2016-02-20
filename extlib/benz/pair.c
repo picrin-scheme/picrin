@@ -4,7 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/object.h"
+#include "picrin/private/object.h"
 
 pic_value
 pic_cons(pic_state *pic, pic_value car, pic_value cdr)

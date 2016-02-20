@@ -4,9 +4,9 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/object.h"
-#include "picrin/opcode.h"
-#include "picrin/state.h"
+#include "picrin/private/object.h"
+#include "picrin/private/opcode.h"
+#include "picrin/private/state.h"
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 

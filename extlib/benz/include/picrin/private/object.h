@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include "picrin/khash.h"
+#include "picrin/private/khash.h"
 
 typedef struct pic_identifier pic_id;
 typedef pic_id pic_sym;

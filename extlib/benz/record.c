@@ -3,7 +3,7 @@
  */
 
 #include "picrin.h"
-#include "picrin/object.h"
+#include "picrin/private/object.h"
 
 pic_value
 pic_make_rec(pic_state *pic, pic_value type, pic_value datum)

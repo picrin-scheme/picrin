@@ -9,12 +9,12 @@
 extern "C" {
 #endif
 
-#include "picrin/khash.h"
-#include "picrin/file.h"
+#include "picrin/private/khash.h"
+#include "picrin/private/file.h"
 
-#include "picrin/irep.h"
-#include "picrin/read.h"
-#include "picrin/gc.h"
+#include "picrin/private/irep.h"
+#include "picrin/private/read.h"
+#include "picrin/private/gc.h"
 
 struct pic_lib {
   struct pic_string *name;

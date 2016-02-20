@@ -4,8 +4,8 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/object.h"
-#include "picrin/state.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
 static pic_value
 var_get(pic_state *pic, pic_value var)

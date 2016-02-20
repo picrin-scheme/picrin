@@ -4,8 +4,8 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/object.h"
-#include "picrin/file.h"
+#include "picrin/private/object.h"
+#include "picrin/private/file.h"
 
 #undef EOF
 #define EOF (-1)

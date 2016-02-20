@@ -3,8 +3,8 @@
  */
 
 #include "picrin.h"
-#include "picrin/object.h"
-#include "picrin/state.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
 enum {
   WHITE = 0,

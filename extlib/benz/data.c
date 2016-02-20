@@ -1,5 +1,5 @@
 #include "picrin.h"
-#include "picrin/object.h"
+#include "picrin/private/object.h"
 
 bool
 pic_data_p(pic_state *pic, pic_value obj, const pic_data_type *type)

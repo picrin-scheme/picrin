@@ -4,7 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/object.h"
+#include "picrin/private/object.h"
 
 pic_value
 pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
