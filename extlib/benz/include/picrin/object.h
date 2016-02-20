@@ -17,6 +17,8 @@ KHASH_DECLARE(weak, struct pic_object *, pic_value)
   unsigned char tt;                             \
   char gc_mark;
 
+struct pic_object;              /* defined in gc.c */
+
 struct pic_basic {
   PIC_OBJECT_HEADER
 };
@@ -141,11 +143,11 @@ struct pic_checkpoint {
 #define pic_weak_ptr(pic, o) ((struct pic_weak *)pic_obj_ptr(o))
 #define pic_data_ptr(pic, o) ((struct pic_data *)pic_obj_ptr(o))
 #define pic_proc_ptr(pic, o) ((struct pic_proc *)pic_obj_ptr(o))
+#define pic_env_ptr(pic, o) ((struct pic_env *)pic_obj_ptr(o))
 #define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
 #define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
 #define pic_error_ptr(v) ((struct pic_error *)pic_obj_ptr(v))
 #define pic_port_ptr(v) ((struct pic_port *)pic_obj_ptr(v))
-#define pic_env_ptr(v) ((struct pic_env *)pic_obj_ptr(v))
 
 #define pic_obj_p(pic,v) (pic_vtype(pic,v) == PIC_IVAL_END)
 #define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
@@ -168,16 +170,16 @@ struct pic_object *pic_obj_alloc(pic_state *, size_t, int type);
     if (tolen - at < e - s) pic_errorf(pic, "invalid range");   \
   } while (0)
 
-pic_value pic_make_identifier(pic_state *, pic_value id, struct pic_env *);
+pic_value pic_make_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_context *);
 struct pic_record *pic_make_rec(pic_state *, pic_value, pic_value);
 struct pic_error *pic_make_error(pic_state *, const char *, const char *, pic_value);
-struct pic_env *pic_make_env(pic_state *, struct pic_env *);
+pic_value pic_make_env(pic_state *, pic_value env);
 
-pic_value pic_add_identifier(pic_state *, pic_value id, struct pic_env *);
-pic_value pic_put_identifier(pic_state *, pic_value id, pic_value uid, struct pic_env *);
-pic_value pic_find_identifier(pic_state *, pic_value id, struct pic_env *);
+pic_value pic_add_identifier(pic_state *, pic_value id, pic_value env);
+pic_value pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);
+pic_value pic_find_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_id_name(pic_state *, pic_value id);
 
 void pic_rope_incref(pic_state *, struct pic_rope *);

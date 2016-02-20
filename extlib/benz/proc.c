@@ -890,8 +890,7 @@ pic_defvar(pic_state *pic, const char *name, pic_value init, pic_value conv)
 void
 pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 {
-  pic_value sym, uid;
-  struct pic_env *env;
+  pic_value sym, uid, env;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -907,8 +906,7 @@ pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 pic_value
 pic_ref(pic_state *pic, const char *lib, const char *name)
 {
-  pic_value sym, uid;
-  struct pic_env *env;
+  pic_value sym, uid, env;
 
   sym = pic_intern_cstr(pic, name);
 
@@ -925,8 +923,7 @@ pic_ref(pic_state *pic, const char *lib, const char *name)
 void
 pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 {
-  pic_value sym, uid;
-  struct pic_env *env;
+  pic_value sym, uid, env;
 
   sym = pic_intern_cstr(pic, name);
 

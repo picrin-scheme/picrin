@@ -51,10 +51,8 @@ typedef struct {
 } pic_value;
 #endif
 
-struct pic_object;
 struct pic_port;
 struct pic_error;
-struct pic_env;
 
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 
@@ -291,9 +289,9 @@ void pic_close_port(pic_state *, struct pic_port *port);
 pic_value pic_read(pic_state *, struct pic_port *);
 pic_value pic_read_cstr(pic_state *, const char *);
 
-pic_value pic_expand(pic_state *, pic_value, struct pic_env *);
+pic_value pic_expand(pic_state *, pic_value program, pic_value env);
 
-pic_value pic_eval(pic_state *, pic_value, const char *);
+pic_value pic_eval(pic_state *, pic_value program, const char *lib);
 
 void pic_load(pic_state *, struct pic_port *);
 void pic_load_cstr(pic_state *, const char *);
@@ -360,7 +358,7 @@ void pic_fprintf(pic_state *, struct pic_port *, const char *, ...);
 pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
-struct pic_env *pic_library_environment(pic_state *, const char *);
+pic_value pic_library_environment(pic_state *, const char *);
 
 #if DEBUG
 # define pic_debug(pic,obj) pic_fwrite(pic,obj,xstderr)

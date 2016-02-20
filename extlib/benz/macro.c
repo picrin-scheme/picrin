@@ -7,30 +7,29 @@
 
 KHASH_DEFINE(env, pic_id *, pic_sym *, kh_ptr_hash_func, kh_ptr_hash_equal)
 
-struct pic_env *
-pic_make_env(pic_state *pic, struct pic_env *up)
+pic_value
+pic_make_env(pic_state *pic, pic_value up)
 {
   struct pic_env *env;
 
-  assert(up != NULL);
-
   env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
-  env->up = up;
+  env->up = pic_env_ptr(pic, up);
   env->lib = NULL;
   kh_init(env, &env->map);
-  return env;
+
+  return pic_obj_value(env);
 }
 
 pic_value
-pic_add_identifier(pic_state *pic, pic_value id, struct pic_env *env)
+pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
 {
   const char *name;
   pic_value uid, str;
 
   name = pic_str(pic, pic_id_name(pic, id));
 
-  if (env->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
-    str = pic_strf_value(pic, "%s/%s", pic_str(pic, pic_obj_value(env->lib)), name);
+  if (pic_env_ptr(pic, env)->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
+    str = pic_strf_value(pic, "~a/%s", pic_obj_value(pic_env_ptr(pic, env)->lib), name);
   } else {
     str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
   }
@@ -40,55 +39,63 @@ pic_add_identifier(pic_state *pic, pic_value id, struct pic_env *env)
 }
 
 pic_value
-pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, struct pic_env *env)
+pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
 {
   khiter_t it;
   int ret;
 
-  it = kh_put(env, &env->map, pic_id_ptr(pic, id), &ret);
-  kh_val(&env->map, it) = pic_sym_ptr(pic, uid);
+  it = kh_put(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id), &ret);
+  kh_val(&pic_env_ptr(pic, env)->map, it) = pic_sym_ptr(pic, uid);
 
   return uid;
 }
 
 static bool
-search_scope(pic_state *pic, pic_value id, struct pic_env *env, pic_value *uid)
+search_scope(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
 {
   khiter_t it;
 
-  it = kh_get(env, &env->map, pic_id_ptr(pic, id));
-  if (it == kh_end(&env->map)) {
+  it = kh_get(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id));
+  if (it == kh_end(&pic_env_ptr(pic, env)->map)) {
     return false;
   }
-  *uid = pic_obj_value(kh_val(&env->map, it));
+  *uid = pic_obj_value(kh_val(&pic_env_ptr(pic, env)->map, it));
   return true;
 }
 
 static bool
-search(pic_state *pic, pic_value id, struct pic_env *env, pic_value *uid)
+search(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
 {
-  while (env != NULL) {
-    if (search_scope(pic, id, env, uid)) {
+  struct pic_env *e;
+
+  while (1) {
+    if (search_scope(pic, id, env, uid))
       return true;
-    }
-    env = env->up;
+    e = pic_env_ptr(pic, env)->up;
+    if (e == NULL)
+      break;
+    env = pic_obj_value(e);
   }
   return false;
 }
 
 pic_value
-pic_find_identifier(pic_state *pic, pic_value id, struct pic_env *env)
+pic_find_identifier(pic_state *pic, pic_value id, pic_value env)
 {
+  struct pic_env *e;
   pic_value uid;
 
   while (! search(pic, id, env, &uid)) {
     if (pic_sym_p(pic, id)) {
-      while (env->up != NULL) {
-        env = env->up;
+      while (1) {
+        e = pic_env_ptr(pic, env);
+        if (e->up == NULL)
+          break;
+        env = pic_obj_value(e->up);
       }
       return pic_add_identifier(pic, id, env);
     }
-    env = pic_id_ptr(pic, id)->env;              /* do not overwrite id first */
+    env = pic_obj_value(pic_id_ptr(pic, id)->env); /* do not overwrite id first */
     id = pic_obj_value(pic_id_ptr(pic, id)->u.id);
   }
   return uid;
@@ -127,18 +134,18 @@ shadow_macro(pic_state *pic, pic_value uid)
   }
 }
 
-static pic_value expand(pic_state *, pic_value, struct pic_env *, pic_value);
-static pic_value expand_lambda(pic_state *, pic_value, struct pic_env *);
+static pic_value expand(pic_state *, pic_value expr, pic_value env, pic_value deferred);
+static pic_value expand_lambda(pic_state *, pic_value expr, pic_value env);
 
 static pic_value
-expand_var(pic_state *pic, pic_value id, struct pic_env *env, pic_value deferred)
+expand_var(pic_state *pic, pic_value id, pic_value env, pic_value deferred)
 {
   pic_value mac, functor;
 
   functor = pic_find_identifier(pic, id, env);
 
   if (find_macro(pic, functor, &mac)) {
-    return expand(pic, pic_call(pic, mac, 2, id, pic_obj_value(env)), env, deferred);
+    return expand(pic, pic_call(pic, mac, 2, id, env), env, deferred);
   }
   return functor;
 }
@@ -150,7 +157,7 @@ expand_quote(pic_state *pic, pic_value expr)
 }
 
 static pic_value
-expand_list(pic_state *pic, pic_value obj, struct pic_env *env, pic_value deferred)
+expand_list(pic_state *pic, pic_value obj, pic_value env, pic_value deferred)
 {
   size_t ai = pic_enter(pic);
   pic_value x, head, tail;
@@ -179,7 +186,7 @@ expand_defer(pic_state *pic, pic_value expr, pic_value deferred)
 }
 
 static void
-expand_deferred(pic_state *pic, pic_value deferred, struct pic_env *env)
+expand_deferred(pic_state *pic, pic_value deferred, pic_value env)
 {
   pic_value defer, val, src, dst, it;
 
@@ -198,10 +205,10 @@ expand_deferred(pic_state *pic, pic_value deferred, struct pic_env *env)
 }
 
 static pic_value
-expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
+expand_lambda(pic_state *pic, pic_value expr, pic_value env)
 {
   pic_value formal, body;
-  struct pic_env *in;
+  pic_value in;
   pic_value a, deferred;
 
   in = pic_make_env(pic, env);
@@ -224,7 +231,7 @@ expand_lambda(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 static pic_value
-expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
+expand_define(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 {
   pic_value id, uid, val;
 
@@ -240,7 +247,7 @@ expand_define(pic_state *pic, pic_value expr, struct pic_env *env, pic_value def
 }
 
 static pic_value
-expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
+expand_defmacro(pic_state *pic, pic_value expr, pic_value env)
 {
   pic_value pic_compile(pic_state *, pic_value);
   pic_value id, uid, val;
@@ -261,7 +268,7 @@ expand_defmacro(pic_state *pic, pic_value expr, struct pic_env *env)
 }
 
 static pic_value
-expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
+expand_node(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 {
   switch (pic_type(pic, expr)) {
   case PIC_TYPE_ID:
@@ -294,7 +301,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
       }
 
       if (find_macro(pic, functor, &mac)) {
-        return expand(pic, pic_call(pic, mac, 2, expr, pic_obj_value(env)), env, deferred);
+        return expand(pic, pic_call(pic, mac, 2, expr, env), env, deferred);
       }
     }
     return expand_list(pic, expr, env, deferred);
@@ -305,7 +312,7 @@ expand_node(pic_state *pic, pic_value expr, struct pic_env *env, pic_value defer
 }
 
 static pic_value
-expand(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
+expand(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 {
   size_t ai = pic_enter(pic);
   pic_value v;
@@ -318,7 +325,7 @@ expand(pic_state *pic, pic_value expr, struct pic_env *env, pic_value deferred)
 }
 
 pic_value
-pic_expand(pic_state *pic, pic_value expr, struct pic_env *env)
+pic_expand(pic_state *pic, pic_value expr, pic_value env)
 {
   pic_value v, deferred;
 

@@ -876,8 +876,7 @@ pic_value
 pic_eval(pic_state *pic, pic_value program, const char *lib)
 {
   const char *prev_lib = pic_current_library(pic);
-  struct pic_env *env;
-  pic_value r;
+  pic_value env, r;
 
   env = pic_library_environment(pic, lib);
 

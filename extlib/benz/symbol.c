@@ -35,13 +35,13 @@ pic_intern(pic_state *pic, pic_value str)
 }
 
 pic_value
-pic_make_identifier(pic_state *pic, pic_value base, struct pic_env *env)
+pic_make_identifier(pic_state *pic, pic_value base, pic_value env)
 {
   pic_id *id;
 
   id = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TYPE_ID);
   id->u.id = pic_id_ptr(pic, base);
-  id->env = env;
+  id->env = pic_env_ptr(pic, env);
 
   return pic_obj_value(id);
 }
@@ -131,7 +131,7 @@ pic_symbol_make_identifier(pic_state *pic)
   pic_assert_type(pic, id, id);
   pic_assert_type(pic, env, env);
 
-  return pic_make_identifier(pic, id, pic_env_ptr(env));
+  return pic_make_identifier(pic, id, env);
 }
 
 static pic_value
