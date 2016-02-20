@@ -146,8 +146,7 @@ struct pic_checkpoint {
 #define pic_env_ptr(pic, o) ((struct pic_env *)pic_obj_ptr(o))
 #define pic_port_ptr(pic, o) ((struct pic_port *)pic_obj_ptr(o))
 #define pic_error_ptr(pic, o) ((struct pic_error *)pic_obj_ptr(o))
-#define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
-#define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
+#define pic_rec_ptr(pic, o) ((struct pic_record *)pic_obj_ptr(o))
 
 #define pic_obj_p(pic,v) (pic_vtype(pic,v) == PIC_IVAL_END)
 #define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
@@ -175,7 +174,7 @@ pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct pic_irep *, struct pic_context *);
 pic_value pic_make_env(pic_state *, pic_value env);
 pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs);
-struct pic_record *pic_make_rec(pic_state *, pic_value, pic_value);
+pic_value pic_make_rec(pic_state *, pic_value type, pic_value datum);
 
 pic_value pic_add_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);

@@ -137,16 +137,21 @@ find_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 static void
 define_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 {
-  if (search_scope(pic, scope, sym)) {
-    if (scope->depth > 0 || pic_weak_has(pic, pic->globals, sym)) {
+  if (scope->depth > 0) {
+    /* local */
+    if (search_scope(pic, scope, sym)) {
       pic_warnf(pic, "redefining variable: ~s", sym);
+      return;
     }
-    return;
+    pic_dict_set(pic, scope->locals, sym, pic_true_value(pic));
+  } else {
+    /* global */
+    if (pic_weak_has(pic, pic->globals, sym)) {
+      pic_warnf(pic, "redefining variable: ~s", sym);
+      return;
+    }
+    pic_weak_set(pic, pic->globals, sym, pic_invalid_value());
   }
-
-  pic_weak_set(pic, pic->globals, sym, pic_invalid_value());
-
-  pic_dict_set(pic, scope->locals, sym, pic_true_value(pic));
 }
 
 static pic_value analyze(pic_state *, analyze_scope *, pic_value);

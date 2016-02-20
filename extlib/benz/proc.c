@@ -27,10 +27,11 @@
  *  l   pic_value *             lambda object
  *  p   pic_value *             port object
  *  d   pic_value *             dictionary object
- *  r   struct pic_record **    record object
+ *  r   pic_value *             record object
  *
  *  |                           optional operator
- *  *   int *, pic_value **  variable length operator
+ *  *   int *, pic_value **     variable length operator
+ * ---- ----                    ----
  */
 
 int
@@ -143,11 +144,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
     VAL_CASE('c', char, char, pic_char(pic, v))
     VAL_CASE('z', str, const char *, pic_str(pic, v))
 
-#define PTR_CASE(c, type, ctype)                        \
-      VAL_CASE(c, type, ctype, pic_## type ##_ptr(v))
-
-    PTR_CASE('r', rec, struct pic_record *)
-
 #define OBJ_CASE(c, type) VAL_CASE(c, type, pic_value, v)
 
     OBJ_CASE('m', sym)
@@ -157,6 +153,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
     OBJ_CASE('v', vec)
     OBJ_CASE('d', dict)
     OBJ_CASE('p', port)
+    OBJ_CASE('r', rec)
 
     default:
       pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
@@ -182,6 +179,9 @@ vm_gref(pic_state *pic, pic_value uid)
 {
   pic_value val;
 
+  if (! pic_weak_has(pic, pic->globals, uid)) {
+    pic_errorf(pic, "undefined variable ~s", uid);
+  }
   val = pic_weak_ref(pic, pic->globals, uid);;
   if (pic_invalid_p(pic, val)) {
     pic_errorf(pic, "uninitialized global variable: ~s", uid);
@@ -192,6 +192,9 @@ vm_gref(pic_state *pic, pic_value uid)
 static void
 vm_gset(pic_state *pic, pic_value uid, pic_value value)
 {
+  if (! pic_weak_has(pic, pic->globals, uid)) {
+    pic_errorf(pic, "undefined variable ~s", uid);
+  }
   pic_weak_set(pic, pic->globals, uid, value);
 }
 
@@ -904,35 +907,25 @@ pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 pic_value
 pic_ref(pic_state *pic, const char *lib, const char *name)
 {
-  pic_value sym, uid, env;
+  pic_value sym, env;
 
   sym = pic_intern_cstr(pic, name);
 
   env = pic_library_environment(pic, lib);
 
-  uid = pic_find_identifier(pic, sym, env);
-  if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
-  }
-
-  return vm_gref(pic, uid);
+  return vm_gref(pic, pic_find_identifier(pic, sym, env));
 }
 
 void
 pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 {
-  pic_value sym, uid, env;
+  pic_value sym, env;
 
   sym = pic_intern_cstr(pic, name);
 
   env = pic_library_environment(pic, lib);
 
-  uid = pic_find_identifier(pic, sym, env);
-  if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_errorf(pic, "symbol \"%s\" not defined in library %s", name, lib);
-  }
-
-  vm_gset(pic, uid, val);
+  vm_gset(pic, pic_find_identifier(pic, sym, env), val);
 }
 
 pic_value
