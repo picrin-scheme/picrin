@@ -844,7 +844,7 @@ pic_read(pic_state *pic, pic_value port)
 pic_value
 pic_read_cstr(pic_state *pic, const char *str)
 {
-  pic_value port = pic_make_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
+  pic_value port = pic_open_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
   pic_value form;
 
   pic_try {

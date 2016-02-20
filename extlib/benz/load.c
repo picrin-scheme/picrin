@@ -20,7 +20,7 @@ pic_load(pic_state *pic, pic_value port)
 void
 pic_load_cstr(pic_state *pic, const char *str)
 {
-  pic_value port = pic_make_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
+  pic_value port = pic_open_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
 
   pic_try {
     pic_load(pic, port);

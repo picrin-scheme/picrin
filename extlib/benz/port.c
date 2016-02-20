@@ -9,7 +9,7 @@
 #define EOF (-1)
 
 pic_value
-pic_make_port(pic_state *pic, xFILE *file)
+pic_open_port(pic_state *pic, xFILE *file)
 {
   struct pic_port *port;
 
@@ -142,7 +142,7 @@ pic_port_open_input_bytevector(pic_state *pic)
 
   buf = pic_blob(pic, blob, &len);
 
-  return pic_make_port(pic, xfopen_buf(pic, (char *)buf, len, "r"));
+  return pic_open_port(pic, xfopen_buf(pic, (char *)buf, len, "r"));
 }
 
 static pic_value
@@ -150,7 +150,7 @@ pic_port_open_output_bytevector(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_make_port(pic, xfopen_buf(pic, NULL, 0, "w"));
+  return pic_open_port(pic, xfopen_buf(pic, NULL, 0, "w"));
 }
 
 static pic_value
@@ -337,7 +337,7 @@ coerce_port(pic_state *pic)
 }
 
 #define DEFINE_PORT(pic, name, file)                                    \
-  pic_defvar(pic, name, pic_make_port(pic, file), coerce)
+  pic_defvar(pic, name, pic_open_port(pic, file), coerce)
 
 void
 pic_init_port(pic_state *pic)

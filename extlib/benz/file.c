@@ -252,10 +252,6 @@ size_t xfwrite(pic_state *pic, const void *ptr, size_t size, size_t count, xFILE
   return count;
 }
 
-#define XSEEK_CUR 0
-#define XSEEK_END 1
-#define XSEEK_SET 2
-
 long xfseek(pic_state *pic, xFILE *fp, long offset, int whence) {
   long s;
 

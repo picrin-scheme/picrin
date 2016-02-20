@@ -20,7 +20,7 @@ pic_load_load(pic_state *pic)
     pic_errorf(pic, "load: could not open file %s", fn);
   }
 
-  port = pic_make_port(pic, xfopen_file(pic, fp, "r"));
+  port = pic_open_port(pic, xfopen_file(pic, fp, "r"));
 
   pic_load(pic, port);
 

@@ -10,9 +10,9 @@ extern "C" {
 #endif
 
 #include "picrin/khash.h"
+#include "picrin/file.h"
 
 #include "picrin/irep.h"
-#include "picrin/file.h"
 #include "picrin/read.h"
 #include "picrin/gc.h"
 

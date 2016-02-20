@@ -20,7 +20,7 @@ open_file(pic_state *pic, const char *fname, const char *mode)
   if ((fp = fopen(fname, mode)) == NULL) {
     file_error(pic, "could not open file...");
   }
-  return pic_make_port(pic, xfopen_file(pic, fp, mode));
+  return pic_open_port(pic, xfopen_file(pic, fp, mode));
 }
 
 pic_value

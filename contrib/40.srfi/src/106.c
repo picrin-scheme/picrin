@@ -331,7 +331,7 @@ make_socket_port(pic_state *pic, struct pic_socket_t *sock, const char *mode)
     fp = xfunopen(pic, sock, 0, xf_socket_write, xf_socket_seek, xf_socket_close);
   }
 
-  return pic_make_port(pic, fp);
+  return pic_open_port(pic, fp);
 }
 
 static pic_value

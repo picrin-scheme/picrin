@@ -107,6 +107,12 @@ pic_value pic_vcall(pic_state *, pic_value proc, int, va_list);
 pic_value pic_apply(pic_state *, pic_value proc, int n, pic_value *argv);
 pic_value pic_applyk(pic_state *, pic_value proc, int n, pic_value *argv);
 
+typedef struct xFILE xFILE;
+
+pic_value pic_open_port(pic_state *, xFILE *file);
+xFILE *pic_fileno(pic_state *, pic_value port);
+void pic_close_port(pic_state *, pic_value port);
+
 PIC_INLINE int pic_int(pic_state *, pic_value i);
 PIC_INLINE double pic_float(pic_state *, pic_value f);
 PIC_INLINE char pic_char(pic_state *, pic_value c);
@@ -255,6 +261,35 @@ int pic_str_cmp(pic_state *, pic_value str1, pic_value str2);
 int pic_str_hash(pic_state *, pic_value str);
 
 
+
+/* External I/O */
+
+#define XSEEK_CUR 0
+#define XSEEK_END 1
+#define XSEEK_SET 2
+
+xFILE *xfunopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
+size_t xfread(pic_state *, void *ptr, size_t size, size_t count, xFILE *fp);
+size_t xfwrite(pic_state *, const void *ptr, size_t size, size_t count, xFILE *fp);
+long xfseek(pic_state *, xFILE *fp, long offset, int whence);
+int xfclose(pic_state *, xFILE *fp);
+
+void xclearerr(pic_state *, xFILE *fp);
+int xfeof(pic_state *, xFILE *fp);
+int xferror(pic_state *, xFILE *fp);
+
+int xfputc(pic_state *, int c, xFILE *fp);
+int xfgetc(pic_state *, xFILE *fp);
+int xfputs(pic_state *, const char *s, xFILE *fp);
+char *xfgets(pic_state *, char *s, int size, xFILE *fp);
+int xungetc(pic_state *, int c, xFILE *fp);
+int xfflush(pic_state *, xFILE *fp);
+
+int xfprintf(pic_state *, xFILE *fp, const char *fmt, ...);
+int xvfprintf(pic_state *, xFILE *fp, const char *fmt, va_list);
+
+
+
 /* extra stuff */
 
 
@@ -272,15 +307,23 @@ void *pic_default_allocf(void *, void *, size_t);
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-pic_value pic_make_port(pic_state *, xFILE *file);
-void pic_close_port(pic_state *, pic_value port);
+#define xstdin  (&pic->files[0])
+#define xstdout (&pic->files[1])
+#define xstderr (&pic->files[2])
+
+#if PIC_ENABLE_STDIO
+xFILE *xfopen_file(pic_state *, FILE *, const char *mode);
+#endif
+xFILE *xfopen_buf(pic_state *, const char *buf, int len, const char *mode);
+int xfget_buf(pic_state *, xFILE *file, const char **buf, int *len);
+xFILE *xfopen_null(pic_state *, const char *mode);
 
 #define pic_void(exec)                          \
   pic_void_(PIC_GENSYM(ai), exec)
 #define pic_void_(ai,exec) do {                 \
-    size_t ai = pic_enter(pic);     \
+    size_t ai = pic_enter(pic);                 \
     exec;                                       \
-    pic_leave(pic, ai);              \
+    pic_leave(pic, ai);                         \
   } while (0)
 
 pic_value pic_read(pic_state *, pic_value port);
@@ -347,8 +390,6 @@ void pic_print_backtrace(pic_state *, xFILE *);
 #define pic_stdin(pic) pic_funcall(pic, "picrin.base", "current-input-port", 0)
 #define pic_stdout(pic) pic_funcall(pic, "picrin.base", "current-output-port", 0)
 #define pic_stderr(pic) pic_funcall(pic, "picrin.base", "current-error-port", 0)
-
-xFILE *pic_fileno(pic_state *, pic_value port);
 
 pic_value pic_write(pic_state *, pic_value); /* returns given obj */
 pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
