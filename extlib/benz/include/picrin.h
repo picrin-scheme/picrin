@@ -307,9 +307,13 @@ void *pic_default_allocf(void *, void *, size_t);
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-#define xstdin  (&pic->files[0])
-#define xstdout (&pic->files[1])
-#define xstderr (&pic->files[2])
+xFILE *xfile_xstdin(pic_state *);
+xFILE *xfile_xstdout(pic_state *);
+xFILE *xfile_xstderr(pic_state *);
+
+#define xstdin  (xfile_xstdin(pic))
+#define xstdout (xfile_xstdout(pic))
+#define xstderr (xfile_xstderr(pic))
 
 #if PIC_ENABLE_STDIO
 xFILE *xfopen_file(pic_state *, FILE *, const char *mode);
@@ -347,9 +351,6 @@ bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
     pic_in_library(pic, lib);                   \
   } while (0)
 
-void pic_save_point(pic_state *, struct pic_cont *);
-void pic_load_point(pic_state *, struct pic_cont *);
-
 pic_value pic_make_cont(pic_state *, struct pic_cont *);
 
 void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
@@ -365,6 +366,8 @@ void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
     extern void pic_push_handler(pic_state *, pic_value proc);          \
     extern pic_value pic_pop_handler(pic_state *);                      \
     extern pic_value pic_native_exception_handler(pic_state *);         \
+    extern void pic_save_point(pic_state *, struct pic_cont *);         \
+    extern void pic_exit_point(pic_state *);                            \
     struct pic_cont cont;                                               \
     pic_save_point(pic, &cont);                                         \
     if (PIC_SETJMP(pic, cont.jmp) == 0) {                               \
@@ -375,7 +378,7 @@ void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
 #define pic_catch_(label)                                 \
         pic_pop_handler(pic);                             \
       } while (0);                                        \
-      pic->cc = pic->cc->prev;                            \
+      pic_exit_point(pic);                                \
     } else {                                              \
       goto label;                                         \
     }                                                     \

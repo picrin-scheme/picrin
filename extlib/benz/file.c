@@ -355,6 +355,10 @@ int xvfprintf(pic_state *pic, xFILE *stream, const char *fmt, va_list ap) {
   return cnt;
 }
 
+xFILE *xfile_xstdin(pic_state *pic) { return &pic->files[0]; }
+xFILE *xfile_xstdout(pic_state *pic) { return &pic->files[1]; }
+xFILE *xfile_xstderr(pic_state *pic) { return &pic->files[2]; }
+
 #if PIC_ENABLE_STDIO
 
 static int

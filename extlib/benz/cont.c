@@ -41,6 +41,12 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
 }
 
 void
+pic_exit_point(pic_state *pic)
+{
+  pic->cc = pic->cc->prev;
+}
+
+void
 pic_wind(pic_state *pic, struct pic_checkpoint *here, struct pic_checkpoint *there)
 {
   if (here == there)
@@ -140,7 +146,7 @@ pic_callcc(pic_state *pic, pic_value proc)
 
     val = pic_call(pic, proc, 1, pic_make_cont(pic, &cont));
 
-    pic->cc = pic->cc->prev;
+    pic_exit_point(pic);
 
     return val;
   }
