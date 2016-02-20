@@ -104,7 +104,7 @@
 #if __STDC_VERSION__ >= 199901L
 # include <stddef.h>
 #elif ! defined(offsetof)
-# define offsetof(s,m) ((size_t)&(((s *)NULL)->m))
+# define offsetof(s,m) ((size_t)(&(((s *)0)->m) - 0))
 #endif
 
 #if __STDC_VERSION__ >= 199901L
