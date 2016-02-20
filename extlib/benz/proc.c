@@ -21,13 +21,13 @@
  *  c   char *                  char
  *  z   char **                 c string
  *  m   pic_value *             symbol
- *  v   pic_value *             vector object
- *  s   pic_value *             string object
- *  b   pic_value *             bytevector object
- *  l   pic_value *             lambda object
- *  p   pic_value *             port object
- *  d   pic_value *             dictionary object
- *  r   pic_value *             record object
+ *  v   pic_value *             vector
+ *  s   pic_value *             string
+ *  b   pic_value *             bytevector
+ *  l   pic_value *             lambda
+ *  p   pic_value *             port
+ *  d   pic_value *             dictionary
+ *  r   pic_value *             record
  *
  *  |                           optional operator
  *  *   int *, pic_value **     variable length operator

@@ -49,14 +49,6 @@ static const pic_data_type socket_type = { "socket", socket_dtor, NULL };
 #define pic_socket_p(pic, o) (pic_data_type_p(pic, (o), &socket_type))
 #define pic_socket_data(pic, o) ((struct pic_socket_t *)pic_data(pic, o))
 
-PIC_INLINE void
-validate_socket_object(pic_state *pic, pic_value v)
-{
-  if (! pic_socket_p(pic, v)) {
-    pic_errorf(pic, "~s is not a socket object", v);
-  }
-}
-
 static pic_value
 pic_socket_socket_p(pic_state *pic)
 {
@@ -152,7 +144,7 @@ pic_socket_socket_accept(pic_state *pic)
   struct pic_socket_t *sock, *new_sock;
 
   pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
 
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
@@ -191,7 +183,7 @@ pic_socket_socket_send(pic_state *pic)
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "ob|i", &obj, &bv, &flags);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
 
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
@@ -229,7 +221,7 @@ pic_socket_socket_recv(pic_state *pic)
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "oi|i", &obj, &size, &flags);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
   if (size < 0) {
     pic_errorf(pic, "size must not be negative");
   }
@@ -263,7 +255,7 @@ pic_socket_socket_shutdown(pic_state *pic)
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "oi", &obj, &how);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
 
   sock = pic_socket_data(pic, obj);
   if (sock->fd != -1) {
@@ -280,7 +272,7 @@ pic_socket_socket_close(pic_state *pic)
   pic_value obj;
 
   pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
 
   socket_close(pic_socket_data(pic, obj));
 
@@ -341,7 +333,7 @@ pic_socket_socket_input_port(pic_state *pic)
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
 
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
@@ -356,7 +348,7 @@ pic_socket_socket_output_port(pic_state *pic)
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
 
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
@@ -371,7 +363,7 @@ pic_socket_call_with_socket(pic_state *pic)
   struct pic_socket_t *sock;
 
   pic_get_args(pic, "ol", &obj, &proc);
-  validate_socket_object(pic, obj);
+  pic_assert_type(pic, obj, socket);
 
   sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);

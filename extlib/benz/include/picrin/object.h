@@ -193,6 +193,8 @@ void pic_rope_decref(pic_state *, struct pic_rope *);
 #define pic_proc_func_p(proc) ((proc)->tag == PIC_PROC_TAG_FUNC)
 #define pic_proc_irep_p(proc) ((proc)->tag == PIC_PROC_TAG_IREP)
 
+void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
+
 
 #if defined(__cplusplus)
 }

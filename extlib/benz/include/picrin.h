@@ -82,6 +82,7 @@ void pic_set(pic_state *, const char *lib, const char *name, pic_value v);
 pic_value pic_closure_ref(pic_state *, int i);
 void pic_closure_set(pic_state *, int i, pic_value v);
 pic_value pic_funcall(pic_state *, const char *lib, const char *name, int n, ...);
+pic_value pic_make_var(pic_state *, pic_value init, pic_value conv);
 
 pic_value pic_return(pic_state *, int n, ...);
 pic_value pic_vreturn(pic_state *, int n, va_list);
@@ -337,8 +338,6 @@ pic_value pic_eval(pic_state *, pic_value program, const char *lib);
 void pic_load(pic_state *, pic_value port);
 void pic_load_cstr(pic_state *, const char *);
 
-pic_value pic_make_var(pic_state *, pic_value init, pic_value conv);
-
 bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
 
 #define pic_deflibrary(pic, lib) do {           \
@@ -348,10 +347,6 @@ bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
     pic_in_library(pic, lib);                   \
   } while (0)
 
-pic_value pic_make_cont(pic_state *, struct pic_cont *);
-
-void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
-
 /* do not return from try block! */
 
 #define pic_try                                 \
@@ -360,6 +355,7 @@ void pic_wind(pic_state *, struct pic_checkpoint *, struct pic_checkpoint *);
   pic_catch_(PIC_GENSYM(label))
 #define pic_try_(cont, handler)                                         \
   do {                                                                  \
+    extern pic_value pic_make_cont(pic_state *, struct pic_cont *);     \
     extern void pic_push_handler(pic_state *, pic_value proc);          \
     extern pic_value pic_pop_handler(pic_state *);                      \
     extern pic_value pic_native_exception_handler(pic_state *);         \
