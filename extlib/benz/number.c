@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 static pic_value
 pic_number_number_p(pic_state *pic)

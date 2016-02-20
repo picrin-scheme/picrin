@@ -12,6 +12,7 @@ print <<EOL;
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 EOL
 

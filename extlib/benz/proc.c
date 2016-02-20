@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 #include "picrin/object.h"
 #include "picrin/opcode.h"
 #include "picrin/state.h"

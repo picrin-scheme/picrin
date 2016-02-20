@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 void
 pic_load(pic_state *pic, pic_value port)

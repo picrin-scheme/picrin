@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 #define UTC_TAI_DIFF 35
 

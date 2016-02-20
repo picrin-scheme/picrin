@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 extern int picrin_argc;
 extern char **picrin_argv;

@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 void
 pic_init_picrin(pic_state *pic)

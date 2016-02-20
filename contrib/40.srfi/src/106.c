@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include "picrin/extra.h"
 
 #include <errno.h>
 #include <netdb.h>

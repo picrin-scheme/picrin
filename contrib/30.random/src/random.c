@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include "picrin/extra.h"
 
 double genrand_real3(void);
 
