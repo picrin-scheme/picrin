@@ -12,7 +12,7 @@ file_error(pic_state *pic, const char *msg)
   pic_error(pic, "file", msg, pic_nil_value(pic));
 }
 
-static struct pic_port *
+static pic_value
 open_file(pic_state *pic, const char *fname, const char *mode)
 {
   FILE *fp;
@@ -30,7 +30,7 @@ pic_file_open_input_file(pic_state *pic)
 
   pic_get_args(pic, "z", &fname);
 
-  return pic_obj_value(open_file(pic, fname, "r"));
+  return open_file(pic, fname, "r");
 }
 
 pic_value
@@ -40,7 +40,7 @@ pic_file_open_output_file(pic_state *pic)
 
   pic_get_args(pic, "z", &fname);
 
-  return pic_obj_value(open_file(pic, fname, "w"));
+  return open_file(pic, fname, "w");
 }
 
 pic_value

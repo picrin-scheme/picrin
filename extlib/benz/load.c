@@ -5,7 +5,7 @@
 #include "picrin.h"
 
 void
-pic_load(pic_state *pic, struct pic_port *port)
+pic_load(pic_state *pic, pic_value port)
 {
   pic_value form;
   size_t ai = pic_enter(pic);
@@ -20,7 +20,7 @@ pic_load(pic_state *pic, struct pic_port *port)
 void
 pic_load_cstr(pic_state *pic, const char *str)
 {
-  struct pic_port *port = pic_make_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
+  pic_value port = pic_make_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
 
   pic_try {
     pic_load(pic, port);

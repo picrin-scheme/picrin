@@ -411,7 +411,7 @@ write(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
 pic_value
 pic_write(pic_state *pic, pic_value obj)
 {
-  return pic_fwrite(pic, obj, pic_stdout(pic)->file);
+  return pic_fwrite(pic, obj, pic_fileno(pic, pic_stdout(pic)));
 }
 
 pic_value
@@ -425,7 +425,7 @@ pic_fwrite(pic_state *pic, pic_value obj, xFILE *file)
 pic_value
 pic_display(pic_state *pic, pic_value obj)
 {
-  return pic_fdisplay(pic, obj, pic_stdout(pic)->file);
+  return pic_fdisplay(pic, obj, pic_fileno(pic, pic_stdout(pic)));
 }
 
 pic_value
@@ -437,63 +437,74 @@ pic_fdisplay(pic_state *pic, pic_value obj, xFILE *file)
 }
 
 void
-pic_printf(pic_state *pic, const char *fmt, ...)
+pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
 {
-  xFILE *file = pic_stdout(pic)->file;
-  va_list ap;
+  xFILE *file = pic_fileno(pic, port);
   pic_value str;
 
-  va_start(ap, fmt);
-
   str = pic_vstrf_value(pic, fmt, ap);
-
-  va_end(ap);
 
   xfprintf(pic, file, "%s", pic_str(pic, str));
   xfflush(pic, file);
 }
 
+void
+pic_fprintf(pic_state *pic, pic_value port, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  pic_vfprintf(pic, port, fmt, ap);
+  va_end(ap);
+}
+
+void
+pic_printf(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  pic_vfprintf(pic, pic_stdout(pic), fmt, ap);
+  va_end(ap);
+}
+
 static pic_value
 pic_write_write(pic_state *pic)
 {
-  pic_value v;
-  struct pic_port *port = pic_stdout(pic);
+  pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write(pic, v, port->file, WRITE_MODE, OP_WRITE);
+  write(pic, v, pic_fileno(pic, port), WRITE_MODE, OP_WRITE);
   return pic_undef_value(pic);
 }
 
 static pic_value
 pic_write_write_simple(pic_state *pic)
 {
-  pic_value v;
-  struct pic_port *port = pic_stdout(pic);
+  pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write(pic, v, port->file, WRITE_MODE, OP_WRITE_SIMPLE);
+  write(pic, v, pic_fileno(pic, port), WRITE_MODE, OP_WRITE_SIMPLE);
   return pic_undef_value(pic);
 }
 
 static pic_value
 pic_write_write_shared(pic_state *pic)
 {
-  pic_value v;
-  struct pic_port *port = pic_stdout(pic);
+  pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write(pic, v, port->file, WRITE_MODE, OP_WRITE_SHARED);
+  write(pic, v, pic_fileno(pic, port), WRITE_MODE, OP_WRITE_SHARED);
   return pic_undef_value(pic);
 }
 
 static pic_value
 pic_write_display(pic_state *pic)
 {
-  pic_value v;
-  struct pic_port *port = pic_stdout(pic);
+  pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write(pic, v, port->file, DISPLAY_MODE, OP_WRITE);
+  write(pic, v, pic_fileno(pic, port), DISPLAY_MODE, OP_WRITE);
   return pic_undef_value(pic);
 }
 

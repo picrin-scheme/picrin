@@ -144,10 +144,10 @@ struct pic_checkpoint {
 #define pic_data_ptr(pic, o) ((struct pic_data *)pic_obj_ptr(o))
 #define pic_proc_ptr(pic, o) ((struct pic_proc *)pic_obj_ptr(o))
 #define pic_env_ptr(pic, o) ((struct pic_env *)pic_obj_ptr(o))
+#define pic_port_ptr(pic, o) ((struct pic_port *)pic_obj_ptr(o))
 #define pic_context_ptr(o) ((struct pic_context *)pic_obj_ptr(o))
 #define pic_rec_ptr(v) ((struct pic_record *)pic_obj_ptr(v))
 #define pic_error_ptr(v) ((struct pic_error *)pic_obj_ptr(v))
-#define pic_port_ptr(v) ((struct pic_port *)pic_obj_ptr(v))
 
 #define pic_obj_p(pic,v) (pic_vtype(pic,v) == PIC_IVAL_END)
 #define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)

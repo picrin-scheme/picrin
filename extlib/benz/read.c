@@ -818,11 +818,11 @@ pic_reader_destroy(pic_state *pic)
 }
 
 pic_value
-pic_read(pic_state *pic, struct pic_port *port)
+pic_read(pic_state *pic, pic_value port)
 {
   size_t ai = pic_enter(pic);
   pic_value val;
-  xFILE *file = port->file;
+  xFILE *file = pic_fileno(pic, port);
   int c;
 
   while ((c = skip(pic, file, next(pic, file))) != EOF) {
@@ -844,7 +844,7 @@ pic_read(pic_state *pic, struct pic_port *port)
 pic_value
 pic_read_cstr(pic_state *pic, const char *str)
 {
-  struct pic_port *port = pic_make_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
+  pic_value port = pic_make_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
   pic_value form;
 
   pic_try {
@@ -863,7 +863,7 @@ pic_read_cstr(pic_state *pic, const char *str)
 static pic_value
 pic_read_read(pic_state *pic)
 {
-  struct pic_port *port = pic_stdin(pic);
+  pic_value port = pic_stdin(pic);
 
   pic_get_args(pic, "|p", &port);
 

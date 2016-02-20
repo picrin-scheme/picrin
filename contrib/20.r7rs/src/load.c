@@ -9,9 +9,8 @@
 static pic_value
 pic_load_load(pic_state *pic)
 {
-  pic_value envid;
+  pic_value envid, port;
   char *fn;
-  struct pic_port *port;
   FILE *fp;
 
   pic_get_args(pic, "z|o", &fn, &envid);

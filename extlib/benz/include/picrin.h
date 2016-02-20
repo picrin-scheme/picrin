@@ -51,7 +51,6 @@ typedef struct {
 } pic_value;
 #endif
 
-struct pic_port;
 struct pic_error;
 
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
@@ -275,8 +274,8 @@ void *pic_default_allocf(void *, void *, size_t);
     pic_errorf(pic, "expected " #type ", but got ~s", v);       \
   }
 
-struct pic_port *pic_make_port(pic_state *, xFILE *file);
-void pic_close_port(pic_state *, struct pic_port *port);
+pic_value pic_make_port(pic_state *, xFILE *file);
+void pic_close_port(pic_state *, pic_value port);
 
 #define pic_void(exec)                          \
   pic_void_(PIC_GENSYM(ai), exec)
@@ -286,14 +285,14 @@ void pic_close_port(pic_state *, struct pic_port *port);
     pic_leave(pic, ai);              \
   } while (0)
 
-pic_value pic_read(pic_state *, struct pic_port *);
+pic_value pic_read(pic_state *, pic_value port);
 pic_value pic_read_cstr(pic_state *, const char *);
 
 pic_value pic_expand(pic_state *, pic_value program, pic_value env);
 
 pic_value pic_eval(pic_state *, pic_value program, const char *lib);
 
-void pic_load(pic_state *, struct pic_port *);
+void pic_load(pic_state *, pic_value port);
 void pic_load_cstr(pic_state *, const char *);
 
 pic_value pic_make_var(pic_state *, pic_value init, pic_value conv);
@@ -347,14 +346,16 @@ void pic_warnf(pic_state *, const char *, ...);
 pic_value pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);
 
-#define pic_stdin(pic) pic_port_ptr(pic_funcall(pic, "picrin.base", "current-input-port", 0))
-#define pic_stdout(pic) pic_port_ptr(pic_funcall(pic, "picrin.base", "current-output-port", 0))
-#define pic_stderr(pic) pic_port_ptr(pic_funcall(pic, "picrin.base", "current-error-port", 0))
+#define pic_stdin(pic) pic_funcall(pic, "picrin.base", "current-input-port", 0)
+#define pic_stdout(pic) pic_funcall(pic, "picrin.base", "current-output-port", 0)
+#define pic_stderr(pic) pic_funcall(pic, "picrin.base", "current-error-port", 0)
+
+xFILE *pic_fileno(pic_state *, pic_value port);
 
 pic_value pic_write(pic_state *, pic_value); /* returns given obj */
 pic_value pic_fwrite(pic_state *, pic_value, xFILE *);
 void pic_printf(pic_state *, const char *, ...);
-void pic_fprintf(pic_state *, struct pic_port *, const char *, ...);
+void pic_fprintf(pic_state *, pic_value port, const char *, ...);
 pic_value pic_display(pic_state *, pic_value);
 pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
