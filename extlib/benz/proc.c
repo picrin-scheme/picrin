@@ -20,15 +20,17 @@
  *  F   double *, bool *        float with exactness
  *  c   char *                  char
  *  z   char **                 c string
+ *  b   unsigned char *, int *  bytevector
+ *  u   void **, const pic_data_type *  user data type
  *  m   pic_value *             symbol
  *  v   pic_value *             vector
  *  s   pic_value *             string
- *  b   pic_value *             bytevector
  *  l   pic_value *             lambda
  *  p   pic_value *             port
  *  d   pic_value *             dictionary
  *  r   pic_value *             record
  *
+ *  +                           aliasing operator
  *  |                           optional operator
  *  *   int *, pic_value **     variable length operator
  * ---- ----                    ----
@@ -38,34 +40,41 @@ int
 pic_get_args(pic_state *pic, const char *format, ...)
 {
   char c;
+  const char *p = format;
   int paramc = 0, optc = 0;
   int i, argc = pic->ci->argc - 1;
   va_list ap;
-  bool proc = false, rest = false, opt = false;
+  bool proc = 0, rest = 0, opt = 0;
 
   /* parse format */
-  if ((c = *format) != '\0') {
+  if ((c = *p) != '\0') {
     if (c == '&') {
-      proc = true;
-      format++;                 /* forget about '&' */
+      proc = 1;
+      p++;
     }
-    for (paramc = 0, c = *format; c;  c = format[++paramc]) {
+    while ((c = *p++) != '\0') {
+      if (c == '+')
+        continue;
       if (c == '|') {
-        opt = true;
-        break;
+        opt = 1; break;
       } else if (c == '*') {
-        rest = true;
-        break;
+        rest = 1; break;
+      }
+      paramc++;
+    }
+    if (opt) {
+      while ((c = *p++) != '\0') {
+        if (c == '+')
+          continue;
+        if (c == '*') {
+          rest = 1; break;
+        }
+        optc++;
       }
     }
-    for (optc = 0; opt && c; c = format[paramc + opt + ++optc]) {
-      if (c == '*') {
-        rest = true;
-        break;
-      }
-    }
-    assert((opt ? 1 : 0) <= optc); /* at least 1 char after '|'? */
-    assert(format[paramc + opt + optc + rest] == '\0'); /* no extra chars? */
+    if (rest) c = *p++;
+    assert(opt <= optc); /* at least 1 char after '|'? */
+    assert(c == '\0');   /* no extra chars? */
   }
 
   if (argc < paramc || (paramc + optc < argc && ! rest)) {
@@ -80,6 +89,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
     proc = va_arg(ap, pic_value *);
     *proc = GET_OPERAND(pic, 0);
+    format++;                   /* skip '&' */
   }
   for (i = 1; i <= MIN(paramc + optc, argc); ++i) {
 
@@ -94,6 +104,41 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       p = va_arg(ap, pic_value*);
       *p = GET_OPERAND(pic, i);
+      break;
+    }
+
+    case 'u': {
+      void **data;
+      const pic_data_type *type;
+      pic_value v;
+
+      data = va_arg(ap, void **);
+      type = va_arg(ap, const pic_data_type *);
+      v = GET_OPERAND(pic, i);
+      if (pic_data_p(pic, v, type)) {
+        *data = pic_data(pic, v);
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected data type \"%s\", but got ~s", type->type_name, v);
+      }
+      break;
+    }
+
+    case 'b': {
+      unsigned char **buf;
+      int *len;
+      pic_value v;
+
+      buf = va_arg(ap, unsigned char **);
+      len = va_arg(ap, int *);
+      v = GET_OPERAND(pic, i);
+      if (pic_blob_p(pic, v)) {
+        unsigned char *tmp = pic_blob(pic, v, len);
+        if (buf) *buf = tmp;
+      }
+      else {
+        pic_errorf(pic, "pic_get_args: expected bytevector, but got ~s", v);
+      }
       break;
     }
 
@@ -149,7 +194,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
     OBJ_CASE('m', sym)
     OBJ_CASE('s', str)
     OBJ_CASE('l', proc)
-    OBJ_CASE('b', blob)
     OBJ_CASE('v', vec)
     OBJ_CASE('d', dict)
     OBJ_CASE('p', port)
@@ -157,6 +201,12 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
     default:
       pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
+    }
+
+    if (format[1] == '+') {
+      pic_value *p;
+      p = va_arg(ap, pic_value*);
+      *p = GET_OPERAND(pic, i);
     }
   }
   if (rest) {

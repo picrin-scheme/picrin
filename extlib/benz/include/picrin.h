@@ -186,7 +186,6 @@ enum {
 #define pic_str_p(pic,v) (pic_type(pic,v) == PIC_TYPE_STRING)
 #define pic_blob_p(pic,v) (pic_type(pic,v) == PIC_TYPE_BLOB)
 #define pic_proc_p(pic,v) (pic_type(pic,v) == PIC_TYPE_PROC)
-#define pic_data_p(pic,v) (pic_type(pic,v) == PIC_TYPE_DATA)
 #define pic_nil_p(pic,v) (pic_type(pic,v) == PIC_TYPE_NIL)
 #define pic_pair_p(pic,v) (pic_type(pic,v) == PIC_TYPE_PAIR)
 #define pic_vec_p(pic,v) (pic_type(pic,v) == PIC_TYPE_VECTOR)
@@ -194,6 +193,7 @@ enum {
 #define pic_weak_p(pic,v) (pic_type(pic,v) == PIC_TYPE_WEAK)
 #define pic_port_p(pic, v) (pic_type(pic, v) == PIC_TYPE_PORT)
 #define pic_sym_p(pic,v) (pic_type(pic,v) == PIC_TYPE_SYMBOL)
+bool pic_data_p(pic_state *, pic_value, const pic_data_type *);
 
 int pic_type(pic_state *, pic_value);
 const char *pic_typename(pic_state *, int);
@@ -337,8 +337,6 @@ pic_value pic_eval(pic_state *, pic_value program, const char *lib);
 
 void pic_load(pic_state *, pic_value port);
 void pic_load_cstr(pic_state *, const char *);
-
-bool pic_data_type_p(pic_state *, pic_value, const pic_data_type *);
 
 #define pic_deflibrary(pic, lib) do {           \
     if (! pic_find_library(pic, lib)) {         \

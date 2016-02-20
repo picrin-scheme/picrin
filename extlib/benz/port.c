@@ -134,13 +134,10 @@ pic_port_close_port(pic_state *pic)
 static pic_value
 pic_port_open_input_bytevector(pic_state *pic)
 {
-  pic_value blob;
   unsigned char *buf;
   int len;
 
-  pic_get_args(pic, "b", &blob);
-
-  buf = pic_blob(pic, blob, &len);
+  pic_get_args(pic, "b", &buf, &len);
 
   return pic_open_port(pic, xfopen_buf(pic, (char *)buf, len, "r"));
 }
@@ -240,13 +237,11 @@ pic_port_read_bytevector(pic_state *pic)
 static pic_value
 pic_port_read_bytevector_ip(pic_state *pic)
 {
-  pic_value bv, port;
+  pic_value port;
   unsigned char *buf;
   int n, start, end, i, len;
 
-  n = pic_get_args(pic, "b|pii", &bv, &port, &start, &end);
-
-  buf = pic_blob(pic, bv, &len);
+  n = pic_get_args(pic, "b|pii", &buf, &len, &port, &start, &end);
 
   switch (n) {
   case 1:
@@ -284,14 +279,11 @@ pic_port_write_u8(pic_state *pic)
 static pic_value
 pic_port_write_bytevector(pic_state *pic)
 {
-  pic_value blob;
   pic_value port;
   unsigned char *buf;
   int n, start, end, len, done;
 
-  n = pic_get_args(pic, "b|pii", &blob, &port, &start, &end);
-
-  buf = pic_blob(pic, blob, &len);
+  n = pic_get_args(pic, "b|pii", &buf, &len, &port, &start, &end);
 
   switch (n) {
   case 1:

@@ -46,16 +46,14 @@ socket_dtor(pic_state *pic, void *data)
 
 static const pic_data_type socket_type = { "socket", socket_dtor, NULL };
 
-#define pic_socket_p(pic, o) (pic_data_type_p(pic, (o), &socket_type))
-#define pic_socket_data(pic, o) ((struct pic_socket_t *)pic_data(pic, o))
-
 static pic_value
 pic_socket_socket_p(pic_state *pic)
 {
   pic_value obj;
 
   pic_get_args(pic, "o", &obj);
-  return pic_bool_value(pic, pic_socket_p(pic, obj));
+
+  return pic_bool_value(pic, pic_data_p(pic, obj, &socket_type));
 }
 
 static pic_value
@@ -139,14 +137,11 @@ pic_socket_make_socket(pic_state *pic)
 static pic_value
 pic_socket_socket_accept(pic_state *pic)
 {
-  pic_value obj;
   int fd = -1;
   struct pic_socket_t *sock, *new_sock;
 
-  pic_get_args(pic, "o", &obj);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   errno = 0;
@@ -177,18 +172,14 @@ pic_socket_socket_accept(pic_state *pic)
 static pic_value
 pic_socket_socket_send(pic_state *pic)
 {
-  pic_value obj, bv;
   const unsigned char *cursor;
   int flags = 0, remain, written;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "ob|i", &obj, &bv, &flags);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "ub|i", &sock, &socket_type, &cursor, &remain, &flags);
 
-  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
-  cursor = pic_blob(pic, bv, &remain);
   written = 0;
   errno = 0;
   while (remain > 0) {
@@ -213,20 +204,18 @@ pic_socket_socket_send(pic_state *pic)
 static pic_value
 pic_socket_socket_recv(pic_state *pic)
 {
-  pic_value obj;
   void *buf;
   int size;
   int flags = 0;
   ssize_t len;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "oi|i", &obj, &size, &flags);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "ui|i", &sock, &socket_type, &size, &flags);
+
   if (size < 0) {
     pic_errorf(pic, "size must not be negative");
   }
 
-  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   buf = pic_blob(pic, pic_blob_value(pic, NULL, size), NULL);
@@ -250,14 +239,11 @@ pic_socket_socket_recv(pic_state *pic)
 static pic_value
 pic_socket_socket_shutdown(pic_state *pic)
 {
-  pic_value obj;
   int how;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "oi", &obj, &how);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "ui", &sock, &socket_type, &how);
 
-  sock = pic_socket_data(pic, obj);
   if (sock->fd != -1) {
     shutdown(sock->fd, how);
     sock->fd = -1;
@@ -269,12 +255,11 @@ pic_socket_socket_shutdown(pic_state *pic)
 static pic_value
 pic_socket_socket_close(pic_state *pic)
 {
-  pic_value obj;
+  struct pic_socket_t *sock;
 
-  pic_get_args(pic, "o", &obj);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  socket_close(pic_socket_data(pic, obj));
+  socket_close(sock);
 
   return pic_undef_value(pic);
 }
@@ -329,13 +314,10 @@ make_socket_port(pic_state *pic, struct pic_socket_t *sock, const char *mode)
 static pic_value
 pic_socket_socket_input_port(pic_state *pic)
 {
-  pic_value obj;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "o", &obj);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   return make_socket_port(pic, sock, "r");
@@ -344,13 +326,10 @@ pic_socket_socket_input_port(pic_state *pic)
 static pic_value
 pic_socket_socket_output_port(pic_state *pic)
 {
-  pic_value obj;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "o", &obj);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   return make_socket_port(pic, sock, "w");
@@ -362,10 +341,8 @@ pic_socket_call_with_socket(pic_state *pic)
   pic_value obj, proc, result;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "ol", &obj, &proc);
-  pic_assert_type(pic, obj, socket);
+  pic_get_args(pic, "u+l", &sock, &socket_type, &obj, &proc);
 
-  sock = pic_socket_data(pic, obj);
   ensure_socket_is_open(pic, sock);
 
   result = pic_call(pic, proc, 1, obj);

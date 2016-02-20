@@ -89,12 +89,9 @@ pic_blob_make_bytevector(pic_state *pic)
 static pic_value
 pic_blob_bytevector_length(pic_state *pic)
 {
-  pic_value bv;
   int len;
 
-  pic_get_args(pic, "b", &bv);
-
-  pic_blob(pic, bv, &len);
+  pic_get_args(pic, "b", NULL, &len);
 
   return pic_int_value(pic, len);
 }
@@ -102,13 +99,10 @@ pic_blob_bytevector_length(pic_state *pic)
 static pic_value
 pic_blob_bytevector_u8_ref(pic_state *pic)
 {
-  pic_value bv;
   unsigned char *buf;
-  int k, len;
+  int len, k;
 
-  pic_get_args(pic, "bi", &bv, &k);
-
-  buf = pic_blob(pic, bv, &len);
+  pic_get_args(pic, "bi", &buf, &len, &k);
 
   VALID_INDEX(pic, len, k);
 
@@ -118,16 +112,13 @@ pic_blob_bytevector_u8_ref(pic_state *pic)
 static pic_value
 pic_blob_bytevector_u8_set(pic_state *pic)
 {
-  pic_value bv;
   unsigned char *buf;
-  int k, v, len;
+  int len, k, v;
 
-  pic_get_args(pic, "bii", &bv, &k, &v);
+  pic_get_args(pic, "bii", &buf, &len, &k, &v);
 
   if (v < 0 || v > 255)
     pic_errorf(pic, "byte out of range");
-
-  buf = pic_blob(pic, bv, &len);
 
   VALID_INDEX(pic, len, k);
 
@@ -139,14 +130,10 @@ pic_blob_bytevector_u8_set(pic_state *pic)
 static pic_value
 pic_blob_bytevector_copy_i(pic_state *pic)
 {
-  pic_value to, from;
-  unsigned char *tobuf, *frombuf;
+  unsigned char *to, *from;
   int n, at, start, end, tolen, fromlen;
 
-  n = pic_get_args(pic, "bib|ii", &to, &at, &from, &start, &end);
-
-  tobuf = pic_blob(pic, to, &tolen);
-  frombuf = pic_blob(pic, from, &fromlen);
+  n = pic_get_args(pic, "bib|ii", &to, &tolen, &at, &from, &fromlen, &start, &end);
 
   switch (n) {
   case 3:
@@ -157,7 +144,7 @@ pic_blob_bytevector_copy_i(pic_state *pic)
 
   VALID_ATRANGE(pic, tolen, at, fromlen, start, end);
 
-  memmove(tobuf + at, frombuf + start, end - start);
+  memmove(to + at, from + start, end - start);
 
   return pic_undef_value(pic);
 }
@@ -165,13 +152,10 @@ pic_blob_bytevector_copy_i(pic_state *pic)
 static pic_value
 pic_blob_bytevector_copy(pic_state *pic)
 {
-  pic_value from;
   unsigned char *buf;
   int n, start, end, len;
 
-  n = pic_get_args(pic, "b|ii", &from, &start, &end);
-
-  buf = pic_blob(pic, from, &len);
+  n = pic_get_args(pic, "b|ii", &buf, &len, &start, &end);
 
   switch (n) {
   case 1:
@@ -241,13 +225,11 @@ pic_blob_list_to_bytevector(pic_state *pic)
 static pic_value
 pic_blob_bytevector_to_list(pic_state *pic)
 {
-  pic_value blob, list;
+  pic_value list;
   unsigned char *buf;
   int n, len, start, end, i;
 
-  n = pic_get_args(pic, "b|ii", &blob, &start, &end);
-
-  buf = pic_blob(pic, blob, &len);
+  n = pic_get_args(pic, "b|ii", &buf, &len, &start, &end);
 
   switch (n) {
   case 1:
