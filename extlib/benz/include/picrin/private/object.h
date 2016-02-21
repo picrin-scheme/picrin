@@ -93,10 +93,6 @@ struct context {
 
 struct proc {
   PIC_OBJECT_HEADER
-  enum {
-    PIC_PROC_TAG_IREP,
-    PIC_PROC_TAG_FUNC
-  } tag;
   union {
     struct {
       pic_func_t func;
@@ -158,7 +154,6 @@ struct object *pic_obj_ptr(pic_value);
 #define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
 #define pic_error_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ERROR)
 #define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TYPE_RECORD)
-#define pic_id_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ID || pic_type(pic, v) == PIC_TYPE_SYMBOL)
 
 pic_value pic_obj_value(void *ptr);
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
@@ -191,8 +186,8 @@ pic_value pic_id_name(pic_state *, pic_value id);
 void pic_rope_incref(pic_state *, struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);
 
-#define pic_proc_func_p(proc) ((proc)->tag == PIC_PROC_TAG_FUNC)
-#define pic_proc_irep_p(proc) ((proc)->tag == PIC_PROC_TAG_IREP)
+#define pic_func_p(proc) (pic_type(pic, proc) == PIC_TYPE_FUNC)
+#define pic_irep_p(proc) (pic_type(pic, proc) == PIC_TYPE_IREP)
 
 void pic_wind(pic_state *, struct checkpoint *, struct checkpoint *);
 

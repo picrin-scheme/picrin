@@ -162,7 +162,6 @@ enum {
   PIC_TYPE_STRING  = 16,
   PIC_TYPE_VECTOR  = 17,
   PIC_TYPE_BLOB    = 18,
-  PIC_TYPE_PROC    = 19,
   PIC_TYPE_PORT    = 20,
   PIC_TYPE_ERROR   = 21,
   PIC_TYPE_ID      = 22,
@@ -174,7 +173,9 @@ enum {
   PIC_TYPE_SYMBOL  = 28,
   PIC_TYPE_PAIR    = 29,
   PIC_TYPE_CXT     = 30,
-  PIC_TYPE_CP      = 31
+  PIC_TYPE_CP      = 31,
+  PIC_TYPE_FUNC    = 32,
+  PIC_TYPE_IREP    = 33,
 };
 
 #define pic_invalid_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INVALID)
@@ -185,9 +186,10 @@ enum {
 #define pic_eof_p(pic, v) (pic_type(pic, v) == PIC_TYPE_EOF)
 #define pic_true_p(pic,v) (pic_type(pic,v) == PIC_TYPE_TRUE)
 #define pic_false_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FALSE)
+#define pic_id_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ID || pic_type(pic, v) == PIC_TYPE_SYMBOL)
 #define pic_str_p(pic,v) (pic_type(pic,v) == PIC_TYPE_STRING)
 #define pic_blob_p(pic,v) (pic_type(pic,v) == PIC_TYPE_BLOB)
-#define pic_proc_p(pic,v) (pic_type(pic,v) == PIC_TYPE_PROC)
+#define pic_proc_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FUNC || pic_type(pic, v) == PIC_TYPE_IREP)
 #define pic_nil_p(pic,v) (pic_type(pic,v) == PIC_TYPE_NIL)
 #define pic_pair_p(pic,v) (pic_type(pic,v) == PIC_TYPE_PAIR)
 #define pic_vec_p(pic,v) (pic_type(pic,v) == PIC_TYPE_VECTOR)

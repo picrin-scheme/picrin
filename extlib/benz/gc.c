@@ -301,16 +301,16 @@ gc_mark_object(pic_state *pic, struct object *obj)
     }
     break;
   }
-  case PIC_TYPE_PROC: {
-    if (pic_proc_irep_p(&obj->u.proc)) {
-      if (obj->u.proc.u.i.cxt) {
-        LOOP(obj->u.proc.u.i.cxt);
-      }
-    } else {
-      int i;
-      for (i = 0; i < obj->u.proc.u.f.localc; ++i) {
-        gc_mark(pic, obj->u.proc.locals[i]);
-      }
+  case PIC_TYPE_FUNC: {
+    int i;
+    for (i = 0; i < obj->u.proc.u.f.localc; ++i) {
+      gc_mark(pic, obj->u.proc.locals[i]);
+    }
+    break;
+  }
+  case PIC_TYPE_IREP: {
+    if (obj->u.proc.u.i.cxt) {
+      LOOP(obj->u.proc.u.i.cxt);
     }
     break;
   }
@@ -550,10 +550,8 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     kh_destroy(weak, &obj->u.weak.hash);
     break;
   }
-  case PIC_TYPE_PROC: {
-    if (pic_proc_irep_p(&obj->u.proc)) {
-      pic_irep_decref(pic, obj->u.proc.u.i.irep);
-    }
+  case PIC_TYPE_IREP: {
+    pic_irep_decref(pic, obj->u.proc.u.i.irep);
     break;
   }
 
@@ -564,6 +562,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_ID:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_CP:
+  case PIC_TYPE_FUNC:
     break;
 
   default:

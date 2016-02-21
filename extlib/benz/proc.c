@@ -503,7 +503,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       ci->fp = pic->sp - c.a;
       ci->irep = NULL;
       ci->cxt = NULL;
-      if (pic_proc_func_p(proc)) {
+      if (proc->tt == PIC_TYPE_FUNC) {
 
         /* invoke! */
         v = proc->u.f.func(pic);
@@ -904,27 +904,27 @@ pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 pic_value
 pic_closure_ref(pic_state *pic, int n)
 {
-  struct proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
+  pic_value self = GET_OPERAND(pic, 0);
 
-  assert(pic_proc_func_p(self));
+  assert(pic_func_p(self));
 
-  if (n < 0 || self->u.f.localc <= n) {
+  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
     pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
   }
-  return self->locals[n];
+  return pic_proc_ptr(pic, self)->locals[n];
 }
 
 void
 pic_closure_set(pic_state *pic, int n, pic_value v)
 {
-  struct proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
+  pic_value self = GET_OPERAND(pic, 0);
 
-  assert(pic_proc_func_p(self));
+  assert(pic_func_p(self));
 
-  if (n < 0 || self->u.f.localc <= n) {
+  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
     pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
   }
-  self->locals[n] = v;
+  pic_proc_ptr(pic, self)->locals[n] = v;
 }
 
 pic_value
@@ -979,8 +979,7 @@ pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
   struct proc *proc;
   int i;
 
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC);
-  proc->tag = PIC_PROC_TAG_FUNC;
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_FUNC);
   proc->u.f.func = func;
   proc->u.f.localc = n;
   for (i = 0; i < n; ++i) {
@@ -994,8 +993,7 @@ pic_make_proc_irep(pic_state *pic, struct irep *irep, struct context *cxt)
 {
   struct proc *proc;
 
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_PROC);
-  proc->tag = PIC_PROC_TAG_IREP;
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_IREP);
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
   pic_irep_incref(pic, irep);

@@ -22,7 +22,7 @@ pic_get_backtrace(pic_state *pic)
     trace = pic_str_cat(pic, trace, pic_lit_value(pic, "  at "));
     trace = pic_str_cat(pic, trace, pic_lit_value(pic, "(anonymous lambda)"));
 
-    if (pic_proc_func_p(pic_proc_ptr(pic, proc))) {
+    if (pic_func_p(proc)) {
       trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (native function)\n"));
     } else {
       trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (unknown location)\n")); /* TODO */

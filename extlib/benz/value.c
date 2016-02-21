@@ -240,7 +240,8 @@ pic_typename(pic_state *pic, int type)
     return "identifier";
   case PIC_TYPE_CXT:
     return "context";
-  case PIC_TYPE_PROC:
+  case PIC_TYPE_FUNC:
+  case PIC_TYPE_IREP:
     return "procedure";
   case PIC_TYPE_ENV:
     return "environment";
