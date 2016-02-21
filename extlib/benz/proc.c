@@ -5,7 +5,7 @@
 #include "picrin.h"
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
-#include "picrin/private/opcode.h"
+#include "picrin/private/vm.h"
 #include "picrin/private/state.h"
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -856,8 +856,10 @@ pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
   pic_callinfo *ci;
   int i;
 
-  PIC_INIT_CODE_I(pic->iseq[0], OP_NOP, 0);
-  PIC_INIT_CODE_I(pic->iseq[1], OP_TAILCALL, -1);
+  pic->iseq[0].insn = OP_NOP;
+  pic->iseq[0].a = 0;
+  pic->iseq[1].insn = OP_TAILCALL;
+  pic->iseq[1].a = -1;
 
   *pic->sp++ = proc;
 

@@ -5,7 +5,7 @@
 #include "picrin.h"
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
-#include "picrin/private/opcode.h"
+#include "picrin/private/vm.h"
 #include "picrin/private/state.h"
 
 #define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym)), lit) == 0)

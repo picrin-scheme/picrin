@@ -12,7 +12,7 @@ extern "C" {
 #include "picrin/private/khash.h"
 #include "picrin/private/file.h"
 
-#include "picrin/private/irep.h"
+#include "picrin/private/vm.h"
 #include "picrin/private/gc.h"
 
 struct pic_lib {
