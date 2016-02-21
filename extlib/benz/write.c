@@ -12,8 +12,6 @@ KHASH_DEFINE2(l, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
 KHASH_DEFINE2(v, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 struct writer_control {
-  pic_state *pic;
-  xFILE *file;
   int mode;
   int op;
   khash_t(l) labels;            /* object -> int */
@@ -29,10 +27,8 @@ struct writer_control {
 #define OP_WRITE_SIMPLE 3
 
 static void
-writer_control_init(struct writer_control *p, pic_state *pic, xFILE *file, int mode, int op)
+writer_control_init(struct writer_control *p, int mode, int op)
 {
-  p->pic = pic;
-  p->file = file;
   p->mode = mode;
   p->op = op;
   p->cnt = 0;
@@ -41,9 +37,8 @@ writer_control_init(struct writer_control *p, pic_state *pic, xFILE *file, int m
 }
 
 static void
-writer_control_destroy(struct writer_control *p)
+writer_control_destroy(pic_state *pic, struct writer_control *p)
 {
-  pic_state *pic = p->pic;
   kh_destroy(l, &p->labels);
   kh_destroy(v, &p->visited);
 }
@@ -67,9 +62,11 @@ write_blob(pic_state *pic, pic_value blob, xFILE *file)
 }
 
 static void
-write_char(pic_state *pic, char c, xFILE *file, int mode)
+write_char(pic_state *pic, pic_value ch, xFILE *file, struct writer_control *p)
 {
-  if (mode == DISPLAY_MODE) {
+  char c = pic_char(pic, ch);
+
+  if (p->mode == DISPLAY_MODE) {
     xfputc(pic, c, file);
     return;
   }
@@ -87,12 +84,12 @@ write_char(pic_state *pic, char c, xFILE *file, int mode)
 }
 
 static void
-write_str(pic_state *pic, pic_value str, xFILE *file, int mode)
+write_str(pic_state *pic, pic_value str, xFILE *file, struct writer_control *p)
 {
   int i;
   const char *cstr = pic_str(pic, str);
 
-  if (mode == DISPLAY_MODE) {
+  if (p->mode == DISPLAY_MODE) {
     xfprintf(pic, file, "%s", pic_str(pic, str));
     return;
   }
@@ -120,18 +117,17 @@ write_float(pic_state *pic, double f, xFILE *file)
   }
 }
 
-static void write_core(struct writer_control *p, pic_value);
+static void write_core(pic_state *, pic_value, xFILE *, struct writer_control *);
 
 static void
-write_pair_help(struct writer_control *p, pic_value pair)
+write_pair_help(pic_state *pic, pic_value pair, xFILE *file, struct writer_control *p)
 {
-  pic_state *pic = p->pic;
   khash_t(l) *lh = &p->labels;
   khash_t(v) *vh = &p->visited;
   int it;
   int ret;
 
-  write_core(p, pic_car(pic, pair));
+  write_core(pic, pic_car(pic, pair), file, p);
 
   if (pic_nil_p(pic, pic_cdr(pic, pair))) {
     return;
@@ -140,20 +136,20 @@ write_pair_help(struct writer_control *p, pic_value pair)
 
     /* shared objects */
     if ((it = kh_get(l, lh, pic_obj_ptr(pic_cdr(pic, pair)))) != kh_end(lh) && kh_val(lh, it) != -1) {
-      xfprintf(pic, p->file, " . ");
+      xfprintf(pic, file, " . ");
 
       kh_put(v, vh, pic_obj_ptr(pic_cdr(pic, pair)), &ret);
       if (ret == 0) {           /* if exists */
-        xfprintf(pic, p->file, "#%d#", kh_val(lh, it));
+        xfprintf(pic, file, "#%d#", kh_val(lh, it));
         return;
       }
-      xfprintf(pic, p->file, "#%d=", kh_val(lh, it));
+      xfprintf(pic, file, "#%d=", kh_val(lh, it));
     }
     else {
-      xfprintf(pic, p->file, " ");
+      xfprintf(pic, file, " ");
     }
 
-    write_pair_help(p, pic_cdr(pic, pair));
+    write_pair_help(pic, pic_cdr(pic, pair), file, p);
 
     if (p->op == OP_WRITE) {
       if ((it = kh_get(l, lh, pic_obj_ptr(pic_cdr(pic, pair)))) != kh_end(lh) && kh_val(lh, it) != -1) {
@@ -164,78 +160,74 @@ write_pair_help(struct writer_control *p, pic_value pair)
     return;
   }
   else {
-    xfprintf(pic, p->file, " . ");
-    write_core(p, pic_cdr(pic, pair));
+    xfprintf(pic, file, " . ");
+    write_core(pic, pic_cdr(pic, pair), file, p);
   }
 }
 
 #define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym)), lit) == 0)
 
 static void
-write_pair(struct writer_control *p, pic_value pair)
+write_pair(pic_state *pic, pic_value pair, xFILE *file, struct writer_control *p)
 {
-  pic_state *pic = p->pic;
-  xFILE *file = p->file;
   pic_value tag;
 
   if (pic_pair_p(pic, pic_cdr(pic, pair)) && pic_nil_p(pic, pic_cddr(pic, pair)) && pic_sym_p(pic, pic_car(pic, pair))) {
     tag = pic_car(pic, pair);
     if (EQ(tag, "quote")) {
       xfprintf(pic, file, "'");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
     else if (EQ(tag, "unquote")) {
       xfprintf(pic, file, ",");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
     else if (EQ(tag, "unquote-splicing")) {
       xfprintf(pic, file, ",@");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
     else if (EQ(tag, "quasiquote")) {
       xfprintf(pic, file, "`");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
     else if (EQ(tag, "syntax-quote")) {
       xfprintf(pic, file, "#'");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
     else if (EQ(tag, "syntax-unquote")) {
       xfprintf(pic, file, "#,");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
     else if (EQ(tag, "syntax-unquote-splicing")) {
       xfprintf(pic, file, "#,@");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
     else if (EQ(tag, "syntax-quasiquote")) {
       xfprintf(pic, file, "#`");
-      write_core(p, pic_cadr(pic, pair));
+      write_core(pic, pic_cadr(pic, pair), file, p);
       return;
     }
   }
   xfprintf(pic, file, "(");
-  write_pair_help(p, pair);
+  write_pair_help(pic, pair, file, p);
   xfprintf(pic, file, ")");
 }
 
 static void
-write_vec(struct writer_control *p, pic_value vec)
+write_vec(pic_state *pic, pic_value vec, xFILE *file, struct writer_control *p)
 {
-  pic_state *pic = p->pic;
-  xFILE *file = p->file;
   int i, len = pic_vec_len(pic, vec);
 
   xfprintf(pic, file, "#(");
   for (i = 0; i < len; ++i) {
-    write_core(p, pic_vec_ref(pic, vec, i));
+    write_core(pic, pic_vec_ref(pic, vec, i), file, p);
     if (i + 1 < len) {
       xfprintf(pic, file, " ");
     }
@@ -244,28 +236,24 @@ write_vec(struct writer_control *p, pic_value vec)
 }
 
 static void
-write_dict(struct writer_control *p, pic_value dict)
+write_dict(pic_state *pic, pic_value dict, xFILE *file, struct writer_control *p)
 {
-  pic_state *pic = p->pic;
-  xFILE *file = p->file;
   pic_value key, val;
   int it = 0;
 
   xfprintf(pic, file, "#.(dictionary");
   while (pic_dict_next(pic, dict, &it, &key, &val)) {
     xfprintf(pic, file, " '%s ", pic_str(pic, pic_sym_name(pic, key)));
-    write_core(p, val);
+    write_core(pic, val, file, p);
   }
   xfprintf(pic, file, ")");
 }
 
 static void
-write_core(struct writer_control *p, pic_value obj)
+write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
 {
-  pic_state *pic = p->pic;
   khash_t(l) *lh = &p->labels;
   khash_t(v) *vh = &p->visited;
-  xFILE *file = p->file;
   int it;
   int ret;
 
@@ -311,19 +299,19 @@ write_core(struct writer_control *p, pic_value obj)
     write_blob(pic, obj, file);
     break;
   case PIC_TYPE_CHAR:
-    write_char(pic, pic_char(pic, obj), file, p->mode);
+    write_char(pic, obj, file, p);
     break;
   case PIC_TYPE_STRING:
-    write_str(pic, obj, file, p->mode);
+    write_str(pic, obj, file, p);
     break;
   case PIC_TYPE_PAIR:
-    write_pair(p, obj);
+    write_pair(pic, obj, file, p);
     break;
   case PIC_TYPE_VECTOR:
-    write_vec(p, obj);
+    write_vec(pic, obj, file, p);
     break;
   case PIC_TYPE_DICT:
-    write_dict(p, obj);
+    write_dict(pic, obj, file, p);
     break;
   default:
     xfprintf(pic, file, "#<%s %p>", pic_typename(pic, pic_type(pic, obj)), pic_obj_ptr(obj));
@@ -339,10 +327,8 @@ write_core(struct writer_control *p, pic_value obj)
 }
 
 static void
-traverse(struct writer_control *p, pic_value obj)
+traverse(pic_state *pic, pic_value obj, struct writer_control *p)
 {
-  pic_state *pic = p->pic;
-
   if (p->op == OP_WRITE_SIMPLE) {
     return;
   }
@@ -362,20 +348,20 @@ traverse(struct writer_control *p, pic_value obj)
 
       if (pic_pair_p(pic, obj)) {
         /* pair */
-        traverse(p, pic_car(pic, obj));
-        traverse(p, pic_cdr(pic, obj));
+        traverse(pic, pic_car(pic, obj), p);
+        traverse(pic, pic_cdr(pic, obj), p);
       } else if (pic_vec_p(pic, obj)) {
         /* vector */
         int i, len = pic_vec_len(pic, obj);
         for (i = 0; i < len; ++i) {
-          traverse(p, pic_vec_ref(pic, obj, i));
+          traverse(pic, pic_vec_ref(pic, obj, i), p);
         }
       } else {
         /* dictionary */
         int it = 0;
         pic_value val;
         while (pic_dict_next(pic, obj, &it, NULL, &val)) {
-          traverse(p, val);
+          traverse(pic, val, p);
         }
       }
 
@@ -401,13 +387,13 @@ write(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
 {
   struct writer_control p;
 
-  writer_control_init(&p, pic, file, mode, op);
+  writer_control_init(&p, mode, op);
 
-  traverse(&p, obj);
+  traverse(pic, obj, &p);
 
-  write_core(&p, obj);
+  write_core(pic, obj, file, &p);
 
-  writer_control_destroy(&p);
+  writer_control_destroy(pic, &p);
 }
 
 
