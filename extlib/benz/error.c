@@ -8,15 +8,16 @@
 #include "picrin/private/state.h"
 
 void
-pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)
+pic_panic(pic_state *pic, const char *msg)
 {
-  extern PIC_NORETURN void abort();
+  if (pic->panicf) {
+    pic->panicf(pic, msg);
+  }
 
-#if DEBUG
-  fprintf(stderr, "abort: %s\n", msg);
-#else
-  (void)msg;
+#if PIC_ENABLE_STDIO
+  fprintf(stderr, "picrin panic!: %s\n", msg);
 #endif
+
   PIC_ABORT(pic);
 }
 

@@ -76,6 +76,7 @@ struct pic_state {
   size_t arena_size, arena_idx;
 
   pic_value err;
+  pic_panicf panicf;
 
   char *native_stack_start;
 };

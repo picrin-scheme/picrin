@@ -276,6 +276,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->ireps.prev = &pic->ireps;
 
   /* raised error object */
+  pic->panicf = NULL;
   pic->err = pic_invalid_value(pic);
 
   /* file pool */
