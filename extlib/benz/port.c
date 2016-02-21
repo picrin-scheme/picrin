@@ -13,9 +13,9 @@
 pic_value
 pic_open_port(pic_state *pic, xFILE *file)
 {
-  struct pic_port *port;
+  struct port *port;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TYPE_PORT);
+  port = (struct port *)pic_obj_alloc(pic, sizeof(struct port), PIC_TYPE_PORT);
   port->file = file;
 
   return pic_obj_value(port);

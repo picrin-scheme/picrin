@@ -219,7 +219,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* callinfo */
-  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(struct pic_callinfo));
+  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(struct callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   if (! pic->ci) {
@@ -227,7 +227,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* exception handler */
-  pic->xpbase = pic->xp = allocf(userdata, NULL, PIC_RESCUE_SIZE * sizeof(struct pic_proc *));
+  pic->xpbase = pic->xp = allocf(userdata, NULL, PIC_RESCUE_SIZE * sizeof(struct proc *));
   pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
 
   if (! pic->xp) {
@@ -235,7 +235,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* GC arena */
-  pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct pic_object *));
+  pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct object *));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
 
@@ -298,7 +298,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->macros = pic_make_weak(pic);
 
   /* root block */
-  pic->cp = (struct pic_checkpoint *)pic_obj_alloc(pic, sizeof(struct pic_checkpoint), PIC_TYPE_CP);
+  pic->cp = (struct checkpoint *)pic_obj_alloc(pic, sizeof(struct checkpoint), PIC_TYPE_CP);
   pic->cp->prev = NULL;
   pic->cp->depth = 0;
   pic->cp->in = pic->cp->out = NULL;
@@ -356,7 +356,7 @@ pic_close(pic_state *pic)
   {
     /* FIXME */
     int i = 0;
-    struct pic_list_head *list;
+    struct list_head *list;
     for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
       i++;
     }

@@ -354,17 +354,17 @@ typedef struct codegen_context {
   pic_value rest;
   pic_value args, locals, captures;
   /* actual bit code sequence */
-  struct pic_code *code;
+  struct code *code;
   size_t clen, ccapa;
   /* child ireps */
-  struct pic_irep **irep;
+  struct irep **irep;
   size_t ilen, icapa;
   /* constant object pool */
   int *ints;
   size_t klen, kcapa;
   double *nums;
   size_t flen, fcapa;
-  struct pic_object **pool;
+  struct object **pool;
   size_t plen, pcapa;
 
   struct codegen_context *up;
@@ -382,15 +382,15 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->locals = locals;
   cxt->captures = captures;
 
-  cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
+  cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct code));
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
 
-  cxt->irep = pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct pic_irep *));
+  cxt->irep = pic_calloc(pic, PIC_IREP_SIZE, sizeof(struct irep *));
   cxt->ilen = 0;
   cxt->icapa = PIC_IREP_SIZE;
 
-  cxt->pool = pic_calloc(pic, PIC_POOL_SIZE, sizeof(struct pic_object *));
+  cxt->pool = pic_calloc(pic, PIC_POOL_SIZE, sizeof(struct object *));
   cxt->plen = 0;
   cxt->pcapa = PIC_POOL_SIZE;
 
@@ -405,23 +405,23 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   create_activation(pic, cxt);
 }
 
-static struct pic_irep *
+static struct irep *
 codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 {
-  struct pic_irep *irep;
+  struct irep *irep;
 
   /* create irep */
-  irep = pic_malloc(pic, sizeof(struct pic_irep));
+  irep = pic_malloc(pic, sizeof(struct irep));
   irep->refc = 1;
   irep->varg = pic_sym_p(pic, cxt->rest);
   irep->argc = pic_vec_len(pic, cxt->args) + 1;
   irep->localc = pic_vec_len(pic, cxt->locals);
   irep->capturec = pic_vec_len(pic, cxt->captures);
-  irep->code = pic_realloc(pic, cxt->code, sizeof(struct pic_code) * cxt->clen);
-  irep->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->ilen);
+  irep->code = pic_realloc(pic, cxt->code, sizeof(struct code) * cxt->clen);
+  irep->irep = pic_realloc(pic, cxt->irep, sizeof(struct irep *) * cxt->ilen);
   irep->ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
   irep->nums = pic_realloc(pic, cxt->nums, sizeof(double) * cxt->flen);
-  irep->pool = pic_realloc(pic, cxt->pool, sizeof(struct pic_object *) * cxt->plen);
+  irep->pool = pic_realloc(pic, cxt->pool, sizeof(struct object *) * cxt->plen);
   irep->ncode = cxt->clen;
   irep->nirep = cxt->ilen;
   irep->nints = cxt->klen;
@@ -443,9 +443,9 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
     }                                                                   \
   } while (0)
 
-#define check_code_size(pic, cxt) check_size(pic, cxt, c, code, struct pic_code)
-#define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
-#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, struct pic_object *)
+#define check_code_size(pic, cxt) check_size(pic, cxt, c, code, struct code)
+#define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct irep *)
+#define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, struct object *)
 #define check_ints_size(pic, cxt) check_size(pic, cxt, k, ints, int)
 #define check_nums_size(pic, cxt) check_size(pic, cxt, f, nums, double)
 
@@ -513,7 +513,7 @@ index_global(pic_state *pic, codegen_context *cxt, pic_value name)
 
   check_pool_size(pic, cxt);
   pidx = (int)cxt->plen++;
-  cxt->pool[pidx] = (struct pic_object *)pic_sym_ptr(pic, name);
+  cxt->pool[pidx] = (struct object *)pic_sym_ptr(pic, name);
 
   return pidx;
 }
@@ -804,7 +804,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   }
 }
 
-static struct pic_irep *
+static struct irep *
 pic_codegen(pic_state *pic, pic_value obj)
 {
   pic_value empty = pic_make_vec(pic, 0, NULL);
@@ -822,7 +822,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 pic_value
 pic_compile(pic_state *pic, pic_value obj)
 {
-  struct pic_irep *irep;
+  struct irep *irep;
   pic_value proc;
   size_t ai = pic_enter(pic);
 

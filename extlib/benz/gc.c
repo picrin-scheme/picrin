@@ -23,39 +23,39 @@ struct heap_page {
   struct heap_page *next;
 };
 
-struct pic_object {
+struct object {
   union {
-    struct pic_basic basic;
-    struct pic_identifier id;
-    struct pic_string str;
-    struct pic_blob blob;
-    struct pic_pair pair;
-    struct pic_vector vec;
-    struct pic_dict dict;
-    struct pic_weak weak;
-    struct pic_data data;
-    struct pic_record rec;
-    struct pic_env env;
-    struct pic_proc proc;
-    struct pic_context cxt;
-    struct pic_port port;
-    struct pic_error err;
-    struct pic_checkpoint cp;
+    struct basic basic;
+    struct identifier id;
+    struct string str;
+    struct blob blob;
+    struct pair pair;
+    struct vector vec;
+    struct dict dict;
+    struct weak weak;
+    struct data data;
+    struct record rec;
+    struct env env;
+    struct proc proc;
+    struct context cxt;
+    struct port port;
+    struct error err;
+    struct checkpoint cp;
   } u;
 };
 
-struct pic_heap {
+struct heap {
   union header base, *freep;
   struct heap_page *pages;
-  struct pic_weak *weaks;       /* weak map chain */
+  struct weak *weaks;       /* weak map chain */
 };
 
-struct pic_heap *
+struct heap *
 pic_heap_open(pic_state *pic)
 {
-  struct pic_heap *heap;
+  struct heap *heap;
 
-  heap = pic_malloc(pic, sizeof(struct pic_heap));
+  heap = pic_malloc(pic, sizeof(struct heap));
 
   heap->base.s.ptr = &heap->base;
   heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
@@ -69,7 +69,7 @@ pic_heap_open(pic_state *pic)
 }
 
 void
-pic_heap_close(pic_state *pic, struct pic_heap *heap)
+pic_heap_close(pic_state *pic, struct heap *heap)
 {
   struct heap_page *page;
 
@@ -137,11 +137,11 @@ pic_free(pic_state *pic, void *ptr)
 }
 
 static void
-gc_protect(pic_state *pic, struct pic_object *obj)
+gc_protect(pic_state *pic, struct object *obj)
 {
   if (pic->arena_idx >= pic->arena_size) {
     pic->arena_size = pic->arena_size * 2 + 1;
-    pic->arena = pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
+    pic->arena = pic_realloc(pic, pic->arena, sizeof(struct object *) * pic->arena_size);
   }
   pic->arena[pic->arena_idx++] = obj;
 }
@@ -259,7 +259,7 @@ heap_morecore(pic_state *pic)
 
 /* MARK */
 
-static void gc_mark_object(pic_state *, struct pic_object *);
+static void gc_mark_object(pic_state *, struct object *);
 
 static void
 gc_mark(pic_state *pic, pic_value v)
@@ -271,7 +271,7 @@ gc_mark(pic_state *pic, pic_value v)
 }
 
 static void
-gc_mark_object(pic_state *pic, struct pic_object *obj)
+gc_mark_object(pic_state *pic, struct object *obj)
 {
  loop:
 
@@ -280,7 +280,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
   obj->u.basic.gc_mark = BLACK;
 
-#define LOOP(o) obj = (struct pic_object *)(o); goto loop
+#define LOOP(o) obj = (struct object *)(o); goto loop
 
   switch (obj->u.basic.tt) {
   case PIC_TYPE_PAIR: {
@@ -318,8 +318,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TYPE_ERROR: {
-    gc_mark_object(pic, (struct pic_object *)obj->u.err.type);
-    gc_mark_object(pic, (struct pic_object *)obj->u.err.msg);
+    gc_mark_object(pic, (struct object *)obj->u.err.type);
+    gc_mark_object(pic, (struct object *)obj->u.err.msg);
     gc_mark(pic, obj->u.err.irrs);
     LOOP(obj->u.err.stack);
     break;
@@ -338,7 +338,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TYPE_ID: {
-    gc_mark_object(pic, (struct pic_object *)obj->u.id.u.id);
+    gc_mark_object(pic, (struct object *)obj->u.id.u.id);
     LOOP(obj->u.id.env);
     break;
   }
@@ -348,8 +348,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
 
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (kh_exist(h, it)) {
-        gc_mark_object(pic, (struct pic_object *)kh_key(h, it));
-        gc_mark_object(pic, (struct pic_object *)kh_val(h, it));
+        gc_mark_object(pic, (struct object *)kh_key(h, it));
+        gc_mark_object(pic, (struct object *)kh_val(h, it));
       }
     }
     if (obj->u.env.up) {
@@ -385,7 +385,7 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     break;
   }
   case PIC_TYPE_WEAK: {
-    struct pic_weak *weak = (struct pic_weak *)obj;
+    struct weak *weak = (struct weak *)obj;
 
     weak->prev = pic->heap->weaks;
     pic->heap->weaks = weak;
@@ -393,13 +393,13 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
   }
   case PIC_TYPE_CP: {
     if (obj->u.cp.prev) {
-      gc_mark_object(pic, (struct pic_object *)obj->u.cp.prev);
+      gc_mark_object(pic, (struct object *)obj->u.cp.prev);
     }
     if (obj->u.cp.in) {
-      gc_mark_object(pic, (struct pic_object *)obj->u.cp.in);
+      gc_mark_object(pic, (struct object *)obj->u.cp.in);
     }
     if (obj->u.cp.out) {
-      LOOP((struct pic_object *)obj->u.cp.out);
+      LOOP((struct object *)obj->u.cp.out);
     }
     break;
   }
@@ -412,9 +412,9 @@ static void
 gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
-  struct pic_callinfo *ci;
-  struct pic_proc **xhandler;
-  struct pic_list_head *list;
+  struct callinfo *ci;
+  struct proc **xhandler;
+  struct list_head *list;
   int it;
   size_t j;
 
@@ -422,7 +422,7 @@ gc_mark_phase(pic_state *pic)
 
   /* checkpoint */
   if (pic->cp) {
-    gc_mark_object(pic, (struct pic_object *)pic->cp);
+    gc_mark_object(pic, (struct object *)pic->cp);
   }
 
   /* stack */
@@ -433,23 +433,23 @@ gc_mark_phase(pic_state *pic)
   /* callinfo */
   for (ci = pic->ci; ci != pic->cibase; --ci) {
     if (ci->cxt) {
-      gc_mark_object(pic, (struct pic_object *)ci->cxt);
+      gc_mark_object(pic, (struct object *)ci->cxt);
     }
   }
 
   /* exception handlers */
   for (xhandler = pic->xpbase; xhandler != pic->xp; ++xhandler) {
-    gc_mark_object(pic, (struct pic_object *)*xhandler);
+    gc_mark_object(pic, (struct object *)*xhandler);
   }
 
   /* arena */
   for (j = 0; j < pic->arena_idx; ++j) {
-    gc_mark_object(pic, (struct pic_object *)pic->arena[j]);
+    gc_mark_object(pic, (struct object *)pic->arena[j]);
   }
 
   /* ireps */
   for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
-    struct pic_irep *irep = (struct pic_irep *)list;
+    struct irep *irep = (struct irep *)list;
     for (j = 0; j < irep->npool; ++j) {
       gc_mark_object(pic, irep->pool[j]);
     }
@@ -475,18 +475,18 @@ gc_mark_phase(pic_state *pic)
     if (! kh_exist(&pic->ltable, it)) {
       continue;
     }
-    gc_mark_object(pic, (struct pic_object *)kh_val(&pic->ltable, it).name);
-    gc_mark_object(pic, (struct pic_object *)kh_val(&pic->ltable, it).env);
-    gc_mark_object(pic, (struct pic_object *)kh_val(&pic->ltable, it).exports);
+    gc_mark_object(pic, (struct object *)kh_val(&pic->ltable, it).name);
+    gc_mark_object(pic, (struct object *)kh_val(&pic->ltable, it).env);
+    gc_mark_object(pic, (struct object *)kh_val(&pic->ltable, it).exports);
   }
 
   /* weak maps */
   do {
-    struct pic_object *key;
+    struct object *key;
     pic_value val;
     int it;
     khash_t(weak) *h;
-    struct pic_weak *weak;
+    struct weak *weak;
 
     j = 0;
     weak = pic->heap->weaks;
@@ -513,7 +513,7 @@ gc_mark_phase(pic_state *pic)
 /* SWEEP */
 
 static void
-gc_finalize_object(pic_state *pic, struct pic_object *obj)
+gc_finalize_object(pic_state *pic, struct object *obj)
 {
   switch (obj->u.basic.tt) {
   case PIC_TYPE_VECTOR: {
@@ -575,7 +575,7 @@ static size_t
 gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
   union header *bp, *p, *head = NULL, *tail = NULL;
-  struct pic_object *obj;
+  struct object *obj;
   size_t alive = 0;
 
   for (bp = page->basep; ; bp = bp->s.ptr) {
@@ -584,7 +584,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
       if (p < page->basep || page->endp <= p) {
         goto escape;
       }
-      obj = (struct pic_object *)(p + 1);
+      obj = (struct object *)(p + 1);
       if (obj->u.basic.gc_mark == BLACK) {
         obj->u.basic.gc_mark = WHITE;
         alive += p->s.size;
@@ -606,7 +606,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   while (head != NULL) {
     p = head;
     head = head->s.ptr;
-    gc_finalize_object(pic, (struct pic_object *)(p + 1));
+    gc_finalize_object(pic, (struct object *)(p + 1));
     heap_free(pic, p + 1);
   }
 
@@ -621,7 +621,7 @@ gc_sweep_phase(pic_state *pic)
   khash_t(weak) *h;
   khash_t(oblist) *s = &pic->oblist;
   symbol *sym;
-  struct pic_object *obj;
+  struct object *obj;
   size_t total = 0, inuse = 0;
 
   /* weak maps */
@@ -680,22 +680,22 @@ pic_alloca(pic_state *pic, size_t n)
   return pic_data(pic, pic_data_value(pic, pic_malloc(pic, n), &t));
 }
 
-struct pic_object *
+struct object *
 pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
 {
-  struct pic_object *obj;
+  struct object *obj;
 
 #if GC_STRESS
   pic_gc(pic);
 #endif
 
-  obj = (struct pic_object *)heap_alloc(pic, size);
+  obj = (struct object *)heap_alloc(pic, size);
   if (obj == NULL) {
     pic_gc(pic);
-    obj = (struct pic_object *)heap_alloc(pic, size);
+    obj = (struct object *)heap_alloc(pic, size);
     if (obj == NULL) {
       heap_morecore(pic);
-      obj = (struct pic_object *)heap_alloc(pic, size);
+      obj = (struct object *)heap_alloc(pic, size);
       if (obj == NULL)
 	pic_panic(pic, "GC memory exhausted");
     }
@@ -706,10 +706,10 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
   return obj;
 }
 
-struct pic_object *
+struct object *
 pic_obj_alloc(pic_state *pic, size_t size, int type)
 {
-  struct pic_object *obj;
+  struct object *obj;
 
   obj = pic_obj_alloc_unsafe(pic, size, type);
 

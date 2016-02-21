@@ -2,12 +2,12 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
-struct pic_fullcont {
+struct fullcont {
   jmp_buf jmp;
 
   struct pic_cont *prev_jmp;
 
-  struct pic_checkpoint *cp;
+  struct checkpoint *cp;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;
@@ -16,19 +16,19 @@ struct pic_fullcont {
   size_t sp_offset;
   ptrdiff_t st_len;
 
-  struct pic_callinfo *ci_ptr;
+  struct callinfo *ci_ptr;
   size_t ci_offset;
   ptrdiff_t ci_len;
 
-  struct pic_proc **xp_ptr;
+  struct proc **xp_ptr;
   size_t xp_offset;
   ptrdiff_t xp_len;
 
-  struct pic_code *ip;
+  struct code *ip;
 
   pic_value ptable;
 
-  struct pic_object **arena;
+  struct object **arena;
   size_t arena_size, arena_idx;
 
   int retc;
@@ -38,7 +38,7 @@ struct pic_fullcont {
 static void
 cont_dtor(pic_state *pic, void *data)
 {
-  struct pic_fullcont *cont = data;
+  struct fullcont *cont = data;
 
   pic_free(pic, cont->stk_ptr);
   pic_free(pic, cont->st_ptr);
@@ -51,11 +51,11 @@ cont_dtor(pic_state *pic, void *data)
 static void
 cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 {
-  struct pic_fullcont *cont = data;
-  struct pic_checkpoint *cp;
+  struct fullcont *cont = data;
+  struct checkpoint *cp;
   pic_value *stack;
-  struct pic_callinfo *ci;
-  struct pic_proc **xp;
+  struct callinfo *ci;
+  struct proc **xp;
   size_t i;
 
   /* checkpoint */
@@ -96,8 +96,8 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 
 static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
 
-static void save_cont(pic_state *, struct pic_fullcont **);
-static void restore_cont(pic_state *, struct pic_fullcont *);
+static void save_cont(pic_state *, struct fullcont **);
+static void restore_cont(pic_state *, struct fullcont *);
 
 static ptrdiff_t
 native_stack_length(pic_state *pic, char **pos)
@@ -114,15 +114,15 @@ native_stack_length(pic_state *pic, char **pos)
 }
 
 static void
-save_cont(pic_state *pic, struct pic_fullcont **c)
+save_cont(pic_state *pic, struct fullcont **c)
 {
   void pic_vm_tear_off(pic_state *);
-  struct pic_fullcont *cont;
+  struct fullcont *cont;
   char *pos;
 
   pic_vm_tear_off(pic);         /* tear off */
 
-  cont = *c = pic_malloc(pic, sizeof(struct pic_fullcont));
+  cont = *c = pic_malloc(pic, sizeof(struct fullcont));
 
   cont->prev_jmp = pic->cc;
 
@@ -141,13 +141,13 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
 
   cont->ci_offset = pic->ci - pic->cibase;
   cont->ci_len = pic->ciend - pic->cibase;
-  cont->ci_ptr = pic_malloc(pic, sizeof(struct pic_callinfo) * cont->ci_len);
-  memcpy(cont->ci_ptr, pic->cibase, sizeof(struct pic_callinfo) * cont->ci_len);
+  cont->ci_ptr = pic_malloc(pic, sizeof(struct callinfo) * cont->ci_len);
+  memcpy(cont->ci_ptr, pic->cibase, sizeof(struct callinfo) * cont->ci_len);
 
   cont->xp_offset = pic->xp - pic->xpbase;
   cont->xp_len = pic->xpend - pic->xpbase;
-  cont->xp_ptr = pic_malloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
-  memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
+  cont->xp_ptr = pic_malloc(pic, sizeof(struct proc *) * cont->xp_len);
+  memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct proc *) * cont->xp_len);
 
   cont->ip = pic->ip;
 
@@ -155,15 +155,15 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
 
   cont->arena_idx = pic->arena_idx;
   cont->arena_size = pic->arena_size;
-  cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
-  memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
+  cont->arena = pic_malloc(pic, sizeof(struct object *) * pic->arena_size);
+  memcpy(cont->arena, pic->arena, sizeof(struct object *) * pic->arena_size);
 
   cont->retc = 0;
   cont->retv = NULL;
 }
 
 static void
-native_stack_extend(pic_state *pic, struct pic_fullcont *cont)
+native_stack_extend(pic_state *pic, struct fullcont *cont)
 {
   volatile pic_value v[1024];
 
@@ -172,10 +172,10 @@ native_stack_extend(pic_state *pic, struct pic_fullcont *cont)
 }
 
 PIC_NORETURN static void
-restore_cont(pic_state *pic, struct pic_fullcont *cont)
+restore_cont(pic_state *pic, struct fullcont *cont)
 {
   char v;
-  struct pic_fullcont *tmp = cont;
+  struct fullcont *tmp = cont;
 
   if (&v < pic->native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
@@ -193,12 +193,12 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
   pic->stend = pic->stbase + cont->st_len;
 
   assert(pic->ciend - pic->cibase >= cont->ci_len);
-  memcpy(pic->cibase, cont->ci_ptr, sizeof(struct pic_callinfo) * cont->ci_len);
+  memcpy(pic->cibase, cont->ci_ptr, sizeof(struct callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
 
   assert(pic->xpend - pic->xpbase >= cont->xp_len);
-  memcpy(pic->xpbase, cont->xp_ptr, sizeof(struct pic_proc *) * cont->xp_len);
+  memcpy(pic->xpbase, cont->xp_ptr, sizeof(struct proc *) * cont->xp_len);
   pic->xp = pic->xpbase + cont->xp_offset;
   pic->xpend = pic->xpbase + cont->xp_len;
 
@@ -207,7 +207,7 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
   pic->ptable = cont->ptable;
 
   assert(pic->arena_size >= cont->arena_size);
-  memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
+  memcpy(pic->arena, cont->arena, sizeof(struct object *) * cont->arena_size);
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
 
@@ -221,7 +221,7 @@ cont_call(pic_state *pic)
 {
   int argc, i;
   pic_value *argv, *retv;
-  struct pic_fullcont *cont;
+  struct fullcont *cont;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -243,7 +243,7 @@ cont_call(pic_state *pic)
 static pic_value
 pic_callcc(pic_state *pic, pic_value proc)
 {
-  struct pic_fullcont *cont;
+  struct fullcont *cont;
 
   save_cont(pic, &cont);
   if (setjmp(cont->jmp)) {

@@ -45,10 +45,10 @@ pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
   return v & 0xfffffffful;
 }
 
-struct pic_object *
+struct object *
 pic_obj_ptr(pic_value v)
 {
-  return (struct pic_object *)(0xfffffffffffful & v);
+  return (struct object *)(0xfffffffffffful & v);
 }
 
 #else
@@ -79,10 +79,10 @@ pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
   return v.u.c;
 }
 
-struct pic_object *
+struct object *
 pic_obj_ptr(pic_value v)
 {
-  return (struct pic_object *)(v.u.data);
+  return (struct object *)(v.u.data);
 }
 
 #endif
@@ -198,7 +198,7 @@ pic_type(pic_state *PIC_UNUSED(pic), pic_value v)
   if (tt < PIC_IVAL_END) {
     return tt;
   }
-  return ((struct pic_basic *)pic_obj_ptr(v))->tt;
+  return ((struct basic *)pic_obj_ptr(v))->tt;
 }
 
 const char *

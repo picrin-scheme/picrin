@@ -7,14 +7,14 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
-KHASH_DEFINE(env, identifier *, symbol *, kh_ptr_hash_func, kh_ptr_hash_equal)
+KHASH_DEFINE(env, struct identifier *, symbol *, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 pic_value
 pic_make_env(pic_state *pic, pic_value up)
 {
-  struct pic_env *env;
+  struct env *env;
 
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
+  env = (struct env *)pic_obj_alloc(pic, sizeof(struct env), PIC_TYPE_ENV);
   env->up = pic_env_ptr(pic, up);
   env->lib = NULL;
   kh_init(env, &env->map);
@@ -68,7 +68,7 @@ search_scope(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
 static bool
 search(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
 {
-  struct pic_env *e;
+  struct env *e;
 
   while (1) {
     if (search_scope(pic, id, env, uid))
@@ -84,7 +84,7 @@ search(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
 pic_value
 pic_find_identifier(pic_state *pic, pic_value id, pic_value env)
 {
-  struct pic_env *e;
+  struct env *e;
   pic_value uid;
 
   while (! search(pic, id, env, &uid)) {

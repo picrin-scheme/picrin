@@ -11,9 +11,9 @@ KHASH_DEFINE(dict, symbol *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
 pic_value
 pic_make_dict(pic_state *pic)
 {
-  struct pic_dict *dict;
+  struct dict *dict;
 
-  dict = (struct pic_dict *)pic_obj_alloc(pic, sizeof(struct pic_dict), PIC_TYPE_DICT);
+  dict = (struct dict *)pic_obj_alloc(pic, sizeof(struct dict), PIC_TYPE_DICT);
   kh_init(dict, &dict->hash);
   return pic_obj_value(dict);
 }

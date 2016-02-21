@@ -5,14 +5,14 @@
 #include "picrin.h"
 #include "picrin/private/object.h"
 
-KHASH_DEFINE(weak, struct pic_object *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
+KHASH_DEFINE(weak, struct object *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 pic_value
 pic_make_weak(pic_state *pic)
 {
-  struct pic_weak *weak;
+  struct weak *weak;
 
-  weak = (struct pic_weak *)pic_obj_alloc(pic, sizeof(struct pic_weak), PIC_TYPE_WEAK);
+  weak = (struct weak *)pic_obj_alloc(pic, sizeof(struct weak), PIC_TYPE_WEAK);
   weak->prev = NULL;
   kh_init(weak, &weak->hash);
 

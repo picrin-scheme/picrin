@@ -6,19 +6,19 @@
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
 
-struct pic_chunk {
+struct chunk {
   char *str;
   int refcnt;
   size_t len;
   char buf[1];
 };
 
-struct pic_rope {
+struct rope {
   int refcnt;
   size_t weight;
-  struct pic_chunk *chunk;
+  struct chunk *chunk;
   size_t offset;
-  struct pic_rope *left, *right;
+  struct rope *left, *right;
 };
 
 #define CHUNK_INCREF(c) do {                    \
@@ -26,19 +26,19 @@ struct pic_rope {
   } while (0)
 
 #define CHUNK_DECREF(c) do {                    \
-    struct pic_chunk *c_ = (c);                 \
+    struct chunk *c_ = (c);                 \
     if (! --c_->refcnt) {                       \
       pic_free(pic, c_);                        \
     }                                           \
   } while (0)
 
 void
-pic_rope_incref(pic_state *PIC_UNUSED(pic), struct pic_rope *x) {
+pic_rope_incref(pic_state *PIC_UNUSED(pic), struct rope *x) {
   x->refcnt++;
 }
 
 void
-pic_rope_decref(pic_state *pic, struct pic_rope *x) {
+pic_rope_decref(pic_state *pic, struct rope *x) {
   if (! --x->refcnt) {
     if (x->chunk) {
       CHUNK_DECREF(x->chunk);
@@ -51,12 +51,12 @@ pic_rope_decref(pic_state *pic, struct pic_rope *x) {
   }
 }
 
-static struct pic_chunk *
+static struct chunk *
 pic_make_chunk(pic_state *pic, const char *str, size_t len)
 {
-  struct pic_chunk *c;
+  struct chunk *c;
 
-  c = pic_malloc(pic, offsetof(struct pic_chunk, buf) + len + 1);
+  c = pic_malloc(pic, offsetof(struct chunk, buf) + len + 1);
   c->refcnt = 1;
   c->str = c->buf;
   c->len = len;
@@ -66,12 +66,12 @@ pic_make_chunk(pic_state *pic, const char *str, size_t len)
   return c;
 }
 
-static struct pic_chunk *
+static struct chunk *
 pic_make_chunk_lit(pic_state *pic, const char *str, size_t len)
 {
-  struct pic_chunk *c;
+  struct chunk *c;
 
-  c = pic_malloc(pic, sizeof(struct pic_chunk));
+  c = pic_malloc(pic, sizeof(struct chunk));
   c->refcnt = 1;
   c->str = (char *)str;
   c->len = len;
@@ -79,12 +79,12 @@ pic_make_chunk_lit(pic_state *pic, const char *str, size_t len)
   return c;
 }
 
-static struct pic_rope *
-pic_make_rope(pic_state *pic, struct pic_chunk *c)
+static struct rope *
+pic_make_rope(pic_state *pic, struct chunk *c)
 {
-  struct pic_rope *x;
+  struct rope *x;
 
-  x = pic_malloc(pic, sizeof(struct pic_rope));
+  x = pic_malloc(pic, sizeof(struct rope));
   x->refcnt = 1;
   x->left = NULL;
   x->right = NULL;
@@ -96,24 +96,24 @@ pic_make_rope(pic_state *pic, struct pic_chunk *c)
 }
 
 static pic_value
-pic_make_str(pic_state *pic, struct pic_rope *rope)
+pic_make_str(pic_state *pic, struct rope *rope)
 {
-  struct pic_string *str;
+  struct string *str;
 
-  str = (struct pic_string *)pic_obj_alloc(pic, sizeof(struct pic_string), PIC_TYPE_STRING);
+  str = (struct string *)pic_obj_alloc(pic, sizeof(struct string), PIC_TYPE_STRING);
   str->rope = rope;             /* delegate ownership */
 
   return pic_obj_value(str);
 }
 
 static size_t
-rope_len(struct pic_rope *x)
+rope_len(struct rope *x)
 {
   return x->weight;
 }
 
 static char
-rope_at(struct pic_rope *x, size_t i)
+rope_at(struct rope *x, size_t i)
 {
   while (i < x->weight) {
     if (x->chunk) {
@@ -129,12 +129,12 @@ rope_at(struct pic_rope *x, size_t i)
   return -1;
 }
 
-static struct pic_rope *
-rope_cat(pic_state *pic, struct pic_rope *x, struct pic_rope *y)
+static struct rope *
+rope_cat(pic_state *pic, struct rope *x, struct rope *y)
 {
-  struct pic_rope *z;
+  struct rope *z;
 
-  z = pic_malloc(pic, sizeof(struct pic_rope));
+  z = pic_malloc(pic, sizeof(struct rope));
   z->refcnt = 1;
   z->left = x;
   z->right = y;
@@ -148,8 +148,8 @@ rope_cat(pic_state *pic, struct pic_rope *x, struct pic_rope *y)
   return z;
 }
 
-static struct pic_rope *
-rope_sub(pic_state *pic, struct pic_rope *x, size_t i, size_t j)
+static struct rope *
+rope_sub(pic_state *pic, struct rope *x, size_t i, size_t j)
 {
   assert(i <= j);
   assert(j <= x->weight);
@@ -160,9 +160,9 @@ rope_sub(pic_state *pic, struct pic_rope *x, size_t i, size_t j)
   }
 
   if (x->chunk) {
-    struct pic_rope *y;
+    struct rope *y;
 
-    y = pic_malloc(pic, sizeof(struct pic_rope));
+    y = pic_malloc(pic, sizeof(struct rope));
     y->refcnt = 1;
     y->left = NULL;
     y->right = NULL;
@@ -182,7 +182,7 @@ rope_sub(pic_state *pic, struct pic_rope *x, size_t i, size_t j)
     return rope_sub(pic, x->right, i - x->left->weight, j - x->left->weight);
   }
   else {
-    struct pic_rope *r, *l;
+    struct rope *r, *l;
 
     l = rope_sub(pic, x->left, i, x->left->weight);
     r = rope_sub(pic, x->right, 0, j - x->left->weight);
@@ -196,7 +196,7 @@ rope_sub(pic_state *pic, struct pic_rope *x, size_t i, size_t j)
 }
 
 static void
-flatten(pic_state *pic, struct pic_rope *x, struct pic_chunk *c, size_t offset)
+flatten(pic_state *pic, struct rope *x, struct chunk *c, size_t offset)
 {
   if (x->chunk) {
     memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
@@ -219,15 +219,15 @@ flatten(pic_state *pic, struct pic_rope *x, struct pic_chunk *c, size_t offset)
 }
 
 static const char *
-rope_cstr(pic_state *pic, struct pic_rope *x)
+rope_cstr(pic_state *pic, struct rope *x)
 {
-  struct pic_chunk *c;
+  struct chunk *c;
 
   if (x->chunk && x->offset == 0 && x->weight == x->chunk->len) {
     return x->chunk->str;       /* reuse cached chunk */
   }
 
-  c = pic_malloc(pic, offsetof(struct pic_chunk, buf) + x->weight + 1);
+  c = pic_malloc(pic, offsetof(struct chunk, buf) + x->weight + 1);
   c->refcnt = 1;
   c->len = x->weight;
   c->str = c->buf;
@@ -250,7 +250,7 @@ str_update(pic_state *pic, pic_value dst, pic_value src)
 pic_value
 pic_str_value(pic_state *pic, const char *str, int len)
 {
-  struct pic_chunk *c;
+  struct chunk *c;
 
   if (len > 0) {
     c = pic_make_chunk(pic, str, len);

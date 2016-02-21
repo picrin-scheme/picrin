@@ -15,48 +15,48 @@ extern "C" {
 #include "picrin/private/vm.h"
 #include "picrin/private/gc.h"
 
-struct pic_lib {
-  struct pic_string *name;
-  struct pic_env *env;
-  struct pic_dict *exports;
+struct lib {
+  struct string *name;
+  struct env *env;
+  struct dict *exports;
 };
 
-struct pic_callinfo {
+struct callinfo {
   int argc, retc;
-  struct pic_code *ip;
+  struct code *ip;
   pic_value *fp;
-  struct pic_irep *irep;
-  struct pic_context *cxt;
+  struct irep *irep;
+  struct context *cxt;
   int regc;
   pic_value *regs;
-  struct pic_context *up;
+  struct context *up;
 };
 
-KHASH_DECLARE(oblist, struct pic_string *, struct pic_identifier *)
-KHASH_DECLARE(ltable, const char *, struct pic_lib)
+KHASH_DECLARE(oblist, struct string *, struct identifier *)
+KHASH_DECLARE(ltable, const char *, struct lib)
 
 struct pic_state {
   pic_allocf allocf;
   void *userdata;
 
-  struct pic_checkpoint *cp;
+  struct checkpoint *cp;
   struct pic_cont *cc;
   int ccnt;
 
   pic_value *sp;
   pic_value *stbase, *stend;
 
-  struct pic_callinfo *ci;
-  struct pic_callinfo *cibase, *ciend;
+  struct callinfo *ci;
+  struct callinfo *cibase, *ciend;
 
-  struct pic_proc **xp;
-  struct pic_proc **xpbase, **xpend;
+  struct proc **xp;
+  struct proc **xpbase, **xpend;
 
-  struct pic_code *ip;
+  struct code *ip;
 
   pic_value ptable;             /* list of ephemerons */
 
-  struct pic_lib *lib;
+  struct lib *lib;
 
   pic_value features;
 
@@ -65,14 +65,14 @@ struct pic_state {
   pic_value globals;            /* weak */
   pic_value macros;             /* weak */
   khash_t(ltable) ltable;
-  struct pic_list_head ireps;        /* chain */
+  struct list_head ireps;        /* chain */
 
   xFILE files[XOPEN_MAX];
-  struct pic_code iseq[2];             /* for pic_apply_trampoline */
+  struct code iseq[2];             /* for pic_apply_trampoline */
 
   bool gc_enable;
-  struct pic_heap *heap;
-  struct pic_object **arena;
+  struct heap *heap;
+  struct object **arena;
   size_t arena_size, arena_idx;
 
   pic_value err;

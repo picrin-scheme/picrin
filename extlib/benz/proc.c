@@ -253,18 +253,18 @@ vm_gset(pic_state *pic, pic_value uid, pic_value value)
 static void
 vm_push_cxt(pic_state *pic)
 {
-  struct pic_callinfo *ci = pic->ci;
+  struct callinfo *ci = pic->ci;
 
-  ci->cxt = (struct pic_context *)pic_obj_alloc(pic, offsetof(struct pic_context, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_CXT);
+  ci->cxt = (struct context *)pic_obj_alloc(pic, offsetof(struct context, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_CXT);
   ci->cxt->up = ci->up;
   ci->cxt->regc = ci->regc;
   ci->cxt->regs = ci->regs;
 }
 
 static void
-vm_tear_off(struct pic_callinfo *ci)
+vm_tear_off(struct callinfo *ci)
 {
-  struct pic_context *cxt;
+  struct context *cxt;
   int i;
 
   assert(ci->cxt != NULL);
@@ -283,7 +283,7 @@ vm_tear_off(struct pic_callinfo *ci)
 void
 pic_vm_tear_off(pic_state *pic)
 {
-  struct pic_callinfo *ci;
+  struct callinfo *ci;
 
   for (ci = pic->ci; ci > pic->cibase; ci--) {
     if (ci->cxt != NULL) {
@@ -326,9 +326,9 @@ bool pic_ge(pic_state *, pic_value, pic_value);
 pic_value
 pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
-  struct pic_code c;
+  struct code c;
   size_t ai = pic_enter(pic);
-  struct pic_code boot[2];
+  struct code boot[2];
   int i;
 
 #if PIC_DIRECT_THREADED_VM
@@ -411,8 +411,8 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_LREF) {
-      struct pic_callinfo *ci = pic->ci;
-      struct pic_irep *irep = ci->irep;
+      struct callinfo *ci = pic->ci;
+      struct irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
         if (c.a >= irep->argc + irep->localc) {
@@ -424,8 +424,8 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_LSET) {
-      struct pic_callinfo *ci = pic->ci;
-      struct pic_irep *irep = ci->irep;
+      struct callinfo *ci = pic->ci;
+      struct irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
         if (c.a >= irep->argc + irep->localc) {
@@ -440,7 +440,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     }
     CASE(OP_CREF) {
       int depth = c.a;
-      struct pic_context *cxt;
+      struct context *cxt;
 
       cxt = pic->ci->up;
       while (--depth) {
@@ -451,7 +451,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     }
     CASE(OP_CSET) {
       int depth = c.a;
-      struct pic_context *cxt;
+      struct context *cxt;
 
       cxt = pic->ci->up;
       while (--depth) {
@@ -477,8 +477,8 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     }
     CASE(OP_CALL) {
       pic_value x, v;
-      struct pic_callinfo *ci;
-      struct pic_proc *proc;
+      struct callinfo *ci;
+      struct proc *proc;
 
       if (c.a == -1) {
         pic->sp += pic->ci[1].retc - 1;
@@ -514,7 +514,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
         goto L_RET;
       }
       else {
-        struct pic_irep *irep = proc->u.i.irep;
+        struct irep *irep = proc->u.i.irep;
 	int i;
 	pic_value rest;
 
@@ -557,7 +557,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     CASE(OP_TAILCALL) {
       int i, argc;
       pic_value *argv;
-      struct pic_callinfo *ci;
+      struct callinfo *ci;
 
       if (pic->ci->cxt != NULL) {
         vm_tear_off(pic->ci);
@@ -583,7 +583,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     CASE(OP_RET) {
       int i, retc;
       pic_value *retv;
-      struct pic_callinfo *ci;
+      struct callinfo *ci;
 
       if (pic->ci->cxt != NULL) {
         vm_tear_off(pic->ci);
@@ -772,7 +772,7 @@ pic_value
 pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
 {
   pic_value *sp;
-  struct pic_callinfo *ci;
+  struct callinfo *ci;
   int i;
 
   pic->iseq[0].insn = OP_NOP;
@@ -904,7 +904,7 @@ pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 pic_value
 pic_closure_ref(pic_state *pic, int n)
 {
-  struct pic_proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
+  struct proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
 
   assert(pic_proc_func_p(self));
 
@@ -917,7 +917,7 @@ pic_closure_ref(pic_state *pic, int n)
 void
 pic_closure_set(pic_state *pic, int n, pic_value v)
 {
-  struct pic_proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
+  struct proc *self = pic_proc_ptr(pic, GET_OPERAND(pic, 0));
 
   assert(pic_proc_func_p(self));
 
@@ -945,13 +945,13 @@ pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
 }
 
 void
-pic_irep_incref(pic_state *PIC_UNUSED(pic), struct pic_irep *irep)
+pic_irep_incref(pic_state *PIC_UNUSED(pic), struct irep *irep)
 {
   irep->refc++;
 }
 
 void
-pic_irep_decref(pic_state *pic, struct pic_irep *irep)
+pic_irep_decref(pic_state *pic, struct irep *irep)
 {
   size_t i;
 
@@ -976,10 +976,10 @@ pic_irep_decref(pic_state *pic, struct pic_irep *irep)
 pic_value
 pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
 {
-  struct pic_proc *proc;
+  struct proc *proc;
   int i;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC);
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC);
   proc->tag = PIC_PROC_TAG_FUNC;
   proc->u.f.func = func;
   proc->u.f.localc = n;
@@ -990,11 +990,11 @@ pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
 }
 
 pic_value
-pic_make_proc_irep(pic_state *pic, struct pic_irep *irep, struct pic_context *cxt)
+pic_make_proc_irep(pic_state *pic, struct irep *irep, struct context *cxt)
 {
-  struct pic_proc *proc;
+  struct proc *proc;
 
-  proc = (struct pic_proc *)pic_obj_alloc(pic, offsetof(struct pic_proc, locals), PIC_TYPE_PROC);
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_PROC);
   proc->tag = PIC_PROC_TAG_IREP;
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;

@@ -7,9 +7,9 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
-KHASH_DEFINE(ltable, const char *, struct pic_lib, kh_str_hash_func, kh_str_cmp_func)
+KHASH_DEFINE(ltable, const char *, struct lib, kh_str_hash_func, kh_str_cmp_func)
 
-static struct pic_lib *
+static struct lib *
 get_library_opt(pic_state *pic, const char *lib)
 {
   khash_t(ltable) *h = &pic->ltable;
@@ -22,10 +22,10 @@ get_library_opt(pic_state *pic, const char *lib)
   return &kh_val(h, it);
 }
 
-static struct pic_lib *
+static struct lib *
 get_library(pic_state *pic, const char *lib)
 {
-  struct pic_lib *libp;
+  struct lib *libp;
 
   if ((libp = get_library_opt(pic, lib)) == NULL) {
     pic_errorf(pic, "library not found: %s", lib);
@@ -36,10 +36,10 @@ get_library(pic_state *pic, const char *lib)
 static pic_value
 make_library_env(pic_state *pic, pic_value name)
 {
-  struct pic_env *env;
+  struct env *env;
   pic_value e;
 
-  env = (struct pic_env *)pic_obj_alloc(pic, sizeof(struct pic_env), PIC_TYPE_ENV);
+  env = (struct env *)pic_obj_alloc(pic, sizeof(struct env), PIC_TYPE_ENV);
   env->up = NULL;
   env->lib = pic_str_ptr(pic, name);
   kh_init(env, &env->map);
@@ -117,7 +117,7 @@ pic_import(pic_state *pic, const char *lib)
 {
   pic_value name, realname, uid;
   int it = 0;
-  struct pic_lib *libp;
+  struct lib *libp;
 
   libp = get_library(pic, lib);
 
@@ -181,7 +181,7 @@ pic_lib_library_import(pic_state *pic)
 {
   const char *lib;
   pic_value name, alias, realname, uid;
-  struct pic_lib *libp;
+  struct lib *libp;
   int n;
 
   n = pic_get_args(pic, "zm|m", &lib, &name, &alias);
@@ -231,7 +231,7 @@ pic_lib_library_exports(pic_state *pic)
   const char *lib;
   pic_value sym, exports = pic_nil_value(pic);
   int it = 0;
-  struct pic_lib *libp;
+  struct lib *libp;
 
   pic_get_args(pic, "z", &lib);
 

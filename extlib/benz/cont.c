@@ -11,13 +11,13 @@ struct pic_cont {
 
   int id;
 
-  struct pic_checkpoint *cp;
+  struct checkpoint *cp;
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
   ptrdiff_t xp_offset;
   size_t arena_idx;
   pic_value ptable;
-  struct pic_code *ip;
+  struct code *ip;
 
   int retc;
   pic_value *retv;
@@ -71,7 +71,7 @@ pic_exit_point(pic_state *pic)
 }
 
 void
-pic_wind(pic_state *pic, struct pic_checkpoint *here, struct pic_checkpoint *there)
+pic_wind(pic_state *pic, struct checkpoint *here, struct checkpoint *there)
 {
   if (here == there)
     return;
@@ -89,13 +89,13 @@ pic_wind(pic_state *pic, struct pic_checkpoint *here, struct pic_checkpoint *the
 static pic_value
 pic_dynamic_wind(pic_state *pic, pic_value in, pic_value thunk, pic_value out)
 {
-  struct pic_checkpoint *here;
+  struct checkpoint *here;
   pic_value val;
 
   pic_call(pic, in, 0);       /* enter */
 
   here = pic->cp;
-  pic->cp = (struct pic_checkpoint *)pic_obj_alloc(pic, sizeof(struct pic_checkpoint), PIC_TYPE_CP);
+  pic->cp = (struct checkpoint *)pic_obj_alloc(pic, sizeof(struct checkpoint), PIC_TYPE_CP);
   pic->cp->prev = here;
   pic->cp->depth = here->depth + 1;
   pic->cp->in = pic_proc_ptr(pic, in);
@@ -218,7 +218,7 @@ pic_valuesk(pic_state *pic, int argc, pic_value *argv)
 int
 pic_receive(pic_state *pic, int n, pic_value *argv)
 {
-  struct pic_callinfo *ci;
+  struct callinfo *ci;
   int i, retc;
 
   /* take info from discarded frame */

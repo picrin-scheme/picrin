@@ -83,7 +83,7 @@ pic_push_handler(pic_state *pic, pic_value handler)
   if (pic->xp >= pic->xpend) {
     xp_len = (size_t)(pic->xpend - pic->xpbase) * 2;
     xp_offset = pic->xp - pic->xpbase;
-    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
+    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct proc *) * xp_len);
     pic->xp = pic->xpbase + xp_offset;
     pic->xpend = pic->xpbase + xp_len;
   }
@@ -110,12 +110,12 @@ pic_err(pic_state *pic)
 pic_value
 pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
 {
-  struct pic_error *e;
+  struct error *e;
   pic_value stack, ty = pic_intern_cstr(pic, type);
 
   stack = pic_get_backtrace(pic);
 
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TYPE_ERROR);
+  e = (struct error *)pic_obj_alloc(pic, sizeof(struct error), PIC_TYPE_ERROR);
   e->type = pic_sym_ptr(pic, ty);
   e->msg = pic_str_ptr(pic, pic_cstr_value(pic, msg));
   e->irrs = irrs;

@@ -94,7 +94,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
 
   switch (pic_type(pic, x)) {
   case PIC_TYPE_ID: {
-    identifier *id1, *id2;
+    struct identifier *id1, *id2;
     pic_value s1, s2;
 
     id1 = pic_id_ptr(pic, x);

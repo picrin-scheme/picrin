@@ -11,7 +11,7 @@ pic_value
 pic_get_backtrace(pic_state *pic)
 {
   size_t ai = pic_enter(pic);
-  struct pic_callinfo *ci;
+  struct callinfo *ci;
   pic_value trace;
 
   trace = pic_lit_value(pic, "");
@@ -46,7 +46,7 @@ pic_print_backtrace(pic_state *pic, xFILE *file)
     xfprintf(pic, file, "raise: ");
     pic_fwrite(pic, err, file);
   } else {
-    struct pic_error *e;
+    struct error *e;
     pic_value elem, it;
 
     e = pic_error_ptr(pic, err);
