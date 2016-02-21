@@ -6,11 +6,6 @@
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
 
-KHASH_DECLARE(l, void *, int)
-KHASH_DECLARE(v, void *, int)
-KHASH_DEFINE2(l, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
-KHASH_DEFINE2(v, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
-
 struct writer_control {
   int mode;
   int op;
