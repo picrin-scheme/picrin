@@ -186,7 +186,7 @@ int xfputs(pic_state *pic, const char *s, xFILE *stream) {
 }
 
 char *xfgets(pic_state *pic, char *s, int size, xFILE *stream) {
-  int c;
+  int c = 0;
   char *buf;
 
   xfflush(pic, NULL);

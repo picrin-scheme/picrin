@@ -61,7 +61,7 @@ void
 pic_make_library(pic_state *pic, const char *lib)
 {
   khash_t(ltable) *h = &pic->ltable;
-  const char *old_lib;
+  const char *old_lib = NULL;
   pic_value name, env, exports;
   int it;
   int ret;

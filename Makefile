@@ -20,12 +20,12 @@ REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
 TEST_RUNNER = bin/picrin
 
-CFLAGS += -I./extlib/benz/include -Wall -Wextra $(CONTRIB_DEFS)
+CFLAGS += -I./extlib/benz/include -Wall -Wextra
 LDFLAGS += -lm
 
 prefix ?= /usr/local
 
-all: CFLAGS += -O2 -DNDEBUG=1
+all: CFLAGS += -O2 -flto -DNDEBUG=1
 all: bin/picrin
 
 debug: CFLAGS += -O0 -g
@@ -33,8 +33,9 @@ debug: bin/picrin
 
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.so
-	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.so $(LDFLAGS)
+bin/picrin: CFLAGS += $(CONTRIB_DEFS)
+bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(BENZ_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) $(BENZ_OBJS) $(LDFLAGS)
 
 src/load_piclib.c: $(CONTRIB_LIBS)
 	perl etc/mkloader.pl $(CONTRIB_LIBS) > $@
