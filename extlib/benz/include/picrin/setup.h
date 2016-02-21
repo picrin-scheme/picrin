@@ -83,14 +83,6 @@
 # define PIC_ISEQ_SIZE 1024
 #endif
 
-#if DEBUG
-# include <stdio.h>
-# define GC_STRESS 0
-# define VM_DEBUG 1
-# define GC_DEBUG 0
-# define GC_DEBUG_DETAIL 0
-#endif
-
 /* check compatibility */
 
 #if __STDC_VERSION__ >= 199901L

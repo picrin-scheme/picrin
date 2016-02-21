@@ -52,31 +52,31 @@ enum {
   OP_STOP
 };
 
-struct code {
+typedef struct {
   int insn;
   int a;
   int b;
-}
+} pic_code;
 
-struct list_head {
-  struct list_head *prev, *next;
+struct pic_list {
+  struct pic_list *prev, *next;
 };
 
-struct irep {
-  struct list_head list;
+struct pic_irep {
+  struct pic_list list;
   unsigned refc;
   int argc, localc, capturec;
   bool varg;
-  struct code *code;
-  struct irep **irep;
+  pic_code *code;
+  struct pic_irep **irep;
   int *ints;
   double *nums;
-  struct object **pool;
+  struct pic_object **pool;
   size_t ncode, nirep, nints, nnums, npool;
 };
 
-void pic_irep_incref(pic_state *, struct irep *);
-void pic_irep_decref(pic_state *, struct irep *);
+void pic_irep_incref(pic_state *, struct pic_irep *);
+void pic_irep_decref(pic_state *, struct pic_irep *);
 
 #if defined(__cplusplus)
 }

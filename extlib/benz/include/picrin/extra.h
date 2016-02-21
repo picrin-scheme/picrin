@@ -119,11 +119,6 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 
 pic_value pic_library_environment(pic_state *, const char *);
 
-#if DEBUG
-# define pic_debug(pic,obj) pic_fwrite(pic,obj,xstderr)
-# define pic_fdebug(pic,obj,file) pic_fwrite(pic,obj,file)
-#endif
-
 #if defined(__cplusplus)
 }
 #endif

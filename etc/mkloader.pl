@@ -60,10 +60,6 @@ EOL
 }
 
 print <<EOL;
-
-#if DEBUG
-  puts("successfully loaded stdlib");
-#endif
 }
 EOL
 

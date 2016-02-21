@@ -334,23 +334,11 @@ pic_expand(pic_state *pic, pic_value expr, pic_value env)
 {
   pic_value v, deferred;
 
-#if DEBUG
-  puts("before expand:");
-  pic_debug(pic, expr);
-  puts("");
-#endif
-
   deferred = pic_list(pic, 1, pic_nil_value(pic));
 
   v = expand(pic, expr, env, deferred);
 
   expand_deferred(pic, deferred, env);
-
-#if DEBUG
-  puts("after expand:");
-  pic_debug(pic, v);
-  puts("");
-#endif
 
   return v;
 }

@@ -292,15 +292,9 @@ pic_vm_tear_off(pic_state *pic)
   }
 }
 
-#if VM_DEBUG
-# define OPCODE_EXEC_HOOK pic_dump_code(c)
-#else
-# define OPCODE_EXEC_HOOK ((void)0)
-#endif
-
 #if PIC_DIRECT_THREADED_VM
 # define VM_LOOP JUMP;
-# define CASE(x) L_##x: OPCODE_EXEC_HOOK;
+# define CASE(x) L_##x:
 # define NEXT pic->ip++; JUMP;
 # define JUMP c = *pic->ip; goto *oplabels[c.insn];
 # define VM_LOOP_END
@@ -317,69 +311,6 @@ pic_vm_tear_off(pic_state *pic)
 
 #define PUSHCI() (++pic->ci)
 #define POPCI() (pic->ci--)
-
-#if VM_DEBUG
-# define VM_BOOT_PRINT                          \
-  do {                                          \
-    puts("### booting VM... ###");              \
-    stbase = pic->sp;                           \
-    cibase = pic->ci;                           \
-  } while (0)
-#else
-# define VM_BOOT_PRINT
-#endif
-
-#if VM_DEBUG
-# define VM_END_PRINT                                                   \
-  do {                                                                  \
-    puts("**VM END STATE**");                                           \
-    printf("stbase\t= %p\nsp\t= %p\n", (void *)stbase, (void *)pic->sp); \
-    printf("cibase\t= %p\nci\t= %p\n", (void *)cibase, (void *)pic->ci); \
-    if (stbase < pic->sp - 1) {                                         \
-      pic_value *sp;                                                    \
-      printf("* stack trace:");                                         \
-      for (sp = stbase; pic->sp != sp; ++sp) {                          \
-        pic_debug(pic, *sp);                                            \
-        puts("");                                                       \
-      }                                                                 \
-    }                                                                   \
-    if (stbase > pic->sp - 1) {                                         \
-      puts("*** stack underflow!");                                     \
-    }                                                                   \
-  } while (0)
-#else
-# define VM_END_PRINT
-#endif
-
-#if VM_DEBUG
-# define VM_CALL_PRINT                                                  \
-  do {                                                                  \
-    short i;                                                            \
-    puts("\n== calling proc...");                                       \
-    printf("  proc = ");                                                \
-    pic_debug(pic, pic_obj_value(proc));                                \
-    puts("");                                                           \
-    printf("  argv = (");                                               \
-    for (i = 1; i < c.u.i; ++i) {                                       \
-      if (i > 1)                                                        \
-        printf(" ");                                                    \
-      pic_debug(pic, pic->sp[-c.u.i + i]);                              \
-    }                                                                   \
-    puts(")");                                                          \
-    if (! pic_proc_func_p(proc)) {                                      \
-      printf("  irep = %p\n", proc->u.i.irep);                          \
-      printf("  name = %s\n", pic_str(pic, pic_sym_name(pic, pic_proc_name(proc)))); \
-      pic_dump_irep(proc->u.i.irep);                                    \
-    }                                                                   \
-    else {                                                              \
-      printf("  cfunc = %p\n", (void *)proc->u.f.func);                 \
-      printf("  name = %s\n", pic_str(pic, pic_sym_name(pic, pic_proc_name(proc)))); \
-    }                                                                   \
-    puts("== end\n");                                                   \
-  } while (0)
-#else
-# define VM_CALL_PRINT
-#endif
 
 /* for arithmetic instructions */
 pic_value pic_add(pic_state *, pic_value, pic_value);
@@ -414,18 +345,11 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
   };
 #endif
 
-#if VM_DEBUG
-  pic_value *stbase;
-  pic_callinfo *cibase;
-#endif
-
   PUSH(proc);
 
   for (i = 0; i < argc; ++i) {
     PUSH(argv[i]);
   }
-
-  VM_BOOT_PRINT;
 
   /* boot! */
   boot[0].insn = OP_CALL;
@@ -567,8 +491,6 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 	pic_errorf(pic, "invalid application: ~s", x);
       }
       proc = pic_proc_ptr(pic, x);
-
-      VM_CALL_PRINT;
 
       if (pic->sp >= pic->stend) {
         pic_panic(pic, "VM stack overflow");
@@ -841,9 +763,6 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     }
 
     CASE(OP_STOP) {
-
-      VM_END_PRINT;
-
       return pic_protect(pic, POP());
     }
   } VM_LOOP_END;

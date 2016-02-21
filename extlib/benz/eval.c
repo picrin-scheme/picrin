@@ -826,7 +826,7 @@ pic_compile(pic_state *pic, pic_value obj)
   pic_value proc;
   size_t ai = pic_enter(pic);
 
-#if DEBUG
+#if 0
   fprintf(stdout, "ai = %zu\n", pic_enter(pic));
 
   fprintf(stdout, "# input expression\n");
@@ -838,7 +838,7 @@ pic_compile(pic_state *pic, pic_value obj)
 
   /* optimize */
   obj = pic_optimize(pic, obj);
-#if DEBUG
+#if 0
   fprintf(stdout, "## optimize completed\n");
   pic_write(pic, obj);
   fprintf(stdout, "\n");
@@ -849,7 +849,7 @@ pic_compile(pic_state *pic, pic_value obj)
 
   /* analyze */
   obj = pic_analyze(pic, obj);
-#if DEBUG
+#if 0
   fprintf(stdout, "## analyzer completed\n");
   pic_write(pic, obj);
   fprintf(stdout, "\n");
@@ -860,15 +860,6 @@ pic_compile(pic_state *pic, pic_value obj)
 
   /* codegen */
   irep = pic_codegen(pic, obj);
-#if DEBUG
-  fprintf(stdout, "## codegen completed\n");
-  pic_dump_irep(irep);
-#endif
-
-#if DEBUG
-  fprintf(stdout, "# compilation finished\n");
-  puts("");
-#endif
 
   proc = pic_make_proc_irep(pic, irep, NULL);
 

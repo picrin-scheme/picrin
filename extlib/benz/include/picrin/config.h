@@ -42,12 +42,3 @@
 /* #define PIC_SYMS_SIZE 32 */
 
 /* #define PIC_ISEQ_SIZE 1024 */
-
-/** enable all debug flags */
-/* #define DEBUG 1 */
-
-/** auxiliary debug flags */
-/* #define GC_STRESS 1 */
-/* #define VM_DEBUG 1 */
-/* #define GC_DEBUG 1 */
-/* #define GC_DEBUG_DETAIL 1 */
