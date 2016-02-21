@@ -175,7 +175,7 @@ enum {
   PIC_TYPE_CXT     = 30,
   PIC_TYPE_CP      = 31,
   PIC_TYPE_FUNC    = 32,
-  PIC_TYPE_IREP    = 33,
+  PIC_TYPE_IREP    = 33
 };
 
 #define pic_invalid_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INVALID)

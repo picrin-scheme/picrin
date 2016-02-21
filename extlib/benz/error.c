@@ -19,6 +19,8 @@ pic_panic(pic_state *pic, const char *msg)
 #endif
 
   PIC_ABORT(pic);
+
+  PIC_UNREACHABLE();
 }
 
 void

@@ -40,6 +40,7 @@
 #endif
 
 #ifndef PIC_ABORT
+void abort(void);
 # define PIC_ABORT(pic) abort()
 #endif
 
