@@ -147,8 +147,7 @@ typedef unsigned long uint32_t;
 # undef GCC_VERSION
 #endif
 
-#define PIC_SWAP(type,a,b)                      \
-  PIC_SWAP_HELPER_(type, PIC_GENSYM(tmp), a, b)
+#define PIC_SWAP(type,a,b) PIC_SWAP_HELPER_(type, PIC_GENSYM(tmp), a, b)
 #define PIC_SWAP_HELPER_(type,tmp,a,b)          \
   do {                                          \
     type tmp = (a);                             \
