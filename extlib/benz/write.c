@@ -14,9 +14,9 @@ KHASH_DEFINE2(v, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
 struct writer_control {
   int mode;
   int op;
-  khash_t(l) labels;            /* object -> int */
-  khash_t(v) visited;           /* is object shared? (yes if >0) */
   int cnt;
+  pic_value shared;            /* is object shared? (yes if >0) */
+  pic_value labels;            /* object -> int */
 };
 
 #define WRITE_MODE 1
@@ -27,25 +27,20 @@ struct writer_control {
 #define OP_WRITE_SIMPLE 3
 
 static void
-writer_control_init(struct writer_control *p, int mode, int op)
+writer_control_init(pic_state *pic, struct writer_control *p, int mode, int op)
 {
   p->mode = mode;
   p->op = op;
   p->cnt = 0;
-  kh_init(l, &p->labels);
-  kh_init(v, &p->visited);
-}
-
-static void
-writer_control_destroy(pic_state *pic, struct writer_control *p)
-{
-  kh_destroy(l, &p->labels);
-  kh_destroy(v, &p->visited);
+  p->shared = pic_make_weak(pic);
+  p->labels = pic_make_weak(pic);
 }
 
 static void
 traverse(pic_state *pic, pic_value obj, struct writer_control *p)
 {
+  pic_value shared = p->shared;
+
   if (p->op == OP_WRITE_SIMPLE) {
     return;
   }
@@ -54,14 +49,10 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
   case PIC_TYPE_PAIR:
   case PIC_TYPE_VECTOR:
   case PIC_TYPE_DICT: {
-    khash_t(v) *h = &p->visited;
-    int it;
-    int ret;
 
-    it = kh_put(v, h, pic_obj_ptr(obj), &ret);
-    if (ret != 0) {
+    if (! pic_weak_has(pic, shared, obj)) {
       /* first time */
-      kh_val(h, it) = 0;
+      pic_weak_set(pic, shared, obj, pic_int_value(pic, 0));
 
       if (pic_pair_p(pic, obj)) {
         /* pair */
@@ -83,14 +74,13 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
       }
 
       if (p->op == OP_WRITE) {
-        it = kh_get(v, h, pic_obj_ptr(obj));
-        if (kh_val(h, it) == 0) {
-          kh_del(v, h, it);
+        if (pic_int(pic, pic_weak_ref(pic, shared, obj)) == 0) {
+          pic_weak_del(pic, shared, obj);
         }
       }
     } else {
       /* second time */
-      kh_val(h, it) = 1;
+      pic_weak_set(pic, shared, obj, pic_int_value(pic, 1));
     }
     break;
   }
@@ -101,17 +91,15 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
 
 static bool
 is_shared_object(pic_state *pic, pic_value obj, struct writer_control *p) {
-  khash_t(v) *h = &p->visited;
-  int it;
+  pic_value shared = p->shared;
 
   if (! pic_obj_p(pic, obj)) {
     return false;
   }
-  it = kh_get(v, h, pic_obj_ptr(obj));
-  if (it == kh_end(h)) {
+  if (! pic_weak_has(pic, shared, obj)) {
     return false;
   }
-  return kh_val(h, it) > 0;
+  return pic_int(pic, pic_weak_ref(pic, shared, obj)) > 0;
 }
 
 static void
@@ -297,17 +285,18 @@ write_dict(pic_state *pic, pic_value dict, xFILE *file, struct writer_control *p
 static void
 write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
 {
-  khash_t(l) *lh = &p->labels;
-  int it, ret;
+  pic_value labels = p->labels;
+  int i;
 
   /* shared objects */
   if (is_shared_object(pic, obj, p)) {
-    it = kh_put(l, lh, pic_obj_ptr(obj), &ret);
-    if (ret == 0) {             /* if exists */
-      xfprintf(pic, file, "#%d#", kh_val(lh, it));
+    if (pic_weak_has(pic, labels, obj)) {
+      xfprintf(pic, file, "#%d#", pic_int(pic, pic_weak_ref(pic, labels, obj)));
       return;
     }
-    xfprintf(pic, file, "#%d=", (kh_val(lh, it) = p->cnt++));
+    i = p->cnt++;
+    xfprintf(pic, file, "#%d=", i);
+    pic_weak_set(pic, labels, obj, pic_int_value(pic, i));
   }
 
   switch (pic_type(pic, obj)) {
@@ -363,7 +352,7 @@ write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
 
   if (p->op == OP_WRITE) {
     if (is_shared_object(pic, obj, p)) {
-      kh_del(l, lh, kh_get(l, lh, pic_obj_ptr(obj)));
+      pic_weak_del(pic, labels, obj);
     }
   }
 }
@@ -373,13 +362,11 @@ write(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
 {
   struct writer_control p;
 
-  writer_control_init(&p, mode, op);
+  writer_control_init(pic, &p, mode, op);
 
   traverse(pic, obj, &p);
 
   write_core(pic, obj, file, &p);
-
-  writer_control_destroy(pic, &p);
 }
 
 
