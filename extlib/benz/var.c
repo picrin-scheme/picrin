@@ -17,7 +17,7 @@ var_get(pic_state *pic, pic_value var)
       return pic_weak_ref(pic, weak, var);
     }
   }
-  pic_panic(pic, "logic flaw");
+  PIC_UNREACHABLE();
 }
 
 static pic_value

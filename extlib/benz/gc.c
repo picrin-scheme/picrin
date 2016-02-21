@@ -403,16 +403,8 @@ gc_mark_object(pic_state *pic, struct pic_object *obj)
     }
     break;
   }
-  case PIC_TYPE_NIL:
-  case PIC_TYPE_TRUE:
-  case PIC_TYPE_FALSE:
-  case PIC_TYPE_FLOAT:
-  case PIC_TYPE_INT:
-  case PIC_TYPE_CHAR:
-  case PIC_TYPE_EOF:
-  case PIC_TYPE_UNDEF:
-  case PIC_TYPE_INVALID:
-    pic_panic(pic, "logic flaw");
+  default:
+    PIC_UNREACHABLE();
   }
 }
 
@@ -574,16 +566,8 @@ gc_finalize_object(pic_state *pic, struct pic_object *obj)
   case PIC_TYPE_CP:
     break;
 
-  case PIC_TYPE_NIL:
-  case PIC_TYPE_TRUE:
-  case PIC_TYPE_FALSE:
-  case PIC_TYPE_FLOAT:
-  case PIC_TYPE_INT:
-  case PIC_TYPE_CHAR:
-  case PIC_TYPE_EOF:
-  case PIC_TYPE_UNDEF:
-  case PIC_TYPE_INVALID:
-    pic_panic(pic, "logic flaw");
+  default:
+    PIC_UNREACHABLE();
   }
 }
 

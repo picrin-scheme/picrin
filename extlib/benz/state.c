@@ -178,13 +178,7 @@ pic_init_core(pic_state *pic)
 
   pic_defun(pic, "features", pic_features);
 
-  pic_try {
-    pic_load_cstr(pic, &pic_boot[0][0]);
-  }
-  pic_catch {
-    pic_print_backtrace(pic, xstdout);
-    pic_panic(pic, "");
-  }
+  pic_load_cstr(pic, &pic_boot[0][0]);
 }
 
 pic_state *

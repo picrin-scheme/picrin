@@ -219,11 +219,7 @@ pic_socket_socket_recv(pic_state *pic)
 
   ensure_socket_is_open(pic, sock);
 
-  buf = pic_blob(pic, pic_blob_value(pic, NULL, size), NULL);
-  if (buf == NULL && size > 0) {
-    /* XXX: Is it really OK? */
-    pic_panic(pic, "memory exhausted");
-  }
+  buf = pic_alloca(pic, size);
 
   errno = 0;
   do {
