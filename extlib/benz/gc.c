@@ -412,9 +412,9 @@ static void
 gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
-  pic_callinfo *ci;
+  struct pic_callinfo *ci;
   struct pic_proc **xhandler;
-  struct pic_list *list;
+  struct pic_list_head *list;
   int it;
   size_t j;
 

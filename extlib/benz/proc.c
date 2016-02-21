@@ -253,7 +253,7 @@ vm_gset(pic_state *pic, pic_value uid, pic_value value)
 static void
 vm_push_cxt(pic_state *pic)
 {
-  pic_callinfo *ci = pic->ci;
+  struct pic_callinfo *ci = pic->ci;
 
   ci->cxt = (struct pic_context *)pic_obj_alloc(pic, offsetof(struct pic_context, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_CXT);
   ci->cxt->up = ci->up;
@@ -262,7 +262,7 @@ vm_push_cxt(pic_state *pic)
 }
 
 static void
-vm_tear_off(pic_callinfo *ci)
+vm_tear_off(struct pic_callinfo *ci)
 {
   struct pic_context *cxt;
   int i;
@@ -283,7 +283,7 @@ vm_tear_off(pic_callinfo *ci)
 void
 pic_vm_tear_off(pic_state *pic)
 {
-  pic_callinfo *ci;
+  struct pic_callinfo *ci;
 
   for (ci = pic->ci; ci > pic->cibase; ci--) {
     if (ci->cxt != NULL) {
@@ -326,9 +326,9 @@ bool pic_ge(pic_state *, pic_value, pic_value);
 pic_value
 pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
-  pic_code c;
+  struct pic_code c;
   size_t ai = pic_enter(pic);
-  pic_code boot[2];
+  struct pic_code boot[2];
   int i;
 
 #if PIC_DIRECT_THREADED_VM
@@ -411,7 +411,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_LREF) {
-      pic_callinfo *ci = pic->ci;
+      struct pic_callinfo *ci = pic->ci;
       struct pic_irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
@@ -424,7 +424,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_LSET) {
-      pic_callinfo *ci = pic->ci;
+      struct pic_callinfo *ci = pic->ci;
       struct pic_irep *irep = ci->irep;
 
       if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
@@ -477,7 +477,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     }
     CASE(OP_CALL) {
       pic_value x, v;
-      pic_callinfo *ci;
+      struct pic_callinfo *ci;
       struct pic_proc *proc;
 
       if (c.a == -1) {
@@ -557,7 +557,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     CASE(OP_TAILCALL) {
       int i, argc;
       pic_value *argv;
-      pic_callinfo *ci;
+      struct pic_callinfo *ci;
 
       if (pic->ci->cxt != NULL) {
         vm_tear_off(pic->ci);
@@ -583,7 +583,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     CASE(OP_RET) {
       int i, retc;
       pic_value *retv;
-      pic_callinfo *ci;
+      struct pic_callinfo *ci;
 
       if (pic->ci->cxt != NULL) {
         vm_tear_off(pic->ci);
@@ -772,7 +772,7 @@ pic_value
 pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
 {
   pic_value *sp;
-  pic_callinfo *ci;
+  struct pic_callinfo *ci;
   int i;
 
   pic->iseq[0].insn = OP_NOP;

@@ -354,7 +354,7 @@ typedef struct codegen_context {
   pic_value rest;
   pic_value args, locals, captures;
   /* actual bit code sequence */
-  pic_code *code;
+  struct pic_code *code;
   size_t clen, ccapa;
   /* child ireps */
   struct pic_irep **irep;
@@ -382,7 +382,7 @@ codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, 
   cxt->locals = locals;
   cxt->captures = captures;
 
-  cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(pic_code));
+  cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct pic_code));
   cxt->clen = 0;
   cxt->ccapa = PIC_ISEQ_SIZE;
 
@@ -417,7 +417,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->argc = pic_vec_len(pic, cxt->args) + 1;
   irep->localc = pic_vec_len(pic, cxt->locals);
   irep->capturec = pic_vec_len(pic, cxt->captures);
-  irep->code = pic_realloc(pic, cxt->code, sizeof(pic_code) * cxt->clen);
+  irep->code = pic_realloc(pic, cxt->code, sizeof(struct pic_code) * cxt->clen);
   irep->irep = pic_realloc(pic, cxt->irep, sizeof(struct pic_irep *) * cxt->ilen);
   irep->ints = pic_realloc(pic, cxt->ints, sizeof(int) * cxt->klen);
   irep->nums = pic_realloc(pic, cxt->nums, sizeof(double) * cxt->flen);
@@ -443,7 +443,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
     }                                                                   \
   } while (0)
 
-#define check_code_size(pic, cxt) check_size(pic, cxt, c, code, pic_code)
+#define check_code_size(pic, cxt) check_size(pic, cxt, c, code, struct pic_code)
 #define check_irep_size(pic, cxt) check_size(pic, cxt, i, irep, struct pic_irep *)
 #define check_pool_size(pic, cxt) check_size(pic, cxt, p, pool, struct pic_object *)
 #define check_ints_size(pic, cxt) check_size(pic, cxt, k, ints, int)

@@ -52,22 +52,22 @@ enum {
   OP_STOP
 };
 
-typedef struct {
+struct pic_code {
   int insn;
   int a;
   int b;
-} pic_code;
+};
 
-struct pic_list {
-  struct pic_list *prev, *next;
+struct pic_list_head {
+  struct pic_list_head *prev, *next;
 };
 
 struct pic_irep {
-  struct pic_list list;
+  struct pic_list_head list;
   unsigned refc;
   int argc, localc, capturec;
   bool varg;
-  pic_code *code;
+  struct pic_code *code;
   struct pic_irep **irep;
   int *ints;
   double *nums;

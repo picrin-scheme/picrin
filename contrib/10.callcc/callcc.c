@@ -16,7 +16,7 @@ struct pic_fullcont {
   size_t sp_offset;
   ptrdiff_t st_len;
 
-  pic_callinfo *ci_ptr;
+  struct pic_callinfo *ci_ptr;
   size_t ci_offset;
   ptrdiff_t ci_len;
 
@@ -24,7 +24,7 @@ struct pic_fullcont {
   size_t xp_offset;
   ptrdiff_t xp_len;
 
-  pic_code *ip;
+  struct pic_code *ip;
 
   pic_value ptable;
 
@@ -54,7 +54,7 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
   struct pic_fullcont *cont = data;
   struct pic_checkpoint *cp;
   pic_value *stack;
-  pic_callinfo *ci;
+  struct pic_callinfo *ci;
   struct pic_proc **xp;
   size_t i;
 
@@ -141,8 +141,8 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
 
   cont->ci_offset = pic->ci - pic->cibase;
   cont->ci_len = pic->ciend - pic->cibase;
-  cont->ci_ptr = pic_malloc(pic, sizeof(pic_callinfo) * cont->ci_len);
-  memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
+  cont->ci_ptr = pic_malloc(pic, sizeof(struct pic_callinfo) * cont->ci_len);
+  memcpy(cont->ci_ptr, pic->cibase, sizeof(struct pic_callinfo) * cont->ci_len);
 
   cont->xp_offset = pic->xp - pic->xpbase;
   cont->xp_len = pic->xpend - pic->xpbase;
@@ -193,7 +193,7 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
   pic->stend = pic->stbase + cont->st_len;
 
   assert(pic->ciend - pic->cibase >= cont->ci_len);
-  memcpy(pic->cibase, cont->ci_ptr, sizeof(pic_callinfo) * cont->ci_len);
+  memcpy(pic->cibase, cont->ci_ptr, sizeof(struct pic_callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
 

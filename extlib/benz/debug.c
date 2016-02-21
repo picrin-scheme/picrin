@@ -11,7 +11,7 @@ pic_value
 pic_get_backtrace(pic_state *pic)
 {
   size_t ai = pic_enter(pic);
-  pic_callinfo *ci;
+  struct pic_callinfo *ci;
   pic_value trace;
 
   trace = pic_lit_value(pic, "");

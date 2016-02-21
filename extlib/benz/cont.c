@@ -17,7 +17,7 @@ struct pic_cont {
   ptrdiff_t xp_offset;
   size_t arena_idx;
   pic_value ptable;
-  pic_code *ip;
+  struct pic_code *ip;
 
   int retc;
   pic_value *retv;
@@ -218,7 +218,7 @@ pic_valuesk(pic_state *pic, int argc, pic_value *argv)
 int
 pic_receive(pic_state *pic, int n, pic_value *argv)
 {
-  pic_callinfo *ci;
+  struct pic_callinfo *ci;
   int i, retc;
 
   /* take info from discarded frame */

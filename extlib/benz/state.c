@@ -219,7 +219,7 @@ pic_open(pic_allocf allocf, void *userdata)
   }
 
   /* callinfo */
-  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_callinfo));
+  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(struct pic_callinfo));
   pic->ciend = pic->cibase + PIC_STACK_SIZE;
 
   if (! pic->ci) {
@@ -356,7 +356,7 @@ pic_close(pic_state *pic)
   {
     /* FIXME */
     int i = 0;
-    struct pic_list *list;
+    struct pic_list_head *list;
     for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
       i++;
     }
