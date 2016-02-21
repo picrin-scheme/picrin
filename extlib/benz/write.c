@@ -9,13 +9,13 @@
 KHASH_DECLARE(l, void *, int)
 KHASH_DECLARE(v, void *, int)
 KHASH_DEFINE2(l, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
-KHASH_DEFINE2(v, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
+KHASH_DEFINE2(v, void *, int, 1, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 struct writer_control {
   int mode;
   int op;
   khash_t(l) labels;            /* object -> int */
-  khash_t(v) visited;           /* object -> int */
+  khash_t(v) visited;           /* is object shared? (yes if >0) */
   int cnt;
 };
 
@@ -41,6 +41,77 @@ writer_control_destroy(pic_state *pic, struct writer_control *p)
 {
   kh_destroy(l, &p->labels);
   kh_destroy(v, &p->visited);
+}
+
+static void
+traverse(pic_state *pic, pic_value obj, struct writer_control *p)
+{
+  if (p->op == OP_WRITE_SIMPLE) {
+    return;
+  }
+
+  switch (pic_type(pic, obj)) {
+  case PIC_TYPE_PAIR:
+  case PIC_TYPE_VECTOR:
+  case PIC_TYPE_DICT: {
+    khash_t(v) *h = &p->visited;
+    int it;
+    int ret;
+
+    it = kh_put(v, h, pic_obj_ptr(obj), &ret);
+    if (ret != 0) {
+      /* first time */
+      kh_val(h, it) = 0;
+
+      if (pic_pair_p(pic, obj)) {
+        /* pair */
+        traverse(pic, pic_car(pic, obj), p);
+        traverse(pic, pic_cdr(pic, obj), p);
+      } else if (pic_vec_p(pic, obj)) {
+        /* vector */
+        int i, len = pic_vec_len(pic, obj);
+        for (i = 0; i < len; ++i) {
+          traverse(pic, pic_vec_ref(pic, obj, i), p);
+        }
+      } else {
+        /* dictionary */
+        int it = 0;
+        pic_value val;
+        while (pic_dict_next(pic, obj, &it, NULL, &val)) {
+          traverse(pic, val, p);
+        }
+      }
+
+      if (p->op == OP_WRITE) {
+        it = kh_get(v, h, pic_obj_ptr(obj));
+        if (kh_val(h, it) == 0) {
+          kh_del(v, h, it);
+        }
+      }
+    } else {
+      /* second time */
+      kh_val(h, it) = 1;
+    }
+    break;
+  }
+  default:
+    break;
+  }
+}
+
+static bool
+is_shared_object(pic_state *pic, pic_value obj, struct writer_control *p) {
+  khash_t(v) *h = &p->visited;
+  int it;
+
+  if (! pic_obj_p(pic, obj)) {
+    return false;
+  }
+  it = kh_get(v, h, pic_obj_ptr(obj));
+  if (it == kh_end(h)) {
+    return false;
+  }
+  return kh_val(h, it) > 0;
 }
 
 static void
@@ -122,46 +193,20 @@ static void write_core(pic_state *, pic_value, xFILE *, struct writer_control *)
 static void
 write_pair_help(pic_state *pic, pic_value pair, xFILE *file, struct writer_control *p)
 {
-  khash_t(l) *lh = &p->labels;
-  khash_t(v) *vh = &p->visited;
-  int it;
-  int ret;
+  pic_value cdr = pic_cdr(pic, pair);
 
   write_core(pic, pic_car(pic, pair), file, p);
 
-  if (pic_nil_p(pic, pic_cdr(pic, pair))) {
+  if (pic_nil_p(pic, cdr)) {
     return;
   }
-  else if (pic_pair_p(pic, pic_cdr(pic, pair))) {
-
-    /* shared objects */
-    if ((it = kh_get(l, lh, pic_obj_ptr(pic_cdr(pic, pair)))) != kh_end(lh) && kh_val(lh, it) != -1) {
-      xfprintf(pic, file, " . ");
-
-      kh_put(v, vh, pic_obj_ptr(pic_cdr(pic, pair)), &ret);
-      if (ret == 0) {           /* if exists */
-        xfprintf(pic, file, "#%d#", kh_val(lh, it));
-        return;
-      }
-      xfprintf(pic, file, "#%d=", kh_val(lh, it));
-    }
-    else {
-      xfprintf(pic, file, " ");
-    }
-
-    write_pair_help(pic, pic_cdr(pic, pair), file, p);
-
-    if (p->op == OP_WRITE) {
-      if ((it = kh_get(l, lh, pic_obj_ptr(pic_cdr(pic, pair)))) != kh_end(lh) && kh_val(lh, it) != -1) {
-        it = kh_get(v, vh, pic_obj_ptr(pic_cdr(pic, pair)));
-        kh_del(v, vh, it);
-      }
-    }
-    return;
+  else if (pic_pair_p(pic, cdr) && ! is_shared_object(pic, cdr, p)) {
+    xfprintf(pic, file, " ");
+    write_pair_help(pic, cdr, file, p);
   }
   else {
     xfprintf(pic, file, " . ");
-    write_core(pic, pic_cdr(pic, pair), file, p);
+    write_core(pic, cdr, file, p);
   }
 }
 
@@ -253,18 +298,16 @@ static void
 write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
 {
   khash_t(l) *lh = &p->labels;
-  khash_t(v) *vh = &p->visited;
-  int it;
-  int ret;
+  int it, ret;
 
   /* shared objects */
-  if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_obj_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
-    kh_put(v, vh, pic_obj_ptr(obj), &ret);
+  if (is_shared_object(pic, obj, p)) {
+    it = kh_put(l, lh, pic_obj_ptr(obj), &ret);
     if (ret == 0) {             /* if exists */
       xfprintf(pic, file, "#%d#", kh_val(lh, it));
       return;
     }
-    xfprintf(pic, file, "#%d=", kh_val(lh, it));
+    xfprintf(pic, file, "#%d=", (kh_val(lh, it) = p->cnt++));
   }
 
   switch (pic_type(pic, obj)) {
@@ -319,66 +362,9 @@ write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
   }
 
   if (p->op == OP_WRITE) {
-    if (pic_obj_p(pic, obj) && ((it = kh_get(l, lh, pic_obj_ptr(obj))) != kh_end(lh)) && kh_val(lh, it) != -1) {
-      it = kh_get(v, vh, pic_obj_ptr(obj));
-      kh_del(v, vh, it);
+    if (is_shared_object(pic, obj, p)) {
+      kh_del(l, lh, kh_get(l, lh, pic_obj_ptr(obj)));
     }
-  }
-}
-
-static void
-traverse(pic_state *pic, pic_value obj, struct writer_control *p)
-{
-  if (p->op == OP_WRITE_SIMPLE) {
-    return;
-  }
-
-  switch (pic_type(pic, obj)) {
-  case PIC_TYPE_PAIR:
-  case PIC_TYPE_VECTOR:
-  case PIC_TYPE_DICT: {
-    khash_t(l) *h = &p->labels;
-    int it;
-    int ret;
-
-    it = kh_put(l, h, pic_obj_ptr(obj), &ret);
-    if (ret != 0) {
-      /* first time */
-      kh_val(h, it) = -1;
-
-      if (pic_pair_p(pic, obj)) {
-        /* pair */
-        traverse(pic, pic_car(pic, obj), p);
-        traverse(pic, pic_cdr(pic, obj), p);
-      } else if (pic_vec_p(pic, obj)) {
-        /* vector */
-        int i, len = pic_vec_len(pic, obj);
-        for (i = 0; i < len; ++i) {
-          traverse(pic, pic_vec_ref(pic, obj, i), p);
-        }
-      } else {
-        /* dictionary */
-        int it = 0;
-        pic_value val;
-        while (pic_dict_next(pic, obj, &it, NULL, &val)) {
-          traverse(pic, val, p);
-        }
-      }
-
-      if (p->op == OP_WRITE) {
-        it = kh_get(l, h, pic_obj_ptr(obj));
-        if (kh_val(h, it) == -1) {
-          kh_del(l, h, it);
-        }
-      }
-    } else if (kh_val(h, it) == -1) {
-      /* second time */
-      kh_val(h, it) = p->cnt++;
-    }
-    break;
-  }
-  default:
-    break;
   }
 }
 
