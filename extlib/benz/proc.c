@@ -1024,7 +1024,7 @@ pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
 }
 
 void
-pic_irep_incref(pic_state PIC_UNUSED(*pic), struct pic_irep *irep)
+pic_irep_incref(pic_state *PIC_UNUSED(pic), struct pic_irep *irep)
 {
   irep->refc++;
 }

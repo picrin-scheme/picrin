@@ -138,7 +138,9 @@ typedef unsigned long uint32_t;
 
 #define PIC_FALLTHROUGH ((void)0)
 
-#if __GNUC__ || __clang__
+#if __cplusplus
+# define PIC_UNUSED(v)
+#elif __GNUC__ || __clang__
 # define PIC_UNUSED(v) __attribute__((unused)) v
 #else
 # define PIC_UNUSED(v) v

@@ -84,7 +84,7 @@ pic_heap_close(pic_state *pic, struct pic_heap *heap)
 
 #if PIC_ENABLE_LIBC
 void *
-pic_default_allocf(void PIC_UNUSED(*userdata), void *ptr, size_t size)
+pic_default_allocf(void *PIC_UNUSED(userdata), void *ptr, size_t size)
 {
   if (size != 0) {
     return realloc(ptr, size);

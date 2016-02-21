@@ -110,7 +110,7 @@ analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, anal
 }
 
 static void
-analyzer_scope_destroy(pic_state PIC_UNUSED(*pic), analyze_scope PIC_UNUSED(*scope))
+analyzer_scope_destroy(pic_state *PIC_UNUSED(pic), analyze_scope *PIC_UNUSED(scope))
 {
   /* nothing here */
 }

@@ -262,7 +262,7 @@ pic_socket_socket_close(pic_state *pic)
 }
 
 static int
-xf_socket_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size)
+xf_socket_read(pic_state *PIC_UNUSED(pic), void *cookie, char *ptr, int size)
 {
   struct pic_socket_t *sock;
 
@@ -272,7 +272,7 @@ xf_socket_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size)
 }
 
 static int
-xf_socket_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int size)
+xf_socket_write(pic_state *PIC_UNUSED(pic), void *cookie, const char *ptr, int size)
 {
   struct pic_socket_t *sock;
 
@@ -282,14 +282,14 @@ xf_socket_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int s
 }
 
 static long
-xf_socket_seek(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence))
+xf_socket_seek(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence))
 {
   errno = EBADF;
   return -1;
 }
 
 static int
-xf_socket_close(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie))
+xf_socket_close(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie))
 {
   return 0;
 }

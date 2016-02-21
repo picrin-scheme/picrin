@@ -101,7 +101,7 @@ case_fold(int c, struct reader_control *p)
 }
 
 static pic_value
-read_comment(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_comment(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
   do {
     c = next(pic, file);
@@ -111,7 +111,7 @@ read_comment(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSE
 }
 
 static pic_value
-read_block_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control PIC_UNUSED(*p))
+read_block_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *PIC_UNUSED(p))
 {
   int x, y;
   int i = 1;
@@ -240,7 +240,7 @@ read_symbol(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 }
 
 static unsigned
-read_uinteger(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_uinteger(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
   unsigned u = 0;
 
@@ -257,7 +257,7 @@ read_uinteger(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUS
 }
 
 static pic_value
-read_unsigned(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_unsigned(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
 #define ATOF_BUF_SIZE (64)
   char buf[ATOF_BUF_SIZE];
@@ -370,7 +370,7 @@ read_plus(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 }
 
 static pic_value
-read_true(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_true(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
   if ((c = peek(pic, file)) == 'r') {
     if (! expect(pic, file, "rue")) {
@@ -384,7 +384,7 @@ read_true(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*
 }
 
 static pic_value
-read_false(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_false(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
   if ((c = peek(pic, file)) == 'a') {
     if (! expect(pic, file, "alse")) {
@@ -398,7 +398,7 @@ read_false(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(
 }
 
 static pic_value
-read_char(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_char(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
   c = next(pic, file);
 
@@ -433,7 +433,7 @@ read_char(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*
 }
 
 static pic_value
-read_string(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_string(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
   char *buf;
   int size, cnt;
@@ -468,7 +468,7 @@ read_string(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED
 }
 
 static pic_value
-read_pipe(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
+read_pipe(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
 {
   char *buf;
   int size, cnt;
@@ -678,7 +678,7 @@ read_label_set(pic_state *pic, xFILE *file, int i, struct reader_control *p)
 }
 
 static pic_value
-read_label_ref(pic_state *pic, xFILE PIC_UNUSED(*file), int i, struct reader_control *p)
+read_label_ref(pic_state *pic, xFILE *PIC_UNUSED(file), int i, struct reader_control *p)
 {
   khash_t(read) *h = &p->labels;
   int it;
@@ -710,7 +710,7 @@ read_label(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 }
 
 static pic_value
-read_unmatch(pic_state *pic, xFILE PIC_UNUSED(*file), int PIC_UNUSED(c), struct reader_control PIC_UNUSED(*p))
+read_unmatch(pic_state *pic, xFILE *PIC_UNUSED(file), int PIC_UNUSED(c), struct reader_control *PIC_UNUSED(p))
 {
   read_error(pic, "unmatched parenthesis", pic_nil_value(pic));
 }
@@ -816,7 +816,7 @@ reader_table_init(void)
 }
 
 static void
-reader_init(pic_state PIC_UNUSED(*pic), struct reader_control *p)
+reader_init(pic_state *PIC_UNUSED(pic), struct reader_control *p)
 {
   p->typecase = CASE_DEFAULT;
   kh_init(read, &p->labels);

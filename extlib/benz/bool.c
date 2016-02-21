@@ -8,13 +8,13 @@
 #if PIC_NAN_BOXING
 
 bool
-pic_eq_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
   return x == y;
 }
 
 bool
-pic_eqv_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
   return x == y;
 }
@@ -22,7 +22,7 @@ pic_eqv_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
 #else
 
 bool
-pic_eq_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
   if (pic_type(pic, x) != pic_type(pic, y))
     return false;
@@ -38,7 +38,7 @@ pic_eq_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
 }
 
 bool
-pic_eqv_p(pic_state PIC_UNUSED(*pic), pic_value x, pic_value y)
+pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
   if (pic_type(pic, x) != pic_type(pic, y))
     return false;

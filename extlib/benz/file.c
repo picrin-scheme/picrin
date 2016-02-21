@@ -40,15 +40,15 @@ int xfclose(pic_state *pic, xFILE *fp) {
   return fp->vtable.close(pic, fp->vtable.cookie);
 }
 
-void xclearerr(pic_state PIC_UNUSED(*pic), xFILE *fp) {
+void xclearerr(pic_state *PIC_UNUSED(pic), xFILE *fp) {
   fp->flag &= ~(X_EOF | X_ERR);
 }
 
-int xfeof(pic_state PIC_UNUSED(*pic), xFILE *fp) {
+int xfeof(pic_state *PIC_UNUSED(pic), xFILE *fp) {
   return (fp->flag & X_EOF) != 0;
 }
 
-int xferror(pic_state PIC_UNUSED(*pic), xFILE *fp) {
+int xferror(pic_state *PIC_UNUSED(pic), xFILE *fp) {
   return (fp->flag & X_ERR) != 0;
 }
 
@@ -204,7 +204,7 @@ char *xfgets(pic_state *pic, char *s, int size, xFILE *stream) {
   return (c == EOF && buf == s) ? NULL : s;
 }
 
-int xungetc(pic_state PIC_UNUSED(*pic), int c, xFILE *fp) {
+int xungetc(pic_state *PIC_UNUSED(pic), int c, xFILE *fp) {
   unsigned char uc = c;
 
   if (c == EOF || fp->base == fp->ptr) {
@@ -367,7 +367,7 @@ xFILE *xfile_xstderr(pic_state *pic) { return &pic->files[2]; }
 #if PIC_ENABLE_STDIO
 
 static int
-file_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size) {
+file_read(pic_state *PIC_UNUSED(pic), void *cookie, char *ptr, int size) {
   FILE *file = cookie;
   int r;
 
@@ -384,7 +384,7 @@ file_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size) {
 }
 
 static int
-file_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int size) {
+file_write(pic_state *PIC_UNUSED(pic), void *cookie, const char *ptr, int size) {
   FILE *file = cookie;
   int r;
 
@@ -397,7 +397,7 @@ file_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int size) 
 }
 
 static long
-file_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence) {
+file_seek(pic_state *PIC_UNUSED(pic), void *cookie, long pos, int whence) {
   switch (whence) {
   case XSEEK_CUR:
     whence = SEEK_CUR;
@@ -416,7 +416,7 @@ file_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence) {
 }
 
 static int
-file_close(pic_state PIC_UNUSED(*pic), void *cookie) {
+file_close(pic_state *PIC_UNUSED(pic), void *cookie) {
   return fclose(cookie);
 }
 
@@ -435,7 +435,7 @@ xFILE *xfopen_file(pic_state *pic, FILE *fp, const char *mode) {
 typedef struct { char *buf; long pos, end, capa; } xbuf_t;
 
 static int
-string_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size)
+string_read(pic_state *PIC_UNUSED(pic), void *cookie, char *ptr, int size)
 {
   xbuf_t *m = cookie;
 
@@ -463,7 +463,7 @@ string_write(pic_state *pic, void *cookie, const char *ptr, int size)
 }
 
 static long
-string_seek(pic_state PIC_UNUSED(*pic), void *cookie, long pos, int whence)
+string_seek(pic_state *PIC_UNUSED(pic), void *cookie, long pos, int whence)
 {
   xbuf_t *m = cookie;
 
@@ -529,26 +529,26 @@ int xfget_buf(pic_state *pic, xFILE *file, const char **buf, int *len) {
 }
 
 static int
-null_read(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), char PIC_UNUSED(*ptr), int PIC_UNUSED(size)) {
+null_read(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), char *PIC_UNUSED(ptr), int PIC_UNUSED(size)) {
   return 0;
 }
 
 static int
-null_write(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), const char PIC_UNUSED(*ptr), int size) {
+null_write(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), const char *PIC_UNUSED(ptr), int size) {
   return size;
 }
 
 static long
-null_seek(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence)) {
+null_seek(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence)) {
   return 0;
 }
 
 static int
-null_close(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie)) {
+null_close(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie)) {
   return 0;
 }
 
-xFILE *xfopen_null(pic_state PIC_UNUSED(*pic), const char *mode) {
+xFILE *xfopen_null(pic_state *PIC_UNUSED(pic), const char *mode) {
   switch (*mode) {
   case 'r':
     return xfunopen(pic, 0, null_read, 0, null_seek, null_close);

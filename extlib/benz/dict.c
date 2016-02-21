@@ -43,7 +43,7 @@ pic_dict_set(pic_state *pic, pic_value dict, pic_value key, pic_value val)
 }
 
 int
-pic_dict_size(pic_state PIC_UNUSED(*pic), pic_value dict)
+pic_dict_size(pic_state *PIC_UNUSED(pic), pic_value dict)
 {
   return kh_size(&pic_dict_ptr(pic, dict)->hash);
 }
@@ -70,7 +70,7 @@ pic_dict_del(pic_state *pic, pic_value dict, pic_value key)
 }
 
 bool
-pic_dict_next(pic_state PIC_UNUSED(*pic), pic_value dict, int *iter, pic_value *key, pic_value *val)
+pic_dict_next(pic_state *PIC_UNUSED(pic), pic_value dict, int *iter, pic_value *key, pic_value *val)
 {
   khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
   int it = *iter;

@@ -22,7 +22,7 @@ pic_open_port(pic_state *pic, xFILE *file)
 }
 
 xFILE *
-pic_fileno(pic_state PIC_UNUSED(*pic), pic_value port)
+pic_fileno(pic_state *PIC_UNUSED(pic), pic_value port)
 {
   return pic_port_ptr(pic, port)->file;
 }

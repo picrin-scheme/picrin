@@ -49,7 +49,7 @@ pic_make_identifier(pic_state *pic, pic_value base, pic_value env)
 }
 
 pic_value
-pic_sym_name(pic_state PIC_UNUSED(*pic), pic_value sym)
+pic_sym_name(pic_state *PIC_UNUSED(pic), pic_value sym)
 {
   return pic_obj_value(pic_sym_ptr(pic, sym)->u.str);
 }

@@ -18,13 +18,13 @@
 #define pic_init_value(v,vtype) (v = (0xfff0000000000000ul | ((uint64_t)(vtype) << 48)))
 
 int
-pic_vtype(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_vtype(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return 0xfff0 >= (v >> 48) ? PIC_TYPE_FLOAT : ((v >> 48) & 0xf);
 }
 
 double
-pic_float(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   union { double f; uint64_t i; } u;
   u.i = v;
@@ -32,7 +32,7 @@ pic_float(pic_state PIC_UNUSED(*pic), pic_value v)
 }
 
 int
-pic_int(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   union { int i; unsigned u; } u;
   u.u = v & 0xfffffffful;
@@ -40,7 +40,7 @@ pic_int(pic_state PIC_UNUSED(*pic), pic_value v)
 }
 
 char
-pic_char(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v & 0xfffffffful;
 }
@@ -56,25 +56,25 @@ pic_obj_ptr(pic_value v)
 #define pic_init_value(v,vtype) ((v).type = (vtype), (v).u.data = NULL)
 
 int
-pic_vtype(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_vtype(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return (int)(v.type);
 }
 
 double
-pic_float(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v.u.f;
 }
 
 int
-pic_int(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v.u.i;
 }
 
 char
-pic_char(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v.u.c;
 }
@@ -100,7 +100,7 @@ pic_obj_value(void *ptr)
 }
 
 pic_value
-pic_float_value(pic_state PIC_UNUSED(*pic), double f)
+pic_float_value(pic_state *PIC_UNUSED(pic), double f)
 {
   union { double f; uint64_t i; } u;
 
@@ -113,7 +113,7 @@ pic_float_value(pic_state PIC_UNUSED(*pic), double f)
 }
 
 pic_value
-pic_int_value(pic_state PIC_UNUSED(*pic), int i)
+pic_int_value(pic_state *PIC_UNUSED(pic), int i)
 {
   pic_value v;
 
@@ -123,7 +123,7 @@ pic_int_value(pic_state PIC_UNUSED(*pic), int i)
 }
 
 pic_value
-pic_char_value(pic_state PIC_UNUSED(*pic), char c)
+pic_char_value(pic_state *PIC_UNUSED(pic), char c)
 {
   pic_value v;
 
@@ -145,7 +145,7 @@ pic_obj_value(void *ptr)
 }
 
 pic_value
-pic_float_value(pic_state PIC_UNUSED(*pic), double f)
+pic_float_value(pic_state *PIC_UNUSED(pic), double f)
 {
   pic_value v;
 
@@ -155,7 +155,7 @@ pic_float_value(pic_state PIC_UNUSED(*pic), double f)
 }
 
 pic_value
-pic_int_value(pic_state PIC_UNUSED(*pic), int i)
+pic_int_value(pic_state *PIC_UNUSED(pic), int i)
 {
   pic_value v;
 
@@ -165,7 +165,7 @@ pic_int_value(pic_state PIC_UNUSED(*pic), int i)
 }
 
 pic_value
-pic_char_value(pic_state PIC_UNUSED(*pic), char c)
+pic_char_value(pic_state *PIC_UNUSED(pic), char c)
 {
   pic_value v;
 
@@ -177,7 +177,7 @@ pic_char_value(pic_state PIC_UNUSED(*pic), char c)
 #endif
 
 #define DEFVAL(name, type)                      \
-  pic_value name(pic_state PIC_UNUSED(*pic)) {  \
+  pic_value name(pic_state *PIC_UNUSED(pic)) {  \
     pic_value v;                                \
     pic_init_value(v, type);                    \
     return v;                                   \
@@ -191,7 +191,7 @@ DEFVAL(pic_undef_value, PIC_TYPE_UNDEF)
 DEFVAL(pic_invalid_value, PIC_TYPE_INVALID)
 
 int
-pic_type(pic_state PIC_UNUSED(*pic), pic_value v)
+pic_type(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   int tt = pic_vtype(pic, v);
 

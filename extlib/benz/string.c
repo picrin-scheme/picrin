@@ -33,7 +33,7 @@ struct pic_rope {
   } while (0)
 
 void
-pic_rope_incref(pic_state PIC_UNUSED(*pic), struct pic_rope *x) {
+pic_rope_incref(pic_state *PIC_UNUSED(pic), struct pic_rope *x) {
   x->refcnt++;
 }
 
@@ -264,7 +264,7 @@ pic_str_value(pic_state *pic, const char *str, int len)
 }
 
 int
-pic_str_len(pic_state PIC_UNUSED(*pic), pic_value str)
+pic_str_len(pic_state *PIC_UNUSED(pic), pic_value str)
 {
   return rope_len(pic_str_ptr(pic, str)->rope);
 }

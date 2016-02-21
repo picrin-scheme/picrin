@@ -26,19 +26,19 @@ pic_make_vec(pic_state *pic, int len, pic_value *argv)
 }
 
 pic_value
-pic_vec_ref(pic_state PIC_UNUSED(*pic), pic_value vec, int k)
+pic_vec_ref(pic_state *PIC_UNUSED(pic), pic_value vec, int k)
 {
   return pic_vec_ptr(pic, vec)->data[k];
 }
 
 void
-pic_vec_set(pic_state PIC_UNUSED(*pic), pic_value vec, int k, pic_value val)
+pic_vec_set(pic_state *PIC_UNUSED(pic), pic_value vec, int k, pic_value val)
 {
   pic_vec_ptr(pic, vec)->data[k] = val;
 }
 
 int
-pic_vec_len(pic_state PIC_UNUSED(*pic), pic_value vec)
+pic_vec_len(pic_state *PIC_UNUSED(pic), pic_value vec)
 {
   return pic_vec_ptr(pic, vec)->len;
 }
