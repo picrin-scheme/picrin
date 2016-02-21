@@ -163,8 +163,10 @@ write_str(pic_state *pic, pic_value str, xFILE *file, struct writer_control *p)
 }
 
 static void
-write_float(pic_state *pic, double f, xFILE *file)
+write_float(pic_state *pic, pic_value flo, xFILE *file)
 {
+  double f = pic_float(pic, flo);
+
   if (f != f) {
     xfprintf(pic, file, "+nan.0");
   } else if (f == 1.0 / 0.0) {
@@ -321,11 +323,11 @@ write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
   case PIC_TYPE_INT:
     xfprintf(pic, file, "%d", pic_int(pic, obj));
     break;
-  case PIC_TYPE_FLOAT:
-    write_float(pic, pic_float(pic, obj), file);
-    break;
   case PIC_TYPE_SYMBOL:
     xfprintf(pic, file, "%s", pic_str(pic, pic_sym_name(pic, obj)));
+    break;
+  case PIC_TYPE_FLOAT:
+    write_float(pic, obj, file);
     break;
   case PIC_TYPE_BLOB:
     write_blob(pic, obj, file);

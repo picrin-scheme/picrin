@@ -308,9 +308,6 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->cp->depth = 0;
   pic->cp->in = pic->cp->out = NULL;
 
-  /* reader */
-  pic_reader_init(pic);
-
   /* parameter table */
   pic->ptable = pic_cons(pic, pic_make_weak(pic), pic_nil_value(pic));
 
@@ -377,9 +374,6 @@ pic_close(pic_state *pic)
 
   /* free heaps */
   pic_heap_close(pic, pic->heap);
-
-  /* free reader struct */
-  pic_reader_destroy(pic);
 
   /* free runtime context */
   allocf(pic->userdata, pic->stbase, 0);

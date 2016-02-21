@@ -13,7 +13,6 @@ extern "C" {
 #include "picrin/private/file.h"
 
 #include "picrin/private/irep.h"
-#include "picrin/private/read.h"
 #include "picrin/private/gc.h"
 
 struct pic_lib {
@@ -68,7 +67,6 @@ struct pic_state {
   khash_t(ltable) ltable;
   struct pic_list ireps;        /* chain */
 
-  pic_reader reader;
   xFILE files[XOPEN_MAX];
   pic_code iseq[2];             /* for pic_apply_trampoline */
 

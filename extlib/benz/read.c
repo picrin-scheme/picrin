@@ -5,15 +5,28 @@
 #include "picrin.h"
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
-#include "picrin/private/state.h"
 
 #undef EOF
 #define EOF (-1)
 
+KHASH_DECLARE(read, int, pic_value)
 KHASH_DEFINE(read, int, pic_value, kh_int_hash_func, kh_int_hash_equal)
 
-static pic_value read(pic_state *pic, xFILE *file, int c);
-static pic_value read_nullable(pic_state *pic, xFILE *file, int c);
+struct reader_control {
+  int typecase;
+  khash_t(read) labels;
+};
+
+#define CASE_DEFAULT 0
+#define CASE_FOLD    1
+
+typedef pic_value (*pic_reader_t)(pic_state *, xFILE *file, int c, struct reader_control *);
+
+static pic_reader_t reader_table[256];
+static pic_reader_t reader_dispatch[256];
+
+static pic_value read(pic_state *pic, xFILE *file, int c, struct reader_control *p);
+static pic_value read_nullable(pic_state *pic, xFILE *file, int c, struct reader_control *p);
 
 PIC_NORETURN static void
 read_error(pic_state *pic, const char *msg, pic_value irritants)
@@ -79,16 +92,16 @@ strcaseeq(const char *s1, const char *s2)
 }
 
 static int
-case_fold(pic_state *pic, int c)
+case_fold(int c, struct reader_control *p)
 {
-  if (pic->reader.typecase == PIC_CASE_FOLD) {
+  if (p->typecase == CASE_FOLD) {
     c = tolower(c);
   }
   return c;
 }
 
 static pic_value
-read_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int c)
+read_comment(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
   do {
     c = next(pic, file);
@@ -98,7 +111,7 @@ read_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int c)
 }
 
 static pic_value
-read_block_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int PIC_UNUSED(c))
+read_block_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control PIC_UNUSED(*p))
 {
   int x, y;
   int i = 1;
@@ -120,48 +133,48 @@ read_block_comment(pic_state PIC_UNUSED(*pic), xFILE *file, int PIC_UNUSED(c))
 }
 
 static pic_value
-read_datum_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
+read_datum_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  read(pic, file, next(pic, file));
+  read(pic, file, next(pic, file), p);
 
   return pic_invalid_value(pic);
 }
 
 static pic_value
-read_directive(pic_state *pic, xFILE *file, int c)
+read_directive(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   switch (peek(pic, file)) {
   case 'n':
     if (expect(pic, file, "no-fold-case")) {
-      pic->reader.typecase = PIC_CASE_DEFAULT;
+      p->typecase = CASE_DEFAULT;
       return pic_invalid_value(pic);
     }
     break;
   case 'f':
     if (expect(pic, file, "fold-case")) {
-      pic->reader.typecase = PIC_CASE_FOLD;
+      p->typecase = CASE_FOLD;
       return pic_invalid_value(pic);
     }
     break;
   }
 
-  return read_comment(pic, file, c);
+  return read_comment(pic, file, c, p);
 }
 
 static pic_value
-read_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
+read_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "quote"), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "quote"), read(pic, file, next(pic, file), p));
 }
 
 static pic_value
-read_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
+read_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "quasiquote"), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "quasiquote"), read(pic, file, next(pic, file), p));
 }
 
 static pic_value
-read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
+read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
   pic_value tag;
 
@@ -171,23 +184,23 @@ read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
   } else {
     tag = pic_intern_lit(pic, "unquote");
   }
-  return pic_list(pic, 2, tag, read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, tag, read(pic, file, next(pic, file), p));
 }
 
 static pic_value
-read_syntax_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
+read_syntax_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quote"), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quote"), read(pic, file, next(pic, file), p));
 }
 
 static pic_value
-read_syntax_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
+read_syntax_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quasiquote"), read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quasiquote"), read(pic, file, next(pic, file), p));
 }
 
 static pic_value
-read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
+read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
   pic_value tag;
 
@@ -197,11 +210,11 @@ read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c))
   } else {
     tag = pic_intern_lit(pic, "syntax-unquote");
   }
-  return pic_list(pic, 2, tag, read(pic, file, next(pic, file)));
+  return pic_list(pic, 2, tag, read(pic, file, next(pic, file), p));
 }
 
 static pic_value
-read_symbol(pic_state *pic, xFILE *file, int c)
+read_symbol(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   int len;
   char *buf;
@@ -209,14 +222,14 @@ read_symbol(pic_state *pic, xFILE *file, int c)
 
   len = 1;
   buf = pic_malloc(pic, len + 1);
-  buf[0] = case_fold(pic, c);
+  buf[0] = case_fold(c, p);
   buf[1] = 0;
 
   while (! isdelim(peek(pic, file))) {
     c = next(pic, file);
     len += 1;
     buf = pic_realloc(pic, buf, len + 1);
-    buf[len - 1] = case_fold(pic, c);
+    buf[len - 1] = case_fold(c, p);
     buf[len] = 0;
   }
 
@@ -227,7 +240,7 @@ read_symbol(pic_state *pic, xFILE *file, int c)
 }
 
 static unsigned
-read_uinteger(pic_state *pic, xFILE *file, int c)
+read_uinteger(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
   unsigned u = 0;
 
@@ -244,7 +257,7 @@ read_uinteger(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_unsigned(pic_state *pic, xFILE *file, int c)
+read_unsigned(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
 #define ATOF_BUF_SIZE (64)
   char buf[ATOF_BUF_SIZE];
@@ -301,9 +314,9 @@ read_unsigned(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_number(pic_state *pic, xFILE *file, int c)
+read_number(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
-  return read_unsigned(pic, file, c);
+  return read_unsigned(pic, file, c, p);
 }
 
 static pic_value
@@ -317,15 +330,15 @@ negate(pic_state *pic, pic_value n)
 }
 
 static pic_value
-read_minus(pic_state *pic, xFILE *file, int c)
+read_minus(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   pic_value sym;
 
   if (isdigit(peek(pic, file))) {
-    return negate(pic, read_unsigned(pic, file, next(pic, file)));
+    return negate(pic, read_unsigned(pic, file, next(pic, file), p));
   }
   else {
-    sym = read_symbol(pic, file, c);
+    sym = read_symbol(pic, file, c, p);
     if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "-inf.0")) {
       return pic_float_value(pic, -(1.0 / 0.0));
     }
@@ -337,15 +350,15 @@ read_minus(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_plus(pic_state *pic, xFILE *file, int c)
+read_plus(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   pic_value sym;
 
   if (isdigit(peek(pic, file))) {
-    return read_unsigned(pic, file, next(pic, file));
+    return read_unsigned(pic, file, next(pic, file), p);
   }
   else {
-    sym = read_symbol(pic, file, c);
+    sym = read_symbol(pic, file, c, p);
     if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "+inf.0")) {
       return pic_float_value(pic, 1.0 / 0.0);
     }
@@ -357,7 +370,7 @@ read_plus(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_true(pic_state *pic, xFILE *file, int c)
+read_true(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
   if ((c = peek(pic, file)) == 'r') {
     if (! expect(pic, file, "rue")) {
@@ -371,7 +384,7 @@ read_true(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_false(pic_state *pic, xFILE *file, int c)
+read_false(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
   if ((c = peek(pic, file)) == 'a') {
     if (! expect(pic, file, "alse")) {
@@ -385,7 +398,7 @@ read_false(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_char(pic_state *pic, xFILE *file, int c)
+read_char(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
   c = next(pic, file);
 
@@ -420,7 +433,7 @@ read_char(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_string(pic_state *pic, xFILE *file, int c)
+read_string(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
   char *buf;
   int size, cnt;
@@ -455,7 +468,7 @@ read_string(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_pipe(pic_state *pic, xFILE *file, int c)
+read_pipe(pic_state *pic, xFILE *file, int c, struct reader_control PIC_UNUSED(*p))
 {
   char *buf;
   int size, cnt;
@@ -499,7 +512,7 @@ read_pipe(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_blob(pic_state *pic, xFILE *file, int c)
+read_blob(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   int nbits, n;
   int len;
@@ -524,7 +537,7 @@ read_blob(pic_state *pic, xFILE *file, int c)
   dat = NULL;
   c = next(pic, file);
   while ((c = skip(pic, file, c)) != ')') {
-    n = read_uinteger(pic, file, c);
+    n = read_uinteger(pic, file, c, p);
     if (n < 0 || (1 << nbits) <= n) {
       read_error(pic, "invalid element in bytevector literal", pic_list(pic, 1, pic_int_value(pic, n)));
     }
@@ -541,7 +554,7 @@ read_blob(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_undef_or_blob(pic_state *pic, xFILE *file, int c)
+read_undef_or_blob(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   if ((c = peek(pic, file)) == 'n') {
     if (! expect(pic, file, "ndefined")) {
@@ -552,11 +565,11 @@ read_undef_or_blob(pic_state *pic, xFILE *file, int c)
   if (! isdigit(c)) {
     read_error(pic, "expect #undefined or #u8(...), but illegal character given", pic_list(pic, 1, pic_char_value(pic, c)));
   }
-  return read_blob(pic, file, 'u');
+  return read_blob(pic, file, 'u', p);
 }
 
 static pic_value
-read_pair(pic_state *pic, xFILE *file, int c)
+read_pair(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   static const int tCLOSE = ')';
   pic_value car, cdr;
@@ -569,11 +582,11 @@ read_pair(pic_state *pic, xFILE *file, int c)
     return pic_nil_value(pic);
   }
   if (c == '.' && isdelim(peek(pic, file))) {
-    cdr = read(pic, file, next(pic, file));
+    cdr = read(pic, file, next(pic, file), p);
 
   closing:
     if ((c = skip(pic, file, ' ')) != tCLOSE) {
-      if (pic_invalid_p(pic, read_nullable(pic, file, c))) {
+      if (pic_invalid_p(pic, read_nullable(pic, file, c, p))) {
         goto closing;
       }
       read_error(pic, "unmatched parenthesis", pic_nil_value(pic));
@@ -581,24 +594,24 @@ read_pair(pic_state *pic, xFILE *file, int c)
     return cdr;
   }
   else {
-    car = read_nullable(pic, file, c);
+    car = read_nullable(pic, file, c, p);
 
     if (pic_invalid_p(pic, car)) {
       goto retry;
     }
 
-    cdr = read_pair(pic, file, '(');
+    cdr = read_pair(pic, file, '(', p);
     return pic_cons(pic, car, cdr);
   }
 }
 
 static pic_value
-read_vector(pic_state *pic, xFILE *file, int c)
+read_vector(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   pic_value list, it, elem, vec;
   int i = 0;
 
-  list = read(pic, file, c);
+  list = read(pic, file, c, p);
 
   vec = pic_make_vec(pic, pic_length(pic, list), NULL);
 
@@ -610,12 +623,11 @@ read_vector(pic_state *pic, xFILE *file, int c)
 }
 
 static pic_value
-read_label_set(pic_state *pic, xFILE *file, int i)
+read_label_set(pic_state *pic, xFILE *file, int i, struct reader_control *p)
 {
-  khash_t(read) *h = &pic->reader.labels;
+  khash_t(read) *h = &p->labels;
   pic_value val;
-  int c, ret;
-  int it;
+  int c, ret, it;
 
   it = kh_put(read, h, i, &ret);
 
@@ -626,7 +638,7 @@ read_label_set(pic_state *pic, xFILE *file, int i)
 
       kh_val(h, it) = val = pic_cons(pic, pic_undef_value(pic), pic_undef_value(pic));
 
-      tmp = read(pic, file, c);
+      tmp = read(pic, file, c, p);
       pic_pair_ptr(pic, val)->car = pic_car(pic, tmp);
       pic_pair_ptr(pic, val)->cdr = pic_cdr(pic, tmp);
 
@@ -647,7 +659,7 @@ read_label_set(pic_state *pic, xFILE *file, int i)
 
         kh_val(h, it) = val = pic_make_vec(pic, 0, NULL);
 
-        tmp = read(pic, file, c);
+        tmp = read(pic, file, c, p);
         PIC_SWAP(pic_value *, pic_vec_ptr(pic, tmp)->data, pic_vec_ptr(pic, val)->data);
         PIC_SWAP(int, pic_vec_ptr(pic, tmp)->len, pic_vec_ptr(pic, val)->len);
 
@@ -658,7 +670,7 @@ read_label_set(pic_state *pic, xFILE *file, int i)
     }
   default:
     {
-      kh_val(h, it) = val = read(pic, file, c);
+      kh_val(h, it) = val = read(pic, file, c, p);
 
       return val;
     }
@@ -666,9 +678,9 @@ read_label_set(pic_state *pic, xFILE *file, int i)
 }
 
 static pic_value
-read_label_ref(pic_state *pic, xFILE PIC_UNUSED(*file), int i)
+read_label_ref(pic_state *pic, xFILE PIC_UNUSED(*file), int i, struct reader_control *p)
 {
-  khash_t(read) *h = &pic->reader.labels;
+  khash_t(read) *h = &p->labels;
   int it;
 
   it = kh_get(read, h, i);
@@ -679,7 +691,7 @@ read_label_ref(pic_state *pic, xFILE PIC_UNUSED(*file), int i)
 }
 
 static pic_value
-read_label(pic_state *pic, xFILE *file, int c)
+read_label(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   int i;
 
@@ -689,22 +701,22 @@ read_label(pic_state *pic, xFILE *file, int c)
   } while (isdigit(c = next(pic, file)));
 
   if (c == '=') {
-    return read_label_set(pic, file, i);
+    return read_label_set(pic, file, i, p);
   }
   if (c == '#') {
-    return read_label_ref(pic, file, i);
+    return read_label_ref(pic, file, i, p);
   }
   read_error(pic, "broken label expression", pic_nil_value(pic));
 }
 
 static pic_value
-read_unmatch(pic_state *pic, xFILE PIC_UNUSED(*file), int PIC_UNUSED(c))
+read_unmatch(pic_state *pic, xFILE PIC_UNUSED(*file), int PIC_UNUSED(c), struct reader_control PIC_UNUSED(*p))
 {
   read_error(pic, "unmatched parenthesis", pic_nil_value(pic));
 }
 
 static pic_value
-read_dispatch(pic_state *pic, xFILE *file, int c)
+read_dispatch(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   c = next(pic, file);
 
@@ -712,15 +724,15 @@ read_dispatch(pic_state *pic, xFILE *file, int c)
     read_error(pic, "unexpected EOF", pic_nil_value(pic));
   }
 
-  if (pic->reader.dispatch[c] == NULL) {
+  if (reader_dispatch[c] == NULL) {
     read_error(pic, "invalid character at the seeker head", pic_list(pic, 1, pic_char_value(pic, c)));
   }
 
-  return pic->reader.dispatch[c](pic, file, c);
+  return reader_dispatch[c](pic, file, c, p);
 }
 
 static pic_value
-read_nullable(pic_state *pic, xFILE *file, int c)
+read_nullable(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   c = skip(pic, file, c);
 
@@ -728,20 +740,20 @@ read_nullable(pic_state *pic, xFILE *file, int c)
     read_error(pic, "unexpected EOF", pic_nil_value(pic));
   }
 
-  if (pic->reader.table[c] == NULL) {
+  if (reader_table[c] == NULL) {
     read_error(pic, "invalid character at the seeker head", pic_list(pic, 1, pic_char_value(pic, c)));
   }
 
-  return pic->reader.table[c](pic, file, c);
+  return reader_table[c](pic, file, c, p);
 }
 
 static pic_value
-read(pic_state *pic, xFILE *file, int c)
+read(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   pic_value val;
 
  retry:
-  val = read_nullable(pic, file, c);
+  val = read_nullable(pic, file, c, p);
 
   if (pic_invalid_p(pic, val)) {
     c = next(pic, file);
@@ -752,95 +764,97 @@ read(pic_state *pic, xFILE *file, int c)
 }
 
 static void
-reader_table_init(pic_reader *reader)
+reader_table_init(void)
 {
   int c;
 
-  reader->table[0] = NULL;
+  for (c = 0; c < 256; ++c) {
+    reader_table[c] = NULL;
+  }
+  for (c = 0; c < 256; ++c) {
+    reader_dispatch[c] = NULL;
+  }
 
   /* default reader */
   for (c = 1; c < 256; ++c) {
-    reader->table[c] = read_symbol;
+    reader_table[c] = read_symbol;
   }
 
-  reader->table[')'] = read_unmatch;
-  reader->table[';'] = read_comment;
-  reader->table['\''] = read_quote;
-  reader->table['`'] = read_quasiquote;
-  reader->table[','] = read_unquote;
-  reader->table['"'] = read_string;
-  reader->table['|'] = read_pipe;
-  reader->table['+'] = read_plus;
-  reader->table['-'] = read_minus;
-  reader->table['('] = read_pair;
-  reader->table['#'] = read_dispatch;
+  reader_table[')'] = read_unmatch;
+  reader_table[';'] = read_comment;
+  reader_table['\''] = read_quote;
+  reader_table['`'] = read_quasiquote;
+  reader_table[','] = read_unquote;
+  reader_table['"'] = read_string;
+  reader_table['|'] = read_pipe;
+  reader_table['+'] = read_plus;
+  reader_table['-'] = read_minus;
+  reader_table['('] = read_pair;
+  reader_table['#'] = read_dispatch;
 
   /* read number */
   for (c = '0'; c <= '9'; ++c) {
-    reader->table[c] = read_number;
+    reader_table[c] = read_number;
   }
 
-  reader->dispatch['!'] = read_directive;
-  reader->dispatch['|'] = read_block_comment;
-  reader->dispatch[';'] = read_datum_comment;
-  reader->dispatch['t'] = read_true;
-  reader->dispatch['f'] = read_false;
-  reader->dispatch['\''] = read_syntax_quote;
-  reader->dispatch['`'] = read_syntax_quasiquote;
-  reader->dispatch[','] = read_syntax_unquote;
-  reader->dispatch['\\'] = read_char;
-  reader->dispatch['('] = read_vector;
-  reader->dispatch['u'] = read_undef_or_blob;
+  reader_dispatch['!'] = read_directive;
+  reader_dispatch['|'] = read_block_comment;
+  reader_dispatch[';'] = read_datum_comment;
+  reader_dispatch['t'] = read_true;
+  reader_dispatch['f'] = read_false;
+  reader_dispatch['\''] = read_syntax_quote;
+  reader_dispatch['`'] = read_syntax_quasiquote;
+  reader_dispatch[','] = read_syntax_unquote;
+  reader_dispatch['\\'] = read_char;
+  reader_dispatch['('] = read_vector;
+  reader_dispatch['u'] = read_undef_or_blob;
 
   /* read labels */
   for (c = '0'; c <= '9'; ++c) {
-    reader->dispatch[c] = read_label;
+    reader_dispatch[c] = read_label;
   }
 }
 
-void
-pic_reader_init(pic_state *pic)
+static void
+reader_init(pic_state PIC_UNUSED(*pic), struct reader_control *p)
 {
-  int c;
-
-  pic->reader.typecase = PIC_CASE_DEFAULT;
-  kh_init(read, &pic->reader.labels);
-
-  for (c = 0; c < 256; ++c) {
-    pic->reader.table[c] = NULL;
-  }
-
-  for (c = 0; c < 256; ++c) {
-    pic->reader.dispatch[c] = NULL;
-  }
-
-  reader_table_init(&pic->reader);
+  p->typecase = CASE_DEFAULT;
+  kh_init(read, &p->labels);
 }
 
-void
-pic_reader_destroy(pic_state *pic)
+static void
+reader_destroy(pic_state *pic, struct reader_control *p)
 {
-  kh_destroy(read, &pic->reader.labels);
+  kh_destroy(read, &p->labels);
 }
 
 pic_value
 pic_read(pic_state *pic, pic_value port)
 {
+  struct reader_control p;
   size_t ai = pic_enter(pic);
   pic_value val;
   xFILE *file = pic_fileno(pic, port);
   int c;
 
-  while ((c = skip(pic, file, next(pic, file))) != EOF) {
-    val = read_nullable(pic, file, c);
+  reader_init(pic, &p);
 
-    if (! pic_invalid_p(pic, val)) {
-      break;
+  pic_try {
+    while ((c = skip(pic, file, next(pic, file))) != EOF) {
+      val = read_nullable(pic, file, c, &p);
+
+      if (! pic_invalid_p(pic, val)) {
+        break;
+      }
+      pic_leave(pic, ai);
     }
-    pic_leave(pic, ai);
+    if (c == EOF) {
+      val = pic_eof_object(pic);
+    }
   }
-  if (c == EOF) {
-    return pic_eof_object(pic);
+  pic_catch {
+    reader_destroy(pic, &p);
+    pic_raise(pic, pic_err(pic));
   }
 
   pic_leave(pic, ai);
@@ -879,5 +893,7 @@ pic_read_read(pic_state *pic)
 void
 pic_init_read(pic_state *pic)
 {
+  reader_table_init();
+
   pic_defun(pic, "read", pic_read_read);
 }
