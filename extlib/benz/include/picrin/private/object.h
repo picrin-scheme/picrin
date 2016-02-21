@@ -11,11 +11,11 @@ extern "C" {
 
 #include "picrin/private/khash.h"
 
-typedef struct pic_identifier pic_id;
-typedef pic_id pic_sym;
+typedef struct pic_identifier identifier;
+typedef identifier symbol;
 
-KHASH_DECLARE(env, pic_id *, pic_sym *)
-KHASH_DECLARE(dict, pic_sym *, pic_value)
+KHASH_DECLARE(env, identifier *, symbol *)
+KHASH_DECLARE(dict, symbol *, pic_value)
 KHASH_DECLARE(weak, struct pic_object *, pic_value)
 
 #define PIC_OBJECT_HEADER			\
@@ -119,7 +119,7 @@ struct pic_record {
 
 struct pic_error {
   PIC_OBJECT_HEADER
-  pic_sym *type;
+  symbol *type;
   struct pic_string *msg;
   pic_value irrs;
   struct pic_string *stack;
@@ -140,8 +140,8 @@ struct pic_checkpoint {
 
 struct pic_object *pic_obj_ptr(pic_value);
 
-#define pic_id_ptr(pic, o) (assert(pic_id_p(pic, o)), (pic_id *)pic_obj_ptr(o))
-#define pic_sym_ptr(pic, o) (assert(pic_sym_p(pic, o)), (pic_sym *)pic_obj_ptr(o))
+#define pic_id_ptr(pic, o) (assert(pic_id_p(pic, o)), (identifier *)pic_obj_ptr(o))
+#define pic_sym_ptr(pic, o) (assert(pic_sym_p(pic, o)), (symbol *)pic_obj_ptr(o))
 #define pic_str_ptr(pic, o) (assert(pic_str_p(pic, o)), (struct pic_string *)pic_obj_ptr(o))
 #define pic_blob_ptr(pic, o) (assert(pic_blob_p(pic, o)), (struct pic_blob *)pic_obj_ptr(o))
 #define pic_pair_ptr(pic, o) (assert(pic_pair_p(pic, o)), (struct pic_pair *)pic_obj_ptr(o))

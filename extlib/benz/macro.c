@@ -7,7 +7,7 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
-KHASH_DEFINE(env, pic_id *, pic_sym *, kh_ptr_hash_func, kh_ptr_hash_equal)
+KHASH_DEFINE(env, identifier *, symbol *, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 pic_value
 pic_make_env(pic_state *pic, pic_value up)

@@ -10,13 +10,13 @@
 #define kh_pic_str_hash(a) (pic_str_hash(pic, pic_obj_value(a)))
 #define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, pic_obj_value(a), pic_obj_value(b)) == 0)
 
-KHASH_DEFINE(oblist, struct pic_string *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
+KHASH_DEFINE(oblist, struct pic_string *, symbol *, kh_pic_str_hash, kh_pic_str_cmp)
 
 pic_value
 pic_intern(pic_state *pic, pic_value str)
 {
   khash_t(oblist) *h = &pic->oblist;
-  pic_sym *sym;
+  symbol *sym;
   int it;
   int ret;
 
@@ -29,7 +29,7 @@ pic_intern(pic_state *pic, pic_value str)
 
   kh_val(h, it) = NULL;         /* dummy */
 
-  sym = (pic_sym *)pic_obj_alloc(pic, offsetof(pic_sym, env), PIC_TYPE_SYMBOL);
+  sym = (symbol *)pic_obj_alloc(pic, offsetof(symbol, env), PIC_TYPE_SYMBOL);
   sym->u.str = pic_str_ptr(pic, str);
   kh_val(h, it) = sym;
 
@@ -39,9 +39,9 @@ pic_intern(pic_state *pic, pic_value str)
 pic_value
 pic_make_identifier(pic_state *pic, pic_value base, pic_value env)
 {
-  pic_id *id;
+  identifier *id;
 
-  id = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TYPE_ID);
+  id = (identifier *)pic_obj_alloc(pic, sizeof(identifier), PIC_TYPE_ID);
   id->u.id = pic_id_ptr(pic, base);
   id->env = pic_env_ptr(pic, env);
 

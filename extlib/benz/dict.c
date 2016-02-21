@@ -6,7 +6,7 @@
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
 
-KHASH_DEFINE(dict, pic_sym *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
+KHASH_DEFINE(dict, symbol *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
 
 pic_value
 pic_make_dict(pic_state *pic)

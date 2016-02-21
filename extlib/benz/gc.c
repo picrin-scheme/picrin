@@ -620,7 +620,7 @@ gc_sweep_phase(pic_state *pic)
   int it;
   khash_t(weak) *h;
   khash_t(oblist) *s = &pic->oblist;
-  pic_sym *sym;
+  symbol *sym;
   struct pic_object *obj;
   size_t total = 0, inuse = 0;
 
