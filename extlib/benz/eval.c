@@ -17,7 +17,7 @@ static void
 define_macro(pic_state *pic, pic_value uid, pic_value mac)
 {
   if (pic_weak_has(pic, pic->macros, uid)) {
-    pic_warnf(pic, "redefining syntax variable: ~s", uid);
+    pic_warnf(pic, "redefining syntax variable: %s", pic_sym(pic, uid));
   }
   pic_weak_set(pic, pic->macros, uid, mac);
 }
@@ -368,14 +368,14 @@ define_var(pic_state *pic, analyze_scope *scope, pic_value sym)
   if (scope->depth > 0) {
     /* local */
     if (find_local_var(pic, scope, sym)) {
-      pic_warnf(pic, "redefining variable: ~s", sym);
+      pic_warnf(pic, "redefining variable: %s", pic_sym(pic, sym));
       return;
     }
     pic_dict_set(pic, scope->locals, sym, pic_true_value(pic));
   } else {
     /* global */
     if (pic_weak_has(pic, pic->globals, sym)) {
-      pic_warnf(pic, "redefining variable: ~s", sym);
+      pic_warnf(pic, "redefining variable: %s", pic_sym(pic, sym));
       return;
     }
     pic_weak_set(pic, pic->globals, sym, pic_invalid_value(pic));

@@ -872,7 +872,7 @@ pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 
   uid = pic_find_identifier(pic, sym, env);
   if (pic_weak_has(pic, pic->globals, uid)) {
-    pic_warnf(pic, "redefining variable: ~s", uid);
+    pic_warnf(pic, "redefining variable: %s", pic_sym(pic, uid));
   }
   pic_weak_set(pic, pic->globals, uid, val);
 }
