@@ -77,7 +77,7 @@ pic_find_identifier(pic_state *pic, pic_value id, pic_value env)
 pic_value
 pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
 {
-  const char *name;
+  const char *name, *lib;
   pic_value uid, str;
 
   if (search_scope(pic, id, env, &uid)) {
@@ -87,7 +87,8 @@ pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
   name = pic_str(pic, pic_id_name(pic, id));
 
   if (pic_env_ptr(pic, env)->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
-    str = pic_strf_value(pic, "~a/%s", pic_obj_value(pic_env_ptr(pic, env)->lib), name);
+    lib = pic_str(pic, pic_obj_value(pic_env_ptr(pic, env)->lib));
+    str = pic_strf_value(pic, "%s/%s", lib, name);
   } else {
     str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
   }
