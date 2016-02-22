@@ -10,6 +10,7 @@ Originally, Benz used to be the core component of [Picrin Scheme](https://github
 #include <stdio.h>
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 /* Simple REPL program */
 
@@ -26,11 +27,11 @@ main(int argc, char *argv[])
 
     expr = pic_read(pic, pic_stdin(pic));
 
-    if (pic_eof_p(expr)) {
+    if (pic_eof_p(pic, expr)) {
       break;
     }
 
-    pic_printf(pic, "~s\n", pic_eval(pic, expr, pic->lib));
+    pic_printf(pic, "~s\n", pic_eval(pic, expr, "picrin.user"));
   }
 
   pic_close(pic);
@@ -45,6 +46,7 @@ Function binding is also easy. `pic_defun` defines a scheme procedure converting
 
 ```c
 #include "picrin.h"
+#include "picrin/extra.h"
 
 int fact(int i) {
   return i == 1 ? 1 : i * fact(i - 1);
