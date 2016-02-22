@@ -131,7 +131,7 @@ cont_call(pic_state *pic)
     }
   }
   if (cc == NULL) {
-    pic_errorf(pic, "calling dead escape continuation");
+    pic_error(pic, "calling dead escape continuation", 0);
   }
 
   cont->retc = argc;

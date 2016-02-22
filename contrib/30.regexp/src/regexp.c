@@ -57,7 +57,7 @@ pic_regexp_regexp(pic_state *pic)
     regerror(err, &reg->reg, errbuf, sizeof errbuf);
     regexp_dtor(pic, &reg->reg);
 
-    pic_errorf(pic, "regexp compilation error: %s", errbuf);
+    pic_error(pic, "regexp compilation error", 1, pic_cstr_value(pic, errbuf));
   }
 
   return pic_data_value(pic, reg, &regexp_type);

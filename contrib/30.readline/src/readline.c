@@ -194,7 +194,7 @@ pic_rl_read_history(pic_state *pic)
   pic_get_args(pic, "z", &filename);
 
   if(read_history(filename))
-    pic_errorf(pic, "cannot read history file : %s", filename);
+    pic_error(pic, "cannot read history file", 1, pic_cstr_value(pic, filename));
   
   return pic_undef_value(pic);
 }
@@ -207,7 +207,7 @@ pic_rl_write_history(pic_state *pic)
   pic_get_args(pic, "z", &filename);
 
   if(write_history(filename))
-    pic_errorf(pic, "cannot write history file: %s", filename);
+    pic_error(pic, "cannot write history file", 1, pic_cstr_value(pic, filename));
   
   return pic_undef_value(pic);
 }
@@ -235,7 +235,7 @@ pic_rl_history_expand(pic_state *pic)
   
   status = history_expand(input,  &result);
   if(status == -1 || status == 2)
-    pic_errorf(pic, "%s\n", result);
+    pic_error(pic, result, 0);
 
   return pic_cstr_value(pic, result);
 }

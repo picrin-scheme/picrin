@@ -36,7 +36,7 @@ pic_close_port(pic_state *pic, pic_value port)
     return;
   }
   if (xfclose(pic, file) == EOF) {
-    pic_errorf(pic, "close-port: failure");
+    pic_error(pic, "close-port: failure", 0);
   }
 }
 
@@ -123,13 +123,13 @@ pic_port_close_port(pic_state *pic)
     if ((pic_fileno(pic, port)->flag & (flags)) != (flags)) {                      \
       switch (flags) {                                                  \
       case X_WRITE:                                                     \
-        pic_errorf(pic, caller ": expected output port");               \
+        pic_error(pic, caller ": output port required", 0);               \
       case X_READ:                                                      \
-        pic_errorf(pic, caller ": expected input port");                \
+        pic_error(pic, caller ": input port required", 0);                \
       }                                                                 \
     }                                                                   \
     if (pic_fileno(pic, port)->flag == 0) {                                        \
-      pic_errorf(pic, caller ": expected open port");                   \
+      pic_error(pic, caller ": open port required", 0);                   \
     }                                                                   \
   } while (0)
 
@@ -164,7 +164,7 @@ pic_port_get_output_bytevector(pic_state *pic)
   assert_port_profile(port, X_WRITE, "get-output-bytevector");
 
   if (xfget_buf(pic, pic_fileno(pic, port), &buf, &len) < 0) {
-    pic_errorf(pic, "port was not created by open-output-bytevector");
+    pic_error(pic, "port was not created by open-output-bytevector", 0);
   }
   return pic_blob_value(pic, (unsigned char *)buf, len);
 }

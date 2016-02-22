@@ -127,7 +127,7 @@ get_library(pic_state *pic, const char *lib)
   struct lib *libp;
 
   if ((libp = get_library_opt(pic, lib)) == NULL) {
-    pic_errorf(pic, "library not found: %s", lib);
+    pic_error(pic, "library not found", 1, pic_cstr_value(pic, lib));
   }
   return libp;
 }
@@ -175,7 +175,7 @@ pic_make_library(pic_state *pic, const char *lib)
 
   it = kh_put(ltable, h, pic_str(pic, name), &ret);
   if (ret == 0) {               /* if exists */
-    pic_errorf(pic, "library name already in use: %s", lib);
+    pic_error(pic, "library name already in use", pic_cstr_value(pic, lib));
   }
 
   kh_val(h, it).name = pic_str_ptr(pic, name);
@@ -223,7 +223,7 @@ pic_import(pic_state *pic, const char *lib)
   while (pic_dict_next(pic, pic_obj_value(libp->exports), &it, &name, &realname)) {
     uid = pic_find_identifier(pic, realname, pic_obj_value(libp->env));
     if (! pic_weak_has(pic, pic->globals, uid) && ! pic_weak_has(pic, pic->macros, uid)) {
-      pic_errorf(pic, "attempted to export undefined variable '~s'", realname);
+      pic_error(pic, "attempted to export undefined variable", 1, realname);
     }
     pic_put_identifier(pic, name, uid, pic_obj_value(pic->lib->env));
   }
@@ -292,14 +292,14 @@ pic_lib_library_import(pic_state *pic)
   libp = get_library(pic, lib);
 
   if (! pic_dict_has(pic, pic_obj_value(libp->exports), name)) {
-    pic_errorf(pic, "library-import: variable is not exported '~s'", name);
+    pic_error(pic, "library-import: variable is not exported", 1, name);
   } else {
     realname = pic_dict_ref(pic, pic_obj_value(libp->exports), name);
   }
 
   uid = pic_find_identifier(pic, realname, pic_obj_value(libp->env));
   if (! pic_weak_has(pic, pic->globals, uid) && ! pic_weak_has(pic, pic->macros, uid)) {
-    pic_errorf(pic, "attempted to export undefined variable '~s'", realname);
+    pic_error(pic, "attempted to export undefined variable", 1, realname);
   }
 
   pic_put_identifier(pic, alias, uid, pic_obj_value(pic->lib->env));

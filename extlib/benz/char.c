@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 static pic_value
 pic_char_char_p(pic_state *pic)
@@ -32,7 +33,7 @@ pic_char_integer_to_char(pic_state *pic)
   pic_get_args(pic, "i", &i);
 
   if (i < 0 || i > 255) {
-    pic_errorf(pic, "integer->char: integer out of char range: %d", i);
+    pic_error(pic, "integer->char: integer out of char range", 1, pic_int_value(pic, i));
   }
   
   return pic_char_value(pic, (char)i);
@@ -49,15 +50,13 @@ pic_char_integer_to_char(pic_state *pic)
     pic_get_args(pic, "cc*", &c, &d, &argc, &argv);	\
     							\
     if (! (c op d))					\
-      return pic_false_value(pic);				\
-    							\
-    for (i = 0; i < argc; ++i) {			\
+      return pic_false_value(pic);                      \
+                                                        \
+    for (i = 0; i < argc; ++i) {                        \
       c = d;                                            \
-      if (pic_char_p(pic, argv[i]))                          \
-        d = pic_char(pic, argv[i]);                          \
-      else						\
-	pic_errorf(pic, #op ": char required");         \
-      							\
+      pic_assert_type(pic, argv[i], char);              \
+      d = pic_char(pic, argv[i]);                       \
+                                                        \
       if (! (c op d))					\
 	return pic_false_value(pic);			\
     }							\

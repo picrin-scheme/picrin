@@ -256,6 +256,6 @@ pic_typename(pic_state *pic, int type)
   case PIC_TYPE_CP:
     return "checkpoint";
   default:
-    pic_errorf(pic, "pic_typename: invalid type given %d", type);
+    pic_error(pic, "pic_typename: invalid type given", 1, pic_int_value(pic, type));
   }
 }

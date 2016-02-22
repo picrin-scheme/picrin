@@ -159,16 +159,16 @@ pic_value pic_obj_value(void *ptr);
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
 
 #define VALID_INDEX(pic, len, i) do {                                   \
-    if (i < 0 || len <= i) pic_errorf(pic, "index out of range: %d", i); \
+    if (i < 0 || len <= i) pic_error(pic, "index out of range", 1, pic_int_value(pic, i)); \
   } while (0)
 #define VALID_RANGE(pic, len, s, e) do {                                \
-    if (s < 0 || len < s) pic_errorf(pic, "invalid start index: %d", s); \
-    if (e < s || len < e) pic_errorf(pic, "invalid end index: %d", e);  \
+    if (s < 0 || len < s) pic_error(pic, "invalid start index", 1, pic_int_value(pic, s)); \
+    if (e < s || len < e) pic_error(pic, "invalid end index", 1, pic_int_value(pic, e)); \
   } while (0)
-#define VALID_ATRANGE(pic, tolen, at, fromlen, s, e) do {       \
-    VALID_INDEX(pic, tolen, at);                                \
-    VALID_RANGE(pic, fromlen, s, e);                            \
-    if (tolen - at < e - s) pic_errorf(pic, "invalid range");   \
+#define VALID_ATRANGE(pic, tolen, at, fromlen, s, e) do {               \
+    VALID_INDEX(pic, tolen, at);                                        \
+    VALID_RANGE(pic, fromlen, s, e);                                    \
+    if (tolen - at < e - s) pic_error(pic, "invalid range", 0);        \
   } while (0)
 
 pic_value pic_make_identifier(pic_state *, pic_value id, pic_value env);

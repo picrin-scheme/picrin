@@ -73,7 +73,7 @@ pic_vec_make_vector(pic_state *pic)
   n = pic_get_args(pic, "i|o", &k, &init);
 
   if (k < 0) {
-    pic_errorf(pic, "make-vector: negative length given %d", k);
+    pic_error(pic, "make-vector: negative length given", 1, pic_int_value(pic, k));
   }
 
   vec = pic_make_vec(pic, k, NULL);
@@ -231,7 +231,7 @@ pic_vec_vector_map(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   if (argc == 0) {
-    pic_errorf(pic, "vector-map: wrong number of arguments (1 for at least 2)");
+    pic_error(pic, "vector-map: wrong number of arguments (1 for at least 2)", 0);
   }
 
   len = INT_MAX;
@@ -265,7 +265,7 @@ pic_vec_vector_for_each(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   if (argc == 0) {
-    pic_errorf(pic, "vector-for-each: wrong number of arguments (1 for at least 2)");
+    pic_error(pic, "vector-for-each: wrong number of arguments (1 for at least 2)", 0);
   }
 
   len = INT_MAX;

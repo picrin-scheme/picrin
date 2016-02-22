@@ -26,7 +26,7 @@ pic_dict_ref(pic_state *pic, pic_value dict, pic_value key)
 
   it = kh_get(dict, h, pic_sym_ptr(pic, key));
   if (it == kh_end(h)) {
-    pic_errorf(pic, "element not found for a key: ~s", key);
+    pic_error(pic, "element not found for given key", 1, key);
   }
   return kh_val(h, it);
 }
@@ -64,7 +64,7 @@ pic_dict_del(pic_state *pic, pic_value dict, pic_value key)
 
   it = kh_get(dict, h, pic_sym_ptr(pic, key));
   if (it == kh_end(h)) {
-    pic_errorf(pic, "no slot named ~s found in dictionary", key);
+    pic_error(pic, "element not found for given key", 1, key);
   }
   kh_del(dict, h, it);
 }

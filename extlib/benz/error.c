@@ -37,19 +37,16 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
 }
 
 void
-pic_errorf(pic_state *pic, const char *fmt, ...)
+pic_error(pic_state *pic, const char *msg, int n, ...)
 {
   va_list ap;
-  const char *msg;
-  pic_value err;
+  pic_value irrs;
 
-  va_start(ap, fmt);
-  err = pic_vstrf_value(pic, fmt, ap);
+  va_start(ap, n);
+  irrs = pic_vlist(pic, n, ap);
   va_end(ap);
 
-  msg = pic_str(pic, err);
-
-  pic_raise(pic, pic_make_error(pic, "", msg, pic_nil_value(pic)));
+  pic_raise(pic, pic_make_error(pic, "", msg, irrs));
 }
 
 void
@@ -151,7 +148,7 @@ pic_raise(pic_state *pic, pic_value err)
 
   pic_pop_handler(pic);
 
-  pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
+  pic_error(pic, "error handler returned", 2, val, err);
 }
 
 static pic_value

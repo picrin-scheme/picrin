@@ -146,7 +146,7 @@ pic_symbol_identifier_base(pic_state *pic)
   pic_assert_type(pic, id, id);
 
   if (pic_sym_p(pic, id)) {
-    pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
+    pic_error(pic, "non-symbol identifier required", 1, id);
   }
 
   return pic_obj_value(pic_id_ptr(pic, id)->u.id);
@@ -162,7 +162,7 @@ pic_symbol_identifier_environment(pic_state *pic)
   pic_assert_type(pic, id, id);
 
   if (pic_sym_p(pic, id)) {
-    pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
+    pic_error(pic, "non-symbol identifier required", 1, id);
   }
 
   return pic_obj_value(pic_id_ptr(pic, id)->env);

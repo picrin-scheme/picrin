@@ -27,7 +27,7 @@ pic_weak_ref(pic_state *pic, pic_value weak, pic_value key)
 
   it = kh_get(weak, h, pic_obj_ptr(key));
   if (it == kh_end(h)) {
-    pic_errorf(pic, "element not found for a key: ~s", key);
+    pic_error(pic, "element not found for given key", 1, key);
   }
   return kh_val(h, it);
 }
@@ -59,7 +59,7 @@ pic_weak_del(pic_state *pic, pic_value weak, pic_value key)
 
   it = kh_get(weak, h, pic_obj_ptr(key));
   if (it == kh_end(h)) {
-    pic_errorf(pic, "no slot named ~s found in ephemeron", key);
+    pic_error(pic, "element not found for given key", 1, key);
   }
   kh_del(weak, h, it);
 }
@@ -74,7 +74,7 @@ weak_call(pic_state *pic)
   n = pic_get_args(pic, "o|o", &key, &val);
 
   if (! pic_obj_p(pic, key)) {
-    pic_errorf(pic, "attempted to set a non-object key '~s' in an ephemeron", key);
+    pic_error(pic, "attempted to set a non-object key", 1, key);
   }
 
   weak = pic_closure_ref(pic, 0);

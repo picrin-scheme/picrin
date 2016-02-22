@@ -159,7 +159,7 @@ expand_defmacro(pic_state *pic, pic_value expr, pic_value env)
 
   val = pic_call(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)), 0);
   if (! pic_proc_p(pic, val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", pic_list_ref(pic, expr, 1));
+    pic_error(pic, "macro definition evaluates to non-procedure object", 1, pic_list_ref(pic, expr, 1));
   }
 
   define_macro(pic, uid, val);
@@ -179,7 +179,7 @@ expand_node(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
     pic_value mac;
 
     if (! pic_list_p(pic, expr)) {
-      pic_errorf(pic, "cannot expand improper list: ~s", expr);
+      pic_error(pic, "cannot expand improper list", 1, expr);
     }
 
     if (pic_id_p(pic, pic_car(pic, expr))) {
@@ -516,7 +516,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     pic_value proc;
 
     if (! pic_list_p(pic, obj)) {
-      pic_errorf(pic, "invalid expression given: ~s", obj);
+      pic_error(pic, "invalid expression given", 1, obj);
     }
 
     proc = pic_list_ref(pic, obj, 0);
@@ -1023,7 +1023,7 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     codegen_call(pic, cxt, obj, tailpos);
   }
   else {
-    pic_errorf(pic, "codegen: unknown AST type ~s", obj);
+    pic_error(pic, "codegen: unknown AST type", 1, obj);
   }
 }
 

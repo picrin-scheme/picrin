@@ -276,7 +276,7 @@ pic_str_ref(pic_state *pic, pic_value str, int i)
 
   c = rope_at(pic_str_ptr(pic, str)->rope, i);
   if (c == -1) {
-    pic_errorf(pic, "index out of range %d", i);
+    pic_error(pic, "index out of range", 1, pic_int_value(pic, i));
   }
   return (char)c;
 }
@@ -453,7 +453,7 @@ pic_str_make_string(pic_state *pic)
   pic_get_args(pic, "i|c", &len, &c);
 
   if (len < 0) {
-    pic_errorf(pic, "make-string: negative length given %d", len);
+    pic_error(pic, "make-string: negative length given", 1, pic_int_value(pic, len));
   }
 
   buf = pic_alloca(pic, len);
@@ -647,7 +647,7 @@ pic_str_string_map(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   if (argc == 0) {
-    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
+    pic_error(pic, "string-map: one or more strings expected, but got zero", 0);
   }
 
   len = INT_MAX;
@@ -684,7 +684,7 @@ pic_str_string_for_each(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &argv);
 
   if (argc == 0) {
-    pic_errorf(pic, "string-map: one or more strings expected, but got zero");
+    pic_error(pic, "string-map: one or more strings expected, but got zero", 0);
   }
 
   len = INT_MAX;

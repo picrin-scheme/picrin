@@ -100,7 +100,7 @@ typedef void (*pic_panicf)(pic_state *, const char *msg);
 
 pic_panicf pic_atpanic(pic_state *, pic_panicf f);
 PIC_NORETURN void pic_panic(pic_state *, const char *msg);
-PIC_NORETURN void pic_errorf(pic_state *, const char *fmt, ...);
+PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
 PIC_NORETURN void pic_raise(pic_state *, pic_value v);
 pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 

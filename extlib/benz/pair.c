@@ -22,7 +22,7 @@ pic_value
 pic_car(pic_state *pic, pic_value obj)
 {
   if (! pic_pair_p(pic, obj)) {
-    pic_errorf(pic, "car: pair required, but got ~s", obj);
+    pic_error(pic, "car: pair required", 1, obj);
   }
   return pic_pair_ptr(pic, obj)->car;
 }
@@ -31,7 +31,7 @@ pic_value
 pic_cdr(pic_state *pic, pic_value obj)
 {
   if (! pic_pair_p(pic, obj)) {
-    pic_errorf(pic, "cdr: pair required, but got ~s", obj);
+    pic_error(pic, "cdr: pair required", 1, obj);
   }
   return pic_pair_ptr(pic, obj)->cdr;
 }
@@ -40,7 +40,7 @@ void
 pic_set_car(pic_state *pic, pic_value obj, pic_value val)
 {
   if (! pic_pair_p(pic, obj)) {
-    pic_errorf(pic, "pair required");
+    pic_error(pic, "pair required", 0);
   }
   pic_pair_ptr(pic, obj)->car = val;
 }
@@ -49,7 +49,7 @@ void
 pic_set_cdr(pic_state *pic, pic_value obj, pic_value val)
 {
   if (! pic_pair_p(pic, obj)) {
-    pic_errorf(pic, "pair required");
+    pic_error(pic, "pair required", 0);
   }
   pic_pair_ptr(pic, obj)->cdr = val;
 }
@@ -171,15 +171,10 @@ pic_length(pic_state *pic, pic_value obj)
 {
   int c = 0;
 
-  if (! pic_list_p(pic, obj)) {
-    pic_errorf(pic, "length: expected list, but got ~s", obj);
-  }
-
   while (! pic_nil_p(pic, obj)) {
     obj = pic_cdr(pic, obj);
     ++c;
   }
-
   return c;
 }
 
@@ -477,7 +472,7 @@ pic_pair_map(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   if (argc == 0)
-    pic_errorf(pic, "map: wrong number of arguments (1 for at least 2)");
+    pic_error(pic, "map: wrong number of arguments (1 for at least 2)", 0);
 
   arg_list = pic_alloca(pic, sizeof(pic_value) * argc);
 

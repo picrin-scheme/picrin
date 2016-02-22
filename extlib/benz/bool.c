@@ -72,7 +72,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
 
   if (depth > 10) {
     if (depth > 200) {
-      pic_errorf(pic, "Stack overflow in equal\n");
+      pic_error(pic, "stack overflow in equal", 0);
     }
     if (pic_pair_p(pic, x) || pic_vec_p(pic, x)) {
       int ret;

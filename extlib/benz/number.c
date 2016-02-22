@@ -59,7 +59,6 @@ pic_number_exact(pic_state *pic)
   pic_value                                                             \
   name(pic_state *pic, pic_value a, pic_value b)                        \
   {                                                                     \
-    PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);       \
     double f;                                                           \
     if (pic_int_p(pic, a) && pic_int_p(pic, b)) {                       \
       f = (double)pic_int(pic, a) op (double)pic_int(pic, b);           \
@@ -73,7 +72,7 @@ pic_number_exact(pic_state *pic)
     } else if (pic_float_p(pic, a) && pic_int_p(pic, b)) {              \
       return pic_float_value(pic, pic_float(pic, a) op pic_int(pic, b)); \
     } else {                                                            \
-      pic_errorf(pic, #name ": non-number operand given");              \
+      pic_error(pic, #name ": non-number operand given", 0);              \
     }                                                                   \
     PIC_UNREACHABLE();                                                  \
   }
@@ -87,7 +86,6 @@ pic_define_aop(pic_div, /, f == (int)f)
   bool                                                                  \
   name(pic_state *pic, pic_value a, pic_value b)                        \
   {                                                                     \
-    PIC_NORETURN void pic_errorf(pic_state *, const char *, ...);       \
     if (pic_int_p(pic, a) && pic_int_p(pic, b)) {                       \
       return pic_int(pic, a) op pic_int(pic, b);                        \
     } else if (pic_float_p(pic, a) && pic_float_p(pic, b)) {            \
@@ -97,7 +95,7 @@ pic_define_aop(pic_div, /, f == (int)f)
     } else if (pic_float_p(pic, a) && pic_int_p(pic, b)) {              \
       return pic_float(pic, a) op pic_int(pic, b);                      \
     } else {                                                            \
-      pic_errorf(pic, #name ": non-number operand given");              \
+      pic_error(pic, #name ": non-number operand given", 0);              \
     }                                                                   \
     PIC_UNREACHABLE();                                                  \
   }
@@ -165,10 +163,10 @@ DEFINE_AOP(mul, argv[0], do {
     return pic_int_value(pic, 1);
   } while (0))
 DEFINE_AOP(sub, pic_sub(pic, pic_int_value(pic, 0), argv[0]), do {
-    pic_errorf(pic, "-: at least one argument required");
+    pic_error(pic, "-: at least one argument required", 0);
   } while (0))
 DEFINE_AOP(div, pic_div(pic, pic_int_value(pic, 1), argv[0]), do {
-    pic_errorf(pic, "/: at least one argument required");
+    pic_error(pic, "/: at least one argument required", 0);
   } while (0))
 
 static int
@@ -224,7 +222,7 @@ pic_number_number_to_string(pic_state *pic)
   pic_get_args(pic, "F|i", &f, &e, &radix);
 
   if (radix < 2 || radix > 36) {
-    pic_errorf(pic, "number->string: invalid radix %d (between 2 and 36, inclusive)", radix);
+    pic_error(pic, "number->string: invalid radix (between 2 and 36, inclusive)", 1, pic_int_value(pic, radix));
   }
 
   if (e) {

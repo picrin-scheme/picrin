@@ -31,7 +31,7 @@ PIC_INLINE void
 ensure_socket_is_open(pic_state *pic, struct pic_socket_t *sock)
 {
   if (sock != NULL && sock->fd == -1) {
-    pic_errorf(pic, "the socket is already closed");
+    pic_error(pic, "the socket is already closed", 0);
   }
 }
 
@@ -87,9 +87,9 @@ pic_socket_make_socket(pic_state *pic)
   } while (result == EAI_AGAIN);
   if (result) {
     if (result == EAI_SYSTEM) {
-      pic_errorf(pic, "%s", strerror(errno));
+      pic_error(pic, strerror(errno), 0);
     }
-    pic_errorf(pic, "%s", gai_strerror(result));
+    pic_error(pic, gai_strerror(result), 0);
   }
 
   for (it = ai; it != NULL; it = it->ai_next) {
@@ -129,7 +129,7 @@ pic_socket_make_socket(pic_state *pic)
   freeaddrinfo(ai);
 
   if (sock->fd == -1) {
-    pic_errorf(pic, "%s", strerror(errno));
+    pic_error(pic, strerror(errno), 0);
   }
 
   return pic_data_value(pic, sock, &socket_type);
@@ -158,7 +158,7 @@ pic_socket_socket_accept(pic_state *pic)
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         continue;
       } else {
-        pic_errorf(pic, "%s", strerror(errno));
+        pic_error(pic, strerror(errno), 0);
       }
     } else {
       break;
@@ -191,7 +191,7 @@ pic_socket_socket_send(pic_state *pic)
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         break;
       } else {
-        pic_errorf(pic, "%s", strerror(errno));
+        pic_error(pic, strerror(errno), 0);
       }
     }
     cursor += len;
@@ -214,7 +214,7 @@ pic_socket_socket_recv(pic_state *pic)
   pic_get_args(pic, "ui|i", &sock, &socket_type, &size, &flags);
 
   if (size < 0) {
-    pic_errorf(pic, "size must not be negative");
+    pic_error(pic, "size must not be negative", 0);
   }
 
   ensure_socket_is_open(pic, sock);
@@ -227,7 +227,7 @@ pic_socket_socket_recv(pic_state *pic)
   } while (len < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
 
   if (len < 0) {
-    pic_errorf(pic, "%s", strerror(errno));
+    pic_error(pic, strerror(errno), 0);
   }
 
   return pic_blob_value(pic, buf, len);

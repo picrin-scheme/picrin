@@ -10,6 +10,16 @@
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
+PIC_NORETURN static void
+arg_error(pic_state *pic, int actual, bool varg, int expected)
+{
+  const char *msg;
+
+  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual, (varg ? "at least " : ""), expected));
+
+  pic_error(pic, msg, 0);
+}
+
 #define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
 
 /**
@@ -80,7 +90,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
   }
 
   if (argc < paramc || (paramc + optc < argc && ! rest)) {
-    pic_errorf(pic, "pic_get_args: wrong number of arguments (%d for %s%d)", argc, rest? "at least " : "", paramc);
+    arg_error(pic, argc, rest, paramc);
   }
 
   va_start(ap, format);
@@ -121,7 +131,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
         *data = pic_data(pic, v);
       }
       else {
-        pic_errorf(pic, "pic_get_args: expected data type \"%s\", but got ~s", type->type_name, v);
+        const char *msg;
+        msg = pic_str(pic, pic_strf_value(pic, "pic_get_args: data type \"%s\" required", type->type_name));
+        pic_error(pic, msg, 1, v);
       }
       break;
     }
@@ -139,7 +151,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         if (buf) *buf = tmp;
       }
       else {
-        pic_errorf(pic, "pic_get_args: expected bytevector, but got ~s", v);
+        pic_error(pic, "pic_get_args: bytevector required", 1, v);
       }
       break;
     }
@@ -155,16 +167,16 @@ pic_get_args(pic_state *pic, const char *format, ...)
                                                                         \
         v = GET_OPERAND(pic, i);                                        \
         switch (pic_type(pic, v)) {                                     \
-        case PIC_TYPE_FLOAT:                                              \
+        case PIC_TYPE_FLOAT:                                            \
           *n = pic_float(pic, v);                                       \
           *e = false;                                                   \
           break;                                                        \
-        case PIC_TYPE_INT:                                                \
+        case PIC_TYPE_INT:                                              \
           *n = pic_int(pic, v);                                         \
           *e = true;                                                    \
           break;                                                        \
         default:                                                        \
-          pic_errorf(pic, "pic_get_args: expected float or int, but got ~s", v); \
+          pic_error(pic, "pic_get_args: float or int required", 1, v);  \
         }                                                               \
         break;                                                          \
       }
@@ -183,7 +195,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
           *ptr = conv;                                                  \
         }                                                               \
         else {                                                          \
-          pic_errorf(pic, "pic_get_args: expected " #type ", but got ~s", v); \
+          pic_error(pic, "pic_get_args: " #type " required", 1, v);     \
         }                                                               \
         break;                                                          \
       }
@@ -202,7 +214,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
     OBJ_CASE('r', rec)
 
     default:
-      pic_errorf(pic, "pic_get_args: invalid argument specifier '%c' given", c);
+      pic_error(pic, "pic_get_args: invalid argument specifier given", 1, pic_char_value(pic, c));
     }
 
     if (format[1] == '+') {
@@ -232,11 +244,11 @@ vm_gref(pic_state *pic, pic_value uid)
   pic_value val;
 
   if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_errorf(pic, "undefined variable ~s", uid);
+    pic_error(pic, "undefined variable", 1, uid);
   }
   val = pic_weak_ref(pic, pic->globals, uid);;
   if (pic_invalid_p(pic, val)) {
-    pic_errorf(pic, "uninitialized global variable: ~s", uid);
+    pic_error(pic, "uninitialized global variable", 1, uid);
   }
   return val;
 }
@@ -245,7 +257,7 @@ static void
 vm_gset(pic_state *pic, pic_value uid, pic_value value)
 {
   if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_errorf(pic, "undefined variable ~s", uid);
+    pic_error(pic, "undefined variable", 1, uid);
   }
   pic_weak_set(pic, pic->globals, uid, value);
 }
@@ -488,7 +500,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     L_CALL:
       x = pic->sp[-c.a];
       if (! pic_proc_p(pic, x)) {
-	pic_errorf(pic, "invalid application: ~s", x);
+	pic_error(pic, "invalid application", 1, x);
       }
       proc = pic_proc_ptr(pic, x);
 
@@ -521,7 +533,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
         ci->irep = irep;
 	if (ci->argc != irep->argc) {
 	  if (! (irep->varg && ci->argc >= irep->argc)) {
-            pic_errorf(pic, "wrong number of arguments (%d for %s%d)", ci->argc - 1, (irep->varg ? "at least " : ""), irep->argc - 1);
+            arg_error(pic, ci->argc - 1, irep->varg, irep->argc - 1);
 	  }
 	}
 	/* prepare rest args */
@@ -909,7 +921,7 @@ pic_closure_ref(pic_state *pic, int n)
   assert(pic_func_p(self));
 
   if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
-    pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
+    pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
   return pic_proc_ptr(pic, self)->locals[n];
 }
@@ -922,7 +934,7 @@ pic_closure_set(pic_state *pic, int n, pic_value v)
   assert(pic_func_p(self));
 
   if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
-    pic_errorf(pic, "pic_closure_ref: index out of range (%d)", n);
+    pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
   pic_proc_ptr(pic, self)->locals[n] = v;
 }
@@ -1019,7 +1031,7 @@ pic_proc_apply(pic_state *pic)
   pic_get_args(pic, "l*", &proc, &argc, &args);
 
   if (argc == 0) {
-    pic_errorf(pic, "apply: wrong number of arguments");
+    pic_error(pic, "apply: wrong number of arguments", 0);
   }
 
   n = argc - 1 + pic_length(pic, args[argc - 1]);

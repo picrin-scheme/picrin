@@ -18,7 +18,7 @@ pic_load_load(pic_state *pic)
 
   fp = fopen(fn, "r");
   if (fp == NULL) {
-    pic_errorf(pic, "load: could not open file %s", fn);
+    pic_error(pic, "load: could not open file", 1, pic_cstr_value(pic, fn));
   }
 
   port = pic_open_port(pic, xfopen_file(pic, fp, "r"));

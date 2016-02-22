@@ -59,9 +59,9 @@ pic_value pic_fdisplay(pic_state *, pic_value, xFILE *);
 #define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
 #define pic_pop(pic, place) (place = pic_cdr(pic, place))
 
-#define pic_assert_type(pic, v, type) do {                      \
-    if (! pic_##type##_p(pic, v))                               \
-      pic_errorf(pic, "expected " #type ", but got ~s", v);     \
+#define pic_assert_type(pic, v, type) do {      \
+    if (! pic_##type##_p(pic, v))               \
+      pic_error(pic, #type " required", 1, v);  \
   } while (0)
 
 #define pic_void(exec) pic_void_(PIC_GENSYM(ai), exec)
