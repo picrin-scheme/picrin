@@ -122,6 +122,7 @@ double pic_float(pic_state *, pic_value f);
 char pic_char(pic_state *, pic_value c);
 #define pic_bool(pic,b) (! pic_false_p(pic, b))
 const char *pic_str(pic_state *, pic_value str);
+#define pic_sym(pic,s) (pic_str(pic, pic_sym_name(pic, (s))))
 unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
 void *pic_data(pic_state *, pic_value data);
 

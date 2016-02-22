@@ -339,10 +339,10 @@ read_minus(pic_state *pic, xFILE *file, int c, struct reader_control *p)
   }
   else {
     sym = read_symbol(pic, file, c, p);
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "-inf.0")) {
+    if (strcaseeq(pic_sym(pic, sym), "-inf.0")) {
       return pic_float_value(pic, -(1.0 / 0.0));
     }
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "-nan.0")) {
+    if (strcaseeq(pic_sym(pic, sym), "-nan.0")) {
       return pic_float_value(pic, -(0.0 / 0.0));
     }
     return sym;
@@ -359,10 +359,10 @@ read_plus(pic_state *pic, xFILE *file, int c, struct reader_control *p)
   }
   else {
     sym = read_symbol(pic, file, c, p);
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "+inf.0")) {
+    if (strcaseeq(pic_sym(pic, sym), "+inf.0")) {
       return pic_float_value(pic, 1.0 / 0.0);
     }
-    if (strcaseeq(pic_str(pic, pic_sym_name(pic, sym)), "+nan.0")) {
+    if (strcaseeq(pic_sym(pic, sym), "+nan.0")) {
       return pic_float_value(pic, 0.0 / 0.0);
     }
     return sym;

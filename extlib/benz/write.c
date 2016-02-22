@@ -195,7 +195,7 @@ write_pair_help(pic_state *pic, pic_value pair, xFILE *file, struct writer_contr
   }
 }
 
-#define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym)), lit) == 0)
+#define EQ(sym, lit) (strcmp(pic_sym(pic, sym), lit) == 0)
 
 static void
 write_pair(pic_state *pic, pic_value pair, xFILE *file, struct writer_control *p)
@@ -273,7 +273,7 @@ write_dict(pic_state *pic, pic_value dict, xFILE *file, struct writer_control *p
 
   xfprintf(pic, file, "#.(dictionary");
   while (pic_dict_next(pic, dict, &it, &key, &val)) {
-    xfprintf(pic, file, " '%s ", pic_str(pic, pic_sym_name(pic, key)));
+    xfprintf(pic, file, " '%s ", pic_sym(pic, key));
     write_core(pic, val, file, p);
   }
   xfprintf(pic, file, ")");
@@ -319,7 +319,7 @@ write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
     xfprintf(pic, file, "%d", pic_int(pic, obj));
     break;
   case PIC_TYPE_SYMBOL:
-    xfprintf(pic, file, "%s", pic_str(pic, pic_sym_name(pic, obj)));
+    xfprintf(pic, file, "%s", pic_sym(pic, obj));
     break;
   case PIC_TYPE_FLOAT:
     write_float(pic, obj, file);
