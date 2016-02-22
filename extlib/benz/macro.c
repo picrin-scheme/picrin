@@ -22,36 +22,6 @@ pic_make_env(pic_state *pic, pic_value up)
   return pic_obj_value(env);
 }
 
-pic_value
-pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
-{
-  const char *name;
-  pic_value uid, str;
-
-  name = pic_str(pic, pic_id_name(pic, id));
-
-  if (pic_env_ptr(pic, env)->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
-    str = pic_strf_value(pic, "~a/%s", pic_obj_value(pic_env_ptr(pic, env)->lib), name);
-  } else {
-    str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
-  }
-  uid = pic_intern(pic, str);
-
-  return pic_put_identifier(pic, id, uid, env);
-}
-
-pic_value
-pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
-{
-  int it;
-  int ret;
-
-  it = kh_put(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id), &ret);
-  kh_val(&pic_env_ptr(pic, env)->map, it) = pic_sym_ptr(pic, uid);
-
-  return uid;
-}
-
 static bool
 search_scope(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
 {
@@ -101,6 +71,39 @@ pic_find_identifier(pic_state *pic, pic_value id, pic_value env)
     id = pic_obj_value(pic_id_ptr(pic, id)->u.id);
   }
   return uid;
+}
+
+pic_value
+pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
+{
+  const char *name;
+  pic_value uid, str;
+
+  if (search_scope(pic, id, env, &uid)) {
+    return uid;
+  }
+
+  name = pic_str(pic, pic_id_name(pic, id));
+
+  if (pic_env_ptr(pic, env)->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
+    str = pic_strf_value(pic, "~a/%s", pic_obj_value(pic_env_ptr(pic, env)->lib), name);
+  } else {
+    str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
+  }
+  uid = pic_intern(pic, str);
+
+  pic_put_identifier(pic, id, uid, env);
+
+  return uid;
+}
+
+void
+pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
+{
+  int it, ret;
+
+  it = kh_put(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id), &ret);
+  kh_val(&pic_env_ptr(pic, env)->map, it) = pic_sym_ptr(pic, uid);
 }
 
 
@@ -238,14 +241,12 @@ expand_lambda(pic_state *pic, pic_value expr, pic_value env)
 static pic_value
 expand_define(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 {
-  pic_value id, uid, val;
+  pic_value uid, val;
 
-  id = pic_cadr(pic, expr);
-  if (! search_scope(pic, id, env, &uid)) {
-    uid = pic_add_identifier(pic, id, env);
-  } else {
-    shadow_macro(pic, uid);
-  }
+  uid = pic_add_identifier(pic, pic_list_ref(pic, expr, 1), env);
+
+  shadow_macro(pic, uid);
+
   val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
 
   return pic_list(pic, 3, S("define"), uid, val);
@@ -255,16 +256,13 @@ static pic_value
 expand_defmacro(pic_state *pic, pic_value expr, pic_value env)
 {
   pic_value pic_compile(pic_state *, pic_value);
-  pic_value id, uid, val;
+  pic_value uid, val;
 
-  id = pic_cadr(pic, expr);
-  if (! search_scope(pic, id, env, &uid)) {
-    uid = pic_add_identifier(pic, id, env);
-  }
+  uid = pic_add_identifier(pic, pic_list_ref(pic, expr, 1), env);
 
   val = pic_call(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)), 0);
   if (! pic_proc_p(pic, val)) {
-    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", id);
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", pic_list_ref(pic, expr, 1));
   }
 
   define_macro(pic, uid, val);

@@ -352,18 +352,6 @@ pic_close(pic_state *pic)
   /* free all heap objects */
   pic_gc(pic);
 
-#if 0
-  {
-    /* FIXME */
-    int i = 0;
-    struct list_head *list;
-    for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
-      i++;
-    }
-    printf("%d\n", i);
-  }
-#endif
-
   /* flush all xfiles */
   xfflush(pic, NULL);
 

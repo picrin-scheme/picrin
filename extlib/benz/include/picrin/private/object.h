@@ -179,7 +179,7 @@ pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_val
 pic_value pic_make_rec(pic_state *, pic_value type, pic_value datum);
 
 pic_value pic_add_identifier(pic_state *, pic_value id, pic_value env);
-pic_value pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);
+void pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);
 pic_value pic_find_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_id_name(pic_state *, pic_value id);
 

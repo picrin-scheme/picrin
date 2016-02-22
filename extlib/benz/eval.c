@@ -116,7 +116,7 @@ analyzer_scope_destroy(pic_state *PIC_UNUSED(pic), analyze_scope *PIC_UNUSED(sco
 }
 
 static bool
-search_scope(pic_state *pic, analyze_scope *scope, pic_value sym)
+find_local_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 {
   return pic_dict_has(pic, scope->args, sym) || pic_dict_has(pic, scope->locals, sym) || scope->depth == 0;
 }
@@ -127,7 +127,7 @@ find_var(pic_state *pic, analyze_scope *scope, pic_value sym)
   int depth = 0;
 
   while (scope) {
-    if (search_scope(pic, scope, sym)) {
+    if (find_local_var(pic, scope, sym)) {
       if (depth > 0) {
         pic_dict_set(pic, scope->captures, sym, pic_true_value(pic)); /* capture! */
       }
@@ -144,7 +144,7 @@ define_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 {
   if (scope->depth > 0) {
     /* local */
-    if (search_scope(pic, scope, sym)) {
+    if (find_local_var(pic, scope, sym)) {
       pic_warnf(pic, "redefining variable: ~s", sym);
       return;
     }
