@@ -2,11 +2,14 @@
  * See Copyright Notice in picrin.h
  */
 
-/** no dependency on libc */
-/* #define PIC_ENABLE_LIBC 1 */
+/** no dependency on libc? */
+/* #define PIC_USE_LIBC 1 */
 
 /** use stdio or not */
-/* #define PIC_ENABLE_STDIO 1 */
+/* #define PIC_USE_STDIO 1 */
+
+/** enable some specific features? */
+/* #define PIC_USE_WRITE 1 */
 
 /** essential external functions */
 /* #define PIC_JMPBUF jmp_buf */

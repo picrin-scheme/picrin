@@ -6,6 +6,8 @@
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
 
+#if PIC_USE_WRITE
+
 struct writer_control {
   int mode;
   int op;
@@ -501,3 +503,5 @@ pic_init_write(pic_state *pic)
   pic_defun(pic, "write-shared", pic_write_write_shared);
   pic_defun(pic, "display", pic_write_display);
 }
+
+#endif

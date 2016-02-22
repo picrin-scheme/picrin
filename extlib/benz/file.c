@@ -364,7 +364,7 @@ xFILE *xfile_xstdin(pic_state *pic) { return &pic->files[0]; }
 xFILE *xfile_xstdout(pic_state *pic) { return &pic->files[1]; }
 xFILE *xfile_xstderr(pic_state *pic) { return &pic->files[2]; }
 
-#if PIC_ENABLE_STDIO
+#if PIC_USE_STDIO
 
 static int
 file_read(pic_state *PIC_UNUSED(pic), void *cookie, char *ptr, int size) {

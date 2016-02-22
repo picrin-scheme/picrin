@@ -4,12 +4,16 @@
 
 #include "picrin/config.h"
 
-#ifndef PIC_ENABLE_LIBC
-# define PIC_ENABLE_LIBC 1
+#ifndef PIC_USE_LIBC
+# define PIC_USE_LIBC 1
 #endif
 
-#ifndef PIC_ENABLE_STDIO
-# define PIC_ENABLE_STDIO 1
+#ifndef PIC_USE_STDIO
+# define PIC_USE_STDIO 1
+#endif
+
+#ifndef PIC_USE_WRITE
+# define PIC_USE_WRITE 1
 #endif
 
 #ifndef PIC_JMPBUF
@@ -156,7 +160,7 @@ typedef unsigned long uint32_t;
   } while (0)
 
 
-#if PIC_ENABLE_LIBC
+#if PIC_USE_LIBC
 
 #include <string.h>
 #include <ctype.h>
@@ -375,7 +379,7 @@ atof(const char *nptr)
 
 #endif
 
-#if PIC_ENABLE_STDIO
+#if PIC_USE_STDIO
 # include <stdio.h>
 
 PIC_INLINE void

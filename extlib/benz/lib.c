@@ -175,7 +175,7 @@ pic_make_library(pic_state *pic, const char *lib)
 
   it = kh_put(ltable, h, pic_str(pic, name), &ret);
   if (ret == 0) {               /* if exists */
-    pic_error(pic, "library name already in use", pic_cstr_value(pic, lib));
+    pic_error(pic, "library name already in use", 1, pic_cstr_value(pic, lib));
   }
 
   kh_val(h, it).name = pic_str_ptr(pic, name);

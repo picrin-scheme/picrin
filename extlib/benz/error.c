@@ -14,7 +14,7 @@ pic_panic(pic_state *pic, const char *msg)
     pic->panicf(pic, msg);
   }
 
-#if PIC_ENABLE_STDIO
+#if PIC_USE_STDIO
   fprintf(stderr, "picrin panic!: %s\n", msg);
 #endif
 
@@ -26,6 +26,7 @@ pic_panic(pic_state *pic, const char *msg)
 void
 pic_warnf(pic_state *pic, const char *fmt, ...)
 {
+  xFILE *file = pic_fileno(pic, pic_stderr(pic));
   va_list ap;
   pic_value err;
 
@@ -33,7 +34,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   err = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
 
-  pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_str(pic, err));
+  xfprintf(pic, file, "warn: %s\n", pic_str(pic, err));
 }
 
 void

@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 
-#if PIC_ENABLE_LIBC
+#if PIC_USE_LIBC
 void *pic_default_allocf(void *, void *, size_t);
 #endif
 
@@ -23,9 +23,11 @@ pic_value pic_eval(pic_state *, pic_value program, const char *lib);
 void pic_load(pic_state *, pic_value port);
 void pic_load_cstr(pic_state *, const char *);
 
+#if PIC_USE_WRITE
 void pic_printf(pic_state *, const char *fmt, ...);
 void pic_fprintf(pic_state *, pic_value port, const char *fmt, ...);
 void pic_vfprintf(pic_state *, pic_value port, const char *fmt, va_list ap);
+#endif
 
 /* extra xfile methods */
 
@@ -35,7 +37,7 @@ xFILE *xfile_xstderr(pic_state *);
 #define xstdin  (xfile_xstdin(pic))
 #define xstdout (xfile_xstdout(pic))
 #define xstderr (xfile_xstderr(pic))
-#if PIC_ENABLE_STDIO
+#if PIC_USE_STDIO
 xFILE *xfopen_file(pic_state *, FILE *, const char *mode);
 #endif
 xFILE *xfopen_buf(pic_state *, const char *buf, int len, const char *mode);
@@ -109,7 +111,9 @@ pic_value pic_err(pic_state *);
 
 void pic_warnf(pic_state *, const char *, ...);
 pic_value pic_get_backtrace(pic_state *);
+#if PIC_USE_WRITE
 void pic_print_error(pic_state *, xFILE *);
+#endif
 
 pic_value pic_library_environment(pic_state *, const char *);
 

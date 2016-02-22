@@ -82,7 +82,7 @@ pic_heap_close(pic_state *pic, struct heap *heap)
   pic_free(pic, heap);
 }
 
-#if PIC_ENABLE_LIBC
+#if PIC_USE_LIBC
 void *
 pic_default_allocf(void *PIC_UNUSED(userdata), void *ptr, size_t size)
 {

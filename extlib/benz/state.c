@@ -168,13 +168,16 @@ pic_init_core(pic_state *pic)
   pic_init_error(pic); DONE;
   pic_init_str(pic); DONE;
   pic_init_var(pic); DONE;
-  pic_init_write(pic); DONE;
   pic_init_read(pic); DONE;
   pic_init_dict(pic); DONE;
   pic_init_record(pic); DONE;
   pic_init_eval(pic); DONE;
   pic_init_lib(pic); DONE;
   pic_init_weak(pic); DONE;
+
+#if PIC_USE_WRITE
+  pic_init_write(pic); DONE;
+#endif
 
   pic_defun(pic, "features", pic_features);
 
@@ -275,7 +278,7 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* file pool */
   memset(pic->files, 0, sizeof pic->files);
-#if PIC_ENABLE_STDIO
+#if PIC_USE_STDIO
   xfopen_file(pic, stdin, "r");
   xfopen_file(pic, stdout, "w");
   xfopen_file(pic, stderr, "w");

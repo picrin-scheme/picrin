@@ -71,7 +71,7 @@ test: test-contribs test-nostdlib test-issue
 test-contribs: bin/picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
-	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_STDIO=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libbenz-tiny.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
+	$(CC) -I extlib/benz/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libbenz-tiny.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	strip lib/libbenz-tiny.so
 	ls -lh lib/libbenz-tiny.so
 	rm -f lib/libbenz-tiny.so

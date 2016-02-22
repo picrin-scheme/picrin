@@ -35,6 +35,8 @@ pic_get_backtrace(pic_state *pic)
   return trace;
 }
 
+#if PIC_USE_WRITE
+
 void
 pic_print_error(pic_state *pic, xFILE *file)
 {
@@ -65,3 +67,5 @@ pic_print_error(pic_state *pic, xFILE *file)
     xfputs(pic, pic_str(pic, pic_obj_value(e->stack)), file);
   }
 }
+
+#endif
