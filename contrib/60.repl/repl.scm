@@ -36,6 +36,34 @@
               (picrin macro))
      "picrin.user"))
 
+  (define (repeat x)
+    (let ((p (list x)))
+      (set-cdr! p p)
+      p))
+
+  (define (join xs delim)
+    (cdr (apply append (map list (repeat delim) xs))))
+
+  (define (string-join strings delim)
+    (apply string-append (join strings delim)))
+
+  (define (->string x)
+    (call-with-port (open-output-string)
+      (lambda (port)
+        (write x port)
+        (get-output-string port))))
+
+  (define (print-error-object e)
+    (display "error: ")
+    (display (error-object-message e))
+    (display ".")
+    (define irritants (error-object-irritants e))
+    (unless (null? irritants)
+      (display " (irritants: ")
+      (display (string-join (map ->string irritants) ", "))
+      (display ")"))
+    (newline))
+
   (define (repl)
     (init-env)
     (let loop ((buf ""))
@@ -50,9 +78,7 @@
                   (lambda (condition)
                     (if (error-object? condition)
                         (unless (equal? (error-object-message condition) "unexpected EOF")
-                          (display "error: ")
-                          (display (error-object-message condition))
-                          (newline)
+                          (print-error-object condition)
                           (set! str ""))
                         (begin
                           (display "raised: ")
