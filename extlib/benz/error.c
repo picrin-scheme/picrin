@@ -49,7 +49,7 @@ pic_errorf(pic_state *pic, const char *fmt, ...)
 
   msg = pic_str(pic, err);
 
-  pic_error(pic, "", msg, pic_nil_value(pic));
+  pic_raise(pic, pic_make_error(pic, "", msg, pic_nil_value(pic)));
 }
 
 void
@@ -154,12 +154,6 @@ pic_raise(pic_state *pic, pic_value err)
   pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
 }
 
-void
-pic_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
-{
-  pic_raise(pic, pic_make_error(pic, type, msg, irrs));
-}
-
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
@@ -205,7 +199,7 @@ pic_error_error(pic_state *pic)
 
   pic_get_args(pic, "z*", &str, &argc, &argv);
 
-  pic_error(pic, "", str, pic_make_list(pic, argc, argv));
+  pic_raise(pic, pic_make_error(pic, "", str, pic_make_list(pic, argc, argv)));
 }
 
 static pic_value

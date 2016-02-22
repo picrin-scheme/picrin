@@ -109,7 +109,6 @@ pic_value pic_err(pic_state *);
 
 /* for debug */
 
-PIC_NORETURN void pic_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 void pic_warnf(pic_state *, const char *, ...);
 pic_value pic_get_backtrace(pic_state *);
 void pic_print_backtrace(pic_state *, xFILE *);

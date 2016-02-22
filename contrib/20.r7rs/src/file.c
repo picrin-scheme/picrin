@@ -10,7 +10,7 @@
 PIC_NORETURN static void
 file_error(pic_state *pic, const char *msg)
 {
-  pic_error(pic, "file", msg, pic_nil_value(pic));
+  pic_raise(pic, pic_make_error(pic, "file", msg, pic_nil_value(pic)));
 }
 
 static pic_value
