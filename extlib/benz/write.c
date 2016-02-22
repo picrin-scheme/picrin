@@ -366,44 +366,70 @@ write(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
   write_core(pic, obj, file, &p);
 }
 
-
-pic_value
-pic_write(pic_state *pic, pic_value obj)
-{
-  return pic_fwrite(pic, obj, pic_fileno(pic, pic_stdout(pic)));
-}
-
-pic_value
-pic_fwrite(pic_state *pic, pic_value obj, xFILE *file)
-{
-  write(pic, obj, file, WRITE_MODE, OP_WRITE);
-  xfflush(pic, file);
-  return obj;
-}
-
-pic_value
-pic_display(pic_state *pic, pic_value obj)
-{
-  return pic_fdisplay(pic, obj, pic_fileno(pic, pic_stdout(pic)));
-}
-
-pic_value
-pic_fdisplay(pic_state *pic, pic_value obj, xFILE *file)
-{
-  write(pic, obj, file, DISPLAY_MODE, OP_WRITE);
-  xfflush(pic, file);
-  return obj;
-}
-
 void
 pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
 {
   xFILE *file = pic_fileno(pic, port);
-  pic_value str;
+  char c;
 
-  str = pic_vstrf_value(pic, fmt, ap);
-
-  xfprintf(pic, file, "%s", pic_str(pic, str));
+  while ((c = *fmt++) != '\0') {
+    switch (c) {
+    default:
+      xfputc(pic, c, file);
+      break;
+    case '%':
+      c = *fmt++;
+      if (! c)
+        goto exit;
+      switch (c) {
+      default:
+        xfputc(pic, c, file);
+        break;
+      case '%':
+        xfputc(pic, '%', file);
+        break;
+      case 'c':
+        xfprintf(pic, file, "%c", va_arg(ap, int));
+        break;
+      case 's':
+        xfprintf(pic, file, "%s", va_arg(ap, const char *));
+        break;
+      case 'd':
+        xfprintf(pic, file, "%d", va_arg(ap, int));
+        break;
+      case 'p':
+        xfprintf(pic, file, "%p", va_arg(ap, void *));
+        break;
+      case 'f':
+        xfprintf(pic, file, "%f", va_arg(ap, double));
+        break;
+      }
+      break;
+    case '~':
+      c = *fmt++;
+      if (! c)
+        goto exit;
+      switch (c) {
+      default:
+        xfputc(pic, c, file);
+        break;
+      case '~':
+        xfputc(pic, '~', file);
+        break;
+      case '%':
+        xfputc(pic, '\n', file);
+        break;
+      case 'a':
+        write(pic, va_arg(ap, pic_value), file, DISPLAY_MODE, OP_WRITE);
+        break;
+      case 's':
+        write(pic, va_arg(ap, pic_value), file, WRITE_MODE, OP_WRITE);
+        break;
+      }
+      break;
+    }
+  }
+ exit:
   xfflush(pic, file);
 }
 

@@ -36,30 +36,29 @@ pic_get_backtrace(pic_state *pic)
 }
 
 void
-pic_print_backtrace(pic_state *pic, xFILE *file)
+pic_print_error(pic_state *pic, xFILE *file)
 {
-  pic_value err = pic_err(pic);
+  pic_value err = pic_err(pic), port = pic_open_port(pic, file);
 
   assert(! pic_invalid_p(pic, err));
 
   if (! pic_error_p(pic, err)) {
     xfprintf(pic, file, "raise: ");
-    pic_fwrite(pic, err, file);
+    pic_fprintf(pic, port, "~s", err);
   } else {
     struct error *e;
     pic_value elem, it;
 
     e = pic_error_ptr(pic, err);
     if (! pic_eq_p(pic, pic_obj_value(e->type), pic_intern_lit(pic, ""))) {
-      pic_fwrite(pic, pic_obj_value(e->type), file);
+      pic_fprintf(pic, port, "~s", pic_obj_value(e->type));
       xfprintf(pic, file, " ");
     }
     xfprintf(pic, file, "error: ");
-    pic_fwrite(pic, pic_obj_value(e->msg), file);
+    pic_fprintf(pic, port, "~s", pic_obj_value(e->msg));
 
     pic_for_each (elem, e->irrs, it) { /* print error irritants */
-      xfprintf(pic, file, " ");
-      pic_fwrite(pic, elem, file);
+      pic_fprintf(pic, port, " ~s", elem);
     }
     xfprintf(pic, file, "\n");
 

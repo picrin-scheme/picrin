@@ -318,72 +318,6 @@ pic_str(pic_state *pic, pic_value str)
   return rope_cstr(pic, pic_str_ptr(pic, str)->rope);
 }
 
-static void
-vfstrf(pic_state *pic, xFILE *file, const char *fmt, va_list ap)
-{
-  char c;
-
-  while ((c = *fmt++) != '\0') {
-    switch (c) {
-    default:
-      xfputc(pic, c, file);
-      break;
-    case '%':
-      c = *fmt++;
-      if (! c)
-        goto exit;
-      switch (c) {
-      default:
-        xfputc(pic, c, file);
-        break;
-      case '%':
-        xfputc(pic, '%', file);
-        break;
-      case 'c':
-        xfprintf(pic, file, "%c", va_arg(ap, int));
-        break;
-      case 's':
-        xfprintf(pic, file, "%s", va_arg(ap, const char *));
-        break;
-      case 'd':
-        xfprintf(pic, file, "%d", va_arg(ap, int));
-        break;
-      case 'p':
-        xfprintf(pic, file, "%p", va_arg(ap, void *));
-        break;
-      case 'f':
-        xfprintf(pic, file, "%f", va_arg(ap, double));
-        break;
-      }
-      break;
-    case '~':
-      c = *fmt++;
-      if (! c)
-        goto exit;
-      switch (c) {
-      default:
-        xfputc(pic, c, file);
-        break;
-      case '~':
-        xfputc(pic, '~', file);
-        break;
-      case '%':
-        xfputc(pic, '\n', file);
-        break;
-      case 'a':
-        pic_fdisplay(pic, va_arg(ap, pic_value), file);
-        break;
-      case 's':
-        pic_fwrite(pic, va_arg(ap, pic_value), file);
-        break;
-      }
-      break;
-    }
-  }
- exit:
-  return;
-}
-
 pic_value
 pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 {
@@ -394,7 +328,7 @@ pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 
   file = xfopen_buf(pic, NULL, 0, "w");
 
-  vfstrf(pic, file, fmt, ap);
+  xvfprintf(pic, file, fmt, ap);
   xfget_buf(pic, file, &buf, &len);
   str = pic_str_value(pic, buf, len);
   xfclose(pic, file);

@@ -54,6 +54,10 @@
         (get-output-string port))))
 
   (define (print-error-object e)
+    (define type (error-object-type e))
+    (unless (eq? type '||)
+      (display type)
+      (display "-"))
     (display "error: ")
     (display (error-object-message e))
     (display ".")
@@ -81,7 +85,7 @@
                           (print-error-object condition)
                           (set! str ""))
                         (begin
-                          (display "raised: ")
+                          (display "raise: ")
                           (write condition)
                           (newline)
                           (set! str "")))

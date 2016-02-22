@@ -39,7 +39,7 @@ main(int argc, char *argv[], char **envp)
     status = 0;
   }
   pic_catch {
-    pic_print_backtrace(pic, xstderr);
+    pic_print_error(pic, xstderr);
     status = 1;
   }
 
