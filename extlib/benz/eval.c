@@ -8,8 +8,235 @@
 #include "picrin/private/vm.h"
 #include "picrin/private/state.h"
 
+static pic_value pic_compile(pic_state *, pic_value);
+
 #define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym)), lit) == 0)
 #define S(lit) (pic_intern_lit(pic, lit))
+
+static void
+define_macro(pic_state *pic, pic_value uid, pic_value mac)
+{
+  if (pic_weak_has(pic, pic->macros, uid)) {
+    pic_warnf(pic, "redefining syntax variable: ~s", uid);
+  }
+  pic_weak_set(pic, pic->macros, uid, mac);
+}
+
+static bool
+find_macro(pic_state *pic, pic_value uid, pic_value *mac)
+{
+  if (! pic_weak_has(pic, pic->macros, uid)) {
+    return false;
+  }
+  *mac = pic_weak_ref(pic, pic->macros, uid);
+  return true;
+}
+
+static void
+shadow_macro(pic_state *pic, pic_value uid)
+{
+  if (pic_weak_has(pic, pic->macros, uid)) {
+    pic_weak_del(pic, pic->macros, uid);
+  }
+}
+
+static pic_value expand(pic_state *, pic_value expr, pic_value env, pic_value deferred);
+static pic_value expand_lambda(pic_state *, pic_value expr, pic_value env);
+
+static pic_value
+expand_var(pic_state *pic, pic_value id, pic_value env, pic_value deferred)
+{
+  pic_value mac, functor;
+
+  functor = pic_find_identifier(pic, id, env);
+
+  if (find_macro(pic, functor, &mac)) {
+    return expand(pic, pic_call(pic, mac, 2, id, env), env, deferred);
+  }
+  return functor;
+}
+
+static pic_value
+expand_quote(pic_state *pic, pic_value expr)
+{
+  return pic_cons(pic, S("quote"), pic_cdr(pic, expr));
+}
+
+static pic_value
+expand_list(pic_state *pic, pic_value obj, pic_value env, pic_value deferred)
+{
+  size_t ai = pic_enter(pic);
+  pic_value x, head, tail;
+
+  if (pic_pair_p(pic, obj)) {
+    head = expand(pic, pic_car(pic, obj), env, deferred);
+    tail = expand_list(pic, pic_cdr(pic, obj), env, deferred);
+    x = pic_cons(pic, head, tail);
+  } else {
+    x = expand(pic, obj, env, deferred);
+  }
+
+  pic_leave(pic, ai);
+  pic_protect(pic, x);
+  return x;
+}
+
+static pic_value
+expand_defer(pic_state *pic, pic_value expr, pic_value deferred)
+{
+  pic_value skel = pic_cons(pic, pic_invalid_value(pic), pic_invalid_value(pic));
+
+  pic_set_car(pic, deferred, pic_cons(pic, pic_cons(pic, expr, skel), pic_car(pic, deferred)));
+
+  return skel;
+}
+
+static void
+expand_deferred(pic_state *pic, pic_value deferred, pic_value env)
+{
+  pic_value defer, val, src, dst, it;
+
+  deferred = pic_car(pic, deferred);
+
+  pic_for_each (defer, pic_reverse(pic, deferred), it) {
+    src = pic_car(pic, defer);
+    dst = pic_cdr(pic, defer);
+
+    val = expand_lambda(pic, src, env);
+
+    /* copy */
+    pic_set_car(pic, dst, pic_car(pic, val));
+    pic_set_cdr(pic, dst, pic_cdr(pic, val));
+  }
+}
+
+static pic_value
+expand_lambda(pic_state *pic, pic_value expr, pic_value env)
+{
+  pic_value formal, body;
+  pic_value in;
+  pic_value a, deferred;
+
+  in = pic_make_env(pic, env);
+
+  for (a = pic_cadr(pic, expr); pic_pair_p(pic, a); a = pic_cdr(pic, a)) {
+    pic_add_identifier(pic, pic_car(pic, a), in);
+  }
+  if (pic_id_p(pic, a)) {
+    pic_add_identifier(pic, a, in);
+  }
+
+  deferred = pic_list(pic, 1, pic_nil_value(pic));
+
+  formal = expand_list(pic, pic_list_ref(pic, expr, 1), in, deferred);
+  body = expand(pic, pic_list_ref(pic, expr, 2), in, deferred);
+
+  expand_deferred(pic, deferred, in);
+
+  return pic_list(pic, 3, S("lambda"), formal, body);
+}
+
+static pic_value
+expand_define(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
+{
+  pic_value uid, val;
+
+  uid = pic_add_identifier(pic, pic_list_ref(pic, expr, 1), env);
+
+  shadow_macro(pic, uid);
+
+  val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
+
+  return pic_list(pic, 3, S("define"), uid, val);
+}
+
+static pic_value
+expand_defmacro(pic_state *pic, pic_value expr, pic_value env)
+{
+  pic_value uid, val;
+
+  uid = pic_add_identifier(pic, pic_list_ref(pic, expr, 1), env);
+
+  val = pic_call(pic, pic_compile(pic, pic_expand(pic, pic_list_ref(pic, expr, 2), env)), 0);
+  if (! pic_proc_p(pic, val)) {
+    pic_errorf(pic, "macro definition \"~s\" evaluates to non-procedure object", pic_list_ref(pic, expr, 1));
+  }
+
+  define_macro(pic, uid, val);
+
+  return pic_undef_value(pic);
+}
+
+static pic_value
+expand_node(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
+{
+  switch (pic_type(pic, expr)) {
+  case PIC_TYPE_ID:
+  case PIC_TYPE_SYMBOL: {
+    return expand_var(pic, expr, env, deferred);
+  }
+  case PIC_TYPE_PAIR: {
+    pic_value mac;
+
+    if (! pic_list_p(pic, expr)) {
+      pic_errorf(pic, "cannot expand improper list: ~s", expr);
+    }
+
+    if (pic_id_p(pic, pic_car(pic, expr))) {
+      pic_value functor;
+
+      functor = pic_find_identifier(pic, pic_car(pic, expr), env);
+
+      if (EQ(functor, "define-macro")) {
+        return expand_defmacro(pic, expr, env);
+      }
+      else if (EQ(functor, "lambda")) {
+        return expand_defer(pic, expr, deferred);
+      }
+      else if (EQ(functor, "define")) {
+        return expand_define(pic, expr, env, deferred);
+      }
+      else if (EQ(functor, "quote")) {
+        return expand_quote(pic, expr);
+      }
+
+      if (find_macro(pic, functor, &mac)) {
+        return expand(pic, pic_call(pic, mac, 2, expr, env), env, deferred);
+      }
+    }
+    return expand_list(pic, expr, env, deferred);
+  }
+  default:
+    return expr;
+  }
+}
+
+static pic_value
+expand(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
+{
+  size_t ai = pic_enter(pic);
+  pic_value v;
+
+  v = expand_node(pic, expr, env, deferred);
+
+  pic_leave(pic, ai);
+  pic_protect(pic, v);
+  return v;
+}
+
+pic_value
+pic_expand(pic_state *pic, pic_value expr, pic_value env)
+{
+  pic_value v, deferred;
+
+  deferred = pic_list(pic, 1, pic_nil_value(pic));
+
+  v = expand(pic, expr, env, deferred);
+
+  expand_deferred(pic, deferred, env);
+
+  return v;
+}
 
 static pic_value
 optimize_beta(pic_state *pic, pic_value expr)
@@ -72,10 +299,6 @@ pic_optimize(pic_state *pic, pic_value expr)
 {
   return optimize_beta(pic, expr);
 }
-
-/**
- * TODO: don't use khash_t, use kvec_t instead
- */
 
 typedef struct analyze_scope {
   int depth;
@@ -819,7 +1042,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 
 #define SAVE(pic, ai, obj) pic_leave(pic, ai); pic_protect(pic, obj)
 
-pic_value
+static pic_value
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct irep *irep;

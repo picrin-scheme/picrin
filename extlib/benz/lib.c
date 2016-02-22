@@ -7,7 +7,105 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
+KHASH_DEFINE(env, struct identifier *, symbol *, kh_ptr_hash_func, kh_ptr_hash_equal)
 KHASH_DEFINE(ltable, const char *, struct lib, kh_str_hash_func, kh_str_cmp_func)
+
+pic_value
+pic_make_env(pic_state *pic, pic_value up)
+{
+  struct env *env;
+
+  env = (struct env *)pic_obj_alloc(pic, sizeof(struct env), PIC_TYPE_ENV);
+  env->up = pic_env_ptr(pic, up);
+  env->lib = NULL;
+  kh_init(env, &env->map);
+
+  return pic_obj_value(env);
+}
+
+static bool
+search_scope(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
+{
+  int it;
+
+  it = kh_get(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id));
+  if (it == kh_end(&pic_env_ptr(pic, env)->map)) {
+    return false;
+  }
+  *uid = pic_obj_value(kh_val(&pic_env_ptr(pic, env)->map, it));
+  return true;
+}
+
+static bool
+search(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
+{
+  struct env *e;
+
+  while (1) {
+    if (search_scope(pic, id, env, uid))
+      return true;
+    e = pic_env_ptr(pic, env)->up;
+    if (e == NULL)
+      break;
+    env = pic_obj_value(e);
+  }
+  return false;
+}
+
+pic_value
+pic_find_identifier(pic_state *pic, pic_value id, pic_value env)
+{
+  struct env *e;
+  pic_value uid;
+
+  while (! search(pic, id, env, &uid)) {
+    if (pic_sym_p(pic, id)) {
+      while (1) {
+        e = pic_env_ptr(pic, env);
+        if (e->up == NULL)
+          break;
+        env = pic_obj_value(e->up);
+      }
+      return pic_add_identifier(pic, id, env);
+    }
+    env = pic_obj_value(pic_id_ptr(pic, id)->env); /* do not overwrite id first */
+    id = pic_obj_value(pic_id_ptr(pic, id)->u.id);
+  }
+  return uid;
+}
+
+pic_value
+pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
+{
+  const char *name;
+  pic_value uid, str;
+
+  if (search_scope(pic, id, env, &uid)) {
+    return uid;
+  }
+
+  name = pic_str(pic, pic_id_name(pic, id));
+
+  if (pic_env_ptr(pic, env)->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
+    str = pic_strf_value(pic, "~a/%s", pic_obj_value(pic_env_ptr(pic, env)->lib), name);
+  } else {
+    str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
+  }
+  uid = pic_intern(pic, str);
+
+  pic_put_identifier(pic, id, uid, env);
+
+  return uid;
+}
+
+void
+pic_put_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
+{
+  int it, ret;
+
+  it = kh_put(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id), &ret);
+  kh_val(&pic_env_ptr(pic, env)->map, it) = pic_sym_ptr(pic, uid);
+}
 
 static struct lib *
 get_library_opt(pic_state *pic, const char *lib)
