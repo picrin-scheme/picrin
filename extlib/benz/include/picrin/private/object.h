@@ -17,18 +17,18 @@ KHASH_DECLARE(env, struct identifier *, symbol *)
 KHASH_DECLARE(dict, symbol *, pic_value)
 KHASH_DECLARE(weak, struct object *, pic_value)
 
-#define PIC_OBJECT_HEADER			\
+#define OBJECT_HEADER                           \
   unsigned char tt;                             \
   char gc_mark;
 
 struct object;              /* defined in gc.c */
 
 struct basic {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
 };
 
 struct identifier {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   union {
     struct string *str;
     struct identifier *id;
@@ -37,54 +37,54 @@ struct identifier {
 };
 
 struct env {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   khash_t(env) map;
   struct env *up;
   struct string *lib;
 };
 
 struct pair {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   pic_value car;
   pic_value cdr;
 };
 
 struct blob {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   unsigned char *data;
   int len;
 };
 
 struct string {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   struct rope *rope;
 };
 
 struct dict {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   khash_t(dict) hash;
 };
 
 struct weak {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   khash_t(weak) hash;
   struct weak *prev;         /* for GC */
 };
 
 struct vector {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   pic_value *data;
   int len;
 };
 
 struct data {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   const pic_data_type *type;
   void *data;
 };
 
 struct context {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   pic_value *regs;
   int regc;
   struct context *up;
@@ -92,7 +92,7 @@ struct context {
 };
 
 struct proc {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   union {
     struct {
       pic_func_t func;
@@ -107,13 +107,13 @@ struct proc {
 };
 
 struct record {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   pic_value type;
   pic_value datum;
 };
 
 struct error {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   symbol *type;
   struct string *msg;
   pic_value irrs;
@@ -121,12 +121,12 @@ struct error {
 };
 
 struct port {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   xFILE *file;
 };
 
 struct checkpoint {
-  PIC_OBJECT_HEADER
+  OBJECT_HEADER
   struct proc *in;
   struct proc *out;
   int depth;
