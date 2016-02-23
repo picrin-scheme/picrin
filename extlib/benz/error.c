@@ -37,46 +37,6 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   xfprintf(pic, file, "warn: %s\n", pic_str(pic, err));
 }
 
-void
-pic_error(pic_state *pic, const char *msg, int n, ...)
-{
-  va_list ap;
-  pic_value irrs;
-
-  va_start(ap, n);
-  irrs = pic_vlist(pic, n, ap);
-  va_end(ap);
-
-  pic_raise(pic, pic_make_error(pic, "", msg, irrs));
-}
-
-void
-pic_push_handler(pic_state *pic, pic_value handler)
-{
-  size_t xp_len;
-  ptrdiff_t xp_offset;
-
-  if (pic->xp >= pic->xpend) {
-    xp_len = (size_t)(pic->xpend - pic->xpbase) * 2;
-    xp_offset = pic->xp - pic->xpbase;
-    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct proc *) * xp_len);
-    pic->xp = pic->xpbase + xp_offset;
-    pic->xpend = pic->xpbase + xp_len;
-  }
-
-  *pic->xp++ = pic_proc_ptr(pic, handler);
-}
-
-pic_value
-pic_pop_handler(pic_state *pic)
-{
-  if (pic->xp == pic->xpbase) {
-    pic_panic(pic, "no exception handler registered");
-  }
-
-  return pic_obj_value(*--pic->xp);
-}
-
 static pic_value
 native_exception_handler(pic_state *pic)
 {
@@ -91,14 +51,70 @@ native_exception_handler(pic_state *pic)
   PIC_UNREACHABLE();
 }
 
-void
-pic_push_native_handler(pic_state *pic, struct pic_cont *cont)
+static pic_value
+dynamic_set(pic_state *pic)
 {
-  pic_value handler;
+  pic_value var, val;
 
+  pic_get_args(pic, "");
+
+  var = pic_closure_ref(pic, 0);
+  val = pic_closure_ref(pic, 1);
+
+  pic_proc_ptr(pic, var)->locals[0] = val;
+
+  return pic_undef_value(pic);
+}
+
+pic_value
+pic_start_try(pic_state *pic, PIC_JMPBUF *jmp)
+{
+  struct pic_cont *cont;
+  pic_value handler;
+  pic_value var, old_val, new_val;
+  pic_value in, out;
+  struct checkpoint *here;
+
+  /* call/cc */
+
+  cont = pic_alloca_cont(pic);
+  pic_save_point(pic, cont, jmp);
   handler = pic_lambda(pic, native_exception_handler, 1, pic_make_cont(pic, cont));
 
-  pic_push_handler(pic, handler);
+  /* with-exception-handler */
+
+  var = pic_ref(pic, "picrin.base", "current-exception-handlers");
+  old_val = pic_call(pic, var, 0);
+  new_val = pic_cons(pic, handler, old_val);
+
+  in = pic_lambda(pic, dynamic_set, 2, var, new_val);
+  out = pic_lambda(pic, dynamic_set, 2, var, old_val);
+
+  /* dynamic-wind */
+
+  pic_call(pic, in, 0);       /* enter */
+
+  here = pic->cp;
+  pic->cp = (struct checkpoint *)pic_obj_alloc(pic, sizeof(struct checkpoint), PIC_TYPE_CP);
+  pic->cp->prev = here;
+  pic->cp->depth = here->depth + 1;
+  pic->cp->in = pic_proc_ptr(pic, in);
+  pic->cp->out = pic_proc_ptr(pic, out);
+
+  return pic_cons(pic, pic_obj_value(here), out);
+}
+
+void
+pic_end_try(pic_state *pic, pic_value cookie)
+{
+  struct checkpoint *here = (struct checkpoint *)pic_obj_ptr(pic_car(pic, cookie));
+  pic_value out = pic_cdr(pic, cookie);
+
+  pic->cp = here;
+
+  pic_call(pic, out, 0); /* exit */
+
+  pic_exit_point(pic);
 }
 
 pic_value
@@ -124,48 +140,72 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
   return pic_obj_value(e);
 }
 
-pic_value
-pic_raise_continuable(pic_state *pic, pic_value err)
+pic_value pic_raise_continuable(pic_state *, pic_value err);
+
+void
+pic_error(pic_state *pic, const char *msg, int n, ...)
 {
-  pic_value handler, v;
+  va_list ap;
+  pic_value irrs;
 
-  handler = pic_pop_handler(pic);
+  va_start(ap, n);
+  irrs = pic_vlist(pic, n, ap);
+  va_end(ap);
 
-  pic_protect(pic, handler);
+  pic_raise(pic, pic_make_error(pic, "", msg, irrs));
+}
 
-  v = pic_call(pic, handler, 1, err);
+static pic_value
+raise(pic_state *pic)
+{
+  pic_get_args(pic, "");
 
-  pic_push_handler(pic, handler);
+  pic_call(pic, pic_closure_ref(pic, 0), 1, pic_closure_ref(pic, 1));
 
-  return v;
+  pic_error(pic, "handler returned", 2, pic_closure_ref(pic, 0), pic_closure_ref(pic, 1));
 }
 
 void
 pic_raise(pic_state *pic, pic_value err)
 {
-  pic_value val;
+  pic_value stack, exc = pic_ref(pic, "picrin.base", "current-exception-handlers");
 
-  val = pic_raise_continuable(pic, err);
+  stack = pic_call(pic, exc, 0);
 
-  pic_pop_handler(pic);
+  pic_dynamic_bind(pic, exc, pic_cdr(pic, stack), pic_lambda(pic, raise, 2, pic_car(pic, stack), err));
 
-  pic_error(pic, "error handler returned", 2, val, err);
+  PIC_UNREACHABLE();
+}
+
+static pic_value
+raise_continuable(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic_call(pic, pic_closure_ref(pic, 0), 1, pic_closure_ref(pic, 1));
+}
+
+pic_value
+pic_raise_continuable(pic_state *pic, pic_value err)
+{
+  pic_value stack, exc = pic_ref(pic, "picrin.base", "current-exception-handlers");
+
+  stack = pic_call(pic, exc, 0);
+
+  return pic_dynamic_bind(pic, exc, pic_cdr(pic, stack), pic_lambda(pic, raise_continuable, 2, pic_car(pic, stack), err));
 }
 
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
-  pic_value handler, thunk, val;
+  pic_value handler, thunk;
+  pic_value stack, exc = pic_ref(pic, "picrin.base", "current-exception-handlers");
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
-  pic_push_handler(pic, handler);
+  stack = pic_call(pic, exc, 0);
 
-  val = pic_call(pic, thunk, 0);
-
-  pic_pop_handler(pic);
-
-  return val;
+  return pic_dynamic_bind(pic, exc, pic_cons(pic, handler, stack), thunk);
 }
 
 static pic_value
@@ -249,6 +289,7 @@ pic_error_error_object_type(pic_state *pic)
 void
 pic_init_error(pic_state *pic)
 {
+  pic_defvar(pic, "current-exception-handlers", pic_nil_value(pic), pic_false_value(pic));
   pic_defun(pic, "with-exception-handler", pic_error_with_exception_handler);
   pic_defun(pic, "raise", pic_error_raise);
   pic_defun(pic, "raise-continuable", pic_error_raise_continuable);

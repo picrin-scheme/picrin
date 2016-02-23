@@ -20,10 +20,6 @@ struct fullcont {
   size_t ci_offset;
   ptrdiff_t ci_len;
 
-  struct proc **xp_ptr;
-  size_t xp_offset;
-  ptrdiff_t xp_len;
-
   struct code *ip;
 
   struct object **arena;
@@ -41,7 +37,6 @@ cont_dtor(pic_state *pic, void *data)
   pic_free(pic, cont->stk_ptr);
   pic_free(pic, cont->st_ptr);
   pic_free(pic, cont->ci_ptr);
-  pic_free(pic, cont->xp_ptr);
   pic_free(pic, cont->arena);
   pic_free(pic, cont);
 }
@@ -53,7 +48,6 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
   struct checkpoint *cp;
   pic_value *stack;
   struct callinfo *ci;
-  struct proc **xp;
   size_t i;
 
   /* checkpoint */
@@ -76,11 +70,6 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
     if (ci->cxt) {
       mark(pic, pic_obj_value(ci->cxt));
     }
-  }
-
-  /* exception handlers */
-  for (xp = cont->xp_ptr; xp != cont->xp_ptr + cont->xp_offset; ++xp) {
-    mark(pic, pic_obj_value(*xp));
   }
 
   /* arena */
@@ -139,11 +128,6 @@ save_cont(pic_state *pic, struct fullcont **c)
   cont->ci_ptr = pic_malloc(pic, sizeof(struct callinfo) * cont->ci_len);
   memcpy(cont->ci_ptr, pic->cibase, sizeof(struct callinfo) * cont->ci_len);
 
-  cont->xp_offset = pic->xp - pic->xpbase;
-  cont->xp_len = pic->xpend - pic->xpbase;
-  cont->xp_ptr = pic_malloc(pic, sizeof(struct proc *) * cont->xp_len);
-  memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct proc *) * cont->xp_len);
-
   cont->ip = pic->ip;
 
   cont->arena_idx = pic->arena_idx;
@@ -189,11 +173,6 @@ restore_cont(pic_state *pic, struct fullcont *cont)
   memcpy(pic->cibase, cont->ci_ptr, sizeof(struct callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
-
-  assert(pic->xpend - pic->xpbase >= cont->xp_len);
-  memcpy(pic->xpbase, cont->xp_ptr, sizeof(struct proc *) * cont->xp_len);
-  pic->xp = pic->xpbase + cont->xp_offset;
-  pic->xpend = pic->xpbase + cont->xp_len;
 
   pic->ip = cont->ip;
 

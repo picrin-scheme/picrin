@@ -188,9 +188,14 @@ void pic_rope_decref(pic_state *, struct rope *);
 #define pic_func_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_FUNC)
 #define pic_irep_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_IREP)
 
+struct pic_cont *pic_alloca_cont(pic_state *);
+pic_value pic_make_cont(pic_state *, struct pic_cont *);
+void pic_save_point(pic_state *, struct pic_cont *, PIC_JMPBUF *);
+void pic_exit_point(pic_state *);
 void pic_wind(pic_state *, struct checkpoint *, struct checkpoint *);
 pic_value pic_dynamic_wind(pic_state *, pic_value in, pic_value thunk, pic_value out);
 
+pic_value pic_dynamic_bind(pic_state *, pic_value var, pic_value val, pic_value thunk);
 
 #if defined(__cplusplus)
 }

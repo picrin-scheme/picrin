@@ -229,14 +229,6 @@ pic_open(pic_allocf allocf, void *userdata)
     goto EXIT_CI;
   }
 
-  /* exception handler */
-  pic->xpbase = pic->xp = allocf(userdata, NULL, PIC_RESCUE_SIZE * sizeof(struct proc *));
-  pic->xpend = pic->xpbase + PIC_RESCUE_SIZE;
-
-  if (! pic->xp) {
-    goto EXIT_XP;
-  }
-
   /* GC arena */
   pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct object *));
   pic->arena_size = PIC_ARENA_SIZE;
@@ -317,8 +309,6 @@ pic_open(pic_allocf allocf, void *userdata)
   return pic;
 
  EXIT_ARENA:
-  allocf(userdata, pic->xp, 0);
- EXIT_XP:
   allocf(userdata, pic->ci, 0);
  EXIT_CI:
   allocf(userdata, pic->sp, 0);
@@ -336,7 +326,6 @@ pic_close(pic_state *pic)
   /* clear out root objects */
   pic->sp = pic->stbase;
   pic->ci = pic->cibase;
-  pic->xp = pic->xpbase;
   pic->arena_idx = 0;
   pic->err = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
@@ -358,7 +347,6 @@ pic_close(pic_state *pic)
   /* free runtime context */
   allocf(pic->userdata, pic->stbase, 0);
   allocf(pic->userdata, pic->cibase, 0);
-  allocf(pic->userdata, pic->xpbase, 0);
 
   /* free global stacks */
   kh_destroy(oblist, &pic->oblist);

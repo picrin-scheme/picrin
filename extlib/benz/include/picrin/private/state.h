@@ -49,9 +49,6 @@ struct pic_state {
   struct callinfo *ci;
   struct callinfo *cibase, *ciend;
 
-  struct proc **xp;
-  struct proc **xpbase, **xpend;
-
   struct code *ip;
 
   struct lib *lib;

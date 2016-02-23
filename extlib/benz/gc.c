@@ -413,7 +413,6 @@ gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
   struct callinfo *ci;
-  struct proc **xhandler;
   struct list_head *list;
   int it;
   size_t j;
@@ -435,11 +434,6 @@ gc_mark_phase(pic_state *pic)
     if (ci->cxt) {
       gc_mark_object(pic, (struct object *)ci->cxt);
     }
-  }
-
-  /* exception handlers */
-  for (xhandler = pic->xpbase; xhandler != pic->xp; ++xhandler) {
-    gc_mark_object(pic, (struct object *)*xhandler);
   }
 
   /* arena */

@@ -78,26 +78,17 @@ xFILE *xfopen_null(pic_state *, const char *mode);
     pic_in_library(pic, lib);                   \
   } while (0)
 
-/* for pic_try & pic_catch macros */
-struct pic_cont *pic_alloca_cont(pic_state *);
-pic_value pic_make_cont(pic_state *, struct pic_cont *);
-void pic_push_native_handler(pic_state *, struct pic_cont *);
-pic_value pic_pop_handler(pic_state *);
-void pic_save_point(pic_state *, struct pic_cont *, PIC_JMPBUF *);
-void pic_exit_point(pic_state *);
-
 #define pic_try pic_try_(PIC_GENSYM(cont), PIC_GENSYM(jmp))
 #define pic_try_(cont, jmp)                                             \
   do {                                                                  \
+    extern pic_value pic_start_try(pic_state *, PIC_JMPBUF *);          \
+    extern void pic_end_try(pic_state *, pic_value);                    \
     PIC_JMPBUF jmp;                                                     \
-    struct pic_cont *cont = pic_alloca_cont(pic);                       \
     if (PIC_SETJMP(pic, jmp) == 0) {                                    \
-      pic_save_point(pic, cont, &jmp);                                  \
-      pic_push_native_handler(pic, cont);
+      pic_value pic_try_cookie_ = pic_start_try(pic, &jmp);
 #define pic_catch pic_catch_(PIC_GENSYM(label))
 #define pic_catch_(label)                                 \
-      pic_pop_handler(pic);                               \
-      pic_exit_point(pic);                                \
+      pic_end_try(pic, pic_try_cookie_);                  \
     } else {                                              \
       goto label;                                         \
     }                                                     \
