@@ -918,7 +918,7 @@ pic_closure_ref(pic_state *pic, int n)
 {
   pic_value self = GET_OPERAND(pic, 0);
 
-  assert(pic_func_p(self));
+  assert(pic_func_p(pic, self));
 
   if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
@@ -931,7 +931,7 @@ pic_closure_set(pic_state *pic, int n, pic_value v)
 {
   pic_value self = GET_OPERAND(pic, 0);
 
-  assert(pic_func_p(self));
+  assert(pic_func_p(pic, self));
 
   if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));

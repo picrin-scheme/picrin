@@ -1050,22 +1050,13 @@ pic_compile(pic_state *pic, pic_value obj)
   size_t ai = pic_enter(pic);
 
 #if 0
-  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
-
-  fprintf(stdout, "# input expression\n");
-  pic_write(pic, obj);
-  fprintf(stdout, "\n");
-
-  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
+  pic_printf(pic, "# input expression\n~s\n", obj);
 #endif
 
   /* optimize */
   obj = pic_optimize(pic, obj);
 #if 0
-  fprintf(stdout, "## optimize completed\n");
-  pic_write(pic, obj);
-  fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
+  pic_printf(pic, "## optimize completed\n~s\n", obj);
 #endif
 
   SAVE(pic, ai, obj);
@@ -1073,10 +1064,7 @@ pic_compile(pic_state *pic, pic_value obj)
   /* analyze */
   obj = pic_analyze(pic, obj);
 #if 0
-  fprintf(stdout, "## analyzer completed\n");
-  pic_write(pic, obj);
-  fprintf(stdout, "\n");
-  fprintf(stdout, "ai = %zu\n", pic_enter(pic));
+  pic_printf(pic, "## analyzer completed\n~s\n", obj);
 #endif
 
   SAVE(pic, ai, obj);

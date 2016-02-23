@@ -185,10 +185,11 @@ pic_value pic_id_name(pic_state *, pic_value id);
 void pic_rope_incref(pic_state *, struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);
 
-#define pic_func_p(proc) (pic_type(pic, proc) == PIC_TYPE_FUNC)
-#define pic_irep_p(proc) (pic_type(pic, proc) == PIC_TYPE_IREP)
+#define pic_func_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_FUNC)
+#define pic_irep_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_IREP)
 
 void pic_wind(pic_state *, struct checkpoint *, struct checkpoint *);
+pic_value pic_dynamic_wind(pic_state *, pic_value in, pic_value thunk, pic_value out);
 
 
 #if defined(__cplusplus)

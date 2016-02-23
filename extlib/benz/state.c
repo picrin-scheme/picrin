@@ -290,9 +290,6 @@ pic_open(pic_allocf allocf, void *userdata)
   xfopen_null(pic, "w");
 #endif
 
-  /* parameter table */
-  pic->ptable = pic_nil_value(pic);
-
   /* native stack marker */
   pic->native_stack_start = &t;
 
@@ -305,9 +302,6 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->cp->prev = NULL;
   pic->cp->depth = 0;
   pic->cp->in = pic->cp->out = NULL;
-
-  /* parameter table */
-  pic->ptable = pic_cons(pic, pic_make_weak(pic), pic_nil_value(pic));
 
   /* standard libraries */
   pic_make_library(pic, "picrin.user");

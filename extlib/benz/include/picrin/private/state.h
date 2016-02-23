@@ -54,8 +54,6 @@ struct pic_state {
 
   struct code *ip;
 
-  pic_value ptable;             /* list of ephemerons */
-
   struct lib *lib;
 
   pic_value features;

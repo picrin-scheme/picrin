@@ -467,9 +467,6 @@ gc_mark_phase(pic_state *pic)
   /* features */
   gc_mark(pic, pic->features);
 
-  /* parameter table */
-  gc_mark(pic, pic->ptable);
-
   /* library table */
   for (it = kh_begin(&pic->ltable); it != kh_end(&pic->ltable); ++it) {
     if (! kh_exist(&pic->ltable, it)) {

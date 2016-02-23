@@ -16,7 +16,6 @@ struct pic_cont {
   ptrdiff_t ci_offset;
   ptrdiff_t xp_offset;
   size_t arena_idx;
-  pic_value ptable;
   struct code *ip;
 
   int retc;
@@ -39,7 +38,6 @@ pic_save_point(pic_state *pic, struct pic_cont *cont, PIC_JMPBUF *jmp)
   cont->xp_offset = pic->xp - pic->xpbase;
   cont->arena_idx = pic->arena_idx;
   cont->ip = pic->ip;
-  cont->ptable = pic->ptable;
   cont->prev = pic->cc;
   cont->retc = 0;
   cont->retv = NULL;
@@ -60,7 +58,6 @@ pic_load_point(pic_state *pic, struct pic_cont *cont)
   pic->xp = pic->xpbase + cont->xp_offset;
   pic->arena_idx = cont->arena_idx;
   pic->ip = cont->ip;
-  pic->ptable = cont->ptable;
   pic->cc = cont->prev;
 }
 
@@ -86,11 +83,13 @@ pic_wind(pic_state *pic, struct checkpoint *here, struct checkpoint *there)
   }
 }
 
-static pic_value
+pic_value
 pic_dynamic_wind(pic_state *pic, pic_value in, pic_value thunk, pic_value out)
 {
   struct checkpoint *here;
   pic_value val;
+
+  assert(pic_proc_p(pic, thunk));
 
   pic_call(pic, in, 0);       /* enter */
 
