@@ -41,7 +41,6 @@ struct pic_state {
 
   struct checkpoint *cp;
   struct cont *cc;
-  int ccnt;
 
   pic_value *sp;
   pic_value *stbase, *stend;

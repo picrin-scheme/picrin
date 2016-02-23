@@ -208,7 +208,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* continuation chain */
   pic->cc = NULL;
-  pic->ccnt = 0;
 
   /* root block */
   pic->cp = NULL;

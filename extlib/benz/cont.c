@@ -9,8 +9,6 @@
 struct cont {
   PIC_JMPBUF *jmp;
 
-  int id;
-
   struct checkpoint *cp;
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
@@ -39,7 +37,6 @@ pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
   cont->prev = pic->cc;
   cont->retc = 0;
   cont->retv = NULL;
-  cont->id = pic->ccnt++;
 
   pic->cc = cont;
 }
@@ -109,18 +106,15 @@ cont_call(pic_state *pic)
 {
   int argc;
   pic_value *argv;
-  int id;
   struct cont *cc, *cont;
 
   pic_get_args(pic, "*", &argc, &argv);
 
   cont = pic_data(pic, pic_closure_ref(pic, 0));
 
-  id = cont->id;
-
   /* check if continuation is alive */
   for (cc = pic->cc; cc != NULL; cc = cc->prev) {
-    if (cc->id == id) {
+    if (cc == cont) {
       break;
     }
   }
