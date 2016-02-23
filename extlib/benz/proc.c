@@ -947,7 +947,7 @@ pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
 
   proc = pic_ref(pic, lib, name);
 
-  pic_assert_type(pic, proc, proc);
+  TYPE_CHECK(pic, proc, proc);
 
   va_start(ap, n);
   r = pic_vcall(pic, proc, n, ap);

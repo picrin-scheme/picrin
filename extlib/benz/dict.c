@@ -105,7 +105,7 @@ pic_dict_dictionary(pic_state *pic)
   dict = pic_make_dict(pic);
 
   for (i = 0; i < argc; i += 2) {
-    pic_assert_type(pic, argv[i], sym);
+    TYPE_CHECK(pic, argv[i], sym);
     pic_dict_set(pic, dict, argv[i], argv[i+1]);
   }
 
@@ -217,7 +217,7 @@ pic_dict_alist_to_dictionary(pic_state *pic)
   dict = pic_make_dict(pic);
 
   pic_for_each (e, pic_reverse(pic, alist), it) {
-    pic_assert_type(pic, pic_car(pic, e), sym);
+    TYPE_CHECK(pic, pic_car(pic, e), sym);
     pic_dict_set(pic, dict, pic_car(pic, e), pic_cdr(pic, e));
   }
 
@@ -250,7 +250,7 @@ pic_dict_plist_to_dictionary(pic_state *pic)
   dict = pic_make_dict(pic);
 
   for (e = pic_reverse(pic, plist); ! pic_nil_p(pic, e); e = pic_cddr(pic, e)) {
-    pic_assert_type(pic, pic_cadr(pic, e), sym);
+    TYPE_CHECK(pic, pic_cadr(pic, e), sym);
     pic_dict_set(pic, dict, pic_cadr(pic, e), pic_car(pic, e));
   }
 

@@ -130,8 +130,8 @@ pic_symbol_make_identifier(pic_state *pic)
 
   pic_get_args(pic, "oo", &id, &env);
 
-  pic_assert_type(pic, id, id);
-  pic_assert_type(pic, env, env);
+  TYPE_CHECK(pic, id, id);
+  TYPE_CHECK(pic, env, env);
 
   return pic_make_identifier(pic, id, env);
 }
@@ -143,7 +143,7 @@ pic_symbol_identifier_base(pic_state *pic)
 
   pic_get_args(pic, "o", &id);
 
-  pic_assert_type(pic, id, id);
+  TYPE_CHECK(pic, id, id);
 
   if (pic_sym_p(pic, id)) {
     pic_error(pic, "non-symbol identifier required", 1, id);
@@ -159,7 +159,7 @@ pic_symbol_identifier_environment(pic_state *pic)
 
   pic_get_args(pic, "o", &id);
 
-  pic_assert_type(pic, id, id);
+  TYPE_CHECK(pic, id, id);
 
   if (pic_sym_p(pic, id)) {
     pic_error(pic, "non-symbol identifier required", 1, id);

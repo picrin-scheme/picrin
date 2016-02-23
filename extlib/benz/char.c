@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
+#include "picrin/private/object.h"
 
 static pic_value
 pic_char_char_p(pic_state *pic)
@@ -54,7 +55,7 @@ pic_char_integer_to_char(pic_state *pic)
                                                         \
     for (i = 0; i < argc; ++i) {                        \
       c = d;                                            \
-      pic_assert_type(pic, argv[i], char);              \
+      TYPE_CHECK(pic, argv[i], char);                   \
       d = pic_char(pic, argv[i]);                       \
                                                         \
       if (! (c op d))					\

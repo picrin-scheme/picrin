@@ -370,7 +370,7 @@ pic_str_string(pic_state *pic)
   buf = pic_alloca(pic, argc);
 
   for (i = 0; i < argc; ++i) {
-    pic_assert_type(pic, argv[i], char);
+    TYPE_CHECK(pic, argv[i], char);
     buf[i] = pic_char(pic, argv[i]);
   }
 
@@ -565,7 +565,7 @@ pic_str_string_append(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    pic_assert_type(pic, argv[i], str);
+    TYPE_CHECK(pic, argv[i], str);
     str = pic_str_cat(pic, str, argv[i]);
   }
   return str;
@@ -587,7 +587,7 @@ pic_str_string_map(pic_state *pic)
   len = INT_MAX;
   for (i = 0; i < argc; ++i) {
     int l;
-    pic_assert_type(pic, argv[i], str);
+    TYPE_CHECK(pic, argv[i], str);
     l = pic_str_len(pic, argv[i]);
     len = len < l ? len : l;
   }
@@ -602,7 +602,7 @@ pic_str_string_map(pic_state *pic)
     vals = pic_reverse(pic, vals);
     val = pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
 
-    pic_assert_type(pic, val, char);
+    TYPE_CHECK(pic, val, char);
 
     buf[i] = pic_char(pic, val);
   }
@@ -624,7 +624,7 @@ pic_str_string_for_each(pic_state *pic)
   len = INT_MAX;
   for (i = 0; i < argc; ++i) {
     int l;
-    pic_assert_type(pic, argv[i], str);
+    TYPE_CHECK(pic, argv[i], str);
     l = pic_str_len(pic, argv[i]);
     len = len < l ? len : l;
   }
@@ -653,7 +653,7 @@ pic_str_list_to_string(pic_state *pic)
 
   i = 0;
   pic_for_each (e, list, it) {
-    pic_assert_type(pic, e, char);
+    TYPE_CHECK(pic, e, char);
 
     buf[i++] = pic_char(pic, e);
   }

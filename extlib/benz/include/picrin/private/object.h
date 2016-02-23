@@ -158,6 +158,22 @@ struct object *pic_obj_ptr(pic_value);
 pic_value pic_obj_value(void *ptr);
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
 
+#define TYPENAME_int   "integer"
+#define TYPENAME_blob  "bytevector"
+#define TYPENAME_char  "character"
+#define TYPENAME_sym   "symbol"
+#define TYPENAME_error "error"
+#define TYPENAME_proc  "procedure"
+#define TYPENAME_str   "string"
+#define TYPENAME_id    "identifier"
+#define TYPENAME_env   "environment"
+#define TYPENAME_vec   "vector"
+
+#define TYPE_CHECK(pic, v, type) do {                           \
+    if (! pic_##type##_p(pic, v))                               \
+      pic_error(pic, TYPENAME_##type " required", 1, v);        \
+  } while (0)
+
 #define VALID_INDEX(pic, len, i) do {                                   \
     if (i < 0 || len <= i) pic_error(pic, "index out of range", 1, pic_int_value(pic, i)); \
   } while (0)

@@ -180,7 +180,7 @@ pic_vec_vector_append(pic_state *pic)
 
   len = 0;
   for (i = 0; i < argc; ++i) {
-    pic_assert_type(pic, argv[i], vec);
+    TYPE_CHECK(pic, argv[i], vec);
     len += pic_vec_len(pic, argv[i]);
   }
 
@@ -237,7 +237,7 @@ pic_vec_vector_map(pic_state *pic)
   len = INT_MAX;
   for (i = 0; i < argc; ++i) {
     int l;
-    pic_assert_type(pic, argv[i], vec);
+    TYPE_CHECK(pic, argv[i], vec);
     l = pic_vec_len(pic, argv[i]);
     len = len < l ? len : l;
   }
@@ -271,7 +271,7 @@ pic_vec_vector_for_each(pic_state *pic)
   len = INT_MAX;
   for (i = 0; i < argc; ++i) {
     int l;
-    pic_assert_type(pic, argv[i], vec);
+    TYPE_CHECK(pic, argv[i], vec);
     l = pic_vec_len(pic, argv[i]);
     len = len < l ? len : l;
   }
@@ -356,7 +356,7 @@ pic_vec_vector_to_string(pic_state *pic)
   for (i = start; i < end; ++i) {
     t = pic_vec_ref(pic, vec, i);
 
-    pic_assert_type(pic, t, char);
+    TYPE_CHECK(pic, t, char);
 
     buf[i - start] = pic_char(pic, t);
   }

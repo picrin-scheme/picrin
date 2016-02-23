@@ -257,7 +257,7 @@ pic_error_error_object_message(pic_state *pic)
 
   pic_get_args(pic, "o", &e);
 
-  pic_assert_type(pic, e, error);
+  TYPE_CHECK(pic, e, error);
 
   return pic_obj_value(pic_error_ptr(pic, e)->msg);
 }
@@ -269,7 +269,7 @@ pic_error_error_object_irritants(pic_state *pic)
 
   pic_get_args(pic, "o", &e);
 
-  pic_assert_type(pic, e, error);
+  TYPE_CHECK(pic, e, error);
 
   return pic_error_ptr(pic, e)->irrs;
 }
@@ -281,7 +281,7 @@ pic_error_error_object_type(pic_state *pic)
 
   pic_get_args(pic, "o", &e);
 
-  pic_assert_type(pic, e, error);
+  TYPE_CHECK(pic, e, error);
 
   return pic_obj_value(pic_error_ptr(pic, e)->type);
 }
