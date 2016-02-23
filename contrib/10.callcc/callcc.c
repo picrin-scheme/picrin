@@ -5,7 +5,7 @@
 struct fullcont {
   jmp_buf jmp;
 
-  struct pic_cont *prev_jmp;
+  struct cont *prev_jmp;
 
   struct checkpoint *cp;
 

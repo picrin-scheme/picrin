@@ -40,7 +40,7 @@ struct pic_state {
   void *userdata;
 
   struct checkpoint *cp;
-  struct pic_cont *cc;
+  struct cont *cc;
   int ccnt;
 
   pic_value *sp;

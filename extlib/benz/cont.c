@@ -6,7 +6,7 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
-struct pic_cont {
+struct cont {
   PIC_JMPBUF *jmp;
 
   int id;
@@ -20,13 +20,13 @@ struct pic_cont {
   int retc;
   pic_value *retv;
 
-  struct pic_cont *prev;
+  struct cont *prev;
 };
 
-static const pic_data_type cont_type = { "pic_cont", NULL, NULL };
+static const pic_data_type cont_type = { "cont", NULL, NULL };
 
 void
-pic_save_point(pic_state *pic, struct pic_cont *cont, PIC_JMPBUF *jmp)
+pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
 {
   cont->jmp = jmp;
 
@@ -45,7 +45,7 @@ pic_save_point(pic_state *pic, struct pic_cont *cont, PIC_JMPBUF *jmp)
 }
 
 void
-pic_load_point(pic_state *pic, struct pic_cont *cont)
+pic_load_point(pic_state *pic, struct cont *cont)
 {
   pic_wind(pic, pic->cp, cont->cp);
 
@@ -110,7 +110,7 @@ cont_call(pic_state *pic)
   int argc;
   pic_value *argv;
   int id;
-  struct pic_cont *cc, *cont;
+  struct cont *cc, *cont;
 
   pic_get_args(pic, "*", &argc, &argv);
 
@@ -139,22 +139,22 @@ cont_call(pic_state *pic)
 }
 
 pic_value
-pic_make_cont(pic_state *pic, struct pic_cont *cont)
+pic_make_cont(pic_state *pic, struct cont *cont)
 {
   return pic_lambda(pic, cont_call, 1, pic_data_value(pic, cont, &cont_type));
 }
 
-struct pic_cont *
+struct cont *
 pic_alloca_cont(pic_state *pic)
 {
-  return pic_alloca(pic, sizeof(struct pic_cont));
+  return pic_alloca(pic, sizeof(struct cont));
 }
 
 static pic_value
 pic_callcc(pic_state *pic, pic_value proc)
 {
   PIC_JMPBUF jmp;
-  struct pic_cont *cont = pic_alloca_cont(pic);
+  struct cont *cont = pic_alloca_cont(pic);
 
   if (PIC_SETJMP(pic, jmp)) {
     return pic_valuesk(pic, cont->retc, cont->retv);

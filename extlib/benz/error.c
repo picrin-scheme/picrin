@@ -69,7 +69,7 @@ dynamic_set(pic_state *pic)
 pic_value
 pic_start_try(pic_state *pic, PIC_JMPBUF *jmp)
 {
-  struct pic_cont *cont;
+  struct cont *cont;
   pic_value handler;
   pic_value var, old_val, new_val;
   pic_value in, out;
