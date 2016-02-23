@@ -3,68 +3,55 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
 void
-pic_panic(pic_state PIC_UNUSED(*pic), const char *msg)
+pic_panic(pic_state *pic, const char *msg)
 {
-  extern PIC_NORETURN void abort();
+  if (pic->panicf) {
+    pic->panicf(pic, msg);
+  }
 
-#if DEBUG
-  fprintf(stderr, "abort: %s\n", msg);
-#else
-  (void)msg;
+#if PIC_USE_STDIO
+  fprintf(stderr, "picrin panic!: %s\n", msg);
 #endif
+
   PIC_ABORT(pic);
-}
-
-void
-pic_warnf(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-  pic_str *err;
-
-  va_start(ap, fmt);
-  err = pic_vformat(pic, fmt, ap);
-  va_end(ap);
-
-  xfprintf(pic, pic_stderr(pic)->file, "warn: %s\n", pic_str_cstr(pic, err));
-}
-
-void
-pic_errorf(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-  const char *msg;
-  pic_str *err;
-
-  va_start(ap, fmt);
-  err = pic_vformat(pic, fmt, ap);
-  va_end(ap);
-
-  msg = pic_str_cstr(pic, err);
-
-  pic_error(pic, msg, pic_nil_value());
-}
-
-pic_value
-pic_native_exception_handler(pic_state *pic)
-{
-  pic_value err;
-  struct pic_proc *self, *cont;
-
-  pic_get_args(pic, "&o", &self, &err);
-
-  pic->err = err;
-
-  cont = pic_proc_ptr(pic_proc_env_ref(pic, self, "cont"));
-
-  pic_apply1(pic, cont, pic_false_value());
 
   PIC_UNREACHABLE();
 }
 
 void
-pic_push_handler(pic_state *pic, struct pic_proc *handler)
+pic_warnf(pic_state *pic, const char *fmt, ...)
+{
+  xFILE *file = pic_fileno(pic, pic_stderr(pic));
+  va_list ap;
+  pic_value err;
+
+  va_start(ap, fmt);
+  err = pic_vstrf_value(pic, fmt, ap);
+  va_end(ap);
+
+  xfprintf(pic, file, "warn: %s\n", pic_str(pic, err));
+}
+
+void
+pic_error(pic_state *pic, const char *msg, int n, ...)
+{
+  va_list ap;
+  pic_value irrs;
+
+  va_start(ap, n);
+  irrs = pic_vlist(pic, n, ap);
+  va_end(ap);
+
+  pic_raise(pic, pic_make_error(pic, "", msg, irrs));
+}
+
+void
+pic_push_handler(pic_state *pic, pic_value handler)
 {
   size_t xp_len;
   ptrdiff_t xp_offset;
@@ -72,52 +59,81 @@ pic_push_handler(pic_state *pic, struct pic_proc *handler)
   if (pic->xp >= pic->xpend) {
     xp_len = (size_t)(pic->xpend - pic->xpbase) * 2;
     xp_offset = pic->xp - pic->xpbase;
-    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * xp_len);
+    pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct proc *) * xp_len);
     pic->xp = pic->xpbase + xp_offset;
     pic->xpend = pic->xpbase + xp_len;
   }
 
-  *pic->xp++ = handler;
+  *pic->xp++ = pic_proc_ptr(pic, handler);
 }
 
-struct pic_proc *
+pic_value
 pic_pop_handler(pic_state *pic)
 {
   if (pic->xp == pic->xpbase) {
     pic_panic(pic, "no exception handler registered");
   }
 
-  return *--pic->xp;
+  return pic_obj_value(*--pic->xp);
 }
 
-struct pic_error *
-pic_make_error(pic_state *pic, pic_sym *type, const char *msg, pic_value irrs)
+static pic_value
+native_exception_handler(pic_state *pic)
 {
-  struct pic_error *e;
-  pic_str *stack;
+  pic_value err;
+
+  pic_get_args(pic, "o", &err);
+
+  pic->err = err;
+
+  pic_call(pic, pic_closure_ref(pic, 0), 1, pic_false_value(pic));
+
+  PIC_UNREACHABLE();
+}
+
+void
+pic_push_native_handler(pic_state *pic, struct pic_cont *cont)
+{
+  pic_value handler;
+
+  handler = pic_lambda(pic, native_exception_handler, 1, pic_make_cont(pic, cont));
+
+  pic_push_handler(pic, handler);
+}
+
+pic_value
+pic_err(pic_state *pic)
+{
+  return pic->err;
+}
+
+pic_value
+pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)
+{
+  struct error *e;
+  pic_value stack, ty = pic_intern_cstr(pic, type);
 
   stack = pic_get_backtrace(pic);
 
-  e = (struct pic_error *)pic_obj_alloc(pic, sizeof(struct pic_error), PIC_TT_ERROR);
-  e->type = type;
-  e->msg = pic_make_cstr(pic, msg);
+  e = (struct error *)pic_obj_alloc(pic, sizeof(struct error), PIC_TYPE_ERROR);
+  e->type = pic_sym_ptr(pic, ty);
+  e->msg = pic_str_ptr(pic, pic_cstr_value(pic, msg));
   e->irrs = irrs;
-  e->stack = stack;
+  e->stack = pic_str_ptr(pic, stack);
 
-  return e;
+  return pic_obj_value(e);
 }
 
 pic_value
 pic_raise_continuable(pic_state *pic, pic_value err)
 {
-  struct pic_proc *handler;
-  pic_value v;
+  pic_value handler, v;
 
   handler = pic_pop_handler(pic);
 
-  pic_gc_protect(pic, pic_obj_value(handler));
+  pic_protect(pic, handler);
 
-  v = pic_apply1(pic, handler, err);
+  v = pic_call(pic, handler, 1, err);
 
   pic_push_handler(pic, handler);
 
@@ -133,30 +149,19 @@ pic_raise(pic_state *pic, pic_value err)
 
   pic_pop_handler(pic);
 
-  pic_errorf(pic, "error handler returned with ~s on error ~s", val, err);
-}
-
-void
-pic_error(pic_state *pic, const char *msg, pic_value irrs)
-{
-  struct pic_error *e;
-
-  e = pic_make_error(pic, pic_intern_lit(pic, ""), msg, irrs);
-
-  pic_raise(pic, pic_obj_value(e));
+  pic_error(pic, "error handler returned", 2, val, err);
 }
 
 static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
-  struct pic_proc *handler, *thunk;
-  pic_value val;
+  pic_value handler, thunk, val;
 
   pic_get_args(pic, "ll", &handler, &thunk);
 
   pic_push_handler(pic, handler);
 
-  val = pic_apply0(pic, thunk);
+  val = pic_call(pic, thunk, 0);
 
   pic_pop_handler(pic);
 
@@ -192,7 +197,7 @@ pic_error_error(pic_state *pic)
 
   pic_get_args(pic, "z*", &str, &argc, &argv);
 
-  pic_error(pic, str, pic_list_by_array(pic, argc, argv));
+  pic_raise(pic, pic_make_error(pic, "", str, pic_make_list(pic, argc, argv)));
 }
 
 static pic_value
@@ -202,37 +207,43 @@ pic_error_error_object_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_error_p(v));
+  return pic_bool_value(pic, pic_error_p(pic, v));
 }
 
 static pic_value
 pic_error_error_object_message(pic_state *pic)
 {
-  struct pic_error *e;
+  pic_value e;
 
-  pic_get_args(pic, "e", &e);
+  pic_get_args(pic, "o", &e);
 
-  return pic_obj_value(e->msg);
+  pic_assert_type(pic, e, error);
+
+  return pic_obj_value(pic_error_ptr(pic, e)->msg);
 }
 
 static pic_value
 pic_error_error_object_irritants(pic_state *pic)
 {
-  struct pic_error *e;
+  pic_value e;
 
-  pic_get_args(pic, "e", &e);
+  pic_get_args(pic, "o", &e);
 
-  return e->irrs;
+  pic_assert_type(pic, e, error);
+
+  return pic_error_ptr(pic, e)->irrs;
 }
 
 static pic_value
 pic_error_error_object_type(pic_state *pic)
 {
-  struct pic_error *e;
+  pic_value e;
 
-  pic_get_args(pic, "e", &e);
+  pic_get_args(pic, "o", &e);
 
-  return pic_obj_value(e->type);
+  pic_assert_type(pic, e, error);
+
+  return pic_obj_value(pic_error_ptr(pic, e)->type);
 }
 
 void

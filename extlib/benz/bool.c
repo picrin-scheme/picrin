@@ -3,6 +3,61 @@
  */
 
 #include "picrin.h"
+#include "picrin/private/object.h"
+
+#if PIC_NAN_BOXING
+
+bool
+pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
+{
+  return x == y;
+}
+
+bool
+pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
+{
+  return x == y;
+}
+
+#else
+
+bool
+pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
+{
+  if (pic_type(pic, x) != pic_type(pic, y))
+    return false;
+
+  switch (pic_type(pic, x)) {
+  case PIC_TYPE_NIL:
+    return true;
+  case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
+    return pic_type(pic, x) == pic_type(pic, y);
+  default:
+    return pic_obj_ptr(x) == pic_obj_ptr(y);
+  }
+}
+
+bool
+pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
+{
+  if (pic_type(pic, x) != pic_type(pic, y))
+    return false;
+
+  switch (pic_type(pic, x)) {
+  case PIC_TYPE_NIL:
+    return true;
+  case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
+    return pic_type(pic, x) == pic_type(pic, y);
+  case PIC_TYPE_FLOAT:
+    return pic_float(pic, x) == pic_float(pic, y);
+  case PIC_TYPE_INT:
+    return pic_int(pic, x) == pic_int(pic, y);
+  default:
+    return pic_obj_ptr(x) == pic_obj_ptr(y);
+  }
+}
+
+#endif
 
 KHASH_DECLARE(m, void *, int)
 KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
@@ -10,16 +65,16 @@ KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
 static bool
 internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m) *h)
 {
-  pic_value localx = pic_nil_value();
-  pic_value localy = pic_nil_value();
+  pic_value localx = pic_nil_value(pic);
+  pic_value localy = pic_nil_value(pic);
   int cx = 0;
   int cy = 0;
 
   if (depth > 10) {
     if (depth > 200) {
-      pic_errorf(pic, "Stack overflow in equal\n");
+      pic_error(pic, "stack overflow in equal", 0);
     }
-    if (pic_pair_p(x) || pic_vec_p(x)) {
+    if (pic_pair_p(pic, x) || pic_vec_p(pic, x)) {
       int ret;
       kh_put(m, h, pic_obj_ptr(x), &ret);
       if (ret != 0) {
@@ -30,56 +85,55 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
 
  LOOP:
 
-  if (pic_eqv_p(x, y)) {
+  if (pic_eqv_p(pic, x, y)) {
     return true;
   }
-  if (pic_type(x) != pic_type(y)) {
+  if (pic_type(pic, x) != pic_type(pic, y)) {
     return false;
   }
 
-  switch (pic_type(x)) {
-  case PIC_TT_ID: {
-    struct pic_id *id1, *id2;
-    pic_sym *s1, *s2;
+  switch (pic_type(pic, x)) {
+  case PIC_TYPE_ID: {
+    struct identifier *id1, *id2;
+    pic_value s1, s2;
 
-    id1 = pic_id_ptr(x);
-    id2 = pic_id_ptr(y);
+    id1 = pic_id_ptr(pic, x);
+    id2 = pic_id_ptr(pic, y);
 
-    s1 = pic_lookup_identifier(pic, id1->u.id.id, id1->u.id.env);
-    s2 = pic_lookup_identifier(pic, id2->u.id.id, id2->u.id.env);
+    s1 = pic_find_identifier(pic, pic_obj_value(id1->u.id), pic_obj_value(id1->env));
+    s2 = pic_find_identifier(pic, pic_obj_value(id2->u.id), pic_obj_value(id2->env));
 
-    return s1 == s2;
+    return pic_eq_p(pic, s1, s2);
   }
-  case PIC_TT_STRING: {
-    return pic_str_cmp(pic, pic_str_ptr(x), pic_str_ptr(y)) == 0;
+  case PIC_TYPE_STRING: {
+    return pic_str_cmp(pic, x, y) == 0;
   }
-  case PIC_TT_BLOB: {
-    pic_blob *blob1, *blob2;
-    int i;
+  case PIC_TYPE_BLOB: {
+    int xlen, ylen;
+    const unsigned char *xbuf, *ybuf;
 
-    blob1 = pic_blob_ptr(x);
-    blob2 = pic_blob_ptr(y);
+    xbuf = pic_blob(pic, x, &xlen);
+    ybuf = pic_blob(pic, y, &ylen);
 
-    if (blob1->len != blob2->len) {
+    if (xlen != ylen) {
       return false;
     }
-    for (i = 0; i < blob1->len; ++i) {
-      if (blob1->data[i] != blob2->data[i])
-        return false;
+    if (memcmp(xbuf, ybuf, xlen) != 0) {
+      return false;
     }
     return true;
   }
-  case PIC_TT_PAIR: {
+  case PIC_TYPE_PAIR: {
     if (! internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, h))
       return false;
 
     /* Floyd's cycle-finding algorithm */
-    if (pic_nil_p(localx)) {
+    if (pic_nil_p(pic, localx)) {
       localx = x;
     }
     x = pic_cdr(pic, x);
     cx++;
-    if (pic_nil_p(localy)) {
+    if (pic_nil_p(pic, localy)) {
       localy = y;
     }
     y = pic_cdr(pic, y);
@@ -87,7 +141,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     if (cx == 2) {
       cx = 0;
       localx = pic_cdr(pic, localx);
-      if (pic_eq_p(localx, x)) {
+      if (pic_eq_p(pic, localx, x)) {
         if (cy < 0 ) return true; /* both lists circular */
         cx = INT_MIN; /* found a cycle on x */
       }
@@ -95,31 +149,30 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     if (cy == 2) {
       cy = 0;
       localy = pic_cdr(pic, localy);
-      if (pic_eq_p(localy, y)) {
+      if (pic_eq_p(pic, localy, y)) {
         if (cx < 0 ) return true; /* both lists circular */
         cy = INT_MIN; /* found a cycle on y */
       }
     }
     goto LOOP;                  /* tail-call optimization */
   }
-  case PIC_TT_VECTOR: {
-    int i;
-    struct pic_vector *u, *v;
+  case PIC_TYPE_VECTOR: {
+    int i, xlen, ylen;
 
-    u = pic_vec_ptr(x);
-    v = pic_vec_ptr(y);
+    xlen = pic_vec_len(pic, x);
+    ylen = pic_vec_len(pic, y);
 
-    if (u->len != v->len) {
+    if (xlen != ylen) {
       return false;
     }
-    for (i = 0; i < u->len; ++i) {
-      if (! internal_equal_p(pic, u->data[i], v->data[i], depth + 1, h))
+    for (i = 0; i < xlen; ++i) {
+      if (! internal_equal_p(pic, pic_vec_ref(pic, x, i), pic_vec_ref(pic, y, i), depth + 1, h))
         return false;
     }
     return true;
   }
-  case PIC_TT_DATA: {
-    return pic_data_ptr(x)->data == pic_data_ptr(y)->data;
+  case PIC_TYPE_DATA: {
+    return pic_data(pic, x) == pic_data(pic, y);
   }
   default:
     return false;
@@ -143,7 +196,7 @@ pic_bool_eq_p(pic_state *pic)
 
   pic_get_args(pic, "oo", &x, &y);
 
-  return pic_bool_value(pic_eq_p(x, y));
+  return pic_bool_value(pic, pic_eq_p(pic, x, y));
 }
 
 static pic_value
@@ -153,7 +206,7 @@ pic_bool_eqv_p(pic_state *pic)
 
   pic_get_args(pic, "oo", &x, &y);
 
-  return pic_bool_value(pic_eqv_p(x, y));
+  return pic_bool_value(pic, pic_eqv_p(pic, x, y));
 }
 
 static pic_value
@@ -163,7 +216,7 @@ pic_bool_equal_p(pic_state *pic)
 
   pic_get_args(pic, "oo", &x, &y);
 
-  return pic_bool_value(pic_equal_p(pic, x, y));
+  return pic_bool_value(pic, pic_equal_p(pic, x, y));
 }
 
 static pic_value
@@ -173,7 +226,7 @@ pic_bool_not(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_false_p(v) ? pic_true_value() : pic_false_value();
+  return pic_false_p(pic, v) ? pic_true_value(pic) : pic_false_value(pic);
 }
 
 static pic_value
@@ -183,7 +236,7 @@ pic_bool_boolean_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return (pic_true_p(v) || pic_false_p(v)) ? pic_true_value() : pic_false_value();
+  return (pic_true_p(pic, v) || pic_false_p(pic, v)) ? pic_true_value(pic) : pic_false_value(pic);
 }
 
 static pic_value
@@ -195,14 +248,14 @@ pic_bool_boolean_eq_p(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    if (! (pic_true_p(argv[i]) || pic_false_p(argv[i]))) {
-      return pic_false_value();
+    if (! (pic_true_p(pic, argv[i]) || pic_false_p(pic, argv[i]))) {
+      return pic_false_value(pic);
     }
-    if (! pic_eq_p(argv[i], argv[0])) {
-      return pic_false_value();
+    if (! pic_eq_p(pic, argv[i], argv[0])) {
+      return pic_false_value(pic);
     }
   }
-  return pic_true_value();
+  return pic_true_value(pic);
 }
 
 void

@@ -3,16 +3,30 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
+#include "picrin/private/object.h"
 
-struct pic_blob *
-pic_make_blob(pic_state *pic, int len)
+pic_value
+pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
 {
-  struct pic_blob *bv;
+  struct blob *bv;
 
-  bv = (struct pic_blob *)pic_obj_alloc(pic, sizeof(struct pic_blob), PIC_TT_BLOB);
+  bv = (struct blob *)pic_obj_alloc(pic, sizeof(struct blob), PIC_TYPE_BLOB);
   bv->data = pic_malloc(pic, len);
   bv->len = len;
-  return bv;
+  if (buf) {
+    memcpy(bv->data, buf, len);
+  }
+  return pic_obj_value(bv);
+}
+
+unsigned char *
+pic_blob(pic_state *PIC_UNUSED(pic), pic_value blob, int *len)
+{
+  if (len) {
+    *len = pic_blob_ptr(pic, blob)->len;
+  }
+  return pic_blob_ptr(pic, blob)->data;
 }
 
 static pic_value
@@ -22,221 +36,214 @@ pic_blob_bytevector_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_blob_p(v));
+  return pic_bool_value(pic, pic_blob_p(pic, v));
 }
 
 static pic_value
 pic_blob_bytevector(pic_state *pic)
 {
-  pic_value *argv;
+  pic_value *argv, blob;
   int argc, i;
-  pic_blob *blob;
   unsigned char *data;
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  blob = pic_make_blob(pic, argc);
+  blob = pic_blob_value(pic, 0, argc);
 
-  data = blob->data;
+  data = pic_blob(pic, blob, NULL);
 
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], int);
 
-    if (pic_int(argv[i]) < 0 || pic_int(argv[i]) > 255) {
-      pic_errorf(pic, "byte out of range");
+    if (pic_int(pic, argv[i]) < 0 || pic_int(pic, argv[i]) > 255) {
+      pic_error(pic, "byte out of range", 0);
     }
 
-    *data++ = (unsigned char)pic_int(argv[i]);
+    *data++ = (unsigned char)pic_int(pic, argv[i]);
   }
 
-  return pic_obj_value(blob);
+  return blob;
 }
 
 static pic_value
 pic_blob_make_bytevector(pic_state *pic)
 {
-  pic_blob *blob;
-  int k, i, b = 0;
+  pic_value blob;
+  int k, b = 0;
 
   pic_get_args(pic, "i|i", &k, &b);
 
   if (b < 0 || b > 255)
-    pic_errorf(pic, "byte out of range");
+    pic_error(pic, "byte out of range", 0);
 
-  blob = pic_make_blob(pic, k);
-  for (i = 0; i < k; ++i) {
-    blob->data[i] = (unsigned char)b;
+  if (k < 0) {
+    pic_error(pic, "make-bytevector: negative length given", 1, pic_int_value(pic, k));
   }
 
-  return pic_obj_value(blob);
+  blob = pic_blob_value(pic, 0, k);
+
+  memset(pic_blob(pic, blob, NULL), (unsigned char)b, k);
+
+  return blob;
 }
 
 static pic_value
 pic_blob_bytevector_length(pic_state *pic)
 {
-  struct pic_blob *bv;
+  int len;
 
-  pic_get_args(pic, "b", &bv);
+  pic_get_args(pic, "b", NULL, &len);
 
-  return pic_int_value(bv->len);
+  return pic_int_value(pic, len);
 }
 
 static pic_value
 pic_blob_bytevector_u8_ref(pic_state *pic)
 {
-  struct pic_blob *bv;
-  int k;
+  unsigned char *buf;
+  int len, k;
 
-  pic_get_args(pic, "bi", &bv, &k);
+  pic_get_args(pic, "bi", &buf, &len, &k);
 
-  return pic_int_value(bv->data[k]);
+  VALID_INDEX(pic, len, k);
+
+  return pic_int_value(pic, buf[k]);
 }
 
 static pic_value
 pic_blob_bytevector_u8_set(pic_state *pic)
 {
-  struct pic_blob *bv;
-  int k, v;
+  unsigned char *buf;
+  int len, k, v;
 
-  pic_get_args(pic, "bii", &bv, &k, &v);
+  pic_get_args(pic, "bii", &buf, &len, &k, &v);
 
   if (v < 0 || v > 255)
-    pic_errorf(pic, "byte out of range");
+    pic_error(pic, "byte out of range", 0);
 
-  bv->data[k] = (unsigned char)v;
-  return pic_undef_value();
+  VALID_INDEX(pic, len, k);
+
+  buf[k] = (unsigned char)v;
+
+  return pic_undef_value(pic);
 }
 
 static pic_value
 pic_blob_bytevector_copy_i(pic_state *pic)
 {
-  pic_blob *to, *from;
-  int n, at, start, end;
+  unsigned char *to, *from;
+  int n, at, start, end, tolen, fromlen;
 
-  n = pic_get_args(pic, "bib|ii", &to, &at, &from, &start, &end);
+  n = pic_get_args(pic, "bib|ii", &to, &tolen, &at, &from, &fromlen, &start, &end);
 
   switch (n) {
   case 3:
     start = 0;
   case 4:
-    end = from->len;
+    end = fromlen;
   }
 
-  if (to == from && (start <= at && at < end)) {
-    /* copy in reversed order */
-    at += end - start;
-    while (start < end) {
-      to->data[--at] = from->data[--end];
-    }
-    return pic_undef_value();
-  }
+  VALID_ATRANGE(pic, tolen, at, fromlen, start, end);
 
-  while (start < end) {
-    to->data[at++] = from->data[start++];
-  }
+  memmove(to + at, from + start, end - start);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
 pic_blob_bytevector_copy(pic_state *pic)
 {
-  pic_blob *from, *to;
-  int n, start, end, i = 0;
+  unsigned char *buf;
+  int n, start, end, len;
 
-  n = pic_get_args(pic, "b|ii", &from, &start, &end);
+  n = pic_get_args(pic, "b|ii", &buf, &len, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = from->len;
+    end = len;
   }
 
-  if (end < start) {
-    pic_errorf(pic, "make-bytevector: end index must not be less than start index");
-  }
+  VALID_RANGE(pic, len, start, end);
 
-  to = pic_make_blob(pic, end - start);
-  while (start < end) {
-    to->data[i++] = from->data[start++];
-  }
-
-  return pic_obj_value(to);
+  return pic_blob_value(pic, buf + start, end - start);
 }
 
 static pic_value
 pic_blob_bytevector_append(pic_state *pic)
 {
-  int argc, i, j, len;
-  pic_value *argv;
-  pic_blob *blob;
+  int argc, i, l, len;
+  unsigned char *buf, *dst;
+  pic_value *argv, blob;
 
   pic_get_args(pic, "*", &argc, &argv);
 
   len = 0;
   for (i = 0; i < argc; ++i) {
     pic_assert_type(pic, argv[i], blob);
-    len += pic_blob_ptr(argv[i])->len;
+    pic_blob(pic, argv[i], &l);
+    len += l;
   }
 
-  blob = pic_make_blob(pic, len);
+  blob = pic_blob_value(pic, NULL, len);
 
+  dst = pic_blob(pic, blob, NULL);
   len = 0;
   for (i = 0; i < argc; ++i) {
-    for (j = 0; j < pic_blob_ptr(argv[i])->len; ++j) {
-      blob->data[len + j] = pic_blob_ptr(argv[i])->data[j];
-    }
-    len += pic_blob_ptr(argv[i])->len;
+    buf = pic_blob(pic, argv[i], &l);
+    memcpy(dst + len, buf, l);
+    len += l;
   }
 
-  return pic_obj_value(blob);
+  return blob;
 }
 
 static pic_value
 pic_blob_list_to_bytevector(pic_state *pic)
 {
-  pic_blob *blob;
+  pic_value blob;
   unsigned char *data;
   pic_value list, e, it;
 
   pic_get_args(pic, "o", &list);
 
-  blob = pic_make_blob(pic, pic_length(pic, list));
+  blob = pic_blob_value(pic, 0, pic_length(pic, list));
 
-  data = blob->data;
+  data = pic_blob(pic, blob, NULL);
 
   pic_for_each (e, list, it) {
     pic_assert_type(pic, e, int);
 
-    if (pic_int(e) < 0 || pic_int(e) > 255)
-      pic_errorf(pic, "byte out of range");
+    if (pic_int(pic, e) < 0 || pic_int(pic, e) > 255)
+      pic_error(pic, "byte out of range", 0);
 
-    *data++ = (unsigned char)pic_int(e);
+    *data++ = (unsigned char)pic_int(pic, e);
   }
-  return pic_obj_value(blob);
+  return blob;
 }
 
 static pic_value
 pic_blob_bytevector_to_list(pic_state *pic)
 {
-  pic_blob *blob;
   pic_value list;
-  int n, start, end, i;
+  unsigned char *buf;
+  int n, len, start, end, i;
 
-  n = pic_get_args(pic, "b|ii", &blob, &start, &end);
+  n = pic_get_args(pic, "b|ii", &buf, &len, &start, &end);
 
   switch (n) {
   case 1:
     start = 0;
   case 2:
-    end = blob->len;
+    end = len;
   }
 
-  list = pic_nil_value();
+  VALID_RANGE(pic, len, start, end);
 
+  list = pic_nil_value(pic);
   for (i = start; i < end; ++i) {
-    pic_push(pic, pic_int_value(blob->data[i]), list);
+    pic_push(pic, pic_int_value(pic, buf[i]), list);
   }
   return pic_reverse(pic, list);
 }

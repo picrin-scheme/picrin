@@ -3,59 +3,65 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
-#define kh_pic_str_hash(a) (pic_str_hash(pic, (a)))
-#define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, (a), (b)) == 0)
+#define kh_pic_str_hash(a) (pic_str_hash(pic, pic_obj_value(a)))
+#define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, pic_obj_value(a), pic_obj_value(b)) == 0)
 
-KHASH_DEFINE(s, pic_str *, pic_sym *, kh_pic_str_hash, kh_pic_str_cmp)
+KHASH_DEFINE(oblist, struct string *, symbol *, kh_pic_str_hash, kh_pic_str_cmp)
 
-pic_sym *
-pic_intern(pic_state *pic, pic_str *str)
+pic_value
+pic_intern(pic_state *pic, pic_value str)
 {
-  khash_t(s) *h = &pic->oblist;
-  pic_sym *sym;
-  khiter_t it;
+  khash_t(oblist) *h = &pic->oblist;
+  symbol *sym;
+  int it;
   int ret;
 
-  it = kh_put(s, h, str, &ret);
+  it = kh_put(oblist, h, pic_str_ptr(pic, str), &ret);
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
-    pic_gc_protect(pic, pic_obj_value(sym));
-    return sym;
+    pic_protect(pic, pic_obj_value(sym));
+    return pic_obj_value(sym);
   }
 
-  sym = (pic_sym *)pic_obj_alloc(pic, sizeof(pic_sym), PIC_TT_SYMBOL);
-  sym->str = str;
+  kh_val(h, it) = NULL;         /* dummy */
+
+  sym = (symbol *)pic_obj_alloc(pic, offsetof(symbol, env), PIC_TYPE_SYMBOL);
+  sym->u.str = pic_str_ptr(pic, str);
   kh_val(h, it) = sym;
 
-  return sym;
+  return pic_obj_value(sym);
 }
 
-pic_id *
-pic_make_identifier(pic_state *pic, pic_id *id, struct pic_env *env)
+pic_value
+pic_make_identifier(pic_state *pic, pic_value base, pic_value env)
 {
-  pic_id *nid;
+  struct identifier *id;
 
-  nid = (pic_id *)pic_obj_alloc(pic, sizeof(pic_id), PIC_TT_ID);
-  nid->u.id.id = id;
-  nid->u.id.env = env;
-  return nid;
+  id = (struct identifier *)pic_obj_alloc(pic, sizeof(struct identifier), PIC_TYPE_ID);
+  id->u.id = pic_id_ptr(pic, base);
+  id->env = pic_env_ptr(pic, env);
+
+  return pic_obj_value(id);
 }
 
-const char *
-pic_symbol_name(pic_state *pic, pic_sym *sym)
+pic_value
+pic_sym_name(pic_state *PIC_UNUSED(pic), pic_value sym)
 {
-  return pic_str_cstr(pic, sym->str);
+  return pic_obj_value(pic_sym_ptr(pic, sym)->u.str);
 }
 
-const char *
-pic_identifier_name(pic_state *pic, pic_id *id)
+pic_value
+pic_id_name(pic_state *pic, pic_value id)
 {
-  while (! pic_sym_p(pic_obj_value(id))) {
-    id = id->u.id.id;
+  while (! pic_sym_p(pic, id)) {
+    id = pic_obj_value(pic_id_ptr(pic, id)->u.id);
   }
 
-  return pic_symbol_name(pic, (pic_sym *)id);
+  return pic_sym_name(pic, id);
 }
 
 static pic_value
@@ -65,7 +71,7 @@ pic_symbol_symbol_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic_sym_p(v));
+  return pic_bool_value(pic, pic_sym_p(pic, v));
 }
 
 static pic_value
@@ -77,34 +83,34 @@ pic_symbol_symbol_eq_p(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    if (! pic_sym_p(argv[i])) {
-      return pic_false_value();
+    if (! pic_sym_p(pic, argv[i])) {
+      return pic_false_value(pic);
     }
-    if (! pic_eq_p(argv[i], argv[0])) {
-      return pic_false_value();
+    if (! pic_eq_p(pic, argv[i], argv[0])) {
+      return pic_false_value(pic);
     }
   }
-  return pic_true_value();
+  return pic_true_value(pic);
 }
 
 static pic_value
 pic_symbol_symbol_to_string(pic_state *pic)
 {
-  pic_sym *sym;
+  pic_value sym;
 
   pic_get_args(pic, "m", &sym);
 
-  return pic_obj_value(sym->str);
+  return pic_sym_name(pic, sym);
 }
 
 static pic_value
 pic_symbol_string_to_symbol(pic_state *pic)
 {
-  pic_str *str;
+  pic_value str;
 
   pic_get_args(pic, "s", &str);
 
-  return pic_obj_value(pic_intern(pic, str));
+  return pic_intern(pic, str);
 }
 
 static pic_value
@@ -114,7 +120,7 @@ pic_symbol_identifier_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(pic_id_p(obj));
+  return pic_bool_value(pic, pic_id_p(pic, obj));
 }
 
 static pic_value
@@ -127,11 +133,11 @@ pic_symbol_make_identifier(pic_state *pic)
   pic_assert_type(pic, id, id);
   pic_assert_type(pic, env, env);
 
-  return pic_obj_value(pic_make_identifier(pic, pic_id_ptr(id), pic_env_ptr(env)));
+  return pic_make_identifier(pic, id, env);
 }
 
 static pic_value
-pic_symbol_identifier_variable(pic_state *pic)
+pic_symbol_identifier_base(pic_state *pic)
 {
   pic_value id;
 
@@ -139,11 +145,11 @@ pic_symbol_identifier_variable(pic_state *pic)
 
   pic_assert_type(pic, id, id);
 
-  if (pic_sym_p(id)) {
-    pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
+  if (pic_sym_p(pic, id)) {
+    pic_error(pic, "non-symbol identifier required", 1, id);
   }
 
-  return pic_obj_value(pic_id_ptr(id)->u.id.id);
+  return pic_obj_value(pic_id_ptr(pic, id)->u.id);
 }
 
 static pic_value
@@ -155,11 +161,11 @@ pic_symbol_identifier_environment(pic_state *pic)
 
   pic_assert_type(pic, id, id);
 
-  if (pic_sym_p(id)) {
-    pic_errorf(pic, "expected non-symbol identifier, but got symbol ~s", id);
+  if (pic_sym_p(pic, id)) {
+    pic_error(pic, "non-symbol identifier required", 1, id);
   }
 
-  return pic_obj_value(pic_id_ptr(id)->u.id.env);
+  return pic_obj_value(pic_id_ptr(pic, id)->env);
 }
 
 static pic_value
@@ -171,14 +177,14 @@ pic_symbol_identifier_eq_p(pic_state *pic)
   pic_get_args(pic, "*", &argc, &argv);
 
   for (i = 0; i < argc; ++i) {
-    if (! pic_id_p(argv[i])) {
-      return pic_false_value();
+    if (! pic_id_p(pic, argv[i])) {
+      return pic_false_value(pic);
     }
     if (! pic_equal_p(pic, argv[i], argv[0])) {
-      return pic_false_value();
+      return pic_false_value(pic);
     }
   }
-  return pic_true_value();
+  return pic_true_value(pic);
 }
 
 void
@@ -192,6 +198,6 @@ pic_init_symbol(pic_state *pic)
   pic_defun(pic, "make-identifier", pic_symbol_make_identifier);
   pic_defun(pic, "identifier?", pic_symbol_identifier_p);
   pic_defun(pic, "identifier=?", pic_symbol_identifier_eq_p);
-  pic_defun(pic, "identifier-variable", pic_symbol_identifier_variable);
+  pic_defun(pic, "identifier-base", pic_symbol_identifier_base);
   pic_defun(pic, "identifier-environment", pic_symbol_identifier_environment);
 }

@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include "picrin/extra.h"
 
 #include <regex.h>
 
@@ -18,9 +19,6 @@ regexp_dtor(pic_state *pic, void *data)
 }
 
 static const pic_data_type regexp_type = { "regexp", regexp_dtor, NULL };
-
-#define pic_regexp_p(o) (pic_data_type_p((o), &regexp_type))
-#define pic_regexp_data_ptr(o) ((struct pic_regexp_t *)pic_data_ptr(o)->data)
 
 static pic_value
 pic_regexp_regexp(pic_state *pic)
@@ -59,10 +57,10 @@ pic_regexp_regexp(pic_state *pic)
     regerror(err, &reg->reg, errbuf, sizeof errbuf);
     regexp_dtor(pic, &reg->reg);
 
-    pic_errorf(pic, "regexp compilation error: %s", errbuf);
+    pic_error(pic, "regexp compilation error", 1, pic_cstr_value(pic, errbuf));
   }
 
-  return pic_obj_value(pic_data_alloc(pic, &regexp_type, reg));
+  return pic_data_value(pic, reg, &regexp_type);
 }
 
 static pic_value
@@ -72,33 +70,30 @@ pic_regexp_regexp_p(pic_state *pic)
 
   pic_get_args(pic, "o", &obj);
 
-  return pic_bool_value(pic_regexp_p(obj));
+  return pic_bool_value(pic, pic_data_p(pic, obj, &regexp_type));
 }
 
 static pic_value
 pic_regexp_regexp_match(pic_state *pic)
 {
-  pic_value reg;
+  struct pic_regexp_t *reg;
   const char *input;
   regmatch_t match[100];
-  pic_value matches, positions;
-  pic_str *str;
+  pic_value str, matches, positions;
   int i, offset;
 
-  pic_get_args(pic, "oz", &reg, &input);
+  pic_get_args(pic, "uz", &reg, &regexp_type, &input);
 
-  pic_assert_type(pic, reg, regexp);
+  matches = pic_nil_value(pic);
+  positions = pic_nil_value(pic);
 
-  matches = pic_nil_value();
-  positions = pic_nil_value();
-
-  if (strchr(pic_regexp_data_ptr(reg)->flags, 'g') != NULL) {
+  if (strchr(reg->flags, 'g') != NULL) {
     /* global search */
 
     offset = 0;
-    while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, match, 0) != REG_NOMATCH) {
-      pic_push(pic, pic_obj_value(pic_make_str(pic, input, match[0].rm_eo - match[0].rm_so)), matches);
-      pic_push(pic, pic_int_value(offset), positions);
+    while (regexec(&reg->reg, input, 1, match, 0) != REG_NOMATCH) {
+      pic_push(pic, pic_str_value(pic, input, match[0].rm_eo - match[0].rm_so), matches);
+      pic_push(pic, pic_int_value(pic, offset), positions);
 
       offset += match[0].rm_eo;
       input += match[0].rm_eo;
@@ -106,47 +101,45 @@ pic_regexp_regexp_match(pic_state *pic)
   } else {
     /* local search */
 
-    if (regexec(&pic_regexp_data_ptr(reg)->reg, input, 100, match, 0) == 0) {
+    if (regexec(&reg->reg, input, 100, match, 0) == 0) {
       for (i = 0; i < 100; ++i) {
         if (match[i].rm_so == -1) {
           break;
         }
-        str = pic_make_str(pic, input + match[i].rm_so, match[i].rm_eo - match[i].rm_so);
-        pic_push(pic, pic_obj_value(str), matches);
-        pic_push(pic, pic_int_value(match[i].rm_so), positions);
+        str = pic_str_value(pic, input + match[i].rm_so, match[i].rm_eo - match[i].rm_so);
+        pic_push(pic, str, matches);
+        pic_push(pic, pic_int_value(pic, match[i].rm_so), positions);
       }
     }
   }
 
-  if (pic_nil_p(matches)) {
-    matches = pic_false_value();
-    positions = pic_false_value();
+  if (pic_nil_p(pic, matches)) {
+    matches = pic_false_value(pic);
+    positions = pic_false_value(pic);
   } else {
     matches = pic_reverse(pic, matches);
     positions = pic_reverse(pic, positions);
   }
-  return pic_values2(pic, matches, positions);
+  return pic_return(pic, 2, matches, positions);
 }
 
 static pic_value
 pic_regexp_regexp_split(pic_state *pic)
 {
-  pic_value reg;
+  struct pic_regexp_t *reg;
   const char *input;
   regmatch_t match;
-  pic_value output = pic_nil_value();
+  pic_value output = pic_nil_value(pic);
 
-  pic_get_args(pic, "oz", &reg, &input);
+  pic_get_args(pic, "uz", &reg, &regexp_type, &input);
 
-  pic_assert_type(pic, reg, regexp);
-
-  while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
-    pic_push(pic, pic_obj_value(pic_make_str(pic, input, match.rm_so)), output);
+  while (regexec(&reg->reg, input, 1, &match, 0) != REG_NOMATCH) {
+    pic_push(pic, pic_str_value(pic, input, match.rm_so), output);
 
     input += match.rm_eo;
   }
 
-  pic_push(pic, pic_obj_value(pic_make_cstr(pic, input)), output);
+  pic_push(pic, pic_cstr_value(pic, input), output);
 
   return pic_reverse(pic, output);
 }
@@ -154,36 +147,32 @@ pic_regexp_regexp_split(pic_state *pic)
 static pic_value
 pic_regexp_regexp_replace(pic_state *pic)
 {
-  pic_value reg;
+  struct pic_regexp_t *reg;
   const char *input;
   regmatch_t match;
-  pic_str *txt, *output = pic_make_lit(pic, "");
+  pic_value txt, output = pic_lit_value(pic, "");
 
-  pic_get_args(pic, "ozs", &reg, &input, &txt);
+  pic_get_args(pic, "uzs", &reg, &regexp_type, &input, &txt);
 
-  pic_assert_type(pic, reg, regexp);
-
-  while (regexec(&pic_regexp_data_ptr(reg)->reg, input, 1, &match, 0) != REG_NOMATCH) {
-    output = pic_str_cat(pic, output, pic_make_str(pic, input, match.rm_so));
+  while (regexec(&reg->reg, input, 1, &match, 0) != REG_NOMATCH) {
+    output = pic_str_cat(pic, output, pic_str_value(pic, input, match.rm_so));
     output = pic_str_cat(pic, output, txt);
 
     input += match.rm_eo;
   }
 
-  output = pic_str_cat(pic, output, pic_make_str(pic, input, strlen(input)));
-
-  return pic_obj_value(output);
+  return pic_str_cat(pic, output, pic_str_value(pic, input, strlen(input)));
 }
 
 void
 pic_init_regexp(pic_state *pic)
 {
-  pic_deflibrary (pic, "(picrin regexp)") {
-    pic_defun(pic, "regexp", pic_regexp_regexp);
-    pic_defun(pic, "regexp?", pic_regexp_regexp_p);
-    pic_defun(pic, "regexp-match", pic_regexp_regexp_match);
-    /* pic_defun(pic, "regexp-search", pic_regexp_regexp_search); */
-    pic_defun(pic, "regexp-split", pic_regexp_regexp_split);
-    pic_defun(pic, "regexp-replace", pic_regexp_regexp_replace);
-  }
+  pic_deflibrary(pic, "picrin.regexp");
+
+  pic_defun(pic, "regexp", pic_regexp_regexp);
+  pic_defun(pic, "regexp?", pic_regexp_regexp_p);
+  pic_defun(pic, "regexp-match", pic_regexp_regexp_match);
+  /* pic_defun(pic, "regexp-search", pic_regexp_regexp_search); */
+  pic_defun(pic, "regexp-split", pic_regexp_regexp_split);
+  pic_defun(pic, "regexp-replace", pic_regexp_regexp_replace);
 }

@@ -3,48 +3,39 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
 static pic_value
-var_conv(pic_state *pic, struct pic_proc *var, pic_value val)
+var_get(pic_state *pic, pic_value var)
 {
-  if (pic_proc_env_has(pic, var, "conv") != 0) {
-    return pic_apply1(pic, pic_proc_ptr(pic_proc_env_ref(pic, var, "conv")), val);
-  }
-  return val;
-}
+  pic_value weak, it;
 
-static pic_value
-var_get(pic_state *pic, struct pic_proc *var)
-{
-  pic_value elem, it;
-  struct pic_weak *weak;
-
-  pic_for_each (elem, pic->ptable, it) {
-    weak = pic_weak_ptr(elem);
+  pic_for_each (weak, pic->ptable, it) {
     if (pic_weak_has(pic, weak, var)) {
       return pic_weak_ref(pic, weak, var);
     }
   }
-  pic_panic(pic, "logic flaw");
+  PIC_UNREACHABLE();
 }
 
 static pic_value
-var_set(pic_state *pic, struct pic_proc *var, pic_value val)
+var_set(pic_state *pic, pic_value var, pic_value val)
 {
-  struct pic_weak *weak;
+  pic_value weak;
 
-  weak = pic_weak_ptr(pic_car(pic, pic->ptable));
+  weak = pic_car(pic, pic->ptable);
 
   pic_weak_set(pic, weak, var, val);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
 var_call(pic_state *pic)
 {
-  struct pic_proc *self;
-  pic_value val;
+  pic_value self, val;
   int n;
 
   n = pic_get_args(pic, "&|o", &self, &val);
@@ -52,22 +43,24 @@ var_call(pic_state *pic)
   if (n == 0) {
     return var_get(pic, self);
   } else {
-    return var_set(pic, self, var_conv(pic, self, val));
+    pic_value conv;
+
+    conv = pic_closure_ref(pic, 0);
+    if (! pic_false_p(pic, conv)) {
+      val = pic_call(pic, conv, 1, val);
+    }
+    return var_set(pic, self, val);
   }
 }
 
-struct pic_proc *
-pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
+pic_value
+pic_make_var(pic_state *pic, pic_value init, pic_value conv)
 {
-  struct pic_proc *var;
+  pic_value var;
 
-  var = pic_make_proc(pic, var_call);
+  var = pic_lambda(pic, var_call, 1, conv);
 
-  if (conv != NULL) {
-    pic_proc_env_set(pic, var, "conv", pic_obj_value(conv));
-  }
-
-  pic_apply1(pic, var, init);
+  pic_call(pic, var, 1, init);
 
   return var;
 }
@@ -75,25 +68,23 @@ pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
 static pic_value
 pic_var_make_parameter(pic_state *pic)
 {
-  struct pic_proc *conv = NULL;
-  pic_value init;
+  pic_value init, conv = pic_false_value(pic);
 
   pic_get_args(pic, "o|l", &init, &conv);
 
-  return pic_obj_value(pic_make_var(pic, init, conv));
+  return pic_make_var(pic, init, conv);
 }
 
 static pic_value
 pic_var_with_parameter(pic_state *pic)
 {
-  struct pic_proc *body;
-  pic_value val;
+  pic_value body, val;
 
   pic_get_args(pic, "l", &body);
 
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_weak(pic)), pic->ptable);
+  pic->ptable = pic_cons(pic, pic_make_weak(pic), pic->ptable);
 
-  val = pic_apply0(pic, body);
+  val = pic_call(pic, body, 0);
 
   pic->ptable = pic_cdr(pic, pic->ptable);
 

@@ -2,12 +2,81 @@
  * See Copyright Notice in picrin.h
  */
 
-#ifndef PICRIN_COMPAT_H
-#define PICRIN_COMPAT_H
+#include "picconf.h"
 
-#if defined(__cplusplus)
-extern "C" {
+#ifndef PIC_USE_LIBC
+# define PIC_USE_LIBC 1
 #endif
+
+#ifndef PIC_USE_STDIO
+# define PIC_USE_STDIO 1
+#endif
+
+#ifndef PIC_USE_WRITE
+# define PIC_USE_WRITE 1
+#endif
+
+#ifndef PIC_JMPBUF
+# include <setjmp.h>
+# define PIC_JMPBUF jmp_buf
+#endif
+
+#ifndef PIC_SETJMP
+# include <setjmp.h>
+# define PIC_SETJMP(pic, buf) setjmp(buf)
+#endif
+
+#ifndef PIC_LONGJMP
+# include <setjmp.h>
+# define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val))
+#endif
+
+#ifndef PIC_ABORT
+void abort(void);
+# define PIC_ABORT(pic) abort()
+#endif
+
+#ifndef PIC_ARENA_SIZE
+# define PIC_ARENA_SIZE (8 * 1024)
+#endif
+
+#ifndef PIC_HEAP_PAGE_SIZE
+# define PIC_HEAP_PAGE_SIZE (4 * 1024 * 1024)
+#endif
+
+#ifndef PIC_PAGE_REQUEST_THRESHOLD
+# define PIC_PAGE_REQUEST_THRESHOLD(total) ((total) * 77 / 100)
+#endif
+
+#ifndef PIC_STACK_SIZE
+# define PIC_STACK_SIZE 2048
+#endif
+
+#ifndef PIC_RESCUE_SIZE
+# define PIC_RESCUE_SIZE 30
+#endif
+
+#ifndef PIC_SYM_POOL_SIZE
+# define PIC_SYM_POOL_SIZE (2 * 1024)
+#endif
+
+#ifndef PIC_IREP_SIZE
+# define PIC_IREP_SIZE 8
+#endif
+
+#ifndef PIC_POOL_SIZE
+# define PIC_POOL_SIZE 8
+#endif
+
+#ifndef PIC_SYMS_SIZE
+# define PIC_SYMS_SIZE 32
+#endif
+
+#ifndef PIC_ISEQ_SIZE
+# define PIC_ISEQ_SIZE 1024
+#endif
+
+/* check compatibility */
 
 #if __STDC_VERSION__ >= 199901L
 # include <stdbool.h>
@@ -20,7 +89,7 @@ extern "C" {
 #if __STDC_VERSION__ >= 199901L
 # include <stddef.h>
 #elif ! defined(offsetof)
-# define offsetof(s,m) ((size_t)&(((s *)NULL)->m))
+# define offsetof(s,m) ((size_t)(&(((s *)0)->m) - 0))
 #endif
 
 #if __STDC_VERSION__ >= 199901L
@@ -54,8 +123,10 @@ typedef unsigned long uint32_t;
 
 #define PIC_FALLTHROUGH ((void)0)
 
-#if __GNUC__ || __clang__
-# define PIC_UNUSED(v) __attribute__((unused)) v
+#if defined(__cplusplus)
+# define PIC_UNUSED(v)
+#elif __GNUC__ || __clang__
+# define PIC_UNUSED(v) v __attribute__((unused))
 #else
 # define PIC_UNUSED(v) v
 #endif
@@ -80,8 +151,7 @@ typedef unsigned long uint32_t;
 # undef GCC_VERSION
 #endif
 
-#define PIC_SWAP(type,a,b)                      \
-  PIC_SWAP_HELPER_(type, PIC_GENSYM(tmp), a, b)
+#define PIC_SWAP(type,a,b) PIC_SWAP_HELPER_(type, PIC_GENSYM(tmp), a, b)
 #define PIC_SWAP_HELPER_(type,tmp,a,b)          \
   do {                                          \
     type tmp = (a);                             \
@@ -90,7 +160,7 @@ typedef unsigned long uint32_t;
   } while (0)
 
 
-#if PIC_ENABLE_LIBC
+#if PIC_USE_LIBC
 
 #include <string.h>
 #include <ctype.h>
@@ -203,6 +273,36 @@ memcpy(void *dst, const void *src, size_t n)
   return d;
 }
 
+PIC_INLINE void *
+memmove(void *dst, const void *src, size_t n)
+{
+  const char *s = src;
+  char *d = dst;
+
+  if (d <= s || d >= s + n) {
+    memcpy(dst, src, n);
+  } else {
+    s += n;
+    d += n;
+    while (n-- > 0) {
+      *--d = *--s;
+    }
+  }
+  return d;
+}
+
+PIC_INLINE int
+memcmp(const void *b1, const void *b2, size_t n)
+{
+  const char *s1 = b1, *s2 = b2;
+
+  while (*s1 == *s2 && n-- > 0) {
+    s1++;
+    s2++;
+  }
+  return (unsigned)*s1 - (unsigned)*s2;
+}
+
 PIC_INLINE char *
 strcpy(char *dst, const char *src)
 {
@@ -279,7 +379,7 @@ atof(const char *nptr)
 
 #endif
 
-#if PIC_ENABLE_STDIO
+#if PIC_USE_STDIO
 # include <stdio.h>
 
 PIC_INLINE void
@@ -349,8 +449,16 @@ void PIC_DOUBLE_TO_CSTRING(double, char *);
 #endif
 double PIC_CSTRING_TO_DOUBLE(const char *);
 
-#if defined(__cplusplus)
-}
+/* optional features available? */
+
+#if (defined(__GNUC__) || defined(__clang__)) && ! defined(__STRICT_ANSI__)
+# define PIC_DIRECT_THREADED_VM 1
+#else
+# define PIC_DIRECT_THREADED_VM 0
 #endif
 
+#if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && ! defined(__STRICT_ANSI__)
+# define PIC_NAN_BOXING 1
+#else
+# define PIC_NAN_BOXING 0
 #endif

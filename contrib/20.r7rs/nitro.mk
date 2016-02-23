@@ -4,7 +4,6 @@ CONTRIB_SRCS += \
 	contrib/20.r7rs/src/r7rs.c\
 	contrib/20.r7rs/src/file.c\
 	contrib/20.r7rs/src/load.c\
-	contrib/20.r7rs/src/mutable-string.c\
 	contrib/20.r7rs/src/system.c\
 	contrib/20.r7rs/src/time.c
 

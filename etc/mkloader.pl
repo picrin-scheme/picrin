@@ -12,6 +12,7 @@ print <<EOL;
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 
 EOL
 
@@ -53,16 +54,12 @@ EOL
   pic_catch {
     /* error! */
     xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
-    pic_raise(pic, pic->err);
+    pic_raise(pic, pic_err(pic));
   }
 EOL
 }
 
 print <<EOL;
-
-#if DEBUG
-  puts("successfully loaded stdlib");
-#endif
 }
 EOL
 

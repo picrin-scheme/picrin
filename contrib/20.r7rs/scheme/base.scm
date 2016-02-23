@@ -13,7 +13,6 @@
                 nan?
                 infinite?)
           (picrin macro)
-          (picrin string)
           (scheme file))
 
   ;; 4.1.2. Literal expressions
@@ -776,6 +775,68 @@
 
   ;; 6.13. Input and output
 
+  (define (input-port-open? port)
+    (and (input-port? port) (port-open? port)))
+
+  (define (output-port-open? port)
+    (and (output-port? port) (port-open? port)))
+
+  (define (call-with-port port handler)
+    (let ((res (handler port)))
+      (close-port port)
+      res))
+
+  (define (open-input-string str)
+    (open-input-bytevector (list->bytevector (map char->integer (string->list str)))))
+
+  (define (open-output-string)
+    (open-output-bytevector))
+
+  (define (get-output-string port)
+    (list->string (map integer->char (bytevector->list (get-output-bytevector port)))))
+
+  (define (read-char . opt)
+    (let ((b (apply read-u8 opt)))
+      (if (eof-object? b)
+          b
+          (integer->char b))))
+
+  (define (peek-char . opt)
+    (let ((b (apply peek-u8 opt)))
+      (if (eof-object? b)
+          b
+          (integer->char b))))
+
+  (define (char-ready? . opt)
+    (apply u8-ready? opt))
+
+  (define (newline . opt)
+    (apply write-u8 (char->integer #\newline) opt))
+
+  (define (write-char c . opt)
+    (apply write-u8 (char->integer c) opt))
+
+  (define (write-string s . opt)
+    (apply write-bytevector (list->bytevector (map char->integer (string->list s))) opt))
+
+  (define (read-line . opt)
+    (if (eof-object? (apply peek-char opt))
+        (eof-object)
+        (let loop ((str "") (c (apply read-char opt)))
+          (if (or (eof-object? c)
+                  (char=? c #\newline))
+              str
+              (loop (string-append str (string c)) (apply read-char opt))))))
+
+  (define (read-string k . opt)
+    (if (eof-object? (apply peek-char opt))
+        (eof-object)
+        (let loop ((k k) (str "") (c (apply read-char opt)))
+          (if (or (eof-object? c)
+                  (zero? k))
+              str
+              (loop (- k 1) (string-append str (string c)) (apply read-char opt))))))
+
   (export current-input-port
           current-output-port
           current-error-port
@@ -785,11 +846,11 @@
           port?
           input-port?
           output-port?
-          textual-port?
-          binary-port?
+          (rename port? textual-port?)
+          (rename port? binary-port?)
 
-          (rename port-open? input-port-open?)
-          (rename port-open? output-port-open?)
+          input-port-open?
+          output-port-open?
           close-port
           (rename close-port close-input-port)
           (rename close-port close-output-port)
