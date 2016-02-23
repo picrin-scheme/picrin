@@ -50,7 +50,7 @@ struct pic_state {
 
   struct code *ip;
 
-  struct lib *lib;
+  const char *lib;
 
   pic_value features;
 

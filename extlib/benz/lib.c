@@ -160,14 +160,9 @@ void
 pic_make_library(pic_state *pic, const char *lib)
 {
   khash_t(ltable) *h = &pic->ltable;
-  const char *old_lib = NULL;
   pic_value name, env, exports;
   int it;
   int ret;
-
-  if (pic->lib) {
-    old_lib = pic_current_library(pic);
-  }
 
   name = pic_cstr_value(pic, lib);
   env = make_library_env(pic, name);
@@ -181,16 +176,13 @@ pic_make_library(pic_state *pic, const char *lib)
   kh_val(h, it).name = pic_str_ptr(pic, name);
   kh_val(h, it).env = pic_env_ptr(pic, env);
   kh_val(h, it).exports = pic_dict_ptr(pic, exports);
-
-  if (pic->lib) {
-    pic->lib = get_library(pic, old_lib); /* ltable might be rehashed */
-  }
 }
 
 void
 pic_in_library(pic_state *pic, const char *lib)
 {
-  pic->lib = get_library(pic, lib);
+  get_library(pic, lib);
+  pic->lib = lib;
 }
 
 bool
@@ -202,7 +194,7 @@ pic_find_library(pic_state *pic, const char *lib)
 const char *
 pic_current_library(pic_state *pic)
 {
-  return pic_str(pic, pic_obj_value(pic->lib->name));
+  return pic->lib;
 }
 
 pic_value
@@ -216,23 +208,24 @@ pic_import(pic_state *pic, const char *lib)
 {
   pic_value name, realname, uid;
   int it = 0;
-  struct lib *libp;
+  struct lib *our, *their;
 
-  libp = get_library(pic, lib);
+  our = get_library(pic, pic->lib);
+  their = get_library(pic, lib);
 
-  while (pic_dict_next(pic, pic_obj_value(libp->exports), &it, &name, &realname)) {
-    uid = pic_find_identifier(pic, realname, pic_obj_value(libp->env));
+  while (pic_dict_next(pic, pic_obj_value(their->exports), &it, &name, &realname)) {
+    uid = pic_find_identifier(pic, realname, pic_obj_value(their->env));
     if (! pic_weak_has(pic, pic->globals, uid) && ! pic_weak_has(pic, pic->macros, uid)) {
       pic_error(pic, "attempted to export undefined variable", 1, realname);
     }
-    pic_put_identifier(pic, name, uid, pic_obj_value(pic->lib->env));
+    pic_put_identifier(pic, name, uid, pic_obj_value(our->env));
   }
 }
 
 void
 pic_export(pic_state *pic, pic_value name)
 {
-  pic_dict_set(pic, pic_obj_value(pic->lib->exports), name, name);
+  pic_dict_set(pic, pic_obj_value(get_library(pic, pic->lib)->exports), name, name);
 }
 
 static pic_value
@@ -266,7 +259,7 @@ pic_lib_current_library(pic_state *pic)
   n = pic_get_args(pic, "|z", &lib);
 
   if (n == 0) {
-    return pic_obj_value(pic->lib->name);
+    return pic_cstr_value(pic, pic_current_library(pic));
   }
   else {
     pic_in_library(pic, lib);
@@ -302,7 +295,7 @@ pic_lib_library_import(pic_state *pic)
     pic_error(pic, "attempted to export undefined variable", 1, realname);
   }
 
-  pic_put_identifier(pic, alias, uid, pic_obj_value(pic->lib->env));
+  pic_put_identifier(pic, alias, uid, pic_obj_value(get_library(pic, pic->lib)->env));
 
   return pic_undef_value(pic);
 }
@@ -319,7 +312,7 @@ pic_lib_library_export(pic_state *pic)
     alias = name;
   }
 
-  pic_dict_set(pic, pic_obj_value(pic->lib->exports), alias, name);
+  pic_dict_set(pic, pic_obj_value(get_library(pic, pic->lib)->exports), alias, name);
 
   return pic_undef_value(pic);
 }

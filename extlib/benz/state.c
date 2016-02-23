@@ -7,9 +7,19 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
+static pic_value
+pic_features(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic->features;
+}
+
 static void
 pic_init_features(pic_state *pic)
 {
+  pic_defun(pic, "features", pic_features);
+
   pic_add_feature(pic, "picrin");
 
 #if __STDC_IEC_559__
@@ -71,25 +81,17 @@ pic_add_feature(pic_state *pic, const char *feature)
   pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
 }
 
-static pic_value
-pic_features(pic_state *pic)
-{
-  pic_get_args(pic, "");
-
-  return pic->features;
-}
-
-#define import_builtin_syntax(name) do {                                \
-    pic_value nick, real;                                               \
-    nick = pic_intern_lit(pic, "builtin:" name);                        \
-    real = pic_intern_lit(pic, name);                                   \
-    pic_put_identifier(pic, nick, real, pic_obj_value(pic->lib->env));  \
+#define import_builtin_syntax(name) do {                \
+    pic_value nick, real;                               \
+    nick = pic_intern_lit(pic, "builtin:" name);        \
+    real = pic_intern_lit(pic, name);                   \
+    pic_put_identifier(pic, nick, real, env);           \
   } while (0)
 
-#define declare_vm_procedure(name) do {                                 \
-    pic_value sym;                                                      \
-    sym = pic_intern_lit(pic, name);                                    \
-    pic_put_identifier(pic, sym, sym, pic_obj_value(pic->lib->env));    \
+#define declare_vm_procedure(name) do {         \
+    pic_value sym;                              \
+    sym = pic_intern_lit(pic, name);            \
+    pic_put_identifier(pic, sym, sym, env);     \
   } while (0)
 
 void pic_init_bool(pic_state *);
@@ -119,14 +121,15 @@ static void
 pic_init_core(pic_state *pic)
 {
   size_t ai;
-
-  pic_init_features(pic);
+  pic_value env;
 
   pic_deflibrary(pic, "picrin.base");
 
   ai = pic_enter(pic);
 
 #define DONE pic_leave(pic, ai);
+
+  env = pic_library_environment(pic, pic->lib);
 
   import_builtin_syntax("define");
   import_builtin_syntax("set!");
@@ -179,7 +182,7 @@ pic_init_core(pic_state *pic)
   pic_init_write(pic); DONE;
 #endif
 
-  pic_defun(pic, "features", pic_features);
+  pic_init_features(pic);
 
   pic_load_cstr(pic, &pic_boot[0][0]);
 }
