@@ -213,6 +213,8 @@ pic_value pic_dynamic_wind(pic_state *, pic_value in, pic_value thunk, pic_value
 
 pic_value pic_dynamic_bind(pic_state *, pic_value var, pic_value val, pic_value thunk);
 
+pic_value pic_library_environment(pic_state *, const char *);
+
 #if defined(__cplusplus)
 }
 #endif

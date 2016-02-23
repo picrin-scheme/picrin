@@ -59,8 +59,8 @@ xFILE *xfopen_null(pic_state *, const char *mode);
 #define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
 #define pic_pop(pic, place) (place = pic_cdr(pic, place))
 
-#define pic_void(exec) pic_void_(PIC_GENSYM(ai), exec)
-#define pic_void_(ai,exec) do {                 \
+#define pic_void(pic, exec) pic_void_(pic, PIC_GENSYM(ai), exec)
+#define pic_void_(pic,ai,exec) do {             \
     size_t ai = pic_enter(pic);                 \
     exec;                                       \
     pic_leave(pic, ai);                         \
@@ -100,8 +100,6 @@ pic_value pic_get_backtrace(pic_state *);
 #if PIC_USE_WRITE
 void pic_print_error(pic_state *, xFILE *);
 #endif
-
-pic_value pic_library_environment(pic_state *, const char *);
 
 #if defined(__cplusplus)
 }
