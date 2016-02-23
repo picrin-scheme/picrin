@@ -2,7 +2,7 @@
  * See Copyright Notice in picrin.h
  */
 
-#include "picrin/config.h"
+#include "picconf.h"
 
 #ifndef PIC_USE_LIBC
 # define PIC_USE_LIBC 1
