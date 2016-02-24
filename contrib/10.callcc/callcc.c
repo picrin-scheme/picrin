@@ -29,6 +29,8 @@ struct fullcont {
   pic_value *retv;
 };
 
+char *picrin_native_stack_start;
+
 static void
 cont_dtor(pic_state *pic, void *data)
 {
@@ -84,17 +86,17 @@ static void save_cont(pic_state *, struct fullcont **);
 static void restore_cont(pic_state *, struct fullcont *);
 
 static ptrdiff_t
-native_stack_length(pic_state *pic, char **pos)
+native_stack_length(char **pos)
 {
   char t;
 
-  *pos = (pic->native_stack_start > &t)
+  *pos = (picrin_native_stack_start > &t)
     ? &t
-    : pic->native_stack_start;
+    : picrin_native_stack_start;
 
-  return (pic->native_stack_start > &t)
-    ? pic->native_stack_start - &t
-    : &t - pic->native_stack_start;
+  return (picrin_native_stack_start > &t)
+    ? picrin_native_stack_start - &t
+    : &t - picrin_native_stack_start;
 }
 
 static void
@@ -112,7 +114,7 @@ save_cont(pic_state *pic, struct fullcont **c)
 
   cont->cp = pic->cp;
 
-  cont->stk_len = native_stack_length(pic, &pos);
+  cont->stk_len = native_stack_length(&pos);
   cont->stk_pos = pos;
   assert(cont->stk_len > 0);
   cont->stk_ptr = pic_malloc(pic, cont->stk_len);
@@ -154,7 +156,7 @@ restore_cont(pic_state *pic, struct fullcont *cont)
   char v;
   struct fullcont *tmp = cont;
 
-  if (&v < pic->native_stack_start) {
+  if (&v < picrin_native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
   }
   else {

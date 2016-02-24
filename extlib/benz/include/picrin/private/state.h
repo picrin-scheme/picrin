@@ -59,10 +59,10 @@ struct pic_state {
   pic_value globals;            /* weak */
   pic_value macros;             /* weak */
   khash_t(ltable) ltable;
-  struct list_head ireps;        /* chain */
+  struct list_head ireps;
 
   xFILE files[XOPEN_MAX];
-  struct code iseq[2];             /* for pic_apply_trampoline */
+  struct code iseq[2];          /* for pic_apply_trampoline */
 
   bool gc_enable;
   struct heap *heap;
@@ -70,9 +70,8 @@ struct pic_state {
   size_t arena_size, arena_idx;
 
   pic_value err;
-  pic_panicf panicf;
 
-  char *native_stack_start;
+  pic_panicf panicf;
 };
 
 #if defined(__cplusplus)

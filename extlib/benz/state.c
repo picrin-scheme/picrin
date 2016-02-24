@@ -190,8 +190,6 @@ pic_init_core(pic_state *pic)
 pic_state *
 pic_open(pic_allocf allocf, void *userdata)
 {
-  char t;
-
   pic_state *pic;
 
   pic = allocf(userdata, NULL, sizeof(pic_state));
@@ -283,9 +281,6 @@ pic_open(pic_allocf allocf, void *userdata)
   xfopen_null(pic, "w");
   xfopen_null(pic, "w");
 #endif
-
-  /* native stack marker */
-  pic->native_stack_start = &t;
 
   /* root tables */
   pic->globals = pic_make_weak(pic);
