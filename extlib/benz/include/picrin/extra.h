@@ -98,7 +98,7 @@ xFILE *xfopen_null(pic_state *, const char *mode);
 void pic_warnf(pic_state *, const char *, ...);
 pic_value pic_get_backtrace(pic_state *);
 #if PIC_USE_WRITE
-void pic_print_error(pic_state *, xFILE *);
+void pic_print_error(pic_state *, xFILE *, pic_value err);
 #endif
 
 #if defined(__cplusplus)

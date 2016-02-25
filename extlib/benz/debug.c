@@ -38,11 +38,9 @@ pic_get_backtrace(pic_state *pic)
 #if PIC_USE_WRITE
 
 void
-pic_print_error(pic_state *pic, xFILE *file)
+pic_print_error(pic_state *pic, xFILE *file, pic_value err)
 {
-  pic_value err = pic_err(pic), port = pic_open_port(pic, file);
-
-  assert(! pic_invalid_p(pic, err));
+  pic_value port = pic_open_port(pic, file);
 
   if (! pic_error_p(pic, err)) {
     pic_fprintf(pic, port, "raise: ~s", err);
