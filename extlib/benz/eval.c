@@ -1083,7 +1083,7 @@ pic_value
 pic_eval(pic_state *pic, pic_value program, const char *lib)
 {
   const char *prev_lib = pic_current_library(pic);
-  pic_value env, r;
+  pic_value env, r, e;
 
   env = pic_library_environment(pic, lib);
 
@@ -1091,9 +1091,9 @@ pic_eval(pic_state *pic, pic_value program, const char *lib)
   pic_try {
     r = pic_call(pic, pic_compile(pic, pic_expand(pic, program, env)), 0);
   }
-  pic_catch {
+  pic_catch(e) {
     pic_in_library(pic, prev_lib);
-    pic_raise(pic, pic_err(pic));
+    pic_raise(pic, e);
   }
   pic_in_library(pic, prev_lib);
 

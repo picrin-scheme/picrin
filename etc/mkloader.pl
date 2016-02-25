@@ -39,6 +39,8 @@ print <<EOL;
 void
 pic_load_piclib(pic_state *pic)
 {
+  pic_value e;
+
 EOL
 
 foreach my $file (@ARGV) {
@@ -51,10 +53,10 @@ EOL
     print "    pic_load_cstr(pic, &${var}[0][0]);\n";
     print<<EOL
   }
-  pic_catch {
+  pic_catch(e) {
     /* error! */
     xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
-    pic_raise(pic, pic_err(pic));
+    pic_raise(pic, e);
   }
 EOL
 }

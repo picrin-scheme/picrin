@@ -836,6 +836,7 @@ pic_read(pic_state *pic, pic_value port)
   pic_value val;
   xFILE *file = pic_fileno(pic, port);
   int c;
+  pic_value e;
 
   reader_init(pic, &p);
 
@@ -852,9 +853,9 @@ pic_read(pic_state *pic, pic_value port)
       val = pic_eof_object(pic);
     }
   }
-  pic_catch {
+  pic_catch(e) {
     reader_destroy(pic, &p);
-    pic_raise(pic, pic_err(pic));
+    pic_raise(pic, e);
   }
 
   pic_leave(pic, ai);
@@ -865,14 +866,14 @@ pic_value
 pic_read_cstr(pic_state *pic, const char *str)
 {
   pic_value port = pic_open_port(pic, xfopen_buf(pic, str, strlen(str), "r"));
-  pic_value form;
+  pic_value form, e;
 
   pic_try {
     form = pic_read(pic, port);
   }
-  pic_catch {
+  pic_catch(e) {
     pic_close_port(pic, port);
-    pic_raise(pic, pic_err(pic));
+    pic_raise(pic, e);
   }
 
   pic_close_port(pic, port);

@@ -255,7 +255,7 @@ pic_number_string_to_number(pic_state *pic)
   int radix = 10;
   long num;
   char *eptr;
-  pic_value flo;
+  pic_value flo, e;
 
   pic_get_args(pic, "z|i", &str, &radix);
 
@@ -269,7 +269,7 @@ pic_number_string_to_number(pic_state *pic)
   pic_try {
     flo = pic_read_cstr(pic, str);
   }
-  pic_catch {
+  pic_catch(e) {
     /* swallow error */
     flo = pic_false_value(pic);
   }

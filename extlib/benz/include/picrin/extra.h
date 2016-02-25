@@ -78,20 +78,20 @@ xFILE *xfopen_null(pic_state *, const char *mode);
   do {                                                                  \
     extern pic_value pic_start_try(pic_state *, PIC_JMPBUF *);          \
     extern void pic_end_try(pic_state *, pic_value);                    \
+    extern pic_value pic_err(pic_state *);                              \
     PIC_JMPBUF jmp;                                                     \
     if (PIC_SETJMP(pic, jmp) == 0) {                                    \
       pic_value pic_try_cookie_ = pic_start_try(pic, &jmp);
-#define pic_catch pic_catch_(PIC_GENSYM(label))
-#define pic_catch_(label)                                 \
+#define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
+#define pic_catch_(e, label)                              \
       pic_end_try(pic, pic_try_cookie_);                  \
     } else {                                              \
+      e = pic_err(pic);                                   \
       goto label;                                         \
     }                                                     \
   } while (0);                                            \
   if (0)                                                  \
   label:
-
-pic_value pic_err(pic_state *);
 
 /* for debug */
 

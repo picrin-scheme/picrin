@@ -26,6 +26,7 @@ main(int argc, char *argv[], char **envp)
 {
   char t;
   pic_state *pic;
+  pic_value e;
   int status;
 
   pic = pic_open(pic_default_allocf, NULL);
@@ -43,7 +44,7 @@ main(int argc, char *argv[], char **envp)
 
     status = 0;
   }
-  pic_catch {
+  pic_catch(e) {
     pic_print_error(pic, xstderr);
     status = 1;
   }
