@@ -28,6 +28,7 @@ struct object {
     struct basic basic;
     struct identifier id;
     struct string str;
+    struct rope rope;
     struct blob blob;
     struct pair pair;
     struct vector vec;
@@ -325,6 +326,19 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_STRING: {
+    LOOP(obj->u.str.rope);
+    break;
+  }
+  case PIC_TYPE_NODE: {
+    if (obj->u.rope.u.node.left) {
+      gc_mark_object(pic, (struct object *)obj->u.rope.u.node.left);
+    }
+    if (obj->u.rope.u.node.right) {
+      LOOP((struct object *)obj->u.rope.u.node.right);
+    }
+    break;
+  }
+  case PIC_TYPE_LEAF: {
     break;
   }
   case PIC_TYPE_VECTOR: {
@@ -515,10 +529,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_free(pic, obj->u.blob.data);
     break;
   }
-  case PIC_TYPE_STRING: {
-    pic_rope_decref(pic, obj->u.str.rope);
-    break;
-  }
   case PIC_TYPE_ENV: {
     kh_destroy(env, &obj->u.env.map);
     break;
@@ -545,7 +555,12 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_irep_decref(pic, obj->u.proc.u.i.irep);
     break;
   }
+  case PIC_TYPE_LEAF: {
+    pic_chunk_decref(pic, obj->u.rope.u.leaf.chunk);
+    break;
+  }
 
+  case PIC_TYPE_STRING:
   case PIC_TYPE_PAIR:
   case PIC_TYPE_CXT:
   case PIC_TYPE_PORT:
@@ -554,6 +569,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_RECORD:
   case PIC_TYPE_CP:
   case PIC_TYPE_FUNC:
+  case PIC_TYPE_NODE:
     break;
 
   default:

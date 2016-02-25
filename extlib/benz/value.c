@@ -255,6 +255,10 @@ pic_typename(pic_state *pic, int type)
     return "record";
   case PIC_TYPE_CP:
     return "checkpoint";
+  case PIC_TYPE_NODE:
+    return "rope-node";
+  case PIC_TYPE_LEAF:
+    return "rope-leaf";
   default:
     pic_error(pic, "pic_typename: invalid type given", 1, pic_int_value(pic, type));
   }

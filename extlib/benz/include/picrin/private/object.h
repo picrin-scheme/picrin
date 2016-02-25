@@ -60,6 +60,20 @@ struct string {
   struct rope *rope;
 };
 
+struct rope {
+  OBJECT_HEADER
+  int weight;
+  union {
+    struct {
+      struct chunk *chunk;
+      const char *str;
+    } leaf;
+    struct {
+      struct rope *left, *right;
+    } node;
+  } u;
+};
+
 struct dict {
   OBJECT_HEADER
   khash_t(dict) hash;
@@ -198,8 +212,8 @@ void pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env)
 pic_value pic_find_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_id_name(pic_state *, pic_value id);
 
-void pic_rope_incref(pic_state *, struct rope *);
-void pic_rope_decref(pic_state *, struct rope *);
+void pic_chunk_incref(pic_state *, struct chunk *);
+void pic_chunk_decref(pic_state *, struct chunk *);
 
 #define pic_func_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_FUNC)
 #define pic_irep_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_IREP)
