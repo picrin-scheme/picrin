@@ -198,7 +198,7 @@ void pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env)
 pic_value pic_find_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_id_name(pic_state *, pic_value id);
 
-void pic_rope_incref(pic_state *, struct rope *);
+struct rope *pic_rope_incref(struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);
 
 #define pic_func_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_FUNC)

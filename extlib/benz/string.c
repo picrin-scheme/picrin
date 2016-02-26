@@ -7,8 +7,8 @@
 #include "picrin/private/object.h"
 
 struct chunk {
-  char *str;
   int refcnt;
+  const char *str;
   int len;
   char buf[1];
 };
@@ -16,9 +16,16 @@ struct chunk {
 struct rope {
   int refcnt;
   int weight;
-  struct chunk *chunk;
-  int offset;
-  struct rope *left, *right;
+  bool isleaf;
+  union {
+    struct {
+      struct chunk *chunk;
+      int offset;
+    } leaf;
+    struct {
+      struct rope *left, *right;
+    } node;
+  } u;
 };
 
 #define CHUNK_INCREF(c) do {                    \
@@ -31,22 +38,22 @@ struct rope {
     }                                           \
   } while (0)
 
-void
-pic_rope_incref(pic_state *PIC_UNUSED(pic), struct rope *x) {
-  x->refcnt++;
+struct rope *
+pic_rope_incref(struct rope *rope) {
+  rope->refcnt++;
+  return rope;
 }
 
 void
-pic_rope_decref(pic_state *pic, struct rope *x) {
-  if (! --x->refcnt) {
-    if (x->chunk) {
-      CHUNK_DECREF(x->chunk);
-      pic_free(pic, x);
-      return;
+pic_rope_decref(pic_state *pic, struct rope *rope) {
+  if (! --rope->refcnt) {
+    if (rope->isleaf) {
+      CHUNK_DECREF(rope->u.leaf.chunk);
+    } else {
+      pic_rope_decref(pic, rope->u.node.left);
+      pic_rope_decref(pic, rope->u.node.right);
     }
-    pic_rope_decref(pic, x->left);
-    pic_rope_decref(pic, x->right);
-    pic_free(pic, x);
+    pic_free(pic, rope);
   }
 }
 
@@ -60,8 +67,9 @@ make_chunk(pic_state *pic, const char *str, int len)
   c->str = c->buf;
   c->len = len;
   c->buf[len] = 0;
-  memcpy(c->buf, str, len);
-
+  if (str) {
+    memcpy(c->buf, str, len);
+  }
   return c;
 }
 
@@ -70,7 +78,7 @@ make_chunk_lit(pic_state *pic, const char *str, int len)
 {
   struct chunk *c;
 
-  c = pic_malloc(pic, sizeof(struct chunk));
+  c = pic_malloc(pic, offsetof(struct chunk, buf));
   c->refcnt = 1;
   c->str = (char *)str;
   c->len = len;
@@ -79,19 +87,38 @@ make_chunk_lit(pic_state *pic, const char *str, int len)
 }
 
 static struct rope *
-make_rope(pic_state *pic, struct chunk *c)
+make_rope_leaf(pic_state *pic, struct chunk *c)
 {
-  struct rope *x;
+  struct rope *rope;
 
-  x = pic_malloc(pic, sizeof(struct rope));
-  x->refcnt = 1;
-  x->left = NULL;
-  x->right = NULL;
-  x->weight = c->len;
-  x->offset = 0;
-  x->chunk = c;                 /* delegate ownership */
+  rope = pic_malloc(pic, sizeof(struct rope));
+  rope->refcnt = 1;
+  rope->weight = c->len;
+  rope->isleaf = true;
+  rope->u.leaf.offset = 0;
+  rope->u.leaf.chunk = c;          /* delegate ownership */
 
-  return x;
+  return rope;
+}
+
+static struct rope *
+make_rope_node(pic_state *pic, struct rope *left, struct rope *right)
+{
+  struct rope *rope;
+
+  if (left == 0)
+    return pic_rope_incref(right);
+  if (right == 0)
+    return pic_rope_incref(left);
+
+  rope = pic_malloc(pic, sizeof(struct rope));
+  rope->refcnt = 1;
+  rope->weight = left->weight + right->weight;
+  rope->isleaf = false;
+  rope->u.node.left = pic_rope_incref(left);
+  rope->u.node.right = pic_rope_incref(right);
+
+  return rope;
 }
 
 static pic_value
@@ -106,110 +133,85 @@ make_str(pic_state *pic, struct rope *rope)
 }
 
 static struct rope *
-rope_cat(pic_state *pic, struct rope *x, struct rope *y)
+merge(pic_state *pic, struct rope *left, struct rope *right)
 {
-  struct rope *z;
-
-  z = pic_malloc(pic, sizeof(struct rope));
-  z->refcnt = 1;
-  z->left = x;
-  z->right = y;
-  z->weight = x->weight + y->weight;
-  z->offset = 0;
-  z->chunk = NULL;
-
-  pic_rope_incref(pic, x);
-  pic_rope_incref(pic, y);
-
-  return z;
+  return make_rope_node(pic, left, right);
 }
 
 static struct rope *
-rope_sub(pic_state *pic, struct rope *x, int i, int j)
+slice(pic_state *pic, struct rope *rope, int i, int j)
 {
   assert(i <= j);
-  assert(j <= x->weight);
+  assert(j <= rope->weight);
 
-  if (i == 0 && x->weight == j) {
-    pic_rope_incref(pic, x);
-    return x;
+  if (i == 0 && rope->weight == j) {
+    return pic_rope_incref(rope);
   }
 
-  if (x->chunk) {
+  if (rope->isleaf) {
     struct rope *y;
 
-    y = pic_malloc(pic, sizeof(struct rope));
-    y->refcnt = 1;
-    y->left = NULL;
-    y->right = NULL;
+    y = make_rope_leaf(pic, rope->u.leaf.chunk);
     y->weight = j - i;
-    y->offset = x->offset + i;
-    y->chunk = x->chunk;
+    y->u.leaf.offset = rope->u.leaf.offset + i;
 
-    CHUNK_INCREF(x->chunk);
+    CHUNK_INCREF(rope->u.leaf.chunk);
 
     return y;
   }
 
-  if (j <= x->left->weight) {
-    return rope_sub(pic, x->left, i, j);
-  }
-  else if (x->left->weight <= i) {
-    return rope_sub(pic, x->right, i - x->left->weight, j - x->left->weight);
-  }
-  else {
+  if (j <= rope->u.node.left->weight) {
+    return slice(pic, rope->u.node.left, i, j);
+  } else if (rope->u.node.left->weight <= i) {
+    return slice(pic, rope->u.node.right, i - rope->u.node.left->weight, j - rope->u.node.left->weight);
+  } else {
     struct rope *r, *l;
 
-    l = rope_sub(pic, x->left, i, x->left->weight);
-    r = rope_sub(pic, x->right, 0, j - x->left->weight);
-    x = rope_cat(pic, l, r);
+    l = slice(pic, rope->u.node.left, i, rope->u.node.left->weight);
+    r = slice(pic, rope->u.node.right, 0, j - rope->u.node.left->weight);
+    rope = merge(pic, l, r);
 
     pic_rope_decref(pic, l);
     pic_rope_decref(pic, r);
 
-    return x;
+    return rope;
   }
 }
 
 static void
-flatten(pic_state *pic, struct rope *x, struct chunk *c, int offset)
+flatten(pic_state *pic, struct rope *rope, struct chunk *c, int offset)
 {
-  if (x->chunk) {
-    memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
-    CHUNK_DECREF(x->chunk);
-
-    x->chunk = c;
-    x->offset = offset;
+  if (rope->isleaf) {
+    memcpy(c->buf + offset, rope->u.leaf.chunk->str + rope->u.leaf.offset, rope->weight);
+    CHUNK_DECREF(rope->u.leaf.chunk);
+    rope->u.leaf.chunk = c;
+    rope->u.leaf.offset = offset;
     CHUNK_INCREF(c);
-    return;
-  }
-  flatten(pic, x->left, c, offset);
-  flatten(pic, x->right, c, offset + x->left->weight);
+  } else {
+    flatten(pic, rope->u.node.left, c, offset);
+    flatten(pic, rope->u.node.right, c, offset + rope->u.node.left->weight);
 
-  pic_rope_decref(pic, x->left);
-  pic_rope_decref(pic, x->right);
-  x->left = x->right = NULL;
-  x->chunk = c;
-  x->offset = offset;
-  CHUNK_INCREF(c);
+    pic_rope_decref(pic, rope->u.node.left);
+    pic_rope_decref(pic, rope->u.node.right);
+    rope->isleaf = true;
+    rope->u.leaf.chunk = c;
+    rope->u.leaf.offset = offset;
+    CHUNK_INCREF(c);
+  }
 }
 
 static const char *
-rope_cstr(pic_state *pic, struct rope *x)
+rope_cstr(pic_state *pic, struct rope *rope)
 {
   struct chunk *c;
 
-  if (x->chunk && x->offset == 0 && x->weight == x->chunk->len) {
-    return x->chunk->str;       /* reuse cached chunk */
+  if (rope->isleaf && rope->u.leaf.offset == 0 && rope->weight == rope->u.leaf.chunk->len) {
+    return rope->u.leaf.chunk->str; /* reuse cached chunk */
   }
 
-  c = pic_malloc(pic, offsetof(struct chunk, buf) + x->weight + 1);
-  c->refcnt = 1;
-  c->len = x->weight;
-  c->str = c->buf;
-  c->str[c->len] = '\0';
+  c = make_chunk(pic, 0, rope->weight);
 
-  flatten(pic, x, c, 0);
+  flatten(pic, rope, c, 0);
 
   CHUNK_DECREF(c);
   return c->str;
@@ -218,7 +220,7 @@ rope_cstr(pic_state *pic, struct rope *x)
 static void
 str_update(pic_state *pic, pic_value dst, pic_value src)
 {
-  pic_rope_incref(pic, pic_str_ptr(pic, src)->rope);
+  pic_rope_incref(pic_str_ptr(pic, src)->rope);
   pic_rope_decref(pic, pic_str_ptr(pic, dst)->rope);
   pic_str_ptr(pic, dst)->rope = pic_str_ptr(pic, src)->rope;
 }
@@ -236,7 +238,37 @@ pic_str_value(pic_state *pic, const char *str, int len)
     }
     c = make_chunk_lit(pic, str, -len);
   }
-  return make_str(pic, make_rope(pic, c));
+  return make_str(pic, make_rope_leaf(pic, c));
+}
+
+pic_value
+pic_strf_value(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  pic_value str;
+
+  va_start(ap, fmt);
+  str = pic_vstrf_value(pic, fmt, ap);
+  va_end(ap);
+
+  return str;
+}
+
+pic_value
+pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
+{
+  pic_value str;
+  xFILE *file;
+  const char *buf;
+  int len;
+
+  file = xfopen_buf(pic, NULL, 0, "w");
+
+  xvfprintf(pic, file, fmt, ap);
+  xfget_buf(pic, file, &buf, &len);
+  str = pic_str_value(pic, buf, len);
+  xfclose(pic, file);
+  return str;
 }
 
 int
@@ -246,19 +278,19 @@ pic_str_len(pic_state *PIC_UNUSED(pic), pic_value str)
 }
 
 char
-pic_str_ref(pic_state *pic, pic_value str, int i)
+pic_str_ref(pic_state *PIC_UNUSED(pic), pic_value str, int i)
 {
   struct rope *rope = pic_str_ptr(pic, str)->rope;
 
   while (i < rope->weight) {
-    if (rope->chunk) {
-      return rope->chunk->str[rope->offset + i];
+    if (rope->isleaf) {
+      return rope->u.leaf.chunk->str[rope->u.leaf.offset + i];
     }
-    if (i < rope->left->weight) {
-      rope = rope->left;
+    if (i < rope->u.node.left->weight) {
+      rope = rope->u.node.left;
     } else {
-      i -= rope->left->weight;
-      rope = rope->right;
+      i -= rope->u.node.left->weight;
+      rope = rope->u.node.right;
     }
   }
   PIC_UNREACHABLE();
@@ -267,13 +299,13 @@ pic_str_ref(pic_state *pic, pic_value str, int i)
 pic_value
 pic_str_cat(pic_state *pic, pic_value a, pic_value b)
 {
-  return make_str(pic, rope_cat(pic, pic_str_ptr(pic, a)->rope, pic_str_ptr(pic, b)->rope));
+  return make_str(pic, merge(pic, pic_str_ptr(pic, a)->rope, pic_str_ptr(pic, b)->rope));
 }
 
 pic_value
 pic_str_sub(pic_state *pic, pic_value str, int s, int e)
 {
-  return make_str(pic, rope_sub(pic, pic_str_ptr(pic, str)->rope, s, e));
+  return make_str(pic, slice(pic, pic_str_ptr(pic, str)->rope, s, e));
 }
 
 int
@@ -299,36 +331,6 @@ const char *
 pic_str(pic_state *pic, pic_value str)
 {
   return rope_cstr(pic, pic_str_ptr(pic, str)->rope);
-}
-
-pic_value
-pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
-{
-  pic_value str;
-  xFILE *file;
-  const char *buf;
-  int len;
-
-  file = xfopen_buf(pic, NULL, 0, "w");
-
-  xvfprintf(pic, file, fmt, ap);
-  xfget_buf(pic, file, &buf, &len);
-  str = pic_str_value(pic, buf, len);
-  xfclose(pic, file);
-  return str;
-}
-
-pic_value
-pic_strf_value(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-  pic_value str;
-
-  va_start(ap, fmt);
-  str = pic_vstrf_value(pic, fmt, ap);
-  va_end(ap);
-
-  return str;
 }
 
 static pic_value
