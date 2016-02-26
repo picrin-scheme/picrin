@@ -9,15 +9,15 @@
 struct chunk {
   char *str;
   int refcnt;
-  size_t len;
+  int len;
   char buf[1];
 };
 
 struct rope {
   int refcnt;
-  size_t weight;
+  int weight;
   struct chunk *chunk;
-  size_t offset;
+  int offset;
   struct rope *left, *right;
 };
 
@@ -26,9 +26,8 @@ struct rope {
   } while (0)
 
 #define CHUNK_DECREF(c) do {                    \
-    struct chunk *c_ = (c);                 \
-    if (! --c_->refcnt) {                       \
-      pic_free(pic, c_);                        \
+    if (! --(c)->refcnt) {                      \
+      pic_free(pic, (c));                       \
     }                                           \
   } while (0)
 
@@ -52,7 +51,7 @@ pic_rope_decref(pic_state *pic, struct rope *x) {
 }
 
 static struct chunk *
-pic_make_chunk(pic_state *pic, const char *str, size_t len)
+make_chunk(pic_state *pic, const char *str, int len)
 {
   struct chunk *c;
 
@@ -67,7 +66,7 @@ pic_make_chunk(pic_state *pic, const char *str, size_t len)
 }
 
 static struct chunk *
-pic_make_chunk_lit(pic_state *pic, const char *str, size_t len)
+make_chunk_lit(pic_state *pic, const char *str, int len)
 {
   struct chunk *c;
 
@@ -80,7 +79,7 @@ pic_make_chunk_lit(pic_state *pic, const char *str, size_t len)
 }
 
 static struct rope *
-pic_make_rope(pic_state *pic, struct chunk *c)
+make_rope(pic_state *pic, struct chunk *c)
 {
   struct rope *x;
 
@@ -96,7 +95,7 @@ pic_make_rope(pic_state *pic, struct chunk *c)
 }
 
 static pic_value
-pic_make_str(pic_state *pic, struct rope *rope)
+make_str(pic_state *pic, struct rope *rope)
 {
   struct string *str;
 
@@ -104,29 +103,6 @@ pic_make_str(pic_state *pic, struct rope *rope)
   str->rope = rope;             /* delegate ownership */
 
   return pic_obj_value(str);
-}
-
-static size_t
-rope_len(struct rope *x)
-{
-  return x->weight;
-}
-
-static char
-rope_at(struct rope *x, size_t i)
-{
-  while (i < x->weight) {
-    if (x->chunk) {
-      return x->chunk->str[x->offset + i];
-    }
-    if (i < x->left->weight) {
-      x = x->left;
-    } else {
-      i -= x->left->weight;
-      x = x->right;
-    }
-  }
-  return -1;
 }
 
 static struct rope *
@@ -149,7 +125,7 @@ rope_cat(pic_state *pic, struct rope *x, struct rope *y)
 }
 
 static struct rope *
-rope_sub(pic_state *pic, struct rope *x, size_t i, size_t j)
+rope_sub(pic_state *pic, struct rope *x, int i, int j)
 {
   assert(i <= j);
   assert(j <= x->weight);
@@ -196,7 +172,7 @@ rope_sub(pic_state *pic, struct rope *x, size_t i, size_t j)
 }
 
 static void
-flatten(pic_state *pic, struct rope *x, struct chunk *c, size_t offset)
+flatten(pic_state *pic, struct rope *x, struct chunk *c, int offset)
 {
   if (x->chunk) {
     memcpy(c->str + offset, x->chunk->str + x->offset, x->weight);
@@ -253,44 +229,51 @@ pic_str_value(pic_state *pic, const char *str, int len)
   struct chunk *c;
 
   if (len > 0) {
-    c = pic_make_chunk(pic, str, len);
+    c = make_chunk(pic, str, len);
   } else {
     if (len == 0) {
       str = "";
     }
-    c = pic_make_chunk_lit(pic, str, -len);
+    c = make_chunk_lit(pic, str, -len);
   }
-  return pic_make_str(pic, pic_make_rope(pic, c));
+  return make_str(pic, make_rope(pic, c));
 }
 
 int
 pic_str_len(pic_state *PIC_UNUSED(pic), pic_value str)
 {
-  return rope_len(pic_str_ptr(pic, str)->rope);
+  return pic_str_ptr(pic, str)->rope->weight;
 }
 
 char
 pic_str_ref(pic_state *pic, pic_value str, int i)
 {
-  int c;
+  struct rope *rope = pic_str_ptr(pic, str)->rope;
 
-  c = rope_at(pic_str_ptr(pic, str)->rope, i);
-  if (c == -1) {
-    pic_error(pic, "index out of range", 1, pic_int_value(pic, i));
+  while (i < rope->weight) {
+    if (rope->chunk) {
+      return rope->chunk->str[rope->offset + i];
+    }
+    if (i < rope->left->weight) {
+      rope = rope->left;
+    } else {
+      i -= rope->left->weight;
+      rope = rope->right;
+    }
   }
-  return (char)c;
+  PIC_UNREACHABLE();
 }
 
 pic_value
 pic_str_cat(pic_state *pic, pic_value a, pic_value b)
 {
-  return pic_make_str(pic, rope_cat(pic, pic_str_ptr(pic, a)->rope, pic_str_ptr(pic, b)->rope));
+  return make_str(pic, rope_cat(pic, pic_str_ptr(pic, a)->rope, pic_str_ptr(pic, b)->rope));
 }
 
 pic_value
 pic_str_sub(pic_state *pic, pic_value str, int s, int e)
 {
-  return pic_make_str(pic, rope_sub(pic, pic_str_ptr(pic, str)->rope, s, e));
+  return make_str(pic, rope_sub(pic, pic_str_ptr(pic, str)->rope, s, e));
 }
 
 int
