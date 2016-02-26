@@ -20,7 +20,7 @@ struct rope {
   union {
     struct {
       struct chunk *chunk;
-      int offset;
+      const char *str;
     } leaf;
     struct {
       struct rope *left, *right;
@@ -80,7 +80,7 @@ make_chunk_lit(pic_state *pic, const char *str, int len)
 
   c = pic_malloc(pic, offsetof(struct chunk, buf));
   c->refcnt = 1;
-  c->str = (char *)str;
+  c->str = str;
   c->len = len;
 
   return c;
@@ -95,8 +95,8 @@ make_rope_leaf(pic_state *pic, struct chunk *c)
   rope->refcnt = 1;
   rope->weight = c->len;
   rope->isleaf = true;
-  rope->u.leaf.offset = 0;
-  rope->u.leaf.chunk = c;          /* delegate ownership */
+  rope->u.leaf.chunk = c;       /* delegate ownership */
+  rope->u.leaf.str = c->str;
 
   return rope;
 }
@@ -105,11 +105,6 @@ static struct rope *
 make_rope_node(pic_state *pic, struct rope *left, struct rope *right)
 {
   struct rope *rope;
-
-  if (left == 0)
-    return pic_rope_incref(right);
-  if (right == 0)
-    return pic_rope_incref(left);
 
   rope = pic_malloc(pic, sizeof(struct rope));
   rope->refcnt = 1;
@@ -135,29 +130,31 @@ make_str(pic_state *pic, struct rope *rope)
 static struct rope *
 merge(pic_state *pic, struct rope *left, struct rope *right)
 {
+  if (left == 0)
+    return pic_rope_incref(right);
+  if (right == 0)
+    return pic_rope_incref(left);
+
   return make_rope_node(pic, left, right);
 }
 
 static struct rope *
 slice(pic_state *pic, struct rope *rope, int i, int j)
 {
-  assert(i <= j);
-  assert(j <= rope->weight);
-
   if (i == 0 && rope->weight == j) {
     return pic_rope_incref(rope);
   }
 
   if (rope->isleaf) {
-    struct rope *y;
+    struct rope *r;
 
-    y = make_rope_leaf(pic, rope->u.leaf.chunk);
-    y->weight = j - i;
-    y->u.leaf.offset = rope->u.leaf.offset + i;
+    r = make_rope_leaf(pic, rope->u.leaf.chunk);
+    r->weight = j - i;
+    r->u.leaf.str += i;
 
     CHUNK_INCREF(rope->u.leaf.chunk);
 
-    return y;
+    return r;
   }
 
   if (j <= rope->u.node.left->weight) {
@@ -179,42 +176,27 @@ slice(pic_state *pic, struct rope *rope, int i, int j)
 }
 
 static void
-flatten(pic_state *pic, struct rope *rope, struct chunk *c, int offset)
+flatten(pic_state *pic, struct rope *rope, struct chunk *c, char *buf)
 {
   if (rope->isleaf) {
-    memcpy(c->buf + offset, rope->u.leaf.chunk->str + rope->u.leaf.offset, rope->weight);
+    memcpy(buf, rope->u.leaf.str, rope->weight);
+  } else {
+    flatten(pic, rope->u.node.left, c, buf);
+    flatten(pic, rope->u.node.right, c, buf + rope->u.node.left->weight);
+  }
+
+  if (rope->isleaf) {
     CHUNK_DECREF(rope->u.leaf.chunk);
     rope->u.leaf.chunk = c;
-    rope->u.leaf.offset = offset;
-    CHUNK_INCREF(c);
+    rope->u.leaf.str = buf;
   } else {
-    flatten(pic, rope->u.node.left, c, offset);
-    flatten(pic, rope->u.node.right, c, offset + rope->u.node.left->weight);
-
     pic_rope_decref(pic, rope->u.node.left);
     pic_rope_decref(pic, rope->u.node.right);
     rope->isleaf = true;
     rope->u.leaf.chunk = c;
-    rope->u.leaf.offset = offset;
-    CHUNK_INCREF(c);
+    rope->u.leaf.str = buf;
   }
-}
-
-static const char *
-rope_cstr(pic_state *pic, struct rope *rope)
-{
-  struct chunk *c;
-
-  if (rope->isleaf && rope->u.leaf.offset == 0 && rope->weight == rope->u.leaf.chunk->len) {
-    return rope->u.leaf.chunk->str; /* reuse cached chunk */
-  }
-
-  c = make_chunk(pic, 0, rope->weight);
-
-  flatten(pic, rope, c, 0);
-
-  CHUNK_DECREF(c);
-  return c->str;
+  CHUNK_INCREF(c);
 }
 
 static void
@@ -284,7 +266,7 @@ pic_str_ref(pic_state *PIC_UNUSED(pic), pic_value str, int i)
 
   while (i < rope->weight) {
     if (rope->isleaf) {
-      return rope->u.leaf.chunk->str[rope->u.leaf.offset + i];
+      return rope->u.leaf.str[i];
     }
     if (i < rope->u.node.left->weight) {
       rope = rope->u.node.left;
@@ -330,7 +312,19 @@ pic_str_hash(pic_state *pic, pic_value str)
 const char *
 pic_str(pic_state *pic, pic_value str)
 {
-  return rope_cstr(pic, pic_str_ptr(pic, str)->rope);
+  struct rope *rope = pic_str_ptr(pic, str)->rope;
+  struct chunk *c;
+
+  if (rope->isleaf && rope->u.leaf.str + rope->weight == rope->u.leaf.chunk->str + rope->u.leaf.chunk->len) {
+    return rope->u.leaf.str;    /* reuse cached chunk */
+  }
+
+  c = make_chunk(pic, 0, rope->weight);
+
+  flatten(pic, rope, c, c->buf);
+
+  CHUNK_DECREF(c);
+  return c->str;
 }
 
 static pic_value
