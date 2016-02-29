@@ -13,7 +13,7 @@ struct cont {
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
   size_t arena_idx;
-  struct code *ip;
+  const struct code *ip;
 
   int retc;
   pic_value *retv;

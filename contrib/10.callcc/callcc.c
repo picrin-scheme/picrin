@@ -20,7 +20,7 @@ struct fullcont {
   size_t ci_offset;
   ptrdiff_t ci_len;
 
-  struct code *ip;
+  const struct code *ip;
 
   struct object **arena;
   size_t arena_size, arena_idx;

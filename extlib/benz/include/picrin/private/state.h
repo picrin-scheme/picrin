@@ -23,7 +23,7 @@ struct lib {
 
 struct callinfo {
   int argc, retc;
-  struct code *ip;
+  const struct code *ip;
   pic_value *fp;
   struct irep *irep;
   struct context *cxt;
@@ -48,7 +48,7 @@ struct pic_state {
   struct callinfo *ci;
   struct callinfo *cibase, *ciend;
 
-  struct code *ip;
+  const struct code *ip;
 
   const char *lib;
 
@@ -62,7 +62,6 @@ struct pic_state {
   struct list_head ireps;
 
   xFILE files[XOPEN_MAX];
-  struct code iseq[2];          /* for pic_apply_trampoline */
 
   bool gc_enable;
   struct heap *heap;

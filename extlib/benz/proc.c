@@ -783,14 +783,10 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 pic_value
 pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
 {
+  static const struct code iseq[2] = { { OP_NOP, 0, 0 }, { OP_TAILCALL, -1, 0 } };
   pic_value *sp;
   struct callinfo *ci;
   int i;
-
-  pic->iseq[0].insn = OP_NOP;
-  pic->iseq[0].a = 0;
-  pic->iseq[1].insn = OP_TAILCALL;
-  pic->iseq[1].a = -1;
 
   *pic->sp++ = proc;
 
@@ -800,7 +796,7 @@ pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
   }
 
   ci = PUSHCI();
-  ci->ip = pic->iseq;
+  ci->ip = iseq;
   ci->fp = pic->sp;
   ci->retc = (int)argc;
 
