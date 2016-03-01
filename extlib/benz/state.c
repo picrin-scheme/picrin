@@ -292,14 +292,15 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->cp->depth = 0;
   pic->cp->in = pic->cp->out = NULL;
 
-  /* standard libraries */
-  pic_make_library(pic, "picrin.user");
-  pic_in_library(pic, "picrin.user");
+  /* user land */
+  pic_deflibrary(pic, "picrin.user");
 
   /* turn on GC */
   pic->gc_enable = true;
 
   pic_init_core(pic);
+
+  pic_in_library(pic, "picrin.user");
 
   pic_leave(pic, 0);            /* empty arena */
 
