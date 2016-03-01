@@ -172,6 +172,10 @@ pic_raise(pic_state *pic, pic_value err)
 
   stack = pic_call(pic, exc, 0);
 
+  if (pic_nil_p(pic, stack)) {
+    pic_panic(pic, "no exception handler");
+  }
+
   pic_dynamic_bind(pic, exc, pic_cdr(pic, stack), pic_lambda(pic, raise, 2, pic_car(pic, stack), err));
 
   PIC_UNREACHABLE();
@@ -191,6 +195,10 @@ pic_raise_continuable(pic_state *pic, pic_value err)
   pic_value stack, exc = pic_ref(pic, "picrin.base", "current-exception-handlers");
 
   stack = pic_call(pic, exc, 0);
+
+  if (pic_nil_p(pic, stack)) {
+    pic_panic(pic, "no exception handler");
+  }
 
   return pic_dynamic_bind(pic, exc, pic_cdr(pic, stack), pic_lambda(pic, raise_continuable, 2, pic_car(pic, stack), err));
 }
