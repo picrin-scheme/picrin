@@ -71,19 +71,22 @@ emit_irep()
 static void
 emit_code()
 {
-  size_t i, j;
+  size_t i, j, k = 0;
   struct code c;
 
-  printf("struct code pic_boot_code[] = {\n");
+  printf("struct code pic_boot_code[] = {");
 
   for (j = 0; j < nireps; ++j) {
     for (i = 0; i < ireps[j].ncode; ++i) {
       c = ireps[j].code[i];
-      printf("  { %d, %d, %d },\n", c.insn, c.a, c.b);
+      if (k++ % 8 == 0) {
+        printf("\n ");
+      }
+      printf(" { %d, %d, %d },", c.insn, c.a, c.b);
     }
   }
 
-  printf("{ 0, 0, 0 } };\n\n");
+  printf("\n{ 0, 0, 0 } };\n\n");
 }
 
 static void
@@ -107,11 +110,13 @@ emit_ints()
 
   printf("int pic_boot_ints[] = {\n");
 
+  printf("  ");
   for (j = 0; j < nireps; ++j) {
     for (i = 0; i < ireps[j].nints; ++i) {
-      printf("  %d,\n", ireps[j].ints[i]);
+      printf("%d,", ireps[j].ints[i]);
     }
   }
+  printf("\n");
 
   printf("0 };\n\n");
 }
@@ -135,24 +140,27 @@ emit_nums()
 static void
 emit_pool(pic_state *pic)
 {
-  size_t i, j;
+  size_t i, j, k = 0;
 
-  printf("struct object *pic_boot_pool[] = {\n");
+  printf("struct object *pic_boot_pool[] = {");
 
   for (j = 0; j < nireps; ++j) {
     for (i = 0; i < ireps[j].npool; ++i) {
       pic_value obj = pic_obj_value(ireps[j].pool[i]);
+      if (k++ % 5 == 0) {
+        printf("\n ");
+      }
       if (pic_sym_p(pic, obj)) {
-        printf("  (struct object *)\"M%s\",\n", pic_sym(pic, obj));
+        printf(" (struct object *)\"M%s\",", pic_sym(pic, obj));
       } else if (pic_str_p(pic, obj)) {
-        printf("  (struct object *)\"S%s\",\n", pic_str(pic, obj));
+        printf(" (struct object *)\"S%s\",", pic_str(pic, obj));
       } else {
         pic_error(pic, "symbol or string required", 0);
       }
     }
   }
 
-  printf("0 };\n\n");
+  printf("\n0 };\n\n");
 }
 
 static void
