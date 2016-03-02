@@ -46,9 +46,8 @@ src/init_contrib.c:
 lib/libbenz.so: $(BENZ_OBJS)
 	$(CC) -shared $(CFLAGS) -o $@ $(BENZ_OBJS) $(LDFLAGS)
 
-extlib/benz/boot.o: extlib/benz/boot.c
-	cd extlib/benz; perl boot.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+extlib/benz/boot.c: tools/built-in.scm
+	$(MAKE) -C tools
 
 $(BENZ_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): extlib/benz/include/picrin.h extlib/benz/include/picrin/*.h
 
@@ -97,5 +96,6 @@ clean:
 	rm -f $(BENZ_OBJS)
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
+	$(MAKE) -C tools clean
 
 .PHONY: all install clean run test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)
