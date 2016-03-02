@@ -35,14 +35,14 @@ emit_irep()
 {
   size_t j;
 
-  printf("static struct irep *boot_irepp[];\n");
-  printf("static struct code boot_code[];\n");
-  printf("static int boot_ints[];\n");
-  printf("static double boot_nums[];\n");
-  printf("static struct object *boot_pool[];\n");
+  printf("extern struct irep *pic_boot_irepp[];\n");
+  printf("extern struct code pic_boot_code[];\n");
+  printf("extern int pic_boot_ints[];\n");
+  printf("extern double pic_boot_nums[];\n");
+  printf("extern struct object *pic_boot_pool[];\n");
   printf("\n");
 
-  printf("static struct irep boot_irep[] = {\n");
+  printf("struct irep pic_boot_irep[] = {\n");
 
   ncode = nirepp = nints = nnums = npool = 0;
 
@@ -50,11 +50,11 @@ emit_irep()
     printf("  {");
     printf(" { 0, 0 }, 1,");
     printf(" %d, %d, %d, %d,", ireps[j].argc, ireps[j].localc, ireps[j].capturec, ireps[j].varg);
-    printf(" &boot_code[%zu],", ncode);
-    printf(" &boot_irepp[%zu],", nirepp);
-    printf(" &boot_ints[%zu],", nints);
-    printf(" &boot_nums[%zu],", nnums);
-    printf(" &boot_pool[%zu],", npool);
+    printf(" &pic_boot_code[%zu],", ncode);
+    printf(" &pic_boot_irepp[%zu],", nirepp);
+    printf(" &pic_boot_ints[%zu],", nints);
+    printf(" &pic_boot_nums[%zu],", nnums);
+    printf(" &pic_boot_pool[%zu],", npool);
     printf(" %zu, %zu, %zu, %zu, %zu,", ireps[j].ncode, ireps[j].nirep, ireps[j].nints, ireps[j].nnums, ireps[j].npool);
     printf(" },\n");
 
@@ -74,7 +74,7 @@ emit_code()
   size_t i, j;
   struct code c;
 
-  printf("static struct code boot_code[] = {\n");
+  printf("struct code pic_boot_code[] = {\n");
 
   for (j = 0; j < nireps; ++j) {
     for (i = 0; i < ireps[j].ncode; ++i) {
@@ -91,10 +91,10 @@ emit_irepp()
 {
   size_t i;
 
-  printf("static struct irep *boot_irepp[] = {\n");
+  printf("struct irep *pic_boot_irepp[] = {\n");
 
   for (i = 1; i < nireps; ++i) {
-    printf("  &boot_irep[%zu],\n", i);
+    printf("  &pic_boot_irep[%zu],\n", i);
   }
 
   printf("0 };\n\n");
@@ -105,7 +105,7 @@ emit_ints()
 {
   size_t i, j;
 
-  printf("static int boot_ints[] = {\n");
+  printf("int pic_boot_ints[] = {\n");
 
   for (j = 0; j < nireps; ++j) {
     for (i = 0; i < ireps[j].nints; ++i) {
@@ -121,7 +121,7 @@ emit_nums()
 {
   size_t i, j;
 
-  printf("static double boot_nums[] = {\n");
+  printf("double pic_boot_nums[] = {\n");
 
   for (j = 0; j < nireps; ++j) {
     for (i = 0; i < ireps[j].nnums; ++i) {
@@ -137,7 +137,7 @@ emit_pool(pic_state *pic)
 {
   size_t i, j;
 
-  printf("static struct object *boot_pool[] = {\n");
+  printf("struct object *pic_boot_pool[] = {\n");
 
   for (j = 0; j < nireps; ++j) {
     for (i = 0; i < ireps[j].npool; ++i) {
@@ -196,24 +196,24 @@ print_footer()
   puts("pic_builtins(pic_state *pic) {");
   puts("  size_t i;");
   puts("");
-  puts("  for (i = 0; i < sizeof(boot_pool) / sizeof(boot_pool[0]) - 1; ++i) {");
-  puts("    const char *str = (const char *)boot_pool[i];");
+  puts("  for (i = 0; i < sizeof(pic_boot_pool) / sizeof(pic_boot_pool[0]) - 1; ++i) {");
+  puts("    const char *str = (const char *)pic_boot_pool[i];");
   puts("    if (*str == 'M') {");
-  puts("      boot_pool[i] = (struct object *)pic_sym_ptr(pic, pic_intern_cstr(pic, str + 1));");
+  puts("      pic_boot_pool[i] = (struct object *)pic_sym_ptr(pic, pic_intern_cstr(pic, str + 1));");
   puts("    } else {");
-  puts("      boot_pool[i] = (struct object *)pic_str_ptr(pic, pic_cstr_value(pic, str + 1));");
+  puts("      pic_boot_pool[i] = (struct object *)pic_str_ptr(pic, pic_cstr_value(pic, str + 1));");
   puts("    }");
   puts("  }");
   puts("");
-  puts("  for (i = 0; i < sizeof(boot_irep) / sizeof(boot_irep[0]) - 1; ++i) {");
-  puts("    struct irep *irep = boot_irep + i;");
+  puts("  for (i = 0; i < sizeof(pic_boot_irep) / sizeof(pic_boot_irep[0]) - 1; ++i) {");
+  puts("    struct irep *irep = pic_boot_irep + i;");
   puts("    irep->list.next = pic->ireps.next;");
   puts("    irep->list.prev = &pic->ireps;");
   puts("    irep->list.next->prev = &irep->list;");
   puts("    irep->list.prev->next = &irep->list;");
   puts("  }");
   puts("");
-  puts("  return pic_call(pic, pic_make_proc_irep(pic, boot_irep, 0), 0);");
+  puts("  return pic_call(pic, pic_make_proc_irep(pic, pic_boot_irep, 0), 0);");
   puts("}");
   puts("");
   puts("void");
