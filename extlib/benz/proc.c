@@ -217,8 +217,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_error(pic, "pic_get_args: invalid argument specifier given", 1, pic_char_value(pic, c));
     }
 
-    if (format[1] == '+') {
+    if (*format == '+') {
       pic_value *p;
+      format++;
       p = va_arg(ap, pic_value*);
       *p = GET_OPERAND(pic, i);
     }
