@@ -25,7 +25,7 @@ LDFLAGS += -lm
 
 prefix ?= /usr/local
 
-all: CFLAGS += -O2 -flto -DNDEBUG=1
+all: CFLAGS += -O2 -DNDEBUG=1
 all: bin/picrin
 
 debug: CFLAGS += -O0 -g
