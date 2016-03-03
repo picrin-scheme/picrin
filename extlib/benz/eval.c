@@ -961,7 +961,7 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 static void
 codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 {
-  int len = (int)pic_length(pic, obj);
+  int len = pic_length(pic, obj);
   pic_value elt, it, functor;
 
   pic_for_each (elt, pic_cdr(pic, obj), it) {
@@ -974,22 +974,22 @@ codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
     sym = pic_list_ref(pic, functor, 1);
 
-    VM("cons", OP_CONS)
-    VM("car", OP_CAR)
-    VM("cdr", OP_CDR)
-    VM("null?", OP_NILP)
-    VM("symbol?", OP_SYMBOLP)
-    VM("pair?", OP_PAIRP)
-    VM("not", OP_NOT)
-    VM("=", OP_EQ)
-    VM("<", OP_LT)
-    VM("<=", OP_LE)
-    VM(">", OP_GT)
-    VM(">=", OP_GE)
-    VM("+", OP_ADD)
-    VM("-", OP_SUB)
-    VM("*", OP_MUL)
-    VM("/", OP_DIV)
+    VM("picrin.base/cons", OP_CONS)
+    VM("picrin.base/car", OP_CAR)
+    VM("picrin.base/cdr", OP_CDR)
+    VM("picrin.base/null?", OP_NILP)
+    VM("picrin.base/symbol?", OP_SYMBOLP)
+    VM("picrin.base/pair?", OP_PAIRP)
+    VM("picrin.base/not", OP_NOT)
+    VM("picrin.base/=", OP_EQ)
+    VM("picrin.base/<", OP_LT)
+    VM("picrin.base/<=", OP_LE)
+    VM("picrin.base/>", OP_GT)
+    VM("picrin.base/>=", OP_GE)
+    VM("picrin.base/+", OP_ADD)
+    VM("picrin.base/-", OP_SUB)
+    VM("picrin.base/*", OP_MUL)
+    VM("picrin.base//", OP_DIV)
   }
 
   emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);

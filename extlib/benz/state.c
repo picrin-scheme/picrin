@@ -88,12 +88,6 @@ pic_add_feature(pic_state *pic, const char *feature)
     pic_put_identifier(pic, nick, real, env);           \
   } while (0)
 
-#define declare_vm_procedure(name) do {         \
-    pic_value sym;                              \
-    sym = pic_intern_lit(pic, name);            \
-    pic_put_identifier(pic, sym, sym, env);     \
-  } while (0)
-
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -138,23 +132,6 @@ pic_init_core(pic_state *pic)
   import_builtin_syntax("if");
   import_builtin_syntax("begin");
   import_builtin_syntax("define-macro");
-
-  declare_vm_procedure("cons");
-  declare_vm_procedure("car");
-  declare_vm_procedure("cdr");
-  declare_vm_procedure("null?");
-  declare_vm_procedure("symbol?");
-  declare_vm_procedure("pair?");
-  declare_vm_procedure("+");
-  declare_vm_procedure("-");
-  declare_vm_procedure("*");
-  declare_vm_procedure("/");
-  declare_vm_procedure("=");
-  declare_vm_procedure("<");
-  declare_vm_procedure(">");
-  declare_vm_procedure("<=");
-  declare_vm_procedure(">=");
-  declare_vm_procedure("not");
 
   DONE;
 
