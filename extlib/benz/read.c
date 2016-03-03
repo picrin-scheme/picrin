@@ -79,18 +79,6 @@ isdelim(int c)
   return c == EOF || strchr("();,|\" \t\n\r", c) != NULL; /* ignores "#", "'" */
 }
 
-static bool
-strcaseeq(const char *s1, const char *s2)
-{
-  char a, b;
-
-  while ((a = *s1++) * (b = *s2++)) {
-    if (tolower(a) != tolower(b))
-      return false;
-  }
-  return a == b;
-}
-
 static int
 case_fold(int c, struct reader_control *p)
 {
@@ -214,11 +202,10 @@ read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reade
 }
 
 static pic_value
-read_symbol(pic_state *pic, xFILE *file, int c, struct reader_control *p)
-{
+read_atom(pic_state *pic, xFILE *file, int c, struct reader_control *p) {
   int len;
   char *buf;
-  pic_value sym;
+  pic_value str;
 
   len = 1;
   buf = pic_malloc(pic, len + 1);
@@ -233,10 +220,28 @@ read_symbol(pic_state *pic, xFILE *file, int c, struct reader_control *p)
     buf[len] = 0;
   }
 
-  sym = pic_intern_cstr(pic, buf);
+  str = pic_str_value(pic, buf, len);
   pic_free(pic, buf);
 
-  return sym;
+  return str;
+}
+
+static pic_value
+read_symbol(pic_state *pic, xFILE *file, int c, struct reader_control *p)
+{
+  return pic_intern(pic, read_atom(pic, file, c, p));
+}
+
+static pic_value
+read_number(pic_state *pic, xFILE *file, int c, struct reader_control *p)
+{
+  pic_value str = read_atom(pic, file, c, p), num;
+
+  num = pic_funcall(pic, "picrin.base", "string->number", 1, str);
+  if (! pic_false_p(pic, num)) {
+    return num;
+  }
+  return pic_intern(pic, str);
 }
 
 static unsigned
@@ -254,119 +259,6 @@ read_uinteger(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNU
   }
 
   return u;
-}
-
-static pic_value
-read_unsigned(pic_state *pic, xFILE *file, int c, struct reader_control *PIC_UNUSED(p))
-{
-#define ATOF_BUF_SIZE (64)
-  char buf[ATOF_BUF_SIZE];
-  double flt;
-  int idx = 0;  /* index into buffer */
-  int dpe = 0;  /* the number of '.' or 'e' characters seen */
-
-  if (! isdigit(c)) {
-    read_error(pic, "expected one or more digits", pic_list(pic, 1, pic_char_value(pic, c)));
-  }
-  buf[idx++] = (char )c;
-  while (isdigit(c = peek(pic, file)) && idx < ATOF_BUF_SIZE) {
-    buf[idx++] = (char )next(pic, file);
-  }
-  if ('.' == peek(pic, file) && idx < ATOF_BUF_SIZE) {
-    dpe++;
-    buf[idx++] = (char )next(pic, file);
-    while (isdigit(c = peek(pic, file)) && idx < ATOF_BUF_SIZE) {
-      buf[idx++] = (char )next(pic, file);
-    }
-  }
-  c = peek(pic, file);
-
-  if ((c == 'e' || c == 'E') && idx < (ATOF_BUF_SIZE - 2)) {
-    dpe++;
-    buf[idx++] = (char )next(pic, file);
-    switch ((c = peek(pic, file))) {
-    case '-':
-    case '+':
-      buf[idx++] = (char )next(pic, file);
-      break;
-    default:
-      break;
-    }
-    if (! isdigit(peek(pic, file))) {
-      read_error(pic, "expected one or more digits", pic_list(pic, 1, pic_char_value(pic, c)));
-    }
-    while (isdigit(c = peek(pic, file)) && idx < ATOF_BUF_SIZE) {
-      buf[idx++] = (char )next(pic, file);
-    }
-  }
-  if (idx >= ATOF_BUF_SIZE)
-    read_error(pic, "number too large", pic_list(pic, 1, pic_str_value(pic, (const char *)buf, ATOF_BUF_SIZE)));
-
-  if (! isdelim(c))
-    read_error(pic, "non-delimiter character given after number", pic_list(pic, 1, pic_char_value(pic, c)));
-
-  buf[idx] = 0;
-  flt = PIC_CSTRING_TO_DOUBLE(buf);
-
-  if (dpe == 0 && INT_MIN <= flt && flt <= INT_MAX)
-    return pic_int_value(pic, flt);
-  return pic_float_value(pic, flt);
-}
-
-static pic_value
-read_number(pic_state *pic, xFILE *file, int c, struct reader_control *p)
-{
-  return read_unsigned(pic, file, c, p);
-}
-
-static pic_value
-negate(pic_state *pic, pic_value n)
-{
-  if (pic_int_p(pic, n) && (INT_MIN != pic_int(pic, n))) {
-    return pic_int_value(pic, -pic_int(pic, n));
-  } else {
-    return pic_float_value(pic, -pic_float(pic, n));
-  }
-}
-
-static pic_value
-read_minus(pic_state *pic, xFILE *file, int c, struct reader_control *p)
-{
-  pic_value sym;
-
-  if (isdigit(peek(pic, file))) {
-    return negate(pic, read_unsigned(pic, file, next(pic, file), p));
-  }
-  else {
-    sym = read_symbol(pic, file, c, p);
-    if (strcaseeq(pic_sym(pic, sym), "-inf.0")) {
-      return pic_float_value(pic, -(1.0 / 0.0));
-    }
-    if (strcaseeq(pic_sym(pic, sym), "-nan.0")) {
-      return pic_float_value(pic, -(0.0 / 0.0));
-    }
-    return sym;
-  }
-}
-
-static pic_value
-read_plus(pic_state *pic, xFILE *file, int c, struct reader_control *p)
-{
-  pic_value sym;
-
-  if (isdigit(peek(pic, file))) {
-    return read_unsigned(pic, file, next(pic, file), p);
-  }
-  else {
-    sym = read_symbol(pic, file, c, p);
-    if (strcaseeq(pic_sym(pic, sym), "+inf.0")) {
-      return pic_float_value(pic, 1.0 / 0.0);
-    }
-    if (strcaseeq(pic_sym(pic, sym), "+nan.0")) {
-      return pic_float_value(pic, 0.0 / 0.0);
-    }
-    return sym;
-  }
 }
 
 static pic_value
@@ -787,12 +679,10 @@ reader_table_init(void)
   reader_table[','] = read_unquote;
   reader_table['"'] = read_string;
   reader_table['|'] = read_pipe;
-  reader_table['+'] = read_plus;
-  reader_table['-'] = read_minus;
   reader_table['('] = read_pair;
   reader_table['#'] = read_dispatch;
-
-  /* read number */
+  reader_table['+'] = read_number;
+  reader_table['-'] = read_number;
   for (c = '0'; c <= '9'; ++c) {
     reader_table[c] = read_number;
   }

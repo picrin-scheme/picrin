@@ -248,6 +248,62 @@ pic_number_number_to_string(pic_state *pic)
   return str;
 }
 
+static bool
+strcaseeq(const char *s1, const char *s2)
+{
+  char a, b;
+
+  while ((a = *s1++) * (b = *s2++)) {
+    if (tolower(a) != tolower(b))
+      return false;
+  }
+  return a == b;
+}
+
+static pic_value
+string_to_number(pic_state *pic, const char *str)
+{
+  double flt;
+  const char *c = str;
+  bool isint = 1;
+
+  if (*c == '+' || *c == '-')
+    c++;
+
+  if (! isdigit(*c++)) {
+    return pic_false_value(pic);
+  }
+  while (isdigit(*c)) c++;
+
+  if (*c == '.') {
+    isint = false;
+    c++;
+    while (isdigit(*c)) c++;
+  }
+  if (*c == 'e' || *c == 'E') {
+    isint = false;
+    c++;
+    if (*c == '+' || *c == '-')
+      c++;
+    if (! isdigit(*c++)) {
+      return pic_false_value(pic);
+    }
+    while (isdigit(*c)) c++;
+  }
+
+  if (*c != '\0') {
+    return pic_false_value(pic);
+  }
+
+  flt = PIC_CSTRING_TO_DOUBLE(str);
+
+  if (isint && INT_MIN <= flt && flt <= INT_MAX) {
+    return pic_int_value(pic, flt);
+  } else {
+    return pic_float_value(pic, flt);
+  }
+}
+
 static pic_value
 pic_number_string_to_number(pic_state *pic)
 {
@@ -255,30 +311,24 @@ pic_number_string_to_number(pic_state *pic)
   int radix = 10;
   long num;
   char *eptr;
-  pic_value flo = pic_false_value(pic), e;
 
   pic_get_args(pic, "z|i", &str, &radix);
 
+  if (strcaseeq(str, "+inf.0"))
+    return pic_float_value(pic, 1.0 / 0.0);
+  if (strcaseeq(str, "-inf.0"))
+    return pic_float_value(pic, -1.0 / 0.0);
+  if (strcaseeq(str, "+nan.0"))
+    return pic_float_value(pic, 0.0 / 0.0);
+  if (strcaseeq(str, "-nan.0"))
+    return pic_float_value(pic, -0.0 / 0.0);
+
   num = strtol(str, &eptr, radix);
   if (*eptr == '\0') {
-    return INT_MIN <= num && num <= INT_MAX
-      ? pic_int_value(pic, num)
-      : pic_float_value(pic, num);
+    return INT_MIN <= num && num <= INT_MAX ? pic_int_value(pic, num) : pic_float_value(pic, num);
   }
 
-  pic_try {
-    flo = pic_read_cstr(pic, str);
-  }
-  pic_catch(e) {
-    /* swallow error */
-    (void)e;
-  }
-
-  if (pic_int_p(pic, flo) || pic_float_p(pic, flo)) {
-    return flo;
-  }
-
-  return pic_false_value(pic);
+  return string_to_number(pic, str);
 }
 
 void
