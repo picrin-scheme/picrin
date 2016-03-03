@@ -835,8 +835,15 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   type = pic_list_ref(pic, var, 0);
   if (EQ(type, "gref")) {
     pic_value name;
+    size_t i;
 
     name = pic_list_ref(pic, var, 1);
+
+    for (i = 0; i < sizeof pic_vm_proc / sizeof pic_vm_proc[0]; ++i) {
+      if (EQ(name, pic_vm_proc[i].name))
+        pic_error(pic, "tried to override built-in procedure", 1, name);
+    }
+
     emit_i(pic, cxt, OP_GSET, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
