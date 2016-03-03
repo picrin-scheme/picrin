@@ -148,7 +148,7 @@ static pic_value
 pic_callcc(pic_state *pic, pic_value proc)
 {
   PIC_JMPBUF jmp;
-  struct cont *cont = pic_alloca_cont(pic);
+  volatile struct cont *cont = pic_alloca_cont(pic);
 
   if (PIC_SETJMP(pic, jmp)) {
     return pic_valuesk(pic, cont->retc, cont->retv);
@@ -156,9 +156,9 @@ pic_callcc(pic_state *pic, pic_value proc)
   else {
     pic_value val;
 
-    pic_save_point(pic, cont, &jmp);
+    pic_save_point(pic, (struct cont *)cont, &jmp);
 
-    val = pic_call(pic, proc, 1, pic_make_cont(pic, cont));
+    val = pic_call(pic, proc, 1, pic_make_cont(pic, (struct cont *)cont));
 
     pic_exit_point(pic);
 
