@@ -695,7 +695,10 @@ foreach (@data) {
 print "\n#endif\n\n";
 
 print <<EOL;
-const char pic_boot[][80] = {
+#include "picrin.h"
+#include "picrin/extra.h"
+
+static const char boot_rom[][80] = {
 EOL
 
 my @lines = $src =~ /.{0,80}/gs;
@@ -715,6 +718,12 @@ print "\"\"\n";
 print <<EOL;
 };
 
+void
+pic_boot(pic_state *pic)
+{
+  pic_load_cstr(pic, &boot_rom[0][0]);
+}
+
 #if 0
 Local Variables:
 mode: scheme
@@ -730,7 +739,10 @@ EOL
 
 #endif
 
-const char pic_boot[][80] = {
+#include "picrin.h"
+#include "picrin/extra.h"
+
+static const char boot_rom[][80] = {
 "\n(builtin:define-macro call-with-current-environment\n  (builtin:lambda (form env",
 ")\n    (list (cadr form) env)))\n\n(builtin:define here\n  (call-with-current-enviro",
 "nment\n   (builtin:lambda (env)\n     env)))\n\n(builtin:define the                 ",
@@ -1032,6 +1044,12 @@ const char pic_boot[][80] = {
 "",
 ""
 };
+
+void
+pic_boot(pic_state *pic)
+{
+  pic_load_cstr(pic, &boot_rom[0][0]);
+}
 
 #if 0
 Local Variables:

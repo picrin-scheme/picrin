@@ -109,19 +109,17 @@ void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_weak(pic_state *);
 
-extern const char pic_boot[][80];
+void pic_boot(pic_state *);
+
+#define DONE pic_leave(pic, ai);
 
 static void
 pic_init_core(pic_state *pic)
 {
-  size_t ai;
+  size_t ai = pic_enter(pic);
   pic_value env;
 
   pic_deflibrary(pic, "picrin.base");
-
-  ai = pic_enter(pic);
-
-#define DONE pic_leave(pic, ai);
 
   env = pic_library_environment(pic, pic->lib);
 
@@ -133,8 +131,7 @@ pic_init_core(pic_state *pic)
   import_builtin_syntax("begin");
   import_builtin_syntax("define-macro");
 
-  DONE;
-
+  pic_init_features(pic); DONE;
   pic_init_bool(pic); DONE;
   pic_init_pair(pic); DONE;
   pic_init_port(pic); DONE;
@@ -159,9 +156,7 @@ pic_init_core(pic_state *pic)
   pic_init_write(pic); DONE;
 #endif
 
-  pic_init_features(pic);
-
-  pic_load_cstr(pic, &pic_boot[0][0]);
+  pic_boot(pic); DONE;
 }
 
 pic_state *
