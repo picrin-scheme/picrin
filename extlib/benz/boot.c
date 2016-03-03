@@ -1,1042 +1,990 @@
-#if 0
-
-=pod
-/*
-=cut
-
-use strict;
-
-my $src = <<'EOL';
-
-(builtin:define-macro call-with-current-environment
-  (builtin:lambda (form env)
-    (list (cadr form) env)))
-
-(builtin:define here
-  (call-with-current-environment
-   (builtin:lambda (env)
-     env)))
-
-(builtin:define the                     ; synonym for #'var
-  (builtin:lambda (var)
-    (make-identifier var here)))
-
-
-(builtin:define the-builtin-define (the (builtin:quote builtin:define)))
-(builtin:define the-builtin-lambda (the (builtin:quote builtin:lambda)))
-(builtin:define the-builtin-begin (the (builtin:quote builtin:begin)))
-(builtin:define the-builtin-quote (the (builtin:quote builtin:quote)))
-(builtin:define the-builtin-set! (the (builtin:quote builtin:set!)))
-(builtin:define the-builtin-if (the (builtin:quote builtin:if)))
-(builtin:define the-builtin-define-macro (the (builtin:quote builtin:define-macro)))
-
-(builtin:define the-define (the (builtin:quote define)))
-(builtin:define the-lambda (the (builtin:quote lambda)))
-(builtin:define the-begin (the (builtin:quote begin)))
-(builtin:define the-quote (the (builtin:quote quote)))
-(builtin:define the-set! (the (builtin:quote set!)))
-(builtin:define the-if (the (builtin:quote if)))
-(builtin:define the-define-macro (the (builtin:quote define-macro)))
-
-(builtin:define-macro quote
-  (builtin:lambda (form env)
-    (builtin:if (= (length form) 2)
-      (list the-builtin-quote (cadr form))
-      (error "illegal quote form" form))))
-
-(builtin:define-macro if
-  (builtin:lambda (form env)
-    ((builtin:lambda (len)
-       (builtin:if (= len 4)
-           (cons the-builtin-if (cdr form))
-           (builtin:if (= len 3)
-               (list the-builtin-if (list-ref form 1) (list-ref form 2) #undefined)
-               (error "illegal if form" form))))
-     (length form))))
-
-(builtin:define-macro begin
-  (builtin:lambda (form env)
-    ((builtin:lambda (len)
-       (if (= len 1)
-           #undefined
-           (if (= len 2)
-               (cadr form)
-               (if (= len 3)
-                   (cons the-builtin-begin (cdr form))
-                   (list the-builtin-begin
-                         (cadr form)
-                         (cons the-begin (cddr form)))))))
-     (length form))))
-
-(builtin:define-macro set!
-  (builtin:lambda (form env)
-    (if (= (length form) 3)
-        (if (identifier? (cadr form))
-            (cons the-builtin-set! (cdr form))
-            (error "illegal set! form" form))
-        (error "illegal set! form" form))))
-
-(builtin:define check-formal
-  (builtin:lambda (formal)
-    (if (null? formal)
-        #t
-        (if (identifier? formal)
-            #t
-            (if (pair? formal)
-                (if (identifier? (car formal))
-                    (check-formal (cdr formal))
-                    #f)
-                #f)))))
-
-(builtin:define-macro lambda
-  (builtin:lambda (form env)
-    (if (= (length form) 1)
-        (error "illegal lambda form" form)
-        (if (check-formal (cadr form))
-            (list the-builtin-lambda (cadr form) (cons the-begin (cddr form)))
-            (error "illegal lambda form" form)))))
-
-(builtin:define-macro define
-  (lambda (form env)
-    ((lambda (len)
-       (if (= len 1)
-           (error "illegal define form" form)
-           (if (identifier? (cadr form))
-               (if (= len 3)
-                   (cons the-builtin-define (cdr form))
-                   (error "illegal define form" form))
-               (if (pair? (cadr form))
-                   (list the-define
-                         (car (cadr form))
-                         (cons the-lambda (cons (cdr (cadr form)) (cddr form))))
-                   (error "define: binding to non-varaible object" form)))))
-     (length form))))
-
-(builtin:define-macro define-macro
-  (lambda (form env)
-    (if (= (length form) 3)
-        (if (identifier? (cadr form))
-            (cons the-builtin-define-macro (cdr form))
-            (error "define-macro: binding to non-variable object" form))
-        (error "illegal define-macro form" form))))
-
-
-(define-macro syntax-error
-  (lambda (form _)
-    (apply error (cdr form))))
-
-(define-macro define-auxiliary-syntax
-  (lambda (form _)
-    (define message
-      (string-append
-       "invalid use of auxiliary syntax: '" (symbol->string (cadr form)) "'"))
-    (list
-     the-define-macro
-     (cadr form)
-     (list the-lambda '_
-           (list (the 'error) message)))))
-
-(define-auxiliary-syntax else)
-(define-auxiliary-syntax =>)
-(define-auxiliary-syntax unquote)
-(define-auxiliary-syntax unquote-splicing)
-(define-auxiliary-syntax syntax-unquote)
-(define-auxiliary-syntax syntax-unquote-splicing)
-
-(define-macro let
-  (lambda (form env)
-    (if (identifier? (cadr form))
-        (list
-         (list the-lambda '()
-               (list the-define (cadr form)
-                     (cons the-lambda
-                           (cons (map car (car (cddr form)))
-                                 (cdr (cddr form)))))
-               (cons (cadr form) (map cadr (car (cddr form))))))
-        (cons
-         (cons
-          the-lambda
-          (cons (map car (cadr form))
-                (cddr form)))
-         (map cadr (cadr form))))))
-
-(define-macro and
-  (lambda (form env)
-    (if (null? (cdr form))
-        #t
-        (if (null? (cddr form))
-            (cadr form)
-            (list the-if
-                  (cadr form)
-                  (cons (the 'and) (cddr form))
-                  #f)))))
-
-(define-macro or
-  (lambda (form env)
-    (if (null? (cdr form))
-        #f
-        (let ((tmp (make-identifier 'it env)))
-          (list (the 'let)
-                (list (list tmp (cadr form)))
-                (list the-if
-                      tmp
-                      tmp
-                      (cons (the 'or) (cddr form))))))))
-
-(define-macro cond
-  (lambda (form env)
-    (let ((clauses (cdr form)))
-      (if (null? clauses)
-          #undefined
-          (let ((clause (car clauses)))
-            (if (and (identifier? (car clause))
-                     (identifier=? (the 'else) (make-identifier (car clause) env)))
-                (cons the-begin (cdr clause))
-                (if (null? (cdr clause))
-                    (let ((tmp (make-identifier 'tmp here)))
-                      (list (the 'let) (list (list tmp (car clause)))
-                            (list the-if tmp tmp (cons (the 'cond) (cdr clauses)))))
-                    (if (and (identifier? (cadr clause))
-                             (identifier=? (the '=>) (make-identifier (cadr clause) env)))
-                        (let ((tmp (make-identifier 'tmp here)))
-                          (list (the 'let) (list (list tmp (car clause)))
-                                (list the-if tmp
-                                      (list (car (cddr clause)) tmp)
-                                      (cons (the 'cond) (cdr clauses)))))
-                        (list the-if (car clause)
-                              (cons the-begin (cdr clause))
-                              (cons (the 'cond) (cdr clauses)))))))))))
-
-(define-macro quasiquote
-  (lambda (form env)
-
-    (define (quasiquote? form)
-      (and (pair? form)
-           (identifier? (car form))
-           (identifier=? (the 'quasiquote) (make-identifier (car form) env))))
-
-    (define (unquote? form)
-      (and (pair? form)
-           (identifier? (car form))
-           (identifier=? (the 'unquote) (make-identifier (car form) env))))
-
-    (define (unquote-splicing? form)
-      (and (pair? form)
-           (pair? (car form))
-           (identifier? (caar form))
-           (identifier=? (the 'unquote-splicing) (make-identifier (caar form) env))))
-
-    (define (qq depth expr)
-      (cond
-       ;; unquote
-       ((unquote? expr)
-        (if (= depth 1)
-            (car (cdr expr))
-            (list (the 'list)
-                  (list (the 'quote) (the 'unquote))
-                  (qq (- depth 1) (car (cdr expr))))))
-       ;; unquote-splicing
-       ((unquote-splicing? expr)
-        (if (= depth 1)
-            (list (the 'append)
-                  (car (cdr (car expr)))
-                  (qq depth (cdr expr)))
-            (list (the 'cons)
-                  (list (the 'list)
-                        (list (the 'quote) (the 'unquote-splicing))
-                        (qq (- depth 1) (car (cdr (car expr)))))
-                  (qq depth (cdr expr)))))
-       ;; quasiquote
-       ((quasiquote? expr)
-        (list (the 'list)
-              (list (the 'quote) (the 'quasiquote))
-              (qq (+ depth 1) (car (cdr expr)))))
-       ;; list
-       ((pair? expr)
-        (list (the 'cons)
-              (qq depth (car expr))
-              (qq depth (cdr expr))))
-       ;; vector
-       ((vector? expr)
-        (list (the 'list->vector) (qq depth (vector->list expr))))
-       ;; simple datum
-       (else
-        (list (the 'quote) expr))))
-
-    (let ((x (cadr form)))
-      (qq 1 x))))
-
-(define-macro let*
-  (lambda (form env)
-    (let ((bindings (car (cdr form)))
-          (body     (cdr (cdr form))))
-      (if (null? bindings)
-          `(,(the 'let) () ,@body)
-          `(,(the 'let) ((,(car (car bindings)) ,@(cdr (car bindings))))
-            (,(the 'let*) (,@(cdr bindings))
-             ,@body))))))
-
-(define-macro letrec
-  (lambda (form env)
-    `(,(the 'letrec*) ,@(cdr form))))
-
-(define-macro letrec*
-  (lambda (form env)
-    (let ((bindings (car (cdr form)))
-          (body     (cdr (cdr form))))
-      (let ((variables (map (lambda (v) `(,v #f)) (map car bindings)))
-            (initials  (map (lambda (v) `(,(the 'set!) ,@v)) bindings)))
-        `(,(the 'let) (,@variables)
-          ,@initials
-          ,@body)))))
-
-(define-macro let-values
-  (lambda (form env)
-    `(,(the 'let*-values) ,@(cdr form))))
-
-(define-macro let*-values
-  (lambda (form env)
-    (let ((formal (car (cdr form)))
-          (body   (cdr (cdr form))))
-      (if (null? formal)
-          `(,(the 'let) () ,@body)
-          `(,(the 'call-with-values) (,the-lambda () ,@(cdr (car formal)))
-            (,(the 'lambda) (,@(car (car formal)))
-             (,(the 'let*-values) (,@(cdr formal))
-              ,@body)))))))
-
-(define-macro define-values
-  (lambda (form env)
-    (let ((formal (car (cdr form)))
-          (body   (cdr (cdr form))))
-      (let ((arguments (make-identifier 'arguments here)))
-        `(,the-begin
-          ,@(let loop ((formal formal))
-              (if (pair? formal)
-                  `((,the-define ,(car formal) #undefined) ,@(loop (cdr formal)))
-                  (if (identifier? formal)
-                      `((,the-define ,formal #undefined))
-                      '())))
-          (,(the 'call-with-values) (,the-lambda () ,@body)
-           (,the-lambda
-            ,arguments
-            ,@(let loop ((formal formal) (args arguments))
-                (if (pair? formal)
-                    `((,the-set! ,(car formal) (,(the 'car) ,args)) ,@(loop (cdr formal) `(,(the 'cdr) ,args)))
-                    (if (identifier? formal)
-                        `((,the-set! ,formal ,args))
-                        '()))))))))))
-
-(define-macro do
-  (lambda (form env)
-    (let ((bindings (car (cdr form)))
-          (test     (car (car (cdr (cdr form)))))
-          (cleanup  (cdr (car (cdr (cdr form)))))
-          (body     (cdr (cdr (cdr form)))))
-      (let ((loop (make-identifier 'loop here)))
-        `(,(the 'let) ,loop ,(map (lambda (x) `(,(car x) ,(cadr x))) bindings)
-          (,the-if ,test
-                   (,the-begin
-                    ,@cleanup)
-                   (,the-begin
-                    ,@body
-                    (,loop ,@(map (lambda (x) (if (null? (cdr (cdr x))) (car x) (car (cdr (cdr x))))) bindings)))))))))
-
-(define-macro when
-  (lambda (form env)
-    (let ((test (car (cdr form)))
-          (body (cdr (cdr form))))
-      `(,the-if ,test
-                (,the-begin ,@body)
-                #undefined))))
-
-(define-macro unless
-  (lambda (form env)
-    (let ((test (car (cdr form)))
-          (body (cdr (cdr form))))
-      `(,the-if ,test
-                #undefined
-                (,the-begin ,@body)))))
-
-(define-macro case
-  (lambda (form env)
-    (let ((key     (car (cdr form)))
-          (clauses (cdr (cdr form))))
-      (let ((the-key (make-identifier 'key here)))
-        `(,(the 'let) ((,the-key ,key))
-          ,(let loop ((clauses clauses))
-             (if (null? clauses)
-                 #undefined
-                 (let ((clause (car clauses)))
-                   `(,the-if ,(if (and (identifier? (car clause))
-                                       (identifier=? (the 'else) (make-identifier (car clause) env)))
-                                  #t
-                                  `(,(the 'or) ,@(map (lambda (x) `(,(the 'eqv?) ,the-key (,the-quote ,x))) (car clause))))
-                             ,(if (and (identifier? (cadr clause))
-                                       (identifier=? (the '=>) (make-identifier (cadr clause) env)))
-                                  `(,(car (cdr (cdr clause))) ,the-key)
-                                  `(,the-begin ,@(cdr clause)))
-                             ,(loop (cdr clauses)))))))))))
-
-(define-macro parameterize
-  (lambda (form env)
-    (let ((formal (car (cdr form)))
-          (body   (cdr (cdr form))))
-      (if (null? formal)
-          `(,the-begin ,@body)
-          (let ((bind (car formal)))
-            `(,(the 'dynamic-bind) ,(car bind) ,(cadr bind)
-              (,the-lambda () (,(the 'parameterize) ,(cdr formal) ,@body))))))))
-
-(define-macro syntax-quote
-  (lambda (form env)
-    (let ((renames '()))
-      (letrec
-          ((rename (lambda (var)
-                     (let ((x (assq var renames)))
-                       (if x
-                           (cadr x)
-                           (begin
-                             (set! renames `((,var ,(make-identifier var env) (,(the 'make-identifier) ',var ',env)) . ,renames))
-                             (rename var))))))
-           (walk (lambda (f form)
-                   (cond
-                    ((identifier? form)
-                     (f form))
-                    ((pair? form)
-                     `(,(the 'cons) (walk f (car form)) (walk f (cdr form))))
-                    ((vector? form)
-                     `(,(the 'list->vector) (walk f (vector->list form))))
-                    (else
-                     `(,(the 'quote) ,form))))))
-        (let ((form (walk rename (cadr form))))
-          `(,(the 'let)
-            ,(map cdr renames)
-            ,form))))))
-
-(define-macro syntax-quasiquote
-  (lambda (form env)
-    (let ((renames '()))
-      (letrec
-          ((rename (lambda (var)
-                     (let ((x (assq var renames)))
-                       (if x
-                           (cadr x)
-                           (begin
-                             (set! renames `((,var ,(make-identifier var env) (,(the 'make-identifier) ',var ',env)) . ,renames))
-                             (rename var)))))))
-
-        (define (syntax-quasiquote? form)
-          (and (pair? form)
-               (identifier? (car form))
-               (identifier=? (the 'syntax-quasiquote) (make-identifier (car form) env))))
-
-        (define (syntax-unquote? form)
-          (and (pair? form)
-               (identifier? (car form))
-               (identifier=? (the 'syntax-unquote) (make-identifier (car form) env))))
-
-        (define (syntax-unquote-splicing? form)
-          (and (pair? form)
-               (pair? (car form))
-               (identifier? (caar form))
-               (identifier=? (the 'syntax-unquote-splicing) (make-identifier (caar form) env))))
-
-        (define (qq depth expr)
-          (cond
-           ;; syntax-unquote
-           ((syntax-unquote? expr)
-            (if (= depth 1)
-                (car (cdr expr))
-                (list (the 'list)
-                      (list (the 'quote) (the 'syntax-unquote))
-                      (qq (- depth 1) (car (cdr expr))))))
-           ;; syntax-unquote-splicing
-           ((syntax-unquote-splicing? expr)
-            (if (= depth 1)
-                (list (the 'append)
-                      (car (cdr (car expr)))
-                      (qq depth (cdr expr)))
-                (list (the 'cons)
-                      (list (the 'list)
-                            (list (the 'quote) (the 'syntax-unquote-splicing))
-                            (qq (- depth 1) (car (cdr (car expr)))))
-                      (qq depth (cdr expr)))))
-           ;; syntax-quasiquote
-           ((syntax-quasiquote? expr)
-            (list (the 'list)
-                  (list (the 'quote) (the 'quasiquote))
-                  (qq (+ depth 1) (car (cdr expr)))))
-           ;; list
-           ((pair? expr)
-            (list (the 'cons)
-                  (qq depth (car expr))
-                  (qq depth (cdr expr))))
-           ;; vector
-           ((vector? expr)
-            (list (the 'list->vector) (qq depth (vector->list expr))))
-           ;; identifier
-           ((identifier? expr)
-            (rename expr))
-           ;; simple datum
-           (else
-            (list (the 'quote) expr))))
-
-        (let ((body (qq 1 (cadr form))))
-          `(,(the 'let)
-            ,(map cdr renames)
-            ,body))))))
-
-(define (transformer f)
-  (lambda (form env)
-    (let ((ephemeron1 (make-ephemeron))
-          (ephemeron2 (make-ephemeron)))
-      (letrec
-          ((wrap (lambda (var1)
-                   (let ((var2 (ephemeron1 var1)))
-                     (if var2
-                         (cdr var2)
-                         (let ((var2 (make-identifier var1 env)))
-                           (ephemeron1 var1 var2)
-                           (ephemeron2 var2 var1)
-                           var2)))))
-           (unwrap (lambda (var2)
-                     (let ((var1 (ephemeron2 var2)))
-                       (if var1
-                           (cdr var1)
-                           var2))))
-           (walk (lambda (f form)
-                   (cond
-                    ((identifier? form)
-                     (f form))
-                    ((pair? form)
-                     (cons (walk f (car form)) (walk f (cdr form))))
-                    ((vector? form)
-                     (list->vector (walk f (vector->list form))))
-                    (else
-                     form)))))
-        (let ((form (cdr form)))
-          (walk unwrap (apply f (walk wrap form))))))))
-
-(define-macro define-syntax
-  (lambda (form env)
-    (let ((formal (car (cdr form)))
-          (body   (cdr (cdr form))))
-      (if (pair? formal)
-          `(,(the 'define-syntax) ,(car formal) (,the-lambda ,(cdr formal) ,@body))
-          `(,the-define-macro ,formal (,(the 'transformer) (,the-begin ,@body)))))))
-
-(define-macro letrec-syntax
-  (lambda (form env)
-    (let ((formal (car (cdr form)))
-          (body   (cdr (cdr form))))
-      `(let ()
-         ,@(map (lambda (x)
-                  `(,(the 'define-syntax) ,(car x) ,(cadr x)))
-                formal)
-         ,@body))))
-
-(define-macro let-syntax
-  (lambda (form env)
-    `(,(the 'letrec-syntax) ,@(cdr form))))
-
-
-;;; library primitives
-
-(define (mangle name)
-  (define (->string n)
-    (if (symbol? n)
-        (symbol->string n)
-        (number->string n)))
-  (define (join strs delim)
-    (let loop ((res (car strs)) (strs (cdr strs)))
-      (if (null? strs)
-          res
-          (loop (string-append res delim (car strs)) (cdr strs)))))
-  (join (map ->string name) "."))
-
-(define-macro define-library
-  (lambda (form _)
-    (let ((lib (mangle (cadr form)))
-          (body (cddr form)))
-      (or (find-library lib) (make-library lib))
-      (for-each (lambda (expr) (eval expr lib)) body))))
-
-(define-macro cond-expand
-  (lambda (form _)
-    (letrec
-        ((test (lambda (form)
-                 (or
-                  (eq? form 'else)
-                  (and (symbol? form)
-                       (memq form (features)))
-                  (and (pair? form)
-                       (case (car form)
-                         ((library) (find-library (mangle (cadr form))))
-                         ((not) (not (test (cadr form))))
-                         ((and) (let loop ((form (cdr form)))
-                                  (or (null? form)
-                                      (and (test (car form)) (loop (cdr form))))))
-                         ((or) (let loop ((form (cdr form)))
-                                 (and (pair? form)
-                                      (or (test (car form)) (loop (cdr form))))))
-                         (else #f)))))))
-      (let loop ((clauses (cdr form)))
-        (if (null? clauses)
-            #undefined
-            (if (test (caar clauses))
-                `(,the-begin ,@(cdar clauses))
-                (loop (cdr clauses))))))))
-
-(define-macro import
-  (lambda (form _)
-    (let ((caddr
-           (lambda (x) (car (cdr (cdr x)))))
-          (prefix
-           (lambda (prefix symbol)
-             (string->symbol
-              (string-append
-               (symbol->string prefix)
-               (symbol->string symbol)))))
-          (getlib
-           (lambda (name)
-             (let ((lib (mangle name)))
-               (if (find-library lib)
-                   lib
-                   (error "library not found" name))))))
-      (letrec
-          ((extract
-            (lambda (spec)
-              (case (car spec)
-                ((only rename prefix except)
-                 (extract (cadr spec)))
-                (else
-                 (getlib spec)))))
-           (collect
-            (lambda (spec)
-              (case (car spec)
-                ((only)
-                 (let ((alist (collect (cadr spec))))
-                   (map (lambda (var) (assq var alist)) (cddr spec))))
-                ((rename)
-                 (let ((alist (collect (cadr spec)))
-                       (renames (map (lambda (x) `((car x) . (cadr x))) (cddr spec))))
-                   (map (lambda (s) (or (assq (car s) renames) s)) alist)))
-                ((prefix)
-                 (let ((alist (collect (cadr spec))))
-                   (map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))
-                ((except)
-                 (let ((alist (collect (cadr spec))))
-                   (let loop ((alist alist))
-                     (if (null? alist)
-                         '()
-                         (if (memq (caar alist) (cddr spec))
-                             (loop (cdr alist))
-                             (cons (car alist) (loop (cdr alist))))))))
-                (else
-                 (map (lambda (x) (cons x x)) (library-exports (getlib spec))))))))
-        (letrec
-            ((import
-               (lambda (spec)
-                 (let ((lib (extract spec))
-                       (alist (collect spec)))
-                   (for-each
-                    (lambda (slot)
-                      (library-import lib (cdr slot) (car slot)))
-                    alist)))))
-          (for-each import (cdr form)))))))
-
-(define-macro export
-  (lambda (form _)
-    (letrec
-        ((collect
-          (lambda (spec)
-            (cond
-             ((symbol? spec)
-              `(,spec . ,spec))
-             ((and (list? spec) (= (length spec) 3) (eq? (car spec) 'rename))
-              `(,(list-ref spec 1) . ,(list-ref spec 2)))
-             (else
-              (error "malformed export")))))
-         (export
-           (lambda (spec)
-             (let ((slot (collect spec)))
-               (library-export (car slot) (cdr slot))))))
-      (for-each export (cdr form)))))
-
-(export define lambda quote set! if begin define-macro
-        let let* letrec letrec*
-        let-values let*-values define-values
-        quasiquote unquote unquote-splicing
-        and or
-        cond case else =>
-        do when unless
-        parameterize
-        define-syntax
-        syntax-quote syntax-unquote
-        syntax-quasiquote syntax-unquote-splicing
-        let-syntax letrec-syntax
-        syntax-error)
-
-
-EOL
-
-open IN, "./boot.c";
-my @data = <IN>;
-close IN;
-
-open STDOUT, ">", "./boot.c";
-
-foreach (@data) {
-  print;
-  last if $_ eq "#---END---\n";
+/* DO NOT EDIT, this file is automatically generated by tools/mkboot */
+
+#include "picrin.h"
+#include "picrin/extra.h"
+#include "picrin/private/state.h"
+#include "picrin/private/object.h"
+#include "picrin/private/vm.h"
+
+extern struct irep *pic_boot_irepp[];
+extern struct code pic_boot_code[];
+extern int pic_boot_ints[];
+extern double pic_boot_nums[];
+extern struct object *pic_boot_pool[];
+
+struct irep pic_boot_irep[] = {
+  { { 0, 0 }, 1, 1, 7, 5, 0, &pic_boot_code[0], &pic_boot_irepp[0], &pic_boot_ints[0], &pic_boot_nums[0], &pic_boot_pool[0], 397, 38, 0, 0, 125, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[397], &pic_boot_irepp[38], &pic_boot_ints[0], &pic_boot_nums[0], &pic_boot_pool[125], 4, 0, 0, 0, 1, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[401], &pic_boot_irepp[38], &pic_boot_ints[0], &pic_boot_nums[0], &pic_boot_pool[126], 24, 0, 1, 0, 8, },
+  { { 0, 0 }, 1, 3, 3, 0, 0, &pic_boot_code[425], &pic_boot_irepp[38], &pic_boot_ints[1], &pic_boot_nums[0], &pic_boot_pool[134], 67, 0, 2, 0, 14, },
+  { { 0, 0 }, 1, 3, 4, 0, 0, &pic_boot_code[492], &pic_boot_irepp[38], &pic_boot_ints[3], &pic_boot_nums[0], &pic_boot_pool[148], 91, 0, 3, 0, 18, },
+  { { 0, 0 }, 1, 2, 3, 0, 0, &pic_boot_code[583], &pic_boot_irepp[38], &pic_boot_ints[6], &pic_boot_nums[0], &pic_boot_pool[166], 48, 0, 0, 0, 6, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[631], &pic_boot_irepp[38], &pic_boot_ints[6], &pic_boot_nums[0], &pic_boot_pool[172], 45, 0, 1, 0, 14, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[676], &pic_boot_irepp[38], &pic_boot_ints[7], &pic_boot_nums[0], &pic_boot_pool[186], 32, 0, 1, 0, 10, },
+  { { 0, 0 }, 1, 3, 1, 0, 0, &pic_boot_code[708], &pic_boot_irepp[38], &pic_boot_ints[8], &pic_boot_nums[0], &pic_boot_pool[196], 83, 0, 2, 0, 26, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[791], &pic_boot_irepp[38], &pic_boot_ints[10], &pic_boot_nums[0], &pic_boot_pool[222], 32, 0, 1, 0, 10, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[823], &pic_boot_irepp[38], &pic_boot_ints[11], &pic_boot_nums[0], &pic_boot_pool[232], 6, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[829], &pic_boot_irepp[38], &pic_boot_ints[11], &pic_boot_nums[0], &pic_boot_pool[235], 99, 0, 0, 0, 40, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[928], &pic_boot_irepp[38], &pic_boot_ints[11], &pic_boot_nums[0], &pic_boot_pool[275], 49, 0, 2, 0, 15, },
+  { { 0, 0 }, 1, 3, 1, 0, 0, &pic_boot_code[977], &pic_boot_irepp[38], &pic_boot_ints[13], &pic_boot_nums[0], &pic_boot_pool[290], 64, 0, 1, 0, 21, },
+  { { 0, 0 }, 1, 3, 4, 0, 0, &pic_boot_code[1041], &pic_boot_irepp[38], &pic_boot_ints[14], &pic_boot_nums[0], &pic_boot_pool[311], 234, 0, 0, 0, 77, },
+  { { 0, 0 }, 1, 3, 5, 5, 0, &pic_boot_code[1275], &pic_boot_irepp[38], &pic_boot_ints[14], &pic_boot_nums[0], &pic_boot_pool[388], 26, 4, 1, 0, 1, },
+  { { 0, 0 }, 1, 3, 2, 0, 0, &pic_boot_code[1301], &pic_boot_irepp[42], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[389], 78, 0, 0, 0, 26, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[1379], &pic_boot_irepp[42], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[415], 12, 0, 0, 0, 4, },
+  { { 0, 0 }, 1, 3, 4, 0, 0, &pic_boot_code[1391], &pic_boot_irepp[42], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[419], 48, 2, 0, 0, 14, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[1439], &pic_boot_irepp[44], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[433], 12, 0, 0, 0, 4, },
+  { { 0, 0 }, 1, 3, 2, 0, 0, &pic_boot_code[1451], &pic_boot_irepp[44], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[437], 94, 0, 0, 0, 32, },
+  { { 0, 0 }, 1, 3, 5, 2, 0, &pic_boot_code[1545], &pic_boot_irepp[44], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[469], 79, 2, 0, 0, 22, },
+  { { 0, 0 }, 1, 3, 5, 0, 0, &pic_boot_code[1624], &pic_boot_irepp[46], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[491], 105, 2, 0, 0, 36, },
+  { { 0, 0 }, 1, 3, 2, 0, 0, &pic_boot_code[1729], &pic_boot_irepp[48], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[527], 38, 0, 0, 0, 12, },
+  { { 0, 0 }, 1, 3, 2, 0, 0, &pic_boot_code[1767], &pic_boot_irepp[48], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[539], 38, 0, 0, 0, 12, },
+  { { 0, 0 }, 1, 3, 4, 3, 0, &pic_boot_code[1805], &pic_boot_irepp[48], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[551], 50, 1, 0, 0, 13, },
+  { { 0, 0 }, 1, 3, 3, 0, 0, &pic_boot_code[1855], &pic_boot_irepp[49], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[564], 78, 0, 0, 0, 25, },
+  { { 0, 0 }, 1, 3, 4, 3, 0, &pic_boot_code[1933], &pic_boot_irepp[49], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[589], 42, 2, 0, 0, 7, },
+  { { 0, 0 }, 1, 3, 7, 7, 0, &pic_boot_code[1975], &pic_boot_irepp[51], &pic_boot_ints[15], &pic_boot_nums[0], &pic_boot_pool[596], 52, 5, 1, 0, 7, },
+  { { 0, 0 }, 1, 2, 0, 1, 0, &pic_boot_code[2027], &pic_boot_irepp[56], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[603], 3, 1, 0, 0, 0, },
+  { { 0, 0 }, 1, 3, 2, 0, 0, &pic_boot_code[2030], &pic_boot_irepp[57], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[603], 74, 0, 0, 0, 24, },
+  { { 0, 0 }, 1, 3, 2, 0, 0, &pic_boot_code[2104], &pic_boot_irepp[57], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[627], 31, 1, 0, 0, 10, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[2135], &pic_boot_irepp[58], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[637], 12, 0, 0, 0, 4, },
+  { { 0, 0 }, 1, 2, 0, 1, 0, &pic_boot_code[2147], &pic_boot_irepp[58], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[641], 3, 1, 0, 0, 0, },
+  { { 0, 0 }, 1, 2, 2, 0, 0, &pic_boot_code[2150], &pic_boot_irepp[59], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[641], 13, 2, 0, 0, 2, },
+  { { 0, 0 }, 1, 3, 4, 1, 0, &pic_boot_code[2163], &pic_boot_irepp[61], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[643], 37, 1, 0, 0, 5, },
+  { { 0, 0 }, 1, 3, 2, 2, 0, &pic_boot_code[2200], &pic_boot_irepp[62], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[648], 16, 2, 0, 0, 1, },
+  { { 0, 0 }, 1, 3, 6, 5, 0, &pic_boot_code[2216], &pic_boot_irepp[64], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[649], 38, 6, 0, 0, 2, },
+  { { 0, 0 }, 1, 3, 2, 1, 0, &pic_boot_code[2254], &pic_boot_irepp[70], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[651], 19, 2, 0, 0, 2, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2273], &pic_boot_irepp[72], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[653], 27, 0, 0, 0, 7, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2300], &pic_boot_irepp[72], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[660], 27, 0, 0, 0, 7, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2327], &pic_boot_irepp[72], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[667], 36, 0, 0, 0, 9, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[2363], &pic_boot_irepp[72], &pic_boot_ints[16], &pic_boot_nums[0], &pic_boot_pool[676], 180, 0, 5, 0, 49, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2543], &pic_boot_irepp[72], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[725], 8, 0, 0, 0, 2, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2551], &pic_boot_irepp[72], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[727], 10, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2561], &pic_boot_irepp[72], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[730], 53, 0, 0, 0, 15, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[2614], &pic_boot_irepp[72], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[745], 70, 0, 0, 0, 21, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2684], &pic_boot_irepp[72], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[766], 12, 0, 0, 0, 4, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[2696], &pic_boot_irepp[72], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[770], 21, 0, 0, 0, 7, },
+  { { 0, 0 }, 1, 2, 1, 0, 0, &pic_boot_code[2717], &pic_boot_irepp[72], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[777], 111, 1, 0, 0, 34, },
+  { { 0, 0 }, 1, 2, 1, 0, 0, &pic_boot_code[2828], &pic_boot_irepp[73], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[811], 56, 0, 0, 0, 17, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[2884], &pic_boot_irepp[73], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[828], 96, 0, 0, 0, 40, },
+  { { 0, 0 }, 1, 2, 1, 0, 0, &pic_boot_code[2980], &pic_boot_irepp[73], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[868], 56, 0, 0, 0, 17, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3036], &pic_boot_irepp[73], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[885], 27, 0, 0, 0, 7, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3063], &pic_boot_irepp[73], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[892], 27, 0, 0, 0, 7, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3090], &pic_boot_irepp[73], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[899], 36, 0, 0, 0, 9, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[3126], &pic_boot_irepp[73], &pic_boot_ints[21], &pic_boot_nums[0], &pic_boot_pool[908], 188, 0, 5, 0, 50, },
+  { { 0, 0 }, 1, 3, 6, 4, 0, &pic_boot_code[3314], &pic_boot_irepp[73], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[958], 45, 3, 0, 0, 4, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3359], &pic_boot_irepp[76], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[962], 17, 0, 0, 0, 6, },
+  { { 0, 0 }, 1, 3, 1, 0, 0, &pic_boot_code[3376], &pic_boot_irepp[76], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[968], 18, 0, 0, 0, 6, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3394], &pic_boot_irepp[76], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[974], 11, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 3, 1, 2, 0, &pic_boot_code[3405], &pic_boot_irepp[76], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[977], 13, 1, 0, 0, 2, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3418], &pic_boot_irepp[77], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[979], 4, 0, 0, 0, 1, },
+  { { 0, 0 }, 1, 2, 10, 2, 0, &pic_boot_code[3422], &pic_boot_irepp[77], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[980], 138, 2, 0, 0, 21, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3560], &pic_boot_irepp[79], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1001], 31, 0, 0, 0, 7, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3591], &pic_boot_irepp[79], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1008], 8, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[3599], &pic_boot_irepp[79], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1011], 10, 0, 0, 0, 4, },
+  { { 0, 0 }, 1, 2, 1, 0, 0, &pic_boot_code[3609], &pic_boot_irepp[79], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1015], 16, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 2, 5, 0, 0, &pic_boot_code[3625], &pic_boot_irepp[79], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1018], 61, 0, 0, 0, 10, },
+  { { 0, 0 }, 1, 2, 11, 4, 0, &pic_boot_code[3686], &pic_boot_irepp[79], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1028], 130, 6, 0, 0, 21, },
+  { { 0, 0 }, 1, 2, 2, 1, 0, &pic_boot_code[3816], &pic_boot_irepp[85], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1049], 15, 1, 0, 0, 1, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3831], &pic_boot_irepp[86], &pic_boot_ints[26], &pic_boot_nums[0], &pic_boot_pool[1050], 47, 0, 3, 0, 13, },
+  { { 0, 0 }, 1, 2, 1, 0, 0, &pic_boot_code[3878], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1063], 13, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[3891], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1066], 21, 0, 0, 0, 7, },
+  { { 0, 0 }, 1, 2, 2, 0, 0, &pic_boot_code[3912], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1073], 30, 0, 0, 0, 2, },
+  { { 0, 0 }, 1, 2, 1, 0, 0, &pic_boot_code[3942], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1075], 14, 0, 0, 0, 1, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[3956], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1076], 43, 0, 0, 0, 8, },
+  { { 0, 0 }, 1, 3, 0, 0, 0, &pic_boot_code[3999], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1084], 19, 0, 0, 0, 4, },
+  { { 0, 0 }, 1, 2, 2, 0, 0, &pic_boot_code[4018], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1088], 33, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 2, 2, 0, 0, &pic_boot_code[4051], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1091], 32, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[4083], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1094], 5, 0, 0, 0, 1, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[4088], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1095], 33, 0, 0, 0, 8, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[4121], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1103], 14, 0, 0, 0, 3, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[4135], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1106], 17, 0, 0, 0, 9, },
+  { { 0, 0 }, 1, 2, 2, 0, 0, &pic_boot_code[4152], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1115], 23, 0, 0, 0, 2, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[4175], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1117], 4, 0, 0, 0, 1, },
+  { { 0, 0 }, 1, 2, 0, 0, 0, &pic_boot_code[4179], &pic_boot_irepp[86], &pic_boot_ints[29], &pic_boot_nums[0], &pic_boot_pool[1118], 9, 0, 0, 0, 3, },
+{ { 0, 0 }, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
+
+struct code pic_boot_code[] = {
+  { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 3, 0, 0 }, { 14, 1, 0 }, { 1, 0, 0 },
+  { 11, 0, 0 }, { 10, 1, 0 }, { 20, 2, 0 }, { 14, 8, 0 }, { 1, 0, 0 }, { 23, 0, 0 }, { 14, 9, 0 }, { 1, 0, 0 },
+  { 2, 0, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 10, 4, 0 }, { 23, 1, 0 }, { 24, 3, 0 }, { 13, 1, 0 },
+  { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 5, 0 }, { 11, 6, 0 }, { 10, 7, 0 }, { 23, 2, 0 }, { 24, 3, 0 },
+  { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 10, 10, 0 }, { 23, 3, 0 },
+  { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 23, 4, 0 }, { 14, 11, 0 }, { 1, 0, 0 },
+  { 11, 11, 0 }, { 11, 12, 0 }, { 10, 13, 0 }, { 23, 5, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 },
+  { 1, 0, 0 }, { 11, 14, 0 }, { 11, 15, 0 }, { 10, 16, 0 }, { 23, 6, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 },
+  { 14, 1, 0 }, { 1, 0, 0 }, { 11, 17, 0 }, { 11, 18, 0 }, { 10, 19, 0 }, { 23, 7, 0 }, { 24, 3, 0 }, { 13, 1, 0 },
+  { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 20, 0 }, { 11, 21, 0 }, { 10, 22, 0 }, { 23, 8, 0 }, { 24, 3, 0 },
+  { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 23, 0 }, { 11, 24, 0 }, { 10, 25, 0 }, { 23, 9, 0 },
+  { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 26, 0 }, { 11, 27, 0 }, { 10, 28, 0 },
+  { 23, 10, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 29, 0 }, { 11, 30, 0 },
+  { 10, 31, 0 }, { 23, 11, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 32, 0 },
+  { 11, 33, 0 }, { 10, 34, 0 }, { 23, 12, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 },
+  { 11, 35, 0 }, { 11, 36, 0 }, { 10, 37, 0 }, { 23, 13, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 },
+  { 1, 0, 0 }, { 11, 38, 0 }, { 11, 39, 0 }, { 10, 40, 0 }, { 23, 14, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 },
+  { 14, 1, 0 }, { 1, 0, 0 }, { 11, 41, 0 }, { 11, 42, 0 }, { 10, 43, 0 }, { 23, 15, 0 }, { 24, 3, 0 }, { 13, 1, 0 },
+  { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 44, 0 }, { 11, 45, 0 }, { 10, 46, 0 }, { 23, 16, 0 }, { 24, 3, 0 },
+  { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 47, 0 }, { 11, 48, 0 }, { 10, 49, 0 }, { 23, 17, 0 },
+  { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 50, 0 }, { 11, 51, 0 }, { 10, 52, 0 },
+  { 23, 18, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 53, 0 }, { 11, 54, 0 },
+  { 10, 55, 0 }, { 23, 19, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 56, 0 },
+  { 11, 57, 0 }, { 10, 58, 0 }, { 23, 20, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 },
+  { 11, 59, 0 }, { 11, 60, 0 }, { 10, 61, 0 }, { 23, 21, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 },
+  { 1, 0, 0 }, { 11, 62, 0 }, { 11, 63, 0 }, { 10, 64, 0 }, { 23, 22, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 },
+  { 14, 1, 0 }, { 1, 0, 0 }, { 11, 65, 0 }, { 11, 66, 0 }, { 10, 67, 0 }, { 23, 23, 0 }, { 24, 3, 0 }, { 13, 1, 0 },
+  { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 68, 0 }, { 11, 69, 0 }, { 10, 70, 0 }, { 23, 24, 0 }, { 24, 3, 0 },
+  { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 71, 0 }, { 11, 72, 0 }, { 10, 73, 0 }, { 23, 25, 0 },
+  { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 74, 0 }, { 11, 75, 0 }, { 10, 76, 0 },
+  { 23, 26, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 77, 0 }, { 11, 78, 0 },
+  { 10, 79, 0 }, { 23, 27, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 23, 28, 0 },
+  { 14, 12, 0 }, { 1, 0, 0 }, { 11, 80, 0 }, { 11, 81, 0 }, { 10, 82, 0 }, { 23, 29, 0 }, { 24, 3, 0 }, { 13, 1, 0 },
+  { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 83, 0 }, { 11, 84, 0 }, { 10, 85, 0 }, { 23, 30, 0 }, { 24, 3, 0 },
+  { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 86, 0 }, { 11, 87, 0 }, { 10, 88, 0 }, { 23, 31, 0 },
+  { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 23, 32, 0 }, { 14, 7, 0 }, { 1, 0, 0 },
+  { 2, 0, 0 }, { 1, 0, 0 }, { 11, 89, 0 }, { 11, 90, 0 }, { 10, 91, 0 }, { 13, 7, 0 }, { 10, 92, 0 }, { 20, 2, 0 },
+  { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 93, 0 }, { 11, 94, 0 }, { 10, 95, 0 },
+  { 13, 7, 0 }, { 10, 96, 0 }, { 20, 2, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 },
+  { 11, 97, 0 }, { 11, 98, 0 }, { 10, 99, 0 }, { 13, 7, 0 }, { 10, 100, 0 }, { 20, 2, 0 }, { 24, 3, 0 }, { 13, 1, 0 },
+  { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 101, 0 }, { 11, 102, 0 }, { 10, 103, 0 }, { 13, 7, 0 }, { 10, 104, 0 },
+  { 20, 2, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 11, 105, 0 }, { 11, 106, 0 },
+  { 10, 107, 0 }, { 13, 7, 0 }, { 10, 108, 0 }, { 20, 2, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 },
+  { 1, 0, 0 }, { 11, 109, 0 }, { 11, 110, 0 }, { 10, 111, 0 }, { 13, 7, 0 }, { 10, 112, 0 }, { 20, 2, 0 }, { 24, 3, 0 },
+  { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 23, 33, 0 }, { 14, 10, 0 }, { 1, 0, 0 }, { 11, 113, 0 },
+  { 11, 114, 0 }, { 10, 115, 0 }, { 23, 34, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 },
+  { 11, 116, 0 }, { 11, 117, 0 }, { 10, 118, 0 }, { 23, 35, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 14, 1, 0 },
+  { 1, 0, 0 }, { 11, 119, 0 }, { 11, 120, 0 }, { 10, 121, 0 }, { 23, 36, 0 }, { 24, 3, 0 }, { 13, 1, 0 }, { 24, 3, 0 },
+  { 14, 1, 0 }, { 1, 0, 0 }, { 11, 122, 0 }, { 11, 123, 0 }, { 10, 124, 0 }, { 23, 37, 0 }, { 24, 3, 0 }, { 13, 1, 0 },
+  { 24, 3, 0 }, { 14, 1, 0 }, { 1, 0, 0 }, { 13, 1, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 15, 1, 0 },
+  { 21, 3, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 0, 0 }, { 34, 3, 0 }, { 18, 6, 0 },
+  { 11, 2, 0 }, { 10, 3, 0 }, { 13, 1, 0 }, { 21, 3, 0 }, { 17, 13, 0 }, { 11, 4, 0 }, { 15, 1, 1 }, { 10, 5, 0 },
+  { 20, 2, 0 }, { 11, 6, 0 }, { 11, 7, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 1, 0 }, { 13, 3, 0 },
+  { 6, 0, 0 }, { 20, 3, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 13, 4, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 },
+  { 13, 4, 0 }, { 18, 39, 0 }, { 11, 2, 0 }, { 13, 3, 0 }, { 6, 1, 0 }, { 20, 3, 0 }, { 14, 5, 0 }, { 1, 0, 0 },
+  { 13, 5, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 5, 0 }, { 18, 11, 0 }, { 4, 0, 0 }, { 18, 4, 0 },
+  { 2, 0, 0 }, { 22, 0, 0 }, { 17, 5, 0 }, { 11, 3, 0 }, { 10, 4, 0 }, { 13, 1, 0 }, { 21, 3, 0 }, { 17, 16, 0 },
+  { 11, 5, 0 }, { 15, 1, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 11, 9, 0 }, { 2, 0, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 13, 0 },
+  { 11, 10, 0 }, { 15, 1, 1 }, { 10, 11, 0 }, { 20, 2, 0 }, { 11, 12, 0 }, { 11, 13, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 14, 3, 0 },
+  { 1, 0, 0 }, { 11, 1, 0 }, { 13, 3, 0 }, { 6, 0, 0 }, { 20, 3, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 13, 4, 0 },
+  { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 4, 0 }, { 18, 73, 0 }, { 11, 2, 0 }, { 13, 3, 0 }, { 6, 1, 0 },
+  { 20, 3, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 13, 5, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 5, 0 },
+  { 18, 57, 0 }, { 11, 3, 0 }, { 13, 3, 0 }, { 6, 2, 0 }, { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 13, 6, 0 },
+  { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 6, 0 }, { 18, 32, 0 }, { 4, 0, 0 }, { 18, 4, 0 }, { 2, 0, 0 },
+  { 22, 0, 0 }, { 17, 26, 0 }, { 11, 4, 0 }, { 15, 1, 1 }, { 10, 5, 0 }, { 20, 2, 0 }, { 11, 6, 0 }, { 11, 7, 0 },
+  { 13, 1, 0 }, { 20, 2, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 15, 1, 1 }, { 10, 10, 0 }, { 20, 2, 0 }, { 11, 11, 0 },
+  { 11, 12, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 13, 0 }, { 11, 13, 0 }, { 15, 1, 1 }, { 10, 14, 0 }, { 20, 2, 0 },
+  { 11, 15, 0 }, { 11, 16, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 17, 4, 0 }, { 11, 17, 0 }, { 13, 1, 0 }, { 21, 2, 0 }, { 17, 3, 0 }, { 2, 0, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 13, 1, 0 }, { 20, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 13, 2, 0 }, { 18, 40, 0 }, { 11, 1, 0 }, { 13, 1, 0 },
+  { 27, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 13, 3, 0 }, { 18, 30, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 29, 2, 0 },
+  { 18, 3, 0 }, { 5, 0, 0 }, { 17, 14, 0 }, { 11, 3, 0 }, { 11, 4, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 20, 2, 0 },
+  { 18, 3, 0 }, { 5, 0, 0 }, { 17, 6, 0 }, { 15, 1, 3 }, { 11, 5, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 20, 2, 0 },
+  { 14, 4, 0 }, { 1, 0, 0 }, { 13, 4, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 13, 4, 0 },
+  { 22, 0, 0 }, { 17, 3, 0 }, { 13, 3, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 13, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 0, 0 }, { 38, 3, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 6, 0 },
+  { 15, 1, 3 }, { 11, 2, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 2, 0 }, { 18, 6, 0 }, { 11, 3, 0 }, { 10, 4, 0 },
+  { 13, 1, 0 }, { 21, 3, 0 }, { 17, 26, 0 }, { 11, 5, 0 }, { 15, 1, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 11, 7, 0 },
+  { 11, 8, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 11, 9, 0 }, { 11, 10, 0 }, { 15, 1, 1 }, { 10, 11, 0 }, { 20, 2, 0 },
+  { 11, 12, 0 }, { 11, 13, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 6, 0, 0 }, { 34, 3, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 6, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 20, 2, 0 }, { 18, 6, 0 }, { 11, 4, 0 }, { 10, 5, 0 }, { 13, 1, 0 }, { 21, 3, 0 }, { 17, 13, 0 },
+  { 11, 6, 0 }, { 15, 1, 1 }, { 10, 7, 0 }, { 20, 2, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 6, 0, 0 }, { 34, 3, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 6, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 20, 2, 0 }, { 18, 57, 0 }, { 11, 4, 0 }, { 11, 5, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 1, 0 },
+  { 38, 3, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 6, 0 }, { 11, 6, 0 }, { 11, 7, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 29, 2, 0 }, { 18, 6, 0 }, { 11, 8, 0 }, { 10, 9, 0 }, { 13, 1, 0 }, { 21, 3, 0 }, { 17, 36, 0 }, { 11, 10, 0 },
+  { 13, 1, 0 }, { 20, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 11, 0 }, { 15, 1, 1 }, { 10, 12, 0 }, { 20, 2, 0 },
+  { 11, 13, 0 }, { 11, 14, 0 }, { 13, 3, 0 }, { 25, 2, 0 }, { 11, 15, 0 }, { 11, 16, 0 }, { 15, 1, 1 }, { 10, 17, 0 },
+  { 20, 2, 0 }, { 11, 18, 0 }, { 11, 19, 0 }, { 13, 3, 0 }, { 26, 2, 0 }, { 11, 20, 0 }, { 11, 21, 0 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 22, 0, 0 }, { 17, 13, 0 }, { 11, 22, 0 }, { 15, 1, 1 }, { 10, 23, 0 }, { 20, 2, 0 }, { 11, 24, 0 },
+  { 11, 25, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 0, 0 }, { 34, 3, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 6, 0 },
+  { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 2, 0 }, { 18, 6, 0 }, { 11, 4, 0 }, { 10, 5, 0 },
+  { 13, 1, 0 }, { 21, 3, 0 }, { 17, 13, 0 }, { 11, 6, 0 }, { 15, 1, 1 }, { 10, 7, 0 }, { 20, 2, 0 }, { 11, 8, 0 },
+  { 11, 9, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 21, 3, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 20, 2, 0 }, { 18, 33, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 15, 1, 1 }, { 10, 4, 0 }, { 20, 2, 0 },
+  { 11, 5, 0 }, { 11, 6, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 11, 9, 0 },
+  { 11, 10, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 11, 11, 0 },
+  { 11, 12, 0 }, { 11, 13, 0 }, { 11, 14, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 3, 0, 0 }, { 20, 3, 0 },
+  { 24, 3, 0 }, { 22, 0, 0 }, { 17, 62, 0 }, { 11, 15, 0 }, { 15, 1, 1 }, { 10, 16, 0 }, { 20, 2, 0 }, { 11, 17, 0 },
+  { 3, 0, 0 }, { 11, 18, 0 }, { 11, 19, 0 }, { 15, 1, 1 }, { 10, 20, 0 }, { 20, 2, 0 }, { 11, 21, 0 }, { 11, 22, 0 },
+  { 11, 23, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 11, 24, 0 }, { 11, 25, 0 }, { 11, 26, 0 }, { 11, 27, 0 }, { 11, 28, 0 },
+  { 13, 1, 0 }, { 20, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 11, 29, 0 },
+  { 11, 30, 0 }, { 11, 31, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 11, 32, 0 }, { 11, 33, 0 }, { 11, 34, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 11, 35, 0 }, { 11, 36, 0 },
+  { 11, 37, 0 }, { 11, 38, 0 }, { 11, 39, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 3, 0, 0 },
+  { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 0, 0 }, { 34, 3, 0 }, { 18, 41, 0 }, { 11, 2, 0 },
+  { 11, 3, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 1, 0 }, { 34, 3, 0 }, { 18, 30, 0 }, { 11, 4, 0 }, { 15, 1, 1 },
+  { 10, 5, 0 }, { 20, 2, 0 }, { 11, 6, 0 }, { 11, 7, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 11, 8, 0 }, { 11, 9, 0 },
+  { 15, 1, 1 }, { 10, 10, 0 }, { 20, 2, 0 }, { 11, 11, 0 }, { 11, 12, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 },
+  { 20, 3, 0 }, { 24, 3, 0 }, { 11, 13, 0 }, { 5, 0, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 22, 0, 0 }, { 17, 4, 0 }, { 11, 14, 0 }, { 13, 1, 0 }, { 21, 2, 0 }, { 17, 3, 0 }, { 4, 0, 0 },
+  { 22, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 0, 0 }, { 34, 3, 0 }, { 18, 56, 0 },
+  { 11, 2, 0 }, { 10, 3, 0 }, { 13, 2, 0 }, { 20, 3, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 15, 1, 1 },
+  { 10, 5, 0 }, { 20, 2, 0 }, { 11, 6, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 13, 3, 0 }, { 11, 9, 0 }, { 11, 10, 0 },
+  { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 11, 11, 0 },
+  { 11, 12, 0 }, { 15, 1, 1 }, { 10, 13, 0 }, { 20, 2, 0 }, { 11, 14, 0 }, { 13, 3, 0 }, { 11, 15, 0 }, { 13, 3, 0 },
+  { 11, 16, 0 }, { 11, 17, 0 }, { 15, 1, 1 }, { 10, 18, 0 }, { 20, 2, 0 }, { 11, 19, 0 }, { 11, 20, 0 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 5, 0, 0 },
+  { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 1, 0 }, { 13, 3, 0 },
+  { 27, 2, 0 }, { 18, 224, 0 }, { 11, 2, 0 }, { 13, 3, 0 }, { 25, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 3, 0 },
+  { 11, 4, 0 }, { 13, 4, 0 }, { 25, 2, 0 }, { 20, 2, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 12, 0 }, { 11, 5, 0 },
+  { 15, 1, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 13, 4, 0 }, { 25, 2, 0 }, { 13, 2, 0 },
+  { 20, 3, 0 }, { 20, 3, 0 }, { 18, 186, 0 }, { 11, 9, 0 }, { 11, 10, 0 }, { 13, 4, 0 }, { 20, 2, 0 }, { 20, 2, 0 },
+  { 18, 3, 0 }, { 5, 0, 0 }, { 17, 12, 0 }, { 11, 11, 0 }, { 15, 1, 1 }, { 10, 12, 0 }, { 20, 2, 0 }, { 11, 13, 0 },
+  { 11, 14, 0 }, { 13, 4, 0 }, { 20, 2, 0 }, { 13, 2, 0 }, { 20, 3, 0 }, { 20, 3, 0 }, { 18, 101, 0 }, { 11, 15, 0 },
+  { 11, 16, 0 }, { 13, 4, 0 }, { 26, 2, 0 }, { 27, 2, 0 }, { 18, 40, 0 }, { 11, 17, 0 }, { 15, 1, 1 }, { 10, 18, 0 },
+  { 20, 2, 0 }, { 11, 19, 0 }, { 11, 20, 0 }, { 13, 4, 0 }, { 25, 2, 0 }, { 11, 21, 0 }, { 11, 22, 0 }, { 15, 1, 1 },
+  { 10, 23, 0 }, { 20, 2, 0 }, { 11, 24, 0 }, { 11, 25, 0 }, { 13, 4, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 },
+  { 24, 3, 0 }, { 11, 26, 0 }, { 11, 27, 0 }, { 15, 1, 1 }, { 10, 28, 0 }, { 20, 2, 0 }, { 11, 29, 0 }, { 11, 30, 0 },
+  { 13, 3, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 55, 0 }, { 11, 31, 0 }, { 10, 32, 0 }, { 15, 1, 0 }, { 20, 3, 0 },
+  { 14, 6, 0 }, { 1, 0, 0 }, { 11, 33, 0 }, { 15, 1, 1 }, { 10, 34, 0 }, { 20, 2, 0 }, { 11, 35, 0 }, { 11, 36, 0 },
+  { 11, 37, 0 }, { 13, 6, 0 }, { 11, 38, 0 }, { 11, 39, 0 }, { 13, 4, 0 }, { 25, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 11, 40, 0 }, { 11, 41, 0 }, { 15, 1, 1 }, { 10, 42, 0 }, { 20, 2, 0 },
+  { 11, 43, 0 }, { 13, 6, 0 }, { 11, 44, 0 }, { 13, 6, 0 }, { 11, 45, 0 }, { 11, 46, 0 }, { 15, 1, 1 }, { 10, 47, 0 },
+  { 20, 2, 0 }, { 11, 48, 0 }, { 11, 49, 0 }, { 13, 3, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 },
+  { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 22, 0, 0 }, { 17, 65, 0 }, { 11, 50, 0 }, { 10, 51, 0 }, { 15, 1, 0 }, { 20, 3, 0 }, { 14, 5, 0 },
+  { 1, 0, 0 }, { 11, 52, 0 }, { 15, 1, 1 }, { 10, 53, 0 }, { 20, 2, 0 }, { 11, 54, 0 }, { 11, 55, 0 }, { 11, 56, 0 },
+  { 13, 5, 0 }, { 11, 57, 0 }, { 11, 58, 0 }, { 13, 4, 0 }, { 25, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 3, 0, 0 }, { 24, 3, 0 }, { 11, 59, 0 }, { 11, 60, 0 }, { 15, 1, 1 }, { 10, 61, 0 }, { 20, 2, 0 }, { 11, 62, 0 },
+  { 13, 5, 0 }, { 11, 63, 0 }, { 11, 64, 0 }, { 11, 65, 0 }, { 11, 66, 0 }, { 13, 4, 0 }, { 20, 2, 0 }, { 25, 2, 0 },
+  { 11, 67, 0 }, { 13, 5, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 11, 68, 0 }, { 11, 69, 0 }, { 15, 1, 1 },
+  { 10, 70, 0 }, { 20, 2, 0 }, { 11, 71, 0 }, { 11, 72, 0 }, { 13, 3, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 },
+  { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 13, 0 }, { 11, 73, 0 }, { 15, 1, 1 }, { 10, 74, 0 }, { 20, 2, 0 },
+  { 11, 75, 0 }, { 11, 76, 0 }, { 13, 4, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 17, 3, 0 }, { 2, 0, 0 }, { 22, 0, 0 }, { 13, 2, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 },
+  { 23, 0, 0 }, { 14, 10, 0 }, { 1, 0, 0 }, { 23, 1, 0 }, { 14, 9, 0 }, { 1, 0, 0 }, { 23, 2, 0 }, { 14, 12, 0 },
+  { 1, 0, 0 }, { 23, 3, 0 }, { 14, 11, 0 }, { 1, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 14, 5, 0 },
+  { 1, 0, 0 }, { 13, 11, 0 }, { 6, 0, 0 }, { 13, 5, 0 }, { 21, 3, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 },
+  { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 13, 3, 0 }, { 27, 2, 0 }, { 18, 48, 0 }, { 11, 5, 0 },
+  { 15, 1, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 11, 10, 0 }, { 11, 11, 0 },
+  { 13, 3, 0 }, { 25, 2, 0 }, { 25, 2, 0 }, { 11, 12, 0 }, { 11, 13, 0 }, { 11, 14, 0 }, { 13, 3, 0 }, { 25, 2, 0 },
+  { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 11, 15, 0 }, { 11, 16, 0 },
+  { 15, 1, 1 }, { 10, 17, 0 }, { 20, 2, 0 }, { 11, 18, 0 }, { 11, 19, 0 }, { 11, 20, 0 }, { 13, 3, 0 }, { 26, 2, 0 },
+  { 3, 0, 0 }, { 20, 3, 0 }, { 11, 21, 0 }, { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 14, 0 }, { 11, 22, 0 }, { 15, 1, 1 },
+  { 10, 23, 0 }, { 20, 2, 0 }, { 11, 24, 0 }, { 3, 0, 0 }, { 11, 25, 0 }, { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 15, 1, 1 }, { 10, 1, 0 }, { 20, 2, 0 }, { 11, 2, 0 },
+  { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 },
+  { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 23, 0, 0 }, { 11, 5, 0 },
+  { 11, 6, 0 }, { 13, 3, 0 }, { 20, 3, 0 }, { 20, 3, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 11, 7, 0 }, { 23, 1, 0 },
+  { 13, 3, 0 }, { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 11, 8, 0 }, { 15, 1, 1 }, { 10, 9, 0 }, { 20, 2, 0 },
+  { 11, 10, 0 }, { 11, 11, 0 }, { 13, 5, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 11, 12, 0 }, { 13, 6, 0 }, { 11, 13, 0 },
+  { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 15, 1, 1 }, { 10, 1, 0 }, { 20, 2, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 3, 0, 0 },
+  { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 },
+  { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 },
+  { 1, 0, 0 }, { 11, 4, 0 }, { 13, 3, 0 }, { 27, 2, 0 }, { 18, 64, 0 }, { 11, 5, 0 }, { 15, 1, 1 }, { 10, 6, 0 },
+  { 20, 2, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 15, 1, 1 }, { 10, 9, 0 }, { 20, 2, 0 }, { 11, 10, 0 }, { 3, 0, 0 },
+  { 11, 11, 0 }, { 11, 12, 0 }, { 11, 13, 0 }, { 13, 3, 0 }, { 25, 2, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 11, 14, 0 }, { 11, 15, 0 }, { 15, 1, 1 }, { 10, 16, 0 }, { 20, 2, 0 }, { 11, 17, 0 },
+  { 11, 18, 0 }, { 11, 19, 0 }, { 11, 20, 0 }, { 13, 3, 0 }, { 25, 2, 0 }, { 25, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 },
+  { 11, 21, 0 }, { 11, 22, 0 }, { 15, 1, 1 }, { 10, 23, 0 }, { 20, 2, 0 }, { 11, 24, 0 }, { 11, 25, 0 }, { 11, 26, 0 },
+  { 13, 3, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 11, 27, 0 }, { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 14, 0 }, { 11, 28, 0 }, { 15, 1, 1 }, { 10, 29, 0 }, { 20, 2, 0 },
+  { 11, 30, 0 }, { 3, 0, 0 }, { 11, 31, 0 }, { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 22, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 },
+  { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 },
+  { 1, 0, 0 }, { 11, 4, 0 }, { 10, 5, 0 }, { 15, 1, 0 }, { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 11, 6, 0 },
+  { 15, 1, 1 }, { 10, 7, 0 }, { 20, 2, 0 }, { 11, 8, 0 }, { 23, 0, 0 }, { 14, 8, 0 }, { 1, 0, 0 }, { 13, 8, 0 },
+  { 13, 3, 0 }, { 20, 2, 0 }, { 11, 9, 0 }, { 11, 10, 0 }, { 15, 1, 1 }, { 10, 11, 0 }, { 20, 2, 0 }, { 11, 12, 0 },
+  { 11, 13, 0 }, { 15, 1, 1 }, { 10, 14, 0 }, { 20, 2, 0 }, { 11, 15, 0 }, { 3, 0, 0 }, { 11, 16, 0 }, { 13, 4, 0 },
+  { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 11, 17, 0 }, { 11, 18, 0 }, { 15, 1, 1 }, { 10, 19, 0 },
+  { 20, 2, 0 }, { 11, 20, 0 }, { 13, 6, 0 }, { 11, 21, 0 }, { 23, 1, 0 }, { 14, 9, 0 }, { 1, 0, 0 }, { 13, 9, 0 },
+  { 13, 3, 0 }, { 13, 6, 0 }, { 20, 3, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 },
+  { 11, 3, 0 }, { 11, 4, 0 }, { 11, 5, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 25, 2, 0 },
+  { 14, 4, 0 }, { 1, 0, 0 }, { 11, 6, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 26, 2, 0 }, { 25, 2, 0 }, { 26, 2, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 11, 10, 0 }, { 11, 11, 0 }, { 11, 12, 0 },
+  { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 7, 0 }, { 1, 0, 0 }, { 11, 13, 0 }, { 10, 14, 0 },
+  { 15, 1, 0 }, { 20, 3, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 11, 15, 0 }, { 15, 1, 1 }, { 10, 16, 0 }, { 20, 2, 0 },
+  { 11, 17, 0 }, { 13, 5, 0 }, { 11, 18, 0 }, { 11, 19, 0 }, { 23, 0, 0 }, { 13, 3, 0 }, { 20, 3, 0 }, { 11, 20, 0 },
+  { 11, 21, 0 }, { 15, 1, 1 }, { 10, 22, 0 }, { 20, 2, 0 }, { 11, 23, 0 }, { 13, 4, 0 }, { 11, 24, 0 }, { 11, 25, 0 },
+  { 15, 1, 1 }, { 10, 26, 0 }, { 20, 2, 0 }, { 11, 27, 0 }, { 13, 6, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 },
+  { 11, 28, 0 }, { 11, 29, 0 }, { 15, 1, 1 }, { 10, 30, 0 }, { 20, 2, 0 }, { 11, 31, 0 }, { 13, 7, 0 }, { 11, 32, 0 },
+  { 11, 33, 0 }, { 13, 5, 0 }, { 11, 34, 0 }, { 11, 35, 0 }, { 23, 1, 0 }, { 13, 3, 0 }, { 20, 3, 0 }, { 3, 0, 0 },
+  { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 22, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 },
+  { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 },
+  { 15, 1, 1 }, { 10, 5, 0 }, { 20, 2, 0 }, { 11, 6, 0 }, { 13, 3, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 15, 1, 1 },
+  { 10, 9, 0 }, { 20, 2, 0 }, { 11, 10, 0 }, { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 11, 11, 0 },
+  { 2, 0, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 },
+  { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 15, 1, 1 }, { 10, 5, 0 },
+  { 20, 2, 0 }, { 11, 6, 0 }, { 13, 3, 0 }, { 11, 7, 0 }, { 2, 0, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 15, 1, 1 },
+  { 10, 10, 0 }, { 20, 2, 0 }, { 11, 11, 0 }, { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 13, 2, 0 }, { 2, 0, 0 }, { 2, 0, 0 },
+  { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 },
+  { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 10, 5, 0 },
+  { 15, 1, 0 }, { 20, 3, 0 }, { 14, 8, 0 }, { 1, 0, 0 }, { 11, 6, 0 }, { 15, 1, 1 }, { 10, 7, 0 }, { 20, 2, 0 },
+  { 11, 8, 0 }, { 11, 9, 0 }, { 11, 10, 0 }, { 13, 8, 0 }, { 11, 11, 0 }, { 13, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 11, 12, 0 }, { 23, 0, 0 }, { 14, 9, 0 }, { 1, 0, 0 }, { 13, 9, 0 },
+  { 13, 4, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 },
+  { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 13, 3, 0 }, { 27, 2, 0 },
+  { 18, 51, 0 }, { 11, 5, 0 }, { 13, 3, 0 }, { 25, 2, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 11, 6, 0 }, { 15, 1, 1 },
+  { 10, 7, 0 }, { 20, 2, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 13, 5, 0 }, { 25, 2, 0 }, { 11, 10, 0 }, { 11, 11, 0 },
+  { 13, 5, 0 }, { 20, 2, 0 }, { 11, 12, 0 }, { 11, 13, 0 }, { 15, 1, 1 }, { 10, 14, 0 }, { 20, 2, 0 }, { 11, 15, 0 },
+  { 3, 0, 0 }, { 11, 16, 0 }, { 11, 17, 0 }, { 15, 1, 1 }, { 10, 18, 0 }, { 20, 2, 0 }, { 11, 19, 0 }, { 11, 20, 0 },
+  { 13, 3, 0 }, { 26, 2, 0 }, { 11, 21, 0 }, { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 22, 0, 0 }, { 17, 11, 0 }, { 11, 22, 0 }, { 15, 1, 1 }, { 10, 23, 0 }, { 20, 2, 0 }, { 11, 24, 0 },
+  { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 2, 0, 0 }, { 13, 2, 0 }, { 2, 0, 0 },
+  { 3, 0, 0 }, { 14, 7, 0 }, { 1, 0, 0 }, { 5, 0, 0 }, { 14, 9, 0 }, { 1, 0, 0 }, { 5, 0, 0 }, { 14, 5, 0 },
+  { 1, 0, 0 }, { 23, 0, 0 }, { 14, 9, 0 }, { 1, 0, 0 }, { 23, 1, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 13, 5, 0 },
+  { 13, 9, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 11, 1, 0 },
+  { 15, 1, 1 }, { 10, 2, 0 }, { 20, 2, 0 }, { 11, 3, 0 }, { 11, 4, 0 }, { 11, 5, 0 }, { 13, 7, 0 }, { 20, 3, 0 },
+  { 11, 6, 0 }, { 13, 6, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 2, 0, 0 },
+  { 13, 2, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 3, 0, 0 }, { 14, 10, 0 },
+  { 1, 0, 0 }, { 5, 0, 0 }, { 14, 14, 0 }, { 1, 0, 0 }, { 23, 0, 0 }, { 14, 14, 0 }, { 1, 0, 0 }, { 23, 1, 0 },
+  { 14, 13, 0 }, { 1, 0, 0 }, { 23, 2, 0 }, { 14, 15, 0 }, { 1, 0, 0 }, { 23, 3, 0 }, { 14, 16, 0 }, { 1, 0, 0 },
+  { 23, 4, 0 }, { 14, 12, 0 }, { 1, 0, 0 }, { 13, 12, 0 }, { 6, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 11, 1, 0 }, { 15, 1, 1 }, { 10, 2, 0 }, { 20, 2, 0 }, { 11, 3, 0 },
+  { 11, 4, 0 }, { 11, 5, 0 }, { 13, 10, 0 }, { 20, 3, 0 }, { 11, 6, 0 }, { 13, 6, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 13, 1, 0 }, { 23, 0, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 },
+  { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 },
+  { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 13, 3, 0 }, { 29, 2, 0 }, { 18, 29, 0 },
+  { 11, 5, 0 }, { 15, 1, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 11, 7, 0 }, { 13, 3, 0 }, { 11, 8, 0 }, { 11, 9, 0 },
+  { 15, 1, 4 }, { 11, 10, 0 }, { 11, 11, 0 }, { 15, 1, 1 }, { 10, 12, 0 }, { 20, 2, 0 }, { 11, 13, 0 }, { 13, 4, 0 },
+  { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 29, 0 }, { 11, 14, 0 }, { 15, 1, 1 }, { 10, 15, 0 }, { 20, 2, 0 },
+  { 11, 16, 0 }, { 11, 17, 0 }, { 13, 3, 0 }, { 25, 2, 0 }, { 11, 18, 0 }, { 11, 19, 0 }, { 15, 1, 1 }, { 10, 20, 0 },
+  { 20, 2, 0 }, { 11, 21, 0 }, { 11, 22, 0 }, { 13, 3, 0 }, { 26, 2, 0 }, { 11, 23, 0 }, { 13, 4, 0 }, { 3, 0, 0 },
+  { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 2, 0 },
+  { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 10, 5, 0 },
+  { 11, 6, 0 }, { 3, 0, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 23, 0, 0 }, { 13, 3, 0 }, { 20, 3, 0 }, { 11, 9, 0 },
+  { 13, 4, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 15, 1, 1 }, { 10, 1, 0 }, { 20, 2, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 3, 0, 0 },
+  { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 13, 1, 0 }, { 23, 0, 0 }, { 22, 0, 0 }, { 23, 0, 0 }, { 14, 2, 0 },
+  { 1, 0, 0 }, { 23, 1, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 13, 3, 0 }, { 11, 0, 0 }, { 13, 2, 0 }, { 13, 1, 0 },
+  { 20, 3, 0 }, { 10, 1, 0 }, { 21, 3, 0 }, { 2, 0, 0 }, { 15, 1, 2 }, { 11, 0, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 20, 2, 0 }, { 14, 7, 0 }, { 1, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 },
+  { 11, 2, 0 }, { 13, 7, 0 }, { 20, 2, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 13, 5, 0 }, { 18, 12, 0 }, { 11, 3, 0 },
+  { 13, 7, 0 }, { 20, 2, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 13, 6, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 },
+  { 13, 6, 0 }, { 17, 2, 0 }, { 13, 5, 0 }, { 1, 0, 0 }, { 11, 4, 0 }, { 23, 0, 0 }, { 13, 4, 0 }, { 21, 3, 0 },
+  { 2, 0, 0 }, { 2, 0, 0 }, { 5, 0, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 23, 0, 0 }, { 14, 5, 0 }, { 1, 0, 0 },
+  { 23, 1, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 13, 6, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 21, 2, 0 },
+  { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 23, 0, 0 }, { 14, 11, 0 }, { 1, 0, 0 },
+  { 23, 1, 0 }, { 14, 13, 0 }, { 1, 0, 0 }, { 23, 2, 0 }, { 14, 10, 0 }, { 1, 0, 0 }, { 5, 0, 0 }, { 14, 9, 0 },
+  { 1, 0, 0 }, { 5, 0, 0 }, { 14, 12, 0 }, { 1, 0, 0 }, { 23, 3, 0 }, { 14, 9, 0 }, { 1, 0, 0 }, { 23, 4, 0 },
+  { 14, 12, 0 }, { 1, 0, 0 }, { 5, 0, 0 }, { 14, 8, 0 }, { 1, 0, 0 }, { 23, 5, 0 }, { 14, 8, 0 }, { 1, 0, 0 },
+  { 11, 0, 0 }, { 13, 8, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 21, 3, 0 }, { 2, 0, 0 }, { 5, 0, 0 },
+  { 14, 5, 0 }, { 1, 0, 0 }, { 5, 0, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 23, 0, 0 }, { 14, 5, 0 }, { 1, 0, 0 },
+  { 23, 1, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 0, 0 }, { 13, 4, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 21, 3, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 29, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 21, 0 },
+  { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 20, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 },
+  { 17, 12, 0 }, { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 }, { 11, 5, 0 }, { 11, 6, 0 }, { 13, 1, 0 },
+  { 25, 2, 0 }, { 15, 1, 0 }, { 20, 3, 0 }, { 21, 3, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 29, 2, 0 }, { 18, 4, 0 },
+  { 5, 0, 0 }, { 22, 0, 0 }, { 17, 21, 0 }, { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 20, 2, 0 },
+  { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 12, 0 }, { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 },
+  { 11, 5, 0 }, { 11, 6, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 15, 1, 0 }, { 20, 3, 0 }, { 21, 3, 0 }, { 11, 0, 0 },
+  { 13, 1, 0 }, { 29, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 30, 0 }, { 11, 1, 0 }, { 11, 2, 0 },
+  { 13, 1, 0 }, { 25, 2, 0 }, { 29, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 21, 0 }, { 11, 3, 0 },
+  { 11, 4, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 12, 0 },
+  { 11, 5, 0 }, { 15, 2, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 15, 1, 0 }, { 20, 3, 0 }, { 21, 3, 0 }, { 15, 1, 1 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 141, 0 }, { 15, 1, 4 },
+  { 13, 2, 0 }, { 20, 2, 0 }, { 18, 75, 0 }, { 15, 1, 2 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 46, 0 }, { 11, 0, 0 },
+  { 13, 2, 0 }, { 29, 2, 0 }, { 18, 24, 0 }, { 11, 1, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 8, 0 }, { 11, 2, 0 },
+  { 15, 2, 1 }, { 10, 3, 0 }, { 20, 2, 0 }, { 13, 2, 0 }, { 21, 3, 0 }, { 17, 12, 0 }, { 11, 4, 0 }, { 15, 2, 1 },
+  { 10, 5, 0 }, { 20, 2, 0 }, { 15, 1, 3 }, { 13, 1, 0 }, { 11, 6, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 20, 3, 0 },
+  { 21, 3, 0 }, { 17, 18, 0 }, { 11, 7, 0 }, { 15, 2, 1 }, { 10, 8, 0 }, { 20, 2, 0 }, { 15, 1, 3 }, { 13, 1, 0 },
+  { 11, 9, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 15, 1, 3 }, { 13, 1, 0 }, { 11, 10, 0 }, { 13, 2, 0 },
+  { 26, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 }, { 17, 25, 0 }, { 11, 11, 0 }, { 15, 2, 1 }, { 10, 12, 0 }, { 20, 2, 0 },
+  { 11, 13, 0 }, { 15, 2, 1 }, { 10, 14, 0 }, { 20, 2, 0 }, { 15, 2, 1 }, { 10, 15, 0 }, { 20, 2, 0 }, { 20, 3, 0 },
+  { 15, 1, 3 }, { 11, 16, 0 }, { 13, 1, 0 }, { 6, 0, 0 }, { 30, 3, 0 }, { 11, 17, 0 }, { 11, 18, 0 }, { 13, 2, 0 },
+  { 26, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 }, { 17, 62, 0 }, { 11, 19, 0 }, { 13, 1, 0 }, { 6, 1, 0 },
+  { 34, 3, 0 }, { 18, 39, 0 }, { 11, 20, 0 }, { 15, 2, 1 }, { 10, 21, 0 }, { 20, 2, 0 }, { 11, 22, 0 }, { 15, 2, 1 },
+  { 10, 23, 0 }, { 20, 2, 0 }, { 11, 24, 0 }, { 15, 2, 1 }, { 10, 25, 0 }, { 20, 2, 0 }, { 15, 2, 1 }, { 10, 26, 0 },
+  { 20, 2, 0 }, { 20, 3, 0 }, { 15, 1, 3 }, { 11, 27, 0 }, { 13, 1, 0 }, { 6, 2, 0 }, { 31, 3, 0 }, { 11, 28, 0 },
+  { 11, 29, 0 }, { 11, 30, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 20, 4, 0 },
+  { 15, 1, 3 }, { 13, 1, 0 }, { 11, 31, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 }, { 17, 19, 0 },
+  { 11, 32, 0 }, { 15, 2, 1 }, { 10, 33, 0 }, { 20, 2, 0 }, { 11, 34, 0 }, { 11, 35, 0 }, { 11, 36, 0 }, { 13, 2, 0 },
+  { 25, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 15, 1, 3 }, { 13, 1, 0 }, { 11, 37, 0 }, { 13, 2, 0 }, { 26, 2, 0 },
+  { 20, 3, 0 }, { 21, 4, 0 }, { 17, 37, 0 }, { 11, 38, 0 }, { 13, 1, 0 }, { 6, 3, 0 }, { 34, 3, 0 }, { 18, 26, 0 },
+  { 11, 39, 0 }, { 15, 2, 1 }, { 10, 40, 0 }, { 20, 2, 0 }, { 11, 41, 0 }, { 15, 2, 1 }, { 10, 42, 0 }, { 20, 2, 0 },
+  { 15, 2, 1 }, { 10, 43, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 15, 1, 3 }, { 11, 44, 0 }, { 13, 1, 0 }, { 6, 4, 0 },
+  { 31, 3, 0 }, { 11, 45, 0 }, { 11, 46, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 },
+  { 17, 7, 0 }, { 11, 47, 0 }, { 11, 48, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 13, 1, 0 }, { 11, 1, 0 }, { 5, 0, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 15, 2, 1 }, { 10, 1, 0 }, { 20, 2, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 },
+  { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 29, 2, 0 }, { 18, 25, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 18, 4, 0 }, { 3, 0, 0 }, { 22, 0, 0 }, { 17, 17, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 },
+  { 20, 2, 0 }, { 11, 5, 0 }, { 13, 1, 0 }, { 11, 6, 0 }, { 2, 0, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 26, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 15, 2, 1 },
+  { 10, 9, 0 }, { 20, 2, 0 }, { 11, 10, 0 }, { 11, 11, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 11, 12, 0 }, { 2, 0, 0 },
+  { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 11, 13, 0 }, { 15, 1, 0 }, { 11, 14, 0 }, { 13, 1, 0 },
+  { 26, 2, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 },
+  { 29, 2, 0 }, { 18, 25, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 18, 4, 0 }, { 3, 0, 0 }, { 22, 0, 0 },
+  { 17, 17, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 }, { 11, 5, 0 }, { 13, 1, 0 },
+  { 11, 6, 0 }, { 13, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 22, 0, 0 }, { 17, 43, 0 }, { 11, 7, 0 }, { 11, 8, 0 }, { 15, 2, 1 }, { 10, 9, 0 }, { 20, 2, 0 }, { 11, 10, 0 },
+  { 11, 11, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 11, 12, 0 }, { 11, 13, 0 }, { 15, 2, 1 }, { 10, 14, 0 }, { 20, 2, 0 },
+  { 11, 15, 0 }, { 13, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 11, 16, 0 }, { 15, 1, 1 }, { 11, 17, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 11, 18, 0 }, { 15, 2, 1 },
+  { 10, 19, 0 }, { 20, 2, 0 }, { 11, 20, 0 }, { 13, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 20, 3, 0 },
+  { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 25, 2, 0 },
+  { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 27, 2, 0 }, { 18, 10, 0 },
+  { 11, 3, 0 }, { 11, 4, 0 }, { 11, 5, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 22, 0, 0 },
+  { 17, 5, 0 }, { 11, 6, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 27, 2, 0 },
+  { 18, 106, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 11, 2, 0 }, { 15, 2, 1 },
+  { 10, 3, 0 }, { 20, 2, 0 }, { 11, 4, 0 }, { 11, 5, 0 }, { 11, 6, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 20, 2, 0 },
+  { 18, 3, 0 }, { 5, 0, 0 }, { 17, 12, 0 }, { 11, 7, 0 }, { 15, 2, 1 }, { 10, 8, 0 }, { 20, 2, 0 }, { 11, 9, 0 },
+  { 11, 10, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 15, 1, 0 }, { 20, 3, 0 }, { 20, 3, 0 }, { 18, 16, 0 }, { 11, 11, 0 },
+  { 15, 2, 1 }, { 10, 12, 0 }, { 20, 2, 0 }, { 11, 13, 0 }, { 11, 14, 0 }, { 23, 0, 0 }, { 11, 15, 0 }, { 13, 2, 0 },
+  { 25, 2, 0 }, { 20, 3, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 17, 2, 0 }, { 4, 0, 0 }, { 11, 16, 0 },
+  { 11, 17, 0 }, { 11, 18, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 20, 2, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 12, 0 },
+  { 11, 19, 0 }, { 15, 2, 1 }, { 10, 20, 0 }, { 20, 2, 0 }, { 11, 21, 0 }, { 11, 22, 0 }, { 13, 2, 0 }, { 20, 2, 0 },
+  { 15, 1, 0 }, { 20, 3, 0 }, { 20, 3, 0 }, { 18, 13, 0 }, { 11, 23, 0 }, { 15, 2, 1 }, { 10, 24, 0 }, { 20, 2, 0 },
+  { 11, 25, 0 }, { 11, 26, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 17, 14, 0 },
+  { 11, 27, 0 }, { 11, 28, 0 }, { 11, 29, 0 }, { 11, 30, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 },
+  { 11, 31, 0 }, { 15, 1, 1 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 11, 32, 0 }, { 15, 1, 2 }, { 11, 33, 0 },
+  { 13, 1, 0 }, { 26, 2, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 22, 0, 0 }, { 17, 3, 0 }, { 2, 0, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 15, 1, 0 }, { 20, 3, 0 },
+  { 14, 2, 0 }, { 1, 0, 0 }, { 13, 2, 0 }, { 18, 46, 0 }, { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 11, 3, 0 },
+  { 11, 4, 0 }, { 13, 1, 0 }, { 15, 1, 1 }, { 20, 3, 0 }, { 11, 5, 0 }, { 11, 6, 0 }, { 15, 2, 1 }, { 10, 7, 0 },
+  { 20, 2, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 10, 10, 0 }, { 11, 11, 0 }, { 13, 1, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 11, 12, 0 }, { 11, 13, 0 }, { 10, 14, 0 }, { 11, 15, 0 }, { 15, 1, 1 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 15, 1, 0 }, { 24, 3, 0 }, { 16, 1, 0 }, { 1, 0, 0 }, { 15, 1, 2 }, { 13, 1, 0 }, { 21, 2, 0 },
+  { 17, 4, 0 }, { 11, 16, 0 }, { 13, 2, 0 }, { 21, 2, 0 }, { 11, 0, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 90, 0 },
+  { 11, 1, 0 }, { 13, 2, 0 }, { 29, 2, 0 }, { 18, 42, 0 }, { 11, 2, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 12, 0 },
+  { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 }, { 11, 5, 0 }, { 13, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 22, 0, 0 }, { 17, 26, 0 }, { 11, 6, 0 }, { 15, 2, 1 }, { 10, 7, 0 }, { 20, 2, 0 }, { 11, 8, 0 },
+  { 11, 9, 0 }, { 10, 10, 0 }, { 11, 11, 0 }, { 10, 12, 0 }, { 11, 13, 0 }, { 11, 14, 0 }, { 10, 15, 0 }, { 11, 16, 0 },
+  { 10, 17, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 44, 0 }, { 11, 18, 0 }, { 15, 2, 1 }, { 10, 19, 0 },
+  { 20, 2, 0 }, { 11, 20, 0 }, { 11, 21, 0 }, { 10, 22, 0 }, { 11, 23, 0 }, { 10, 24, 0 }, { 11, 25, 0 }, { 11, 26, 0 },
+  { 10, 27, 0 }, { 11, 28, 0 }, { 10, 29, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 11, 30, 0 }, { 11, 31, 0 }, { 10, 32, 0 }, { 11, 33, 0 }, { 10, 34, 0 }, { 11, 35, 0 },
+  { 11, 36, 0 }, { 10, 37, 0 }, { 11, 38, 0 }, { 10, 39, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 },
+  { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 17, 4, 0 }, { 13, 1, 0 }, { 13, 2, 0 }, { 21, 2, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 15, 1, 0 }, { 20, 3, 0 },
+  { 14, 2, 0 }, { 1, 0, 0 }, { 13, 2, 0 }, { 18, 46, 0 }, { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 11, 3, 0 },
+  { 11, 4, 0 }, { 13, 1, 0 }, { 15, 1, 1 }, { 20, 3, 0 }, { 11, 5, 0 }, { 11, 6, 0 }, { 15, 2, 1 }, { 10, 7, 0 },
+  { 20, 2, 0 }, { 11, 8, 0 }, { 11, 9, 0 }, { 10, 10, 0 }, { 11, 11, 0 }, { 13, 1, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 11, 12, 0 }, { 11, 13, 0 }, { 10, 14, 0 }, { 11, 15, 0 }, { 15, 1, 1 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 15, 1, 0 }, { 24, 3, 0 }, { 16, 1, 0 }, { 1, 0, 0 }, { 15, 1, 4 }, { 13, 1, 0 }, { 21, 2, 0 },
+  { 17, 4, 0 }, { 11, 16, 0 }, { 13, 2, 0 }, { 21, 2, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 29, 2, 0 }, { 18, 4, 0 },
+  { 5, 0, 0 }, { 22, 0, 0 }, { 17, 21, 0 }, { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 20, 2, 0 },
+  { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 12, 0 }, { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 },
+  { 11, 5, 0 }, { 11, 6, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 15, 1, 1 }, { 20, 3, 0 }, { 21, 3, 0 }, { 11, 0, 0 },
+  { 13, 1, 0 }, { 29, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 21, 0 }, { 11, 1, 0 }, { 11, 2, 0 },
+  { 13, 1, 0 }, { 25, 2, 0 }, { 20, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 12, 0 }, { 11, 3, 0 },
+  { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 }, { 11, 5, 0 }, { 11, 6, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 15, 1, 1 },
+  { 20, 3, 0 }, { 21, 3, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 29, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 },
+  { 17, 30, 0 }, { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 29, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 },
+  { 22, 0, 0 }, { 17, 21, 0 }, { 11, 3, 0 }, { 11, 4, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 2, 0 }, { 18, 4, 0 },
+  { 5, 0, 0 }, { 22, 0, 0 }, { 17, 12, 0 }, { 11, 5, 0 }, { 15, 2, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 11, 7, 0 },
+  { 11, 8, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 15, 1, 1 }, { 20, 3, 0 }, { 21, 3, 0 }, { 15, 1, 5 }, { 13, 2, 0 },
+  { 20, 2, 0 }, { 18, 149, 0 }, { 15, 1, 6 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 83, 0 }, { 15, 1, 3 }, { 13, 2, 0 },
+  { 20, 2, 0 }, { 18, 54, 0 }, { 11, 0, 0 }, { 13, 2, 0 }, { 29, 2, 0 }, { 18, 32, 0 }, { 11, 1, 0 }, { 13, 2, 0 },
+  { 20, 2, 0 }, { 18, 16, 0 }, { 11, 2, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 8, 0 }, { 11, 3, 0 }, { 15, 2, 1 },
+  { 10, 4, 0 }, { 20, 2, 0 }, { 13, 2, 0 }, { 21, 3, 0 }, { 17, 4, 0 }, { 15, 1, 4 }, { 13, 2, 0 }, { 21, 2, 0 },
+  { 17, 12, 0 }, { 11, 5, 0 }, { 15, 2, 1 }, { 10, 6, 0 }, { 20, 2, 0 }, { 15, 1, 2 }, { 13, 1, 0 }, { 11, 7, 0 },
+  { 13, 2, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 21, 3, 0 }, { 17, 18, 0 }, { 11, 8, 0 }, { 15, 2, 1 }, { 10, 9, 0 },
+  { 20, 2, 0 }, { 15, 1, 2 }, { 13, 1, 0 }, { 11, 10, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 15, 1, 2 },
+  { 13, 1, 0 }, { 11, 11, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 }, { 17, 25, 0 }, { 11, 12, 0 },
+  { 15, 2, 1 }, { 10, 13, 0 }, { 20, 2, 0 }, { 11, 14, 0 }, { 15, 2, 1 }, { 10, 15, 0 }, { 20, 2, 0 }, { 15, 2, 1 },
+  { 10, 16, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 15, 1, 2 }, { 11, 17, 0 }, { 13, 1, 0 }, { 6, 0, 0 }, { 30, 3, 0 },
+  { 11, 18, 0 }, { 11, 19, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 }, { 17, 62, 0 },
+  { 11, 20, 0 }, { 13, 1, 0 }, { 6, 1, 0 }, { 34, 3, 0 }, { 18, 39, 0 }, { 11, 21, 0 }, { 15, 2, 1 }, { 10, 22, 0 },
+  { 20, 2, 0 }, { 11, 23, 0 }, { 15, 2, 1 }, { 10, 24, 0 }, { 20, 2, 0 }, { 11, 25, 0 }, { 15, 2, 1 }, { 10, 26, 0 },
+  { 20, 2, 0 }, { 15, 2, 1 }, { 10, 27, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 15, 1, 2 }, { 11, 28, 0 }, { 13, 1, 0 },
+  { 6, 2, 0 }, { 31, 3, 0 }, { 11, 29, 0 }, { 11, 30, 0 }, { 11, 31, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 26, 2, 0 },
+  { 25, 2, 0 }, { 20, 3, 0 }, { 20, 4, 0 }, { 15, 1, 2 }, { 13, 1, 0 }, { 11, 32, 0 }, { 13, 2, 0 }, { 26, 2, 0 },
+  { 20, 3, 0 }, { 21, 4, 0 }, { 17, 19, 0 }, { 11, 33, 0 }, { 15, 2, 1 }, { 10, 34, 0 }, { 20, 2, 0 }, { 11, 35, 0 },
+  { 11, 36, 0 }, { 11, 37, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 15, 1, 2 }, { 13, 1, 0 },
+  { 11, 38, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 }, { 17, 37, 0 }, { 11, 39, 0 }, { 13, 1, 0 },
+  { 6, 3, 0 }, { 34, 3, 0 }, { 18, 26, 0 }, { 11, 40, 0 }, { 15, 2, 1 }, { 10, 41, 0 }, { 20, 2, 0 }, { 11, 42, 0 },
+  { 15, 2, 1 }, { 10, 43, 0 }, { 20, 2, 0 }, { 15, 2, 1 }, { 10, 44, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 15, 1, 2 },
+  { 11, 45, 0 }, { 13, 1, 0 }, { 6, 4, 0 }, { 31, 3, 0 }, { 11, 46, 0 }, { 11, 47, 0 }, { 13, 2, 0 }, { 26, 2, 0 },
+  { 25, 2, 0 }, { 20, 3, 0 }, { 21, 4, 0 }, { 17, 7, 0 }, { 11, 48, 0 }, { 11, 49, 0 }, { 13, 2, 0 }, { 26, 2, 0 },
+  { 25, 2, 0 }, { 22, 0, 0 }, { 2, 0, 0 }, { 13, 2, 0 }, { 2, 0, 0 }, { 2, 0, 0 }, { 11, 0, 0 }, { 20, 1, 0 },
+  { 14, 9, 0 }, { 1, 0, 0 }, { 11, 1, 0 }, { 20, 1, 0 }, { 14, 11, 0 }, { 1, 0, 0 }, { 5, 0, 0 }, { 14, 6, 0 },
+  { 1, 0, 0 }, { 5, 0, 0 }, { 14, 7, 0 }, { 1, 0, 0 }, { 5, 0, 0 }, { 14, 12, 0 }, { 1, 0, 0 }, { 23, 0, 0 },
+  { 14, 6, 0 }, { 1, 0, 0 }, { 23, 1, 0 }, { 14, 7, 0 }, { 1, 0, 0 }, { 23, 2, 0 }, { 14, 12, 0 }, { 1, 0, 0 },
+  { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 14, 8, 0 }, { 1, 0, 0 }, { 13, 12, 0 }, { 13, 7, 0 }, { 11, 3, 0 },
+  { 15, 1, 0 }, { 13, 12, 0 }, { 13, 6, 0 }, { 13, 8, 0 }, { 20, 3, 0 }, { 20, 3, 0 }, { 21, 3, 0 }, { 11, 0, 0 },
+  { 15, 2, 1 }, { 10, 1, 0 }, { 20, 2, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 11, 4, 0 },
+  { 11, 5, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 10, 1, 0 }, { 11, 2, 0 }, { 15, 1, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 14, 3, 0 }, { 1, 0, 0 },
+  { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 }, { 11, 5, 0 }, { 13, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 },
+  { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 28, 2, 0 }, { 18, 5, 0 }, { 11, 1, 0 }, { 13, 1, 0 },
+  { 21, 2, 0 }, { 17, 4, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 21, 2, 0 }, { 2, 0, 0 }, { 13, 2, 0 }, { 23, 0, 0 },
+  { 14, 4, 0 }, { 1, 0, 0 }, { 13, 4, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 11, 1, 0 }, { 13, 1, 0 },
+  { 26, 2, 0 }, { 21, 3, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 15, 1, 0 }, { 21, 3, 0 }, { 2, 0, 0 }, { 2, 0, 0 },
+  { 11, 0, 0 }, { 13, 1, 0 }, { 10, 1, 0 }, { 20, 3, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 13, 2, 0 }, { 18, 127, 0 },
+  { 11, 2, 0 }, { 13, 1, 0 }, { 28, 2, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 6, 0 }, { 11, 3, 0 }, { 13, 1, 0 },
+  { 11, 4, 0 }, { 20, 1, 0 }, { 20, 3, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 13, 3, 0 }, { 18, 109, 0 }, { 11, 5, 0 },
+  { 13, 1, 0 }, { 29, 2, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 93, 0 }, { 11, 6, 0 }, { 13, 1, 0 }, { 25, 2, 0 },
+  { 14, 8, 0 }, { 1, 0, 0 }, { 11, 7, 0 }, { 13, 8, 0 }, { 10, 8, 0 }, { 20, 3, 0 }, { 14, 4, 0 }, { 1, 0, 0 },
+  { 13, 4, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 4, 0 }, { 18, 69, 0 }, { 11, 9, 0 }, { 13, 8, 0 },
+  { 10, 10, 0 }, { 20, 3, 0 }, { 14, 11, 0 }, { 1, 0, 0 }, { 13, 11, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 },
+  { 13, 11, 0 }, { 18, 49, 0 }, { 11, 11, 0 }, { 13, 8, 0 }, { 10, 12, 0 }, { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 },
+  { 13, 6, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 6, 0 }, { 18, 28, 0 }, { 11, 13, 0 }, { 13, 8, 0 },
+  { 10, 14, 0 }, { 20, 3, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 13, 5, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 },
+  { 13, 5, 0 }, { 18, 7, 0 }, { 4, 0, 0 }, { 18, 3, 0 }, { 2, 0, 0 }, { 17, 2, 0 }, { 5, 0, 0 }, { 17, 9, 0 },
+  { 23, 0, 0 }, { 14, 13, 0 }, { 1, 0, 0 }, { 13, 13, 0 }, { 11, 15, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 20, 2, 0 },
+  { 17, 9, 0 }, { 23, 1, 0 }, { 14, 12, 0 }, { 1, 0, 0 }, { 13, 12, 0 }, { 11, 16, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 20, 2, 0 }, { 17, 8, 0 }, { 11, 17, 0 }, { 15, 1, 0 }, { 11, 18, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 2, 0 },
+  { 19, 2, 0 }, { 17, 8, 0 }, { 11, 19, 0 }, { 15, 2, 2 }, { 11, 20, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 20, 2, 0 },
+  { 20, 2, 0 }, { 14, 7, 0 }, { 1, 0, 0 }, { 13, 7, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 3, 0 },
+  { 13, 7, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 13, 3, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 13, 2, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 13, 1, 0 }, { 27, 2, 0 }, { 18, 26, 0 }, { 15, 1, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 20, 2, 0 }, { 18, 7, 0 }, { 15, 1, 1 }, { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 21, 2, 0 }, { 17, 13, 0 },
+  { 11, 3, 0 }, { 15, 2, 1 }, { 10, 4, 0 }, { 20, 2, 0 }, { 11, 5, 0 }, { 11, 6, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 3, 0, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 2, 0, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 26, 2, 0 }, { 25, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 11, 3, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 20, 3, 0 },
+  { 21, 2, 0 }, { 15, 2, 2 }, { 13, 1, 0 }, { 20, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 11, 0, 0 }, { 13, 2, 0 },
+  { 20, 2, 0 }, { 18, 6, 0 }, { 11, 1, 0 }, { 10, 2, 0 }, { 13, 1, 0 }, { 21, 3, 0 }, { 17, 3, 0 }, { 13, 2, 0 },
+  { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 11, 1, 0 }, { 13, 2, 0 },
+  { 10, 2, 0 }, { 20, 3, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 13, 3, 0 }, { 18, 33, 0 }, { 11, 3, 0 }, { 13, 2, 0 },
+  { 10, 4, 0 }, { 20, 3, 0 }, { 14, 5, 0 }, { 1, 0, 0 }, { 13, 5, 0 }, { 18, 23, 0 }, { 11, 5, 0 }, { 13, 2, 0 },
+  { 10, 6, 0 }, { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 13, 6, 0 }, { 18, 13, 0 }, { 11, 7, 0 }, { 13, 2, 0 },
+  { 10, 8, 0 }, { 20, 3, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 13, 4, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 },
+  { 13, 4, 0 }, { 17, 2, 0 }, { 13, 6, 0 }, { 17, 2, 0 }, { 13, 5, 0 }, { 17, 2, 0 }, { 13, 3, 0 }, { 18, 10, 0 },
+  { 4, 0, 0 }, { 18, 4, 0 }, { 2, 0, 0 }, { 22, 0, 0 }, { 17, 4, 0 }, { 15, 1, 1 }, { 13, 1, 0 }, { 21, 2, 0 },
+  { 17, 6, 0 }, { 15, 1, 0 }, { 11, 9, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 21, 2, 0 }, { 2, 0, 0 }, { 2, 0, 0 },
+  { 13, 1, 0 }, { 2, 0, 0 }, { 11, 0, 0 }, { 13, 15, 0 }, { 25, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 11, 1, 0 },
+  { 13, 2, 0 }, { 10, 2, 0 }, { 20, 3, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 13, 3, 0 }, { 18, 3, 0 }, { 5, 0, 0 },
+  { 17, 2, 0 }, { 13, 3, 0 }, { 18, 97, 0 }, { 11, 3, 0 }, { 13, 2, 0 }, { 10, 4, 0 }, { 20, 3, 0 }, { 14, 9, 0 },
+  { 1, 0, 0 }, { 13, 9, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 9, 0 }, { 18, 65, 0 }, { 11, 5, 0 },
+  { 13, 2, 0 }, { 10, 6, 0 }, { 20, 3, 0 }, { 14, 6, 0 }, { 1, 0, 0 }, { 13, 6, 0 }, { 18, 3, 0 }, { 5, 0, 0 },
+  { 17, 2, 0 }, { 13, 6, 0 }, { 18, 41, 0 }, { 11, 7, 0 }, { 13, 2, 0 }, { 10, 8, 0 }, { 20, 3, 0 }, { 14, 5, 0 },
+  { 1, 0, 0 }, { 13, 5, 0 }, { 18, 3, 0 }, { 5, 0, 0 }, { 17, 2, 0 }, { 13, 5, 0 }, { 18, 15, 0 }, { 4, 0, 0 },
+  { 18, 4, 0 }, { 2, 0, 0 }, { 22, 0, 0 }, { 17, 9, 0 }, { 11, 9, 0 }, { 23, 0, 0 }, { 11, 10, 0 }, { 15, 1, 1 },
+  { 13, 15, 0 }, { 20, 2, 0 }, { 20, 2, 0 }, { 21, 3, 0 }, { 17, 14, 0 }, { 15, 1, 3 }, { 11, 11, 0 }, { 13, 15, 0 },
+  { 20, 2, 0 }, { 20, 2, 0 }, { 14, 11, 0 }, { 1, 0, 0 }, { 23, 1, 0 }, { 14, 16, 0 }, { 1, 0, 0 }, { 13, 16, 0 },
+  { 13, 11, 0 }, { 21, 2, 0 }, { 17, 12, 0 }, { 15, 1, 3 }, { 11, 12, 0 }, { 13, 15, 0 }, { 20, 2, 0 }, { 20, 2, 0 },
+  { 14, 10, 0 }, { 1, 0, 0 }, { 11, 13, 0 }, { 23, 2, 0 }, { 13, 10, 0 }, { 21, 3, 0 }, { 17, 20, 0 }, { 15, 1, 3 },
+  { 11, 14, 0 }, { 13, 15, 0 }, { 20, 2, 0 }, { 20, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 11, 15, 0 }, { 23, 3, 0 },
+  { 11, 16, 0 }, { 13, 15, 0 }, { 20, 2, 0 }, { 20, 3, 0 }, { 14, 14, 0 }, { 1, 0, 0 }, { 11, 17, 0 }, { 23, 4, 0 },
+  { 13, 4, 0 }, { 21, 3, 0 }, { 17, 14, 0 }, { 15, 1, 3 }, { 11, 18, 0 }, { 13, 15, 0 }, { 20, 2, 0 }, { 20, 2, 0 },
+  { 14, 13, 0 }, { 1, 0, 0 }, { 11, 19, 0 }, { 23, 5, 0 }, { 11, 20, 0 }, { 13, 15, 0 }, { 20, 2, 0 }, { 21, 3, 0 },
+  { 2, 0, 0 }, { 15, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 14, 4, 0 }, { 1, 0, 0 }, { 15, 1, 3 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 11, 0, 0 }, { 23, 0, 0 }, { 13, 3, 0 }, { 21, 3, 0 }, { 11, 0, 0 },
+  { 13, 1, 0 }, { 28, 2, 0 }, { 18, 39, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 18, 3, 0 }, { 5, 0, 0 },
+  { 17, 16, 0 }, { 11, 2, 0 }, { 11, 3, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 6, 0, 0 }, { 34, 3, 0 }, { 18, 3, 0 },
+  { 5, 0, 0 }, { 17, 7, 0 }, { 11, 4, 0 }, { 11, 5, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 10, 6, 0 }, { 20, 3, 0 },
+  { 18, 5, 0 }, { 11, 7, 0 }, { 10, 8, 0 }, { 21, 2, 0 }, { 17, 12, 0 }, { 11, 9, 0 }, { 11, 10, 0 }, { 13, 1, 0 },
+  { 6, 1, 0 }, { 20, 3, 0 }, { 11, 11, 0 }, { 13, 1, 0 }, { 6, 2, 0 }, { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 17, 6, 0 }, { 11, 12, 0 }, { 13, 1, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 15, 1, 0 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 11, 0, 0 }, { 11, 1, 0 }, { 13, 2, 0 }, { 25, 2, 0 }, { 11, 2, 0 },
+  { 13, 2, 0 }, { 26, 2, 0 }, { 21, 3, 0 }, { 11, 0, 0 }, { 15, 3, 1 }, { 10, 1, 0 }, { 20, 2, 0 }, { 11, 2, 0 },
+  { 15, 2, 1 }, { 11, 3, 0 }, { 11, 4, 0 }, { 15, 3, 1 }, { 10, 5, 0 }, { 20, 2, 0 }, { 11, 6, 0 }, { 13, 1, 0 },
+  { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 15, 1, 0 }, { 13, 1, 0 }, { 20, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 13, 2, 0 }, { 18, 20, 0 }, { 11, 0, 0 },
+  { 13, 1, 0 }, { 15, 1, 1 }, { 20, 3, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 15, 1, 0 }, { 13, 1, 0 }, { 13, 3, 0 },
+  { 20, 3, 0 }, { 1, 0, 0 }, { 15, 1, 2 }, { 13, 3, 0 }, { 13, 1, 0 }, { 20, 3, 0 }, { 1, 0, 0 }, { 13, 3, 0 },
+  { 22, 0, 0 }, { 17, 5, 0 }, { 11, 1, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 22, 0, 0 }, { 15, 1, 2 }, { 13, 1, 0 },
+  { 20, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 }, { 13, 2, 0 }, { 18, 4, 0 }, { 13, 1, 0 }, { 22, 0, 0 }, { 17, 5, 0 },
+  { 11, 0, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 37, 0 },
+  { 11, 1, 0 }, { 13, 2, 0 }, { 29, 2, 0 }, { 18, 17, 0 }, { 11, 2, 0 }, { 13, 2, 0 }, { 20, 2, 0 }, { 18, 4, 0 },
+  { 13, 2, 0 }, { 22, 0, 0 }, { 17, 9, 0 }, { 11, 3, 0 }, { 15, 1, 3 }, { 13, 1, 0 }, { 11, 4, 0 }, { 13, 2, 0 },
+  { 20, 2, 0 }, { 20, 3, 0 }, { 21, 2, 0 }, { 17, 16, 0 }, { 11, 5, 0 }, { 15, 1, 3 }, { 13, 1, 0 }, { 11, 6, 0 },
+  { 13, 2, 0 }, { 25, 2, 0 }, { 20, 3, 0 }, { 15, 1, 3 }, { 13, 1, 0 }, { 11, 7, 0 }, { 13, 2, 0 }, { 26, 2, 0 },
+  { 20, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 17, 4, 0 }, { 13, 1, 0 }, { 13, 2, 0 }, { 21, 2, 0 }, { 11, 0, 0 },
+  { 13, 2, 0 }, { 27, 2, 0 }, { 18, 14, 0 }, { 15, 1, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 15, 1, 1 }, { 11, 2, 0 },
+  { 13, 2, 0 }, { 25, 2, 0 }, { 20, 4, 0 }, { 11, 3, 0 }, { 13, 2, 0 }, { 26, 2, 0 }, { 21, 3, 0 }, { 17, 3, 0 },
+  { 13, 1, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 29, 2, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 },
+  { 17, 27, 0 }, { 15, 2, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 20, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 },
+  { 13, 2, 0 }, { 18, 16, 0 }, { 15, 1, 1 }, { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 20, 2, 0 }, { 14, 3, 0 },
+  { 1, 0, 0 }, { 13, 3, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 13, 3, 0 }, { 22, 0, 0 },
+  { 17, 3, 0 }, { 13, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 27, 2, 0 }, { 14, 2, 0 }, { 1, 0, 0 },
+  { 13, 2, 0 }, { 18, 24, 0 }, { 15, 2, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 20, 2, 0 }, { 18, 3, 0 },
+  { 5, 0, 0 }, { 17, 6, 0 }, { 15, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 20, 2, 0 }, { 14, 3, 0 },
+  { 1, 0, 0 }, { 13, 3, 0 }, { 18, 4, 0 }, { 5, 0, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 13, 3, 0 }, { 22, 0, 0 },
+  { 17, 3, 0 }, { 13, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 }, { 13, 1, 0 }, { 13, 1, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 13, 1, 0 }, { 27, 2, 0 }, { 18, 28, 0 }, { 11, 1, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 20, 2, 0 },
+  { 11, 3, 0 }, { 15, 1, 2 }, { 20, 2, 0 }, { 20, 3, 0 }, { 18, 13, 0 }, { 11, 4, 0 }, { 11, 5, 0 }, { 13, 1, 0 },
+  { 25, 2, 0 }, { 15, 1, 3 }, { 11, 6, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 20, 2, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 17, 6, 0 }, { 15, 1, 3 }, { 11, 7, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 21, 2, 0 }, { 17, 3, 0 }, { 3, 0, 0 },
+  { 22, 0, 0 }, { 11, 0, 0 }, { 15, 2, 4 }, { 15, 2, 2 }, { 15, 1, 2 }, { 20, 2, 0 }, { 11, 1, 0 }, { 13, 1, 0 },
+  { 25, 2, 0 }, { 20, 3, 0 }, { 11, 2, 0 }, { 13, 1, 0 }, { 26, 2, 0 }, { 24, 3, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 11, 1, 0 }, { 10, 2, 0 }, { 11, 3, 0 }, { 10, 4, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 11, 5, 0 },
+  { 10, 6, 0 }, { 11, 7, 0 }, { 10, 8, 0 }, { 3, 0, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 24, 3, 0 }, { 22, 0, 0 },
+  { 11, 0, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 15, 1, 1 }, { 20, 3, 0 }, { 14, 2, 0 }, { 1, 0, 0 },
+  { 13, 2, 0 }, { 18, 12, 0 }, { 13, 1, 0 }, { 14, 3, 0 }, { 1, 0, 0 }, { 13, 3, 0 }, { 18, 4, 0 }, { 5, 0, 0 },
+  { 22, 0, 0 }, { 17, 3, 0 }, { 13, 3, 0 }, { 22, 0, 0 }, { 17, 3, 0 }, { 13, 2, 0 }, { 22, 0, 0 }, { 11, 0, 0 },
+  { 13, 1, 0 }, { 15, 1, 0 }, { 21, 3, 0 }, { 11, 0, 0 }, { 15, 1, 0 }, { 11, 1, 0 }, { 13, 1, 0 }, { 26, 2, 0 },
+  { 11, 2, 0 }, { 13, 1, 0 }, { 25, 2, 0 }, { 21, 4, 0 },
+{ 0, 0, 0 } };
+
+struct irep *pic_boot_irepp[] = {
+  &pic_boot_irep[1],
+  &pic_boot_irep[2],
+  &pic_boot_irep[3],
+  &pic_boot_irep[4],
+  &pic_boot_irep[5],
+  &pic_boot_irep[6],
+  &pic_boot_irep[7],
+  &pic_boot_irep[8],
+  &pic_boot_irep[9],
+  &pic_boot_irep[10],
+  &pic_boot_irep[11],
+  &pic_boot_irep[12],
+  &pic_boot_irep[13],
+  &pic_boot_irep[14],
+  &pic_boot_irep[15],
+  &pic_boot_irep[16],
+  &pic_boot_irep[17],
+  &pic_boot_irep[18],
+  &pic_boot_irep[19],
+  &pic_boot_irep[20],
+  &pic_boot_irep[21],
+  &pic_boot_irep[22],
+  &pic_boot_irep[23],
+  &pic_boot_irep[24],
+  &pic_boot_irep[25],
+  &pic_boot_irep[26],
+  &pic_boot_irep[27],
+  &pic_boot_irep[28],
+  &pic_boot_irep[29],
+  &pic_boot_irep[30],
+  &pic_boot_irep[31],
+  &pic_boot_irep[32],
+  &pic_boot_irep[33],
+  &pic_boot_irep[34],
+  &pic_boot_irep[35],
+  &pic_boot_irep[36],
+  &pic_boot_irep[37],
+  &pic_boot_irep[38],
+  &pic_boot_irep[39],
+  &pic_boot_irep[40],
+  &pic_boot_irep[41],
+  &pic_boot_irep[42],
+  &pic_boot_irep[43],
+  &pic_boot_irep[44],
+  &pic_boot_irep[45],
+  &pic_boot_irep[46],
+  &pic_boot_irep[47],
+  &pic_boot_irep[48],
+  &pic_boot_irep[49],
+  &pic_boot_irep[50],
+  &pic_boot_irep[51],
+  &pic_boot_irep[52],
+  &pic_boot_irep[53],
+  &pic_boot_irep[54],
+  &pic_boot_irep[55],
+  &pic_boot_irep[56],
+  &pic_boot_irep[57],
+  &pic_boot_irep[58],
+  &pic_boot_irep[59],
+  &pic_boot_irep[60],
+  &pic_boot_irep[61],
+  &pic_boot_irep[62],
+  &pic_boot_irep[63],
+  &pic_boot_irep[64],
+  &pic_boot_irep[65],
+  &pic_boot_irep[66],
+  &pic_boot_irep[67],
+  &pic_boot_irep[68],
+  &pic_boot_irep[69],
+  &pic_boot_irep[70],
+  &pic_boot_irep[71],
+  &pic_boot_irep[72],
+  &pic_boot_irep[73],
+  &pic_boot_irep[74],
+  &pic_boot_irep[75],
+  &pic_boot_irep[76],
+  &pic_boot_irep[77],
+  &pic_boot_irep[78],
+  &pic_boot_irep[79],
+  &pic_boot_irep[80],
+  &pic_boot_irep[81],
+  &pic_boot_irep[82],
+  &pic_boot_irep[83],
+  &pic_boot_irep[84],
+  &pic_boot_irep[85],
+  &pic_boot_irep[86],
+0 };
+
+int pic_boot_ints[] = {
+  2,4,3,1,2,3,2,3,3,2,3,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,2,
+0 };
+
+double pic_boot_nums[] = {
+0.0 };
+
+struct object *pic_boot_pool[] = {
+  (struct object *)"Mpicrin.base/library-environment", (struct object *)"Spicrin.base", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mquote",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mif", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mbegin", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mset!", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mdefine",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mdefine-macro", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Msyntax-error", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mand", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mor",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcond", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mquasiquote", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlet*", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mletrec", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mletrec*",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlet-values", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mlet*-values", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mdefine-values", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mdo", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mwhen",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Munless", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcase", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mparameterize", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Msyntax-quote", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Msyntax-quasiquote",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mdefine-syntax", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mletrec-syntax", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlet-syntax", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Melse", (struct object *)"Melse", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"M=>", (struct object *)"M=>", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Munquote",
+  (struct object *)"Munquote", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Munquote-splicing", (struct object *)"Munquote-splicing",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Msyntax-unquote", (struct object *)"Msyntax-unquote", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Msyntax-unquote-splicing", (struct object *)"Msyntax-unquote-splicing", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mdefine-library", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcond-expand", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mimport", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mexport",
+  (struct object *)"Mpicrin.base/make-identifier", (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/error", (struct object *)"Sillegal quote form",
+  (struct object *)"Mcons", (struct object *)"Mbuiltin:quote", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/length",
+  (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mpicrin.base/error", (struct object *)"Sillegal if form", (struct object *)"Mcons",
+  (struct object *)"Mbuiltin:if", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mbuiltin:if", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/eqv?",
+  (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mcons", (struct object *)"Mbuiltin:begin", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mpicrin.base/cddr", (struct object *)"Mcons", (struct object *)"Mbuiltin:begin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mnull?", (struct object *)"Mpair?", (struct object *)"Mpicrin.base/identifier?",
+  (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"M>=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mpicrin.base/error", (struct object *)"Sillegal lambda form", (struct object *)"Mcons", (struct object *)"Mbuiltin:lambda", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mpicrin.base/cddr", (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mpicrin.base/error", (struct object *)"Sillegal set! form", (struct object *)"Mcons", (struct object *)"Mbuiltin:set!", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mcdr", (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"M>=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpair?", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/error",
+  (struct object *)"Sillegal define form", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mdefine", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/cddr", (struct object *)"Mcons", (struct object *)"Mbuiltin:define",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/identifier?",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/error", (struct object *)"Sillegal define-macro form", (struct object *)"Mcons", (struct object *)"Mbuiltin:define-macro",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/apply", (struct object *)"Mpicrin.base/error", (struct object *)"Mcdr",
+  (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda",
+  (struct object *)"Mcons", (struct object *)"Mpicrin.base/map", (struct object *)"Mcar", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mpicrin.base/cddr", (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mdefine", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mpicrin.base/map", (struct object *)"Mcar", (struct object *)"Mcar", (struct object *)"Mpicrin.base/cddr", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/cddr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcar", (struct object *)"Mpicrin.base/cddr",
+  (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"Mcons",
+  (struct object *)"Mif", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mand", (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/cddr", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mtmp", (struct object *)"Mcons",
+  (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mif", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mor", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mpicrin.base/cddr", (struct object *)"Mcdr", (struct object *)"Mnull?", (struct object *)"Mcar", (struct object *)"Mpicrin.base/identifier?",
+  (struct object *)"Mcar", (struct object *)"Mpicrin.base/identifier=?", (struct object *)"Melse", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcar",
+  (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/identifier=?", (struct object *)"M=>", (struct object *)"Mpicrin.base/make-identifier",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mnull?", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mif",
+  (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mbegin",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcond",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mtmp", (struct object *)"Mcons",
+  (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mif", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcond", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mtmp", (struct object *)"Mcons", (struct object *)"Mlet",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcar",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mif", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mpicrin.base/cddr", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcond", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcons",
+  (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mnull?", (struct object *)"Mcons",
+  (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcar",
+  (struct object *)"Mcar", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mlet*", (struct object *)"Mcons", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mcons", (struct object *)"Mletrec*", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/map",
+  (struct object *)"Mcar", (struct object *)"Mpicrin.base/map", (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mlet*-values",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mnull?", (struct object *)"Mcons", (struct object *)"Mcall-with-values", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr",
+  (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcar", (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mlet*-values", (struct object *)"Mcons", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mpicrin.base/append", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Marguments",
+  (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcall-with-values", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/make-identifier",
+  (struct object *)"Mloop", (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/map", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mif", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/map", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mif", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mif",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mbegin",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr",
+  (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mkey", (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mnull?", (struct object *)"Mcar",
+  (struct object *)"Mcons", (struct object *)"Mdynamic-bind", (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mparameterize", (struct object *)"Mcons", (struct object *)"Mcdr",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mpicrin.base/map", (struct object *)"Mcdr",
+  (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/map", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mpair?", (struct object *)"Mcons", (struct object *)"Mdefine-macro",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mdefine-syntax", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mlambda", (struct object *)"Mcons",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/append", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mlet", (struct object *)"Mcons", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/append", (struct object *)"Mcons", (struct object *)"Mletrec-syntax", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/map", (struct object *)"S.", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/cddr",
+  (struct object *)"Mpicrin.base/find-library", (struct object *)"Mpicrin.base/make-library", (struct object *)"Mpicrin.base/for-each", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/for-each",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/for-each", (struct object *)"Mcdr", (struct object *)"Mpair?", (struct object *)"Mpicrin.base/identifier?",
+  (struct object *)"Mcar", (struct object *)"Mpicrin.base/identifier=?", (struct object *)"Mquasiquote", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcar",
+  (struct object *)"Mpair?", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mcar", (struct object *)"Mpicrin.base/identifier=?", (struct object *)"Munquote",
+  (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcar", (struct object *)"Mpair?", (struct object *)"Mpair?", (struct object *)"Mcar",
+  (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpicrin.base/caar", (struct object *)"Mpicrin.base/identifier=?", (struct object *)"Munquote-splicing", (struct object *)"Mpicrin.base/make-identifier",
+  (struct object *)"Mpicrin.base/caar", (struct object *)"Mpair?", (struct object *)"Mpicrin.base/vector?", (struct object *)"Mpicrin.base/list", (struct object *)"Mquote",
+  (struct object *)"Mpicrin.base/list", (struct object *)"Mlist->vector", (struct object *)"Mpicrin.base/vector->list", (struct object *)"Mpicrin.base/list", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/list", (struct object *)"Mlist", (struct object *)"Mpicrin.base/list",
+  (struct object *)"Mquote", (struct object *)"Mquasiquote", (struct object *)"M+", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"M=", (struct object *)"Mpicrin.base/list", (struct object *)"Mcons", (struct object *)"Mpicrin.base/list", (struct object *)"Mlist",
+  (struct object *)"Mpicrin.base/list", (struct object *)"Mquote", (struct object *)"Munquote-splicing", (struct object *)"M-", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/list", (struct object *)"Mappend",
+  (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"M=",
+  (struct object *)"Mpicrin.base/list", (struct object *)"Mlist", (struct object *)"Mpicrin.base/list", (struct object *)"Mquote", (struct object *)"Munquote",
+  (struct object *)"M-", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mset!", (struct object *)"Mpicrin.base/append",
+  (struct object *)"Mpair?", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mdefine",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mdefine",
+  (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr",
+  (struct object *)"Mpair?", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mset!",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mset!",
+  (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcar",
+  (struct object *)"Mcons", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mcdr",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mnull?", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mnull?", (struct object *)"Mcar", (struct object *)"Mcons",
+  (struct object *)"Mif", (struct object *)"Mcons", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mcar", (struct object *)"Mpicrin.base/identifier=?",
+  (struct object *)"Melse", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mor",
+  (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/map", (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mpicrin.base/identifier?",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/identifier=?", (struct object *)"M=>", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mcons", (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mcdr", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/assq", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mmake-identifier", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mquote", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mquote", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpair?",
+  (struct object *)"Mpicrin.base/vector?", (struct object *)"Mcons", (struct object *)"Mquote", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mlist->vector", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mwalk", (struct object *)"Mcons",
+  (struct object *)"Mf", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mvector->list", (struct object *)"Mcons",
+  (struct object *)"Mform", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mwalk", (struct object *)"Mcons", (struct object *)"Mf", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mform", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mwalk", (struct object *)"Mcons", (struct object *)"Mf", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mform", (struct object *)"Mpicrin.base/assq", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mmake-identifier", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mquote", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mquote", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mpair?", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mcar", (struct object *)"Mpicrin.base/identifier=?", (struct object *)"Msyntax-quasiquote",
+  (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcar", (struct object *)"Mpair?", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mcar",
+  (struct object *)"Mpicrin.base/identifier=?", (struct object *)"Msyntax-unquote", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcar", (struct object *)"Mpair?",
+  (struct object *)"Mpair?", (struct object *)"Mcar", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpicrin.base/caar", (struct object *)"Mpicrin.base/identifier=?",
+  (struct object *)"Msyntax-unquote-splicing", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mpicrin.base/caar", (struct object *)"Mpair?", (struct object *)"Mpicrin.base/vector?",
+  (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpicrin.base/list", (struct object *)"Mquote", (struct object *)"Mpicrin.base/list", (struct object *)"Mlist->vector",
+  (struct object *)"Mpicrin.base/vector->list", (struct object *)"Mpicrin.base/list", (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"Mpicrin.base/list", (struct object *)"Mlist", (struct object *)"Mpicrin.base/list", (struct object *)"Mquote", (struct object *)"Mquasiquote",
+  (struct object *)"M+", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"M=", (struct object *)"Mpicrin.base/list",
+  (struct object *)"Mcons", (struct object *)"Mpicrin.base/list", (struct object *)"Mlist", (struct object *)"Mpicrin.base/list", (struct object *)"Mquote",
+  (struct object *)"Msyntax-unquote-splicing", (struct object *)"M-", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/list", (struct object *)"Mappend", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"M=", (struct object *)"Mpicrin.base/list", (struct object *)"Mlist",
+  (struct object *)"Mpicrin.base/list", (struct object *)"Mquote", (struct object *)"Msyntax-unquote", (struct object *)"M-", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/make-ephemeron", (struct object *)"Mpicrin.base/make-ephemeron",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/apply", (struct object *)"Mcons", (struct object *)"Mdefine-syntax", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcons", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/string-append", (struct object *)"Sinvalid use of auxiliary syntax: ",
+  (struct object *)"Mpicrin.base/symbol->string", (struct object *)"Mcons", (struct object *)"Merror", (struct object *)"Mcons", (struct object *)"Msymbol?",
+  (struct object *)"Mpicrin.base/number->string", (struct object *)"Mpicrin.base/symbol->string", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mpicrin.base/eval",
+  (struct object *)"Mpicrin.base/eq?", (struct object *)"Melse", (struct object *)"Msymbol?", (struct object *)"Mpicrin.base/memq", (struct object *)"Mpicrin.base/features",
+  (struct object *)"Mpair?", (struct object *)"Mcar", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mlibrary", (struct object *)"Mpicrin.base/eqv?",
+  (struct object *)"Mnot", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mand", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mor",
+  (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mnot", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/find-library",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mnull?", (struct object *)"Mpicrin.base/caar", (struct object *)"Mcdr", (struct object *)"Mcons",
+  (struct object *)"Mbegin", (struct object *)"Mpicrin.base/append", (struct object *)"Mpicrin.base/cdar", (struct object *)"Mcar", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/string->symbol", (struct object *)"Mpicrin.base/string-append", (struct object *)"Mpicrin.base/symbol->string", (struct object *)"Mpicrin.base/symbol->string",
+  (struct object *)"Mpicrin.base/find-library", (struct object *)"Mpicrin.base/error", (struct object *)"Slibrary not found", (struct object *)"Mcar", (struct object *)"Mpicrin.base/eqv?",
+  (struct object *)"Monly", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mrename", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mprefix",
+  (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mexcept", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mcar", (struct object *)"Mpicrin.base/eqv?",
+  (struct object *)"Monly", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mrename", (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mprefix",
+  (struct object *)"Mpicrin.base/eqv?", (struct object *)"Mexcept", (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/library-exports", (struct object *)"Mpicrin.base/cadr",
+  (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/cddr",
+  (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/cadr", (struct object *)"Mpicrin.base/map", (struct object *)"Mpicrin.base/cddr", (struct object *)"Mpicrin.base/for-each",
+  (struct object *)"Msymbol?", (struct object *)"Mpicrin.base/list?", (struct object *)"M=", (struct object *)"Mpicrin.base/length", (struct object *)"Mpicrin.base/eq?",
+  (struct object *)"Mcar", (struct object *)"Mrename", (struct object *)"Mpicrin.base/error", (struct object *)"Smalformed export", (struct object *)"Mcons",
+  (struct object *)"Mpicrin.base/list-ref", (struct object *)"Mpicrin.base/list-ref", (struct object *)"Mcons", (struct object *)"Mpicrin.base/library-export", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Meqv?", (struct object *)"Mcons", (struct object *)"Mcons",
+  (struct object *)"Mcons", (struct object *)"Mquote", (struct object *)"Mcons", (struct object *)"Mpicrin.base/make-identifier", (struct object *)"Mcdr",
+  (struct object *)"Mcdr", (struct object *)"Mpicrin.base/identifier?", (struct object *)"Mpair?", (struct object *)"Mpicrin.base/vector?", (struct object *)"Mpicrin.base/list->vector",
+  (struct object *)"Mpicrin.base/vector->list", (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mnull?",
+  (struct object *)"Mpicrin.base/string-append", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mpair?", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mnull?", (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcons",
+  (struct object *)"Mnull?", (struct object *)"Mpicrin.base/memq", (struct object *)"Mpicrin.base/caar", (struct object *)"Mpicrin.base/cddr", (struct object *)"Mcons",
+  (struct object *)"Mcar", (struct object *)"Mcdr", (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mcar",
+  (struct object *)"Mcdr", (struct object *)"Mcons", (struct object *)"Mcons", (struct object *)"Mcar", (struct object *)"Mcons",
+  (struct object *)"Mx", (struct object *)"Mcons", (struct object *)"Mcadr", (struct object *)"Mcons", (struct object *)"Mx",
+  (struct object *)"Mpicrin.base/assq", (struct object *)"Mcar", (struct object *)"Mpicrin.base/assq", (struct object *)"Mpicrin.base/library-import", (struct object *)"Mcdr",
+  (struct object *)"Mcar",
+0 };
+
+static pic_value
+pic_builtins(pic_state *pic) {
+  size_t i;
+
+  for (i = 0; i < sizeof(pic_boot_pool) / sizeof(pic_boot_pool[0]) - 1; ++i) {
+    const char *str = (const char *)pic_boot_pool[i];
+    if (*str == 'M') {
+      pic_boot_pool[i] = (struct object *)pic_sym_ptr(pic, pic_intern_cstr(pic, str + 1));
+    } else {
+      pic_boot_pool[i] = (struct object *)pic_str_ptr(pic, pic_cstr_value(pic, str + 1));
+    }
+  }
+
+  for (i = 0; i < sizeof(pic_boot_irep) / sizeof(pic_boot_irep[0]) - 1; ++i) {
+    struct irep *irep = pic_boot_irep + i;
+    irep->list.next = pic->ireps.next;
+    irep->list.prev = &pic->ireps;
+    irep->list.next->prev = &irep->list;
+    irep->list.prev->next = &irep->list;
+  }
+
+  return pic_call(pic, pic_make_proc_irep(pic, pic_boot_irep, 0), 0);
 }
 
-print "\n#endif\n\n";
+void
+pic_boot(pic_state *pic)
+{
+  pic_value e, it, uid, env = pic_library_environment(pic, "picrin.base");
 
-print <<EOL;
-const char pic_boot[][80] = {
-EOL
-
-my @lines = $src =~ /.{0,80}/gs;
-
-foreach (@lines) {
-  s/\\/\\\\/g;
-  s/"/\\"/g;
-  s/\n/\\n/g;
-  print "\"$_\",\n";
+  pic_for_each (e, pic_builtins(pic), it) {
+    uid = pic_add_identifier(pic, pic_car(pic, e), env);
+    pic_weak_set(pic, pic->macros, uid, pic_cdr(pic, e));
+    pic_export(pic, pic_car(pic, e));
+  }
 }
-print "\"\"\n";
-
-=pod
-*/
-=cut
-
-print <<EOL;
-};
-
-#if 0
-Local Variables:
-mode: scheme
-End:
-
-=cut
-#endif
-EOL
-
-=pod
-
-#---END---
-
-#endif
-
-const char pic_boot[][80] = {
-"\n(builtin:define-macro call-with-current-environment\n  (builtin:lambda (form env",
-")\n    (list (cadr form) env)))\n\n(builtin:define here\n  (call-with-current-enviro",
-"nment\n   (builtin:lambda (env)\n     env)))\n\n(builtin:define the                 ",
-"    ; synonym for #'var\n  (builtin:lambda (var)\n    (make-identifier var here)))",
-"\n\n\n(builtin:define the-builtin-define (the (builtin:quote builtin:define)))\n(bui",
-"ltin:define the-builtin-lambda (the (builtin:quote builtin:lambda)))\n(builtin:de",
-"fine the-builtin-begin (the (builtin:quote builtin:begin)))\n(builtin:define the-",
-"builtin-quote (the (builtin:quote builtin:quote)))\n(builtin:define the-builtin-s",
-"et! (the (builtin:quote builtin:set!)))\n(builtin:define the-builtin-if (the (bui",
-"ltin:quote builtin:if)))\n(builtin:define the-builtin-define-macro (the (builtin:",
-"quote builtin:define-macro)))\n\n(builtin:define the-define (the (builtin:quote de",
-"fine)))\n(builtin:define the-lambda (the (builtin:quote lambda)))\n(builtin:define",
-" the-begin (the (builtin:quote begin)))\n(builtin:define the-quote (the (builtin:",
-"quote quote)))\n(builtin:define the-set! (the (builtin:quote set!)))\n(builtin:def",
-"ine the-if (the (builtin:quote if)))\n(builtin:define the-define-macro (the (buil",
-"tin:quote define-macro)))\n\n(builtin:define-macro quote\n  (builtin:lambda (form e",
-"nv)\n    (builtin:if (= (length form) 2)\n      (list the-builtin-quote (cadr form",
-"))\n      (error \"illegal quote form\" form))))\n\n(builtin:define-macro if\n  (built",
-"in:lambda (form env)\n    ((builtin:lambda (len)\n       (builtin:if (= len 4)\n   ",
-"        (cons the-builtin-if (cdr form))\n           (builtin:if (= len 3)\n      ",
-"         (list the-builtin-if (list-ref form 1) (list-ref form 2) #undefined)\n  ",
-"             (error \"illegal if form\" form))))\n     (length form))))\n\n(builtin:d",
-"efine-macro begin\n  (builtin:lambda (form env)\n    ((builtin:lambda (len)\n      ",
-" (if (= len 1)\n           #undefined\n           (if (= len 2)\n               (ca",
-"dr form)\n               (if (= len 3)\n                   (cons the-builtin-begin",
-" (cdr form))\n                   (list the-builtin-begin\n                        ",
-" (cadr form)\n                         (cons the-begin (cddr form)))))))\n     (le",
-"ngth form))))\n\n(builtin:define-macro set!\n  (builtin:lambda (form env)\n    (if (",
-"= (length form) 3)\n        (if (identifier? (cadr form))\n            (cons the-b",
-"uiltin-set! (cdr form))\n            (error \"illegal set! form\" form))\n        (e",
-"rror \"illegal set! form\" form))))\n\n(builtin:define check-formal\n  (builtin:lambd",
-"a (formal)\n    (if (null? formal)\n        #t\n        (if (identifier? formal)\n  ",
-"          #t\n            (if (pair? formal)\n                (if (identifier? (ca",
-"r formal))\n                    (check-formal (cdr formal))\n                    #",
-"f)\n                #f)))))\n\n(builtin:define-macro lambda\n  (builtin:lambda (form",
-" env)\n    (if (= (length form) 1)\n        (error \"illegal lambda form\" form)\n   ",
-"     (if (check-formal (cadr form))\n            (list the-builtin-lambda (cadr f",
-"orm) (cons the-begin (cddr form)))\n            (error \"illegal lambda form\" form",
-")))))\n\n(builtin:define-macro define\n  (lambda (form env)\n    ((lambda (len)\n    ",
-"   (if (= len 1)\n           (error \"illegal define form\" form)\n           (if (i",
-"dentifier? (cadr form))\n               (if (= len 3)\n                   (cons th",
-"e-builtin-define (cdr form))\n                   (error \"illegal define form\" for",
-"m))\n               (if (pair? (cadr form))\n                   (list the-define\n ",
-"                        (car (cadr form))\n                         (cons the-lam",
-"bda (cons (cdr (cadr form)) (cddr form))))\n                   (error \"define: bi",
-"nding to non-varaible object\" form)))))\n     (length form))))\n\n(builtin:define-m",
-"acro define-macro\n  (lambda (form env)\n    (if (= (length form) 3)\n        (if (",
-"identifier? (cadr form))\n            (cons the-builtin-define-macro (cdr form))\n",
-"            (error \"define-macro: binding to non-variable object\" form))\n       ",
-" (error \"illegal define-macro form\" form))))\n\n\n(define-macro syntax-error\n  (lam",
-"bda (form _)\n    (apply error (cdr form))))\n\n(define-macro define-auxiliary-synt",
-"ax\n  (lambda (form _)\n    (define message\n      (string-append\n       \"invalid u",
-"se of auxiliary syntax: '\" (symbol->string (cadr form)) \"'\"))\n    (list\n     the",
-"-define-macro\n     (cadr form)\n     (list the-lambda '_\n           (list (the 'e",
-"rror) message)))))\n\n(define-auxiliary-syntax else)\n(define-auxiliary-syntax =>)\n",
-"(define-auxiliary-syntax unquote)\n(define-auxiliary-syntax unquote-splicing)\n(de",
-"fine-auxiliary-syntax syntax-unquote)\n(define-auxiliary-syntax syntax-unquote-sp",
-"licing)\n\n(define-macro let\n  (lambda (form env)\n    (if (identifier? (cadr form)",
-")\n        (list\n         (list the-lambda '()\n               (list the-define (c",
-"adr form)\n                     (cons the-lambda\n                           (cons",
-" (map car (car (cddr form)))\n                                 (cdr (cddr form)))",
-"))\n               (cons (cadr form) (map cadr (car (cddr form))))))\n        (con",
-"s\n         (cons\n          the-lambda\n          (cons (map car (cadr form))\n    ",
-"            (cddr form)))\n         (map cadr (cadr form))))))\n\n(define-macro and",
-"\n  (lambda (form env)\n    (if (null? (cdr form))\n        #t\n        (if (null? (",
-"cddr form))\n            (cadr form)\n            (list the-if\n                  (",
-"cadr form)\n                  (cons (the 'and) (cddr form))\n                  #f)",
-"))))\n\n(define-macro or\n  (lambda (form env)\n    (if (null? (cdr form))\n        #",
-"f\n        (let ((tmp (make-identifier 'it env)))\n          (list (the 'let)\n    ",
-"            (list (list tmp (cadr form)))\n                (list the-if\n         ",
-"             tmp\n                      tmp\n                      (cons (the 'or)",
-" (cddr form))))))))\n\n(define-macro cond\n  (lambda (form env)\n    (let ((clauses ",
-"(cdr form)))\n      (if (null? clauses)\n          #undefined\n          (let ((cla",
-"use (car clauses)))\n            (if (and (identifier? (car clause))\n            ",
-"         (identifier=? (the 'else) (make-identifier (car clause) env)))\n        ",
-"        (cons the-begin (cdr clause))\n                (if (null? (cdr clause))\n ",
-"                   (let ((tmp (make-identifier 'tmp here)))\n                    ",
-"  (list (the 'let) (list (list tmp (car clause)))\n                            (l",
-"ist the-if tmp tmp (cons (the 'cond) (cdr clauses)))))\n                    (if (",
-"and (identifier? (cadr clause))\n                             (identifier=? (the ",
-"'=>) (make-identifier (cadr clause) env)))\n                        (let ((tmp (m",
-"ake-identifier 'tmp here)))\n                          (list (the 'let) (list (li",
-"st tmp (car clause)))\n                                (list the-if tmp\n         ",
-"                             (list (car (cddr clause)) tmp)\n                    ",
-"                  (cons (the 'cond) (cdr clauses)))))\n                        (l",
-"ist the-if (car clause)\n                              (cons the-begin (cdr claus",
-"e))\n                              (cons (the 'cond) (cdr clauses)))))))))))\n\n(de",
-"fine-macro quasiquote\n  (lambda (form env)\n\n    (define (quasiquote? form)\n     ",
-" (and (pair? form)\n           (identifier? (car form))\n           (identifier=? ",
-"(the 'quasiquote) (make-identifier (car form) env))))\n\n    (define (unquote? for",
-"m)\n      (and (pair? form)\n           (identifier? (car form))\n           (ident",
-"ifier=? (the 'unquote) (make-identifier (car form) env))))\n\n    (define (unquote",
-"-splicing? form)\n      (and (pair? form)\n           (pair? (car form))\n         ",
-"  (identifier? (caar form))\n           (identifier=? (the 'unquote-splicing) (ma",
-"ke-identifier (caar form) env))))\n\n    (define (qq depth expr)\n      (cond\n     ",
-"  ;; unquote\n       ((unquote? expr)\n        (if (= depth 1)\n            (car (c",
-"dr expr))\n            (list (the 'list)\n                  (list (the 'quote) (th",
-"e 'unquote))\n                  (qq (- depth 1) (car (cdr expr))))))\n       ;; un",
-"quote-splicing\n       ((unquote-splicing? expr)\n        (if (= depth 1)\n        ",
-"    (list (the 'append)\n                  (car (cdr (car expr)))\n               ",
-"   (qq depth (cdr expr)))\n            (list (the 'cons)\n                  (list ",
-"(the 'list)\n                        (list (the 'quote) (the 'unquote-splicing))\n",
-"                        (qq (- depth 1) (car (cdr (car expr)))))\n               ",
-"   (qq depth (cdr expr)))))\n       ;; quasiquote\n       ((quasiquote? expr)\n    ",
-"    (list (the 'list)\n              (list (the 'quote) (the 'quasiquote))\n      ",
-"        (qq (+ depth 1) (car (cdr expr)))))\n       ;; list\n       ((pair? expr)\n",
-"        (list (the 'cons)\n              (qq depth (car expr))\n              (qq ",
-"depth (cdr expr))))\n       ;; vector\n       ((vector? expr)\n        (list (the '",
-"list->vector) (qq depth (vector->list expr))))\n       ;; simple datum\n       (el",
-"se\n        (list (the 'quote) expr))))\n\n    (let ((x (cadr form)))\n      (qq 1 x",
-"))))\n\n(define-macro let*\n  (lambda (form env)\n    (let ((bindings (car (cdr form",
-")))\n          (body     (cdr (cdr form))))\n      (if (null? bindings)\n          ",
-"`(,(the 'let) () ,@body)\n          `(,(the 'let) ((,(car (car bindings)) ,@(cdr ",
-"(car bindings))))\n            (,(the 'let*) (,@(cdr bindings))\n             ,@bo",
-"dy))))))\n\n(define-macro letrec\n  (lambda (form env)\n    `(,(the 'letrec*) ,@(cdr",
-" form))))\n\n(define-macro letrec*\n  (lambda (form env)\n    (let ((bindings (car (",
-"cdr form)))\n          (body     (cdr (cdr form))))\n      (let ((variables (map (",
-"lambda (v) `(,v #f)) (map car bindings)))\n            (initials  (map (lambda (v",
-") `(,(the 'set!) ,@v)) bindings)))\n        `(,(the 'let) (,@variables)\n         ",
-" ,@initials\n          ,@body)))))\n\n(define-macro let-values\n  (lambda (form env)",
-"\n    `(,(the 'let*-values) ,@(cdr form))))\n\n(define-macro let*-values\n  (lambda ",
-"(form env)\n    (let ((formal (car (cdr form)))\n          (body   (cdr (cdr form)",
-")))\n      (if (null? formal)\n          `(,(the 'let) () ,@body)\n          `(,(th",
-"e 'call-with-values) (,the-lambda () ,@(cdr (car formal)))\n            (,(the 'l",
-"ambda) (,@(car (car formal)))\n             (,(the 'let*-values) (,@(cdr formal))",
-"\n              ,@body)))))))\n\n(define-macro define-values\n  (lambda (form env)\n ",
-"   (let ((formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      (l",
-"et ((arguments (make-identifier 'arguments here)))\n        `(,the-begin\n        ",
-"  ,@(let loop ((formal formal))\n              (if (pair? formal)\n               ",
-"   `((,the-define ,(car formal) #undefined) ,@(loop (cdr formal)))\n             ",
-"     (if (identifier? formal)\n                      `((,the-define ,formal #unde",
-"fined))\n                      '())))\n          (,(the 'call-with-values) (,the-l",
-"ambda () ,@body)\n           (,the-lambda\n            ,arguments\n            ,@(l",
-"et loop ((formal formal) (args arguments))\n                (if (pair? formal)\n  ",
-"                  `((,the-set! ,(car formal) (,(the 'car) ,args)) ,@(loop (cdr f",
-"ormal) `(,(the 'cdr) ,args)))\n                    (if (identifier? formal)\n     ",
-"                   `((,the-set! ,formal ,args))\n                        '())))))",
-")))))\n\n(define-macro do\n  (lambda (form env)\n    (let ((bindings (car (cdr form)",
-"))\n          (test     (car (car (cdr (cdr form)))))\n          (cleanup  (cdr (c",
-"ar (cdr (cdr form)))))\n          (body     (cdr (cdr (cdr form)))))\n      (let (",
-"(loop (make-identifier 'loop here)))\n        `(,(the 'let) ,loop ,(map (lambda (",
-"x) `(,(car x) ,(cadr x))) bindings)\n          (,the-if ,test\n                   ",
-"(,the-begin\n                    ,@cleanup)\n                   (,the-begin\n      ",
-"              ,@body\n                    (,loop ,@(map (lambda (x) (if (null? (c",
-"dr (cdr x))) (car x) (car (cdr (cdr x))))) bindings)))))))))\n\n(define-macro when",
-"\n  (lambda (form env)\n    (let ((test (car (cdr form)))\n          (body (cdr (cd",
-"r form))))\n      `(,the-if ,test\n                (,the-begin ,@body)\n           ",
-"     #undefined))))\n\n(define-macro unless\n  (lambda (form env)\n    (let ((test (",
-"car (cdr form)))\n          (body (cdr (cdr form))))\n      `(,the-if ,test\n      ",
-"          #undefined\n                (,the-begin ,@body)))))\n\n(define-macro case",
-"\n  (lambda (form env)\n    (let ((key     (car (cdr form)))\n          (clauses (c",
-"dr (cdr form))))\n      (let ((the-key (make-identifier 'key here)))\n        `(,(",
-"the 'let) ((,the-key ,key))\n          ,(let loop ((clauses clauses))\n           ",
-"  (if (null? clauses)\n                 #undefined\n                 (let ((clause",
-" (car clauses)))\n                   `(,the-if ,(if (and (identifier? (car clause",
-"))\n                                       (identifier=? (the 'else) (make-identi",
-"fier (car clause) env)))\n                                  #t\n                  ",
-"                `(,(the 'or) ,@(map (lambda (x) `(,(the 'eqv?) ,the-key (,the-qu",
-"ote ,x))) (car clause))))\n                             ,(if (and (identifier? (c",
-"adr clause))\n                                       (identifier=? (the '=>) (mak",
-"e-identifier (cadr clause) env)))\n                                  `(,(car (cdr",
-" (cdr clause))) ,the-key)\n                                  `(,the-begin ,@(cdr ",
-"clause)))\n                             ,(loop (cdr clauses)))))))))))\n\n(define-m",
-"acro parameterize\n  (lambda (form env)\n    (let ((formal (car (cdr form)))\n     ",
-"     (body   (cdr (cdr form))))\n      (if (null? formal)\n          `(,the-begin ",
-",@body)\n          (let ((bind (car formal)))\n            `(,(the 'dynamic-bind) ",
-",(car bind) ,(cadr bind)\n              (,the-lambda () (,(the 'parameterize) ,(c",
-"dr formal) ,@body))))))))\n\n(define-macro syntax-quote\n  (lambda (form env)\n    (",
-"let ((renames '()))\n      (letrec\n          ((rename (lambda (var)\n             ",
-"        (let ((x (assq var renames)))\n                       (if x\n             ",
-"              (cadr x)\n                           (begin\n                       ",
-"      (set! renames `((,var ,(make-identifier var env) (,(the 'make-identifier) ",
-"',var ',env)) . ,renames))\n                             (rename var))))))\n      ",
-"     (walk (lambda (f form)\n                   (cond\n                    ((ident",
-"ifier? form)\n                     (f form))\n                    ((pair? form)\n  ",
-"                   `(,(the 'cons) (walk f (car form)) (walk f (cdr form))))\n    ",
-"                ((vector? form)\n                     `(,(the 'list->vector) (wal",
-"k f (vector->list form))))\n                    (else\n                     `(,(th",
-"e 'quote) ,form))))))\n        (let ((form (walk rename (cadr form))))\n          ",
-"`(,(the 'let)\n            ,(map cdr renames)\n            ,form))))))\n\n(define-ma",
-"cro syntax-quasiquote\n  (lambda (form env)\n    (let ((renames '()))\n      (letre",
-"c\n          ((rename (lambda (var)\n                     (let ((x (assq var renam",
-"es)))\n                       (if x\n                           (cadr x)\n         ",
-"                  (begin\n                             (set! renames `((,var ,(ma",
-"ke-identifier var env) (,(the 'make-identifier) ',var ',env)) . ,renames))\n     ",
-"                        (rename var)))))))\n\n        (define (syntax-quasiquote? ",
-"form)\n          (and (pair? form)\n               (identifier? (car form))\n      ",
-"         (identifier=? (the 'syntax-quasiquote) (make-identifier (car form) env)",
-")))\n\n        (define (syntax-unquote? form)\n          (and (pair? form)\n        ",
-"       (identifier? (car form))\n               (identifier=? (the 'syntax-unquot",
-"e) (make-identifier (car form) env))))\n\n        (define (syntax-unquote-splicing",
-"? form)\n          (and (pair? form)\n               (pair? (car form))\n          ",
-"     (identifier? (caar form))\n               (identifier=? (the 'syntax-unquote",
-"-splicing) (make-identifier (caar form) env))))\n\n        (define (qq depth expr)",
-"\n          (cond\n           ;; syntax-unquote\n           ((syntax-unquote? expr)",
-"\n            (if (= depth 1)\n                (car (cdr expr))\n                (l",
-"ist (the 'list)\n                      (list (the 'quote) (the 'syntax-unquote))\n",
-"                      (qq (- depth 1) (car (cdr expr))))))\n           ;; syntax-",
-"unquote-splicing\n           ((syntax-unquote-splicing? expr)\n            (if (= ",
-"depth 1)\n                (list (the 'append)\n                      (car (cdr (ca",
-"r expr)))\n                      (qq depth (cdr expr)))\n                (list (th",
-"e 'cons)\n                      (list (the 'list)\n                            (li",
-"st (the 'quote) (the 'syntax-unquote-splicing))\n                            (qq ",
-"(- depth 1) (car (cdr (car expr)))))\n                      (qq depth (cdr expr))",
-")))\n           ;; syntax-quasiquote\n           ((syntax-quasiquote? expr)\n      ",
-"      (list (the 'list)\n                  (list (the 'quote) (the 'quasiquote))\n",
-"                  (qq (+ depth 1) (car (cdr expr)))))\n           ;; list\n       ",
-"    ((pair? expr)\n            (list (the 'cons)\n                  (qq depth (car",
-" expr))\n                  (qq depth (cdr expr))))\n           ;; vector\n         ",
-"  ((vector? expr)\n            (list (the 'list->vector) (qq depth (vector->list ",
-"expr))))\n           ;; identifier\n           ((identifier? expr)\n            (re",
-"name expr))\n           ;; simple datum\n           (else\n            (list (the '",
-"quote) expr))))\n\n        (let ((body (qq 1 (cadr form))))\n          `(,(the 'let",
-")\n            ,(map cdr renames)\n            ,body))))))\n\n(define (transformer f",
-")\n  (lambda (form env)\n    (let ((ephemeron1 (make-ephemeron))\n          (epheme",
-"ron2 (make-ephemeron)))\n      (letrec\n          ((wrap (lambda (var1)\n          ",
-"         (let ((var2 (ephemeron1 var1)))\n                     (if var2\n         ",
-"                (cdr var2)\n                         (let ((var2 (make-identifier",
-" var1 env)))\n                           (ephemeron1 var1 var2)\n                 ",
-"          (ephemeron2 var2 var1)\n                           var2)))))\n          ",
-" (unwrap (lambda (var2)\n                     (let ((var1 (ephemeron2 var2)))\n   ",
-"                    (if var1\n                           (cdr var1)\n             ",
-"              var2))))\n           (walk (lambda (f form)\n                   (con",
-"d\n                    ((identifier? form)\n                     (f form))\n       ",
-"             ((pair? form)\n                     (cons (walk f (car form)) (walk ",
-"f (cdr form))))\n                    ((vector? form)\n                     (list->",
-"vector (walk f (vector->list form))))\n                    (else\n                ",
-"     form)))))\n        (let ((form (cdr form)))\n          (walk unwrap (apply f ",
-"(walk wrap form))))))))\n\n(define-macro define-syntax\n  (lambda (form env)\n    (l",
-"et ((formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      (if (pa",
-"ir? formal)\n          `(,(the 'define-syntax) ,(car formal) (,the-lambda ,(cdr f",
-"ormal) ,@body))\n          `(,the-define-macro ,formal (,(the 'transformer) (,the",
-"-begin ,@body)))))))\n\n(define-macro letrec-syntax\n  (lambda (form env)\n    (let ",
-"((formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      `(let ()\n ",
-"        ,@(map (lambda (x)\n                  `(,(the 'define-syntax) ,(car x) ,(",
-"cadr x)))\n                formal)\n         ,@body))))\n\n(define-macro let-syntax\n",
-"  (lambda (form env)\n    `(,(the 'letrec-syntax) ,@(cdr form))))\n\n\n;;; library p",
-"rimitives\n\n(define (mangle name)\n  (define (->string n)\n    (if (symbol? n)\n    ",
-"    (symbol->string n)\n        (number->string n)))\n  (define (join strs delim)\n",
-"    (let loop ((res (car strs)) (strs (cdr strs)))\n      (if (null? strs)\n      ",
-"    res\n          (loop (string-append res delim (car strs)) (cdr strs)))))\n  (j",
-"oin (map ->string name) \".\"))\n\n(define-macro define-library\n  (lambda (form _)\n ",
-"   (let ((lib (mangle (cadr form)))\n          (body (cddr form)))\n      (or (fin",
-"d-library lib) (make-library lib))\n      (for-each (lambda (expr) (eval expr lib",
-")) body))))\n\n(define-macro cond-expand\n  (lambda (form _)\n    (letrec\n        ((",
-"test (lambda (form)\n                 (or\n                  (eq? form 'else)\n    ",
-"              (and (symbol? form)\n                       (memq form (features)))",
-"\n                  (and (pair? form)\n                       (case (car form)\n   ",
-"                      ((library) (find-library (mangle (cadr form))))\n          ",
-"               ((not) (not (test (cadr form))))\n                         ((and) ",
-"(let loop ((form (cdr form)))\n                                  (or (null? form)",
-"\n                                      (and (test (car form)) (loop (cdr form)))",
-")))\n                         ((or) (let loop ((form (cdr form)))\n               ",
-"                  (and (pair? form)\n                                      (or (t",
-"est (car form)) (loop (cdr form))))))\n                         (else #f)))))))\n ",
-"     (let loop ((clauses (cdr form)))\n        (if (null? clauses)\n            #u",
-"ndefined\n            (if (test (caar clauses))\n                `(,the-begin ,@(c",
-"dar clauses))\n                (loop (cdr clauses))))))))\n\n(define-macro import\n ",
-" (lambda (form _)\n    (let ((caddr\n           (lambda (x) (car (cdr (cdr x)))))\n",
-"          (prefix\n           (lambda (prefix symbol)\n             (string->symbo",
-"l\n              (string-append\n               (symbol->string prefix)\n          ",
-"     (symbol->string symbol)))))\n          (getlib\n           (lambda (name)\n   ",
-"          (let ((lib (mangle name)))\n               (if (find-library lib)\n     ",
-"              lib\n                   (error \"library not found\" name))))))\n     ",
-" (letrec\n          ((extract\n            (lambda (spec)\n              (case (car",
-" spec)\n                ((only rename prefix except)\n                 (extract (c",
-"adr spec)))\n                (else\n                 (getlib spec)))))\n           ",
-"(collect\n            (lambda (spec)\n              (case (car spec)\n             ",
-"   ((only)\n                 (let ((alist (collect (cadr spec))))\n               ",
-"    (map (lambda (var) (assq var alist)) (cddr spec))))\n                ((rename",
-")\n                 (let ((alist (collect (cadr spec)))\n                       (r",
-"enames (map (lambda (x) `((car x) . (cadr x))) (cddr spec))))\n                  ",
-" (map (lambda (s) (or (assq (car s) renames) s)) alist)))\n                ((pref",
-"ix)\n                 (let ((alist (collect (cadr spec))))\n                   (ma",
-"p (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))\n           ",
-"     ((except)\n                 (let ((alist (collect (cadr spec))))\n           ",
-"        (let loop ((alist alist))\n                     (if (null? alist)\n       ",
-"                  '()\n                         (if (memq (caar alist) (cddr spec",
-"))\n                             (loop (cdr alist))\n                             ",
-"(cons (car alist) (loop (cdr alist))))))))\n                (else\n               ",
-"  (map (lambda (x) (cons x x)) (library-exports (getlib spec))))))))\n        (le",
-"trec\n            ((import\n               (lambda (spec)\n                 (let ((",
-"lib (extract spec))\n                       (alist (collect spec)))\n             ",
-"      (for-each\n                    (lambda (slot)\n                      (librar",
-"y-import lib (cdr slot) (car slot)))\n                    alist)))))\n          (f",
-"or-each import (cdr form)))))))\n\n(define-macro export\n  (lambda (form _)\n    (le",
-"trec\n        ((collect\n          (lambda (spec)\n            (cond\n             (",
-"(symbol? spec)\n              `(,spec . ,spec))\n             ((and (list? spec) (",
-"= (length spec) 3) (eq? (car spec) 'rename))\n              `(,(list-ref spec 1) ",
-". ,(list-ref spec 2)))\n             (else\n              (error \"malformed export",
-"\")))))\n         (export\n           (lambda (spec)\n             (let ((slot (coll",
-"ect spec)))\n               (library-export (car slot) (cdr slot))))))\n      (for",
-"-each export (cdr form)))))\n\n(export define lambda quote set! if begin define-ma",
-"cro\n        let let* letrec letrec*\n        let-values let*-values define-values",
-"\n        quasiquote unquote unquote-splicing\n        and or\n        cond case el",
-"se =>\n        do when unless\n        parameterize\n        define-syntax\n        ",
-"syntax-quote syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n  ",
-"      let-syntax letrec-syntax\n        syntax-error)\n\n\n",
-"",
-""
-};
-
-#if 0
-Local Variables:
-mode: scheme
-End:
-
-=cut
-#endif

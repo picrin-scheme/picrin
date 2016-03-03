@@ -115,7 +115,7 @@ void pic_init_eval(pic_state *);
 void pic_init_lib(pic_state *);
 void pic_init_weak(pic_state *);
 
-extern const char pic_boot[][80];
+void pic_boot(pic_state *);
 
 static void
 pic_init_core(pic_state *pic)
@@ -184,7 +184,7 @@ pic_init_core(pic_state *pic)
 
   pic_init_features(pic);
 
-  pic_load_cstr(pic, &pic_boot[0][0]);
+  pic_boot(pic);
 }
 
 pic_state *
