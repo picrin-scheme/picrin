@@ -695,6 +695,29 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 
 #define emit_ret(pic, cxt, tailpos) if (tailpos) emit_n(pic, cxt, OP_RET)
 
+struct {
+  const char *name;
+  int insn;
+  int argc;
+} pic_vm_proc[] = {
+  { "picrin.base/cons", OP_CONS, 2 },
+  { "picrin.base/car", OP_CAR, 1 },
+  { "picrin.base/cdr", OP_CDR, 1 },
+  { "picrin.base/null?", OP_NILP, 1 },
+  { "picrin.base/symbol?", OP_SYMBOLP, 1 },
+  { "picrin.base/pair?", OP_PAIRP, 1 },
+  { "picrin.base/not", OP_NOT, 1 },
+  { "picrin.base/=", OP_EQ, 2 },
+  { "picrin.base/<", OP_LT, 2 },
+  { "picrin.base/<=", OP_LE, 2 },
+  { "picrin.base/>", OP_GT, 2 },
+  { "picrin.base/>=", OP_GE, 2 },
+  { "picrin.base/+", OP_ADD, 2 },
+  { "picrin.base/-", OP_SUB, 2 },
+  { "picrin.base/*", OP_MUL, 2 },
+  { "picrin.base//", OP_DIV, 2 }
+};
+
 static int
 index_capture(pic_state *pic, codegen_context *cxt, pic_value sym, int depth)
 {
@@ -951,47 +974,34 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   emit_ret(pic, cxt, tailpos);
 }
 
-#define VM(name, op)                            \
-  if (EQ(sym, name)) {                          \
-    emit_i(pic, cxt, op, len - 1);              \
-    emit_ret(pic, cxt, tailpos);                \
-    return;                                     \
-  }
-
 static void
 codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 {
   int len = pic_length(pic, obj);
   pic_value elt, it, functor;
 
-  pic_for_each (elt, pic_cdr(pic, obj), it) {
-    codegen(pic, cxt, elt, false);
-  }
-
   functor = pic_list_ref(pic, obj, 1);
   if (EQ(pic_list_ref(pic, functor, 0), "gref")) {
     pic_value sym;
+    size_t i;
 
     sym = pic_list_ref(pic, functor, 1);
 
-    VM("picrin.base/cons", OP_CONS)
-    VM("picrin.base/car", OP_CAR)
-    VM("picrin.base/cdr", OP_CDR)
-    VM("picrin.base/null?", OP_NILP)
-    VM("picrin.base/symbol?", OP_SYMBOLP)
-    VM("picrin.base/pair?", OP_PAIRP)
-    VM("picrin.base/not", OP_NOT)
-    VM("picrin.base/=", OP_EQ)
-    VM("picrin.base/<", OP_LT)
-    VM("picrin.base/<=", OP_LE)
-    VM("picrin.base/>", OP_GT)
-    VM("picrin.base/>=", OP_GE)
-    VM("picrin.base/+", OP_ADD)
-    VM("picrin.base/-", OP_SUB)
-    VM("picrin.base/*", OP_MUL)
-    VM("picrin.base//", OP_DIV)
+    for (i = 0; i < sizeof pic_vm_proc / sizeof pic_vm_proc[0]; ++i) {
+      if (EQ(sym, pic_vm_proc[i].name) && len == pic_vm_proc[i].argc + 2) {
+        pic_for_each (elt, pic_cddr(pic, obj), it) {
+          codegen(pic, cxt, elt, false);
+        }
+        emit_n(pic, cxt, pic_vm_proc[i].insn);
+        emit_ret(pic, cxt, tailpos);
+        return;
+      }
+    }
   }
 
+  pic_for_each (elt, pic_cdr(pic, obj), it) {
+    codegen(pic, cxt, elt, false);
+  }
   emit_i(pic, cxt, (tailpos ? OP_TAILCALL : OP_CALL), len - 1);
 }
 

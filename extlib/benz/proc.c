@@ -629,148 +629,111 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
 
-#define check_condition(name, n) do {                                   \
-      if (c.a != n + 1)                                                 \
-        goto L_CALL;                                                    \
-    } while (0)
-
     CASE(OP_CONS) {
       pic_value a, b;
-      check_condition(CONS, 2);
       pic_protect(pic, b = POP());
       pic_protect(pic, a = POP());
-      (void)POP();
       PUSH(pic_cons(pic, a, b));
       pic_leave(pic, ai);
       NEXT;
     }
     CASE(OP_CAR) {
       pic_value p;
-      check_condition(CAR, 1);
       p = POP();
-      (void)POP();
       PUSH(pic_car(pic, p));
       NEXT;
     }
     CASE(OP_CDR) {
       pic_value p;
-      check_condition(CDR, 1);
       p = POP();
-      (void)POP();
       PUSH(pic_cdr(pic, p));
       NEXT;
     }
     CASE(OP_NILP) {
       pic_value p;
-      check_condition(NILP, 1);
       p = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_nil_p(pic, p)));
       NEXT;
     }
     CASE(OP_SYMBOLP) {
       pic_value p;
-      check_condition(SYMBOLP, 1);
       p = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_sym_p(pic, p)));
       NEXT;
     }
     CASE(OP_PAIRP) {
       pic_value p;
-      check_condition(PAIRP, 1);
       p = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_pair_p(pic, p)));
       NEXT;
     }
     CASE(OP_NOT) {
       pic_value v;
-      check_condition(NOT, 1);
       v = pic_false_p(pic, POP()) ? pic_true_value(pic) : pic_false_value(pic);
-      (void)POP();
       PUSH(v);
       NEXT;
     }
 
     CASE(OP_ADD) {
       pic_value a, b;
-      check_condition(ADD, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_add(pic, a, b));
       NEXT;
     }
     CASE(OP_SUB) {
       pic_value a, b;
-      check_condition(SUB, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_sub(pic, a, b));
       NEXT;
     }
     CASE(OP_MUL) {
       pic_value a, b;
-      check_condition(MUL, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_mul(pic, a, b));
       NEXT;
     }
     CASE(OP_DIV) {
       pic_value a, b;
-      check_condition(DIV, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_div(pic, a, b));
       NEXT;
     }
     CASE(OP_EQ) {
       pic_value a, b;
-      check_condition(EQ, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_eq(pic, a, b)));
       NEXT;
     }
     CASE(OP_LE) {
       pic_value a, b;
-      check_condition(LT, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_le(pic, a, b)));
       NEXT;
     }
     CASE(OP_LT) {
       pic_value a, b;
-      check_condition(LE, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_lt(pic, a, b)));
       NEXT;
     }
     CASE(OP_GE) {
       pic_value a, b;
-      check_condition(LT, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_ge(pic, a, b)));
       NEXT;
     }
     CASE(OP_GT) {
       pic_value a, b;
-      check_condition(LE, 2);
       b = POP();
       a = POP();
-      (void)POP();
       PUSH(pic_bool_value(pic, pic_gt(pic, a, b)));
       NEXT;
     }
