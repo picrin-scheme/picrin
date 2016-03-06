@@ -635,6 +635,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
 
   /* create irep */
   irep = pic_malloc(pic, sizeof(struct irep));
+  irep->list.next = irep->list.prev = 0;
   irep->refc = 1;
   irep->varg = pic_sym_p(pic, cxt->rest);
   irep->argc = pic_vec_len(pic, cxt->args) + 1;
@@ -651,10 +652,12 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->nnums = cxt->flen;
   irep->npool = cxt->plen;
 
-  irep->list.next = pic->ireps.next;
-  irep->list.prev = &pic->ireps;
-  irep->list.next->prev = &irep->list;
-  irep->list.prev->next = &irep->list;
+  if (irep->npool > 0) {
+    irep->list.next = pic->ireps.next;
+    irep->list.prev = &pic->ireps;
+    irep->list.next->prev = &irep->list;
+    irep->list.prev->next = &irep->list;
+  }
 
   return irep;
 }

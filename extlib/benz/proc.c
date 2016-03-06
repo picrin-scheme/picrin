@@ -934,8 +934,10 @@ pic_irep_decref(pic_state *pic, struct irep *irep)
     pic_free(pic, irep->pool);
 
     /* unchain before decref children ireps */
-    irep->list.prev->next = irep->list.next;
-    irep->list.next->prev = irep->list.prev;
+    if (irep->list.prev) {      /* && irep->list.next */
+      irep->list.prev->next = irep->list.next;
+      irep->list.next->prev = irep->list.prev;
+    }
 
     for (i = 0; i < irep->nirep; ++i) {
       pic_irep_decref(pic, irep->irep[i]);
