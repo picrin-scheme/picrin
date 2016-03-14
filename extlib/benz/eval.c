@@ -300,48 +300,123 @@ pic_optimize(pic_state *pic, pic_value expr)
   return optimize_beta(pic, expr);
 }
 
+static pic_value normalize(pic_state *pic, pic_value expr, pic_value locals, bool in);
+
+static pic_value
+normalize_body(pic_state *pic, pic_value expr, bool in)
+{
+  pic_value v, locals;
+
+  locals = pic_list(pic, 1, pic_nil_value(pic));
+
+  v = normalize(pic, expr, locals, in);
+
+  if (! in) {
+    return v;
+  }
+  return pic_list(pic, 3, S("let"), pic_car(pic, locals), v);
+}
+
+static pic_value
+normalize(pic_state *pic, pic_value expr, pic_value locals, bool in)
+{
+  pic_value proc, e, it, r;
+
+  if (! pic_list_p(pic, expr))
+    return expr;
+
+  if (! pic_pair_p(pic, expr))
+    return expr;
+
+  proc = pic_list_ref(pic, expr, 0);
+  if (pic_sym_p(pic, proc)) {
+    pic_value sym = proc;
+
+    if (EQ(sym, "define")) {
+      pic_value var, val;
+
+      var = pic_list_ref(pic, expr, 1);
+
+      if (! in) {               /* global */
+        if (pic_weak_has(pic, pic->globals, var)) {
+          pic_warnf(pic, "redefining variable: %s", pic_sym(pic, var));
+        }
+        pic_weak_set(pic, pic->globals, var, pic_invalid_value(pic));
+      } else {                  /* local */
+        bool found = false;
+
+        pic_for_each (e, pic_car(pic, locals), it) {
+          if (pic_eq_p(pic, e, var)) {
+            pic_warnf(pic, "redefining variable: %s", pic_sym(pic, var));
+            found = true;
+            break;
+          }
+        }
+        if (! found) {
+          pic_set_car(pic, locals, pic_cons(pic, var, pic_car(pic, locals)));
+        }
+      }
+      val = normalize(pic, pic_list_ref(pic, expr, 2), locals, in);
+      return pic_list(pic, 3, S("set!"), var, val);
+    }
+    else if (EQ(sym, "lambda")) {
+      return pic_list(pic, 3, S("lambda"), pic_list_ref(pic, expr, 1), normalize_body(pic, pic_list_ref(pic, expr, 2), true));
+    }
+    else if (EQ(sym, "quote")) {
+      return expr;
+    }
+  }
+
+  r = pic_nil_value(pic);
+  pic_for_each (e, expr, it) {
+    pic_push(pic, normalize(pic, e, locals, in), r);
+  }
+  return pic_reverse(pic, r);
+}
+
+static pic_value
+pic_normalize(pic_state *pic, pic_value expr)
+{
+  return normalize_body(pic, expr, false);
+}
+
 typedef struct analyze_scope {
   int depth;
-  pic_value rest;                   /* Nullable */
-  pic_value args, locals, captures; /* rest args variable is counted as a local */
-  pic_value defer;
+  pic_value args, locals, captures;
   struct analyze_scope *up;
 } analyze_scope;
 
 static void
-analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value formal, analyze_scope *up)
+analyzer_scope_init(pic_state *pic, analyze_scope *scope, pic_value args, pic_value locals, analyze_scope *up)
 {
-  scope->args = pic_make_dict(pic);
-  scope->locals = pic_make_dict(pic);
+  scope->args = args;
+  scope->locals = locals;
   scope->captures = pic_make_dict(pic);
-
-  /* analyze formal */
-  for (; pic_pair_p(pic, formal); formal = pic_cdr(pic, formal)) {
-    pic_dict_set(pic, scope->args, pic_car(pic, formal), pic_true_value(pic));
-  }
-  if (pic_nil_p(pic, formal)) {
-    scope->rest = pic_false_value(pic);
-  }
-  else {
-    scope->rest = formal;
-    pic_dict_set(pic, scope->locals, formal, pic_true_value(pic));
-  }
-
   scope->up = up;
   scope->depth = up ? up->depth + 1 : 0;
-  scope->defer = pic_list(pic, 1, pic_nil_value(pic));
-}
-
-static void
-analyzer_scope_destroy(pic_state *PIC_UNUSED(pic), analyze_scope *PIC_UNUSED(scope))
-{
-  /* nothing here */
 }
 
 static bool
 find_local_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 {
-  return pic_dict_has(pic, scope->args, sym) || pic_dict_has(pic, scope->locals, sym) || scope->depth == 0;
+  pic_value args, locals;
+
+  /* args */
+  for (args = scope->args; pic_pair_p(pic, args); args = pic_cdr(pic, args)) {
+    if (pic_eq_p(pic, pic_car(pic, args), sym))
+      return true;
+  }
+  if (! pic_nil_p(pic, args)) {
+    if (pic_eq_p(pic, args, sym))
+      return true;
+  }
+
+  /* locals */
+  for (locals = scope->locals; pic_pair_p(pic, locals); locals = pic_cdr(pic, locals)) {
+    if (pic_eq_p(pic, pic_car(pic, locals), sym))
+      return true;
+  }
+  return false;
 }
 
 static int
@@ -359,27 +434,7 @@ find_var(pic_state *pic, analyze_scope *scope, pic_value sym)
     depth++;
     scope = scope->up;
   }
-  PIC_UNREACHABLE();
-}
-
-static void
-define_var(pic_state *pic, analyze_scope *scope, pic_value sym)
-{
-  if (scope->depth > 0) {
-    /* local */
-    if (find_local_var(pic, scope, sym)) {
-      pic_warnf(pic, "redefining variable: %s", pic_sym(pic, sym));
-      return;
-    }
-    pic_dict_set(pic, scope->locals, sym, pic_true_value(pic));
-  } else {
-    /* global */
-    if (pic_weak_has(pic, pic->globals, sym)) {
-      pic_warnf(pic, "redefining variable: %s", pic_sym(pic, sym));
-      return;
-    }
-    pic_weak_set(pic, pic->globals, sym, pic_invalid_value(pic));
-  }
+  return depth - 1;             /* global variable */
 }
 
 static pic_value analyze(pic_state *, analyze_scope *, pic_value);
@@ -402,81 +457,21 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_value sym)
 }
 
 static pic_value
-analyze_defer(pic_state *pic, analyze_scope *scope, pic_value form)
-{
-  pic_value skel = pic_cons(pic, pic_invalid_value(pic), pic_invalid_value(pic));
-
-  pic_set_car(pic, scope->defer, pic_cons(pic, pic_cons(pic, form, skel), pic_car(pic, scope->defer)));
-
-  return skel;
-}
-
-static void
-analyze_deferred(pic_state *pic, analyze_scope *scope)
-{
-  pic_value defer, val, src, dst, it;
-
-  scope->defer = pic_car(pic, scope->defer);
-
-  pic_for_each (defer, pic_reverse(pic, scope->defer), it) {
-    src = pic_car(pic, defer);
-    dst = pic_cdr(pic, defer);
-
-    val = analyze_lambda(pic, scope, src);
-
-    /* copy */
-    pic_set_car(pic, dst, pic_car(pic, val));
-    pic_set_cdr(pic, dst, pic_cdr(pic, val));
-  }
-}
-
-static pic_value
 analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
 {
   analyze_scope s, *scope = &s;
-  pic_value formals, body;
-  pic_value rest;
-  pic_value args, locals, captures, key;
-  int i, j, it;
+  pic_value body, args, locals;
 
-  formals = pic_list_ref(pic, form, 1);
-  body = pic_list_ref(pic, form, 2);
+  args = pic_list_ref(pic, form, 1);
+  locals = pic_list_ref(pic, pic_list_ref(pic, form, 2), 1);
+  body = pic_list_ref(pic, pic_list_ref(pic, form, 2), 2);
 
-  analyzer_scope_init(pic, scope, formals, up);
+  analyzer_scope_init(pic, scope, args, locals, up);
 
   /* analyze body */
   body = analyze(pic, scope, body);
-  analyze_deferred(pic, scope);
 
-  args = pic_make_vec(pic, pic_dict_size(pic, scope->args), NULL);
-  for (i = 0; pic_pair_p(pic, formals); formals = pic_cdr(pic, formals), i++) {
-    pic_vec_set(pic, args, i, pic_car(pic, formals));
-  }
-
-  rest = scope->rest;
-
-  locals = pic_make_vec(pic, pic_dict_size(pic, scope->locals), NULL);
-  j = 0;
-  if (pic_sym_p(pic, scope->rest)) {
-    pic_vec_set(pic, locals, j++, scope->rest);
-  }
-  it = 0;
-  while (pic_dict_next(pic, scope->locals, &it, &key, NULL)) {
-    if (pic_eq_p(pic, key, rest))
-      continue;
-    pic_vec_set(pic, locals, j++, key);
-  }
-
-  captures = pic_make_vec(pic, pic_dict_size(pic, scope->captures), NULL);
-  it = 0;
-  j = 0;
-  while (pic_dict_next(pic, scope->captures, &it, &key, NULL)) {
-    pic_vec_set(pic, captures, j++, key);
-  }
-
-  analyzer_scope_destroy(pic, scope);
-
-  return pic_list(pic, 6, S("lambda"), rest, args, locals, captures, body);
+  return pic_list(pic, 5, S("lambda"), args, locals, scope->captures, body);
 }
 
 static pic_value
@@ -489,14 +484,6 @@ analyze_list(pic_state *pic, analyze_scope *scope, pic_value obj)
   }
 
   return pic_reverse(pic, seq);
-}
-
-static pic_value
-analyze_define(pic_state *pic, analyze_scope *scope, pic_value obj)
-{
-  define_var(pic, scope, pic_list_ref(pic, obj, 1));
-
-  return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
 }
 
 static pic_value
@@ -523,11 +510,8 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     if (pic_sym_p(pic, proc)) {
       pic_value sym = proc;
 
-      if (EQ(sym, "define")) {
-        return analyze_define(pic, scope, obj);
-      }
-      else if (EQ(sym, "lambda")) {
-        return analyze_defer(pic, scope, obj);
+      if (EQ(sym, "lambda")) {
+        return analyze_lambda(pic, scope, obj);
       }
       else if (EQ(sym, "quote")) {
         return obj;
@@ -562,13 +546,10 @@ pic_analyze(pic_state *pic, pic_value obj)
 {
   analyze_scope s, *scope = &s;
 
-  analyzer_scope_init(pic, scope, pic_nil_value(pic), NULL);
+  analyzer_scope_init(pic, scope, pic_nil_value(pic), pic_nil_value(pic), NULL);
 
   obj = analyze(pic, scope, obj);
 
-  analyze_deferred(pic, scope);
-
-  analyzer_scope_destroy(pic, scope);
   return obj;
 }
 
@@ -596,14 +577,40 @@ typedef struct codegen_context {
 static void create_activation(pic_state *, codegen_context *);
 
 static void
-codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, pic_value rest, pic_value args, pic_value locals, pic_value captures)
+codegen_context_init(pic_state *pic, codegen_context *cxt, codegen_context *up, pic_value args, pic_value locals, pic_value captures)
 {
-  cxt->up = up;
-  cxt->rest = rest;
+  pic_value tmp;
+  int i, it;
 
-  cxt->args = args;
-  cxt->locals = locals;
-  cxt->captures = captures;
+  for (i = 0, tmp = args; pic_pair_p(pic, tmp); tmp = pic_cdr(pic, tmp))
+    i++;
+  cxt->args = pic_make_vec(pic, i, NULL);
+  for (i = 0, tmp = args; pic_pair_p(pic, tmp); tmp = pic_cdr(pic, tmp)) {
+    pic_vec_set(pic, cxt->args, i++, pic_car(pic, tmp));
+  }
+
+  cxt->rest = tmp;
+
+  i = pic_length(pic, locals);
+  if (pic_sym_p(pic, cxt->rest)) {
+    i++;
+  }
+  cxt->locals = pic_make_vec(pic, i, NULL);
+  i = 0;
+  if (pic_sym_p(pic, cxt->rest)) {
+    pic_vec_set(pic, cxt->locals, i++, cxt->rest);
+  }
+  for (tmp = locals; pic_pair_p(pic, tmp); tmp = pic_cdr(pic, tmp)) {
+    pic_vec_set(pic, cxt->locals, i++, pic_car(pic, tmp));
+  }
+
+  cxt->captures = pic_make_vec(pic, pic_dict_size(pic, captures), NULL);
+  it = i = 0;
+  while (pic_dict_next(pic, captures, &it, &tmp, NULL)) {
+    pic_vec_set(pic, cxt->captures, i++, tmp);
+  }
+
+  cxt->up = up;
 
   cxt->code = pic_calloc(pic, PIC_ISEQ_SIZE, sizeof(struct code));
   cxt->clen = 0;
@@ -878,20 +885,18 @@ static void
 codegen_lambda(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 {
   codegen_context c, *inner_cxt = &c;
-  pic_value rest, body;
-  pic_value args, locals, captures;
+  pic_value args, locals, captures, body;
 
   check_irep_size(pic, cxt);
 
   /* extract arguments */
-  rest = pic_list_ref(pic, obj, 1);
-  args = pic_list_ref(pic, obj, 2);
-  locals = pic_list_ref(pic, obj, 3);
-  captures = pic_list_ref(pic, obj, 4);
-  body = pic_list_ref(pic, obj, 5);
+  args = pic_list_ref(pic, obj, 1);
+  locals = pic_list_ref(pic, obj, 2);
+  captures = pic_list_ref(pic, obj, 3);
+  body = pic_list_ref(pic, obj, 4);
 
   /* emit irep */
-  codegen_context_init(pic, inner_cxt, cxt, rest, args, locals, captures);
+  codegen_context_init(pic, inner_cxt, cxt, args, locals, captures);
   codegen(pic, inner_cxt, body, true);
   cxt->irep[cxt->ilen] = codegen_context_destroy(pic, inner_cxt);
 
@@ -1050,10 +1055,9 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 static struct irep *
 pic_codegen(pic_state *pic, pic_value obj)
 {
-  pic_value empty = pic_make_vec(pic, 0, NULL);
   codegen_context c, *cxt = &c;
 
-  codegen_context_init(pic, cxt, NULL, pic_false_value(pic), empty, empty, empty);
+  codegen_context_init(pic, cxt, NULL, pic_nil_value(pic), pic_nil_value(pic), pic_make_dict(pic));
 
   codegen(pic, cxt, obj, true);
 
@@ -1077,6 +1081,14 @@ pic_compile(pic_state *pic, pic_value obj)
   obj = pic_optimize(pic, obj);
 #if 0
   pic_printf(pic, "## optimize completed\n~s\n", obj);
+#endif
+
+  SAVE(pic, ai, obj);
+
+  /* normalize */
+  obj = pic_normalize(pic, obj);
+#if 0
+  pic_printf(pic, "## normalize completed\n~s\n", obj);
 #endif
 
   SAVE(pic, ai, obj);
