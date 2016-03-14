@@ -82,10 +82,16 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 
 static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
 
-static void save_cont(pic_state *, struct fullcont **);
+static void save_cont(pic_state *, struct fullcont *);
 static void restore_cont(pic_state *, struct fullcont *);
 
-static ptrdiff_t
+#if __GNUC__
+# define NOINLINE __attribute__ ((noinline))
+#else
+# define NOINLINE
+#endif
+
+static ptrdiff_t NOINLINE
 native_stack_length(char **pos)
 {
   char t;
@@ -99,16 +105,13 @@ native_stack_length(char **pos)
     : &t - picrin_native_stack_start;
 }
 
-static void
-save_cont(pic_state *pic, struct fullcont **c)
+static void NOINLINE
+save_cont(pic_state *pic, struct fullcont *cont)
 {
   void pic_vm_tear_off(pic_state *);
-  struct fullcont *cont;
   char *pos;
 
   pic_vm_tear_off(pic);         /* tear off */
-
-  cont = *c = pic_malloc(pic, sizeof(struct fullcont));
 
   cont->prev_jmp = pic->cc;
 
@@ -141,12 +144,13 @@ save_cont(pic_state *pic, struct fullcont **c)
   cont->retv = NULL;
 }
 
-static void
+static void NOINLINE
 native_stack_extend(pic_state *pic, struct fullcont *cont)
 {
-  volatile pic_value v[1024];
+  pic_value v[1024];
 
-  ((void)v);
+  memset(v, 0, sizeof v);
+
   restore_cont(pic, cont);
 }
 
@@ -215,20 +219,19 @@ cont_call(pic_state *pic)
 static pic_value
 pic_callcc(pic_state *pic, pic_value proc)
 {
-  struct fullcont *cont;
+  struct fullcont *cont = pic_malloc(pic, sizeof(struct fullcont));
 
-  save_cont(pic, &cont);
-  if (setjmp(cont->jmp)) {
+  if (setjmp(cont->jmp) != 0) {
     return pic_valuesk(pic, cont->retc, cont->retv);
-  }
-  else {
-    pic_value c, args[1];
+  } else {
+    pic_value c[1];
+
+    save_cont(pic, cont);
 
     /* save the continuation object in proc */
-    c = pic_lambda(pic, cont_call, 1, pic_data_value(pic, cont, &cont_type));
+    c[0] = pic_lambda(pic, cont_call, 1, pic_data_value(pic, cont, &cont_type));
 
-    args[0] = c;
-    return pic_applyk(pic, proc, 1, args);
+    return pic_applyk(pic, proc, 1, c);
   }
 }
 
