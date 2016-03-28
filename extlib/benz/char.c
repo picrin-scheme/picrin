@@ -22,6 +22,7 @@ pic_char_char_to_integer(pic_state *pic)
   char c;
 
   pic_get_args(pic, "c", &c);
+  assert((c & 0x80) == 0);
 
   return pic_int_value(pic, c);
 }
@@ -33,7 +34,7 @@ pic_char_integer_to_char(pic_state *pic)
 
   pic_get_args(pic, "i", &i);
 
-  if (i < 0 || i > 255) {
+  if (i < 0 || i > 127) {
     pic_error(pic, "integer->char: integer out of char range", 1, pic_int_value(pic, i));
   }
   
