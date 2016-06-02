@@ -24,9 +24,12 @@
     (if (promise-done? promise)
 	(promise-value promise)
 	(let ((new-promise ((promise-value promise))))
-          (set-promise-done!  promise (promise-done? new-promise))
-          (set-promise-value! promise (promise-value new-promise))
-          (force promise))))
+	  (if (promise-done? promise)
+	      (promise-value promise)
+	      (begin
+		(set-promise-done!  promise (promise-done? new-promise))
+		(set-promise-value! promise (promise-value new-promise))
+		(force promise))))))
 
   (define (make-promise obj)
     (if (promise? obj)
