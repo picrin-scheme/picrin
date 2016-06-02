@@ -372,6 +372,16 @@
   (force op)
   (test 'ok (force np)))
 
+(let ()
+  (define flag #f)
+  (define p (delay (if flag
+		       'ok
+		       (begin
+			 (set! flag #t)
+			 (force p)
+			 'ng))))
+  (test 'ok (force p)))
+
 
 (define radix
   (make-parameter
