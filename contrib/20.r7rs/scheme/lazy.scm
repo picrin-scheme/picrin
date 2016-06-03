@@ -1,40 +1,45 @@
 ;;; Appendix A. Standard Libraries Lazy
 
 (define-library (scheme lazy)
-  (import (scheme base)
-	  (picrin macro))
+  (import (scheme base))
+
+  ;; type 'a <promise> = cached of 'a | chained of 'a promise | pending of () -> 'a promise
 
   (define-record-type <promise>
-      (make-promise% done value)
+      (promise state value)
       promise?
-    (done  promise-done? set-promise-done!)
+    (state promise-state set-promise-state!)
     (value promise-value set-promise-value!))
-
-  (define-syntax delay-force
-    (syntax-rules ()
-      ((_ expr)
-       (make-promise% #f (lambda () expr)))))
-
-  (define-syntax delay
-    (syntax-rules ()
-      ((_ expr)
-       (delay-force (make-promise% #t expr)))))
-
-  (define (force promise)
-    (if (promise-done? promise)
-	(promise-value promise)
-	(let ((new-promise ((promise-value promise))))
-	  (if (promise-done? promise)
-	      (promise-value promise)
-	      (begin
-		(set-promise-done!  promise (promise-done? new-promise))
-		(set-promise-value! promise (promise-value new-promise))
-		(force promise))))))
 
   (define (make-promise obj)
     (if (promise? obj)
 	obj
-	(make-promise% #t obj)))
+	(promise 'cached obj)))
+
+  (define-syntax delay-force
+    (syntax-rules ()
+      ((_ expr)
+       (promise (string->symbol "pending") (lambda () expr)))))
+
+  (define-syntax delay
+    (syntax-rules ()
+      ((_ expr)
+       (delay-force (make-promise expr)))))
+
+  (define (force p)
+    (let ((v (promise-value p)))
+      (case (promise-state p)
+        ((cached)  v)
+        ((chained) (let ()
+                     (when (eq? 'cached (promise-state v))
+                       (set-promise-state! p 'cached)
+                       (set-promise-value! p (promise-value v)))
+                     (force v)))
+        ((pending) (let ((q (v)))
+                     (when (eq? 'pending (promise-state p))
+                       (set-promise-state! p 'chained)
+                       (set-promise-value! p q))
+                     (force p))))))
 
   (export delay-force
           delay

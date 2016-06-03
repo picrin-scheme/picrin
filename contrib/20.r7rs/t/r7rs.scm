@@ -364,6 +364,15 @@
         (promise? x)))
 
 (let ()
+  (define x 0)
+  (define np (delay (begin
+		      (set! x (+ x 1))
+		      (if (= x 1) 'ok 'ng))))
+  (define op (delay-force np))
+  (force op)
+  (test 'ok (force np)))
+
+(let ()
   (define flag #f)
   (define p (delay (if flag
 		       'ok
