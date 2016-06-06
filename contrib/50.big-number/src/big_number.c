@@ -482,7 +482,7 @@ bigint_mul_i(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
 static bool
 bigint_less(struct pic_bigint_t *val1, struct pic_bigint_t *val2) {
   if (val1->signum != val2->signum) { // signums differ
-    return val2->signum;
+    return val1->signum; // - < +, not + < -
   }
   return val1->signum ^ bigint_vec_lt(val1->digits, val2->digits);
 }

@@ -10,5 +10,6 @@ This library provides the following functions:
 - `bigint->number` : Converts the argument to a double.
 - `bigint->string` : Converts the argument to a string. The second argument (radix) is optional.
 - `bigint-underlying` : Returns the underlying vector of the given bigint.
+- `bigint-pow` : Returns the power a<sup>b</sup>. This uses the standard exponentiation-by-squaring technique.
 
 Every pure operation other than `make-bigint` accepts either integers or bigints. The first argument of in-place operations must be a bigint.
