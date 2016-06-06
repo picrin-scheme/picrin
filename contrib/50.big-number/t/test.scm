@@ -145,6 +145,19 @@
 (test-string "-4294967296")
 (test-string "314159265358979323846264338327950288419716939937510582097494459230781640628620899")
 
+; bigint->string with different radixes
+
+(define-syntax test-string-radix
+  (syntax-rules ()
+    ((_ a r)
+      (test a
+        (bigint->string (make-bigint-radix a r) r)))))
+
+(test-string-radix "23525" 14)
+(test-string-radix "4294967296" 32)
+(test-string-radix "-4294967296" 21)
+(test-string-radix "314159265358979323846264338327950288419716939937510582097494459230781640628620899" 11)
+(test-string-radix "aquickbrownfoxjumpsoverthelazydog" 36)
 
 ; factorial
 

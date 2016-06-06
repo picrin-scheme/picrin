@@ -3,7 +3,7 @@
 
 /**
  * Big integer is represented as a vector of digits.
- * A digit is 0 ~ 255.
+ * A digit is 32-bit long, 0 ~ 2^32 - 1.
  */
 
 struct pic_bigint_t {
@@ -295,8 +295,9 @@ bigint_init_int(pic_state *pic, int value)
   return bi;
 }
 
+/* radix is in 2 ... 36 */
 static struct pic_bigint_t *
-bigint_init_str(pic_state *pic, pic_str *str)
+bigint_init_str(pic_state *pic, pic_str *str, int radix)
 {
   const char *cstr;
   size_t pos, len;
@@ -308,7 +309,7 @@ bigint_init_str(pic_state *pic, pic_str *str)
   len = pic_str_len(str);
   ret = pic_make_vec(pic, 0);
   base = pic_make_vec(pic, 1);
-  base->data[0] = pic_int_value(10);
+  base->data[0] = pic_int_value(radix); // radix is a one-digit number
   retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
   retbi->signum = 0;
 
@@ -317,14 +318,28 @@ bigint_init_str(pic_state *pic, pic_str *str)
     pos = 1;
   }
   if (pos == len) { // no digits
-    pic_errorf(pic, "bigint-make: there are no digits");
+    pic_errorf(pic, "make-bigint: there are no digits");
   }
   for (; pos < len; ++pos) {
     char ch = cstr[pos];
-    if (ch >= '0' && ch <= '9') {
+    if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' || ch <= 'Z')) {
+      int dig;
+
+      if (ch >= '0' && ch <= '9') {
+	dig = ch - '0';
+      } else if (ch >= 'a' && ch <= 'z') {
+	dig = ch - 'a' + 10;
+      } else {
+	dig = ch - 'A' + 10;
+      }
+
+      if (dig >= radix) {
+	pic_error(pic, "bigint-make: digit out of range", 0);
+      }
+
       ret = bigint_vec_mul(pic, ret, base);
       digit = pic_make_vec(pic, 1);
-      digit->data[0] = pic_int_value(ch - '0');
+      digit->data[0] = pic_int_value(dig);
       if (ch != '0') {
 	ret = bigint_vec_add(pic, ret, digit);
       }
@@ -609,11 +624,36 @@ pic_big_number_make_bigint(pic_state *pic)
   } else if (pic_float_p(value)) {
     bi = bigint_init_int(pic, pic_float(value));
   } else if (pic_str_p(value)) {
-    bi = bigint_init_str(pic, pic_str_ptr(value));
+    bi = bigint_init_str(pic, pic_str_ptr(value), 10);
   } else {
     //error
     pic_errorf(pic, "make-bigint can take only int/string as its argument, but got: ~s", value);
   }
+  return pic_obj_value(pic_data_alloc(pic, &bigint_type, bi));
+}
+
+/*
+ * make-bigint-radix takes a string and radix and returns a bigint.
+ */
+static pic_value
+pic_big_number_make_bigint_radix(pic_state *pic) {
+  pic_value value;
+  struct pic_bigint_t *bi;
+  int radix;
+
+  pic_get_args(pic, "oi", &value, &radix);
+
+  if (radix <= 1 || radix >= 37) {
+    pic_error(pic, "make-bigint-radix: radix out of range", 0);
+  }
+
+  if (pic_str_p(value)) {
+    bi = bigint_init_str(pic, pic_str_ptr(value), radix);
+  } else {
+    //error
+    pic_errorf(pic, "make-bigint-radix can take only string as its argument, but got: ~s", value);
+  }
+
   return pic_obj_value(pic_data_alloc(pic, &bigint_type, bi));
 }
 
@@ -827,10 +867,25 @@ pic_big_number_bigint_to_string(pic_state *pic)
   pic_value val;
   struct pic_bigint_t *bi;
   pic_str *result;
+  int radix;
+  int num_args;
 
-  pic_get_args(pic, "o", &val);
+  num_args = pic_get_args(pic, "o|i", &val, &radix);
+
+  switch (num_args) {
+  case 1:
+    radix = 10;
+    break;
+  case 2:
+    break;
+  }
+
+  if (radix <= 1 || radix >= 37) {
+    pic_error(pic, "bigint->string: radix out of range", 0);
+  }
+
   bi = take_bigint_or_int(pic, val);
-  result = bigint_to_string(pic, bi, 10);
+  result = bigint_to_string(pic, bi, radix);
 
   return pic_obj_value(result);
 }
@@ -840,6 +895,7 @@ pic_init_big_number(pic_state *pic)
 {
   pic_deflibrary (pic, "(picrin big-number)") {
     pic_defun(pic, "make-bigint", pic_big_number_make_bigint);
+    pic_defun(pic, "make-bigint-radix", pic_big_number_make_bigint_radix);
     pic_defun(pic, "bigint-add", pic_big_number_bigint_add);
     pic_defun(pic, "bigint-sub", pic_big_number_bigint_sub);
     pic_defun(pic, "bigint-mul", pic_big_number_bigint_mul);
