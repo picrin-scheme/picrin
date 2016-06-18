@@ -25,7 +25,7 @@ typedef pic_value (*pic_reader_t)(pic_state *, xFILE *file, int c, struct reader
 static pic_reader_t reader_table[256];
 static pic_reader_t reader_dispatch[256];
 
-static pic_value read(pic_state *pic, xFILE *file, int c, struct reader_control *p);
+static pic_value read_safe(pic_state *pic, xFILE *file, int c, struct reader_control *p);
 static pic_value read_nullable(pic_state *pic, xFILE *file, int c, struct reader_control *p);
 
 PIC_NORETURN static void
@@ -123,7 +123,7 @@ read_block_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader
 static pic_value
 read_datum_comment(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  read(pic, file, next(pic, file), p);
+  read_safe(pic, file, next(pic, file), p);
 
   return pic_invalid_value(pic);
 }
@@ -152,13 +152,13 @@ read_directive(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 static pic_value
 read_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "quote"), read(pic, file, next(pic, file), p));
+  return pic_list(pic, 2, pic_intern_lit(pic, "quote"), read_safe(pic, file, next(pic, file), p));
 }
 
 static pic_value
 read_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "quasiquote"), read(pic, file, next(pic, file), p));
+  return pic_list(pic, 2, pic_intern_lit(pic, "quasiquote"), read_safe(pic, file, next(pic, file), p));
 }
 
 static pic_value
@@ -172,19 +172,19 @@ read_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_contr
   } else {
     tag = pic_intern_lit(pic, "unquote");
   }
-  return pic_list(pic, 2, tag, read(pic, file, next(pic, file), p));
+  return pic_list(pic, 2, tag, read_safe(pic, file, next(pic, file), p));
 }
 
 static pic_value
 read_syntax_quote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quote"), read(pic, file, next(pic, file), p));
+  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quote"), read_safe(pic, file, next(pic, file), p));
 }
 
 static pic_value
 read_syntax_quasiquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reader_control *p)
 {
-  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quasiquote"), read(pic, file, next(pic, file), p));
+  return pic_list(pic, 2, pic_intern_lit(pic, "syntax-quasiquote"), read_safe(pic, file, next(pic, file), p));
 }
 
 static pic_value
@@ -198,7 +198,7 @@ read_syntax_unquote(pic_state *pic, xFILE *file, int PIC_UNUSED(c), struct reade
   } else {
     tag = pic_intern_lit(pic, "syntax-unquote");
   }
-  return pic_list(pic, 2, tag, read(pic, file, next(pic, file), p));
+  return pic_list(pic, 2, tag, read_safe(pic, file, next(pic, file), p));
 }
 
 static pic_value
@@ -474,7 +474,7 @@ read_pair(pic_state *pic, xFILE *file, int c, struct reader_control *p)
     return pic_nil_value(pic);
   }
   if (c == '.' && isdelim(peek(pic, file))) {
-    cdr = read(pic, file, next(pic, file), p);
+    cdr = read_safe(pic, file, next(pic, file), p);
 
   closing:
     if ((c = skip(pic, file, ' ')) != tCLOSE) {
@@ -503,7 +503,7 @@ read_vector(pic_state *pic, xFILE *file, int c, struct reader_control *p)
   pic_value list, it, elem, vec;
   int i = 0;
 
-  list = read(pic, file, c, p);
+  list = read_safe(pic, file, c, p);
 
   vec = pic_make_vec(pic, pic_length(pic, list), NULL);
 
@@ -530,7 +530,7 @@ read_label_set(pic_state *pic, xFILE *file, int i, struct reader_control *p)
 
       kh_val(h, it) = val = pic_cons(pic, pic_undef_value(pic), pic_undef_value(pic));
 
-      tmp = read(pic, file, c, p);
+      tmp = read_safe(pic, file, c, p);
       pic_pair_ptr(pic, val)->car = pic_car(pic, tmp);
       pic_pair_ptr(pic, val)->cdr = pic_cdr(pic, tmp);
 
@@ -551,7 +551,7 @@ read_label_set(pic_state *pic, xFILE *file, int i, struct reader_control *p)
 
         kh_val(h, it) = val = pic_make_vec(pic, 0, NULL);
 
-        tmp = read(pic, file, c, p);
+        tmp = read_safe(pic, file, c, p);
         PIC_SWAP(pic_value *, pic_vec_ptr(pic, tmp)->data, pic_vec_ptr(pic, val)->data);
         PIC_SWAP(int, pic_vec_ptr(pic, tmp)->len, pic_vec_ptr(pic, val)->len);
 
@@ -562,7 +562,7 @@ read_label_set(pic_state *pic, xFILE *file, int i, struct reader_control *p)
     }
   default:
     {
-      kh_val(h, it) = val = read(pic, file, c, p);
+      kh_val(h, it) = val = read_safe(pic, file, c, p);
 
       return val;
     }
@@ -640,7 +640,7 @@ read_nullable(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 }
 
 static pic_value
-read(pic_state *pic, xFILE *file, int c, struct reader_control *p)
+read_safe(pic_state *pic, xFILE *file, int c, struct reader_control *p)
 {
   pic_value val;
 
