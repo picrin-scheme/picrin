@@ -19,14 +19,16 @@ union header {
   } s;
 };
 
+#define UNIT_SIZE (sizeof(uint32_t) * CHAR_BIT)
 #define BITMAP_SIZE                                                     \
-  (PIC_HEAP_PAGE_SIZE / sizeof(union header)) / (sizeof(uint32_t) * CHAR_BIT)
+  (PIC_HEAP_PAGE_SIZE / sizeof(union header) / UNIT_SIZE)
 
 
 struct heap_page {
-  union header *basep, *endp;
   struct heap_page *next;
+  size_t current;
   uint32_t bitmap[BITMAP_SIZE];
+  uint32_t index[BITMAP_SIZE / UNIT_SIZE];
 };
 
 struct object {
@@ -51,7 +53,6 @@ struct object {
 };
 
 struct heap {
-  union header base, *freep;
   struct heap_page *pages;
   struct weak *weaks;       /* weak map chain */
 };
@@ -63,12 +64,7 @@ pic_heap_open(pic_state *pic)
 
   heap = pic_malloc(pic, sizeof(struct heap));
 
-  heap->base.s.ptr = &heap->base;
-  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
-
-  heap->freep = &heap->base;
   heap->pages = NULL;
-
   heap->weaks = NULL;
 
   return heap;
@@ -174,71 +170,120 @@ pic_leave(pic_state *pic, size_t state)
   pic->arena_idx = state;
 }
 
+/* bitmap */
+
+PIC_INLINE union header *
+index2header(struct heap_page *page, size_t index)
+{
+  return ((union header *)(page + 1)) + index;
+}
+
+PIC_INLINE struct heap_page *
+obj2page(pic_state *PIC_UNUSED(pic), union header *h)
+{
+  unsigned long int mask = ~(PIC_HEAP_PAGE_SIZE - 1);
+
+  return (struct heap_page *)(((unsigned long int) h) & mask);
+}
+
+
+PIC_INLINE int
+numofbits(unsigned long bits)
+{
+    bits = bits - (bits >> 1 & 0x55555555);
+    bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
+    bits = bits + (bits >> 4) & 0x0f0f0f0f;
+    bits = bits * 0x01010101;
+
+    return bits >> 24;
+}
+
+
+PIC_INLINE void
+mark_at(struct heap_page *page, size_t index, size_t size)
+{
+  size_t mask = ~(-1 << size);
+
+  page->bitmap[index / UNIT_SIZE] |= mask << (index % UNIT_SIZE);
+  if (numofbits(page->bitmap[index / UNIT_SIZE]) == UNIT_SIZE) {
+    page->index[index / UNIT_SIZE / UNIT_SIZE] |= 1 << ((index / UNIT_SIZE) % UNIT_SIZE);
+  }
+
+  if (UNIT_SIZE < index % UNIT_SIZE + size) {
+    page->bitmap[index / UNIT_SIZE + 1] |= mask >> (UNIT_SIZE - index % UNIT_SIZE);
+    if (numofbits(page->bitmap[index / UNIT_SIZE + 1]) == UNIT_SIZE) {
+      page->index[(index / UNIT_SIZE + 1) / UNIT_SIZE] |= 1 << ((index / UNIT_SIZE + 1) % UNIT_SIZE);
+    }
+  }
+}
+
+PIC_INLINE int
+is_marked_at(uint32_t *bitmap, size_t index, size_t size)
+{
+  size_t mask = ~(-1 << size);
+  size_t map;
+
+  map = bitmap[index / UNIT_SIZE] >> (index % UNIT_SIZE);
+  if (UNIT_SIZE < index % UNIT_SIZE + size)
+    map |= bitmap[index / UNIT_SIZE + 1] << (UNIT_SIZE - index % UNIT_SIZE);
+
+  return mask & map;
+
+}
+
+
+static void *
+heap_alloc_heap_page(struct heap_page *page, size_t nunits)
+{
+  size_t index;
+  union header *p;
+
+  for (index = page->current; index < BITMAP_SIZE * UNIT_SIZE - (nunits+1) - (sizeof(struct heap_page)/sizeof(union header)); ++index) {
+    if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
+      index += UNIT_SIZE - 1;
+      continue;
+    }
+
+    if (! is_marked_at(page->bitmap, index, nunits+1)) {
+      mark_at(page, index, nunits+1);
+      p = index2header(page, index);
+      p->s.size = nunits;
+      page->current = index + nunits + 1;
+      return (void *)(p+1);
+    }
+  }
+
+  return NULL;
+}
+
 static void *
 heap_alloc(pic_state *pic, size_t size)
 {
-  union header *p, *prevp;
+  struct heap_page *p;
+  void *ret;
   size_t nunits;
 
   assert(size > 0);
 
-  nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
+  nunits = (size + sizeof(union header) - 1) / sizeof(union header);
 
-  prevp = pic->heap->freep;
-  for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
-    if (p->s.size >= nunits)
-      break;
-    if (p == pic->heap->freep) {
-      return NULL;
+  p = pic->heap->pages;
+
+  while (p) {
+    ret = heap_alloc_heap_page(p, nunits);
+    if (ret != NULL) {
+      return ret;
     }
+    p = p->next;
   }
 
-  if (p->s.size == nunits) {
-    prevp->s.ptr = p->s.ptr;
-  }
-  else {
-    p->s.size -= nunits;
-    p += p->s.size;
-    p->s.size = nunits;
-  }
-  pic->heap->freep = prevp;
-
-  return (void *)(p + 1);
+  return NULL;
 }
 
-static void
-heap_free(pic_state *pic, void *ap)
-{
-  union header *bp, *p;
-
-  assert(ap != NULL);
-
-  bp = (union header *)ap - 1;
-
-  for (p = pic->heap->freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
-    if (p >= p->s.ptr && (bp > p || bp < p->s.ptr)) {
-      break;
-    }
-  }
-  if (bp + bp->s.size == p->s.ptr && p->s.ptr->s.size > 0) { /* don't melt base header */
-    bp->s.size += p->s.ptr->s.size;
-    bp->s.ptr = p->s.ptr->s.ptr;
-  } else {
-    bp->s.ptr = p->s.ptr;
-  }
-  if (p + p->s.size == bp && bp->s.size > 0) { /* don't melt base header */
-    p->s.size += bp->s.size;
-    p->s.ptr = bp->s.ptr;
-  } else {
-    p->s.ptr = bp;
-  }
-  pic->heap->freep = p;
-}
 
 static void
 heap_morecore(pic_state *pic)
 {
-  union header *bp, *np;
   struct heap_page *page;
   size_t nunits;
 
@@ -249,29 +294,13 @@ heap_morecore(pic_state *pic)
   if(PIC_MEMALIGN(pic, (void **)&page, PIC_HEAP_PAGE_SIZE, PIC_HEAP_PAGE_SIZE) != 0)
     pic_panic(pic, "memory exhausted");
 
-  bp = (union header*)(page + 1);
-  bp->s.size = 0;               /* bp is never used for allocation */
-  heap_free(pic, bp + 1);
+  memset(page->bitmap, 0, sizeof(page->bitmap));
+  memset(page->index, 0, sizeof(page->index));
+  page->current = 0;
 
-  np = bp + 1;
-  np->s.size = nunits - 1;
-  heap_free(pic, np + 1);
-
-  page->basep = bp;
-  page->endp = bp + nunits;
   page->next = pic->heap->pages;
 
   pic->heap->pages = page;
-}
-
-/* bitmap */
-
-struct heap_page *
-obj2page(pic_state *PIC_UNUSED(pic), union header *h)
-{
-  unsigned long int mask = ~(PIC_HEAP_PAGE_SIZE - 1);
-
-  return (struct heap_page *)(((unsigned long int) h) & mask);
 }
 
 static bool
@@ -279,13 +308,13 @@ is_marked(pic_state *pic, struct object *obj)
 {
   union header *h = ((union header *)obj) - 1;
   struct heap_page *page;
-  size_t i, unit_size = sizeof(uint32_t) * CHAR_BIT;
+  size_t i;
 
   page = obj2page(pic, h);
 
-  i = h - page->basep;
+  i = h - ((union header *)(page + 1));
 
-  return page->bitmap[i / unit_size] & (1 << (i % unit_size));
+  return is_marked_at(page->bitmap, i, h->s.size + 1);
 }
 
 static void
@@ -293,13 +322,13 @@ mark(pic_state *pic, struct object *obj)
 {
   union header *h = ((union header *)obj) - 1;
   struct heap_page *page;
-  size_t i, unit_size = sizeof(uint32_t) * CHAR_BIT;
+  size_t i;
 
   page = obj2page(pic, h);
 
-  i = h - page->basep;
+  i = h - ((union header *)(page + 1));
 
-  page->bitmap[i / unit_size] |= (1 << (i % unit_size));
+  mark_at(page, i, h->s.size + 1);
 }
 
 /* MARK */
@@ -606,47 +635,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 }
 
-static size_t
-gc_sweep_page(pic_state *pic, struct heap_page *page)
-{
-  union header *bp, *p, *head = NULL, *tail = NULL;
-  struct object *obj;
-  size_t alive = 0;
-
-  for (bp = page->basep; ; bp = bp->s.ptr) {
-    p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advnce */
-    for (; p != bp->s.ptr; p += p->s.size) {
-      if (p < page->basep || page->endp <= p) {
-        goto escape;
-      }
-      obj = (struct object *)(p + 1);
-      if (is_marked(pic, obj)) {
-        alive += p->s.size;
-      } else {
-        if (head == NULL) {
-          head = p;
-        }
-        if (tail != NULL) {
-          tail->s.ptr = p;
-        }
-        tail = p;
-        tail->s.ptr = NULL; /* We can safely reuse ptr field of dead object */
-      }
-    }
-  }
- escape:
-
-  /* free! */
-  while (head != NULL) {
-    p = head;
-    head = head->s.ptr;
-    gc_finalize_object(pic, (struct object *)(p + 1));
-    heap_free(pic, p + 1);
-  }
-
-  return alive;
-}
-
 static void
 gc_sweep_phase(pic_state *pic)
 {
@@ -683,9 +671,12 @@ gc_sweep_phase(pic_state *pic)
   }
 
   page = pic->heap->pages;
-  while (page) {
-    inuse += gc_sweep_page(pic, page);
-    total += page->endp - page->basep;
+  while(page) {
+    size_t i;
+    total += BITMAP_SIZE * UNIT_SIZE;
+    for (i = 0; i < BITMAP_SIZE; ++i) {
+      inuse += numofbits(page->bitmap[i]);
+    }
     page = page->next;
   }
 
@@ -703,6 +694,8 @@ gc_init(pic_state *pic)
   while (page) {
     /* clear mark bits */
     memset(page->bitmap, 0, sizeof(page->bitmap));
+    memset(page->index, 0, sizeof(page->index));
+    page->current = 0;
     page = page->next;
   }
 }

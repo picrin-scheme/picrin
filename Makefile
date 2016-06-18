@@ -52,6 +52,8 @@ extlib/benz/boot.o: extlib/benz/boot.c
 
 $(BENZ_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): extlib/benz/include/picrin.h extlib/benz/include/picrin/*.h
 
+extlib/benz/gc.o: $(wildcard extlib/benz/gc/*.c)
+
 doc: docs/*.rst docs/contrib.rst
 	$(MAKE) -C docs html
 	mkdir -p doc

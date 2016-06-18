@@ -170,7 +170,6 @@ typedef unsigned long uint32_t;
 # ifndef PIC_MEMALIGN
 #   include <unistd.h>
 #   define PIC_MEMALIGN(pic, buf, alignment, size) posix_memalign(buf, alignment, size)
-#   define PIC_ALIGNMENT() sysconf(_SC_PAGESIZE)
 #   define PIC_USE_BITMAPGC
 # endif
 
