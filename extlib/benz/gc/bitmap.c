@@ -22,12 +22,14 @@ union header {
 #define UNIT_SIZE (sizeof(uint32_t) * CHAR_BIT)
 #define BITMAP_SIZE                                                     \
   (PIC_HEAP_PAGE_SIZE / sizeof(union header) / UNIT_SIZE)
+#define HEADER_SIZE ((PIC_HEAP_PAGE_SIZE - sizeof(struct heap_page)) / sizeof(union header))
 
 
 struct heap_page {
   struct heap_page *next;
   size_t current;
   uint32_t bitmap[BITMAP_SIZE];
+  uint32_t shadow[BITMAP_SIZE];
   uint32_t index[BITMAP_SIZE / UNIT_SIZE];
 };
 
@@ -238,7 +240,7 @@ heap_alloc_heap_page(struct heap_page *page, size_t nunits)
   size_t index;
   union header *p;
 
-  for (index = page->current; index < BITMAP_SIZE * UNIT_SIZE - (nunits+1) - (sizeof(struct heap_page)/sizeof(union header)); ++index) {
+  for (index = page->current; index < HEADER_SIZE - (nunits + 1) ; ++index) {
     if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
       index += UNIT_SIZE - 1;
       continue;
@@ -672,10 +674,21 @@ gc_sweep_phase(pic_state *pic)
 
   page = pic->heap->pages;
   while(page) {
-    size_t i;
-    total += BITMAP_SIZE * UNIT_SIZE;
+    size_t index, i;
+    union header *h;
+
+    total += HEADER_SIZE;
     for (i = 0; i < BITMAP_SIZE; ++i) {
+      page->shadow[i] &= ~page->bitmap[i];
       inuse += numofbits(page->bitmap[i]);
+    }
+
+    for (index = 0; index < HEADER_SIZE; ++index) {
+      if (page->shadow[index / UNIT_SIZE] & (1 << (index % UNIT_SIZE))) {
+        h = index2header(page, index);
+        index += h->s.size;
+        gc_finalize_object(pic, (struct object *) (h + 1));
+      }
     }
     page = page->next;
   }
@@ -693,6 +706,7 @@ gc_init(pic_state *pic)
   page = pic->heap->pages;
   while (page) {
     /* clear mark bits */
+    memcpy(page->shadow, page->bitmap, sizeof(page->bitmap));
     memset(page->bitmap, 0, sizeof(page->bitmap));
     memset(page->index, 0, sizeof(page->index));
     page->current = 0;
