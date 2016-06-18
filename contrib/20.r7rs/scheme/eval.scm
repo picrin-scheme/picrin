@@ -1,15 +1,16 @@
 (define-library (scheme eval)
   (import (picrin base))
 
-  (define environment
-    (let ((counter 0))
-      (lambda specs
-        (let ((library-name `(picrin @@my-environment ,(string->symbol (number->string counter)))))
-          (set! counter (+ counter 1))
-          (eval
-           `(define-library ,library-name
-              ,@(map (lambda (spec) `(import ,spec)) specs))
-           (library-environment (find-library '(scheme base))))
-          (library-environment (find-library library-name))))))
+  (define counter 0)
+
+  (define-syntax (inc! n)
+    #`(set! #,n (+ #,n 1)))
+
+  (define (environment . specs)
+    (let ((lib (string-append "picrin.@@my-environment." (number->string counter))))
+      (inc! counter)
+      (make-library lib)
+      (eval `(import ,@specs) lib)
+      lib))
 
   (export environment eval))

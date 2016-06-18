@@ -13,6 +13,7 @@ env:
   - CFLAGS="-m64"
 script:
   - perl --version
+  - make
   - make test
 # - make test-contrib TEST_RUNNER="valgrind -q --leak-check=full --dsymutil=yes --error-exitcode=1 bin/picrin"
   - make clean

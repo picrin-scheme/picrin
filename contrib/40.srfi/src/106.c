@@ -1,4 +1,5 @@
 #include "picrin.h"
+#include "picrin/extra.h"
 
 #include <errno.h>
 #include <netdb.h>
@@ -30,7 +31,7 @@ PIC_INLINE void
 ensure_socket_is_open(pic_state *pic, struct pic_socket_t *sock)
 {
   if (sock != NULL && sock->fd == -1) {
-    pic_errorf(pic, "the socket is already closed");
+    pic_error(pic, "the socket is already closed", 0);
   }
 }
 
@@ -46,45 +47,29 @@ socket_dtor(pic_state *pic, void *data)
 
 static const pic_data_type socket_type = { "socket", socket_dtor, NULL };
 
-#define pic_socket_p(o) (pic_data_type_p((o), &socket_type))
-#define pic_socket_data_ptr(o) ((struct pic_socket_t *)pic_data_ptr(o)->data)
-
-PIC_INLINE void
-validate_socket_object(pic_state *pic, pic_value v)
-{
-  if (! pic_socket_p(v)) {
-    pic_errorf(pic, "~s is not a socket object", v);
-  }
-}
-
 static pic_value
 pic_socket_socket_p(pic_state *pic)
 {
   pic_value obj;
 
   pic_get_args(pic, "o", &obj);
-  return pic_bool_value(pic_socket_p(obj));
+
+  return pic_bool_value(pic, pic_data_p(pic, obj, &socket_type));
 }
 
 static pic_value
 pic_socket_make_socket(pic_state *pic)
 {
-  pic_value n, s;
   const char *node, *service;
   int family, socktype, flags, protocol;
   int result;
   struct addrinfo hints, *ai, *it;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "ooiiii", &n, &s, &family, &socktype, &flags, &protocol);
+  pic_get_args(pic, "zziiii", &node, &service, &family, &socktype, &flags, &protocol);
 
-  node = service = NULL;
-  if (pic_str_p(n)) {
-    node = pic_str_cstr(pic, pic_str_ptr(n));
-  }
-  if (pic_str_p(s)) {
-    service = pic_str_cstr(pic, pic_str_ptr(s));
-  }
+  if (strlen(node) == 0) node = NULL;
+  if (strlen(service) == 0) service = NULL;
 
   sock = pic_malloc(pic, sizeof(struct pic_socket_t));
   sock->fd = -1;
@@ -102,9 +87,9 @@ pic_socket_make_socket(pic_state *pic)
   } while (result == EAI_AGAIN);
   if (result) {
     if (result == EAI_SYSTEM) {
-      pic_errorf(pic, "%s", strerror(errno));
+      pic_error(pic, strerror(errno), 0);
     }
-    pic_errorf(pic, "%s", gai_strerror(result));
+    pic_error(pic, gai_strerror(result), 0);
   }
 
   for (it = ai; it != NULL; it = it->ai_next) {
@@ -115,7 +100,7 @@ pic_socket_make_socket(pic_state *pic)
       continue;
     }
 
-    if (it->ai_flags & AI_PASSIVE) {
+    if (hints.ai_flags & AI_PASSIVE) {
       int yes = 1;
       if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == 0 &&
           bind(fd, it->ai_addr, it->ai_addrlen) == 0) {
@@ -144,23 +129,20 @@ pic_socket_make_socket(pic_state *pic)
   freeaddrinfo(ai);
 
   if (sock->fd == -1) {
-    pic_errorf(pic, "%s", strerror(errno));
+    pic_error(pic, strerror(errno), 0);
   }
 
-  return pic_obj_value(pic_data_alloc(pic, &socket_type, sock));
+  return pic_data_value(pic, sock, &socket_type);
 }
 
 static pic_value
 pic_socket_socket_accept(pic_state *pic)
 {
-  pic_value obj;
   int fd = -1;
   struct pic_socket_t *sock, *new_sock;
 
-  pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
   errno = 0;
@@ -176,7 +158,7 @@ pic_socket_socket_accept(pic_state *pic)
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         continue;
       } else {
-        pic_errorf(pic, "%s", strerror(errno));
+        pic_error(pic, strerror(errno), 0);
       }
     } else {
       break;
@@ -185,27 +167,20 @@ pic_socket_socket_accept(pic_state *pic)
 
   new_sock = pic_malloc(pic, sizeof(struct pic_socket_t));
   new_sock->fd = fd;
-  return pic_obj_value(pic_data_alloc(pic, &socket_type, new_sock));
+  return pic_data_value(pic, new_sock, &socket_type);
 }
 
 static pic_value
 pic_socket_socket_send(pic_state *pic)
 {
-  pic_value obj;
-  struct pic_blob *bv;
   const unsigned char *cursor;
-  int flags = 0;
-  size_t remain, written;
+  int flags = 0, remain, written;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "ob|i", &obj, &bv, &flags);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "ub|i", &sock, &socket_type, &cursor, &remain, &flags);
 
-  sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
-  cursor = bv->data;
-  remain = bv->len;
   written = 0;
   errno = 0;
   while (remain > 0) {
@@ -216,7 +191,7 @@ pic_socket_socket_send(pic_state *pic)
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         break;
       } else {
-        pic_errorf(pic, "%s", strerror(errno));
+        pic_error(pic, strerror(errno), 0);
       }
     }
     cursor += len;
@@ -224,34 +199,27 @@ pic_socket_socket_send(pic_state *pic)
     written += len;
   }
 
-  return pic_int_value(written);
+  return pic_int_value(pic, written);
 }
 
 static pic_value
 pic_socket_socket_recv(pic_state *pic)
 {
-  pic_value obj;
-  struct pic_blob *bv;
   void *buf;
   int size;
   int flags = 0;
   ssize_t len;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "oi|i", &obj, &size, &flags);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "ui|i", &sock, &socket_type, &size, &flags);
+
   if (size < 0) {
-    pic_errorf(pic, "size must not be negative");
+    pic_error(pic, "size must not be negative", 0);
   }
 
-  sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
-  buf = malloc(size);
-  if (buf == NULL && size > 0) {
-    /* XXX: Is it really OK? */
-    pic_panic(pic, "memory exhausted");
-  }
+  buf = pic_alloca(pic, size);
 
   errno = 0;
   do {
@@ -259,51 +227,42 @@ pic_socket_socket_recv(pic_state *pic)
   } while (len < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
 
   if (len < 0) {
-    free(buf);
-    pic_errorf(pic, "%s", strerror(errno));
+    pic_error(pic, strerror(errno), 0);
   }
 
-  bv = pic_make_blob(pic, len);
-  memcpy(bv->data, buf, len);
-  free(buf);
-
-  return pic_obj_value(bv);
+  return pic_blob_value(pic, buf, len);
 }
 
 static pic_value
 pic_socket_socket_shutdown(pic_state *pic)
 {
-  pic_value obj;
   int how;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "oi", &obj, &how);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "ui", &sock, &socket_type, &how);
 
-  sock = pic_socket_data_ptr(obj);
   if (sock->fd != -1) {
     shutdown(sock->fd, how);
     sock->fd = -1;
   }
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static pic_value
 pic_socket_socket_close(pic_state *pic)
 {
-  pic_value obj;
+  struct pic_socket_t *sock;
 
-  pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  socket_close(pic_socket_data_ptr(obj));
+  socket_close(sock);
 
-  return pic_undef_value();
+  return pic_undef_value(pic);
 }
 
 static int
-xf_socket_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size)
+xf_socket_read(pic_state *PIC_UNUSED(pic), void *cookie, char *ptr, int size)
 {
   struct pic_socket_t *sock;
 
@@ -313,7 +272,7 @@ xf_socket_read(pic_state PIC_UNUSED(*pic), void *cookie, char *ptr, int size)
 }
 
 static int
-xf_socket_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int size)
+xf_socket_write(pic_state *PIC_UNUSED(pic), void *cookie, const char *ptr, int size)
 {
   struct pic_socket_t *sock;
 
@@ -323,73 +282,67 @@ xf_socket_write(pic_state PIC_UNUSED(*pic), void *cookie, const char *ptr, int s
 }
 
 static long
-xf_socket_seek(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence))
+xf_socket_seek(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence))
 {
   errno = EBADF;
   return -1;
 }
 
 static int
-xf_socket_close(pic_state PIC_UNUSED(*pic), void PIC_UNUSED(*cookie))
+xf_socket_close(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie))
 {
   return 0;
 }
 
-static struct pic_port *
-make_socket_port(pic_state *pic, struct pic_socket_t *sock, short dir)
+static pic_value
+make_socket_port(pic_state *pic, struct pic_socket_t *sock, const char *mode)
 {
-  struct pic_port *port;
+  xFILE *fp;
 
-  port = (struct pic_port *)pic_obj_alloc(pic, sizeof(struct pic_port), PIC_TT_PORT);
-  port->file = xfunopen(pic, sock, xf_socket_read, xf_socket_write, xf_socket_seek, xf_socket_close);
-  port->flags = dir | PIC_PORT_BINARY | PIC_PORT_OPEN;
-  return port;
+  if (*mode == 'r') {
+    fp = xfunopen(pic, sock, xf_socket_read, 0, xf_socket_seek, xf_socket_close);
+  } else {
+    fp = xfunopen(pic, sock, 0, xf_socket_write, xf_socket_seek, xf_socket_close);
+  }
+
+  return pic_open_port(pic, fp);
 }
 
 static pic_value
 pic_socket_socket_input_port(pic_state *pic)
 {
-  pic_value obj;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
-  return pic_obj_value(make_socket_port(pic, sock, PIC_PORT_IN));
+  return make_socket_port(pic, sock, "r");
 }
 
 static pic_value
 pic_socket_socket_output_port(pic_state *pic)
 {
-  pic_value obj;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "o", &obj);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "u", &sock, &socket_type);
 
-  sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
-  return pic_obj_value(make_socket_port(pic, sock, PIC_PORT_OUT));
+  return make_socket_port(pic, sock, "w");
 }
 
 static pic_value
 pic_socket_call_with_socket(pic_state *pic)
 {
-  pic_value obj, result;
-  struct pic_proc *proc;
+  pic_value obj, proc, result;
   struct pic_socket_t *sock;
 
-  pic_get_args(pic, "ol", &obj, &proc);
-  validate_socket_object(pic, obj);
+  pic_get_args(pic, "u+l", &sock, &socket_type, &obj, &proc);
 
-  sock = pic_socket_data_ptr(obj);
   ensure_socket_is_open(pic, sock);
 
-  result = pic_apply1(pic, proc, obj);
+  result = pic_call(pic, proc, 1, obj);
 
   socket_close(sock);
 
@@ -399,123 +352,126 @@ pic_socket_call_with_socket(pic_state *pic)
 void
 pic_init_srfi_106(pic_state *pic)
 {
-  pic_deflibrary (pic, "(srfi 106)") {
-    pic_defun_(pic, "socket?", pic_socket_socket_p);
-    pic_defun_(pic, "make-socket", pic_socket_make_socket);
-    pic_defun_(pic, "socket-accept", pic_socket_socket_accept);
-    pic_defun_(pic, "socket-send", pic_socket_socket_send);
-    pic_defun_(pic, "socket-recv", pic_socket_socket_recv);
-    pic_defun_(pic, "socket-shutdown", pic_socket_socket_shutdown);
-    pic_defun_(pic, "socket-close", pic_socket_socket_close);
-    pic_defun_(pic, "socket-input-port", pic_socket_socket_input_port);
-    pic_defun_(pic, "socket-output-port", pic_socket_socket_output_port);
-    pic_defun_(pic, "call-with-socket", pic_socket_call_with_socket);
+  pic_deflibrary(pic, "srfi.106");
+
+#define pic_defun_(pic, name, f) pic_define(pic, "srfi.106", name, pic_lambda(pic, f, 0))
+#define pic_define_(pic, name, v) pic_define(pic, "srfi.106", name, v)
+
+  pic_defun_(pic, "socket?", pic_socket_socket_p);
+  pic_defun_(pic, "make-socket", pic_socket_make_socket);
+  pic_defun_(pic, "socket-accept", pic_socket_socket_accept);
+  pic_defun_(pic, "socket-send", pic_socket_socket_send);
+  pic_defun_(pic, "socket-recv", pic_socket_socket_recv);
+  pic_defun_(pic, "socket-shutdown", pic_socket_socket_shutdown);
+  pic_defun_(pic, "socket-close", pic_socket_socket_close);
+  pic_defun_(pic, "socket-input-port", pic_socket_socket_input_port);
+  pic_defun_(pic, "socket-output-port", pic_socket_socket_output_port);
+  pic_defun_(pic, "call-with-socket", pic_socket_call_with_socket);
 
 #ifdef AF_INET
-    pic_define_(pic, "*af-inet*", pic_int_value(AF_INET));
+  pic_define_(pic, "*af-inet*", pic_int_value(pic, AF_INET));
 #else
-    pic_define_(pic, "*af-inet*", pic_false_value());
+  pic_define_(pic, "*af-inet*", pic_false_value(pic));
 #endif
 #ifdef AF_INET6
-    pic_define_(pic, "*af-inet6*", pic_int_value(AF_INET6));
+  pic_define_(pic, "*af-inet6*", pic_int_value(pic, AF_INET6));
 #else
-    pic_define_(pic, "*af-inet6*", pic_false_value());
+  pic_define_(pic, "*af-inet6*", pic_false_value(pic));
 #endif
 #ifdef AF_UNSPEC
-    pic_define_(pic, "*af-unspec*", pic_int_value(AF_UNSPEC));
+  pic_define_(pic, "*af-unspec*", pic_int_value(pic, AF_UNSPEC));
 #else
-    pic_define_(pic, "*af-unspec*", pic_false_value());
+  pic_define_(pic, "*af-unspec*", pic_false_value(pic));
 #endif
 
 #ifdef SOCK_STREAM
-    pic_define_(pic, "*sock-stream*", pic_int_value(SOCK_STREAM));
+  pic_define_(pic, "*sock-stream*", pic_int_value(pic, SOCK_STREAM));
 #else
-    pic_define_(pic, "*sock-stream*", pic_false_value());
+  pic_define_(pic, "*sock-stream*", pic_false_value(pic));
 #endif
 #ifdef SOCK_DGRAM
-    pic_define_(pic, "*sock-dgram*", pic_int_value(SOCK_DGRAM));
+  pic_define_(pic, "*sock-dgram*", pic_int_value(pic, SOCK_DGRAM));
 #else
-    pic_define_(pic, "*sock-dgram*", pic_false_value());
+  pic_define_(pic, "*sock-dgram*", pic_false_value(pic));
 #endif
 
 #ifdef AI_CANONNAME
-    pic_define_(pic, "*ai-canonname*", pic_int_value(AI_CANONNAME));
+  pic_define_(pic, "*ai-canonname*", pic_int_value(pic, AI_CANONNAME));
 #else
-    pic_define_(pic, "*ai-canonname*", pic_false_value());
+  pic_define_(pic, "*ai-canonname*", pic_false_value(pic));
 #endif
 #ifdef AI_NUMERICHOST
-    pic_define_(pic, "*ai-numerichost*", pic_int_value(AI_NUMERICHOST));
+  pic_define_(pic, "*ai-numerichost*", pic_int_value(pic, AI_NUMERICHOST));
 #else
-    pic_define_(pic, "*ai-numerichost*", pic_false_value());
+  pic_define_(pic, "*ai-numerichost*", pic_false_value(pic));
 #endif
-/* AI_V4MAPPED and AI_ALL are not supported by *BSDs, even though they are defined in netdb.h. */
+  /* AI_V4MAPPED and AI_ALL are not supported by *BSDs, even though they are defined in netdb.h. */
 #if defined(AI_V4MAPPED) && !defined(BSD)
-    pic_define_(pic, "*ai-v4mapped*", pic_int_value(AI_V4MAPPED));
+  pic_define_(pic, "*ai-v4mapped*", pic_int_value(pic, AI_V4MAPPED));
 #else
-    pic_define_(pic, "*ai-v4mapped*", pic_false_value());
+  pic_define_(pic, "*ai-v4mapped*", pic_false_value(pic));
 #endif
 #if defined(AI_ALL) && !defined(BSD)
-    pic_define_(pic, "*ai-all*", pic_int_value(AI_ALL));
+  pic_define_(pic, "*ai-all*", pic_int_value(pic, AI_ALL));
 #else
-    pic_define_(pic, "*ai-all*", pic_false_value());
+  pic_define_(pic, "*ai-all*", pic_false_value(pic));
 #endif
 #ifdef AI_ADDRCONFIG
-    pic_define_(pic, "*ai-addrconfig*", pic_int_value(AI_ADDRCONFIG));
+  pic_define_(pic, "*ai-addrconfig*", pic_int_value(pic, AI_ADDRCONFIG));
 #else
-    pic_define_(pic, "*ai-addrconfig*", pic_false_value());
+  pic_define_(pic, "*ai-addrconfig*", pic_false_value(pic));
 #endif
 #ifdef AI_PASSIVE
-    pic_define_(pic, "*ai-passive*", pic_int_value(AI_PASSIVE));
+  pic_define_(pic, "*ai-passive*", pic_int_value(pic, AI_PASSIVE));
 #else
-    pic_define_(pic, "*ai-passive*", pic_false_value());
+  pic_define_(pic, "*ai-passive*", pic_false_value(pic));
 #endif
 
 #ifdef IPPROTO_IP
-    pic_define_(pic, "*ipproto-ip*", pic_int_value(IPPROTO_IP));
+  pic_define_(pic, "*ipproto-ip*", pic_int_value(pic, IPPROTO_IP));
 #else
-    pic_define_(pic, "*ipproto-ip*", pic_false_value());
+  pic_define_(pic, "*ipproto-ip*", pic_false_value(pic));
 #endif
 #ifdef IPPROTO_TCP
-    pic_define_(pic, "*ipproto-tcp*", pic_int_value(IPPROTO_TCP));
+  pic_define_(pic, "*ipproto-tcp*", pic_int_value(pic, IPPROTO_TCP));
 #else
-    pic_define_(pic, "*ipproto-tcp*", pic_false_value());
+  pic_define_(pic, "*ipproto-tcp*", pic_false_value(pic));
 #endif
 #ifdef IPPROTO_UDP
-    pic_define_(pic, "*ipproto-udp*", pic_int_value(IPPROTO_UDP));
+  pic_define_(pic, "*ipproto-udp*", pic_int_value(pic, IPPROTO_UDP));
 #else
-    pic_define_(pic, "*ipproto-udp*", pic_false_value());
+  pic_define_(pic, "*ipproto-udp*", pic_false_value(pic));
 #endif
 
 #ifdef MSG_PEEK
-    pic_define_(pic, "*msg-peek*", pic_int_value(MSG_PEEK));
+  pic_define_(pic, "*msg-peek*", pic_int_value(pic, MSG_PEEK));
 #else
-    pic_define_(pic, "*msg-peek*", pic_false_value());
+  pic_define_(pic, "*msg-peek*", pic_false_value(pic));
 #endif
 #ifdef MSG_OOB
-    pic_define_(pic, "*msg-oob*", pic_int_value(MSG_OOB));
+  pic_define_(pic, "*msg-oob*", pic_int_value(pic, MSG_OOB));
 #else
-    pic_define_(pic, "*msg-oob*", pic_false_value());
+  pic_define_(pic, "*msg-oob*", pic_false_value(pic));
 #endif
 #ifdef MSG_WAITALL
-    pic_define_(pic, "*msg-waitall*", pic_int_value(MSG_WAITALL));
+  pic_define_(pic, "*msg-waitall*", pic_int_value(pic, MSG_WAITALL));
 #else
-    pic_define_(pic, "*msg-waitall*", pic_false_value());
+  pic_define_(pic, "*msg-waitall*", pic_false_value(pic));
 #endif
 
 #ifdef SHUT_RD
-    pic_define_(pic, "*shut-rd*", pic_int_value(SHUT_RD));
+  pic_define_(pic, "*shut-rd*", pic_int_value(pic, SHUT_RD));
 #else
-    pic_define_(pic, "*shut-rd*", pic_false_value());
+  pic_define_(pic, "*shut-rd*", pic_false_value(pic));
 #endif
 #ifdef SHUT_WR
-    pic_define_(pic, "*shut-wr*", pic_int_value(SHUT_WR));
+  pic_define_(pic, "*shut-wr*", pic_int_value(pic, SHUT_WR));
 #else
-    pic_define_(pic, "*shut-wr*", pic_false_value());
+  pic_define_(pic, "*shut-wr*", pic_false_value(pic));
 #endif
 #ifdef SHUT_RDWR
-    pic_define_(pic, "*shut-rdwr*", pic_int_value(SHUT_RDWR));
+  pic_define_(pic, "*shut-rdwr*", pic_int_value(pic, SHUT_RDWR));
 #else
-    pic_define_(pic, "*shut-rdwr*", pic_false_value());
+  pic_define_(pic, "*shut-rdwr*", pic_false_value(pic));
 #endif
-  }
 }

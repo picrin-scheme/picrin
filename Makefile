@@ -11,16 +11,19 @@ PICRIN_OBJS = \
 CONTRIB_SRCS =
 CONTRIB_OBJS = $(CONTRIB_SRCS:.c=.o)
 CONTRIB_LIBS =
+CONTRIB_DEFS =
 CONTRIB_INITS =
 CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
+PICRIN_ISSUE_TESTS = $(wildcard t/issue/*.scm)
+REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
 TEST_RUNNER = bin/picrin
 
 CFLAGS += -I./extlib/benz/include -Wall -Wextra
 LDFLAGS += -lm
 
-prefix = /usr/local
+prefix ?= /usr/local
 
 all: CFLAGS += -O2 -DNDEBUG=1
 all: bin/picrin
@@ -30,8 +33,9 @@ debug: bin/picrin
 
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a
-	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libbenz.a $(LDFLAGS)
+bin/picrin: CFLAGS += $(CONTRIB_DEFS)
+bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(BENZ_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) $(BENZ_OBJS) $(LDFLAGS)
 
 src/load_piclib.c: $(CONTRIB_LIBS)
 	perl etc/mkloader.pl $(CONTRIB_LIBS) > $@
@@ -39,8 +43,8 @@ src/load_piclib.c: $(CONTRIB_LIBS)
 src/init_contrib.c:
 	perl etc/mkinit.pl $(CONTRIB_INITS) > $@
 
-lib/libbenz.a: $(BENZ_OBJS)
-	$(AR) $(ARFLAGS) $@ $(BENZ_OBJS)
+lib/libbenz.so: $(BENZ_OBJS)
+	$(CC) -shared $(CFLAGS) -o $@ $(BENZ_OBJS) $(LDFLAGS)
 
 extlib/benz/boot.o: extlib/benz/boot.c
 	cd extlib/benz; perl boot.c
@@ -62,22 +66,36 @@ docs/contrib.rst: $(CONTRIB_DOCS)
 run: bin/picrin
 	bin/picrin
 
-test: test-contribs test-nostdlib
+test: test-contribs test-nostdlib test-issue
 
 test-contribs: bin/picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
-	$(CC) -I extlib/benz/include -D'PIC_ENABLE_LIBC=0' -D'PIC_ENABLE_FLOAT=0' -D'PIC_ENABLE_STDIO=0' -ffreestanding -nostdlib -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libbenz.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
-	rm -f lib/libbenz.so
+	$(CC) -I extlib/benz/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libbenz-tiny.so $(BENZ_SRCS) etc/libc_polyfill.c -fno-stack-protector
+	strip lib/libbenz-tiny.so
+	ls -lh lib/libbenz-tiny.so
+	rm -f lib/libbenz-tiny.so
+
+test-issue: test-picrin-issue test-repl-issue
+
+test-picrin-issue: $(TEST_RUNNER) $(PICRIN_ISSUE_TESTS)
+	for test in $(PICRIN_ISSUE_TESTS); do \
+	  $(TEST_RUNNER) "$$test"; \
+	done
+
+test-repl-issue: $(REPL_ISSUE_TESTS)
+
+$(REPL_ISSUE_TESTS):
+	PICRIN=$(TEST_RUNNER) ./$@
 
 install: all
 	install -c bin/picrin $(prefix)/bin/picrin
 
 clean:
 	rm -f src/load_piclib.c src/init_contrib.c
-	rm -f lib/libbenz.a
+	rm -f lib/libbenz.so
 	rm -f $(BENZ_OBJS)
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
 
-.PHONY: all install clean run test test-r7rs test-contribs doc $(CONTRIB_TESTS)
+.PHONY: all install clean run test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)

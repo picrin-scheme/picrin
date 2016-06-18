@@ -3,106 +3,99 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
 static pic_value
-var_conv(pic_state *pic, struct pic_proc *var, pic_value val)
+var_conv(pic_state *pic, pic_value val, pic_value conv)
 {
-  if (pic_proc_env_has(pic, var, "conv") != 0) {
-    return pic_apply1(pic, pic_proc_ptr(pic_proc_env_ref(pic, var, "conv")), val);
+  if (! pic_false_p(pic, conv)) {
+    val = pic_call(pic, conv, 1, val);
   }
   return val;
-}
-
-static pic_value
-var_get(pic_state *pic, struct pic_proc *var)
-{
-  pic_value elem, it;
-  struct pic_reg *reg;
-
-  pic_for_each (elem, pic->ptable, it) {
-    reg = pic_reg_ptr(elem);
-    if (pic_reg_has(pic, reg, var)) {
-      return pic_reg_ref(pic, reg, var);
-    }
-  }
-  pic_panic(pic, "logic flaw");
-}
-
-static pic_value
-var_set(pic_state *pic, struct pic_proc *var, pic_value val)
-{
-  struct pic_reg *reg;
-
-  reg = pic_reg_ptr(pic_car(pic, pic->ptable));
-
-  pic_reg_set(pic, reg, var, val);
-
-  return pic_undef_value();
 }
 
 static pic_value
 var_call(pic_state *pic)
 {
-  struct pic_proc *self = pic_get_proc(pic);
-  pic_value val;
+  pic_value self, val;
   int n;
 
-  n = pic_get_args(pic, "|o", &val);
+  n = pic_get_args(pic, "&|o", &self, &val);
 
   if (n == 0) {
-    return var_get(pic, self);
+    return pic_closure_ref(pic, 0);
   } else {
-    return var_set(pic, self, var_conv(pic, self, val));
+
+    pic_closure_set(pic, 0, var_conv(pic, val, pic_closure_ref(pic, 1)));
+
+    return pic_undef_value(pic);
   }
 }
 
-struct pic_proc *
-pic_make_var(pic_state *pic, pic_value init, struct pic_proc *conv)
+pic_value
+pic_make_var(pic_state *pic, pic_value init, pic_value conv)
 {
-  struct pic_proc *var;
+  return pic_lambda(pic, var_call, 2, var_conv(pic, init, conv), conv);
+}
 
-  var = pic_make_proc(pic, var_call);
+static pic_value
+dynamic_set(pic_state *pic)
+{
+  pic_value var, val;
 
-  if (conv != NULL) {
-    pic_proc_env_set(pic, var, "conv", pic_obj_value(conv));
-  }
+  pic_get_args(pic, "");
 
-  pic_apply1(pic, var, init);
+  var = pic_closure_ref(pic, 0);
+  val = pic_closure_ref(pic, 1);
 
-  return var;
+  pic_proc_ptr(pic, var)->locals[0] = val;
+
+  return pic_undef_value(pic);
+}
+
+pic_value
+pic_dynamic_bind(pic_state *pic, pic_value var, pic_value val, pic_value thunk)
+{
+  pic_value in, out, new_val, old_val;
+
+  old_val = pic_call(pic, var, 0);
+  new_val = var_conv(pic, val, pic_proc_ptr(pic, var)->locals[1]);
+
+  in = pic_lambda(pic, dynamic_set, 2, var, new_val);
+  out = pic_lambda(pic, dynamic_set, 2, var, old_val);
+
+  return pic_dynamic_wind(pic, in, thunk, out);
 }
 
 static pic_value
 pic_var_make_parameter(pic_state *pic)
 {
-  struct pic_proc *conv = NULL;
-  pic_value init;
+  pic_value init, conv = pic_false_value(pic);
 
   pic_get_args(pic, "o|l", &init, &conv);
 
-  return pic_obj_value(pic_make_var(pic, init, conv));
+  return pic_make_var(pic, init, conv);
 }
 
 static pic_value
-pic_var_with_parameter(pic_state *pic)
+pic_var_dynamic_bind(pic_state *pic)
 {
-  struct pic_proc *body;
-  pic_value val;
+  pic_value var, val, thunk;
 
-  pic_get_args(pic, "l", &body);
+  pic_get_args(pic, "lol", &var, &val, &thunk);
 
-  pic->ptable = pic_cons(pic, pic_obj_value(pic_make_reg(pic)), pic->ptable);
+  if (! (pic_proc_p(pic, var) && pic_proc_ptr(pic, var)->u.f.func == var_call)) {
+    pic_error(pic, "parameter required", 1, var);
+  }
 
-  val = pic_apply0(pic, body);
-
-  pic->ptable = pic_cdr(pic, pic->ptable);
-
-  return val;
+  return pic_dynamic_bind(pic, var, val, thunk);
 }
 
 void
 pic_init_var(pic_state *pic)
 {
   pic_defun(pic, "make-parameter", pic_var_make_parameter);
-  pic_defun(pic, "with-parameter", pic_var_with_parameter);
+  pic_defun(pic, "dynamic-bind", pic_var_dynamic_bind);
 }
