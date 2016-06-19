@@ -167,6 +167,14 @@ typedef unsigned long uint32_t;
 #include <assert.h>
 #include <stdlib.h>
 
+# ifndef PIC_MEMALIGN
+#   include <unistd.h>
+#   define PIC_MEMALIGN(pic, buf, alignment, size) posix_memalign(buf, alignment, size)
+# endif
+# ifndef PIC_USE_BITMAPGC
+#   define PIC_USE_BITMAPGC
+# endif
+
 #else
 
 # define assert(v) (void)0
