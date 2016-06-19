@@ -558,7 +558,7 @@ read_label_set(pic_state *pic, xFILE *file, int i, struct reader_control *p)
         return val;
       }
 
-      PIC_FALLTHROUGH;
+      /* fall through */
     }
   default:
     {

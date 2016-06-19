@@ -95,7 +95,7 @@ void abort(void);
 #if __STDC_VERSION__ >= 199901L
 # include <stdint.h>
 #else
-# if INT_MAX > 2147483640L      /* borrowed from luaconf.h */
+# if INT_MAX > 2147483640L      /* imported from luaconf.h */
 typedef int int32_t;
 typedef unsigned int uint32_t;
 # else
@@ -120,8 +120,6 @@ typedef unsigned long uint32_t;
 #else
 # define PIC_INLINE static
 #endif
-
-#define PIC_FALLTHROUGH ((void)0)
 
 #if defined(__cplusplus)
 # define PIC_UNUSED(v)
