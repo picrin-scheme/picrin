@@ -242,7 +242,7 @@ is_marked_at(uint32_t *bitmap, size_t index, size_t size)
 static void *
 heap_alloc_heap_page(struct heap_page *page, size_t nunits)
 {
-  size_t index, jump;
+  size_t index;
   union header *p;
 
   for (index = page->current; index < HEADER_SIZE - (nunits + 1); ++index) {
