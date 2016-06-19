@@ -11,9 +11,11 @@ enum {
   BLACK = 1
 };
 
+#define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - offsetof(struct heap_page, basep)) / sizeof(union header))
+
 struct heap_page {
-  union header *basep, *endp;
   struct heap_page *next;
+  union header basep[1];
 };
 
 struct heap *
@@ -42,7 +44,6 @@ pic_heap_close(pic_state *pic, struct heap *heap)
   while (heap->pages) {
     page = heap->pages;
     heap->pages = heap->pages->next;
-    pic_free(pic, page->basep);
     pic_free(pic, page);
   }
   pic_free(pic, heap);
@@ -114,24 +115,19 @@ heap_morecore(pic_state *pic)
 {
   union header *bp, *np;
   struct heap_page *page;
-  size_t nunits;
 
-  nunits = PIC_HEAP_PAGE_SIZE / sizeof(union header);
+  assert(PAGE_UNITS >= 2);
 
-  assert(nunits >= 2);
+  page = pic_malloc(pic, PIC_HEAP_PAGE_SIZE);
+  page->next = pic->heap->pages;
 
-  bp = pic_malloc(pic, PIC_HEAP_PAGE_SIZE);
-  bp->s.size = 0;               /* bp is never used for allocation */
+  bp = page->basep;
+  bp->s.size = 0;      /* bp is never used for allocation */
   heap_free(pic, bp + 1);
 
-  np = bp + 1;
-  np->s.size = nunits - 1;
+  np = page->basep + 1;
+  np->s.size = PAGE_UNITS - 1;
   heap_free(pic, np + 1);
-
-  page = pic_malloc(pic, sizeof(struct heap_page));
-  page->basep = bp;
-  page->endp = bp + nunits;
-  page->next = pic->heap->pages;
 
   pic->heap->pages = page;
 }
@@ -158,7 +154,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   for (bp = page->basep; ; bp = bp->s.ptr) {
     p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advnce */
     for (; p != bp->s.ptr; p += p->s.size) {
-      if (p < page->basep || page->endp <= p) {
+      if (p < page->basep || page->basep + PAGE_UNITS <= p) {
         goto escape;
       }
       obj = (struct object *)(p + 1);
@@ -228,7 +224,7 @@ gc_sweep_phase(pic_state *pic)
   page = pic->heap->pages;
   while (page) {
     inuse += gc_sweep_page(pic, page);
-    total += page->endp - page->basep;
+    total += PAGE_UNITS;
     page = page->next;
   }
 
