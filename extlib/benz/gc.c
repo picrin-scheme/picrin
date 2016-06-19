@@ -6,6 +6,8 @@
 #include "picrin/private/object.h"
 #include "picrin/private/state.h"
 
+#define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - offsetof(struct heap_page, basep)) / sizeof(union header))
+
 union header {
   struct {
     union header *ptr;
@@ -34,15 +36,70 @@ struct object {
   } u;
 };
 
-struct heap {
 #if !PIC_USE_BITMAPGC
+
+struct heap {
   union header base, *freep;
-#endif
   struct heap_page *pages;
   struct weak *weaks;           /* weak map chain */
 };
 
-#define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - offsetof(struct heap_page, basep)) / sizeof(union header))
+struct heap_page {
+  struct heap_page *next;
+  union header basep[1];
+};
+
+#else
+
+struct heap {
+  struct heap_page *pages;
+  struct weak *weaks;           /* weak map chain */
+};
+
+#define UNIT_SIZE (sizeof(uint32_t) * CHAR_BIT)
+#define BITMAP_SIZE (PIC_HEAP_PAGE_SIZE / sizeof(union header) / UNIT_SIZE)
+
+struct heap_page {
+  struct heap_page *next;
+  size_t freep;
+  uint32_t bitmap[BITMAP_SIZE];
+  uint32_t shadow[BITMAP_SIZE];
+  union header basep[1];
+};
+
+#endif
+
+struct heap *
+pic_heap_open(pic_state *pic)
+{
+  struct heap *heap;
+
+  heap = pic_malloc(pic, sizeof(struct heap));
+
+#if !PIC_USE_BITMAPGC
+  heap->base.s.ptr = &heap->base;
+  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
+  heap->freep = &heap->base;
+#endif
+
+  heap->pages = NULL;
+  heap->weaks = NULL;
+
+  return heap;
+}
+
+void
+pic_heap_close(pic_state *pic, struct heap *heap)
+{
+  struct heap_page *page;
+
+  while (heap->pages) {
+    page = heap->pages;
+    heap->pages = heap->pages->next;
+    pic_free(pic, page);
+  }
+  pic_free(pic, heap);
+}
 
 #if PIC_USE_LIBC
 void *
@@ -139,10 +196,109 @@ pic_alloca(pic_state *pic, size_t n)
   return pic_data(pic, pic_data_value(pic, pic_malloc(pic, n), &t)); /* TODO optimize */
 }
 
-static bool is_marked(pic_state *pic, struct object *obj);
-static void mark(pic_state *pic, struct object *obj);
-
 /* MARK */
+
+#if !PIC_USE_BITMAPGC
+
+static bool
+is_marked(pic_state *PIC_UNUSED(pic), struct object *obj)
+{
+  return obj->u.basic.gc_mark == 1;
+}
+
+static void
+mark(pic_state *PIC_UNUSED(pic), struct object *obj)
+{
+  obj->u.basic.gc_mark = 1;
+}
+
+#else
+
+static union header *
+index2header(struct heap_page *page, size_t index)
+{
+  return page->basep + index;
+}
+
+static struct heap_page *
+obj2page(pic_state *PIC_UNUSED(pic), union header *h)
+{
+  return (struct heap_page *)(((unsigned long)h) & ~(PIC_HEAP_PAGE_SIZE - 1));
+}
+
+static int
+popcount32(uint32_t bits)
+{
+  bits = bits - (bits >> 1 & 0x55555555);
+  bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
+  bits = bits + ((bits >> 4) & 0x0f0f0f0f);
+  bits = bits * 0x01010101;
+  return bits >> 24;
+}
+
+static void
+mark_at(struct heap_page *page, size_t index, size_t size)
+{
+  size_t mark_size;
+
+  while (0 < size) {
+    if (size  <= UNIT_SIZE - (index % UNIT_SIZE))
+      mark_size = size;
+    else
+      mark_size = UNIT_SIZE - (index % UNIT_SIZE);
+    page->bitmap[index / UNIT_SIZE] |= ~(-1 << mark_size) << (index % UNIT_SIZE);
+    size  -= mark_size;
+    index += mark_size;
+  }
+}
+
+static int
+is_marked_at(uint32_t *bitmap, size_t index, size_t size)
+{
+  size_t test_size;
+
+  while (0 < size) {
+    if (size  <= UNIT_SIZE - (index % UNIT_SIZE))
+      test_size = size;
+    else
+      test_size = UNIT_SIZE - (index % UNIT_SIZE);
+
+    if ((bitmap[index / UNIT_SIZE] >> (index % UNIT_SIZE)) & ~((~0) << test_size))
+      return 1;
+    size  -= test_size;
+    index += test_size;
+  }
+
+  return 0;
+}
+
+static bool
+is_marked(pic_state *pic, struct object *obj)
+{
+  union header *h = ((union header *)obj) - 1;
+  struct heap_page *page;
+  size_t index;
+
+  page = obj2page(pic, h);
+  index = h - page->basep;
+
+  return is_marked_at(page->bitmap, index, h->s.size);
+}
+
+static void
+mark(pic_state *pic, struct object *obj)
+{
+  union header *h = ((union header *)obj) - 1;
+  struct heap_page *page;
+  size_t index;
+
+  page = obj2page(pic, h);
+  index = h - page->basep;
+
+  mark_at(page, index, h->s.size);
+}
+
+#endif
 
 static void gc_mark_object(pic_state *, struct object *);
 
@@ -446,43 +602,205 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 }
 
-#if PIC_USE_BITMAPGC
-# include "./gc/bitmap.c"
-#else
-# include "./gc/markandsweep.c"
-#endif
-
-struct heap *
-pic_heap_open(pic_state *pic)
-{
-  struct heap *heap;
-
-  heap = pic_malloc(pic, sizeof(struct heap));
-
 #if !PIC_USE_BITMAPGC
-  heap->base.s.ptr = &heap->base;
-  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
-  heap->freep = &heap->base;
-#endif
 
-  heap->pages = NULL;
-  heap->weaks = NULL;
+static void *
+heap_alloc(pic_state *pic, size_t size)
+{
+  union header *p, *prevp;
+  size_t nunits;
 
-  return heap;
+  assert(size > 0);
+
+  nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
+
+  prevp = pic->heap->freep;
+  for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
+    if (p->s.size >= nunits)
+      break;
+    if (p == pic->heap->freep) {
+      return NULL;
+    }
+  }
+
+  if (p->s.size == nunits) {
+    prevp->s.ptr = p->s.ptr;
+  }
+  else {
+    p->s.size -= nunits;
+    p += p->s.size;
+    p->s.size = nunits;
+  }
+  pic->heap->freep = prevp;
+
+  return (void *)(p + 1);
 }
 
-void
-pic_heap_close(pic_state *pic, struct heap *heap)
+static void
+heap_free(pic_state *pic, void *ap)
+{
+  union header *bp, *p;
+
+  assert(ap != NULL);
+
+  bp = (union header *)ap - 1;
+
+  for (p = pic->heap->freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
+    if (p >= p->s.ptr && (bp > p || bp < p->s.ptr)) {
+      break;
+    }
+  }
+  if (bp + bp->s.size == p->s.ptr && p->s.ptr->s.size > 0) { /* don't melt base header */
+    bp->s.size += p->s.ptr->s.size;
+    bp->s.ptr = p->s.ptr->s.ptr;
+  } else {
+    bp->s.ptr = p->s.ptr;
+  }
+  if (p + p->s.size == bp && bp->s.size > 0) { /* don't melt base header */
+    p->s.size += bp->s.size;
+    p->s.ptr = bp->s.ptr;
+  } else {
+    p->s.ptr = bp;
+  }
+  pic->heap->freep = p;
+}
+
+static void
+heap_morecore(pic_state *pic)
+{
+  union header *bp, *np;
+  struct heap_page *page;
+
+  assert(PAGE_UNITS >= 2);
+
+  page = pic_malloc(pic, PIC_HEAP_PAGE_SIZE);
+  page->next = pic->heap->pages;
+
+  bp = page->basep;
+  bp->s.size = 0;      /* bp is never used for allocation */
+  heap_free(pic, bp + 1);
+
+  np = page->basep + 1;
+  np->s.size = PAGE_UNITS - 1;
+  heap_free(pic, np + 1);
+
+  pic->heap->pages = page;
+}
+
+static size_t
+gc_sweep_page(pic_state *pic, struct heap_page *page)
+{
+  union header *bp, *p, *head = NULL, *tail = NULL;
+  struct object *obj;
+  size_t alive = 0;
+
+  for (bp = page->basep; ; bp = bp->s.ptr) {
+    p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advnce */
+    for (; p != bp->s.ptr; p += p->s.size) {
+      if (p < page->basep || page->basep + PAGE_UNITS <= p) {
+        goto escape;
+      }
+      obj = (struct object *)(p + 1);
+      if (obj->u.basic.gc_mark == 1) {
+        obj->u.basic.gc_mark = 0;
+        alive += p->s.size;
+      } else {
+        if (head == NULL) {
+          head = p;
+        }
+        if (tail != NULL) {
+          tail->s.ptr = p;
+        }
+        tail = p;
+        tail->s.ptr = NULL; /* We can safely reuse ptr field of dead object */
+      }
+    }
+  }
+ escape:
+
+  /* free! */
+  while (head != NULL) {
+    p = head;
+    head = head->s.ptr;
+    gc_finalize_object(pic, (struct object *)(p + 1));
+    heap_free(pic, p + 1);
+  }
+
+  return alive;
+}
+
+#else
+
+static void *
+heap_alloc(pic_state *pic, size_t size)
+{
+  struct heap_page *page;
+  size_t nunits;
+
+  assert(size > 0);
+
+  nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
+
+  page = pic->heap->pages;
+  while (page) {
+    size_t index;
+    union header *h;
+
+    for (index = page->freep; index < PAGE_UNITS - nunits; ++index) {
+      if (! is_marked_at(page->bitmap, index, nunits)) {
+        mark_at(page, index, nunits);
+        h = index2header(page, index);
+        h->s.size = nunits;
+        page->freep = index + nunits;
+        return (void *)(h + 1);
+      }
+    }
+    page = page->next;
+  }
+
+  return NULL;
+}
+
+static void
+heap_morecore(pic_state *pic)
 {
   struct heap_page *page;
 
-  while (heap->pages) {
-    page = heap->pages;
-    heap->pages = heap->pages->next;
-    pic_free(pic, page);
-  }
-  pic_free(pic, heap);
+  assert(2 <= PAGE_UNITS);
+
+  if (PIC_MEMALIGN(pic, (void **)&page, PIC_HEAP_PAGE_SIZE, PIC_HEAP_PAGE_SIZE) != 0)
+    pic_panic(pic, "memory exhausted");
+
+  memset(page->bitmap, 0, sizeof(page->bitmap));
+  page->freep = 0;
+
+  page->next = pic->heap->pages;
+
+  pic->heap->pages = page;
 }
+
+static size_t
+gc_sweep_page(pic_state *pic, struct heap_page *page)
+{
+  size_t index, i, inuse = 0;
+  union header *h;
+
+  for (i = 0; i < BITMAP_SIZE; ++i) {
+    page->shadow[i] &= ~page->bitmap[i];
+    inuse += popcount32(page->bitmap[i]);
+  }
+
+  for (index = 0; index < PAGE_UNITS; ++index) {
+    if (page->shadow[index / UNIT_SIZE] & (1 << (index % UNIT_SIZE))) {
+      h = index2header(page, index);
+      index += h->s.size - 1;
+      gc_finalize_object(pic, (struct object *) (h + 1));
+    }
+  }
+  return inuse;
+}
+
+#endif
 
 static void
 gc_sweep_phase(pic_state *pic)
@@ -532,6 +850,23 @@ gc_sweep_phase(pic_state *pic)
 }
 
 void
+gc_init(pic_state *PIC_UNUSED(pic))
+{
+#if PIC_USE_BITMAPGC
+  struct heap_page *page;
+
+  page = pic->heap->pages;
+  while (page) {
+    /* clear mark bits */
+    memcpy(page->shadow, page->bitmap, sizeof(page->bitmap));
+    memset(page->bitmap, 0, sizeof(page->bitmap));
+    page->freep = 0;
+    page = page->next;
+  }
+#endif
+}
+
+void
 pic_gc(pic_state *pic)
 {
   if (! pic->gc_enable) {
@@ -565,7 +900,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
     }
   }
 #if !PIC_USE_BITMAPGC
-  obj->u.basic.gc_mark = WHITE;
+  obj->u.basic.gc_mark = 0;
 #endif
   obj->u.basic.tt = type;
 
