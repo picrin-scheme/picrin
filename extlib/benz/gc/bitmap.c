@@ -7,10 +7,6 @@
 #include "picrin/private/khash.h"
 #include "picrin/private/state.h"
 
-#ifndef PIC_MEMALIGN
-# error "bitmapgc requires PIC_MEMALIGN"
-#endif
-
 union header {
   struct {
     union header *ptr;
@@ -294,7 +290,7 @@ heap_morecore(pic_state *pic)
 
   assert(2 <= HEADER_SIZE);
 
-  if(PIC_MEMALIGN(pic, (void **)&page, PIC_HEAP_PAGE_SIZE, PIC_HEAP_PAGE_SIZE) != 0)
+  if (PIC_MEMALIGN(pic, (void **)&page, PIC_HEAP_PAGE_SIZE, PIC_HEAP_PAGE_SIZE) != 0)
     pic_panic(pic, "memory exhausted");
 
   memset(page->bitmap, 0, sizeof(page->bitmap));

@@ -165,14 +165,6 @@ typedef unsigned long uint32_t;
 #include <assert.h>
 #include <stdlib.h>
 
-# ifndef PIC_MEMALIGN
-#   include <unistd.h>
-#   define PIC_MEMALIGN(pic, buf, alignment, size) posix_memalign(buf, alignment, size)
-# endif
-# ifndef PIC_USE_BITMAPGC
-#   define PIC_USE_BITMAPGC
-# endif
-
 #else
 
 # define assert(v) (void)0
@@ -468,3 +460,10 @@ double PIC_CSTRING_TO_DOUBLE(const char *);
 #else
 # define PIC_NAN_BOXING 0
 #endif
+
+#if PIC_USE_LIBC && (defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)))
+# include <unistd.h>
+# define PIC_MEMALIGN(pic, buf, alignment, size) posix_memalign(buf, alignment, size)
+# define PIC_USE_BITMAPGC 1
+#endif
+
