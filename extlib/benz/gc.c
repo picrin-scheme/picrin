@@ -442,7 +442,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 }
 
-#ifdef PIC_USE_BITMAPGC
+#if PIC_USE_BITMAPGC
 # include "./gc/bitmap.c"
 #else
 # include "./gc/markandsweep.c"

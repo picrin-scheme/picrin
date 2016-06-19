@@ -17,7 +17,7 @@ KHASH_DECLARE(env, struct identifier *, symbol *)
 KHASH_DECLARE(dict, symbol *, pic_value)
 KHASH_DECLARE(weak, struct object *, pic_value)
 
-#ifdef PIC_USE_BITMAPGC
+#if PIC_USE_BITMAPGC
 # define OBJECT_HEADER                           \
   unsigned char tt;
 #else
