@@ -11,10 +11,9 @@
 
 struct heap_page {
   struct heap_page *next;
-  size_t current;
+  size_t freep;
   uint32_t bitmap[BITMAP_SIZE];
   uint32_t shadow[BITMAP_SIZE];
-  uint32_t index[BITMAP_SIZE / UNIT_SIZE];
   union header basep[1];
 };
 
@@ -93,16 +92,12 @@ heap_alloc(pic_state *pic, size_t size)
     size_t index;
     union header *h;
 
-    for (index = page->current; index < PAGE_UNITS - nunits; ++index) {
-      if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
-        index += UNIT_SIZE;
-      }
-
+    for (index = page->freep; index < PAGE_UNITS - nunits; ++index) {
       if (! is_marked_at(page->bitmap, index, nunits)) {
         mark_at(page, index, nunits);
         h = index2header(page, index);
         h->s.size = nunits;
-        page->current = index + nunits;
+        page->freep = index + nunits;
         return (void *)(h + 1);
       }
     }
@@ -123,8 +118,7 @@ heap_morecore(pic_state *pic)
     pic_panic(pic, "memory exhausted");
 
   memset(page->bitmap, 0, sizeof(page->bitmap));
-  memset(page->index, 0, sizeof(page->index));
-  page->current = 0;
+  page->freep = 0;
 
   page->next = pic->heap->pages;
 
@@ -136,13 +130,12 @@ is_marked(pic_state *pic, struct object *obj)
 {
   union header *h = ((union header *)obj) - 1;
   struct heap_page *page;
-  size_t i;
+  size_t index;
 
   page = obj2page(pic, h);
+  index = h - page->basep;
 
-  i = h - page->basep;
-
-  return is_marked_at(page->bitmap, i, h->s.size);
+  return is_marked_at(page->bitmap, index, h->s.size);
 }
 
 static void
@@ -150,13 +143,12 @@ mark(pic_state *pic, struct object *obj)
 {
   union header *h = ((union header *)obj) - 1;
   struct heap_page *page;
-  size_t i;
+  size_t index;
 
   page = obj2page(pic, h);
+  index = h - page->basep;
 
-  i = h - page->basep;
-
-  mark_at(page, i, h->s.size);
+  mark_at(page, index, h->s.size);
 }
 
 static size_t
@@ -190,8 +182,7 @@ gc_init(pic_state *pic)
     /* clear mark bits */
     memcpy(page->shadow, page->bitmap, sizeof(page->bitmap));
     memset(page->bitmap, 0, sizeof(page->bitmap));
-    memset(page->index, 0, sizeof(page->index));
-    page->current = 0;
+    page->freep = 0;
     page = page->next;
   }
 }
