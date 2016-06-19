@@ -466,4 +466,3 @@ double PIC_CSTRING_TO_DOUBLE(const char *);
 # define PIC_MEMALIGN(pic, buf, alignment, size) posix_memalign(buf, alignment, size)
 # define PIC_USE_BITMAPGC 1
 #endif
-

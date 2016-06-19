@@ -18,37 +18,6 @@ struct heap_page {
   union header basep[1];
 };
 
-struct heap *
-pic_heap_open(pic_state *pic)
-{
-  struct heap *heap;
-
-  heap = pic_malloc(pic, sizeof(struct heap));
-
-  heap->base.s.ptr = &heap->base;
-  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
-
-  heap->freep = &heap->base;
-  heap->pages = NULL;
-
-  heap->weaks = NULL;
-
-  return heap;
-}
-
-void
-pic_heap_close(pic_state *pic, struct heap *heap)
-{
-  struct heap_page *page;
-
-  while (heap->pages) {
-    page = heap->pages;
-    heap->pages = heap->pages->next;
-    pic_free(pic, page);
-  }
-  pic_free(pic, heap);
-}
-
 static void *
 heap_alloc(pic_state *pic, size_t size)
 {
@@ -187,80 +156,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
 }
 
 static void
-gc_sweep_phase(pic_state *pic)
-{
-  struct heap_page *page;
-  int it;
-  khash_t(weak) *h;
-  khash_t(oblist) *s = &pic->oblist;
-  symbol *sym;
-  struct object *obj;
-  size_t total = 0, inuse = 0;
-
-  /* weak maps */
-  while (pic->heap->weaks != NULL) {
-    h = &pic->heap->weaks->hash;
-    for (it = kh_begin(h); it != kh_end(h); ++it) {
-      if (! kh_exist(h, it))
-        continue;
-      obj = kh_key(h, it);
-      if (obj->u.basic.gc_mark == WHITE) {
-        kh_del(weak, h, it);
-      }
-    }
-    pic->heap->weaks = pic->heap->weaks->prev;
-  }
-
-  /* symbol table */
-  for (it = kh_begin(s); it != kh_end(s); ++it) {
-    if (! kh_exist(s, it))
-      continue;
-    sym = kh_val(s, it);
-    if (sym && ! is_marked(pic, (struct object *)sym)) {
-      kh_del(oblist, s, it);
-    }
-  }
-
-  page = pic->heap->pages;
-  while (page) {
-    inuse += gc_sweep_page(pic, page);
-    total += PAGE_UNITS;
-    page = page->next;
-  }
-
-  if (PIC_PAGE_REQUEST_THRESHOLD(total) <= inuse) {
-    heap_morecore(pic);
-  }
-}
-
-static void
 gc_init(pic_state *PIC_UNUSED(pic))
 {
   return;
-}
-
-struct object *
-pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
-{
-  struct object *obj;
-
-#if GC_STRESS
-  pic_gc(pic);
-#endif
-
-  obj = (struct object *)heap_alloc(pic, size);
-  if (obj == NULL) {
-    pic_gc(pic);
-    obj = (struct object *)heap_alloc(pic, size);
-    if (obj == NULL) {
-      heap_morecore(pic);
-      obj = (struct object *)heap_alloc(pic, size);
-      if (obj == NULL)
-	pic_panic(pic, "GC memory exhausted");
-    }
-  }
-  obj->u.basic.gc_mark = WHITE;
-  obj->u.basic.tt = type;
-
-  return obj;
 }

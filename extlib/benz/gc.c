@@ -35,7 +35,9 @@ struct object {
 };
 
 struct heap {
-  union header base, *freep;    /* unused if PIC_USE_BITMAP */
+#if !PIC_USE_BITMAPGC
+  union header base, *freep;
+#endif
   struct heap_page *pages;
   struct weak *weaks;           /* weak map chain */
 };
@@ -448,6 +450,85 @@ gc_finalize_object(pic_state *pic, struct object *obj)
 # include "./gc/markandsweep.c"
 #endif
 
+struct heap *
+pic_heap_open(pic_state *pic)
+{
+  struct heap *heap;
+
+  heap = pic_malloc(pic, sizeof(struct heap));
+
+#if !PIC_USE_BITMAPGC
+  heap->base.s.ptr = &heap->base;
+  heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
+  heap->freep = &heap->base;
+#endif
+
+  heap->pages = NULL;
+  heap->weaks = NULL;
+
+  return heap;
+}
+
+void
+pic_heap_close(pic_state *pic, struct heap *heap)
+{
+  struct heap_page *page;
+
+  while (heap->pages) {
+    page = heap->pages;
+    heap->pages = heap->pages->next;
+    pic_free(pic, page);
+  }
+  pic_free(pic, heap);
+}
+
+static void
+gc_sweep_phase(pic_state *pic)
+{
+  struct heap_page *page;
+  int it;
+  khash_t(weak) *h;
+  khash_t(oblist) *s = &pic->oblist;
+  symbol *sym;
+  struct object *obj;
+  size_t total = 0, inuse = 0;
+
+  /* weak maps */
+  while (pic->heap->weaks != NULL) {
+    h = &pic->heap->weaks->hash;
+    for (it = kh_begin(h); it != kh_end(h); ++it) {
+      if (! kh_exist(h, it))
+        continue;
+      obj = kh_key(h, it);
+      if (! is_marked(pic, obj)) {
+        kh_del(weak, h, it);
+      }
+    }
+    pic->heap->weaks = pic->heap->weaks->prev;
+  }
+
+  /* symbol table */
+  for (it = kh_begin(s); it != kh_end(s); ++it) {
+    if (! kh_exist(s, it))
+      continue;
+    sym = kh_val(s, it);
+    if (sym && ! is_marked(pic, (struct object *)sym)) {
+      kh_del(oblist, s, it);
+    }
+  }
+
+  page = pic->heap->pages;
+  while (page) {
+    inuse += gc_sweep_page(pic, page);
+    total += PAGE_UNITS;
+    page = page->next;
+  }
+
+  if (PIC_PAGE_REQUEST_THRESHOLD(total) <= inuse) {
+    heap_morecore(pic);
+  }
+}
+
 void
 pic_gc(pic_state *pic)
 {
@@ -459,6 +540,34 @@ pic_gc(pic_state *pic)
 
   gc_mark_phase(pic);
   gc_sweep_phase(pic);
+}
+
+struct object *
+pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
+{
+  struct object *obj;
+
+#if GC_STRESS
+  pic_gc(pic);
+#endif
+
+  obj = (struct object *)heap_alloc(pic, size);
+  if (obj == NULL) {
+    pic_gc(pic);
+    obj = (struct object *)heap_alloc(pic, size);
+    if (obj == NULL) {
+      heap_morecore(pic);
+      obj = (struct object *)heap_alloc(pic, size);
+      if (obj == NULL)
+	pic_panic(pic, "GC memory exhausted");
+    }
+  }
+#if !PIC_USE_BITMAPGC
+  obj->u.basic.gc_mark = WHITE;
+#endif
+  obj->u.basic.tt = type;
+
+  return obj;
 }
 
 struct object *
