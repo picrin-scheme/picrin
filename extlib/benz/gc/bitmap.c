@@ -247,8 +247,7 @@ heap_alloc_heap_page(struct heap_page *page, size_t nunits)
 
   for (index = page->current; index < HEADER_SIZE - (nunits + 1); ++index) {
     if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
-      index += UNIT_SIZE - 1;
-      continue;
+      index += UNIT_SIZE;
     }
 
     if (! is_marked_at(page->bitmap, index, nunits+1)) {
