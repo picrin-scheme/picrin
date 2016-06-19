@@ -35,11 +35,11 @@ obj2page(pic_state *PIC_UNUSED(pic), union header *h)
 static int
 popcount32(uint32_t bits)
 {
-    bits = bits - (bits >> 1 & 0x55555555);
-    bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
-    bits = bits + ((bits >> 4) & 0x0f0f0f0f);
-    bits = bits * 0x01010101;
-    return bits >> 24;
+  bits = bits - (bits >> 1 & 0x55555555);
+  bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
+  bits = bits + ((bits >> 4) & 0x0f0f0f0f);
+  bits = bits * 0x01010101;
+  return bits >> 24;
 }
 
 static void
@@ -86,23 +86,23 @@ heap_alloc(pic_state *pic, size_t size)
 
   assert(size > 0);
 
-  nunits = (size + sizeof(union header) - 1) / sizeof(union header);
+  nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
 
   page = pic->heap->pages;
   while (page) {
     size_t index;
     union header *h;
 
-    for (index = page->current; index < PAGE_UNITS - (nunits + 1); ++index) {
+    for (index = page->current; index < PAGE_UNITS - nunits; ++index) {
       if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
         index += UNIT_SIZE;
       }
 
-      if (! is_marked_at(page->bitmap, index, nunits+1)) {
-        mark_at(page, index, nunits+1);
+      if (! is_marked_at(page->bitmap, index, nunits)) {
+        mark_at(page, index, nunits);
         h = index2header(page, index);
         h->s.size = nunits;
-        page->current = index + nunits + 1;
+        page->current = index + nunits;
         return (void *)(h + 1);
       }
     }
@@ -142,7 +142,7 @@ is_marked(pic_state *pic, struct object *obj)
 
   i = h - page->basep;
 
-  return is_marked_at(page->bitmap, i, h->s.size + 1);
+  return is_marked_at(page->bitmap, i, h->s.size);
 }
 
 static void
@@ -156,7 +156,7 @@ mark(pic_state *pic, struct object *obj)
 
   i = h - page->basep;
 
-  mark_at(page, i, h->s.size + 1);
+  mark_at(page, i, h->s.size);
 }
 
 static size_t
@@ -173,7 +173,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   for (index = 0; index < PAGE_UNITS; ++index) {
     if (page->shadow[index / UNIT_SIZE] & (1 << (index % UNIT_SIZE))) {
       h = index2header(page, index);
-      index += h->s.size;
+      index += h->s.size - 1;
       gc_finalize_object(pic, (struct object *) (h + 1));
     }
   }
