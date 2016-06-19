@@ -36,6 +36,14 @@ void abort(void);
 # define PIC_ABORT(pic) abort()
 #endif
 
+#ifndef PIC_OPEN_MAX
+# define PIC_OPEN_MAX 1024
+#endif
+
+#ifndef PIC_BUFSIZ
+# define PIC_BUFSIZ 1024
+#endif
+
 #ifndef PIC_ARENA_SIZE
 # define PIC_ARENA_SIZE (8 * 1024)
 #endif

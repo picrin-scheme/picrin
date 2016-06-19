@@ -23,32 +23,15 @@ pic_value pic_eval(pic_state *, pic_value program, const char *lib);
 void pic_load(pic_state *, pic_value port);
 void pic_load_cstr(pic_state *, const char *);
 
-#if PIC_USE_WRITE
-void pic_printf(pic_state *, const char *fmt, ...);
-void pic_fprintf(pic_state *, pic_value port, const char *fmt, ...);
-void pic_vfprintf(pic_state *, pic_value port, const char *fmt, va_list ap);
-#endif
-
-/* extra xfile methods */
-
-xFILE *xfile_xstdin(pic_state *);
-xFILE *xfile_xstdout(pic_state *);
-xFILE *xfile_xstderr(pic_state *);
-#define xstdin  (xfile_xstdin(pic))
-#define xstdout (xfile_xstdout(pic))
-#define xstderr (xfile_xstderr(pic))
-#if PIC_USE_STDIO
-xFILE *xfopen_file(pic_state *, FILE *, const char *mode);
-#endif
-xFILE *xfopen_buf(pic_state *, const char *buf, int len, const char *mode);
-int xfget_buf(pic_state *, xFILE *file, const char **buf, int *len);
-xFILE *xfopen_null(pic_state *, const char *mode);
-
-/* port manipulation */
-
 #define pic_stdin(pic) pic_funcall(pic, "picrin.base", "current-input-port", 0)
 #define pic_stdout(pic) pic_funcall(pic, "picrin.base", "current-output-port", 0)
 #define pic_stderr(pic) pic_funcall(pic, "picrin.base", "current-error-port", 0)
+
+#if PIC_USE_STDIO
+pic_value pic_fopen(pic_state *, FILE *, const char *mode);
+#endif
+pic_value pic_fmemopen(pic_state *, const char *buf, int len, const char *mode);
+int pic_fgetbuf(pic_state *, pic_value port, const char **buf, int *len);
 
 /* utility macros */
 
@@ -98,7 +81,7 @@ xFILE *xfopen_null(pic_state *, const char *mode);
 void pic_warnf(pic_state *, const char *, ...);
 pic_value pic_get_backtrace(pic_state *);
 #if PIC_USE_WRITE
-void pic_print_error(pic_state *, xFILE *, pic_value err);
+void pic_print_error(pic_state *, pic_value port, pic_value err);
 #endif
 
 #if defined(__cplusplus)

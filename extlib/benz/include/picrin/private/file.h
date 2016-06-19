@@ -5,10 +5,7 @@
 extern "C" {
 #endif
 
-#define XBUFSIZ 1024
-#define XOPEN_MAX 1024
-
-struct xFILE {
+struct file {
   /* buffer */
   char buf[1];                  /* fallback buffer */
   long cnt;                     /* characters left */
@@ -26,12 +23,12 @@ struct xFILE {
 };
 
 enum {
-  X_READ  = 01,
-  X_WRITE = 02,
-  X_UNBUF = 04,
-  X_EOF   = 010,
-  X_ERR   = 020,
-  X_LNBUF = 040
+  FILE_READ  = 01,
+  FILE_WRITE = 02,
+  FILE_UNBUF = 04,
+  FILE_EOF   = 010,
+  FILE_ERR   = 020,
+  FILE_LNBUF = 040
 };
 
 

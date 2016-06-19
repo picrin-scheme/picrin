@@ -26,7 +26,6 @@ pic_panic(pic_state *pic, const char *msg)
 void
 pic_warnf(pic_state *pic, const char *fmt, ...)
 {
-  xFILE *file = pic_fileno(pic, pic_stderr(pic));
   va_list ap;
   pic_value err;
 
@@ -34,7 +33,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   err = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
 
-  xfprintf(pic, file, "warn: %s\n", pic_str(pic, err));
+  pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_str(pic, err));
 }
 
 static pic_value

@@ -232,17 +232,16 @@ pic_strf_value(pic_state *pic, const char *fmt, ...)
 pic_value
 pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 {
-  pic_value str;
-  xFILE *file;
+  pic_value str, port;
   const char *buf;
   int len;
 
-  file = xfopen_buf(pic, NULL, 0, "w");
+  port = pic_fmemopen(pic, NULL, 0, "w");
 
-  xvfprintf(pic, file, fmt, ap);
-  xfget_buf(pic, file, &buf, &len);
+  pic_vfprintf(pic, port, fmt, ap);
+  pic_fgetbuf(pic, port, &buf, &len);
   str = pic_str_value(pic, buf, len);
-  xfclose(pic, file);
+  pic_fclose(pic, port);
   return str;
 }
 

@@ -45,7 +45,7 @@ main(int argc, char *argv[], char **envp)
     status = 0;
   }
   pic_catch(e) {
-    pic_print_error(pic, xstderr, e);
+    pic_print_error(pic, pic_stderr(pic), e);
     status = 1;
   }
 

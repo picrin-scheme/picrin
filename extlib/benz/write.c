@@ -6,8 +6,6 @@
 #include "picrin/extra.h"
 #include "picrin/private/object.h"
 
-#if PIC_USE_WRITE
-
 struct writer_control {
   int mode;
   int op;
@@ -22,6 +20,135 @@ struct writer_control {
 #define OP_WRITE 1
 #define OP_WRITE_SHARED 2
 #define OP_WRITE_SIMPLE 3
+
+#if PIC_USE_WRITE
+static void write_value(pic_state *pic, pic_value obj, pic_value port, int mode, int op);
+#endif
+
+static void
+print_int(pic_state *pic, pic_value port, long x, int base)
+{
+  static const char digits[] = "0123456789abcdef";
+  char buf[20];
+  int i, neg;
+
+  neg = 0;
+  if (x < 0) {
+    neg = 1;
+    x = -x;
+  }
+
+  i = 0;
+  do {
+    buf[i++] = digits[x % base];
+  } while ((x /= base) != 0);
+
+  if (neg) {
+    buf[i++] = '-';
+  }
+
+  while (i-- > 0) {
+    pic_fputc(pic, buf[i], port);
+  }
+}
+
+int
+pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
+{
+  const char *p;
+  char *sval;
+  int ival;
+  void *vp;
+  long start = pic_fseek(pic, port, 0, PIC_SEEK_CUR);
+
+  for (p = fmt; *p; p++) {
+
+#if PIC_USE_WRITE
+    if (*p == '~') {
+      switch (*++p) {
+      default:
+        pic_fputc(pic, *(p-1), port);
+        break;
+      case '%':
+        pic_fputc(pic, '\n', port);
+        break;
+      case 'a':
+        write_value(pic, va_arg(ap, pic_value), port, DISPLAY_MODE, OP_WRITE);
+        break;
+      case 's':
+        write_value(pic, va_arg(ap, pic_value), port, WRITE_MODE, OP_WRITE);
+        break;
+      }
+      continue;
+    }
+#endif
+
+    if (*p != '%') {
+      pic_fputc(pic, *p, port);
+      continue;
+    }
+    switch (*++p) {
+    case 'd':
+    case 'i':
+      ival = va_arg(ap, int);
+      print_int(pic, port, ival, 10);
+      break;
+    case 'f': {
+      char buf[64];
+      PIC_DOUBLE_TO_CSTRING(va_arg(ap, double), buf);
+      pic_fputs(pic, buf, port);
+      break;
+    }
+    case 'c':
+      ival = va_arg(ap, int);
+      pic_fputc(pic, ival, port);
+      break;
+    case 's':
+      sval = va_arg(ap, char*);
+      pic_fputs(pic, sval, port);
+      break;
+    case 'p':
+      vp = va_arg(ap, void*);
+      pic_fputs(pic, "0x", port);
+      print_int(pic, port, (long)vp, 16);
+      break;
+    case '%':
+      pic_fputc(pic, *(p-1), port);
+      break;
+    default:
+      pic_fputc(pic, '%', port);
+      pic_fputc(pic, *(p-1), port);
+      break;
+    }
+  }
+  return pic_fseek(pic, port, 0, PIC_SEEK_CUR) - start;
+}
+
+int
+pic_fprintf(pic_state *pic, pic_value port, const char *fmt, ...)
+{
+  va_list ap;
+  int n;
+
+  va_start(ap, fmt);
+  n = pic_vfprintf(pic, port, fmt, ap);
+  va_end(ap);
+  return n;
+}
+
+int
+pic_printf(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  int n;
+
+  va_start(ap, fmt);
+  n = pic_vfprintf(pic, pic_stdout(pic), fmt, ap);
+  va_end(ap);
+  return n;
+}
+
+#if PIC_USE_WRITE
 
 static void
 writer_control_init(pic_state *pic, struct writer_control *p, int mode, int op)
@@ -100,189 +227,189 @@ is_shared_object(pic_state *pic, pic_value obj, struct writer_control *p) {
 }
 
 static void
-write_blob(pic_state *pic, pic_value blob, xFILE *file)
+write_blob(pic_state *pic, pic_value blob, pic_value port)
 {
   const unsigned char *buf;
   int len, i;
 
   buf = pic_blob(pic, blob, &len);
 
-  xfprintf(pic, file, "#u8(");
+  pic_fprintf(pic, port, "#u8(");
   for (i = 0; i < len; ++i) {
-    xfprintf(pic, file, "%d", buf[i]);
+    pic_fprintf(pic, port, "%d", buf[i]);
     if (i + 1 < len) {
-      xfprintf(pic, file, " ");
+      pic_fprintf(pic, port, " ");
     }
   }
-  xfprintf(pic, file, ")");
+  pic_fprintf(pic, port, ")");
 }
 
 static void
-write_char(pic_state *pic, pic_value ch, xFILE *file, struct writer_control *p)
+write_char(pic_state *pic, pic_value ch, pic_value port, struct writer_control *p)
 {
   char c = pic_char(pic, ch);
 
   if (p->mode == DISPLAY_MODE) {
-    xfputc(pic, c, file);
+    pic_fputc(pic, c, port);
     return;
   }
   switch (c) {
-  default: xfprintf(pic, file, "#\\%c", c); break;
-  case '\a': xfprintf(pic, file, "#\\alarm"); break;
-  case '\b': xfprintf(pic, file, "#\\backspace"); break;
-  case 0x7f: xfprintf(pic, file, "#\\delete"); break;
-  case 0x1b: xfprintf(pic, file, "#\\escape"); break;
-  case '\n': xfprintf(pic, file, "#\\newline"); break;
-  case '\r': xfprintf(pic, file, "#\\return"); break;
-  case ' ': xfprintf(pic, file, "#\\space"); break;
-  case '\t': xfprintf(pic, file, "#\\tab"); break;
+  default: pic_fprintf(pic, port, "#\\%c", c); break;
+  case '\a': pic_fprintf(pic, port, "#\\alarm"); break;
+  case '\b': pic_fprintf(pic, port, "#\\backspace"); break;
+  case 0x7f: pic_fprintf(pic, port, "#\\delete"); break;
+  case 0x1b: pic_fprintf(pic, port, "#\\escape"); break;
+  case '\n': pic_fprintf(pic, port, "#\\newline"); break;
+  case '\r': pic_fprintf(pic, port, "#\\return"); break;
+  case ' ': pic_fprintf(pic, port, "#\\space"); break;
+  case '\t': pic_fprintf(pic, port, "#\\tab"); break;
   }
 }
 
 static void
-write_str(pic_state *pic, pic_value str, xFILE *file, struct writer_control *p)
+write_str(pic_state *pic, pic_value str, pic_value port, struct writer_control *p)
 {
   int i;
   const char *cstr = pic_str(pic, str);
 
   if (p->mode == DISPLAY_MODE) {
-    xfprintf(pic, file, "%s", pic_str(pic, str));
+    pic_fprintf(pic, port, "%s", pic_str(pic, str));
     return;
   }
-  xfprintf(pic, file, "\"");
+  pic_fprintf(pic, port, "\"");
   for (i = 0; i < pic_str_len(pic, str); ++i) {
     if (cstr[i] == '"' || cstr[i] == '\\') {
-      xfputc(pic, '\\', file);
+      pic_fputc(pic, '\\', port);
     }
-    xfputc(pic, cstr[i], file);
+    pic_fputc(pic, cstr[i], port);
   }
-  xfprintf(pic, file, "\"");
+  pic_fprintf(pic, port, "\"");
 }
 
 static void
-write_float(pic_state *pic, pic_value flo, xFILE *file)
+write_float(pic_state *pic, pic_value flo, pic_value port)
 {
   double f = pic_float(pic, flo);
 
   if (f != f) {
-    xfprintf(pic, file, "+nan.0");
+    pic_fprintf(pic, port, "+nan.0");
   } else if (f == 1.0 / 0.0) {
-    xfprintf(pic, file, "+inf.0");
+    pic_fprintf(pic, port, "+inf.0");
   } else if (f == -1.0 / 0.0) {
-    xfprintf(pic, file, "-inf.0");
+    pic_fprintf(pic, port, "-inf.0");
   } else {
-    xfprintf(pic, file, "%f", f);
+    pic_fprintf(pic, port, "%f", f);
   }
 }
 
-static void write_core(pic_state *, pic_value, xFILE *, struct writer_control *);
+static void write_core(pic_state *, pic_value, pic_value port, struct writer_control *p);
 
 static void
-write_pair_help(pic_state *pic, pic_value pair, xFILE *file, struct writer_control *p)
+write_pair_help(pic_state *pic, pic_value pair, pic_value port, struct writer_control *p)
 {
   pic_value cdr = pic_cdr(pic, pair);
 
-  write_core(pic, pic_car(pic, pair), file, p);
+  write_core(pic, pic_car(pic, pair), port, p);
 
   if (pic_nil_p(pic, cdr)) {
     return;
   }
   else if (pic_pair_p(pic, cdr) && ! is_shared_object(pic, cdr, p)) {
-    xfprintf(pic, file, " ");
-    write_pair_help(pic, cdr, file, p);
+    pic_fprintf(pic, port, " ");
+    write_pair_help(pic, cdr, port, p);
   }
   else {
-    xfprintf(pic, file, " . ");
-    write_core(pic, cdr, file, p);
+    pic_fprintf(pic, port, " . ");
+    write_core(pic, cdr, port, p);
   }
 }
 
 #define EQ(sym, lit) (strcmp(pic_sym(pic, sym), lit) == 0)
 
 static void
-write_pair(pic_state *pic, pic_value pair, xFILE *file, struct writer_control *p)
+write_pair(pic_state *pic, pic_value pair, pic_value port, struct writer_control *p)
 {
   pic_value tag;
 
   if (pic_pair_p(pic, pic_cdr(pic, pair)) && pic_nil_p(pic, pic_cddr(pic, pair)) && pic_sym_p(pic, pic_car(pic, pair))) {
     tag = pic_car(pic, pair);
     if (EQ(tag, "quote")) {
-      xfprintf(pic, file, "'");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, "'");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
     else if (EQ(tag, "unquote")) {
-      xfprintf(pic, file, ",");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, ",");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
     else if (EQ(tag, "unquote-splicing")) {
-      xfprintf(pic, file, ",@");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, ",@");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
     else if (EQ(tag, "quasiquote")) {
-      xfprintf(pic, file, "`");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, "`");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
     else if (EQ(tag, "syntax-quote")) {
-      xfprintf(pic, file, "#'");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, "#'");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
     else if (EQ(tag, "syntax-unquote")) {
-      xfprintf(pic, file, "#,");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, "#,");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
     else if (EQ(tag, "syntax-unquote-splicing")) {
-      xfprintf(pic, file, "#,@");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, "#,@");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
     else if (EQ(tag, "syntax-quasiquote")) {
-      xfprintf(pic, file, "#`");
-      write_core(pic, pic_cadr(pic, pair), file, p);
+      pic_fprintf(pic, port, "#`");
+      write_core(pic, pic_cadr(pic, pair), port, p);
       return;
     }
   }
-  xfprintf(pic, file, "(");
-  write_pair_help(pic, pair, file, p);
-  xfprintf(pic, file, ")");
+  pic_fprintf(pic, port, "(");
+  write_pair_help(pic, pair, port, p);
+  pic_fprintf(pic, port, ")");
 }
 
 static void
-write_vec(pic_state *pic, pic_value vec, xFILE *file, struct writer_control *p)
+write_vec(pic_state *pic, pic_value vec, pic_value port, struct writer_control *p)
 {
   int i, len = pic_vec_len(pic, vec);
 
-  xfprintf(pic, file, "#(");
+  pic_fprintf(pic, port, "#(");
   for (i = 0; i < len; ++i) {
-    write_core(pic, pic_vec_ref(pic, vec, i), file, p);
+    write_core(pic, pic_vec_ref(pic, vec, i), port, p);
     if (i + 1 < len) {
-      xfprintf(pic, file, " ");
+      pic_fprintf(pic, port, " ");
     }
   }
-  xfprintf(pic, file, ")");
+  pic_fprintf(pic, port, ")");
 }
 
 static void
-write_dict(pic_state *pic, pic_value dict, xFILE *file, struct writer_control *p)
+write_dict(pic_state *pic, pic_value dict, pic_value port, struct writer_control *p)
 {
   pic_value key, val;
   int it = 0;
 
-  xfprintf(pic, file, "#.(dictionary");
+  pic_fprintf(pic, port, "#.(dictionary");
   while (pic_dict_next(pic, dict, &it, &key, &val)) {
-    xfprintf(pic, file, " '%s ", pic_sym(pic, key));
-    write_core(pic, val, file, p);
+    pic_fprintf(pic, port, " '%s ", pic_sym(pic, key));
+    write_core(pic, val, port, p);
   }
-  xfprintf(pic, file, ")");
+  pic_fprintf(pic, port, ")");
 }
 
 static void
-write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
+write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control *p)
 {
   pic_value labels = p->labels;
   int i;
@@ -290,62 +417,62 @@ write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
   /* shared objects */
   if (is_shared_object(pic, obj, p)) {
     if (pic_weak_has(pic, labels, obj)) {
-      xfprintf(pic, file, "#%d#", pic_int(pic, pic_weak_ref(pic, labels, obj)));
+      pic_fprintf(pic, port, "#%d#", pic_int(pic, pic_weak_ref(pic, labels, obj)));
       return;
     }
     i = p->cnt++;
-    xfprintf(pic, file, "#%d=", i);
+    pic_fprintf(pic, port, "#%d=", i);
     pic_weak_set(pic, labels, obj, pic_int_value(pic, i));
   }
 
   switch (pic_type(pic, obj)) {
   case PIC_TYPE_UNDEF:
-    xfprintf(pic, file, "#undefined");
+    pic_fprintf(pic, port, "#undefined");
     break;
   case PIC_TYPE_NIL:
-    xfprintf(pic, file, "()");
+    pic_fprintf(pic, port, "()");
     break;
   case PIC_TYPE_TRUE:
-    xfprintf(pic, file, "#t");
+    pic_fprintf(pic, port, "#t");
     break;
   case PIC_TYPE_FALSE:
-    xfprintf(pic, file, "#f");
+    pic_fprintf(pic, port, "#f");
     break;
   case PIC_TYPE_ID:
-    xfprintf(pic, file, "#<identifier %s>", pic_str(pic, pic_id_name(pic, obj)));
+    pic_fprintf(pic, port, "#<identifier %s>", pic_str(pic, pic_id_name(pic, obj)));
     break;
   case PIC_TYPE_EOF:
-    xfprintf(pic, file, "#.(eof-object)");
+    pic_fprintf(pic, port, "#.(eof-object)");
     break;
   case PIC_TYPE_INT:
-    xfprintf(pic, file, "%d", pic_int(pic, obj));
+    pic_fprintf(pic, port, "%d", pic_int(pic, obj));
     break;
   case PIC_TYPE_SYMBOL:
-    xfprintf(pic, file, "%s", pic_sym(pic, obj));
+    pic_fprintf(pic, port, "%s", pic_sym(pic, obj));
     break;
   case PIC_TYPE_FLOAT:
-    write_float(pic, obj, file);
+    write_float(pic, obj, port);
     break;
   case PIC_TYPE_BLOB:
-    write_blob(pic, obj, file);
+    write_blob(pic, obj, port);
     break;
   case PIC_TYPE_CHAR:
-    write_char(pic, obj, file, p);
+    write_char(pic, obj, port, p);
     break;
   case PIC_TYPE_STRING:
-    write_str(pic, obj, file, p);
+    write_str(pic, obj, port, p);
     break;
   case PIC_TYPE_PAIR:
-    write_pair(pic, obj, file, p);
+    write_pair(pic, obj, port, p);
     break;
   case PIC_TYPE_VECTOR:
-    write_vec(pic, obj, file, p);
+    write_vec(pic, obj, port, p);
     break;
   case PIC_TYPE_DICT:
-    write_dict(pic, obj, file, p);
+    write_dict(pic, obj, port, p);
     break;
   default:
-    xfprintf(pic, file, "#<%s %p>", pic_typename(pic, pic_type(pic, obj)), pic_obj_ptr(obj));
+    pic_fprintf(pic, port, "#<%s %p>", pic_typename(pic, pic_type(pic, obj)), pic_obj_ptr(obj));
     break;
   }
 
@@ -357,7 +484,7 @@ write_core(pic_state *pic, pic_value obj, xFILE *file, struct writer_control *p)
 }
 
 static void
-write_value(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
+write_value(pic_state *pic, pic_value obj, pic_value port, int mode, int op)
 {
   struct writer_control p;
 
@@ -365,94 +492,7 @@ write_value(pic_state *pic, pic_value obj, xFILE *file, int mode, int op)
 
   traverse(pic, obj, &p);
 
-  write_core(pic, obj, file, &p);
-}
-
-void
-pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
-{
-  xFILE *file = pic_fileno(pic, port);
-  char c;
-
-  while ((c = *fmt++) != '\0') {
-    switch (c) {
-    default:
-      xfputc(pic, c, file);
-      break;
-    case '%':
-      c = *fmt++;
-      if (! c)
-        goto exit;
-      switch (c) {
-      default:
-        xfputc(pic, c, file);
-        break;
-      case '%':
-        xfputc(pic, '%', file);
-        break;
-      case 'c':
-        xfprintf(pic, file, "%c", va_arg(ap, int));
-        break;
-      case 's':
-        xfprintf(pic, file, "%s", va_arg(ap, const char *));
-        break;
-      case 'd':
-        xfprintf(pic, file, "%d", va_arg(ap, int));
-        break;
-      case 'p':
-        xfprintf(pic, file, "%p", va_arg(ap, void *));
-        break;
-      case 'f':
-        xfprintf(pic, file, "%f", va_arg(ap, double));
-        break;
-      }
-      break;
-    case '~':
-      c = *fmt++;
-      if (! c)
-        goto exit;
-      switch (c) {
-      default:
-        xfputc(pic, c, file);
-        break;
-      case '~':
-        xfputc(pic, '~', file);
-        break;
-      case '%':
-        xfputc(pic, '\n', file);
-        break;
-      case 'a':
-        write_value(pic, va_arg(ap, pic_value), file, DISPLAY_MODE, OP_WRITE);
-        break;
-      case 's':
-        write_value(pic, va_arg(ap, pic_value), file, WRITE_MODE, OP_WRITE);
-        break;
-      }
-      break;
-    }
-  }
- exit:
-  xfflush(pic, file);
-}
-
-void
-pic_fprintf(pic_state *pic, pic_value port, const char *fmt, ...)
-{
-  va_list ap;
-
-  va_start(ap, fmt);
-  pic_vfprintf(pic, port, fmt, ap);
-  va_end(ap);
-}
-
-void
-pic_printf(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-
-  va_start(ap, fmt);
-  pic_vfprintf(pic, pic_stdout(pic), fmt, ap);
-  va_end(ap);
+  write_core(pic, obj, port, &p);
 }
 
 static pic_value
@@ -461,7 +501,7 @@ pic_write_write(pic_state *pic)
   pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write_value(pic, v, pic_fileno(pic, port), WRITE_MODE, OP_WRITE);
+  write_value(pic, v, port, WRITE_MODE, OP_WRITE);
   return pic_undef_value(pic);
 }
 
@@ -471,7 +511,7 @@ pic_write_write_simple(pic_state *pic)
   pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write_value(pic, v, pic_fileno(pic, port), WRITE_MODE, OP_WRITE_SIMPLE);
+  write_value(pic, v, port, WRITE_MODE, OP_WRITE_SIMPLE);
   return pic_undef_value(pic);
 }
 
@@ -481,7 +521,7 @@ pic_write_write_shared(pic_state *pic)
   pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write_value(pic, v, pic_fileno(pic, port), WRITE_MODE, OP_WRITE_SHARED);
+  write_value(pic, v, port, WRITE_MODE, OP_WRITE_SHARED);
   return pic_undef_value(pic);
 }
 
@@ -491,7 +531,7 @@ pic_write_display(pic_state *pic)
   pic_value v, port = pic_stdout(pic);
 
   pic_get_args(pic, "o|p", &v, &port);
-  write_value(pic, v, pic_fileno(pic, port), DISPLAY_MODE, OP_WRITE);
+  write_value(pic, v, port, DISPLAY_MODE, OP_WRITE);
   return pic_undef_value(pic);
 }
 

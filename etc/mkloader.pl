@@ -55,7 +55,7 @@ EOL
   }
   pic_catch(e) {
     /* error! */
-    xfputs(pic, "fatal error: failure in loading $dirname/$basename\\n", xstderr);
+    pic_fputs(pic, "fatal error: failure in loading $dirname/$basename\\n", pic_stderr(pic));
     pic_raise(pic, e);
   }
 EOL

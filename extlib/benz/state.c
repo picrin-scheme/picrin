@@ -242,17 +242,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* file pool */
   memset(pic->files, 0, sizeof pic->files);
-#if PIC_USE_STDIO
-  xfopen_file(pic, stdin, "r");
-  xfopen_file(pic, stdout, "w");
-  xfopen_file(pic, stderr, "w");
-  pic->files[1].flag |= X_LNBUF;
-  pic->files[2].flag |= X_UNBUF;
-#else
-  xfopen_null(pic, "r");
-  xfopen_null(pic, "w");
-  xfopen_null(pic, "w");
-#endif
 
   /* root tables */
   pic->globals = pic_make_weak(pic);
@@ -308,8 +297,8 @@ pic_close(pic_state *pic)
   /* free all heap objects */
   pic_gc(pic);
 
-  /* flush all xfiles */
-  xfflush(pic, NULL);
+  /* flush all files */
+  pic_fflush(pic, pic_false_value(pic));
 
   /* free heaps */
   pic_heap_close(pic, pic->heap);

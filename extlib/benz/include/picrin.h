@@ -111,12 +111,6 @@ pic_value pic_vcall(pic_state *, pic_value proc, int, va_list);
 pic_value pic_apply(pic_state *, pic_value proc, int n, pic_value *argv);
 pic_value pic_applyk(pic_state *, pic_value proc, int n, pic_value *argv);
 
-typedef struct xFILE xFILE;
-
-pic_value pic_open_port(pic_state *, xFILE *file);
-xFILE *pic_fileno(pic_state *, pic_value port);
-void pic_close_port(pic_state *, pic_value port);
-
 int pic_int(pic_state *, pic_value i);
 double pic_float(pic_state *, pic_value f);
 char pic_char(pic_state *, pic_value c);
@@ -273,29 +267,30 @@ int pic_str_hash(pic_state *, pic_value str);
 
 /* External I/O */
 
-#define XSEEK_CUR 0
-#define XSEEK_END 1
-#define XSEEK_SET 2
+#define PIC_SEEK_CUR 0
+#define PIC_SEEK_END 1
+#define PIC_SEEK_SET 2
 
-xFILE *xfunopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
-size_t xfread(pic_state *, void *ptr, size_t size, size_t count, xFILE *fp);
-size_t xfwrite(pic_state *, const void *ptr, size_t size, size_t count, xFILE *fp);
-long xfseek(pic_state *, xFILE *fp, long offset, int whence);
-int xfclose(pic_state *, xFILE *fp);
+pic_value pic_funopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
+size_t pic_fread(pic_state *, void *ptr, size_t size, size_t count, pic_value port);
+size_t pic_fwrite(pic_state *, const void *ptr, size_t size, size_t count, pic_value port);
+long pic_fseek(pic_state *, pic_value port, long offset, int whence);
+int pic_fclose(pic_state *, pic_value port);
 
-void xclearerr(pic_state *, xFILE *fp);
-int xfeof(pic_state *, xFILE *fp);
-int xferror(pic_state *, xFILE *fp);
+void pic_clearerr(pic_state *, pic_value port);
+int pic_feof(pic_state *, pic_value port);
+int pic_ferror(pic_state *, pic_value port);
 
-int xfputc(pic_state *, int c, xFILE *fp);
-int xfgetc(pic_state *, xFILE *fp);
-int xfputs(pic_state *, const char *s, xFILE *fp);
-char *xfgets(pic_state *, char *s, int size, xFILE *fp);
-int xungetc(pic_state *, int c, xFILE *fp);
-int xfflush(pic_state *, xFILE *fp);
+int pic_fputc(pic_state *, int c, pic_value port);
+int pic_fgetc(pic_state *, pic_value port);
+int pic_fputs(pic_state *, const char *s, pic_value port);
+char *pic_fgets(pic_state *, char *s, int size, pic_value port);
+int pic_ungetc(pic_state *, int c, pic_value port);
+int pic_fflush(pic_state *, pic_value port);
 
-int xfprintf(pic_state *, xFILE *fp, const char *fmt, ...);
-int xvfprintf(pic_state *, xFILE *fp, const char *fmt, va_list);
+int pic_printf(pic_state *, const char *fmt, ...);
+int pic_fprintf(pic_state *, pic_value port, const char *fmt, ...);
+int pic_vfprintf(pic_state *, pic_value port, const char *fmt, va_list ap);
 
 
 #if defined(__cplusplus)

@@ -297,15 +297,11 @@ xf_socket_close(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie))
 static pic_value
 make_socket_port(pic_state *pic, struct pic_socket_t *sock, const char *mode)
 {
-  xFILE *fp;
-
   if (*mode == 'r') {
-    fp = xfunopen(pic, sock, xf_socket_read, 0, xf_socket_seek, xf_socket_close);
+    return pic_funopen(pic, sock, xf_socket_read, 0, xf_socket_seek, xf_socket_close);
   } else {
-    fp = xfunopen(pic, sock, 0, xf_socket_write, xf_socket_seek, xf_socket_close);
+    return pic_funopen(pic, sock, 0, xf_socket_write, xf_socket_seek, xf_socket_close);
   }
-
-  return pic_open_port(pic, fp);
 }
 
 static pic_value

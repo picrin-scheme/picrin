@@ -235,14 +235,14 @@ pic_number_number_to_string(pic_state *pic)
     str = pic_str_value(pic, buf, ilen);
   }
   else {
-    xFILE *file = xfopen_buf(pic, NULL, 0, "w");
+    pic_value port = pic_fmemopen(pic, NULL, 0, "w");
     const char *buf;
     int len;
 
-    xfprintf(pic, file, "%f", f);
-    xfget_buf(pic, file, &buf, &len);
+    pic_fprintf(pic, port, "%f", f);
+    pic_fgetbuf(pic, port, &buf, &len);
     str = pic_str_value(pic, buf, len);
-    xfclose(pic, file);
+    pic_fclose(pic, port);
   }
 
   return str;

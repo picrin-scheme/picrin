@@ -127,7 +127,7 @@ struct error {
 
 struct port {
   OBJECT_HEADER
-  xFILE *file;
+  struct file *file;
 };
 
 struct checkpoint {

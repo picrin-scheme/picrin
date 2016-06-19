@@ -21,11 +21,11 @@ pic_load_load(pic_state *pic)
     pic_error(pic, "load: could not open file", 1, pic_cstr_value(pic, fn));
   }
 
-  port = pic_open_port(pic, xfopen_file(pic, fp, "r"));
+  port = pic_fopen(pic, fp, "r");
 
   pic_load(pic, port);
 
-  pic_close_port(pic, port);
+  pic_fclose(pic, port);
 
   return pic_undef_value(pic);
 }

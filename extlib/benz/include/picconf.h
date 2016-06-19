@@ -16,3 +16,7 @@
 /* #define PIC_SETJMP(pic, buf) setjmp(buf) */
 /* #define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val)) */
 /* #define PIC_ABORT(pic) abort() */
+
+/** I/O configuration */
+/* #define PIC_OPEN_MAX 1024 */
+/* #define PIC_BUFSIZ 1024 */
