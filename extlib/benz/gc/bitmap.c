@@ -287,7 +287,7 @@ heap_morecore(pic_state *pic)
 {
   struct heap_page *page;
 
-  assert((2 <= PIC_HEAP_PAGE_SIZE - sizeof(struct heap_page)) / sizeof(union header));
+  assert(2 <= HEADER_SIZE);
 
   if(PIC_MEMALIGN(pic, (void **)&page, PIC_HEAP_PAGE_SIZE, PIC_HEAP_PAGE_SIZE) != 0)
     pic_panic(pic, "memory exhausted");
