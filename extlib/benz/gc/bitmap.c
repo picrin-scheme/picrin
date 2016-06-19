@@ -7,10 +7,9 @@
 #include "picrin/private/khash.h"
 #include "picrin/private/state.h"
 
-enum {
-  WHITE = 0,
-  BLACK = 1
-};
+#ifndef PIC_MEMALIGN
+# error "bitmapgc requires PIC_MEMALIGN"
+#endif
 
 union header {
   struct {
@@ -194,7 +193,7 @@ numofbits(unsigned long bits)
 {
     bits = bits - (bits >> 1 & 0x55555555);
     bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
-    bits = bits + (bits >> 4) & 0x0f0f0f0f;
+    bits = bits + ((bits >> 4) & 0x0f0f0f0f);
     bits = bits * 0x01010101;
 
     return bits >> 24;
@@ -287,11 +286,8 @@ static void
 heap_morecore(pic_state *pic)
 {
   struct heap_page *page;
-  size_t nunits;
 
-  nunits = (PIC_HEAP_PAGE_SIZE - sizeof(struct heap_page)) / sizeof(union header);
-
-  assert(nunits >= 2);
+  assert((2 <= PIC_HEAP_PAGE_SIZE - sizeof(struct heap_page)) / sizeof(union header));
 
   if(PIC_MEMALIGN(pic, (void **)&page, PIC_HEAP_PAGE_SIZE, PIC_HEAP_PAGE_SIZE) != 0)
     pic_panic(pic, "memory exhausted");
