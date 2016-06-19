@@ -8,7 +8,6 @@
 
 #define UNIT_SIZE (sizeof(uint32_t) * CHAR_BIT)
 #define BITMAP_SIZE (PIC_HEAP_PAGE_SIZE / sizeof(union header) / UNIT_SIZE)
-#define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - sizeof(struct heap_page)) / sizeof(union header))
 
 struct heap_page {
   struct heap_page *next;
@@ -16,6 +15,7 @@ struct heap_page {
   uint32_t bitmap[BITMAP_SIZE];
   uint32_t shadow[BITMAP_SIZE];
   uint32_t index[BITMAP_SIZE / UNIT_SIZE];
+  union header basep[1];
 };
 
 /* bitmap */
@@ -23,25 +23,22 @@ struct heap_page {
 static union header *
 index2header(struct heap_page *page, size_t index)
 {
-  return ((union header *)(page + 1)) + index;
+  return page->basep + index;
 }
 
 static struct heap_page *
 obj2page(pic_state *PIC_UNUSED(pic), union header *h)
 {
-  static const unsigned long mask = ~(PIC_HEAP_PAGE_SIZE - 1);
-
-  return (struct heap_page *)(((unsigned long)h) & mask);
+  return (struct heap_page *)(((unsigned long)h) & ~(PIC_HEAP_PAGE_SIZE - 1));
 }
 
 static int
-numofbits(unsigned long bits)
+popcount32(uint32_t bits)
 {
     bits = bits - (bits >> 1 & 0x55555555);
     bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
     bits = bits + ((bits >> 4) & 0x0f0f0f0f);
     bits = bits * 0x01010101;
-
     return bits >> 24;
 }
 
@@ -72,7 +69,7 @@ is_marked_at(uint32_t *bitmap, size_t index, size_t size)
     else
       test_size = UNIT_SIZE - (index % UNIT_SIZE);
 
-    if ((bitmap[index / UNIT_SIZE] >> (index % UNIT_SIZE)) & ~(-1 << test_size))
+    if ((bitmap[index / UNIT_SIZE] >> (index % UNIT_SIZE)) & ~((~0) << test_size))
       return 1;
     size  -= test_size;
     index += test_size;
@@ -82,47 +79,34 @@ is_marked_at(uint32_t *bitmap, size_t index, size_t size)
 }
 
 static void *
-heap_alloc_heap_page(struct heap_page *page, size_t nunits)
-{
-  size_t index;
-  union header *p;
-
-  for (index = page->current; index < PAGE_UNITS - (nunits + 1); ++index) {
-    if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
-      index += UNIT_SIZE;
-    }
-
-    if (! is_marked_at(page->bitmap, index, nunits+1)) {
-      mark_at(page, index, nunits+1);
-      p = index2header(page, index);
-      p->s.size = nunits;
-      page->current = index + nunits + 1;
-      return (void *)(p+1);
-    }
-  }
-
-  return NULL;
-}
-
-static void *
 heap_alloc(pic_state *pic, size_t size)
 {
-  struct heap_page *p;
-  void *ret;
+  struct heap_page *page;
   size_t nunits;
 
   assert(size > 0);
 
   nunits = (size + sizeof(union header) - 1) / sizeof(union header);
 
-  p = pic->heap->pages;
+  page = pic->heap->pages;
+  while (page) {
+    size_t index;
+    union header *h;
 
-  while (p) {
-    ret = heap_alloc_heap_page(p, nunits);
-    if (ret != NULL) {
-      return ret;
+    for (index = page->current; index < PAGE_UNITS - (nunits + 1); ++index) {
+      if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
+        index += UNIT_SIZE;
+      }
+
+      if (! is_marked_at(page->bitmap, index, nunits+1)) {
+        mark_at(page, index, nunits+1);
+        h = index2header(page, index);
+        h->s.size = nunits;
+        page->current = index + nunits + 1;
+        return (void *)(h + 1);
+      }
     }
-    p = p->next;
+    page = page->next;
   }
 
   return NULL;
@@ -156,7 +140,7 @@ is_marked(pic_state *pic, struct object *obj)
 
   page = obj2page(pic, h);
 
-  i = h - ((union header *)(page + 1));
+  i = h - page->basep;
 
   return is_marked_at(page->bitmap, i, h->s.size + 1);
 }
@@ -170,7 +154,7 @@ mark(pic_state *pic, struct object *obj)
 
   page = obj2page(pic, h);
 
-  i = h - ((union header *)(page + 1));
+  i = h - page->basep;
 
   mark_at(page, i, h->s.size + 1);
 }
@@ -183,7 +167,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
 
   for (i = 0; i < BITMAP_SIZE; ++i) {
     page->shadow[i] &= ~page->bitmap[i];
-    inuse += numofbits(page->bitmap[i]);
+    inuse += popcount32(page->bitmap[i]);
   }
 
   for (index = 0; index < PAGE_UNITS; ++index) {
