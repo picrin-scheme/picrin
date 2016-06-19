@@ -173,13 +173,13 @@ pic_leave(pic_state *pic, size_t state)
 
 /* bitmap */
 
-PIC_INLINE union header *
+static union header *
 index2header(struct heap_page *page, size_t index)
 {
   return ((union header *)(page + 1)) + index;
 }
 
-PIC_INLINE struct heap_page *
+static struct heap_page *
 obj2page(pic_state *PIC_UNUSED(pic), union header *h)
 {
   unsigned long int mask = ~(PIC_HEAP_PAGE_SIZE - 1);
@@ -188,7 +188,7 @@ obj2page(pic_state *PIC_UNUSED(pic), union header *h)
 }
 
 
-PIC_INLINE int
+static int
 numofbits(unsigned long bits)
 {
     bits = bits - (bits >> 1 & 0x55555555);
@@ -200,7 +200,7 @@ numofbits(unsigned long bits)
 }
 
 
-PIC_INLINE void
+static void
 mark_at(struct heap_page *page, size_t index, size_t size)
 {
   size_t mask = ~(-1 << size);
@@ -217,7 +217,7 @@ mark_at(struct heap_page *page, size_t index, size_t size)
   }
 }
 
-PIC_INLINE int
+static int
 is_marked_at(uint32_t *bitmap, size_t index, size_t size)
 {
   size_t test_size;
