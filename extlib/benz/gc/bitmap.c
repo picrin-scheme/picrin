@@ -204,31 +204,37 @@ PIC_INLINE void
 mark_at(struct heap_page *page, size_t index, size_t size)
 {
   size_t mask = ~(-1 << size);
+  size_t mark_size;
 
-  page->bitmap[index / UNIT_SIZE] |= mask << (index % UNIT_SIZE);
-  if (numofbits(page->bitmap[index / UNIT_SIZE]) == UNIT_SIZE) {
-    page->index[index / UNIT_SIZE / UNIT_SIZE] |= 1 << ((index / UNIT_SIZE) % UNIT_SIZE);
-  }
-
-  if (UNIT_SIZE < index % UNIT_SIZE + size) {
-    page->bitmap[index / UNIT_SIZE + 1] |= mask >> (UNIT_SIZE - index % UNIT_SIZE);
-    if (numofbits(page->bitmap[index / UNIT_SIZE + 1]) == UNIT_SIZE) {
-      page->index[(index / UNIT_SIZE + 1) / UNIT_SIZE] |= 1 << ((index / UNIT_SIZE + 1) % UNIT_SIZE);
-    }
+  while (0 < size) {
+    if (size  <= UNIT_SIZE - (index % UNIT_SIZE))
+      mark_size = size;
+    else
+      mark_size = UNIT_SIZE - (index % UNIT_SIZE);
+    page->bitmap[index / UNIT_SIZE] |= ~(-1 << mark_size) << (index % UNIT_SIZE);
+    size  -= mark_size;
+    index += mark_size;
   }
 }
 
 PIC_INLINE int
 is_marked_at(uint32_t *bitmap, size_t index, size_t size)
 {
-  size_t mask = ~(-1 << size);
-  size_t map;
+  size_t test_size;
 
-  map = bitmap[index / UNIT_SIZE] >> (index % UNIT_SIZE);
-  if (UNIT_SIZE < index % UNIT_SIZE + size)
-    map |= bitmap[index / UNIT_SIZE + 1] << (UNIT_SIZE - index % UNIT_SIZE);
+  while (0 < size) {
+    if (size  <= UNIT_SIZE - (index % UNIT_SIZE))
+      test_size = size;
+    else
+      test_size = UNIT_SIZE - (index % UNIT_SIZE);
 
-  return mask & map;
+    if ((bitmap[index / UNIT_SIZE] >> (index % UNIT_SIZE)) & ~(-1 << test_size))
+      return 1;
+    size  -= test_size;
+    index += test_size;
+  }
+
+  return 0;
 
 }
 
@@ -236,10 +242,10 @@ is_marked_at(uint32_t *bitmap, size_t index, size_t size)
 static void *
 heap_alloc_heap_page(struct heap_page *page, size_t nunits)
 {
-  size_t index;
+  size_t index, jump;
   union header *p;
 
-  for (index = page->current; index < HEADER_SIZE - (nunits + 1) ; ++index) {
+  for (index = page->current; index < HEADER_SIZE - (nunits + 1); ++index) {
     if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
       index += UNIT_SIZE - 1;
       continue;
