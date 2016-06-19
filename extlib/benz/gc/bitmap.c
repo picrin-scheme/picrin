@@ -8,7 +8,7 @@
 
 #define UNIT_SIZE (sizeof(uint32_t) * CHAR_BIT)
 #define BITMAP_SIZE (PIC_HEAP_PAGE_SIZE / sizeof(union header) / UNIT_SIZE)
-#define HEADER_SIZE ((PIC_HEAP_PAGE_SIZE - sizeof(struct heap_page)) / sizeof(union header))
+#define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - sizeof(struct heap_page)) / sizeof(union header))
 
 struct heap_page {
   struct heap_page *next;
@@ -114,7 +114,7 @@ heap_alloc_heap_page(struct heap_page *page, size_t nunits)
   size_t index;
   union header *p;
 
-  for (index = page->current; index < HEADER_SIZE - (nunits + 1); ++index) {
+  for (index = page->current; index < PAGE_UNITS - (nunits + 1); ++index) {
     if (index % UNIT_SIZE == 0 && is_marked_at(page->index, index / UNIT_SIZE, 1)) {
       index += UNIT_SIZE;
     }
@@ -160,7 +160,7 @@ heap_morecore(pic_state *pic)
 {
   struct heap_page *page;
 
-  assert(2 <= HEADER_SIZE);
+  assert(2 <= PAGE_UNITS);
 
   if (PIC_MEMALIGN(pic, (void **)&page, PIC_HEAP_PAGE_SIZE, PIC_HEAP_PAGE_SIZE) != 0)
     pic_panic(pic, "memory exhausted");
@@ -213,7 +213,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
     inuse += numofbits(page->bitmap[i]);
   }
 
-  for (index = 0; index < HEADER_SIZE; ++index) {
+  for (index = 0; index < PAGE_UNITS; ++index) {
     if (page->shadow[index / UNIT_SIZE] & (1 << (index % UNIT_SIZE))) {
       h = index2header(page, index);
       index += h->s.size;
@@ -261,7 +261,7 @@ gc_sweep_phase(pic_state *pic)
   page = pic->heap->pages;
   while (page) {
     inuse += gc_sweep_page(pic, page);
-    total += HEADER_SIZE;
+    total += PAGE_UNITS;
     page = page->next;
   }
 
