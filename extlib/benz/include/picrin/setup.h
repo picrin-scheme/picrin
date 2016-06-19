@@ -464,5 +464,5 @@ double PIC_CSTRING_TO_DOUBLE(const char *);
 #if PIC_USE_LIBC && (defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)))
 # include <unistd.h>
 # define PIC_MEMALIGN(pic, buf, alignment, size) posix_memalign(buf, alignment, size)
-# define PIC_USE_BITMAPGC 1
+# define PIC_BITMAP_GC 1
 #endif

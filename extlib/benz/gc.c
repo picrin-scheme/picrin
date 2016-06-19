@@ -36,7 +36,7 @@ struct object {
   } u;
 };
 
-#if !PIC_USE_BITMAPGC
+#if !PIC_BITMAP_GC
 
 struct heap {
   union header base, *freep;
@@ -76,7 +76,7 @@ pic_heap_open(pic_state *pic)
 
   heap = pic_malloc(pic, sizeof(struct heap));
 
-#if !PIC_USE_BITMAPGC
+#if !PIC_BITMAP_GC
   heap->base.s.ptr = &heap->base;
   heap->base.s.size = 0; /* not 1, since it must never be used for allocation */
   heap->freep = &heap->base;
@@ -198,7 +198,7 @@ pic_alloca(pic_state *pic, size_t n)
 
 /* MARK */
 
-#if !PIC_USE_BITMAPGC
+#if !PIC_BITMAP_GC
 
 static bool
 is_marked(pic_state *PIC_UNUSED(pic), struct object *obj)
@@ -602,7 +602,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 }
 
-#if !PIC_USE_BITMAPGC
+#if !PIC_BITMAP_GC
 
 static void *
 heap_alloc(pic_state *pic, size_t size)
@@ -852,7 +852,7 @@ gc_sweep_phase(pic_state *pic)
 void
 gc_init(pic_state *PIC_UNUSED(pic))
 {
-#if PIC_USE_BITMAPGC
+#if PIC_BITMAP_GC
   struct heap_page *page;
 
   page = pic->heap->pages;
@@ -899,7 +899,7 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
 	pic_panic(pic, "GC memory exhausted");
     }
   }
-#if !PIC_USE_BITMAPGC
+#if !PIC_BITMAP_GC
   obj->u.basic.gc_mark = 0;
 #endif
   obj->u.basic.tt = type;
