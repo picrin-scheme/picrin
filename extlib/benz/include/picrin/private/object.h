@@ -10,21 +10,13 @@ extern "C" {
 #endif
 
 #include "picrin/private/khash.h"
+#include "picrin/private/gc.h"
 
 typedef struct identifier symbol;
 
 KHASH_DECLARE(env, struct identifier *, symbol *)
 KHASH_DECLARE(dict, symbol *, pic_value)
 KHASH_DECLARE(weak, struct object *, pic_value)
-
-#if PIC_BITMAP_GC
-# define OBJECT_HEADER                           \
-  unsigned char tt;
-#else
-# define OBJECT_HEADER                           \
-  unsigned char tt;                              \
-  char gc_mark;
-#endif
 
 struct object;              /* defined in gc.c */
 
