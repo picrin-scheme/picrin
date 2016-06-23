@@ -10,29 +10,7 @@
 pic_value
 pic_get_backtrace(pic_state *pic)
 {
-  size_t ai = pic_enter(pic);
-  struct callinfo *ci;
-  pic_value trace;
-
-  trace = pic_lit_value(pic, "");
-
-  for (ci = pic->ci; ci != pic->cibase; --ci) {
-    pic_value proc = ci->fp[0];
-
-    trace = pic_str_cat(pic, trace, pic_lit_value(pic, "  at "));
-    trace = pic_str_cat(pic, trace, pic_lit_value(pic, "(anonymous lambda)"));
-
-    if (pic_func_p(pic, proc)) {
-      trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (native function)\n"));
-    } else {
-      trace = pic_str_cat(pic, trace, pic_lit_value(pic, " (unknown location)\n")); /* TODO */
-    }
-  }
-
-  pic_leave(pic, ai);
-  pic_protect(pic, trace);
-
-  return trace;
+  return pic_lit_value(pic, ""); /* FIXME */
 }
 
 #if PIC_USE_WRITE

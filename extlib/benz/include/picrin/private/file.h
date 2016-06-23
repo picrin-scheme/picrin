@@ -6,11 +6,12 @@ extern "C" {
 #endif
 
 struct file {
+  int flag;                     /* mode of the file access */
   /* buffer */
   char buf[1];                  /* fallback buffer */
-  long cnt;                     /* characters left */
   char *ptr;                    /* next character position */
   char *base;                   /* location of the buffer */
+  long cnt;                     /* characters left */
   /* operators */
   struct {
     void *cookie;
@@ -19,7 +20,6 @@ struct file {
     long (*seek)(pic_state *, void *, long, int);
     int (*close)(pic_state *, void *);
   } vtable;
-  int flag;                     /* mode of the file access */
 };
 
 enum {

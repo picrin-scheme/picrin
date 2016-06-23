@@ -18,7 +18,7 @@ union header {
 struct object {
   union {
     struct basic basic;
-    struct identifier id;
+    struct symbol sym;
     struct string str;
     struct blob blob;
     struct pair pair;
@@ -27,9 +27,8 @@ struct object {
     struct weak weak;
     struct data data;
     struct record rec;
-    struct env env;
     struct proc proc;
-    struct context cxt;
+    struct frame frame;
     struct port port;
     struct error err;
     struct checkpoint cp;
@@ -191,7 +190,7 @@ pic_leave(pic_state *pic, size_t state)
 void *
 pic_alloca(pic_state *pic, size_t n)
 {
-  static const pic_data_type t = { "pic_alloca", pic_free, 0 };
+  static const pic_data_type t = { "pic_alloca", pic_free };
 
   return pic_data(pic, pic_data_value(pic, pic_malloc(pic, n), &t)); /* TODO optimize */
 }
@@ -331,14 +330,14 @@ gc_mark_object(pic_state *pic, struct object *obj)
     }
     break;
   }
-  case PIC_TYPE_CXT: {
+  case PIC_TYPE_FRAME: {
     int i;
 
-    for (i = 0; i < obj->u.cxt.regc; ++i) {
-      gc_mark(pic, obj->u.cxt.regs[i]);
+    for (i = 0; i < obj->u.frame.regc; ++i) {
+      gc_mark(pic, obj->u.frame.regs[i]);
     }
-    if (obj->u.cxt.up) {
-      LOOP(obj->u.cxt.up);
+    if (obj->u.frame.link) {
+      LOOP(obj->u.frame.link);
     }
     break;
   }
@@ -350,8 +349,8 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_IREP: {
-    if (obj->u.proc.u.i.cxt) {
-      LOOP(obj->u.proc.u.i.cxt);
+    if (obj->u.proc.u.i.link) {
+      LOOP(obj->u.proc.u.i.link);
     }
     break;
   }
@@ -378,30 +377,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_BLOB: {
     break;
   }
-  case PIC_TYPE_ID: {
-    gc_mark_object(pic, (struct object *)obj->u.id.u.id);
-    LOOP(obj->u.id.env);
-    break;
-  }
-  case PIC_TYPE_ENV: {
-    khash_t(env) *h = &obj->u.env.map;
-    int it;
-
-    for (it = kh_begin(h); it != kh_end(h); ++it) {
-      if (kh_exist(h, it)) {
-        gc_mark_object(pic, (struct object *)kh_key(h, it));
-        gc_mark_object(pic, (struct object *)kh_val(h, it));
-      }
-    }
-    if (obj->u.env.up) {
-      LOOP(obj->u.env.up);
-    }
-    break;
-  }
   case PIC_TYPE_DATA: {
-    if (obj->u.data.type->mark) {
-      obj->u.data.type->mark(pic, obj->u.data.data, gc_mark);
-    }
     break;
   }
   case PIC_TYPE_DICT: {
@@ -422,7 +398,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_SYMBOL: {
-    LOOP(obj->u.id.u.str);
+    LOOP(obj->u.sym.str);
     break;
   }
   case PIC_TYPE_WEAK: {
@@ -452,8 +428,6 @@ gc_mark_object(pic_state *pic, struct object *obj)
 static void
 gc_mark_phase(pic_state *pic)
 {
-  pic_value *stack;
-  struct callinfo *ci;
   struct list_head *list;
   int it;
   size_t j;
@@ -465,18 +439,6 @@ gc_mark_phase(pic_state *pic)
     gc_mark_object(pic, (struct object *)pic->cp);
   }
 
-  /* stack */
-  for (stack = pic->stbase; stack != pic->sp; ++stack) {
-    gc_mark(pic, *stack);
-  }
-
-  /* callinfo */
-  for (ci = pic->ci; ci != pic->cibase; --ci) {
-    if (ci->cxt) {
-      gc_mark_object(pic, (struct object *)ci->cxt);
-    }
-  }
-
   /* arena */
   for (j = 0; j < pic->arena_idx; ++j) {
     gc_mark_object(pic, (struct object *)pic->arena[j]);
@@ -486,15 +448,12 @@ gc_mark_phase(pic_state *pic)
   for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
     struct irep *irep = (struct irep *)list;
     for (j = 0; j < irep->npool; ++j) {
-      gc_mark_object(pic, irep->pool[j]);
+      gc_mark(pic, irep->pool[j]);
     }
   }
 
   /* global variables */
   gc_mark(pic, pic->globals);
-
-  /* macro objects */
-  gc_mark(pic, pic->macros);
 
   /* error object */
   gc_mark(pic, pic->err);
@@ -560,10 +519,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_rope_decref(pic, obj->u.str.rope);
     break;
   }
-  case PIC_TYPE_ENV: {
-    kh_destroy(env, &obj->u.env.map);
-    break;
-  }
   case PIC_TYPE_DATA: {
     if (obj->u.data.type->dtor) {
       obj->u.data.type->dtor(pic, obj->u.data.data);
@@ -588,10 +543,9 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 
   case PIC_TYPE_PAIR:
-  case PIC_TYPE_CXT:
+  case PIC_TYPE_FRAME:
   case PIC_TYPE_PORT:
   case PIC_TYPE_ERROR:
-  case PIC_TYPE_ID:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_CP:
   case PIC_TYPE_FUNC:
@@ -809,7 +763,7 @@ gc_sweep_phase(pic_state *pic)
   int it;
   khash_t(weak) *h;
   khash_t(oblist) *s = &pic->oblist;
-  symbol *sym;
+  struct symbol *sym;
   struct object *obj;
   size_t total = 0, inuse = 0;
 

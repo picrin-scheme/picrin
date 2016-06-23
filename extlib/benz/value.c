@@ -236,15 +236,11 @@ pic_typename(pic_state *pic, int type)
     return "port";
   case PIC_TYPE_ERROR:
     return "error";
-  case PIC_TYPE_ID:
-    return "identifier";
-  case PIC_TYPE_CXT:
-    return "context";
+  case PIC_TYPE_FRAME:
+    return "frame";
   case PIC_TYPE_FUNC:
   case PIC_TYPE_IREP:
     return "procedure";
-  case PIC_TYPE_ENV:
-    return "environment";
   case PIC_TYPE_DATA:
     return "data";
   case PIC_TYPE_DICT:

@@ -12,10 +12,7 @@ extern "C" {
 #include "picrin/private/khash.h"
 #include "picrin/private/gc.h"
 
-typedef struct identifier symbol;
-
-KHASH_DECLARE(env, struct identifier *, symbol *)
-KHASH_DECLARE(dict, symbol *, pic_value)
+KHASH_DECLARE(dict, struct symbol *, pic_value)
 KHASH_DECLARE(weak, struct object *, pic_value)
 
 struct object;              /* defined in gc.c */
@@ -24,20 +21,9 @@ struct basic {
   OBJECT_HEADER
 };
 
-struct identifier {
+struct symbol {
   OBJECT_HEADER
-  union {
-    struct string *str;
-    struct identifier *id;
-  } u;
-  struct env *env;
-};
-
-struct env {
-  OBJECT_HEADER
-  khash_t(env) map;
-  struct env *up;
-  struct string *lib;
+  struct string *str;
 };
 
 struct pair {
@@ -80,12 +66,11 @@ struct data {
   void *data;
 };
 
-struct context {
+struct frame {
   OBJECT_HEADER
-  pic_value *regs;
   int regc;
-  struct context *up;
-  pic_value storage[1];
+  struct frame *link;
+  pic_value regs[1];
 };
 
 struct proc {
@@ -97,7 +82,7 @@ struct proc {
     } f;
     struct {
       struct irep *irep;
-      struct context *cxt;
+      struct frame *link;
     } i;
   } u;
   pic_value locals[1];
@@ -111,7 +96,7 @@ struct record {
 
 struct error {
   OBJECT_HEADER
-  symbol *type;
+  struct symbol *type;
   struct string *msg;
   pic_value irrs;
   struct string *stack;
@@ -132,8 +117,7 @@ struct checkpoint {
 
 struct object *pic_obj_ptr(pic_value);
 
-#define pic_id_ptr(pic, o) (assert(pic_id_p(pic, o)), (struct identifier *)pic_obj_ptr(o))
-#define pic_sym_ptr(pic, o) (assert(pic_sym_p(pic, o)), (symbol *)pic_obj_ptr(o))
+#define pic_sym_ptr(pic, o) (assert(pic_sym_p(pic, o)), (struct symbol *)pic_obj_ptr(o))
 #define pic_str_ptr(pic, o) (assert(pic_str_p(pic, o)), (struct string *)pic_obj_ptr(o))
 #define pic_blob_ptr(pic, o) (assert(pic_blob_p(pic, o)), (struct blob *)pic_obj_ptr(o))
 #define pic_pair_ptr(pic, o) (assert(pic_pair_p(pic, o)), (struct pair *)pic_obj_ptr(o))
@@ -142,13 +126,11 @@ struct object *pic_obj_ptr(pic_value);
 #define pic_weak_ptr(pic, o) (assert(pic_weak_p(pic, o)), (struct weak *)pic_obj_ptr(o))
 #define pic_data_ptr(pic, o) (assert(pic_data_p(pic, o, NULL)), (struct data *)pic_obj_ptr(o))
 #define pic_proc_ptr(pic, o) (assert(pic_proc_p(pic, o)), (struct proc *)pic_obj_ptr(o))
-#define pic_env_ptr(pic, o) (assert(pic_env_p(pic, o)), (struct env *)pic_obj_ptr(o))
 #define pic_port_ptr(pic, o) (assert(pic_port_p(pic, o)), (struct port *)pic_obj_ptr(o))
 #define pic_error_ptr(pic, o) (assert(pic_error_p(pic, o)), (struct error *)pic_obj_ptr(o))
 #define pic_rec_ptr(pic, o) (assert(pic_rec_p(pic, o)), (struct record *)pic_obj_ptr(o))
 
-#define pic_obj_p(pic,v) (pic_type(pic,v) > PIC_IVAL_END)
-#define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
+#define pic_obj_p(pic, v) (pic_type(pic,v) > PIC_IVAL_END)
 #define pic_error_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ERROR)
 #define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TYPE_RECORD)
 
@@ -162,8 +144,6 @@ struct object *pic_obj_alloc(pic_state *, size_t, int type);
 #define TYPENAME_error "error"
 #define TYPENAME_proc  "procedure"
 #define TYPENAME_str   "string"
-#define TYPENAME_id    "identifier"
-#define TYPENAME_env   "environment"
 #define TYPENAME_vec   "vector"
 
 #define TYPE_CHECK(pic, v, type) do {                           \
@@ -184,16 +164,9 @@ struct object *pic_obj_alloc(pic_state *, size_t, int type);
     if (tolen - at < e - s) pic_error(pic, "invalid range", 0);        \
   } while (0)
 
-pic_value pic_make_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
-pic_value pic_make_proc_irep(pic_state *, struct irep *, struct context *);
-pic_value pic_make_env(pic_state *, pic_value env);
+pic_value pic_make_proc_irep(pic_state *, struct irep *, struct frame *);
 pic_value pic_make_rec(pic_state *, pic_value type, pic_value datum);
-
-pic_value pic_add_identifier(pic_state *, pic_value id, pic_value env);
-void pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);
-pic_value pic_find_identifier(pic_state *, pic_value id, pic_value env);
-pic_value pic_id_name(pic_state *, pic_value id);
 
 struct rope *pic_rope_incref(struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);

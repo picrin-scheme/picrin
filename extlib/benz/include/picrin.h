@@ -123,7 +123,6 @@ void *pic_data(pic_state *, pic_value data);
 typedef struct {
   const char *type_name;
   void (*dtor)(pic_state *, void *);
-  void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
 } pic_data_type;
 
 pic_value pic_invalid_value(pic_state *);
@@ -160,15 +159,13 @@ enum {
   PIC_TYPE_BLOB    = 18,
   PIC_TYPE_PORT    = 20,
   PIC_TYPE_ERROR   = 21,
-  PIC_TYPE_ID      = 22,
-  PIC_TYPE_ENV     = 23,
   PIC_TYPE_DATA    = 24,
   PIC_TYPE_DICT    = 25,
   PIC_TYPE_WEAK    = 26,
   PIC_TYPE_RECORD  = 27,
   PIC_TYPE_SYMBOL  = 28,
   PIC_TYPE_PAIR    = 29,
-  PIC_TYPE_CXT     = 30,
+  PIC_TYPE_FRAME   = 30,
   PIC_TYPE_CP      = 31,
   PIC_TYPE_FUNC    = 32,
   PIC_TYPE_IREP    = 33
@@ -179,10 +176,9 @@ enum {
 #define pic_int_p(pic,v) (pic_type(pic,v) == PIC_TYPE_INT)
 #define pic_float_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FLOAT)
 #define pic_char_p(pic,v) (pic_type(pic,v) == PIC_TYPE_CHAR)
-#define pic_eof_p(pic, v) (pic_type(pic, v) == PIC_TYPE_EOF)
+#define pic_eof_p(pic,v) (pic_type(pic,v) == PIC_TYPE_EOF)
 #define pic_true_p(pic,v) (pic_type(pic,v) == PIC_TYPE_TRUE)
 #define pic_false_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FALSE)
-#define pic_id_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ID || pic_type(pic, v) == PIC_TYPE_SYMBOL)
 #define pic_str_p(pic,v) (pic_type(pic,v) == PIC_TYPE_STRING)
 #define pic_blob_p(pic,v) (pic_type(pic,v) == PIC_TYPE_BLOB)
 #define pic_proc_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FUNC || pic_type(pic, v) == PIC_TYPE_IREP)
@@ -191,7 +187,7 @@ enum {
 #define pic_vec_p(pic,v) (pic_type(pic,v) == PIC_TYPE_VECTOR)
 #define pic_dict_p(pic,v) (pic_type(pic,v) == PIC_TYPE_DICT)
 #define pic_weak_p(pic,v) (pic_type(pic,v) == PIC_TYPE_WEAK)
-#define pic_port_p(pic, v) (pic_type(pic, v) == PIC_TYPE_PORT)
+#define pic_port_p(pic,v) (pic_type(pic,v) == PIC_TYPE_PORT)
 #define pic_sym_p(pic,v) (pic_type(pic,v) == PIC_TYPE_SYMBOL)
 bool pic_data_p(pic_state *, pic_value, const pic_data_type *);
 

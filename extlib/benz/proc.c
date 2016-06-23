@@ -240,7 +240,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 }
 
 static pic_value
-vm_gref(pic_state *pic, pic_value uid)
+global_ref(pic_state *pic, pic_value uid)
 {
   pic_value val;
 
@@ -255,75 +255,13 @@ vm_gref(pic_state *pic, pic_value uid)
 }
 
 static void
-vm_gset(pic_state *pic, pic_value uid, pic_value value)
+global_set(pic_state *pic, pic_value uid, pic_value value)
 {
   if (! pic_weak_has(pic, pic->globals, uid)) {
     pic_error(pic, "undefined variable", 1, uid);
   }
   pic_weak_set(pic, pic->globals, uid, value);
 }
-
-static void
-vm_push_cxt(pic_state *pic)
-{
-  struct callinfo *ci = pic->ci;
-
-  ci->cxt = (struct context *)pic_obj_alloc(pic, offsetof(struct context, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_CXT);
-  ci->cxt->up = ci->up;
-  ci->cxt->regc = ci->regc;
-  ci->cxt->regs = ci->regs;
-}
-
-static void
-vm_tear_off(struct callinfo *ci)
-{
-  struct context *cxt;
-  int i;
-
-  assert(ci->cxt != NULL);
-
-  cxt = ci->cxt;
-
-  if (cxt->regs == cxt->storage) {
-    return;                     /* is torn off */
-  }
-  for (i = 0; i < cxt->regc; ++i) {
-    cxt->storage[i] = cxt->regs[i];
-  }
-  cxt->regs = cxt->storage;
-}
-
-void
-pic_vm_tear_off(pic_state *pic)
-{
-  struct callinfo *ci;
-
-  for (ci = pic->ci; ci > pic->cibase; ci--) {
-    if (ci->cxt != NULL) {
-      vm_tear_off(ci);
-    }
-  }
-}
-
-#if PIC_DIRECT_THREADED_VM
-# define VM_LOOP JUMP;
-# define CASE(x) L_##x:
-# define NEXT pic->ip++; JUMP;
-# define JUMP c = *pic->ip; goto *oplabels[c.insn];
-# define VM_LOOP_END
-#else
-# define VM_LOOP for (;;) { c = *pic->ip; switch (c.insn) {
-# define CASE(x) case x:
-# define NEXT pic->ip++; break
-# define JUMP break
-# define VM_LOOP_END } }
-#endif
-
-#define PUSH(v) (*pic->sp++ = (v))
-#define POP() (*--pic->sp)
-
-#define PUSHCI() (++pic->ci)
-#define POPCI() (pic->ci--)
 
 /* for arithmetic instructions */
 pic_value pic_add(pic_state *, pic_value, pic_value);
@@ -336,13 +274,32 @@ bool pic_le(pic_state *, pic_value, pic_value);
 bool pic_gt(pic_state *, pic_value, pic_value);
 bool pic_ge(pic_state *, pic_value, pic_value);
 
+#if PIC_DIRECT_THREADED_VM
+# define VM_LOOP JUMP;
+# define CASE(x) L_##x:
+# define NEXT pc++; JUMP;
+# define JUMP c = *pc; goto *oplabels[GETOP(c)];
+# define VM_LOOP_END
+#else
+# define VM_LOOP for (;;) { c = *pc; switch (GETOP(c)) {
+# define CASE(x) case x:
+# define NEXT pc++; break
+# define JUMP break
+# define VM_LOOP_END } }
+#endif
+
+#define REGA (fp->regs[GETA(c)])
+
 pic_value
 pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
-  struct code c;
   size_t ai = pic_enter(pic);
-  struct code boot[2];
-  int i;
+
+  /* virtual machine registers */
+  uint32_t *pc, c;
+  struct frame *fp;
+  pic_value *argp;
+  struct irep *irep;
 
 #if PIC_DIRECT_THREADED_VM
   static const void *oplabels[] = {
@@ -358,388 +315,117 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
   };
 #endif
 
-  PUSH(proc);
+  /* boot */
+  {
+    int i;
+    uint32_t boot_code = MKOP3(OP_CALL, 0, argc);
 
-  for (i = 0; i < argc; ++i) {
-    PUSH(argv[i]);
+    pc = &boot_code;
+    fp = pic_make_frame(pic, argc + 1, NULL);
+    argp = NULL;
+    irep = NULL;
+
+    fp->regs[0] = proc;
+    for (i = 0; i < argc; ++i) {
+      fp->regs[i + 1] = argv[i];
+    }
   }
 
-  /* boot! */
-  boot[0].insn = OP_CALL;
-  boot[0].a = argc + 1;
-  boot[1].insn = OP_STOP;
-  pic->ip = boot;
-
   VM_LOOP {
-    CASE(OP_NOP) {
+    CASE(OP_CONST) {
+      REGA = irep->pool[GETBx(c)];
       NEXT;
     }
-    CASE(OP_POP) {
-      (void)(POP());
+    CASE(OP_AREF) {
+      REGA = argp[GETB(c)];
       NEXT;
     }
-    CASE(OP_PUSHUNDEF) {
-      PUSH(pic_undef_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHNIL) {
-      PUSH(pic_nil_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHTRUE) {
-      PUSH(pic_true_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHFALSE) {
-      PUSH(pic_false_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(pic, pic->ci->irep->ints[c.a]));
-      NEXT;
-    }
-    CASE(OP_PUSHFLOAT) {
-      PUSH(pic_float_value(pic, pic->ci->irep->nums[c.a]));
-      NEXT;
-    }
-    CASE(OP_PUSHCHAR) {
-      PUSH(pic_char_value(pic, pic->ci->irep->ints[c.a]));
-      NEXT;
-    }
-    CASE(OP_PUSHEOF) {
-      PUSH(pic_eof_object(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHCONST) {
-      PUSH(pic_obj_value(pic->ci->irep->pool[c.a]));
-      NEXT;
-    }
-    CASE(OP_GREF) {
-      PUSH(vm_gref(pic, pic_obj_value(pic->ci->irep->pool[c.a])));
-      NEXT;
-    }
-    CASE(OP_GSET) {
-      vm_gset(pic, pic_obj_value(pic->ci->irep->pool[c.a]), POP());
-      PUSH(pic_undef_value(pic));
+    CASE(OP_ASET) {
+      argp[GETB(c)] = REGA;
       NEXT;
     }
     CASE(OP_LREF) {
-      struct callinfo *ci = pic->ci;
-      struct irep *irep = ci->irep;
+      int depth = GETC(c);
+      struct frame *f = fp;
 
-      if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.a >= irep->argc + irep->localc) {
-          PUSH(ci->cxt->regs[c.a - (ci->regs - ci->fp)]);
-          NEXT;
-        }
+      while (depth--) {
+        f = f->link;
       }
-      PUSH(pic->ci->fp[c.a]);
+      REGA = f->regs[GETB(c)];
       NEXT;
     }
     CASE(OP_LSET) {
-      struct callinfo *ci = pic->ci;
-      struct irep *irep = ci->irep;
+      int depth = GETC(c);
+      struct frame *f = fp;
 
-      if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.a >= irep->argc + irep->localc) {
-          ci->cxt->regs[c.a - (ci->regs - ci->fp)] = POP();
-          PUSH(pic_undef_value(pic));
-          NEXT;
-        }
+      while (depth--) {
+        f = f->link;
       }
-      pic->ci->fp[c.a] = POP();
-      PUSH(pic_undef_value(pic));
+      f->regs[GETB(c)] = REGA;
       NEXT;
     }
-    CASE(OP_CREF) {
-      int depth = c.a;
-      struct context *cxt;
-
-      cxt = pic->ci->up;
-      while (--depth) {
-	cxt = cxt->up;
-      }
-      PUSH(cxt->regs[c.b]);
+    CASE(OP_GREF) {
+      REGA = global_ref(pic, irep->pool[GETBx(c)]);
       NEXT;
     }
-    CASE(OP_CSET) {
-      int depth = c.a;
-      struct context *cxt;
-
-      cxt = pic->ci->up;
-      while (--depth) {
-	cxt = cxt->up;
-      }
-      cxt->regs[c.b] = POP();
-      PUSH(pic_undef_value(pic));
-      NEXT;
-    }
-    CASE(OP_JMP) {
-      pic->ip += c.a;
-      JUMP;
-    }
-    CASE(OP_JMPIF) {
-      pic_value v;
-
-      v = POP();
-      if (! pic_false_p(pic, v)) {
-	pic->ip += c.a;
-	JUMP;
-      }
-      NEXT;
-    }
-    CASE(OP_CALL) {
-      pic_value x, v;
-      struct callinfo *ci;
-      struct proc *proc;
-
-      if (c.a == -1) {
-        pic->sp += pic->ci[1].retc - 1;
-        c.a = pic->ci[1].retc + 1;
-      }
-
-    L_CALL:
-      x = pic->sp[-c.a];
-      if (! pic_proc_p(pic, x)) {
-	pic_error(pic, "invalid application", 1, x);
-      }
-      proc = pic_proc_ptr(pic, x);
-
-      if (pic->sp >= pic->stend) {
-        pic_panic(pic, "VM stack overflow");
-      }
-
-      ci = PUSHCI();
-      ci->argc = c.a;
-      ci->retc = 1;
-      ci->ip = pic->ip;
-      ci->fp = pic->sp - c.a;
-      ci->irep = NULL;
-      ci->cxt = NULL;
-      if (proc->tt == PIC_TYPE_FUNC) {
-
-        /* invoke! */
-        v = proc->u.f.func(pic);
-        pic->sp[0] = v;
-        pic->sp += pic->ci->retc;
-
-        pic_leave(pic, ai);
-        goto L_RET;
-      }
-      else {
-        struct irep *irep = proc->u.i.irep;
-	int i;
-	pic_value rest;
-
-        ci->irep = irep;
-	if (ci->argc != irep->argc) {
-	  if (! (irep->varg && ci->argc >= irep->argc)) {
-            arg_error(pic, ci->argc - 1, irep->varg, irep->argc - 1);
-	  }
-	}
-	/* prepare rest args */
-	if (irep->varg) {
-	  rest = pic_nil_value(pic);
-	  for (i = 0; i < ci->argc - irep->argc; ++i) {
-	    pic_protect(pic, v = POP());
-	    rest = pic_cons(pic, v, rest);
-	  }
-	  PUSH(rest);
-	}
-	/* prepare local variable area */
-	if (irep->localc > 0) {
-	  int l = irep->localc;
-	  if (irep->varg) {
-	    --l;
-	  }
-	  for (i = 0; i < l; ++i) {
-	    PUSH(pic_undef_value(pic));
-	  }
-	}
-
-	/* prepare cxt */
-        ci->up = proc->u.i.cxt;
-        ci->regc = irep->capturec;
-        ci->regs = ci->fp + irep->argc + irep->localc;
-
-	pic->ip = irep->code;
-	pic_leave(pic, ai);
-	JUMP;
-      }
-    }
-    CASE(OP_TAILCALL) {
-      int i, argc;
-      pic_value *argv;
-      struct callinfo *ci;
-
-      if (pic->ci->cxt != NULL) {
-        vm_tear_off(pic->ci);
-      }
-
-      if (c.a == -1) {
-        pic->sp += pic->ci[1].retc - 1;
-        c.a = pic->ci[1].retc + 1;
-      }
-
-      argc = c.a;
-      argv = pic->sp - argc;
-      for (i = 0; i < argc; ++i) {
-	pic->ci->fp[i] = argv[i];
-      }
-      ci = POPCI();
-      pic->sp = ci->fp + argc;
-      pic->ip = ci->ip;
-
-      /* c is not changed */
-      goto L_CALL;
-    }
-    CASE(OP_RET) {
-      int i, retc;
-      pic_value *retv;
-      struct callinfo *ci;
-
-      if (pic->ci->cxt != NULL) {
-        vm_tear_off(pic->ci);
-      }
-
-      assert(pic->ci->retc == 1);
-
-    L_RET:
-      retc = pic->ci->retc;
-      retv = pic->sp - retc;
-      if (retc == 0) {
-        pic->ci->fp[0] = retv[0]; /* copy at least once */
-      }
-      for (i = 0; i < retc; ++i) {
-        pic->ci->fp[i] = retv[i];
-      }
-      ci = POPCI();
-      pic->sp = ci->fp + 1;     /* advance only one! */
-      pic->ip = ci->ip;
-
+    CASE(OP_GSET) {
+      global_set(pic, irep->pool[GETBx(c)], REGA);
       NEXT;
     }
     CASE(OP_LAMBDA) {
-      if (pic->ci->cxt == NULL) {
-        vm_push_cxt(pic);
+      REGA = pic_make_proc_irep(pic, irep->irep[GETBx(c)], fp);
+      pic_leave(pic, ai);
+      NEXT;
+    }
+    CASE(OP_IF) {
+      if (! pic_false_p(pic, REGA)) {
+        c = MKOP3(OP_CALL, GETB(c), 0);
+      } else {
+        c = MKOP3(OP_CALL, GETC(c), 0);
+      }
+      goto L_CALL;
+    }
+    CASE(OP_CALL) {
+      struct proc *proc;
+
+      if (! pic_proc_p(pic, REGA)) {
+	pic_error(pic, "invalid application", 1, REGA);
       }
 
-      PUSH(pic_make_proc_irep(pic, pic->ci->irep->irep[c.a], pic->ci->cxt));
-      pic_leave(pic, ai);
-      NEXT;
-    }
+    L_CALL:
+      proc = pic_proc_ptr(pic, REGA);
 
-    CASE(OP_CONS) {
-      pic_value a, b;
-      pic_protect(pic, b = POP());
-      pic_protect(pic, a = POP());
-      PUSH(pic_cons(pic, a, b));
-      pic_leave(pic, ai);
-      NEXT;
-    }
-    CASE(OP_CAR) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_car(pic, p));
-      NEXT;
-    }
-    CASE(OP_CDR) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_cdr(pic, p));
-      NEXT;
-    }
-    CASE(OP_NILP) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_bool_value(pic, pic_nil_p(pic, p)));
-      NEXT;
-    }
-    CASE(OP_SYMBOLP) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_bool_value(pic, pic_sym_p(pic, p)));
-      NEXT;
-    }
-    CASE(OP_PAIRP) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_bool_value(pic, pic_pair_p(pic, p)));
-      NEXT;
-    }
-    CASE(OP_NOT) {
-      pic_value v;
-      v = pic_false_p(pic, POP()) ? pic_true_value(pic) : pic_false_value(pic);
-      PUSH(v);
-      NEXT;
-    }
+      if (proc->tt == PIC_TYPE_FUNC) {
+        REGA = proc->u.f.func(pic); /* invoke! */
+        pic_leave(pic, ai);
 
-    CASE(OP_ADD) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_add(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_SUB) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_sub(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_MUL) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_mul(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_DIV) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_div(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_EQ) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_eq(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_LE) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_le(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_LT) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_lt(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_GE) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_ge(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_GT) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_gt(pic, a, b)));
-      NEXT;
-    }
+        TODO;
+      }
+      else {
+	int n;
 
-    CASE(OP_STOP) {
-      return pic_protect(pic, POP());
+        irep = proc->u.i.irep;
+        argp = &REGA;
+	pc = irep->code;
+        fp = pic_make_frame(pic, irep->localc, proc->u.i.link);
+
+        n = GETB(c);
+	if (n != irep->argc) {
+	  if (! (irep->varg && n >= irep->argc)) {
+            arg_error(pic, n, irep->varg, irep->argc);
+	  }
+	}
+	if (irep->varg) {
+          fp->regs[0] = pic_make_list(pic, n - irep->argc, argp + irep->argc);
+	}
+
+	pic_leave(pic, ai);
+        pic_protect(pic, pic_obj_value(fp));
+        JUMP;
+      }
+    }
+    CASE(OP_HALT) {
+      return pic_protect(pic, REGA);
     }
   } VM_LOOP_END;
 }

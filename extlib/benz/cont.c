@@ -21,7 +21,7 @@ struct cont {
   struct cont *prev;
 };
 
-static const pic_data_type cont_type = { "cont", NULL, NULL };
+static const pic_data_type cont_type = { "cont", NULL };
 
 void
 pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
@@ -273,7 +273,6 @@ pic_init_cont(pic_state *pic)
 {
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
-  pic_defun(pic, "escape", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
 
   pic_defun(pic, "values", pic_cont_values);

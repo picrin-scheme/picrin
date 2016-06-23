@@ -10,53 +10,30 @@ extern "C" {
 #endif
 
 enum {
-  OP_NOP,
-  OP_POP,
-  OP_PUSHUNDEF,
-  OP_PUSHNIL,
-  OP_PUSHTRUE,
-  OP_PUSHFALSE,
-  OP_PUSHINT,
-  OP_PUSHFLOAT,
-  OP_PUSHCHAR,
-  OP_PUSHEOF,
-  OP_PUSHCONST,
-  OP_GREF,
-  OP_GSET,
-  OP_LREF,
-  OP_LSET,
-  OP_CREF,
-  OP_CSET,
-  OP_JMP,
-  OP_JMPIF,
-  OP_NOT,
-  OP_CALL,
-  OP_TAILCALL,
-  OP_RET,
-  OP_LAMBDA,
-  OP_CONS,
-  OP_CAR,
-  OP_CDR,
-  OP_NILP,
-  OP_SYMBOLP,
-  OP_PAIRP,
-  OP_ADD,
-  OP_SUB,
-  OP_MUL,
-  OP_DIV,
-  OP_EQ,
-  OP_LT,
-  OP_LE,
-  OP_GT,
-  OP_GE,
-  OP_STOP
+  OP_CONST,                     /* CONST   i, const  */
+  OP_AREF,                      /* AREF    i, n      */
+  OP_ASET,                      /* ASET    i, n      */
+  OP_LREF,                      /* LREF    i, n, d   */
+  OP_LSET,                      /* LSET    i, n, d   */
+  OP_GREF,                      /* GREF    i, symb   */
+  OP_GSET,                      /* GSET    i, symb   */
+  OP_LAMBDA,                    /* LAMBDA  i, irep   */
+  OP_IF,                        /* IF      i, k1, k2 */
+  OP_CALL,                      /* CALL    i, n      */
+  OP_HALT                       /* HALT    i         */
 };
 
-struct code {
-  int insn;
-  int a;
-  int b;
-};
+#define MKOP1(OP,A,B,C) 0
+#define MKOP2(OP,A,Bx)
+#define MKOP3(OP,A,B) MKOP1(OP,A,B,0)
+
+#define GETOP(OP) (OP & 0xff)
+#define GETA(OP)  (OP >> 24)
+#define GETB(OP)  ((OP >> 16) & 0xff)
+#define GETBx(OP) ((OP >> 8) & 0xffff)
+#define GETC(OP)  ((OP >> 8) & 0xff)
+
+typedef unsigned char uchar;
 
 struct list_head {
   struct list_head *prev, *next;
@@ -64,15 +41,12 @@ struct list_head {
 
 struct irep {
   struct list_head list;
-  unsigned refc;
-  int argc, localc, capturec;
-  bool varg;
-  struct code *code;
+  int refc;
+  uchar argc, localc, varg;
+  uint32_t *code;
   struct irep **irep;
-  int *ints;
-  double *nums;
-  struct object **pool;
-  size_t ncode, nirep, nints, nnums, npool;
+  pic_value *pool;
+  size_t ncode, nirep, npool;
 };
 
 void pic_irep_incref(pic_state *, struct irep *);

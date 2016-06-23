@@ -20,18 +20,7 @@ struct lib {
   struct dict *exports;
 };
 
-struct callinfo {
-  int argc, retc;
-  const struct code *ip;
-  pic_value *fp;
-  struct irep *irep;
-  struct context *cxt;
-  int regc;
-  pic_value *regs;
-  struct context *up;
-};
-
-KHASH_DECLARE(oblist, struct string *, struct identifier *)
+KHASH_DECLARE(oblist, struct string *, struct symbol *)
 KHASH_DECLARE(ltable, const char *, struct lib)
 
 struct pic_state {
@@ -41,22 +30,12 @@ struct pic_state {
   struct checkpoint *cp;
   struct cont *cc;
 
-  pic_value *sp;
-  pic_value *stbase, *stend;
-
-  struct callinfo *ci;
-  struct callinfo *cibase, *ciend;
-
-  const struct code *ip;
-
   const char *lib;
 
   pic_value features;
 
   khash_t(oblist) oblist;       /* string to symbol */
-  int ucnt;
   pic_value globals;            /* weak */
-  pic_value macros;             /* weak */
   khash_t(ltable) ltable;
   struct list_head ireps;
 

@@ -81,13 +81,6 @@ pic_add_feature(pic_state *pic, const char *feature)
   pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
 }
 
-#define import_builtin_syntax(name) do {                \
-    pic_value nick, real;                               \
-    nick = pic_intern_lit(pic, "builtin:" name);        \
-    real = pic_intern_lit(pic, name);                   \
-    pic_put_identifier(pic, nick, real, env);           \
-  } while (0)
-
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -122,14 +115,6 @@ pic_init_core(pic_state *pic)
   pic_deflibrary(pic, "picrin.base");
 
   env = pic_library_environment(pic, pic->lib);
-
-  import_builtin_syntax("define");
-  import_builtin_syntax("set!");
-  import_builtin_syntax("quote");
-  import_builtin_syntax("lambda");
-  import_builtin_syntax("if");
-  import_builtin_syntax("begin");
-  import_builtin_syntax("define-macro");
 
   pic_init_features(pic); DONE;
   pic_init_bool(pic); DONE;
@@ -185,22 +170,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* root block */
   pic->cp = NULL;
 
-  /* prepare VM stack */
-  pic->stbase = pic->sp = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_value));
-  pic->stend = pic->stbase + PIC_STACK_SIZE;
-
-  if (! pic->sp) {
-    goto EXIT_SP;
-  }
-
-  /* callinfo */
-  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(struct callinfo));
-  pic->ciend = pic->cibase + PIC_STACK_SIZE;
-
-  if (! pic->ci) {
-    goto EXIT_CI;
-  }
-
   /* GC arena */
   pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct object *));
   pic->arena_size = PIC_ARENA_SIZE;
@@ -216,14 +185,8 @@ pic_open(pic_allocf allocf, void *userdata)
   /* symbol table */
   kh_init(oblist, &pic->oblist);
 
-  /* unique symbol count */
-  pic->ucnt = 0;
-
   /* global variables */
   pic->globals = pic_invalid_value(pic);
-
-  /* macros */
-  pic->macros = pic_invalid_value(pic);
 
   /* features */
   pic->features = pic_nil_value(pic);
@@ -245,7 +208,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* root tables */
   pic->globals = pic_make_weak(pic);
-  pic->macros = pic_make_weak(pic);
 
   /* root block */
   pic->cp = (struct checkpoint *)pic_obj_alloc(pic, sizeof(struct checkpoint), PIC_TYPE_CP);
@@ -268,10 +230,6 @@ pic_open(pic_allocf allocf, void *userdata)
   return pic;
 
  EXIT_ARENA:
-  allocf(userdata, pic->ci, 0);
- EXIT_CI:
-  allocf(userdata, pic->sp, 0);
- EXIT_SP:
   allocf(userdata, pic, 0);
  EXIT_PIC:
   return NULL;
@@ -283,12 +241,9 @@ pic_close(pic_state *pic)
   pic_allocf allocf = pic->allocf;
 
   /* clear out root objects */
-  pic->sp = pic->stbase;
-  pic->ci = pic->cibase;
   pic->arena_idx = 0;
   pic->err = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
-  pic->macros = pic_invalid_value(pic);
   pic->features = pic_nil_value(pic);
 
   /* free all libraries */
@@ -302,10 +257,6 @@ pic_close(pic_state *pic)
 
   /* free heaps */
   pic_heap_close(pic, pic->heap);
-
-  /* free runtime context */
-  allocf(pic->userdata, pic->stbase, 0);
-  allocf(pic->userdata, pic->cibase, 0);
 
   /* free global stacks */
   kh_destroy(oblist, &pic->oblist);

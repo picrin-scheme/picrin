@@ -45,7 +45,7 @@ socket_dtor(pic_state *pic, void *data)
   pic_free(pic, data);
 }
 
-static const pic_data_type socket_type = { "socket", socket_dtor, NULL };
+static const pic_data_type socket_type = { "socket", socket_dtor };
 
 static pic_value
 pic_socket_socket_p(pic_state *pic)
