@@ -245,7 +245,7 @@ pic_fgets(pic_state *pic, char *s, int size, pic_value port)
   int c = 0;
   char *buf;
 
-  pic_fflush(pic, pic_false_value(pic));
+  pic_fflush(pic, port);
 
   if (size == 0) {
     return NULL;
