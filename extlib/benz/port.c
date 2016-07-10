@@ -35,6 +35,8 @@ pic_fclose(pic_state *pic, pic_value port)
 {
   struct file *fp = &pic_port_ptr(pic, port)->file;
 
+  if (fp->flag == 0)
+    return 0;
   pic_fflush(pic, port);
   fp->flag = 0;
   if (fp->base != fp->buf)

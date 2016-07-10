@@ -587,9 +587,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_PORT: {
-    if (obj->u.port.file.flag != 0) {
-      pic_fflush(pic, pic_obj_value(obj)); /* FIXME */
-    }
+    pic_fclose(pic, pic_obj_value(obj)); /* FIXME */
     break;
   }
 
