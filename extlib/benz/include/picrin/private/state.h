@@ -10,7 +10,6 @@ extern "C" {
 #endif
 
 #include "picrin/private/khash.h"
-#include "picrin/private/file.h"
 #include "picrin/private/vm.h"
 #include "picrin/private/gc.h"
 
@@ -59,8 +58,6 @@ struct pic_state {
   pic_value macros;             /* weak */
   khash_t(ltable) ltable;
   struct list_head ireps;
-
-  struct file files[PIC_OPEN_MAX];
 
   bool gc_enable;
   struct heap *heap;
