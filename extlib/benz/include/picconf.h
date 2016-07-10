@@ -18,5 +18,4 @@
 /* #define PIC_ABORT(pic) abort() */
 
 /** I/O configuration */
-/* #define PIC_OPEN_MAX 1024 */
 /* #define PIC_BUFSIZ 1024 */

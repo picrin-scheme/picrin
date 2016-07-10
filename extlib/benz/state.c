@@ -240,9 +240,6 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->panicf = NULL;
   pic->err = pic_invalid_value(pic);
 
-  /* file pool */
-  memset(pic->files, 0, sizeof pic->files);
-
   /* root tables */
   pic->globals = pic_make_weak(pic);
   pic->macros = pic_make_weak(pic);
@@ -296,9 +293,6 @@ pic_close(pic_state *pic)
 
   /* free all heap objects */
   pic_gc(pic);
-
-  /* flush all files */
-  pic_fflush(pic, pic_false_value(pic));
 
   /* free heaps */
   pic_heap_close(pic, pic->heap);

@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#include "picrin/private/file.h"
 #include "picrin/private/khash.h"
 #include "picrin/private/gc.h"
 
@@ -119,7 +120,7 @@ struct error {
 
 struct port {
   OBJECT_HEADER
-  struct file *file;
+  struct file file;
 };
 
 struct checkpoint {
