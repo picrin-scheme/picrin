@@ -56,7 +56,7 @@ typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
 pic_state *pic_open(pic_allocf f, void *userdata);
 void pic_close(pic_state *);
 
-int pic_get_args(pic_state *, const char *fmt, ...);
+void pic_add_feature(pic_state *, const char *feature);
 
 void *pic_malloc(pic_state *, size_t);
 void *pic_realloc(pic_state *, void *, size_t);
@@ -71,11 +71,10 @@ void pic_leave(pic_state *, size_t);
 pic_value pic_protect(pic_state *, pic_value);
 void pic_gc(pic_state *);
 
-void pic_add_feature(pic_state *, const char *feature);
+int pic_get_args(pic_state *, const char *fmt, ...);
 
 void pic_defun(pic_state *, const char *name, pic_func_t f);
 void pic_defvar(pic_state *, const char *name, pic_value v, pic_value conv);
-
 void pic_define(pic_state *, const char *lib, const char *name, pic_value v);
 pic_value pic_ref(pic_state *, const char *lib, const char *name);
 void pic_set(pic_state *, const char *lib, const char *name, pic_value v);

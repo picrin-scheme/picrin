@@ -240,7 +240,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 }
 
 static pic_value
-vm_gref(pic_state *pic, pic_value uid)
+global_ref(pic_state *pic, pic_value uid)
 {
   pic_value val;
 
@@ -255,7 +255,7 @@ vm_gref(pic_state *pic, pic_value uid)
 }
 
 static void
-vm_gset(pic_state *pic, pic_value uid, pic_value value)
+global_set(pic_state *pic, pic_value uid, pic_value value)
 {
   if (! pic_weak_has(pic, pic->globals, uid)) {
     pic_error(pic, "undefined variable", 1, uid);
@@ -415,11 +415,11 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(vm_gref(pic, pic_obj_value(pic->ci->irep->pool[c.a])));
+      PUSH(global_ref(pic, pic_obj_value(pic->ci->irep->pool[c.a])));
       NEXT;
     }
     CASE(OP_GSET) {
-      vm_gset(pic, pic_obj_value(pic->ci->irep->pool[c.a]), POP());
+      global_set(pic, pic_obj_value(pic->ci->irep->pool[c.a]), POP());
       PUSH(pic_undef_value(pic));
       NEXT;
     }
@@ -858,7 +858,7 @@ pic_ref(pic_state *pic, const char *lib, const char *name)
 
   env = pic_library_environment(pic, lib);
 
-  return vm_gref(pic, pic_find_identifier(pic, sym, env));
+  return global_ref(pic, pic_find_identifier(pic, sym, env));
 }
 
 void
@@ -870,7 +870,7 @@ pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
 
   env = pic_library_environment(pic, lib);
 
-  vm_gset(pic, pic_find_identifier(pic, sym, env), val);
+  global_set(pic, pic_find_identifier(pic, sym, env), val);
 }
 
 pic_value
