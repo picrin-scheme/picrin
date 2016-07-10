@@ -317,9 +317,6 @@ file_read(pic_state *PIC_UNUSED(pic), void *cookie, char *ptr, int size) {
   FILE *file = cookie;
   int r;
 
-  if (! cookie)
-    return 0;
-
   size = 1;                     /* override size */
 
   r = (int)fread(ptr, 1, (size_t)size, file);
@@ -337,9 +334,6 @@ file_write(pic_state *PIC_UNUSED(pic), void *cookie, const char *ptr, int size) 
   FILE *file = cookie;
   int r;
 
-  if (! cookie)
-    return size;
-
   r = (int)fwrite(ptr, 1, (size_t)size, file);
   if (r < size) {
     return -1;
@@ -350,9 +344,6 @@ file_write(pic_state *PIC_UNUSED(pic), void *cookie, const char *ptr, int size) 
 
 static long
 file_seek(pic_state *PIC_UNUSED(pic), void *cookie, long pos, int whence) {
-  if (! cookie)
-    return 0;
-
   switch (whence) {
   case PIC_SEEK_CUR:
     whence = SEEK_CUR;
