@@ -675,26 +675,6 @@ pic_port_peek_u8(pic_state *pic)
 }
 
 static pic_value
-pic_port_read_bytevector(pic_state *pic)
-{
-  pic_value port = pic_stdin(pic);
-  unsigned char *buf;
-  int k, i;
-
-  pic_get_args(pic, "i|p", &k, &port);
-
-  assert_port_profile(port, FILE_READ, "read-bytevector");
-
-  buf = pic_blob(pic, pic_blob_value(pic, NULL, k), NULL);
-
-  i = pic_fread(pic, buf, sizeof(char), k, port);
-  if (i == 0) {
-    return pic_eof_object(pic);
-  }
-  return pic_blob_value(pic, buf, i);
-}
-
-static pic_value
 pic_port_read_bytevector_ip(pic_state *pic)
 {
   pic_value port;
@@ -817,7 +797,6 @@ pic_init_port(pic_state *pic)
   /* input */
   pic_defun(pic, "read-u8", pic_port_read_u8);
   pic_defun(pic, "peek-u8", pic_port_peek_u8);
-  pic_defun(pic, "read-bytevector", pic_port_read_bytevector);
   pic_defun(pic, "read-bytevector!", pic_port_read_bytevector_ip);
 
   /* output */

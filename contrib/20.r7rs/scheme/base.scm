@@ -810,6 +810,14 @@
   (define (u8-ready? . opt)
     #t)
 
+  (define (read-bytevector k . opt)
+    (let ((port (if (null? opt) (current-input-port) (car opt))))
+      (let ((buf (make-bytevector k)))
+        (let ((n (read-bytevector! buf port 0 k)))
+          (if (eof-object? n)
+              (eof-object)
+              (bytevector-copy buf 0 n))))))
+
   (define (char-ready? . opt)
     #t)
 
