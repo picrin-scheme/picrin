@@ -693,19 +693,6 @@ pic_port_peek_u8(pic_state *pic)
 }
 
 static pic_value
-pic_port_u8_ready_p(pic_state *pic)
-{
-  pic_value port = pic_stdin(pic);
-
-  pic_get_args(pic, "|p", &port);
-
-  assert_port_profile(port, FILE_READ, "u8-ready?");
-
-  return pic_true_value(pic);   /* FIXME: always returns #t */
-}
-
-
-static pic_value
 pic_port_read_bytevector(pic_state *pic)
 {
   pic_value port = pic_stdin(pic);
@@ -848,7 +835,6 @@ pic_init_port(pic_state *pic)
   /* input */
   pic_defun(pic, "read-u8", pic_port_read_u8);
   pic_defun(pic, "peek-u8", pic_port_peek_u8);
-  pic_defun(pic, "u8-ready?", pic_port_u8_ready_p);
   pic_defun(pic, "read-bytevector", pic_port_read_bytevector);
   pic_defun(pic, "read-bytevector!", pic_port_read_bytevector_ip);
 

@@ -807,8 +807,11 @@
           b
           (integer->char b))))
 
+  (define (u8-ready? . opt)
+    #t)
+
   (define (char-ready? . opt)
-    (apply u8-ready? opt))
+    #t)
 
   (define (newline . opt)
     (apply write-u8 (char->integer #\newline) opt))
