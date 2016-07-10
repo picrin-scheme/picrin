@@ -586,10 +586,13 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_irep_decref(pic, obj->u.proc.u.i.irep);
     break;
   }
+  case PIC_TYPE_PORT: {
+    pic_fflush(pic, pic_obj_value(obj)); /* FIXME */
+    break;
+  }
 
   case PIC_TYPE_PAIR:
   case PIC_TYPE_CXT:
-  case PIC_TYPE_PORT:
   case PIC_TYPE_ERROR:
   case PIC_TYPE_ID:
   case PIC_TYPE_RECORD:

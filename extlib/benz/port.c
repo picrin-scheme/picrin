@@ -166,37 +166,19 @@ flushbuf(pic_state *pic, int x, struct file *fp)
   }
 }
 
-static int
-fflush_(pic_state *pic, struct file *fp)
-{
-  int retval;
-  int i;
-
-  retval = 0;
-  if (fp == NULL) {
-    /* flush all output streams */
-    for (i = 0; i < PIC_OPEN_MAX; i++) {
-      if ((pic->files[i].flag & FILE_WRITE) && (fflush_(pic, &pic->files[i]) == -1))
-        retval = -1;
-    }
-  } else {
-    if ((fp->flag & FILE_WRITE) == 0)
-      return -1;
-    flushbuf(pic, EOF, fp);
-    if (fp->flag & FILE_ERR)
-      retval = -1;
-  }
-  return retval;
-}
-
 int
 pic_fflush(pic_state *pic, pic_value port)
 {
-  if (! pic_port_p(pic, port)) {
-    return fflush_(pic, NULL);
-  } else {
-    return fflush_(pic, pic_port_ptr(pic, port)->file);
-  }
+  struct file *fp = pic_port_ptr(pic, port)->file;
+  int retval;
+
+  retval = 0;
+  if ((fp->flag & FILE_WRITE) == 0)
+    return -1;
+  flushbuf(pic, EOF, fp);
+  if (fp->flag & FILE_ERR)
+    retval = -1;
+  return retval;
 }
 
 #define getc_(pic, p)                           \
@@ -675,9 +657,11 @@ pic_port_get_output_bytevector(pic_state *pic)
 }
 
 static pic_value
-pic_port_read_u8(pic_state *pic){
+pic_port_read_u8(pic_state *pic)
+{
   pic_value port = pic_stdin(pic);
   int c;
+
   pic_get_args(pic, "|p", &port);
 
   assert_port_profile(port, FILE_READ, "read-u8");
