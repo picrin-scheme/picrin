@@ -1,6 +1,16 @@
 #include "picrin.h"
 #include "picrin/extra.h"
 #include <math.h>
+void chk_vc(pic_value v) {
+  int i;
+  int len = pic_vec_len(0, v);
+  printf("[debug] len=%d ", len);
+  for (i = 0; i < len; ++i) {
+    printf("%8x ", pic_int(0, pic_vec_ref(0, v, i)));
+  }
+  printf("\n");
+}
+
 
 /**
  * Big integer is represented as a vector of digits.
@@ -134,14 +144,12 @@ bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
     bigint_digit d2 = i >= pic_vec_len(pic, v2) ? 0 : pic_int(pic, pic_vec_ref(pic, v2, i));
     carry += d1;
     carry += d2;
-    if (i == len - 1) {
-      pic_vec_set(pic, ret, i, pic_int_value(pic, carry));
-    } else {
-      pic_vec_set(pic, ret, i, pic_int_value(pic, carry & bigint_digit_max));
-      carry >>= bigint_shift;
-    }
+    pic_vec_set(pic, ret, i, pic_int_value(pic, carry & bigint_digit_max));
+    carry >>= bigint_shift;
   }
 
+  assert (carry == 0);
+  
   return bigint_vec_compact(pic, ret);
 }
 
@@ -169,6 +177,12 @@ bigint_vec_sub(pic_state *pic, const pic_value v1, const pic_value v2)
     carry >>= bigint_shift;
   }
 
+  if (carry) {
+    chk_vc(v1);
+    chk_vc(v2);
+    printf("carry=%d\n", carry);
+  }
+  assert (carry == 0);
   return bigint_vec_compact(pic, ret);
 }
 
@@ -189,7 +203,7 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
 
   len1 = pic_vec_len(pic, v1);
   len2 = pic_vec_len(pic, v2);
-  tmp = (bigint_digit *) pic_malloc(pic, (len1 + len2) * sizeof(bigint_digit));
+  tmp = (bigint_digit *) malloc((len1 + len2) * sizeof(bigint_digit));
   carry = 0;
 
   for (i = 0; i < len1 + len2; ++i) {
@@ -214,7 +228,7 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
     pic_vec_set(pic, ret, i, pic_int_value(pic, tmp[i]));
   }
 
-  pic_free(pic, tmp);
+  free(tmp);
   return bigint_vec_compact(pic, ret);
 }
 
@@ -232,12 +246,15 @@ bigint_vec_div(pic_state *pic, const pic_value v1, const pic_value v2,
   one = pic_make_vec(pic, 1, NULL);
   pic_vec_set(pic, one, 0, pic_int_value(pic, 1));
 
-  for (i = bigint_shift * (pic_vec_len(pic, v1) - pic_vec_len(pic, v2) + 1) - 1; i >= 0; --i) {
+  int init = bigint_shift * (pic_vec_len(pic, v1) - pic_vec_len(pic, v2) + 1);
+  assert (bigint_vec_lt(pic, remv, bigint_vec_asl(pic, v2, init)));
+  for (i = init - 1; i >= 0; --i) {
     pic_value sh = bigint_vec_asl(pic, v2, i);
     if (! bigint_vec_lt(pic, remv, sh)) { // 2^i * v2 <= rem
       remv = bigint_vec_sub(pic, remv, sh);
       quov = bigint_vec_add(pic, quov, bigint_vec_asl(pic, one, i));
     }
+    assert (bigint_vec_lt(pic, remv, sh));
   }
 
   *quo = quov;
@@ -252,6 +269,7 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
   bigint_2digits carry;
   int i, len;
 
+  assert (sh >= 0);
   bitsh = sh % bigint_shift;
   bytesh = sh / bigint_shift;
   carry = 0;
@@ -262,7 +280,7 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
     pic_vec_set(pic, ret, i, pic_int_value(pic, 0));
   }
   for (i = 0; i < len; ++i) {
-    carry |= (bigint_2digits) (bigint_digit) pic_int(pic, pic_vec_ref(pic, val, i)) << bitsh;
+    carry |= ((bigint_2digits) (bigint_digit) pic_int(pic, pic_vec_ref(pic, val, i))) << bitsh;
     pic_vec_set(pic, ret, i + bytesh, pic_int_value(pic, carry & bigint_digit_max));
     carry >>= bigint_shift;
   }
@@ -301,12 +319,10 @@ bigint_init_int(pic_state *pic, int value)
 static struct pic_bigint_t *
 bigint_init_str(pic_state *pic, pic_value str, int radix)
 {
-  const char *cstr;
   size_t pos, len;
   pic_value ret, digit, base;
   struct pic_bigint_t *retbi;
 
-  cstr = pic_str(pic, str);
   pos = 0;
   len = pic_str_len(pic, str);
   ret = pic_make_vec(pic, 0, NULL);
@@ -315,7 +331,7 @@ bigint_init_str(pic_state *pic, pic_value str, int radix)
   retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
   retbi->signum = 0;
 
-  if (cstr[0] == '-') {
+  if (pic_str_ref(pic, str, 0) == '-') {
     retbi->signum = 1;
     pos = 1;
   }
@@ -323,7 +339,7 @@ bigint_init_str(pic_state *pic, pic_value str, int radix)
     pic_error(pic, "make-bigint: there are no digits", 0);
   }
   for (; pos < len; ++pos) {
-    char ch = cstr[pos];
+    char ch = pic_str_ref(pic, str, pos);
     if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' || ch <= 'Z')) {
       int dig;
 
@@ -545,23 +561,23 @@ bigint_to_string(pic_state *pic, struct pic_bigint_t *value, int radix)
   pic_value result;
 
   if (pic_vec_len(pic, value->digits) == 0) { // value == 0.
-    buf = pic_malloc(pic, 1);
+    buf = malloc(1);
     buf[0] = '0';
     result = pic_str_value(pic, buf, 1);
-    pic_free(pic, buf);
+    free(buf);
     return result;
   }
 
   len = ceil(bigint_shift * log(2) / log(radix)) * pic_vec_len(pic, value->digits) + 1;
   dstart = 0;
-  buf = pic_malloc(pic, len);
+  buf = malloc(len);
 
   if (value->signum) {
     buf[0] = '-';
     dstart = 1;
   }
 
-  cur = value->digits;
+  cur = bigint_vec_clone(pic, value->digits);
   rad = pic_make_vec(pic, 1, NULL);
   pic_vec_set(pic, rad, 0, pic_int_value(pic, radix)); // radix is 10 .. 36
 
@@ -575,9 +591,11 @@ bigint_to_string(pic_state *pic, struct pic_bigint_t *value, int radix)
     } else {
       d = pic_int(pic, pic_vec_ref(pic, rem, 0));
     }
+    assert (0 <= d && d < radix);
     buf[i++] = digits[d];
     cur = quo;
   }
+  assert (i <= len);
 
   // reverse digits
   for (j = 0; j < (i - dstart) / 2; ++j) {
@@ -586,9 +604,8 @@ bigint_to_string(pic_state *pic, struct pic_bigint_t *value, int radix)
     buf[i - 1 - j] = tmp;
   }
 
-  assert (i <= len);
   result = pic_str_value(pic, buf, i);
-  pic_free(pic, buf);
+  free(buf);
 
   return result;
 }
