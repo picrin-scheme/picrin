@@ -8,7 +8,9 @@
           (scheme lazy)
           (scheme eval)
           (scheme load)
-          (picrin base))
+          (only (picrin base)
+                library-environment
+                find-library))
 
   (define-library (scheme null)
     (import (scheme base))
@@ -26,12 +28,12 @@
   (define (null-environment n)
     (if (not (= n 5))
         (error "unsupported environment version" n)
-        (library-environment (find-library '(scheme null)))))
+        "scheme.null"))
 
   (define (scheme-report-environment n)
     (if (not (= n 5))
         (error "unsupported environment version" n)
-        (library-environment (find-library '(scheme r5rs)))))
+        "scheme.r5rs"))
 
   (export * + - / < <= = > >=
           abs acos and

@@ -71,7 +71,7 @@ my $src = <<'EOL';
 (builtin:define-macro set!
   (builtin:lambda (form env)
     (if (= (length form) 3)
-        (if (variable? (cadr form))
+        (if (identifier? (cadr form))
             (cons the-builtin-set! (cdr form))
             (error "illegal set! form" form))
         (error "illegal set! form" form))))
@@ -80,10 +80,10 @@ my $src = <<'EOL';
   (builtin:lambda (formal)
     (if (null? formal)
         #t
-        (if (variable? formal)
+        (if (identifier? formal)
             #t
             (if (pair? formal)
-                (if (variable? (car formal))
+                (if (identifier? (car formal))
                     (check-formal (cdr formal))
                     #f)
                 #f)))))
@@ -101,7 +101,7 @@ my $src = <<'EOL';
     ((lambda (len)
        (if (= len 1)
            (error "illegal define form" form)
-           (if (variable? (cadr form))
+           (if (identifier? (cadr form))
                (if (= len 3)
                    (cons the-builtin-define (cdr form))
                    (error "illegal define form" form))
@@ -115,7 +115,7 @@ my $src = <<'EOL';
 (builtin:define-macro define-macro
   (lambda (form env)
     (if (= (length form) 3)
-        (if (variable? (cadr form))
+        (if (identifier? (cadr form))
             (cons the-builtin-define-macro (cdr form))
             (error "define-macro: binding to non-variable object" form))
         (error "illegal define-macro form" form))))
@@ -145,7 +145,7 @@ my $src = <<'EOL';
 
 (define-macro let
   (lambda (form env)
-    (if (variable? (cadr form))
+    (if (identifier? (cadr form))
         (list
          (list the-lambda '()
                (list the-define (cadr form)
@@ -189,38 +189,42 @@ my $src = <<'EOL';
       (if (null? clauses)
           #undefined
           (let ((clause (car clauses)))
-            (if (and (variable? (car clause))
-                     (variable=? (the 'else) (make-identifier (car clause) env)))
+            (if (and (identifier? (car clause))
+                     (identifier=? (the 'else) (make-identifier (car clause) env)))
                 (cons the-begin (cdr clause))
-                (if (and (variable? (cadr clause))
-                         (variable=? (the '=>) (make-identifier (cadr clause) env)))
+                (if (null? (cdr clause))
                     (let ((tmp (make-identifier 'tmp here)))
                       (list (the 'let) (list (list tmp (car clause)))
-                            (list the-if tmp
-                                  (list (car (cddr clause)) tmp)
-                                  (cons (the 'cond) (cdr clauses)))))
-                    (list the-if (car clause)
-                          (cons the-begin (cdr clause))
-                          (cons (the 'cond) (cdr clauses))))))))))
+                            (list the-if tmp tmp (cons (the 'cond) (cdr clauses)))))
+                    (if (and (identifier? (cadr clause))
+                             (identifier=? (the '=>) (make-identifier (cadr clause) env)))
+                        (let ((tmp (make-identifier 'tmp here)))
+                          (list (the 'let) (list (list tmp (car clause)))
+                                (list the-if tmp
+                                      (list (car (cddr clause)) tmp)
+                                      (cons (the 'cond) (cdr clauses)))))
+                        (list the-if (car clause)
+                              (cons the-begin (cdr clause))
+                              (cons (the 'cond) (cdr clauses)))))))))))
 
 (define-macro quasiquote
   (lambda (form env)
 
     (define (quasiquote? form)
       (and (pair? form)
-           (variable? (car form))
-           (variable=? (the 'quasiquote) (make-identifier (car form) env))))
+           (identifier? (car form))
+           (identifier=? (the 'quasiquote) (make-identifier (car form) env))))
 
     (define (unquote? form)
       (and (pair? form)
-           (variable? (car form))
-           (variable=? (the 'unquote) (make-identifier (car form) env))))
+           (identifier? (car form))
+           (identifier=? (the 'unquote) (make-identifier (car form) env))))
 
     (define (unquote-splicing? form)
       (and (pair? form)
            (pair? (car form))
-           (variable? (caar form))
-           (variable=? (the 'unquote-splicing) (make-identifier (caar form) env))))
+           (identifier? (caar form))
+           (identifier=? (the 'unquote-splicing) (make-identifier (caar form) env))))
 
     (define (qq depth expr)
       (cond
@@ -310,7 +314,7 @@ my $src = <<'EOL';
           ,@(let loop ((formal formal))
               (if (pair? formal)
                   `((,the-define ,(car formal) #undefined) ,@(loop (cdr formal)))
-                  (if (variable? formal)
+                  (if (identifier? formal)
                       `((,the-define ,formal #undefined))
                       '())))
           (,(the 'call-with-values) (,the-lambda () ,@body)
@@ -319,7 +323,7 @@ my $src = <<'EOL';
             ,@(let loop ((formal formal) (args arguments))
                 (if (pair? formal)
                     `((,the-set! ,(car formal) (,(the 'car) ,args)) ,@(loop (cdr formal) `(,(the 'cdr) ,args)))
-                    (if (variable? formal)
+                    (if (identifier? formal)
                         `((,the-set! ,formal ,args))
                         '()))))))))))
 
@@ -364,12 +368,12 @@ my $src = <<'EOL';
              (if (null? clauses)
                  #undefined
                  (let ((clause (car clauses)))
-                   `(,the-if ,(if (and (variable? (car clause))
-                                       (variable=? (the 'else) (make-identifier (car clause) env)))
+                   `(,the-if ,(if (and (identifier? (car clause))
+                                       (identifier=? (the 'else) (make-identifier (car clause) env)))
                                   #t
                                   `(,(the 'or) ,@(map (lambda (x) `(,(the 'eqv?) ,the-key (,the-quote ,x))) (car clause))))
-                             ,(if (and (variable? (cadr clause))
-                                       (variable=? (the '=>) (make-identifier (cadr clause) env)))
+                             ,(if (and (identifier? (cadr clause))
+                                       (identifier=? (the '=>) (make-identifier (cadr clause) env)))
                                   `(,(car (cdr (cdr clause))) ,the-key)
                                   `(,the-begin ,@(cdr clause)))
                              ,(loop (cdr clauses)))))))))))
@@ -378,10 +382,11 @@ my $src = <<'EOL';
   (lambda (form env)
     (let ((formal (car (cdr form)))
           (body   (cdr (cdr form))))
-      `(,(the 'with-parameter)
-        (,(the 'lambda) ()
-         ,@formal
-         ,@body)))))
+      (if (null? formal)
+          `(,the-begin ,@body)
+          (let ((bind (car formal)))
+            `(,(the 'dynamic-bind) ,(car bind) ,(cadr bind)
+              (,the-lambda () (,(the 'parameterize) ,(cdr formal) ,@body))))))))
 
 (define-macro syntax-quote
   (lambda (form env)
@@ -396,7 +401,7 @@ my $src = <<'EOL';
                              (rename var))))))
            (walk (lambda (f form)
                    (cond
-                    ((variable? form)
+                    ((identifier? form)
                      (f form))
                     ((pair? form)
                      `(,(the 'cons) (walk f (car form)) (walk f (cdr form))))
@@ -423,19 +428,19 @@ my $src = <<'EOL';
 
         (define (syntax-quasiquote? form)
           (and (pair? form)
-               (variable? (car form))
-               (variable=? (the 'syntax-quasiquote) (make-identifier (car form) env))))
+               (identifier? (car form))
+               (identifier=? (the 'syntax-quasiquote) (make-identifier (car form) env))))
 
         (define (syntax-unquote? form)
           (and (pair? form)
-               (variable? (car form))
-               (variable=? (the 'syntax-unquote) (make-identifier (car form) env))))
+               (identifier? (car form))
+               (identifier=? (the 'syntax-unquote) (make-identifier (car form) env))))
 
         (define (syntax-unquote-splicing? form)
           (and (pair? form)
                (pair? (car form))
-               (variable? (caar form))
-               (variable=? (the 'syntax-unquote-splicing) (make-identifier (caar form) env))))
+               (identifier? (caar form))
+               (identifier=? (the 'syntax-unquote-splicing) (make-identifier (caar form) env))))
 
         (define (qq depth expr)
           (cond
@@ -470,8 +475,8 @@ my $src = <<'EOL';
            ;; vector
            ((vector? expr)
             (list (the 'list->vector) (qq depth (vector->list expr))))
-           ;; variable
-           ((variable? expr)
+           ;; identifier
+           ((identifier? expr)
             (rename expr))
            ;; simple datum
            (else
@@ -484,25 +489,25 @@ my $src = <<'EOL';
 
 (define (transformer f)
   (lambda (form env)
-    (let ((register1 (make-register))
-          (register2 (make-register)))
+    (let ((ephemeron1 (make-ephemeron))
+          (ephemeron2 (make-ephemeron)))
       (letrec
           ((wrap (lambda (var1)
-                   (let ((var2 (register1 var1)))
+                   (let ((var2 (ephemeron1 var1)))
                      (if var2
                          (cdr var2)
                          (let ((var2 (make-identifier var1 env)))
-                           (register1 var1 var2)
-                           (register2 var2 var1)
+                           (ephemeron1 var1 var2)
+                           (ephemeron2 var2 var1)
                            var2)))))
            (unwrap (lambda (var2)
-                     (let ((var1 (register2 var2)))
+                     (let ((var1 (ephemeron2 var2)))
                        (if var1
                            (cdr var1)
                            var2))))
            (walk (lambda (f form)
                    (cond
-                    ((variable? form)
+                    ((identifier? form)
                      (f form))
                     ((pair? form)
                      (cons (walk f (car form)) (walk f (cdr form))))
@@ -538,16 +543,39 @@ my $src = <<'EOL';
 
 ;;; library primitives
 
+(define (mangle name)
+  (when (null? name)
+    (error "library name should be a list of at least one symbols" name))
+
+  (define (->string n)
+    (cond
+     ((symbol? n)
+      (let ((str (symbol->string n)))
+        (string-for-each
+         (lambda (c)
+           (when (or (char=? c #\.) (char=? c #\/))
+             (error "elements of library name may not contain '.' or '/'" n)))
+         str)
+        str))
+     ((and (number? n) (exact? n))
+      (number->string n))
+     (else
+      (error "symbol or integer is required" n))))
+
+  (define (join strs delim)
+    (let loop ((res (car strs)) (strs (cdr strs)))
+      (if (null? strs)
+          res
+          (loop (string-append res delim (car strs)) (cdr strs)))))
+
+  (join (map ->string name) "."))
+
 (define-macro define-library
   (lambda (form _)
-    (let ((name (cadr form))
+    (let ((lib (mangle (cadr form)))
           (body (cddr form)))
-      (let ((old-library (current-library))
-            (new-library (or (find-library name) (make-library name))))
-        (let ((env (library-environment new-library)))
-          (current-library new-library)
-          (for-each (lambda (expr) (eval expr env)) body)
-          (current-library old-library))))))
+      (or (find-library lib) (make-library lib))
+      (for-each (lambda (expr) (eval expr lib)) body))))
 
 (define-macro cond-expand
   (lambda (form _)
@@ -559,7 +587,7 @@ my $src = <<'EOL';
                        (memq form (features)))
                   (and (pair? form)
                        (case (car form)
-                         ((library) (find-library (cadr form)))
+                         ((library) (find-library (mangle (cadr form))))
                          ((not) (not (test (cadr form))))
                          ((and) (let loop ((form (cdr form)))
                                   (or (null? form)
@@ -584,7 +612,13 @@ my $src = <<'EOL';
              (string->symbol
               (string-append
                (symbol->string prefix)
-               (symbol->string symbol))))))
+               (symbol->string symbol)))))
+          (getlib
+           (lambda (name)
+             (let ((lib (mangle name)))
+               (if (find-library lib)
+                   lib
+                   (error "library not found" name))))))
       (letrec
           ((extract
             (lambda (spec)
@@ -592,7 +626,7 @@ my $src = <<'EOL';
                 ((only rename prefix except)
                  (extract (cadr spec)))
                 (else
-                 (or (find-library spec) (error "library not found" spec))))))
+                 (getlib spec)))))
            (collect
             (lambda (spec)
               (case (car spec)
@@ -615,8 +649,7 @@ my $src = <<'EOL';
                              (loop (cdr alist))
                              (cons (car alist) (loop (cdr alist))))))))
                 (else
-                 (let ((lib (or (find-library spec) (error "library not found" spec))))
-                   (map (lambda (x) (cons x x)) (library-exports lib))))))))
+                 (map (lambda (x) (cons x x)) (library-exports (getlib spec))))))))
         (letrec
             ((import
                (lambda (spec)
@@ -677,7 +710,10 @@ foreach (@data) {
 print "\n#endif\n\n";
 
 print <<EOL;
-const char pic_boot[][80] = {
+#include "picrin.h"
+#include "picrin/extra.h"
+
+static const char boot_rom[][80] = {
 EOL
 
 my @lines = $src =~ /.{0,80}/gs;
@@ -697,6 +733,12 @@ print "\"\"\n";
 print <<EOL;
 };
 
+void
+pic_boot(pic_state *pic)
+{
+  pic_load_cstr(pic, &boot_rom[0][0]);
+}
+
 #if 0
 Local Variables:
 mode: scheme
@@ -712,7 +754,10 @@ EOL
 
 #endif
 
-const char pic_boot[][80] = {
+#include "picrin.h"
+#include "picrin/extra.h"
+
+static const char boot_rom[][80] = {
 "\n(builtin:define-macro call-with-current-environment\n  (builtin:lambda (form env",
 ")\n    (list (cadr form) env)))\n\n(builtin:define here\n  (call-with-current-enviro",
 "nment\n   (builtin:lambda (env)\n     env)))\n\n(builtin:define the                 ",
@@ -741,270 +786,290 @@ const char pic_boot[][80] = {
 " (cdr form))\n                   (list the-builtin-begin\n                        ",
 " (cadr form)\n                         (cons the-begin (cddr form)))))))\n     (le",
 "ngth form))))\n\n(builtin:define-macro set!\n  (builtin:lambda (form env)\n    (if (",
-"= (length form) 3)\n        (if (variable? (cadr form))\n            (cons the-bui",
-"ltin-set! (cdr form))\n            (error \"illegal set! form\" form))\n        (err",
-"or \"illegal set! form\" form))))\n\n(builtin:define check-formal\n  (builtin:lambda ",
-"(formal)\n    (if (null? formal)\n        #t\n        (if (variable? formal)\n      ",
-"      #t\n            (if (pair? formal)\n                (if (variable? (car form",
-"al))\n                    (check-formal (cdr formal))\n                    #f)\n   ",
-"             #f)))))\n\n(builtin:define-macro lambda\n  (builtin:lambda (form env)\n",
-"    (if (= (length form) 1)\n        (error \"illegal lambda form\" form)\n        (",
-"if (check-formal (cadr form))\n            (list the-builtin-lambda (cadr form) (",
-"cons the-begin (cddr form)))\n            (error \"illegal lambda form\" form)))))\n",
-"\n(builtin:define-macro define\n  (lambda (form env)\n    ((lambda (len)\n       (if",
-" (= len 1)\n           (error \"illegal define form\" form)\n           (if (variabl",
-"e? (cadr form))\n               (if (= len 3)\n                   (cons the-builti",
-"n-define (cdr form))\n                   (error \"illegal define form\" form))\n    ",
-"           (if (pair? (cadr form))\n                   (list the-define\n         ",
-"                (car (cadr form))\n                         (cons the-lambda (con",
-"s (cdr (cadr form)) (cddr form))))\n                   (error \"define: binding to",
-" non-varaible object\" form)))))\n     (length form))))\n\n(builtin:define-macro def",
-"ine-macro\n  (lambda (form env)\n    (if (= (length form) 3)\n        (if (variable",
-"? (cadr form))\n            (cons the-builtin-define-macro (cdr form))\n          ",
-"  (error \"define-macro: binding to non-variable object\" form))\n        (error \"i",
-"llegal define-macro form\" form))))\n\n\n(define-macro syntax-error\n  (lambda (form ",
-"_)\n    (apply error (cdr form))))\n\n(define-macro define-auxiliary-syntax\n  (lamb",
-"da (form _)\n    (define message\n      (string-append\n       \"invalid use of auxi",
-"liary syntax: '\" (symbol->string (cadr form)) \"'\"))\n    (list\n     the-define-ma",
-"cro\n     (cadr form)\n     (list the-lambda '_\n           (list (the 'error) mess",
-"age)))))\n\n(define-auxiliary-syntax else)\n(define-auxiliary-syntax =>)\n(define-au",
-"xiliary-syntax unquote)\n(define-auxiliary-syntax unquote-splicing)\n(define-auxil",
-"iary-syntax syntax-unquote)\n(define-auxiliary-syntax syntax-unquote-splicing)\n\n(",
-"define-macro let\n  (lambda (form env)\n    (if (variable? (cadr form))\n        (l",
-"ist\n         (list the-lambda '()\n               (list the-define (cadr form)\n  ",
-"                   (cons the-lambda\n                           (cons (map car (c",
-"ar (cddr form)))\n                                 (cdr (cddr form)))))\n         ",
-"      (cons (cadr form) (map cadr (car (cddr form))))))\n        (cons\n         (",
-"cons\n          the-lambda\n          (cons (map car (cadr form))\n                ",
-"(cddr form)))\n         (map cadr (cadr form))))))\n\n(define-macro and\n  (lambda (",
-"form env)\n    (if (null? (cdr form))\n        #t\n        (if (null? (cddr form))\n",
-"            (cadr form)\n            (list the-if\n                  (cadr form)\n ",
-"                 (cons (the 'and) (cddr form))\n                  #f)))))\n\n(defin",
-"e-macro or\n  (lambda (form env)\n    (if (null? (cdr form))\n        #f\n        (l",
-"et ((tmp (make-identifier 'it env)))\n          (list (the 'let)\n                ",
-"(list (list tmp (cadr form)))\n                (list the-if\n                     ",
-" tmp\n                      tmp\n                      (cons (the 'or) (cddr form)",
-")))))))\n\n(define-macro cond\n  (lambda (form env)\n    (let ((clauses (cdr form)))",
-"\n      (if (null? clauses)\n          #undefined\n          (let ((clause (car cla",
-"uses)))\n            (if (and (variable? (car clause))\n                     (vari",
-"able=? (the 'else) (make-identifier (car clause) env)))\n                (cons th",
-"e-begin (cdr clause))\n                (if (and (variable? (cadr clause))\n       ",
-"                  (variable=? (the '=>) (make-identifier (cadr clause) env)))\n  ",
-"                  (let ((tmp (make-identifier 'tmp here)))\n                     ",
-" (list (the 'let) (list (list tmp (car clause)))\n                            (li",
-"st the-if tmp\n                                  (list (car (cddr clause)) tmp)\n ",
-"                                 (cons (the 'cond) (cdr clauses)))))\n           ",
-"         (list the-if (car clause)\n                          (cons the-begin (cd",
-"r clause))\n                          (cons (the 'cond) (cdr clauses))))))))))\n\n(",
-"define-macro quasiquote\n  (lambda (form env)\n\n    (define (quasiquote? form)\n   ",
-"   (and (pair? form)\n           (variable? (car form))\n           (variable=? (t",
-"he 'quasiquote) (make-identifier (car form) env))))\n\n    (define (unquote? form)",
-"\n      (and (pair? form)\n           (variable? (car form))\n           (variable=",
-"? (the 'unquote) (make-identifier (car form) env))))\n\n    (define (unquote-splic",
-"ing? form)\n      (and (pair? form)\n           (pair? (car form))\n           (var",
-"iable? (caar form))\n           (variable=? (the 'unquote-splicing) (make-identif",
-"ier (caar form) env))))\n\n    (define (qq depth expr)\n      (cond\n       ;; unquo",
-"te\n       ((unquote? expr)\n        (if (= depth 1)\n            (car (cdr expr))\n",
-"            (list (the 'list)\n                  (list (the 'quote) (the 'unquote",
-"))\n                  (qq (- depth 1) (car (cdr expr))))))\n       ;; unquote-spli",
-"cing\n       ((unquote-splicing? expr)\n        (if (= depth 1)\n            (list ",
-"(the 'append)\n                  (car (cdr (car expr)))\n                  (qq dep",
-"th (cdr expr)))\n            (list (the 'cons)\n                  (list (the 'list",
-")\n                        (list (the 'quote) (the 'unquote-splicing))\n          ",
-"              (qq (- depth 1) (car (cdr (car expr)))))\n                  (qq dep",
-"th (cdr expr)))))\n       ;; quasiquote\n       ((quasiquote? expr)\n        (list ",
-"(the 'list)\n              (list (the 'quote) (the 'quasiquote))\n              (q",
-"q (+ depth 1) (car (cdr expr)))))\n       ;; list\n       ((pair? expr)\n        (l",
-"ist (the 'cons)\n              (qq depth (car expr))\n              (qq depth (cdr",
-" expr))))\n       ;; vector\n       ((vector? expr)\n        (list (the 'list->vect",
-"or) (qq depth (vector->list expr))))\n       ;; simple datum\n       (else\n       ",
-" (list (the 'quote) expr))))\n\n    (let ((x (cadr form)))\n      (qq 1 x))))\n\n(def",
-"ine-macro let*\n  (lambda (form env)\n    (let ((bindings (car (cdr form)))\n      ",
-"    (body     (cdr (cdr form))))\n      (if (null? bindings)\n          `(,(the 'l",
-"et) () ,@body)\n          `(,(the 'let) ((,(car (car bindings)) ,@(cdr (car bindi",
-"ngs))))\n            (,(the 'let*) (,@(cdr bindings))\n             ,@body))))))\n\n",
-"(define-macro letrec\n  (lambda (form env)\n    `(,(the 'letrec*) ,@(cdr form))))\n",
-"\n(define-macro letrec*\n  (lambda (form env)\n    (let ((bindings (car (cdr form))",
-")\n          (body     (cdr (cdr form))))\n      (let ((variables (map (lambda (v)",
-" `(,v #f)) (map car bindings)))\n            (initials  (map (lambda (v) `(,(the ",
-"'set!) ,@v)) bindings)))\n        `(,(the 'let) (,@variables)\n          ,@initial",
-"s\n          ,@body)))))\n\n(define-macro let-values\n  (lambda (form env)\n    `(,(t",
-"he 'let*-values) ,@(cdr form))))\n\n(define-macro let*-values\n  (lambda (form env)",
-"\n    (let ((formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      ",
-"(if (null? formal)\n          `(,(the 'let) () ,@body)\n          `(,(the 'call-wi",
-"th-values) (,the-lambda () ,@(cdr (car formal)))\n            (,(the 'lambda) (,@",
-"(car (car formal)))\n             (,(the 'let*-values) (,@(cdr formal))\n         ",
-"     ,@body)))))))\n\n(define-macro define-values\n  (lambda (form env)\n    (let ((",
-"formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      (let ((argum",
-"ents (make-identifier 'arguments here)))\n        `(,the-begin\n          ,@(let l",
-"oop ((formal formal))\n              (if (pair? formal)\n                  `((,the",
-"-define ,(car formal) #undefined) ,@(loop (cdr formal)))\n                  (if (",
-"variable? formal)\n                      `((,the-define ,formal #undefined))\n    ",
-"                  '())))\n          (,(the 'call-with-values) (,the-lambda () ,@b",
-"ody)\n           (,the-lambda\n            ,arguments\n            ,@(let loop ((fo",
-"rmal formal) (args arguments))\n                (if (pair? formal)\n              ",
-"      `((,the-set! ,(car formal) (,(the 'car) ,args)) ,@(loop (cdr formal) `(,(t",
-"he 'cdr) ,args)))\n                    (if (variable? formal)\n                   ",
-"     `((,the-set! ,formal ,args))\n                        '()))))))))))\n\n(define",
-"-macro do\n  (lambda (form env)\n    (let ((bindings (car (cdr form)))\n          (",
-"test     (car (car (cdr (cdr form)))))\n          (cleanup  (cdr (car (cdr (cdr f",
-"orm)))))\n          (body     (cdr (cdr (cdr form)))))\n      (let ((loop (make-id",
-"entifier 'loop here)))\n        `(,(the 'let) ,loop ,(map (lambda (x) `(,(car x) ",
-",(cadr x))) bindings)\n          (,the-if ,test\n                   (,the-begin\n  ",
-"                  ,@cleanup)\n                   (,the-begin\n                    ",
-",@body\n                    (,loop ,@(map (lambda (x) (if (null? (cdr (cdr x))) (",
-"car x) (car (cdr (cdr x))))) bindings)))))))))\n\n(define-macro when\n  (lambda (fo",
-"rm env)\n    (let ((test (car (cdr form)))\n          (body (cdr (cdr form))))\n   ",
-"   `(,the-if ,test\n                (,the-begin ,@body)\n                #undefine",
-"d))))\n\n(define-macro unless\n  (lambda (form env)\n    (let ((test (car (cdr form)",
-"))\n          (body (cdr (cdr form))))\n      `(,the-if ,test\n                #und",
-"efined\n                (,the-begin ,@body)))))\n\n(define-macro case\n  (lambda (fo",
-"rm env)\n    (let ((key     (car (cdr form)))\n          (clauses (cdr (cdr form))",
-"))\n      (let ((the-key (make-identifier 'key here)))\n        `(,(the 'let) ((,t",
-"he-key ,key))\n          ,(let loop ((clauses clauses))\n             (if (null? c",
-"lauses)\n                 #undefined\n                 (let ((clause (car clauses)",
-"))\n                   `(,the-if ,(if (and (variable? (car clause))\n             ",
-"                          (variable=? (the 'else) (make-identifier (car clause) ",
-"env)))\n                                  #t\n                                  `(",
-",(the 'or) ,@(map (lambda (x) `(,(the 'eqv?) ,the-key (,the-quote ,x))) (car cla",
-"use))))\n                             ,(if (and (variable? (cadr clause))\n       ",
-"                                (variable=? (the '=>) (make-identifier (cadr cla",
-"use) env)))\n                                  `(,(car (cdr (cdr clause))) ,the-k",
-"ey)\n                                  `(,the-begin ,@(cdr clause)))\n            ",
-"                 ,(loop (cdr clauses)))))))))))\n\n(define-macro parameterize\n  (l",
-"ambda (form env)\n    (let ((formal (car (cdr form)))\n          (body   (cdr (cdr",
-" form))))\n      `(,(the 'with-parameter)\n        (,(the 'lambda) ()\n         ,@f",
-"ormal\n         ,@body)))))\n\n(define-macro syntax-quote\n  (lambda (form env)\n    ",
-"(let ((renames '()))\n      (letrec\n          ((rename (lambda (var)\n            ",
-"         (let ((x (assq var renames)))\n                       (if x\n            ",
-"               (cadr x)\n                           (begin\n                      ",
-"       (set! renames `((,var ,(make-identifier var env) (,(the 'make-identifier)",
-" ',var ',env)) . ,renames))\n                             (rename var))))))\n     ",
-"      (walk (lambda (f form)\n                   (cond\n                    ((vari",
-"able? form)\n                     (f form))\n                    ((pair? form)\n   ",
-"                  `(,(the 'cons) (walk f (car form)) (walk f (cdr form))))\n     ",
-"               ((vector? form)\n                     `(,(the 'list->vector) (walk",
-" f (vector->list form))))\n                    (else\n                     `(,(the",
-" 'quote) ,form))))))\n        (let ((form (walk rename (cadr form))))\n          `",
-"(,(the 'let)\n            ,(map cdr renames)\n            ,form))))))\n\n(define-mac",
-"ro syntax-quasiquote\n  (lambda (form env)\n    (let ((renames '()))\n      (letrec",
-"\n          ((rename (lambda (var)\n                     (let ((x (assq var rename",
-"s)))\n                       (if x\n                           (cadr x)\n          ",
-"                 (begin\n                             (set! renames `((,var ,(mak",
-"e-identifier var env) (,(the 'make-identifier) ',var ',env)) . ,renames))\n      ",
-"                       (rename var)))))))\n\n        (define (syntax-quasiquote? f",
-"orm)\n          (and (pair? form)\n               (variable? (car form))\n         ",
-"      (variable=? (the 'syntax-quasiquote) (make-identifier (car form) env))))\n\n",
-"        (define (syntax-unquote? form)\n          (and (pair? form)\n             ",
-"  (variable? (car form))\n               (variable=? (the 'syntax-unquote) (make-",
-"identifier (car form) env))))\n\n        (define (syntax-unquote-splicing? form)\n ",
-"         (and (pair? form)\n               (pair? (car form))\n               (var",
-"iable? (caar form))\n               (variable=? (the 'syntax-unquote-splicing) (m",
-"ake-identifier (caar form) env))))\n\n        (define (qq depth expr)\n          (c",
-"ond\n           ;; syntax-unquote\n           ((syntax-unquote? expr)\n            ",
-"(if (= depth 1)\n                (car (cdr expr))\n                (list (the 'lis",
-"t)\n                      (list (the 'quote) (the 'syntax-unquote))\n             ",
-"         (qq (- depth 1) (car (cdr expr))))))\n           ;; syntax-unquote-splic",
-"ing\n           ((syntax-unquote-splicing? expr)\n            (if (= depth 1)\n    ",
-"            (list (the 'append)\n                      (car (cdr (car expr)))\n   ",
-"                   (qq depth (cdr expr)))\n                (list (the 'cons)\n    ",
-"                  (list (the 'list)\n                            (list (the 'quot",
-"e) (the 'syntax-unquote-splicing))\n                            (qq (- depth 1) (",
-"car (cdr (car expr)))))\n                      (qq depth (cdr expr)))))\n         ",
-"  ;; syntax-quasiquote\n           ((syntax-quasiquote? expr)\n            (list (",
-"the 'list)\n                  (list (the 'quote) (the 'quasiquote))\n             ",
-"     (qq (+ depth 1) (car (cdr expr)))))\n           ;; list\n           ((pair? e",
-"xpr)\n            (list (the 'cons)\n                  (qq depth (car expr))\n     ",
-"             (qq depth (cdr expr))))\n           ;; vector\n           ((vector? e",
-"xpr)\n            (list (the 'list->vector) (qq depth (vector->list expr))))\n    ",
-"       ;; variable\n           ((variable? expr)\n            (rename expr))\n     ",
-"      ;; simple datum\n           (else\n            (list (the 'quote) expr))))\n\n",
-"        (let ((body (qq 1 (cadr form))))\n          `(,(the 'let)\n            ,(m",
-"ap cdr renames)\n            ,body))))))\n\n(define (transformer f)\n  (lambda (form",
-" env)\n    (let ((register1 (make-register))\n          (register2 (make-register)",
-"))\n      (letrec\n          ((wrap (lambda (var1)\n                   (let ((var2 ",
-"(register1 var1)))\n                     (if var2\n                         (cdr v",
-"ar2)\n                         (let ((var2 (make-identifier var1 env)))\n         ",
-"                  (register1 var1 var2)\n                           (register2 va",
-"r2 var1)\n                           var2)))))\n           (unwrap (lambda (var2)\n",
-"                     (let ((var1 (register2 var2)))\n                       (if v",
-"ar1\n                           (cdr var1)\n                           var2))))\n  ",
-"         (walk (lambda (f form)\n                   (cond\n                    ((v",
-"ariable? form)\n                     (f form))\n                    ((pair? form)\n",
-"                     (cons (walk f (car form)) (walk f (cdr form))))\n           ",
-"         ((vector? form)\n                     (list->vector (walk f (vector->lis",
-"t form))))\n                    (else\n                     form)))))\n        (let",
-" ((form (cdr form)))\n          (walk unwrap (apply f (walk wrap form))))))))\n\n(d",
-"efine-macro define-syntax\n  (lambda (form env)\n    (let ((formal (car (cdr form)",
-"))\n          (body   (cdr (cdr form))))\n      (if (pair? formal)\n          `(,(t",
-"he 'define-syntax) ,(car formal) (,the-lambda ,(cdr formal) ,@body))\n          `",
-"(,the-define-macro ,formal (,(the 'transformer) (,the-begin ,@body)))))))\n\n(defi",
-"ne-macro letrec-syntax\n  (lambda (form env)\n    (let ((formal (car (cdr form)))\n",
-"          (body   (cdr (cdr form))))\n      `(let ()\n         ,@(map (lambda (x)\n",
-"                  `(,(the 'define-syntax) ,(car x) ,(cadr x)))\n                f",
-"ormal)\n         ,@body))))\n\n(define-macro let-syntax\n  (lambda (form env)\n    `(",
-",(the 'letrec-syntax) ,@(cdr form))))\n\n\n;;; library primitives\n\n(define-macro de",
-"fine-library\n  (lambda (form _)\n    (let ((name (cadr form))\n          (body (cd",
-"dr form)))\n      (let ((old-library (current-library))\n            (new-library ",
-"(or (find-library name) (make-library name))))\n        (let ((env (library-envir",
-"onment new-library)))\n          (current-library new-library)\n          (for-eac",
-"h (lambda (expr) (eval expr env)) body)\n          (current-library old-library))",
-"))))\n\n(define-macro cond-expand\n  (lambda (form _)\n    (letrec\n        ((test (l",
-"ambda (form)\n                 (or\n                  (eq? form 'else)\n           ",
-"       (and (symbol? form)\n                       (memq form (features)))\n      ",
-"            (and (pair? form)\n                       (case (car form)\n          ",
-"               ((library) (find-library (cadr form)))\n                         (",
-"(not) (not (test (cadr form))))\n                         ((and) (let loop ((form",
-" (cdr form)))\n                                  (or (null? form)\n               ",
-"                       (and (test (car form)) (loop (cdr form))))))\n            ",
-"             ((or) (let loop ((form (cdr form)))\n                               ",
-"  (and (pair? form)\n                                      (or (test (car form)) ",
-"(loop (cdr form))))))\n                         (else #f)))))))\n      (let loop (",
-"(clauses (cdr form)))\n        (if (null? clauses)\n            #undefined\n       ",
-"     (if (test (caar clauses))\n                `(,the-begin ,@(cdar clauses))\n  ",
-"              (loop (cdr clauses))))))))\n\n(define-macro import\n  (lambda (form _",
-")\n    (let ((caddr\n           (lambda (x) (car (cdr (cdr x)))))\n          (prefi",
-"x\n           (lambda (prefix symbol)\n             (string->symbol\n              ",
-"(string-append\n               (symbol->string prefix)\n               (symbol->st",
-"ring symbol))))))\n      (letrec\n          ((extract\n            (lambda (spec)\n ",
-"             (case (car spec)\n                ((only rename prefix except)\n     ",
-"            (extract (cadr spec)))\n                (else\n                 (or (f",
-"ind-library spec) (error \"library not found\" spec))))))\n           (collect\n    ",
-"        (lambda (spec)\n              (case (car spec)\n                ((only)\n  ",
-"               (let ((alist (collect (cadr spec))))\n                   (map (lam",
-"bda (var) (assq var alist)) (cddr spec))))\n                ((rename)\n           ",
-"      (let ((alist (collect (cadr spec)))\n                       (renames (map (",
-"lambda (x) `((car x) . (cadr x))) (cddr spec))))\n                   (map (lambda",
-" (s) (or (assq (car s) renames) s)) alist)))\n                ((prefix)\n         ",
-"        (let ((alist (collect (cadr spec))))\n                   (map (lambda (s)",
-" (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))\n                ((except",
-")\n                 (let ((alist (collect (cadr spec))))\n                   (let ",
-"loop ((alist alist))\n                     (if (null? alist)\n                    ",
-"     '()\n                         (if (memq (caar alist) (cddr spec))\n          ",
-"                   (loop (cdr alist))\n                             (cons (car al",
-"ist) (loop (cdr alist))))))))\n                (else\n                 (let ((lib ",
-"(or (find-library spec) (error \"library not found\" spec))))\n                   (",
-"map (lambda (x) (cons x x)) (library-exports lib))))))))\n        (letrec\n       ",
-"     ((import\n               (lambda (spec)\n                 (let ((lib (extract",
-" spec))\n                       (alist (collect spec)))\n                   (for-e",
-"ach\n                    (lambda (slot)\n                      (library-import lib",
-" (cdr slot) (car slot)))\n                    alist)))))\n          (for-each impo",
-"rt (cdr form)))))))\n\n(define-macro export\n  (lambda (form _)\n    (letrec\n       ",
-" ((collect\n          (lambda (spec)\n            (cond\n             ((symbol? spe",
-"c)\n              `(,spec . ,spec))\n             ((and (list? spec) (= (length sp",
-"ec) 3) (eq? (car spec) 'rename))\n              `(,(list-ref spec 1) . ,(list-ref",
-" spec 2)))\n             (else\n              (error \"malformed export\")))))\n     ",
-"    (export\n           (lambda (spec)\n             (let ((slot (collect spec)))\n",
-"               (library-export (car slot) (cdr slot))))))\n      (for-each export",
-" (cdr form)))))\n\n(export define lambda quote set! if begin define-macro\n        ",
-"let let* letrec letrec*\n        let-values let*-values define-values\n        qua",
-"siquote unquote unquote-splicing\n        and or\n        cond case else =>\n      ",
-"  do when unless\n        parameterize\n        define-syntax\n        syntax-quote",
-" syntax-unquote\n        syntax-quasiquote syntax-unquote-splicing\n        let-sy",
-"ntax letrec-syntax\n        syntax-error)\n\n\n",
+"= (length form) 3)\n        (if (identifier? (cadr form))\n            (cons the-b",
+"uiltin-set! (cdr form))\n            (error \"illegal set! form\" form))\n        (e",
+"rror \"illegal set! form\" form))))\n\n(builtin:define check-formal\n  (builtin:lambd",
+"a (formal)\n    (if (null? formal)\n        #t\n        (if (identifier? formal)\n  ",
+"          #t\n            (if (pair? formal)\n                (if (identifier? (ca",
+"r formal))\n                    (check-formal (cdr formal))\n                    #",
+"f)\n                #f)))))\n\n(builtin:define-macro lambda\n  (builtin:lambda (form",
+" env)\n    (if (= (length form) 1)\n        (error \"illegal lambda form\" form)\n   ",
+"     (if (check-formal (cadr form))\n            (list the-builtin-lambda (cadr f",
+"orm) (cons the-begin (cddr form)))\n            (error \"illegal lambda form\" form",
+")))))\n\n(builtin:define-macro define\n  (lambda (form env)\n    ((lambda (len)\n    ",
+"   (if (= len 1)\n           (error \"illegal define form\" form)\n           (if (i",
+"dentifier? (cadr form))\n               (if (= len 3)\n                   (cons th",
+"e-builtin-define (cdr form))\n                   (error \"illegal define form\" for",
+"m))\n               (if (pair? (cadr form))\n                   (list the-define\n ",
+"                        (car (cadr form))\n                         (cons the-lam",
+"bda (cons (cdr (cadr form)) (cddr form))))\n                   (error \"define: bi",
+"nding to non-varaible object\" form)))))\n     (length form))))\n\n(builtin:define-m",
+"acro define-macro\n  (lambda (form env)\n    (if (= (length form) 3)\n        (if (",
+"identifier? (cadr form))\n            (cons the-builtin-define-macro (cdr form))\n",
+"            (error \"define-macro: binding to non-variable object\" form))\n       ",
+" (error \"illegal define-macro form\" form))))\n\n\n(define-macro syntax-error\n  (lam",
+"bda (form _)\n    (apply error (cdr form))))\n\n(define-macro define-auxiliary-synt",
+"ax\n  (lambda (form _)\n    (define message\n      (string-append\n       \"invalid u",
+"se of auxiliary syntax: '\" (symbol->string (cadr form)) \"'\"))\n    (list\n     the",
+"-define-macro\n     (cadr form)\n     (list the-lambda '_\n           (list (the 'e",
+"rror) message)))))\n\n(define-auxiliary-syntax else)\n(define-auxiliary-syntax =>)\n",
+"(define-auxiliary-syntax unquote)\n(define-auxiliary-syntax unquote-splicing)\n(de",
+"fine-auxiliary-syntax syntax-unquote)\n(define-auxiliary-syntax syntax-unquote-sp",
+"licing)\n\n(define-macro let\n  (lambda (form env)\n    (if (identifier? (cadr form)",
+")\n        (list\n         (list the-lambda '()\n               (list the-define (c",
+"adr form)\n                     (cons the-lambda\n                           (cons",
+" (map car (car (cddr form)))\n                                 (cdr (cddr form)))",
+"))\n               (cons (cadr form) (map cadr (car (cddr form))))))\n        (con",
+"s\n         (cons\n          the-lambda\n          (cons (map car (cadr form))\n    ",
+"            (cddr form)))\n         (map cadr (cadr form))))))\n\n(define-macro and",
+"\n  (lambda (form env)\n    (if (null? (cdr form))\n        #t\n        (if (null? (",
+"cddr form))\n            (cadr form)\n            (list the-if\n                  (",
+"cadr form)\n                  (cons (the 'and) (cddr form))\n                  #f)",
+"))))\n\n(define-macro or\n  (lambda (form env)\n    (if (null? (cdr form))\n        #",
+"f\n        (let ((tmp (make-identifier 'it env)))\n          (list (the 'let)\n    ",
+"            (list (list tmp (cadr form)))\n                (list the-if\n         ",
+"             tmp\n                      tmp\n                      (cons (the 'or)",
+" (cddr form))))))))\n\n(define-macro cond\n  (lambda (form env)\n    (let ((clauses ",
+"(cdr form)))\n      (if (null? clauses)\n          #undefined\n          (let ((cla",
+"use (car clauses)))\n            (if (and (identifier? (car clause))\n            ",
+"         (identifier=? (the 'else) (make-identifier (car clause) env)))\n        ",
+"        (cons the-begin (cdr clause))\n                (if (null? (cdr clause))\n ",
+"                   (let ((tmp (make-identifier 'tmp here)))\n                    ",
+"  (list (the 'let) (list (list tmp (car clause)))\n                            (l",
+"ist the-if tmp tmp (cons (the 'cond) (cdr clauses)))))\n                    (if (",
+"and (identifier? (cadr clause))\n                             (identifier=? (the ",
+"'=>) (make-identifier (cadr clause) env)))\n                        (let ((tmp (m",
+"ake-identifier 'tmp here)))\n                          (list (the 'let) (list (li",
+"st tmp (car clause)))\n                                (list the-if tmp\n         ",
+"                             (list (car (cddr clause)) tmp)\n                    ",
+"                  (cons (the 'cond) (cdr clauses)))))\n                        (l",
+"ist the-if (car clause)\n                              (cons the-begin (cdr claus",
+"e))\n                              (cons (the 'cond) (cdr clauses)))))))))))\n\n(de",
+"fine-macro quasiquote\n  (lambda (form env)\n\n    (define (quasiquote? form)\n     ",
+" (and (pair? form)\n           (identifier? (car form))\n           (identifier=? ",
+"(the 'quasiquote) (make-identifier (car form) env))))\n\n    (define (unquote? for",
+"m)\n      (and (pair? form)\n           (identifier? (car form))\n           (ident",
+"ifier=? (the 'unquote) (make-identifier (car form) env))))\n\n    (define (unquote",
+"-splicing? form)\n      (and (pair? form)\n           (pair? (car form))\n         ",
+"  (identifier? (caar form))\n           (identifier=? (the 'unquote-splicing) (ma",
+"ke-identifier (caar form) env))))\n\n    (define (qq depth expr)\n      (cond\n     ",
+"  ;; unquote\n       ((unquote? expr)\n        (if (= depth 1)\n            (car (c",
+"dr expr))\n            (list (the 'list)\n                  (list (the 'quote) (th",
+"e 'unquote))\n                  (qq (- depth 1) (car (cdr expr))))))\n       ;; un",
+"quote-splicing\n       ((unquote-splicing? expr)\n        (if (= depth 1)\n        ",
+"    (list (the 'append)\n                  (car (cdr (car expr)))\n               ",
+"   (qq depth (cdr expr)))\n            (list (the 'cons)\n                  (list ",
+"(the 'list)\n                        (list (the 'quote) (the 'unquote-splicing))\n",
+"                        (qq (- depth 1) (car (cdr (car expr)))))\n               ",
+"   (qq depth (cdr expr)))))\n       ;; quasiquote\n       ((quasiquote? expr)\n    ",
+"    (list (the 'list)\n              (list (the 'quote) (the 'quasiquote))\n      ",
+"        (qq (+ depth 1) (car (cdr expr)))))\n       ;; list\n       ((pair? expr)\n",
+"        (list (the 'cons)\n              (qq depth (car expr))\n              (qq ",
+"depth (cdr expr))))\n       ;; vector\n       ((vector? expr)\n        (list (the '",
+"list->vector) (qq depth (vector->list expr))))\n       ;; simple datum\n       (el",
+"se\n        (list (the 'quote) expr))))\n\n    (let ((x (cadr form)))\n      (qq 1 x",
+"))))\n\n(define-macro let*\n  (lambda (form env)\n    (let ((bindings (car (cdr form",
+")))\n          (body     (cdr (cdr form))))\n      (if (null? bindings)\n          ",
+"`(,(the 'let) () ,@body)\n          `(,(the 'let) ((,(car (car bindings)) ,@(cdr ",
+"(car bindings))))\n            (,(the 'let*) (,@(cdr bindings))\n             ,@bo",
+"dy))))))\n\n(define-macro letrec\n  (lambda (form env)\n    `(,(the 'letrec*) ,@(cdr",
+" form))))\n\n(define-macro letrec*\n  (lambda (form env)\n    (let ((bindings (car (",
+"cdr form)))\n          (body     (cdr (cdr form))))\n      (let ((variables (map (",
+"lambda (v) `(,v #f)) (map car bindings)))\n            (initials  (map (lambda (v",
+") `(,(the 'set!) ,@v)) bindings)))\n        `(,(the 'let) (,@variables)\n         ",
+" ,@initials\n          ,@body)))))\n\n(define-macro let-values\n  (lambda (form env)",
+"\n    `(,(the 'let*-values) ,@(cdr form))))\n\n(define-macro let*-values\n  (lambda ",
+"(form env)\n    (let ((formal (car (cdr form)))\n          (body   (cdr (cdr form)",
+")))\n      (if (null? formal)\n          `(,(the 'let) () ,@body)\n          `(,(th",
+"e 'call-with-values) (,the-lambda () ,@(cdr (car formal)))\n            (,(the 'l",
+"ambda) (,@(car (car formal)))\n             (,(the 'let*-values) (,@(cdr formal))",
+"\n              ,@body)))))))\n\n(define-macro define-values\n  (lambda (form env)\n ",
+"   (let ((formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      (l",
+"et ((arguments (make-identifier 'arguments here)))\n        `(,the-begin\n        ",
+"  ,@(let loop ((formal formal))\n              (if (pair? formal)\n               ",
+"   `((,the-define ,(car formal) #undefined) ,@(loop (cdr formal)))\n             ",
+"     (if (identifier? formal)\n                      `((,the-define ,formal #unde",
+"fined))\n                      '())))\n          (,(the 'call-with-values) (,the-l",
+"ambda () ,@body)\n           (,the-lambda\n            ,arguments\n            ,@(l",
+"et loop ((formal formal) (args arguments))\n                (if (pair? formal)\n  ",
+"                  `((,the-set! ,(car formal) (,(the 'car) ,args)) ,@(loop (cdr f",
+"ormal) `(,(the 'cdr) ,args)))\n                    (if (identifier? formal)\n     ",
+"                   `((,the-set! ,formal ,args))\n                        '())))))",
+")))))\n\n(define-macro do\n  (lambda (form env)\n    (let ((bindings (car (cdr form)",
+"))\n          (test     (car (car (cdr (cdr form)))))\n          (cleanup  (cdr (c",
+"ar (cdr (cdr form)))))\n          (body     (cdr (cdr (cdr form)))))\n      (let (",
+"(loop (make-identifier 'loop here)))\n        `(,(the 'let) ,loop ,(map (lambda (",
+"x) `(,(car x) ,(cadr x))) bindings)\n          (,the-if ,test\n                   ",
+"(,the-begin\n                    ,@cleanup)\n                   (,the-begin\n      ",
+"              ,@body\n                    (,loop ,@(map (lambda (x) (if (null? (c",
+"dr (cdr x))) (car x) (car (cdr (cdr x))))) bindings)))))))))\n\n(define-macro when",
+"\n  (lambda (form env)\n    (let ((test (car (cdr form)))\n          (body (cdr (cd",
+"r form))))\n      `(,the-if ,test\n                (,the-begin ,@body)\n           ",
+"     #undefined))))\n\n(define-macro unless\n  (lambda (form env)\n    (let ((test (",
+"car (cdr form)))\n          (body (cdr (cdr form))))\n      `(,the-if ,test\n      ",
+"          #undefined\n                (,the-begin ,@body)))))\n\n(define-macro case",
+"\n  (lambda (form env)\n    (let ((key     (car (cdr form)))\n          (clauses (c",
+"dr (cdr form))))\n      (let ((the-key (make-identifier 'key here)))\n        `(,(",
+"the 'let) ((,the-key ,key))\n          ,(let loop ((clauses clauses))\n           ",
+"  (if (null? clauses)\n                 #undefined\n                 (let ((clause",
+" (car clauses)))\n                   `(,the-if ,(if (and (identifier? (car clause",
+"))\n                                       (identifier=? (the 'else) (make-identi",
+"fier (car clause) env)))\n                                  #t\n                  ",
+"                `(,(the 'or) ,@(map (lambda (x) `(,(the 'eqv?) ,the-key (,the-qu",
+"ote ,x))) (car clause))))\n                             ,(if (and (identifier? (c",
+"adr clause))\n                                       (identifier=? (the '=>) (mak",
+"e-identifier (cadr clause) env)))\n                                  `(,(car (cdr",
+" (cdr clause))) ,the-key)\n                                  `(,the-begin ,@(cdr ",
+"clause)))\n                             ,(loop (cdr clauses)))))))))))\n\n(define-m",
+"acro parameterize\n  (lambda (form env)\n    (let ((formal (car (cdr form)))\n     ",
+"     (body   (cdr (cdr form))))\n      (if (null? formal)\n          `(,the-begin ",
+",@body)\n          (let ((bind (car formal)))\n            `(,(the 'dynamic-bind) ",
+",(car bind) ,(cadr bind)\n              (,the-lambda () (,(the 'parameterize) ,(c",
+"dr formal) ,@body))))))))\n\n(define-macro syntax-quote\n  (lambda (form env)\n    (",
+"let ((renames '()))\n      (letrec\n          ((rename (lambda (var)\n             ",
+"        (let ((x (assq var renames)))\n                       (if x\n             ",
+"              (cadr x)\n                           (begin\n                       ",
+"      (set! renames `((,var ,(make-identifier var env) (,(the 'make-identifier) ",
+"',var ',env)) . ,renames))\n                             (rename var))))))\n      ",
+"     (walk (lambda (f form)\n                   (cond\n                    ((ident",
+"ifier? form)\n                     (f form))\n                    ((pair? form)\n  ",
+"                   `(,(the 'cons) (walk f (car form)) (walk f (cdr form))))\n    ",
+"                ((vector? form)\n                     `(,(the 'list->vector) (wal",
+"k f (vector->list form))))\n                    (else\n                     `(,(th",
+"e 'quote) ,form))))))\n        (let ((form (walk rename (cadr form))))\n          ",
+"`(,(the 'let)\n            ,(map cdr renames)\n            ,form))))))\n\n(define-ma",
+"cro syntax-quasiquote\n  (lambda (form env)\n    (let ((renames '()))\n      (letre",
+"c\n          ((rename (lambda (var)\n                     (let ((x (assq var renam",
+"es)))\n                       (if x\n                           (cadr x)\n         ",
+"                  (begin\n                             (set! renames `((,var ,(ma",
+"ke-identifier var env) (,(the 'make-identifier) ',var ',env)) . ,renames))\n     ",
+"                        (rename var)))))))\n\n        (define (syntax-quasiquote? ",
+"form)\n          (and (pair? form)\n               (identifier? (car form))\n      ",
+"         (identifier=? (the 'syntax-quasiquote) (make-identifier (car form) env)",
+")))\n\n        (define (syntax-unquote? form)\n          (and (pair? form)\n        ",
+"       (identifier? (car form))\n               (identifier=? (the 'syntax-unquot",
+"e) (make-identifier (car form) env))))\n\n        (define (syntax-unquote-splicing",
+"? form)\n          (and (pair? form)\n               (pair? (car form))\n          ",
+"     (identifier? (caar form))\n               (identifier=? (the 'syntax-unquote",
+"-splicing) (make-identifier (caar form) env))))\n\n        (define (qq depth expr)",
+"\n          (cond\n           ;; syntax-unquote\n           ((syntax-unquote? expr)",
+"\n            (if (= depth 1)\n                (car (cdr expr))\n                (l",
+"ist (the 'list)\n                      (list (the 'quote) (the 'syntax-unquote))\n",
+"                      (qq (- depth 1) (car (cdr expr))))))\n           ;; syntax-",
+"unquote-splicing\n           ((syntax-unquote-splicing? expr)\n            (if (= ",
+"depth 1)\n                (list (the 'append)\n                      (car (cdr (ca",
+"r expr)))\n                      (qq depth (cdr expr)))\n                (list (th",
+"e 'cons)\n                      (list (the 'list)\n                            (li",
+"st (the 'quote) (the 'syntax-unquote-splicing))\n                            (qq ",
+"(- depth 1) (car (cdr (car expr)))))\n                      (qq depth (cdr expr))",
+")))\n           ;; syntax-quasiquote\n           ((syntax-quasiquote? expr)\n      ",
+"      (list (the 'list)\n                  (list (the 'quote) (the 'quasiquote))\n",
+"                  (qq (+ depth 1) (car (cdr expr)))))\n           ;; list\n       ",
+"    ((pair? expr)\n            (list (the 'cons)\n                  (qq depth (car",
+" expr))\n                  (qq depth (cdr expr))))\n           ;; vector\n         ",
+"  ((vector? expr)\n            (list (the 'list->vector) (qq depth (vector->list ",
+"expr))))\n           ;; identifier\n           ((identifier? expr)\n            (re",
+"name expr))\n           ;; simple datum\n           (else\n            (list (the '",
+"quote) expr))))\n\n        (let ((body (qq 1 (cadr form))))\n          `(,(the 'let",
+")\n            ,(map cdr renames)\n            ,body))))))\n\n(define (transformer f",
+")\n  (lambda (form env)\n    (let ((ephemeron1 (make-ephemeron))\n          (epheme",
+"ron2 (make-ephemeron)))\n      (letrec\n          ((wrap (lambda (var1)\n          ",
+"         (let ((var2 (ephemeron1 var1)))\n                     (if var2\n         ",
+"                (cdr var2)\n                         (let ((var2 (make-identifier",
+" var1 env)))\n                           (ephemeron1 var1 var2)\n                 ",
+"          (ephemeron2 var2 var1)\n                           var2)))))\n          ",
+" (unwrap (lambda (var2)\n                     (let ((var1 (ephemeron2 var2)))\n   ",
+"                    (if var1\n                           (cdr var1)\n             ",
+"              var2))))\n           (walk (lambda (f form)\n                   (con",
+"d\n                    ((identifier? form)\n                     (f form))\n       ",
+"             ((pair? form)\n                     (cons (walk f (car form)) (walk ",
+"f (cdr form))))\n                    ((vector? form)\n                     (list->",
+"vector (walk f (vector->list form))))\n                    (else\n                ",
+"     form)))))\n        (let ((form (cdr form)))\n          (walk unwrap (apply f ",
+"(walk wrap form))))))))\n\n(define-macro define-syntax\n  (lambda (form env)\n    (l",
+"et ((formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      (if (pa",
+"ir? formal)\n          `(,(the 'define-syntax) ,(car formal) (,the-lambda ,(cdr f",
+"ormal) ,@body))\n          `(,the-define-macro ,formal (,(the 'transformer) (,the",
+"-begin ,@body)))))))\n\n(define-macro letrec-syntax\n  (lambda (form env)\n    (let ",
+"((formal (car (cdr form)))\n          (body   (cdr (cdr form))))\n      `(let ()\n ",
+"        ,@(map (lambda (x)\n                  `(,(the 'define-syntax) ,(car x) ,(",
+"cadr x)))\n                formal)\n         ,@body))))\n\n(define-macro let-syntax\n",
+"  (lambda (form env)\n    `(,(the 'letrec-syntax) ,@(cdr form))))\n\n\n;;; library p",
+"rimitives\n\n(define (mangle name)\n  (when (null? name)\n    (error \"library name s",
+"hould be a list of at least one symbols\" name))\n\n  (define (->string n)\n    (con",
+"d\n     ((symbol? n)\n      (let ((str (symbol->string n)))\n        (string-for-ea",
+"ch\n         (lambda (c)\n           (when (or (char=? c #\\.) (char=? c #\\/))\n    ",
+"         (error \"elements of library name may not contain '.' or '/'\" n)))\n     ",
+"    str)\n        str))\n     ((and (number? n) (exact? n))\n      (number->string ",
+"n))\n     (else\n      (error \"symbol or integer is required\" n))))\n\n  (define (jo",
+"in strs delim)\n    (let loop ((res (car strs)) (strs (cdr strs)))\n      (if (nul",
+"l? strs)\n          res\n          (loop (string-append res delim (car strs)) (cdr",
+" strs)))))\n\n  (join (map ->string name) \".\"))\n\n(define-macro define-library\n  (l",
+"ambda (form _)\n    (let ((lib (mangle (cadr form)))\n          (body (cddr form))",
+")\n      (or (find-library lib) (make-library lib))\n      (for-each (lambda (expr",
+") (eval expr lib)) body))))\n\n(define-macro cond-expand\n  (lambda (form _)\n    (l",
+"etrec\n        ((test (lambda (form)\n                 (or\n                  (eq? ",
+"form 'else)\n                  (and (symbol? form)\n                       (memq f",
+"orm (features)))\n                  (and (pair? form)\n                       (cas",
+"e (car form)\n                         ((library) (find-library (mangle (cadr for",
+"m))))\n                         ((not) (not (test (cadr form))))\n                ",
+"         ((and) (let loop ((form (cdr form)))\n                                  ",
+"(or (null? form)\n                                      (and (test (car form)) (l",
+"oop (cdr form))))))\n                         ((or) (let loop ((form (cdr form)))",
+"\n                                 (and (pair? form)\n                            ",
+"          (or (test (car form)) (loop (cdr form))))))\n                         (",
+"else #f)))))))\n      (let loop ((clauses (cdr form)))\n        (if (null? clauses",
+")\n            #undefined\n            (if (test (caar clauses))\n                `",
+"(,the-begin ,@(cdar clauses))\n                (loop (cdr clauses))))))))\n\n(defin",
+"e-macro import\n  (lambda (form _)\n    (let ((caddr\n           (lambda (x) (car (",
+"cdr (cdr x)))))\n          (prefix\n           (lambda (prefix symbol)\n           ",
+"  (string->symbol\n              (string-append\n               (symbol->string pr",
+"efix)\n               (symbol->string symbol)))))\n          (getlib\n           (l",
+"ambda (name)\n             (let ((lib (mangle name)))\n               (if (find-li",
+"brary lib)\n                   lib\n                   (error \"library not found\" ",
+"name))))))\n      (letrec\n          ((extract\n            (lambda (spec)\n        ",
+"      (case (car spec)\n                ((only rename prefix except)\n            ",
+"     (extract (cadr spec)))\n                (else\n                 (getlib spec)",
+"))))\n           (collect\n            (lambda (spec)\n              (case (car spe",
+"c)\n                ((only)\n                 (let ((alist (collect (cadr spec))))",
+"\n                   (map (lambda (var) (assq var alist)) (cddr spec))))\n        ",
+"        ((rename)\n                 (let ((alist (collect (cadr spec)))\n         ",
+"              (renames (map (lambda (x) `((car x) . (cadr x))) (cddr spec))))\n  ",
+"                 (map (lambda (s) (or (assq (car s) renames) s)) alist)))\n      ",
+"          ((prefix)\n                 (let ((alist (collect (cadr spec))))\n      ",
+"             (map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alis",
+"t)))\n                ((except)\n                 (let ((alist (collect (cadr spec",
+"))))\n                   (let loop ((alist alist))\n                     (if (null",
+"? alist)\n                         '()\n                         (if (memq (caar a",
+"list) (cddr spec))\n                             (loop (cdr alist))\n             ",
+"                (cons (car alist) (loop (cdr alist))))))))\n                (else",
+"\n                 (map (lambda (x) (cons x x)) (library-exports (getlib spec))))",
+"))))\n        (letrec\n            ((import\n               (lambda (spec)\n        ",
+"         (let ((lib (extract spec))\n                       (alist (collect spec)",
+"))\n                   (for-each\n                    (lambda (slot)\n             ",
+"         (library-import lib (cdr slot) (car slot)))\n                    alist))",
+")))\n          (for-each import (cdr form)))))))\n\n(define-macro export\n  (lambda ",
+"(form _)\n    (letrec\n        ((collect\n          (lambda (spec)\n            (con",
+"d\n             ((symbol? spec)\n              `(,spec . ,spec))\n             ((an",
+"d (list? spec) (= (length spec) 3) (eq? (car spec) 'rename))\n              `(,(l",
+"ist-ref spec 1) . ,(list-ref spec 2)))\n             (else\n              (error \"",
+"malformed export\")))))\n         (export\n           (lambda (spec)\n             (",
+"let ((slot (collect spec)))\n               (library-export (car slot) (cdr slot)",
+")))))\n      (for-each export (cdr form)))))\n\n(export define lambda quote set! if",
+" begin define-macro\n        let let* letrec letrec*\n        let-values let*-valu",
+"es define-values\n        quasiquote unquote unquote-splicing\n        and or\n    ",
+"    cond case else =>\n        do when unless\n        parameterize\n        define",
+"-syntax\n        syntax-quote syntax-unquote\n        syntax-quasiquote syntax-unq",
+"uote-splicing\n        let-syntax letrec-syntax\n        syntax-error)\n\n\n",
 "",
 ""
 };
+
+void
+pic_boot(pic_state *pic)
+{
+  pic_load_cstr(pic, &boot_rom[0][0]);
+}
 
 #if 0
 Local Variables:

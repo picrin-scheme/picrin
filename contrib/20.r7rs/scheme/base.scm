@@ -13,7 +13,6 @@
                 nan?
                 infinite?)
           (picrin macro)
-          (picrin string)
           (scheme file))
 
   ;; 4.1.2. Literal expressions
@@ -34,7 +33,7 @@
 
   ;; 4.1.7. Inclusion
 
-  (define-syntax include
+  (define-macro include
     (letrec ((read-file
               (lambda (filename)
                 (call-with-port (open-input-file filename)
@@ -208,17 +207,17 @@
 
     (define (constant? obj)
       (and (not (pair? obj))
-           (not (variable? obj))))
+           (not (identifier? obj))))
 
     (define (literal? obj)
-      (and (variable? obj)
+      (and (identifier? obj)
            (memq obj literals)))
 
     (define (many? pat)
       (and (pair? pat)
            (pair? (cdr pat))
-           (variable? (cadr pat))
-           (variable=? (cadr pat) ellipsis)))
+           (identifier? (cadr pat))
+           (identifier=? (cadr pat) ellipsis)))
 
     (define (pattern-validator pat)      ; pattern -> validator
       (letrec
@@ -228,8 +227,8 @@
                ((constant? pat)
                 #`(equal? '#,pat #,form))
                ((literal? pat)
-                #`(and (variable? #,form) (variable=? #'#,pat #,form)))
-               ((variable? pat)
+                #`(and (identifier? #,form) (identifier=? #'#,pat #,form)))
+               ((identifier? pat)
                 #t)
                ((many? pat)
                 (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
@@ -252,7 +251,7 @@
         '())
        ((literal? pat)
         '())
-       ((variable? pat)
+       ((identifier? pat)
         `(,pat))
        ((many? pat)
         (append (pattern-variables (car pat))
@@ -267,7 +266,7 @@
         '())
        ((literal? pat)
         '())
-       ((variable? pat)
+       ((identifier? pat)
         `((,pat . 0)))
        ((many? pat)
         (append (map-values succ (pattern-levels (car pat)))
@@ -285,7 +284,7 @@
                 '())
                ((literal? pat)
                 '())
-               ((variable? pat)
+               ((identifier? pat)
                 `((,pat . ,form)))
                ((many? pat)
                 (let ((head #`(drop-tail #,(length (cddr pat)) #,form))
@@ -303,7 +302,7 @@
       (cond
        ((constant? pat)
         pat)
-       ((variable? pat)
+       ((identifier? pat)
         (let ((it (assq pat levels)))
           (if it
               (if (= 0 (cdr it))
@@ -360,13 +359,13 @@
       #`(call-with-current-environment
          (lambda (env)
            (letrec
-               ((#,'rename (let ((reg (make-register)))
+               ((#,'rename (let ((wm (make-ephemeron)))
                              (lambda (x)
-                               (let ((y (reg x)))
+                               (let ((y (wm x)))
                                  (if y
                                      (cdr y)
                                      (let ((id (make-identifier x env)))
-                                       (reg x id)
+                                       (wm x id)
                                        id)))))))
              (lambda #,'it
                #,(compile-rules rules))))))
@@ -410,25 +409,19 @@
 
   (export define-syntax)
 
-  ;; 5.5 Recored-type definitions
+  ;; 5.5 Record-type definitions
 
-  (define ((boot-make-record-type <meta-type>) name)
-    (let ((rectype (make-record <meta-type>)))
-      (record-set! rectype 'name name)
-      rectype))
+  (define (make-record-type name)
+    (vector name))                      ; TODO
 
-  (define <record-type>
-    (let ((<record-type> ((boot-make-record-type #t) 'record-type)))
-      (record-set! <record-type> '@@type <record-type>)
-      <record-type>))
-
-  (define make-record-type (boot-make-record-type <record-type>))
-
-  (define-syntax (define-record-constructor type name . fields)
+  (define-syntax (define-record-constructor type field-alist name . fields)
     (let ((record #'record))
       #`(define (#,name . #,fields)
-          (let ((#,record (make-record #,type)))
-            #,@(map (lambda (field) #`(record-set! #,record '#,field #,field)) fields)
+          (let ((#,record (make-record #,type (make-vector #,(length field-alist)))))
+            #,@(map
+                (lambda (field)
+                  #`(vector-set! (record-datum #,record) #,(cdr (assq field field-alist)) #,field)) 
+                fields)
             #,record))))
 
   (define-syntax (define-record-predicate type name)
@@ -436,31 +429,39 @@
         (and (record? obj)
              (eq? (record-type obj) #,type))))
 
-  (define-syntax (define-record-accessor pred field accessor)
+  (define-syntax (define-record-accessor pred field-alist field accessor)
     #`(define (#,accessor record)
         (if (#,pred record)
-            (record-ref record '#,field)
+            (vector-ref (record-datum record) #,(cdr (assq field field-alist)))
             (error (string-append (symbol->string  '#,accessor) ": wrong record type") record))))
 
-  (define-syntax (define-record-modifier pred field modifier)
+  (define-syntax (define-record-modifier pred field-alist field modifier)
     #`(define (#,modifier record val)
         (if (#,pred record)
-            (record-set! record '#,field val)
+            (vector-set! (record-datum record) #,(cdr (assq field field-alist)) val)
             (error (string-append (symbol->string '#,modifier) ": wrong record type")  record))))
 
-  (define-syntax (define-record-field pred field accessor . modifier-opt)
+  (define-syntax (define-record-field pred field-alist field accessor . modifier-opt)
     (if (null? modifier-opt)
-        #`(define-record-accessor #,pred #,field #,accessor)
+        #`(define-record-accessor #,pred #,field-alist #,field #,accessor)
         #`(begin
-            (define-record-accessor #,pred #,field #,accessor)
-            (define-record-modifier #,pred #,field #,(car modifier-opt)))))
+            (define-record-accessor #,pred #,field-alist #,field #,accessor)
+            (define-record-modifier #,pred #,field-alist #,field #,(car modifier-opt)))))
 
   (define-syntax (define-record-type name ctor pred . fields)
-    #`(begin
-        (define #,name (make-record-type '#,name))
-        (define-record-constructor #,name #,@ctor)
-        (define-record-predicate #,name #,pred)
-        #,@(map (lambda (field) #`(define-record-field #,pred #,@field)) fields)))
+    (let ((field-alist (let lp ((fds fields) (idx 0) (alst '()))
+                            (if (null? fds)
+                              alst
+                              (lp (cdr fds)
+                                  (+ idx 1)
+                                  (cons
+                                    (cons (if (pair? (car fds)) (car (car fds)) (car fds)) idx)
+                                    alst))))))
+      #`(begin
+          (define #,name (make-record-type '#,name))
+          (define-record-constructor #,name #,field-alist #,@ctor)
+          (define-record-predicate #,name #,pred)
+          #,@(map (lambda (field) #`(define-record-field #,pred #,field-alist #,@field)) fields))))
 
   (export define-record-type)
 
@@ -774,6 +775,79 @@
 
   ;; 6.13. Input and output
 
+  (define (input-port-open? port)
+    (and (input-port? port) (port-open? port)))
+
+  (define (output-port-open? port)
+    (and (output-port? port) (port-open? port)))
+
+  (define (call-with-port port handler)
+    (let ((res (handler port)))
+      (close-port port)
+      res))
+
+  (define (open-input-string str)
+    (open-input-bytevector (list->bytevector (map char->integer (string->list str)))))
+
+  (define (open-output-string)
+    (open-output-bytevector))
+
+  (define (get-output-string port)
+    (list->string (map integer->char (bytevector->list (get-output-bytevector port)))))
+
+  (define (read-char . opt)
+    (let ((b (apply read-u8 opt)))
+      (if (eof-object? b)
+          b
+          (integer->char b))))
+
+  (define (peek-char . opt)
+    (let ((b (apply peek-u8 opt)))
+      (if (eof-object? b)
+          b
+          (integer->char b))))
+
+  (define (u8-ready? . opt)
+    #t)
+
+  (define (read-bytevector k . opt)
+    (let ((port (if (null? opt) (current-input-port) (car opt))))
+      (let ((buf (make-bytevector k)))
+        (let ((n (read-bytevector! buf port 0 k)))
+          (if (eof-object? n)
+              (eof-object)
+              (bytevector-copy buf 0 n))))))
+
+  (define (char-ready? . opt)
+    #t)
+
+  (define (newline . opt)
+    (apply write-u8 (char->integer #\newline) opt))
+
+  (define (write-char c . opt)
+    (apply write-u8 (char->integer c) opt))
+
+  (define (write-string s . opt)
+    (apply write-bytevector (list->bytevector (map char->integer (string->list s))) opt))
+
+  (define (read-line . opt)
+    (if (eof-object? (apply peek-char opt))
+        (eof-object)
+        (let loop ((str "") (c (apply read-char opt)))
+          (if (or (eof-object? c)
+                  (char=? c #\newline))
+              str
+              (loop (string-append str (string c)) (apply read-char opt))))))
+
+  (define (read-string k . opt)
+    (if (eof-object? (apply peek-char opt))
+        (eof-object)
+        (let loop ((k k) (str "") (c (apply read-char opt)))
+          (if (or (eof-object? c)
+                  (zero? k))
+              str
+              (loop (- k 1) (string-append str (string c)) (apply read-char opt))))))
+
   (export current-input-port
           current-output-port
           current-error-port
@@ -783,11 +857,11 @@
           port?
           input-port?
           output-port?
-          textual-port?
-          binary-port?
+          (rename port? textual-port?)
+          (rename port? binary-port?)
 
-          (rename port-open? input-port-open?)
-          (rename port-open? output-port-open?)
+          input-port-open?
+          output-port-open?
           close-port
           (rename close-port close-input-port)
           (rename close-port close-output-port)

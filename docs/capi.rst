@@ -28,7 +28,7 @@ If you want to create a contribution library with C, the only thing you need to 
 
     pic_get_args(pic, "ff", &a, &b);
 
-    return pic_float_value(a + b);
+    return pic_float_value(pic, a + b);
   }
 
   void
@@ -83,15 +83,12 @@ When you use dynamic memory allocation inside C APIs, you must be caseful about 
   pic_create_foo(pic_state *pic)
   {
     struct foo *f;
-    struct pic_data *dat;
 
     pic_get_args(pic, ""); // no args here
 
     f = create_foo();
 
-    data = pic_data_alloc(pic, &foo_type, md);
-
-    return pic_obj_value(data);
+    return pic_data_value(pic, md, &foo_type);
   }
 
   void

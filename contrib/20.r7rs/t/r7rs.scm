@@ -363,7 +363,24 @@
         (force x)
         (promise? x)))
 
+(let ()
+  (define x 0)
+  (define np (delay (begin
+		      (set! x (+ x 1))
+		      (if (= x 1) 'ok 'ng))))
+  (define op (delay-force np))
+  (force op)
+  (test 'ok (force np)))
 
+(let ()
+  (define flag #f)
+  (define p (delay (if flag
+		       'ok
+		       (begin
+			 (set! flag #t)
+			 (force p)
+			 'ng))))
+  (test 'ok (force p)))
 
 
 (define radix
@@ -1766,6 +1783,8 @@
   (test 'exception value)
   (test "condition: an-error!" (get-output-string out)))
 
+(flush-output-port)
+
 (define (test-exception-handler-4 v out)
   (call-with-current-continuation
    (lambda (k)
@@ -2099,14 +2118,14 @@
 ;; (test-read-error "(#; #;x #;y . z)")
 ;; (test-read-error "(#; #;x . z)")
 
-;; (test #\a (read (open-input-string "#\\a")))
-;; (test #\space (read (open-input-string "#\\space")))
-;; (test 0 (char->integer (read (open-input-string "#\\null"))))
-;; (test 7 (char->integer (read (open-input-string "#\\alarm"))))
-;; (test 8 (char->integer (read (open-input-string "#\\backspace"))))
-;; (test 9 (char->integer (read (open-input-string "#\\tab"))))
-;; (test 10 (char->integer (read (open-input-string "#\\newline"))))
-;; (test 13 (char->integer (read (open-input-string "#\\return"))))
+(test #\a (read (open-input-string "#\\a")))
+(test #\space (read (open-input-string "#\\space")))
+(test 0 (char->integer (read (open-input-string "#\\null"))))
+(test 7 (char->integer (read (open-input-string "#\\alarm"))))
+(test 8 (char->integer (read (open-input-string "#\\backspace"))))
+(test 9 (char->integer (read (open-input-string "#\\tab"))))
+(test 10 (char->integer (read (open-input-string "#\\newline"))))
+(test 13 (char->integer (read (open-input-string "#\\return"))))
 ;; (test #x7F (char->integer (read (open-input-string "#\\delete"))))
 ;; (test #x1B (char->integer (read (open-input-string "#\\escape"))))
 ;; (test #x03BB (char->integer (read (open-input-string "#\\λ"))))

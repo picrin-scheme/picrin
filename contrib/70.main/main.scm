@@ -41,7 +41,7 @@
       (lambda (in)
         (let loop ((expr (read in)))
           (unless (eof-object? expr)
-            (eval expr (library-environment (find-library '(picrin user))))
+            (eval expr (find-library "picrin.user"))
             (loop (read in)))))))
 
   (define (main)

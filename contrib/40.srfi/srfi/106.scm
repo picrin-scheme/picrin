@@ -34,7 +34,7 @@
                           (type *sock-stream*)
                           (flags *ai-passive*)
                           (protocol *ipproto-ip*))
-      (make-socket #f service family type flags protocol)))
+      (make-socket "" service family type flags protocol)))
 
   (define %address-family `((inet .   ,*af-inet*)
                             (inet6 .  ,*af-inet6*)

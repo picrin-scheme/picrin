@@ -1,44 +1,44 @@
 #include "picrin.h"
+#include "picrin/private/object.h"
+#include "picrin/private/state.h"
 
-struct pic_fullcont {
+struct fullcont {
   jmp_buf jmp;
 
-  struct pic_cont *prev_jmp;
+  struct cont *prev_jmp;
 
-  pic_checkpoint *cp;
+  struct checkpoint *cp;
 
   char *stk_pos, *stk_ptr;
   ptrdiff_t stk_len;
 
   pic_value *st_ptr;
-  size_t sp_offset, st_len;
+  size_t sp_offset;
+  ptrdiff_t st_len;
 
-  pic_callinfo *ci_ptr;
-  size_t ci_offset, ci_len;
+  struct callinfo *ci_ptr;
+  size_t ci_offset;
+  ptrdiff_t ci_len;
 
-  struct pic_proc **xp_ptr;
-  size_t xp_offset, xp_len;
+  const struct code *ip;
 
-  pic_code *ip;
+  struct object **arena;
+  size_t arena_size, arena_idx;
 
-  pic_value ptable;
-
-  struct pic_object **arena;
-  size_t arena_size;
-  int arena_idx;
-
-  pic_value results;
+  int retc;
+  pic_value *retv;
 };
+
+char *picrin_native_stack_start;
 
 static void
 cont_dtor(pic_state *pic, void *data)
 {
-  struct pic_fullcont *cont = data;
+  struct fullcont *cont = data;
 
   pic_free(pic, cont->stk_ptr);
   pic_free(pic, cont->st_ptr);
   pic_free(pic, cont->ci_ptr);
-  pic_free(pic, cont->xp_ptr);
   pic_free(pic, cont->arena);
   pic_free(pic, cont);
 }
@@ -46,11 +46,10 @@ cont_dtor(pic_state *pic, void *data)
 static void
 cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
 {
-  struct pic_fullcont *cont = data;
-  pic_checkpoint *cp;
+  struct fullcont *cont = data;
+  struct checkpoint *cp;
   pic_value *stack;
-  pic_callinfo *ci;
-  struct pic_proc **xp;
+  struct callinfo *ci;
   size_t i;
 
   /* checkpoint */
@@ -75,58 +74,50 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
     }
   }
 
-  /* exception handlers */
-  for (xp = cont->xp_ptr; xp != cont->xp_ptr + cont->xp_offset; ++xp) {
-    mark(pic, pic_obj_value(*xp));
-  }
-
   /* arena */
-  for (i = 0; i < (size_t)cont->arena_idx; ++i) {
+  for (i = 0; i < cont->arena_idx; ++i) {
     mark(pic, pic_obj_value(cont->arena[i]));
   }
-
-  /* parameter table */
-  mark(pic, cont->ptable);
-
-  /* result values */
-  mark(pic, cont->results);
 }
 
 static const pic_data_type cont_type = { "continuation", cont_dtor, cont_mark };
 
-static void save_cont(pic_state *, struct pic_fullcont **);
-static void restore_cont(pic_state *, struct pic_fullcont *);
+static void save_cont(pic_state *, struct fullcont *);
+static void restore_cont(pic_state *, struct fullcont *);
 
-static ptrdiff_t
-native_stack_length(pic_state *pic, char **pos)
+#if __GNUC__
+# define NOINLINE __attribute__ ((noinline))
+#else
+# define NOINLINE
+#endif
+
+static ptrdiff_t NOINLINE
+native_stack_length(char **pos)
 {
   char t;
 
-  *pos = (pic->native_stack_start > &t)
+  *pos = (picrin_native_stack_start > &t)
     ? &t
-    : pic->native_stack_start;
+    : picrin_native_stack_start;
 
-  return (pic->native_stack_start > &t)
-    ? pic->native_stack_start - &t
-    : &t - pic->native_stack_start;
+  return (picrin_native_stack_start > &t)
+    ? picrin_native_stack_start - &t
+    : &t - picrin_native_stack_start;
 }
 
-static void
-save_cont(pic_state *pic, struct pic_fullcont **c)
+static void NOINLINE
+save_cont(pic_state *pic, struct fullcont *cont)
 {
   void pic_vm_tear_off(pic_state *);
-  struct pic_fullcont *cont;
   char *pos;
 
   pic_vm_tear_off(pic);         /* tear off */
-
-  cont = *c = pic_malloc(pic, sizeof(struct pic_fullcont));
 
   cont->prev_jmp = pic->cc;
 
   cont->cp = pic->cp;
 
-  cont->stk_len = native_stack_length(pic, &pos);
+  cont->stk_len = native_stack_length(&pos);
   cont->stk_pos = pos;
   assert(cont->stk_len > 0);
   cont->stk_ptr = pic_malloc(pic, cont->stk_len);
@@ -139,42 +130,37 @@ save_cont(pic_state *pic, struct pic_fullcont **c)
 
   cont->ci_offset = pic->ci - pic->cibase;
   cont->ci_len = pic->ciend - pic->cibase;
-  cont->ci_ptr = pic_malloc(pic, sizeof(pic_callinfo) * cont->ci_len);
-  memcpy(cont->ci_ptr, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
-
-  cont->xp_offset = pic->xp - pic->xpbase;
-  cont->xp_len = pic->xpend - pic->xpbase;
-  cont->xp_ptr = pic_malloc(pic, sizeof(struct pic_proc *) * cont->xp_len);
-  memcpy(cont->xp_ptr, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
+  cont->ci_ptr = pic_malloc(pic, sizeof(struct callinfo) * cont->ci_len);
+  memcpy(cont->ci_ptr, pic->cibase, sizeof(struct callinfo) * cont->ci_len);
 
   cont->ip = pic->ip;
 
-  cont->ptable = pic->ptable;
-
   cont->arena_idx = pic->arena_idx;
   cont->arena_size = pic->arena_size;
-  cont->arena = pic_malloc(pic, sizeof(struct pic_object *) * pic->arena_size);
-  memcpy(cont->arena, pic->arena, sizeof(struct pic_object *) * pic->arena_size);
+  cont->arena = pic_malloc(pic, sizeof(struct object *) * pic->arena_size);
+  memcpy(cont->arena, pic->arena, sizeof(struct object *) * pic->arena_size);
 
-  cont->results = pic_undef_value();
+  cont->retc = 0;
+  cont->retv = NULL;
 }
 
-static void
-native_stack_extend(pic_state *pic, struct pic_fullcont *cont)
+static void NOINLINE
+native_stack_extend(pic_state *pic, struct fullcont *cont)
 {
-  volatile pic_value v[1024];
+  pic_value v[1024];
 
-  ((void)v);
+  memset(v, 0, sizeof v);
+
   restore_cont(pic, cont);
 }
 
 PIC_NORETURN static void
-restore_cont(pic_state *pic, struct pic_fullcont *cont)
+restore_cont(pic_state *pic, struct fullcont *cont)
 {
   char v;
-  struct pic_fullcont *tmp = cont;
+  struct fullcont *tmp = cont;
 
-  if (&v < pic->native_stack_start) {
+  if (&v < picrin_native_stack_start) {
     if (&v > cont->stk_pos) native_stack_extend(pic, cont);
   }
   else {
@@ -184,27 +170,20 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
   pic->cc = cont->prev_jmp;
   pic->cp = cont->cp;
 
-  pic->stbase = pic_realloc(pic, pic->stbase, sizeof(pic_value) * cont->st_len);
+  assert(pic->stend - pic->stbase >= cont->st_len);
   memcpy(pic->stbase, cont->st_ptr, sizeof(pic_value) * cont->st_len);
   pic->sp = pic->stbase + cont->sp_offset;
   pic->stend = pic->stbase + cont->st_len;
 
-  pic->cibase = pic_realloc(pic, pic->cibase, sizeof(pic_callinfo) * cont->ci_len);
-  memcpy(pic->cibase, cont->ci_ptr, sizeof(pic_callinfo) * cont->ci_len);
+  assert(pic->ciend - pic->cibase >= cont->ci_len);
+  memcpy(pic->cibase, cont->ci_ptr, sizeof(struct callinfo) * cont->ci_len);
   pic->ci = pic->cibase + cont->ci_offset;
   pic->ciend = pic->cibase + cont->ci_len;
 
-  pic->xpbase = pic_realloc(pic, pic->xpbase, sizeof(struct pic_proc *) * cont->xp_len);
-  memcpy(pic->xpbase, cont->xp_ptr, sizeof(struct pic_proc *) * cont->xp_len);
-  pic->xp = pic->xpbase + cont->xp_offset;
-  pic->xpend = pic->xpbase + cont->xp_len;
-
   pic->ip = cont->ip;
 
-  pic->ptable = cont->ptable;
-
-  pic->arena = pic_realloc(pic, pic->arena, sizeof(struct pic_object *) * cont->arena_size);
-  memcpy(pic->arena, cont->arena, sizeof(struct pic_object *) * cont->arena_size);
+  assert(pic->arena_size >= cont->arena_size);
+  memcpy(pic->arena, cont->arena, sizeof(struct object *) * cont->arena_size);
   pic->arena_size = cont->arena_size;
   pic->arena_idx = cont->arena_idx;
 
@@ -216,16 +195,20 @@ restore_cont(pic_state *pic, struct pic_fullcont *cont)
 PIC_NORETURN static pic_value
 cont_call(pic_state *pic)
 {
-  struct pic_proc *proc;
-  size_t argc;
-  pic_value *argv;
-  struct pic_fullcont *cont;
+  int argc, i;
+  pic_value *argv, *retv;
+  struct fullcont *cont;
 
-  proc = pic_get_proc(pic);
   pic_get_args(pic, "*", &argc, &argv);
 
-  cont = pic_data_ptr(pic_proc_env_ref(pic, proc, "cont"))->data;
-  cont->results = pic_list_by_array(pic, argc, argv);
+  retv = pic_alloca(pic, sizeof(pic_value) * argc);
+  for (i = 0; i < argc; ++i) {
+    retv[i] = argv[i];
+  }
+
+  cont = pic_data(pic, pic_closure_ref(pic, 0));
+  cont->retc = argc;
+  cont->retv = retv;
 
   /* execute guard handlers */
   pic_wind(pic, pic->cp, cont->cp);
@@ -233,65 +216,41 @@ cont_call(pic_state *pic)
   restore_cont(pic, cont);
 }
 
-pic_value
-pic_callcc_full(pic_state *pic, struct pic_proc *proc)
+static pic_value
+pic_callcc(pic_state *pic, pic_value proc)
 {
-  struct pic_fullcont *cont;
+  struct fullcont *cont = pic_malloc(pic, sizeof(struct fullcont));
 
-  save_cont(pic, &cont);
-  if (setjmp(cont->jmp)) {
-    return pic_values_by_list(pic, cont->results);
-  }
-  else {
-    struct pic_proc *c;
-    struct pic_data *dat;
+  if (setjmp(cont->jmp) != 0) {
+    return pic_valuesk(pic, cont->retc, cont->retv);
+  } else {
+    pic_value c[1];
 
-    c = pic_make_proc(pic, cont_call);
-
-    dat = pic_data_alloc(pic, &cont_type, cont);
+    save_cont(pic, cont);
 
     /* save the continuation object in proc */
-    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
+    c[0] = pic_lambda(pic, cont_call, 1, pic_data_value(pic, cont, &cont_type));
 
-    return pic_apply1(pic, proc, pic_obj_value(c));
+    return pic_applyk(pic, proc, 1, c);
   }
 }
 
 static pic_value
 pic_callcc_callcc(pic_state *pic)
 {
-  struct pic_proc *proc;
-  struct pic_fullcont *cont;
+  pic_value proc;
 
   pic_get_args(pic, "l", &proc);
 
-  save_cont(pic, &cont);
-  if (setjmp(cont->jmp)) {
-    return pic_values_by_list(pic, cont->results);
-  }
-  else {
-    struct pic_proc *c;
-    struct pic_data *dat;
-
-    c = pic_make_proc(pic, cont_call);
-
-    dat = pic_data_alloc(pic, &cont_type, cont);
-
-    /* save the continuation object in proc */
-    pic_proc_env_set(pic, c, "cont", pic_obj_value(dat));
-
-    return pic_apply_trampoline_list(pic, proc, pic_list1(pic, pic_obj_value(c)));
-  }
+  return pic_callcc(pic, proc);
 }
 
-#define pic_redefun(pic, lib, name, func)       \
-  pic_set(pic, lib, name, pic_obj_value(pic_make_proc(pic, func)))
+#define pic_redefun(pic, lib, name, func)               \
+  pic_set(pic, lib, name, pic_lambda(pic, func, 0))
 
 void
 pic_init_callcc(pic_state *pic)
 {
-  pic_deflibrary (pic, "(scheme base)") {
-    pic_redefun(pic, pic->PICRIN_BASE, "call-with-current-continuation", pic_callcc_callcc);
-    pic_redefun(pic, pic->PICRIN_BASE, "call/cc", pic_callcc_callcc);
-  }
+  pic_redefun(pic, "picrin.base", "call-with-current-continuation", pic_callcc_callcc);
+  pic_redefun(pic, "picrin.base", "call/cc", pic_callcc_callcc);
 }

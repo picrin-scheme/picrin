@@ -6,10 +6,9 @@
   (export define-macro
           make-identifier
           identifier?
-          identifier-variable
-          identifier-environment
-          variable?
-          variable=?)
+          identifier=?
+          identifier-base
+          identifier-environment)
 
   ;; simple macro
 
@@ -41,17 +40,17 @@
 
   (define (make-syntactic-closure env free form)
     (letrec
-        ((wrap (let ((register (make-register)))
+        ((wrap (let ((ephemeron (make-ephemeron)))
                  (lambda (var)
-                   (let ((id (register var)))
+                   (let ((id (ephemeron var)))
                      (if id
                          (cdr id)
                          (let ((id (make-identifier var env)))
-                           (register var id)
+                           (ephemeron var id)
                            id))))))
          (walk (lambda (f form)
                  (cond
-                  ((variable? form)
+                  ((identifier? form)
                    (f form))
                   ((pair? form)
                    (cons (walk f (car form)) (walk f (cdr form))))
@@ -64,7 +63,7 @@
                 (let loop ((free free))
                   (if (null? free)
                       (wrap free)
-                      (if (variable=? var (car free))
+                      (if (identifier=? var (car free))
                           var
                           (loop (cdr free))))))))
         (walk f form))))
@@ -75,10 +74,10 @@
   (define (strip-syntax form)
     (letrec
         ((unwrap (lambda (var)
-                   (identifier-variable var)))
+                   (identifier-base var)))
          (walk (lambda (f form)
                  (cond
-                  ((variable? form)
+                  ((identifier? form)
                    (f form))
                   ((pair? form)
                    (cons (walk f (car form)) (walk f (cdr form))))
@@ -103,49 +102,49 @@
   (define (er-transformer f)
     (lambda (form use-env mac-env)
       (letrec
-          ((rename (let ((register (make-register)))
+          ((rename (let ((ephemeron (make-ephemeron)))
                      (lambda (var)
-                       (let ((id (register var)))
+                       (let ((id (ephemeron var)))
                          (if id
                              (cdr id)
                              (let ((id (make-identifier var mac-env)))
-                               (register var id)
+                               (ephemeron var id)
                                id))))))
            (compare (lambda (x y)
-                      (variable=?
+                      (identifier=?
                        (make-identifier x use-env)
                        (make-identifier y use-env)))))
         (f form rename compare))))
 
   (define (ir-transformer f)
     (lambda (form use-env mac-env)
-      (let ((register1 (make-register))
-            (register2 (make-register)))
+      (let ((ephemeron1 (make-ephemeron))
+            (ephemeron2 (make-ephemeron)))
         (letrec
             ((inject (lambda (var1)
-                       (let ((var2 (register1 var1)))
+                       (let ((var2 (ephemeron1 var1)))
                          (if var2
                              (cdr var2)
                              (let ((var2 (make-identifier var1 use-env)))
-                               (register1 var1 var2)
-                               (register2 var2 var1)
+                               (ephemeron1 var1 var2)
+                               (ephemeron2 var2 var1)
                                var2)))))
-             (rename (let ((register (make-register)))
+             (rename (let ((ephemeron (make-ephemeron)))
                        (lambda (var)
-                         (let ((id (register var)))
+                         (let ((id (ephemeron var)))
                            (if id
                                (cdr id)
                                (let ((id (make-identifier var mac-env)))
-                                 (register var id)
+                                 (ephemeron var id)
                                  id))))))
              (flip (lambda (var2) ; unwrap if injected, wrap if not injected
-                     (let ((var1 (register2 var2)))
+                     (let ((var1 (ephemeron2 var2)))
                        (if var1
                            (cdr var1)
                            (rename var2)))))
              (walk (lambda (f form)
                      (cond
-                      ((variable? form)
+                      ((identifier? form)
                        (f form))
                       ((pair? form)
                        (cons (walk f (car form)) (walk f (cdr form))))
@@ -154,7 +153,7 @@
                       (else
                        form))))
              (compare (lambda (x y)
-                        (variable=?
+                        (identifier=?
                          (make-identifier x mac-env)
                          (make-identifier y mac-env)))))
           (walk flip (f (walk inject form) inject compare))))))
