@@ -155,6 +155,7 @@ bigint_vec_sub(pic_state *pic, const pic_value v1, const pic_value v2)
   int i, len;
   pic_value ret;
 
+  assert (! bigint_vec_lt(pic, v1, v2)); // v1 >= v2
   len = pic_vec_len(pic, v1); // v1 must be larger than v2
   carry = 0;
   ret = pic_make_vec(pic, len, NULL);
@@ -188,7 +189,7 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
 
   len1 = pic_vec_len(pic, v1);
   len2 = pic_vec_len(pic, v2);
-  tmp = (bigint_digit *) malloc((len1 + len2) * sizeof(bigint_digit));
+  tmp = (bigint_digit *) pic_malloc(pic, (len1 + len2) * sizeof(bigint_digit));
   carry = 0;
 
   for (i = 0; i < len1 + len2; ++i) {
@@ -213,7 +214,7 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
     pic_vec_set(pic, ret, i, pic_int_value(pic, tmp[i]));
   }
 
-  free(tmp);
+  pic_free(pic, tmp);
   return bigint_vec_compact(pic, ret);
 }
 
@@ -227,7 +228,7 @@ bigint_vec_div(pic_state *pic, const pic_value v1, const pic_value v2,
  
   // Very slow, but still in polynomial time. :)
   quov = pic_make_vec(pic, 0, NULL);
-  remv = bigint_vec_clone(pic, v1);
+  remv = v1;
   one = pic_make_vec(pic, 1, NULL);
   pic_vec_set(pic, one, 0, pic_int_value(pic, 1));
 
@@ -261,7 +262,7 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
     pic_vec_set(pic, ret, i, pic_int_value(pic, 0));
   }
   for (i = 0; i < len; ++i) {
-    carry |= (bigint_2digits) pic_int(pic, pic_vec_ref(pic, val, i)) << bitsh;
+    carry |= (bigint_2digits) (bigint_digit) pic_int(pic, pic_vec_ref(pic, val, i)) << bitsh;
     pic_vec_set(pic, ret, i + bytesh, pic_int_value(pic, carry & bigint_digit_max));
     carry >>= bigint_shift;
   }
@@ -585,6 +586,7 @@ bigint_to_string(pic_state *pic, struct pic_bigint_t *value, int radix)
     buf[i - 1 - j] = tmp;
   }
 
+  assert (i <= len);
   result = pic_str_value(pic, buf, i);
   pic_free(pic, buf);
 
@@ -682,10 +684,14 @@ pic_big_number_bigint_sub(pic_state *pic)
   bi1 = take_bigint_or_int(pic, value1);
   bi2 = take_bigint_or_int(pic, value2);
 
-  bi2->signum = 1 - bi2->signum;
-  result = bigint_add(pic, bi1, bi2);
-  bi2->signum = 1 - bi2->signum;
-
+  if (bi1 != bi2) { // destructive change of bi2 will not cause problems
+    bi2->signum = 1 - bi2->signum;
+    result = bigint_add(pic, bi1, bi2);
+    bi2->signum = 1 - bi2->signum;
+  } else {
+    // 0
+    return pic_data_value(pic, bigint_init_int(pic, 0), &bigint_type);
+  }
   return pic_data_value(pic, result, &bigint_type);
 }
 
