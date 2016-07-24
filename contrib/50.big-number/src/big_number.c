@@ -53,8 +53,7 @@ bigint_vec_from_int(pic_state *pic, int v)
     ret = pic_make_vec(pic, 1, NULL);
     pic_vec_set(pic, ret, 0, v);
   }
-  pic_protect(pic, ret);
-  return ret;
+  return pic_protect(pic, ret);
 }
 
 #define COMPACT(ret, ai) (ret = bigint_vec_compact(pic, ret), pic_leave(pic, ai), pic_protect(pic, ret))
@@ -63,8 +62,6 @@ static pic_value
 bigint_vec_clone(pic_state *pic, const pic_value v) {
   size_t i;
   size_t len = pic_vec_len(pic, v);
-  size_t ai;
-  ai = pic_enter(pic);
   pic_value ret = pic_make_vec(pic, len, NULL);
   pic_protect(pic, ret);
 
@@ -84,21 +81,16 @@ bigint_vec_compact(pic_state *pic, const pic_value v)
   int i;
   int l = pic_vec_len(pic, v) - 1;
   pic_value ret;
-  size_t ai;
 
   while (l >= 0 && pic_int(pic, pic_vec_ref(pic, v, l)) == 0) {
     --l;
   }
-  ai = pic_enter(pic);
-  pic_protect(pic, v);
   ret = pic_make_vec(pic, l + 1, NULL);
   for (i = 0; i <= l; ++i) {
     pic_vec_set(pic, ret, i, pic_vec_ref(pic, v, i));
   }
 
-  pic_leave(pic, ai);
-  pic_protect(pic, ret);
-  return ret;
+  return pic_protect(pic, ret);
 }
 
 
@@ -184,10 +176,8 @@ bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
   }
 
   assert (carry == 0);
-  
-  ret = bigint_vec_compact(pic, ret);
-  pic_leave(pic, ai);
-  pic_protect(pic, ret);
+
+  COMPACT(ret, ai);
 
   return ret;
 }
@@ -222,14 +212,13 @@ bigint_vec_sub(pic_state *pic, const pic_value v1, const pic_value v2)
   if (carry) {
     chk_vc(v1);
     chk_vc(v2);
-    printf("carry=%d\n", carry);
+    printf("carry=%llu\n", carry);
   }
   assert (carry == 0);
   ret = bigint_vec_compact(pic, ret);
   pic_leave(pic, ai);
-  pic_protect(pic, ret);
 
-  return ret;
+  return pic_protect(pic, ret);
 }
 
 static pic_value 
@@ -376,7 +365,7 @@ bigint_init_int(pic_state *pic, int value)
   }
   bi->digits = bigint_vec_compact(pic, bn);
 
-  return pic_data_value(pic, bi, &bigint_type);
+  return pic_protect(pic, pic_data_value(pic, bi, &bigint_type));
 }
 
 /* radix is in 2 ... 36 */
@@ -438,7 +427,7 @@ bigint_init_str(pic_state *pic, pic_value str, int radix)
   retbi->digits = ret;
   pic_leave(pic, ai);
   pic_protect(pic, ret);
-  return pic_data_value(pic, retbi, &bigint_type);
+  return pic_protect(pic, pic_data_value(pic, retbi, &bigint_type));
 }
 
 static pic_value
@@ -467,7 +456,7 @@ bigint_add(pic_state *pic, pic_value v1, pic_value v2)
   retbi->signum = bn1->signum;
   retbi->digits = bigint_vec_add(pic, bn1->digits, bn2->digits);
 
-  return pic_data_value(pic, retbi, &bigint_type);
+  return pic_protect(pic, pic_data_value(pic, retbi, &bigint_type));
 }
 
 static pic_value 
@@ -486,7 +475,7 @@ bigint_mul(pic_state *pic, pic_value v1, pic_value v2)
     retbi->signum = 0;
   }
   retbi->digits = ret;
-  return pic_data_value(pic, retbi, &bigint_type);
+  return pic_protect(pic, pic_data_value(pic, retbi, &bigint_type));
 }
 
 /*
@@ -519,8 +508,8 @@ bigint_div(pic_state *pic, pic_value v1, pic_value v2,
   rembi->signum = pic_vec_len(pic, rv) == 0 ? 0 : v1bi->signum;
   rembi->digits = rv;
 
-  *quo = pic_data_value(pic, quobi, &bigint_type);
-  *rem = pic_data_value(pic, rembi, &bigint_type);
+  *quo = pic_protect(pic, pic_data_value(pic, quobi, &bigint_type));
+  *rem = pic_protect(pic, pic_data_value(pic, rembi, &bigint_type));
   return 0;
 }
 
@@ -599,7 +588,7 @@ bigint_asl(pic_state *pic, pic_value v, int sh)
 
   retbi->signum = val->signum;
   retbi->digits = bigint_vec_asl(pic, val->digits, sh);
-  return pic_data_value(pic, retbi, &bigint_type);
+  return pic_protect(pic, pic_data_value(pic, retbi, &bigint_type));
 }
 
 static double
@@ -693,9 +682,8 @@ bigint_to_string(pic_state *pic, const pic_value val, int radix)
   result = pic_str_value(pic, buf, i);
   free(buf);
   pic_leave(pic, ai);
-  pic_protect(pic, result);
 
-  return result;
+  return pic_protect(pic, result);
 }
 
 /* alternative of bigint_to_string. radix is forced to be 16. */
@@ -751,7 +739,7 @@ bigint_to_string_16(pic_state *pic, const pic_value val, int radix)
   result = pic_str_value(pic, buf, i);
   free(buf);
 
-  return result;
+  return pic_protect(pic, result);
 }
 
 /*
