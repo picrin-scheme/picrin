@@ -1,6 +1,6 @@
 CONTRIB_INITS += \
 	big_number
-CONTRIB_LIBS += contrib/50.big-number/lib/lib.scm
+CONTRIB_LIBS += contrib/50.big-number/t/lib.scm
 CONTRIB_SRCS += $(wildcard contrib/50.big-number/src/*.c)
 CONTRIB_TESTS += test-big-number
 
