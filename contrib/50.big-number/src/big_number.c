@@ -595,59 +595,6 @@ bigint_to_string(pic_state *pic, const struct pic_bigint_t *value, int radix)
   return result;
 }
 
-/* alternative of bigint_to_string. radix is forced to be 16. */
-static pic_value
-bigint_to_string_16(pic_state *pic, const struct pic_bigint_t *value, int radix)
-{
-  const char digits[17] = "0123456789abcdef";
-  char *buf;
-  int len;
-  int i, dstart, j, k;
-  pic_value result;
-
-  if (pic_vec_len(pic, value->digits) == 0) { // value == 0.
-    buf = malloc(1);
-    buf[0] = '0';
-    result = pic_str_value(pic, buf, 1);
-    free(buf);
-    return result;
-  }
-
-  assert (bigint_shift == 32);
-  len = 8 * pic_vec_len(pic, value->digits) + 1;
-  dstart = 0;
-  buf = malloc(len);
-
-  if (value->signum) {
-    buf[0] = '-';
-    dstart = 1;
-  }
-
-  i = dstart;
-  for (j = 0; j < len / 8; ++j) {
-    bigint_digit d = pic_int_value(pic, pic_vec_ref(pic, value->digits, j));
-    for (k = 0; k < 8; ++k) {
-      buf[dstart + 8 * j + k] = digits[d % 16];
-      d /= 16;
-    }
-  }
-  i = dstart + 8 * (len / 8);
-  while (i >= dstart && buf[i - 1] == '0') {
-    i--;
-  }
-  assert (dstart <= i);
-  // reverse digits
-  for (j = 0; j < (i - dstart) / 2; ++j) {
-    char tmp = buf[dstart + j];
-    buf[dstart + j] = buf[i - 1 - j];
-    buf[i - 1 - j] = tmp;
-  }
-
-  result = pic_str_value(pic, buf, i);
-  free(buf);
-
-  return result;
-}
 
 /*
  * Take a value that contains a bigint or an int, and convert it to a bigint.
