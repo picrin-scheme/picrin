@@ -1,16 +1,6 @@
 #include "picrin.h"
 #include "picrin/extra.h"
 #include <math.h>
-void chk_vc(pic_value v) {
-  int i;
-  int len = pic_vec_len(0, v);
-  printf("[debug] len=%d ", len);
-  for (i = 0; i < len; ++i) {
-    printf("%8x ", pic_int(0, pic_vec_ref(0, v, i)));
-  }
-  printf("\n");
-}
-
 
 /**
  * Big integer is represented as a vector of digits.
@@ -177,11 +167,6 @@ bigint_vec_sub(pic_state *pic, const pic_value v1, const pic_value v2)
     carry >>= bigint_shift;
   }
 
-  if (carry) {
-    chk_vc(v1);
-    chk_vc(v2);
-    printf("carry=%d\n", carry);
-  }
   assert (carry == 0);
   return bigint_vec_compact(pic, ret);
 }
@@ -252,7 +237,7 @@ bigint_vec_div(pic_state *pic, const pic_value v1, const pic_value v2,
     pic_value sh = bigint_vec_asl(pic, v2, i);
     if (! bigint_vec_lt(pic, remv, sh)) { // 2^i * v2 <= rem
       remv = bigint_vec_sub(pic, remv, sh);
-      quov = bigint_vec_add(pic, quov, bigint_vec_asl(pic, one, i));
+      quov = bigint_vec_add(pic, quov, bigint_vec_asl(pic, one, i)); // [suspect]!!
     }
     assert (bigint_vec_lt(pic, remv, sh));
   }
@@ -963,7 +948,7 @@ pic_big_number_bigint_to_string(pic_state *pic)
   }
 
   bi = take_bigint_or_int(pic, val);
-  result = bigint_to_string_16(pic, bi, radix);
+  result = bigint_to_string(pic, bi, radix);
 
   return result;
 }

@@ -872,7 +872,7 @@ gc_init(pic_state *PIC_UNUSED(pic))
 void
 pic_gc(pic_state *pic)
 {
-  if (! pic->gc_enable) {
+  if (true || ! pic->gc_enable) {
     return;
   }
 
