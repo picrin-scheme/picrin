@@ -274,6 +274,32 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
   return bigint_vec_compact(pic, ret);
 }
 
+static pic_value
+bigint_vec_rand(pic_state *pic, pic_value max)
+{
+  int i, len;
+  pic_value ret;
+  bigint_digit msb;
+  
+  len = pic_vec_len(pic, max);
+  if (len == 0) {
+    return max; // 0
+  }
+  msb = pic_int(pic, pic_vec_ref(pic, max, len - 1));
+
+  while (1) {
+    ret = pic_make_vec(pic, len, NULL);
+    // TODO ugly random number generation!!
+    for (i = 0; i < len - 1; ++i) {
+      pic_vec_set(pic, ret, i, pic_int_value(pic, rand()));
+    }
+    pic_vec_set(pic, ret, len - 1, pic_int_value(pic, msb == bigint_digit_max ? rand() : (rand() % msb)));
+    if (bigint_vec_lt(pic, ret, max)) {
+      return ret;
+    }
+  }
+}
+
 
 /*
  * Creates a big integer by the given int value.
@@ -614,6 +640,18 @@ take_bigint_or_int(pic_state *pic, pic_value val)
   return bi;
 }
 
+static struct pic_bigint_t *
+bigint_rand(pic_state *pic, struct pic_bigint_t *bi)
+{
+  struct pic_bigint_t *retbi;
+
+  retbi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+  retbi->signum = 0;
+  retbi->digits = bigint_vec_rand(pic, bi->digits);
+
+  return retbi;
+}
+
 /*
  * make-bigint can take int or string as its argument.
  */
@@ -900,6 +938,20 @@ pic_big_number_bigint_to_string(pic_state *pic)
   return result;
 }
 
+static pic_value
+pic_big_number_bigint_rand(pic_state *pic)
+{
+  pic_value val;
+  struct pic_bigint_t *bi;
+  struct pic_bigint_t *result;
+
+  pic_get_args(pic, "o", &val);
+  bi = take_bigint_or_int(pic, val);
+  result = bigint_rand(pic, bi);
+
+  return pic_data_value(pic, result, &bigint_type);
+}
+
 void
 pic_init_big_number(pic_state *pic)
 {
@@ -920,4 +972,5 @@ pic_init_big_number(pic_state *pic)
   pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
   pic_defun(pic, "bigint->number", pic_big_number_bigint_to_number);
   pic_defun(pic, "bigint->string", pic_big_number_bigint_to_string);
+  pic_defun(pic, "bigint-rand", pic_big_number_bigint_rand);
 }

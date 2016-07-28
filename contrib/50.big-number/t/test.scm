@@ -205,3 +205,8 @@
 ;; powmod
 (define kyopuro-prime (make-bigint 1000000007))
 (test "1" (bigint->string (bigint-pow-mod 2 (bigint-sub kyopuro-prime 1) kyopuro-prime)))
+
+;; rand
+(test #t (bigint-less? (bigint-rand (make-bigint "4294967296")) (make-bigint "4294967296")))
+(test #t (bigint-equal? (bigint-rand 0) 0))
+
