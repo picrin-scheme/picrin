@@ -364,6 +364,26 @@ bigint_vec_bit_test(pic_state *pic, const pic_value val, int index)
   bigint_digit d = pic_int(pic, pic_vec_ref(pic, val, byte));
   return (d & ((bigint_digit) 1 << bit)) != 0;
 }
+static int
+bigint_vec_bit_length(pic_state *pic, pic_value val)
+{
+  int i;
+  int len = pic_vec_len(pic, val);
+  bigint_digit msb;
+
+  if (len == 0) {
+    return 0;
+  }
+
+  msb = pic_int(pic, pic_vec_ref(pic, val, len - 1));
+
+  for (i = bigint_shift - 1; i >= 0; --i) {
+    if (msb & ((bigint_digit) 1 << i)) {
+      return bigint_shift * (len - 1) + i + 1;
+    }
+  }
+  PIC_UNREACHABLE();
+}
 
 unsigned long genrand_int32(void); // in 30.random/src/mt19937ar.c
 
@@ -684,6 +704,7 @@ bigint_bit_test(pic_state *pic, struct pic_bigint_t *val, int index)
 
   return bigint_vec_bit_test(pic, val->digits, index);
 }
+
 
 static double
 bigint_to_double(pic_state *pic, struct pic_bigint_t *bi)
@@ -1072,10 +1093,23 @@ pic_big_number_bigint_bit_test(pic_state *pic)
 {
   pic_value val;
   int index;
-  struct pic_bigint_t *result;
 
   pic_get_args(pic, "oi", &val, &index);
   return pic_bool_value(pic, bigint_bit_test(pic, take_bigint_or_int(pic, val), index));
+}
+
+/**
+ * Returns the minimum non-negative integer i s.t. |val| < 2^i.
+ */
+static pic_value
+pic_big_number_bigint_bit_length(pic_state *pic)
+{
+  pic_value val;
+  struct pic_bigint_t *valbi;
+
+  pic_get_args(pic, "o", &val);
+  valbi = take_bigint_or_int(pic, val);
+  return pic_int_value(pic, bigint_vec_bit_length(pic, valbi->digits));
 }
 
 static pic_value
@@ -1154,6 +1188,7 @@ pic_init_big_number(pic_state *pic)
   pic_defun(pic, "bigint-less?", pic_big_number_bigint_less_p);
   pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
   pic_defun(pic, "bigint-bit-test", pic_big_number_bigint_bit_test);
+  pic_defun(pic, "bigint-bit-length", pic_big_number_bigint_bit_length);
   pic_defun(pic, "bigint->number", pic_big_number_bigint_to_number);
   pic_defun(pic, "bigint->string", pic_big_number_bigint_to_string);
   pic_defun(pic, "bigint-rand", pic_big_number_bigint_rand);
