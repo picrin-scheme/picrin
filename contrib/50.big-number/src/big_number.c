@@ -16,9 +16,6 @@ static void
 bigint_dtor(pic_state *pic, void *data)
 {
   pic_value v = ((struct pic_bigint_t *)data)->digits;
-  for (int i = 0; i < pic_vec_len(pic, v); ++i) {
-    pic_vec_set(pic, v, i, pic_undef_value(pic));
-  }
 }
 
 static void
