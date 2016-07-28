@@ -75,6 +75,7 @@
       (test #t (bigint-equal? (make-bigint ab) (bigint-mul (make-bigint a) (make-bigint b)))))))
 (test-mul "15267" "41446" "632756082")
 (test-mul "17568913159" "72371657891659178645" "1271491372671417140039272289555")
+(test-mul "0" "0" "0")
 
 (test #t
   (bigint-equal? (make-bigint "18446744065119617025")

@@ -185,9 +185,16 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
   pic_value ret;
   bigint_digit *tmp;
   bigint_2digits carry;
+  int trim;
 
   len1 = pic_vec_len(pic, v1);
   len2 = pic_vec_len(pic, v2);
+  if (len1 == 0) {
+    return v1;
+  }
+  if (len2 == 0) {
+    return v2;
+  }
   tmp = (bigint_digit *) malloc((len1 + len2) * sizeof(bigint_digit));
   carry = 0;
 
@@ -208,13 +215,14 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
     tmp[i + len2] = carry;
   }
 
-  ret = pic_make_vec(pic, len1 + len2, NULL);
-  for (i = 0; i < len1 + len2; ++i) {
+  trim = tmp[len1 + len2 - 1] ? 0 : 1;
+  ret = pic_make_vec(pic, len1 + len2 - trim, NULL);
+  for (i = 0; i < len1 + len2 - trim; ++i) {
     pic_vec_set(pic, ret, i, pic_int_value(pic, tmp[i]));
   }
 
   free(tmp);
-  return bigint_vec_compact(pic, ret);
+  return ret;
 }
 
 static void
