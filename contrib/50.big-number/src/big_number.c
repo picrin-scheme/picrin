@@ -348,6 +348,9 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
   return ret;
 }
 
+unsigned long genrand_int32(void); // in 30.random/src/mt19937ar.c
+
+
 static pic_value
 bigint_vec_rand(pic_state *pic, pic_value max)
 {
@@ -365,9 +368,10 @@ bigint_vec_rand(pic_state *pic, pic_value max)
     ret = pic_make_vec(pic, len, NULL);
     // TODO ugly random number generation!!
     for (i = 0; i < len - 1; ++i) {
-      pic_vec_set(pic, ret, i, pic_int_value(pic, rand()));
+      pic_vec_set(pic, ret, i, pic_int_value(pic, genrand_int32()));
     }
-    pic_vec_set(pic, ret, len - 1, pic_int_value(pic, msb == bigint_digit_max ? rand() : (rand() % msb)));
+    pic_vec_set(pic, ret, len - 1, pic_int_value(pic, msb == bigint_digit_max ? genrand_int32() : (genrand_int32() % (msb + 1))));
+    ret = bigint_vec_compact(pic, ret);
     if (bigint_vec_lt(pic, ret, max)) {
       return ret;
     }
