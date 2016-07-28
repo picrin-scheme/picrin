@@ -348,6 +348,23 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
   return ret;
 }
 
+static bool
+bigint_vec_bit_test(pic_state *pic, const pic_value val, int index)
+{
+  int bit, byte;
+
+  assert (index >= 0);
+  byte = index / bigint_shift;
+  bit = index % bigint_shift;
+
+  if (byte >= pic_vec_len(pic, val)) {
+    return false;
+  }
+
+  bigint_digit d = pic_int(pic, pic_vec_ref(pic, val, byte));
+  return (d & ((bigint_digit) 1 << bit)) != 0;
+}
+
 unsigned long genrand_int32(void); // in 30.random/src/mt19937ar.c
 
 
@@ -653,6 +670,19 @@ bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
   retbi->signum = val->signum;
   retbi->digits = bigint_vec_asl(pic, val->digits, sh);
   return retbi;
+}
+
+static bool
+bigint_bit_test(pic_state *pic, struct pic_bigint_t *val, int index)
+{
+  if (index < 0) {
+    pic_error(pic, "bigint-bit-test: index must be >= 0:", 1, index);
+  }
+  if (val->signum) {
+    pic_error(pic, "bigint-bit-test does not support negative numbers", 0);
+  }
+
+  return bigint_vec_bit_test(pic, val->digits, index);
 }
 
 static double
@@ -1038,6 +1068,17 @@ pic_big_number_bigint_asl(pic_state *pic)
   return pic_data_value(pic, result, &bigint_type);
 }
 static pic_value
+pic_big_number_bigint_bit_test(pic_state *pic)
+{
+  pic_value val;
+  int index;
+  struct pic_bigint_t *result;
+
+  pic_get_args(pic, "oi", &val, &index);
+  return pic_bool_value(pic, bigint_bit_test(pic, take_bigint_or_int(pic, val), index));
+}
+
+static pic_value
 pic_big_number_bigint_to_number(pic_state *pic)
 {
   pic_value val;
@@ -1112,6 +1153,7 @@ pic_init_big_number(pic_state *pic)
   pic_defun(pic, "bigint-equal?", pic_big_number_bigint_equal_p);
   pic_defun(pic, "bigint-less?", pic_big_number_bigint_less_p);
   pic_defun(pic, "bigint-asl", pic_big_number_bigint_asl);
+  pic_defun(pic, "bigint-bit-test", pic_big_number_bigint_bit_test);
   pic_defun(pic, "bigint->number", pic_big_number_bigint_to_number);
   pic_defun(pic, "bigint->string", pic_big_number_bigint_to_string);
   pic_defun(pic, "bigint-rand", pic_big_number_bigint_rand);

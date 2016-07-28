@@ -9,7 +9,7 @@
     (if (bigint-less? b 1)
 	sum
 	(let ((aa (bigint-mul a a)))
-	  (if (bigint-equal? (bigint-rem b 2) 0)
+	  (if (not (bigint-bit-test b 0))
 	      (bigint-pow-positive aa (bigint-div b 2) sum)
 	      (bigint-pow-positive aa (bigint-div b 2) (bigint-mul sum a))))))
   (define (bigint-pow-mod a b mod)
@@ -20,7 +20,7 @@
     (if (bigint-less? b 1)
 	sum
 	(let ((aa (bigint-mul-mod a a mod)))
-	  (if (bigint-equal? (bigint-rem b 2) 0)
+	  (if (not (bigint-bit-test b 0))
 	      (bigint-pow-mod-positive aa (bigint-div b 2) sum mod)
 	      (bigint-pow-mod-positive aa (bigint-div b 2) (bigint-mul-mod sum a mod) mod)))))
   (define (bigint-prime? prime . cert)
