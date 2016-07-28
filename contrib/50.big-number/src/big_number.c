@@ -224,7 +224,7 @@ bigint_vec_div(pic_state *pic, const pic_value v1, const pic_value v2,
   pic_value quov, remv, one;
   int i;
   assert (pic_vec_len(pic, v2) >= 1);
- 
+
   // Very slow, but still in polynomial time. :)
   quov = pic_make_vec(pic, 0, NULL);
   remv = v1;
@@ -244,6 +244,30 @@ bigint_vec_div(pic_state *pic, const pic_value v1, const pic_value v2,
 
   *quo = quov;
   *rem = remv;
+}
+static pic_value
+bigint_vec_rem(pic_state *pic, const pic_value v1, const pic_value v2)
+{
+  pic_value remv, one;
+  int i;
+  assert (pic_vec_len(pic, v2) >= 1);
+
+  // Very slow, but still in polynomial time. :)
+  remv = v1;
+  one = pic_make_vec(pic, 1, NULL);
+  pic_vec_set(pic, one, 0, pic_int_value(pic, 1));
+
+  int init = bigint_shift * (pic_vec_len(pic, v1) - pic_vec_len(pic, v2) + 1);
+  assert (bigint_vec_lt(pic, remv, bigint_vec_asl(pic, v2, init)));
+  for (i = init - 1; i >= 0; --i) {
+    pic_value sh = bigint_vec_asl(pic, v2, i);
+    if (! bigint_vec_lt(pic, remv, sh)) { // 2^i * v2 <= rem
+      remv = bigint_vec_sub(pic, remv, sh);
+    }
+    assert (bigint_vec_lt(pic, remv, sh));
+  }
+
+  return remv;
 }
 
 static pic_value 
@@ -459,6 +483,25 @@ bigint_div(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2,
   *quo = quobi;
   *rem = rembi;
   return 0;
+}
+static struct pic_bigint_t *
+bigint_rem(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
+{
+  struct pic_bigint_t *rembi;
+  pic_value rv;
+
+  if (pic_vec_len(pic, v2->digits) == 0) { // Division by zero
+    pic_error(pic, "bigint_rem: Division by zero", 0);
+  }
+
+  rv = bigint_vec_rem(pic, v1->digits, v2->digits);
+
+  rembi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+
+  rembi->signum = pic_vec_len(pic, rv) == 0 ? 0 : v1->signum;
+  rembi->digits = rv;
+
+  return rembi;
 }
 
 /*
@@ -770,13 +813,13 @@ static pic_value
 pic_big_number_bigint_rem(pic_state *pic)
 {
   pic_value value1, value2;
-  struct pic_bigint_t *bi1, *bi2, *rem, *quo;
+  struct pic_bigint_t *bi1, *bi2, *rem;
 
   pic_get_args(pic, "oo", &value1, &value2);
   bi1 = take_bigint_or_int(pic, value1);
   bi2 = take_bigint_or_int(pic, value2);
 
-  bigint_div(pic, bi1, bi2, &quo, &rem);
+  rem = bigint_rem(pic, bi1, bi2);
 
   return pic_data_value(pic, rem, &bigint_type);
 }
