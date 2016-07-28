@@ -12,11 +12,6 @@ struct pic_bigint_t {
   pic_value digits;
 };
 
-static void
-bigint_dtor(pic_state *pic, void *data)
-{
-  pic_value v = ((struct pic_bigint_t *)data)->digits;
-}
 
 static void
 bigint_mark(pic_state *pic, void *data, void (*gc_mark)(pic_state *, pic_value))
@@ -25,7 +20,7 @@ bigint_mark(pic_state *pic, void *data, void (*gc_mark)(pic_state *, pic_value))
   gc_mark(pic, bi->digits);
 }
 
-static const pic_data_type bigint_type = { "bigint", bigint_dtor, bigint_mark };
+static const pic_data_type bigint_type = { "bigint", NULL, bigint_mark };
 #define pic_bigint_p(o) (pic_data_p(pic, (o), &bigint_type))
 #define pic_bigint_data_ptr(o) ((struct pic_bigint_t *)pic_data(pic, o))
 
@@ -116,10 +111,10 @@ bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
   pic_value ret;
 
   if (pic_vec_len(pic, v1) == 0) {
-    return bigint_vec_clone(pic, v2);
+    return v2;
   }
   if (pic_vec_len(pic, v2) == 0) {
-    return bigint_vec_clone(pic, v1);
+    return v1;
   }
   // v1 > 0, v2 > 0
   len = pic_vec_len(pic, v1);
@@ -567,7 +562,7 @@ bigint_to_string(pic_state *pic, const struct pic_bigint_t *value, int radix)
     dstart = 1;
   }
 
-  cur = bigint_vec_clone(pic, value->digits);
+  cur = value->digits;
   rad = pic_make_vec(pic, 1, NULL);
   pic_vec_set(pic, rad, 0, pic_int_value(pic, radix)); // radix is 10 .. 36
 
