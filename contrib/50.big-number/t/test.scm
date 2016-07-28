@@ -210,3 +210,11 @@
 (test #t (bigint-less? (bigint-rand (make-bigint "4294967296")) (make-bigint "4294967296")))
 (test #t (bigint-equal? (bigint-rand 0) 0))
 
+;; prime?
+
+(test #f (bigint-prime? 561))
+(test #f (bigint-prime? 2047))
+(test #t (bigint-prime? kyopuro-prime))
+;; RSA Challenge
+
+(test #f (bigint-prime? rsa576))
