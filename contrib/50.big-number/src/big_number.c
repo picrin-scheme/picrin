@@ -15,12 +15,20 @@ struct pic_bigint_t {
 static void
 bigint_dtor(pic_state *pic, void *data)
 {
-  (void) pic;
-  (void) data;
-  // TODO empty, memory-leaking
+  pic_value v = ((struct pic_bigint_t *)data)->digits;
+  for (int i = 0; i < pic_vec_len(pic, v); ++i) {
+    pic_vec_set(pic, v, i, pic_undef_value(pic));
+  }
 }
 
-static const pic_data_type bigint_type = { "bigint", bigint_dtor, NULL };
+static void
+bigint_mark(pic_state *pic, void *data, void (*gc_mark)(pic_state *, pic_value))
+{
+  struct pic_bigint_t *bi = (struct pic_bigint_t *)data;
+  gc_mark(pic, bi->digits);
+}
+
+static const pic_data_type bigint_type = { "bigint", bigint_dtor, bigint_mark };
 #define pic_bigint_p(o) (pic_data_p(pic, (o), &bigint_type))
 #define pic_bigint_data_ptr(o) ((struct pic_bigint_t *)pic_data(pic, o))
 
@@ -102,7 +110,7 @@ bigint_vec_lt(pic_state *pic, const pic_value v1, const pic_value v2)
   return false;
 }
 
-static pic_value 
+static pic_value
 bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
 {
   bigint_2digits carry;
