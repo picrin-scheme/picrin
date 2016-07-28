@@ -271,6 +271,36 @@ bigint_vec_rem(pic_state *pic, const pic_value v1, const pic_value v2)
 }
 
 static pic_value 
+bigint_vec_mul_mod(pic_state *pic, const pic_value v1, const pic_value v2,
+		   const pic_value mod)
+{
+  return bigint_vec_rem(pic, bigint_vec_mul(pic, v1, v2), mod);
+  /*
+  int len1, i, j;
+  pic_value ret, cur, base;
+
+  len1 = pic_vec_len(pic, v1);
+  ret = pic_make_vec(pic, 0, NULL);
+  cur = v2;
+  base = pic_make_vec(pic, 2, NULL);
+  pic_vec_set(pic, base, 0, pic_int_value(pic, 0));
+  pic_vec_set(pic, base, 1, pic_int_value(pic, 1));
+
+  for (i = 0; i < len1; ++i) {
+    bigint_digit d1 = pic_int(pic, pic_vec_ref(pic, v1, i));
+    pic_value digit = pic_make_vec(pic, 1, NULL);
+    pic_vec_set(pic, digit, 0, pic_int_value(pic, d1));
+    ret = bigint_vec_add(pic, ret, bigint_vec_mul(pic, cur, digit));
+    ret = bigint_vec_rem(pic, ret, mod);
+    cur = bigint_vec_mul(pic, cur, base);
+    cur = bigint_vec_rem(pic, cur, mod);
+  }
+
+  return ret;
+  */
+}
+
+static pic_value
 bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
 {
   pic_value ret;
@@ -499,6 +529,31 @@ bigint_rem(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
   rembi = pic_malloc(pic, sizeof(struct pic_bigint_t));
 
   rembi->signum = pic_vec_len(pic, rv) == 0 ? 0 : v1->signum;
+  rembi->digits = rv;
+
+  return rembi;
+}
+
+static struct pic_bigint_t *
+bigint_mul_mod(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2,
+	       struct pic_bigint_t *mod)
+{
+  struct pic_bigint_t *rembi;
+  pic_value rv;
+
+  if (pic_vec_len(pic, mod->digits) == 0) { // Division by zero
+    pic_error(pic, "bigint_mul_mod: Division by zero", 0);
+  }
+
+  if (mod->signum) {
+    pic_error(pic, "bigint_mul_mod: Divisor not positive", 0);
+  }
+
+  rv = bigint_vec_mul_mod(pic, v1->digits, v2->digits, mod->digits);
+
+  rembi = pic_malloc(pic, sizeof(struct pic_bigint_t));
+
+  rembi->signum = pic_vec_len(pic, rv) == 0 ? 0 : (v1->signum ^ v2->signum);
   rembi->digits = rv;
 
   return rembi;
@@ -824,6 +879,25 @@ pic_big_number_bigint_rem(pic_state *pic)
   return pic_data_value(pic, rem, &bigint_type);
 }
 
+/*
+ * mod must be positive
+ */
+static pic_value
+pic_big_number_bigint_mul_mod(pic_state *pic)
+{
+  pic_value value1, value2, mod;
+  struct pic_bigint_t *bi1, *bi2, *modbi, *rem;
+
+  pic_get_args(pic, "ooo", &value1, &value2, &mod);
+  bi1 = take_bigint_or_int(pic, value1);
+  bi2 = take_bigint_or_int(pic, value2);
+  modbi = take_bigint_or_int(pic, mod);
+
+  rem = bigint_mul_mod(pic, bi1, bi2, modbi);
+
+  return pic_data_value(pic, rem, &bigint_type);
+}
+
 static pic_value
 pic_big_number_bigint_add_i(pic_state *pic)
 {
@@ -1006,6 +1080,7 @@ pic_init_big_number(pic_state *pic)
   pic_defun(pic, "bigint-mul", pic_big_number_bigint_mul);
   pic_defun(pic, "bigint-div", pic_big_number_bigint_div);
   pic_defun(pic, "bigint-rem", pic_big_number_bigint_rem);
+  pic_defun(pic, "bigint-mul-mod", pic_big_number_bigint_mul_mod);
   pic_defun(pic, "bigint-add!", pic_big_number_bigint_add_i);
   pic_defun(pic, "bigint-sub!", pic_big_number_bigint_sub_i);
   pic_defun(pic, "bigint-mul!", pic_big_number_bigint_mul_i);
