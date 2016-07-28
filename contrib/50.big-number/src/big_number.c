@@ -305,27 +305,39 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
 {
   pic_value ret;
   int bitsh, bytesh;
+  bigint_digit msb;
   bigint_2digits carry;
-  int i, len;
+  int i, len, append;
 
   assert (sh >= 0);
   bitsh = sh % bigint_shift;
   bytesh = sh / bigint_shift;
+  len = pic_vec_len(pic, val);
+  if (len == 0) {
+    return val;
+  }
+  msb = pic_int(pic, pic_vec_ref(pic, val, len - 1));
   carry = 0;
 
-  len = pic_vec_len(pic, val);
-  ret = pic_make_vec(pic, len + bytesh + 1, NULL);
+  if (bitsh == 0 || (msb >> (bigint_shift - bitsh)) == 0) {
+    append = 0;
+  } else {
+    append = 1; // an extra digit is needed
+  }
+  ret = pic_make_vec(pic, len + bytesh + append, NULL);
   for (i = 0; i < bytesh; ++i) {
     pic_vec_set(pic, ret, i, pic_int_value(pic, 0));
   }
-  for (i = 0; i < len; ++i) {
-    carry |= ((bigint_2digits) (bigint_digit) pic_int(pic, pic_vec_ref(pic, val, i))) << bitsh;
+  for (i = 0; i < len + append; ++i) {
+    if (i < len) {
+      carry |= ((bigint_2digits) (bigint_digit) pic_int(pic, pic_vec_ref(pic, val, i))) << bitsh;
+    }
     pic_vec_set(pic, ret, i + bytesh, pic_int_value(pic, carry & bigint_digit_max));
     carry >>= bigint_shift;
   }
-  pic_vec_set(pic, ret, bytesh + len, pic_int_value(pic, carry));
+  assert (carry == 0);
 
-  return bigint_vec_compact(pic, ret);
+  return ret;
 }
 
 static pic_value
