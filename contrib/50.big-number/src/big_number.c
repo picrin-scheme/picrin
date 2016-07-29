@@ -106,7 +106,7 @@ static pic_value
 bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
 {
   bigint_2digits carry;
-  bigint_digit msb1, msb2;
+  bigint_diff pcarry; // for prediction
   int i, len;
   pic_value ret;
 
@@ -121,11 +121,23 @@ bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
   if (len < pic_vec_len(pic, v2)) {
     len = pic_vec_len(pic, v2);
   }
-  msb1 = pic_int(pic, pic_vec_ref(pic, v1, pic_vec_len(pic, v1) - 1));
-  msb2 = pic_int(pic, pic_vec_ref(pic, v2, pic_vec_len(pic, v2) - 1));
-  if ((bigint_2digits)msb1 + msb2 >= bigint_digit_max) {
-    ++len;
+
+  // exact prediction: checks if an extra digit is needed
+  pcarry = (bigint_diff) 1 << bigint_shift;
+  for (i = len - 1; i >= 0; --i) {
+    bigint_digit d1 = i >= pic_vec_len(pic, v1) ? 0 : pic_int(pic, pic_vec_ref(pic, v1, i));
+    bigint_digit d2 = i >= pic_vec_len(pic, v2) ? 0 : pic_int(pic, pic_vec_ref(pic, v2, i));
+    pcarry -= d1;
+    pcarry -= d2;
+    if (pcarry < 0 || pcarry >= 2) {
+      break;
+    }
+    pcarry <<= bigint_shift;
   }
+  if (pcarry <= 0) {
+    len++;
+  }
+
   carry = 0;
   ret = pic_make_vec(pic, len, NULL);
 
@@ -140,7 +152,7 @@ bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
 
   assert (carry == 0);
   
-  return bigint_vec_compact(pic, ret);
+  return ret;
 }
 
 /*
