@@ -39,7 +39,7 @@
   (define (bigint-prime?-trial prime k d)
     (let loop ((i 0))
       (if (< i 20)
-	  (let ((a (bigint-rand prime)))
+	  (let ((a (bigint-add (bigint-rand (bigint-sub prime 1)) 1)))
 	    (if (bigint-prime?-once prime k d a)
 		(loop (+ i 1))
 		#f))

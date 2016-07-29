@@ -217,6 +217,9 @@
 
 ;; prime?
 
+(test #t (bigint-prime? 107))
+(test #t (bigint-prime? 107))
+(test #t (bigint-prime? 107))
 (test #f (bigint-prime? 561))
 (test #f (bigint-prime? 2047))
 (test #t (bigint-prime? kyopuro-prime))
