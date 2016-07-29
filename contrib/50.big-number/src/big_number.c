@@ -272,7 +272,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   pic_value quov, remv;
   int i, j, len1, len2, k, init;
   bigint_digit msb2;
-  bigint_digit *buf1, *buf2, *quobuf, *mulbuf;
+  bigint_digit *buf1, *buf2, *quobuf = NULL, *mulbuf;
   assert (pic_vec_len(pic, v2) >= 1);
 
   {
@@ -389,6 +389,10 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     }
     *rem = bigint_vec_compact(pic, remv);
   }
+  free(buf1);
+  free(buf2);
+  free(mulbuf);
+  free(quobuf);
 }
 static pic_value
 bigint_vec_rem(pic_state *pic, pic_value v1, pic_value v2)
