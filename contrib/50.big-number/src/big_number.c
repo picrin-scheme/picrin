@@ -268,14 +268,12 @@ bigint_vec_div(pic_state *pic, const pic_value v1, const pic_value v2,
 static pic_value
 bigint_vec_rem(pic_state *pic, const pic_value v1, const pic_value v2)
 {
-  pic_value remv, one;
+  pic_value remv;
   int i;
   assert (pic_vec_len(pic, v2) >= 1);
 
   // Very slow, but still in polynomial time. :)
   remv = v1;
-  one = pic_make_vec(pic, 1, NULL);
-  pic_vec_set(pic, one, 0, pic_int_value(pic, 1));
 
   int init = bigint_shift * (pic_vec_len(pic, v1) - pic_vec_len(pic, v2) + 1);
   assert (bigint_vec_lt(pic, remv, bigint_vec_asl(pic, v2, init)));
