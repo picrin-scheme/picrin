@@ -240,6 +240,27 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
 static int
 bigint_vec_bit_length(pic_state *pic, const pic_value val);
 
+/**
+ * This function assumes buf1[0, len1) and out[0, len1 + 1) are available
+ */
+static void
+bigint_buf_mul(int len1, const bigint_digit *buf1, bigint_digit v2,
+	       bigint_digit *out)
+{
+  int j;
+  bigint_2digits carry = 0;
+
+  for (j = 0; j < len1 + 1; ++j) {
+    out[j] = 0;
+  }
+  for (j = 0; j < len1; ++j) {
+    carry += (bigint_2digits)buf1[j] * v2;
+    out[j] = (bigint_digit) carry;
+    carry >>= bigint_shift;
+  }
+  out[len1] = carry;
+}
+
 static void
 bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
 	       pic_value *quo, pic_value *rem)
@@ -298,16 +319,10 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     msb1 += i + len2 < len1 ? (bigint_2digits) buf1[i + len2] << bigint_shift : 0;
 
     q = qq = msb1 / ((bigint_2digits)msb2 + 1);
-    while (q < bigint_digit_max - 1) {
-      bigint_2digits carry = 0;
+    while (q < bigint_digit_max) {
       bool lt = false;
       for (j = 0; j < len1 + 1; ++j) { mulbuf[j] = 0; }
-      for (j = 0; j < len2; ++j) {
-	carry += (bigint_2digits)buf2[j] * (q + 1);
-	mulbuf[i + j] = (bigint_digit) carry;
-	carry >>= bigint_shift;
-      }
-      mulbuf[i + len2] = carry;
+      bigint_buf_mul(len2, buf2, q + 1, mulbuf + i);
       for (j = len1; j >= 0; --j) {
 	if (buf1[j] != mulbuf[j]) {
 	  lt = buf1[j] < mulbuf[j];
@@ -319,19 +334,11 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
       }
       q++;
     }
-    assert (q < bigint_digit_max);
     assert (q - qq < 3);
     quobuf[i] = q;
     {
-      bigint_2digits carry = 0;
       bigint_diff pcarry;
-      for (j = 0; j < len1; ++j) { mulbuf[j] = 0; }
-      for (j = 0; j < len2; ++j) {
-	carry += buf2[j] * q;
-	mulbuf[i + j] = (bigint_digit) carry;
-	carry >>= bigint_shift;
-      }
-      mulbuf[i + len2] = carry;
+      bigint_buf_mul(len2, buf2, q, mulbuf + i);
       // buf1 -= mulbuf (mulbuf == qq * v2)
       pcarry = 0;
       for (j = 0; j < len1 + 1; ++j) {
