@@ -371,26 +371,101 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   *rem = bigint_vec_compact(pic, remv);
 }
 static pic_value
-bigint_vec_rem(pic_state *pic, const pic_value v1, const pic_value v2)
+bigint_vec_rem(pic_state *pic, pic_value v1, pic_value v2)
 {
   pic_value remv;
-  int i;
+  int i, j, len1, len2, k, init;
+  bigint_digit msb2;
+  bigint_digit *buf1, *buf2, *mulbuf;
   assert (pic_vec_len(pic, v2) >= 1);
 
-  // Very slow, but still in polynomial time. :)
-  remv = v1;
+  {
+    int bitlen1, bitlen2;
+    bitlen1 = bigint_vec_bit_length(pic, v1);
+    bitlen2 = bigint_vec_bit_length(pic, v2);
 
-  int init = bigint_shift * (pic_vec_len(pic, v1) - pic_vec_len(pic, v2) + 1);
-  assert (bigint_vec_lt(pic, remv, bigint_vec_asl(pic, v2, init)));
-  for (i = init - 1; i >= 0; --i) {
-    pic_value sh = bigint_vec_asl(pic, v2, i);
-    if (! bigint_vec_lt(pic, remv, sh)) { // 2^i * v2 <= rem
-      remv = bigint_vec_sub(pic, remv, sh);
+    if (bitlen1 == 0) {
+      return v1;
     }
-    assert (bigint_vec_lt(pic, remv, sh));
-  }
 
-  return remv;
+    if (bitlen1 < bitlen2) {
+      return v1;
+    }
+
+    // shift by k bits so that v2's msb is in [base / 2, base)
+    // http://www.yamatyuu.net/computer/program/long/div/index.html
+    k = bigint_shift - bitlen2 % bigint_shift;
+    v1 = bigint_vec_asl(pic, v1, k);
+    v2 = bigint_vec_asl(pic, v2, k);
+  }
+  
+  len1 = pic_vec_len(pic, v1);
+  len2 = pic_vec_len(pic, v2);
+  msb2 = pic_int(pic, pic_vec_ref(pic, v2, pic_vec_len(pic, v2) - 1));
+  assert (msb2 > bigint_digit_max / 2);
+
+  buf1 = (bigint_digit *) malloc((len1 + 1) * sizeof(bigint_digit));
+  mulbuf = (bigint_digit *) malloc((len1 + 1) * sizeof(bigint_digit));
+  buf2 = (bigint_digit *) malloc(len2 * sizeof(bigint_digit));
+  init = len1 - len2 + 1;
+  for (i = 0; i < len1; ++i) {
+    buf1[i] = pic_int(pic, pic_vec_ref(pic, v1, i));
+  }
+  buf1[len1] = 0;
+  for (i = 0; i < len2; ++i) {
+    buf2[i] = pic_int(pic, pic_vec_ref(pic, v2, i));
+  }
+  
+  for (i = init - 1; i >= 0; --i) {
+    bigint_2digits qq, q;
+    bigint_2digits msb1 = buf1[i + len2 - 1];
+    msb1 += i + len2 < len1 ? (bigint_2digits) buf1[i + len2] << bigint_shift : 0;
+
+    q = qq = msb1 / ((bigint_2digits)msb2 + 1);
+    while (q < bigint_digit_max) {
+      bool lt = false;
+      for (j = 0; j < len1 + 1; ++j) { mulbuf[j] = 0; }
+      bigint_buf_mul(len2, buf2, q + 1, mulbuf + i);
+      for (j = len1; j >= 0; --j) {
+	if (buf1[j] != mulbuf[j]) {
+	  lt = buf1[j] < mulbuf[j];
+	  break;
+	}
+      }
+      if (lt) { // if buf1 < v2 * (qq + 1)
+	break;
+      }
+      q++;
+    }
+    assert (q - qq < 3);
+    {
+      bigint_diff pcarry;
+      bigint_buf_mul(len2, buf2, q, mulbuf + i);
+      // buf1 -= mulbuf (mulbuf == qq * v2)
+      pcarry = 0;
+      for (j = 0; j < len1 + 1; ++j) {
+	pcarry += buf1[j];
+	pcarry -= mulbuf[j];
+	buf1[j] = (bigint_digit)pcarry;
+	pcarry >>= bigint_shift;
+      }
+      assert (pcarry == 0);
+    }
+  }
+  // buf1 (remainder) shift
+  if (k > 0) {
+    for (i = 0; i < len1; ++i) {
+      buf1[i] >>= k;
+      if (i >= 1) {
+        buf1[i - 1] |= buf1[i] << (bigint_shift - k);
+      }
+    }
+  }
+  remv = pic_make_vec(pic, len1, NULL);
+  for (i = 0; i < len1; ++i) {
+    pic_vec_set(pic, remv, i, pic_int_value(pic, buf1[i]));
+  }
+  return bigint_vec_compact(pic, remv);
 }
 
 static pic_value 
