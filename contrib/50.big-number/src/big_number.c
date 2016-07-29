@@ -696,7 +696,7 @@ static bool
 bigint_bit_test(pic_state *pic, struct pic_bigint_t *val, int index)
 {
   if (index < 0) {
-    pic_error(pic, "bigint-bit-test: index must be >= 0:", 1, index);
+    pic_error(pic, "bigint-bit-test: index must be >= 0", 1, pic_int_value(pic, index));
   }
   if (val->signum) {
     pic_error(pic, "bigint-bit-test does not support negative numbers", 0);
