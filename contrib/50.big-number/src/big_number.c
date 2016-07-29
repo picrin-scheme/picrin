@@ -302,7 +302,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
 
     // shift by k bits so that v2's msb is in [base / 2, base)
     // http://www.yamatyuu.net/computer/program/long/div/index.html
-    k = bigint_shift - bitlen2 % bigint_shift;
+    k = (bigint_shift - bitlen2 % bigint_shift) % bigint_shift;
     v1 = bigint_vec_asl(pic, v1, k);
     v2 = bigint_vec_asl(pic, v2, k);
   }
@@ -354,6 +354,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     }
     {
       bigint_diff pcarry;
+      for (j = 0; j < len1 + 1; ++j) { mulbuf[j] = 0; }
       bigint_buf_mul(len2, buf2, q, mulbuf + i);
       // buf1 -= mulbuf (mulbuf == qq * v2)
       pcarry = 0;
@@ -377,10 +378,10 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     // buf1 (remainder) shift
     if (k > 0) {
       for (i = 0; i < len1; ++i) {
-	buf1[i] >>= k;
 	if (i >= 1) {
 	  buf1[i - 1] |= buf1[i] << (bigint_shift - k);
 	}
+	buf1[i] >>= k;
       }
     }
     remv = pic_make_vec(pic, len1, NULL);
