@@ -279,6 +279,24 @@ bigint_buf_sub_ip(int len1, bigint_digit *buf1, int len2, const bigint_digit *bu
 
   assert (pcarry == 0);
 }
+static bool
+bigint_buf_lt(int len1, const bigint_digit *buf1, int len2, const bigint_digit *buf2) {
+  int j, len;
+
+  len = len1;
+  if (len < len2) {
+    len = len2;
+  }
+  for (j = len - 1; j >= 0; --j) {
+    bigint_digit d1 = j >= len1 ? 0 : buf1[j];
+    bigint_digit d2 = j >= len2 ? 0 : buf2[j];
+    if (d1 != d2) {
+      return d1 < d2;
+    }
+  }
+
+  return false;
+}
 
 /**
  * Computes v1 / v2 and stores the result to quo and rem.
@@ -289,7 +307,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
 	       pic_value *quo, pic_value *rem)
 {
   pic_value quov, remv;
-  int i, j, len1, len2, k, init;
+  int i, j, len1, len2, k, quolen;
   bigint_digit msb2;
   bigint_digit *buf1, *buf2, *mulbuf;
   assert (pic_vec_len(pic, v2) >= 1);
@@ -334,10 +352,6 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   buf1 = (bigint_digit *) malloc((len1 + 1) * sizeof(bigint_digit));
   mulbuf = (bigint_digit *) malloc((len1 + 1) * sizeof(bigint_digit));
   buf2 = (bigint_digit *) malloc(len2 * sizeof(bigint_digit));
-  init = len1 - len2 + 1;
-  if (quo) {
-    quov = pic_make_vec(pic, init, NULL);
-  }
   for (i = 0; i < len1; ++i) {
     buf1[i] = pic_int(pic, pic_vec_ref(pic, v1, i));
   }
@@ -345,11 +359,18 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   for (i = 0; i < len2; ++i) {
     buf2[i] = pic_int(pic, pic_vec_ref(pic, v2, i));
   }
+  quolen = len1 - len2 + 1;
+  if (bigint_buf_lt(len2, buf1 + quolen - 1, len2, buf2)) {
+    quolen--; // for exact estimation of pic_vec_len(quov)
+  }
+  if (quo) {
+    quov = pic_make_vec(pic, quolen, NULL);
+  }
 
-  for (i = init - 1; i >= 0; --i) {
+  for (i = quolen - 1; i >= 0; --i) {
     bigint_2digits qq, q;
     bigint_2digits msb1 = buf1[i + len2 - 1];
-    int buf1_avail = len2 + (i == init - 1 ? 0 : 1);
+    int buf1_avail = len2 + (i + len2 < len1 ? 1 : 0);
     // [buf1_avail, buf1_avail + i) is a subset of [0, len1 + 1)
     msb1 += i + len2 < len1 ? (bigint_2digits) buf1[i + len2] << bigint_shift : 0;
 
@@ -360,13 +381,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     bigint_buf_mul(len2, buf2, qq, mulbuf + i);
     bigint_buf_sub_ip(len1 + 1, buf1, len1 + 1, mulbuf);
     while (1) {
-      bool lt = false;
-      for (j = buf1_avail - 1; j >= 0; --j) {
-	if (buf1[i + j] != (j == len2 ? 0 : buf2[j])) {
-	  lt = buf1[i + j] < (j == len2 ? 0 : buf2[j]);
-	  break;
-	}
-      }
+      bool lt = bigint_buf_lt(buf1_avail, buf1 + i, len2, buf2);
       if (lt) { // if buf1 < buf2 * 2^(bigint_shift * i)
 	break;
       }
@@ -379,9 +394,10 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     }
   }
   if (quo) {
-    *quo = bigint_vec_compact(pic, quov);
+    *quo = quov;
   }
   if (rem) {
+    int remlen; // exact estimation of pic_vec_len(pic, remv)
     // buf1 (remainder) shift
     if (k > 0) {
       for (i = 0; i < len1; ++i) {
@@ -391,11 +407,15 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
 	buf1[i] >>= k;
       }
     }
-    remv = pic_make_vec(pic, len1, NULL);
-    for (i = 0; i < len1; ++i) {
+    remlen = len2;
+    while (remlen >= 1 && buf1[remlen - 1] == 0) {
+      remlen--;
+    }
+    remv = pic_make_vec(pic, remlen, NULL);
+    for (i = 0; i < remlen; ++i) {
       pic_vec_set(pic, remv, i, pic_int_value(pic, buf1[i]));
     }
-    *rem = bigint_vec_compact(pic, remv);
+    *rem = remv;
   }
   free(buf1);
   free(buf2);
