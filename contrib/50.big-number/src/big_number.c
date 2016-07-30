@@ -261,6 +261,25 @@ bigint_buf_mul(int len1, const bigint_digit *buf1, bigint_digit v2,
   out[len1] = carry;
 }
 
+static void
+bigint_buf_sub_ip(int len1, bigint_digit *buf1, int len2, const bigint_digit *buf2) {
+  bigint_diff pcarry;
+  int j;
+
+  assert (len1 >= len2);
+  pcarry = 0;
+  for (j = 0; j < len1; ++j) {
+    pcarry += buf1[j];
+    if (j < len2) {
+      pcarry -= buf2[j];
+    }
+    buf1[j] = (bigint_digit)pcarry;
+    pcarry >>= bigint_shift;
+  }
+
+  assert (pcarry == 0);
+}
+
 /**
  * Computes v1 / v2 and stores the result to quo and rem.
  * quo and rem are nullable. If so, the corresponding result will be simply discarded.
@@ -326,45 +345,37 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   for (i = 0; i < len2; ++i) {
     buf2[i] = pic_int(pic, pic_vec_ref(pic, v2, i));
   }
-  
+
   for (i = init - 1; i >= 0; --i) {
     bigint_2digits qq, q;
     bigint_2digits msb1 = buf1[i + len2 - 1];
+    int buf1_avail = len2 + (i == init - 1 ? 0 : 1);
+    // [buf1_avail, buf1_avail + i) is a subset of [0, len1 + 1)
     msb1 += i + len2 < len1 ? (bigint_2digits) buf1[i + len2] << bigint_shift : 0;
 
     q = qq = msb1 / ((bigint_2digits)msb2 + 1);
-    while (q < bigint_digit_max) {
+    for (j = 0; j < len1 + 1; ++j) {
+      mulbuf[j] = 0;
+    }
+    bigint_buf_mul(len2, buf2, qq, mulbuf + i);
+    bigint_buf_sub_ip(len1 + 1, buf1, len1 + 1, mulbuf);
+    while (1) {
       bool lt = false;
-      for (j = 0; j < len1 + 1; ++j) { mulbuf[j] = 0; }
-      bigint_buf_mul(len2, buf2, q + 1, mulbuf + i);
-      for (j = len1; j >= 0; --j) {
-	if (buf1[j] != mulbuf[j]) {
-	  lt = buf1[j] < mulbuf[j];
+      for (j = buf1_avail - 1; j >= 0; --j) {
+	if (buf1[i + j] != (j == len2 ? 0 : buf2[j])) {
+	  lt = buf1[i + j] < (j == len2 ? 0 : buf2[j]);
 	  break;
 	}
       }
-      if (lt) { // if buf1 < v2 * (qq + 1)
+      if (lt) { // if buf1 < buf2 * 2^(bigint_shift * i)
 	break;
       }
+      bigint_buf_sub_ip(buf1_avail, buf1 + i, len2, buf2);
       q++;
     }
     assert (q - qq < 3);
     if (quo) {
       quobuf[i] = q;
-    }
-    {
-      bigint_diff pcarry;
-      for (j = 0; j < len1 + 1; ++j) { mulbuf[j] = 0; }
-      bigint_buf_mul(len2, buf2, q, mulbuf + i);
-      // buf1 -= mulbuf (mulbuf == qq * v2)
-      pcarry = 0;
-      for (j = 0; j < len1 + 1; ++j) {
-	pcarry += buf1[j];
-	pcarry -= mulbuf[j];
-	buf1[j] = (bigint_digit)pcarry;
-	pcarry >>= bigint_shift;
-      }
-      assert (pcarry == 0);
     }
   }
   if (quo) {
