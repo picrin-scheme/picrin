@@ -76,6 +76,92 @@ bigint_vec_lt(pic_state *pic, const pic_value v1, const pic_value v2)
   return false;
 }
 
+static bool
+bigint_buf_lt(int len1, const bigint_digit *buf1, int len2, const bigint_digit *buf2) {
+  int j, len;
+
+  len = len1;
+  if (len < len2) {
+    len = len2;
+  }
+  for (j = len - 1; j >= 0; --j) {
+    bigint_digit d1 = j >= len1 ? 0 : buf1[j];
+    bigint_digit d2 = j >= len2 ? 0 : buf2[j];
+    if (d1 != d2) {
+      return d1 < d2;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * This function assumes buf1[0, len1) and out[0, len1 + 1) are available
+ * out += v2 * buf1
+ */
+static void
+bigint_buf_mul_onedigit(int len1, const bigint_digit *buf1, bigint_digit v2,
+	       bigint_digit *out)
+{
+  int j;
+  bigint_2digits carry = 0;
+
+  for (j = 0; j < len1; ++j) {
+    carry += (bigint_2digits)buf1[j] * v2;
+    carry += out[j];
+    out[j] = (bigint_digit) carry;
+    carry >>= bigint_shift;
+  }
+  out[len1] = carry;
+}
+/**
+ * This function assumes buf1[0, len1), buf2[0, len2)  and out[0, len1 + len2) are available
+ */
+static void
+bigint_buf_mul_naive(int len1, const bigint_digit *buf1,
+		     int len2, bigint_digit *buf2,
+		     bigint_digit *out)
+{
+  int i;
+
+  for (i = 0; i < len2; ++i) {
+    bigint_buf_mul_onedigit(len1, buf1, buf2[i], out + i);
+  }
+}
+
+/**
+ * This function assumes buf1[0, len1), buf2[0, len2)  and out[0, len1 + len2) are available
+ * out += buf1 * buf2
+ * if you want the result of multiplication, you need to zero-clear out before the call.
+ */
+static void
+bigint_buf_mul(int len1, const bigint_digit *buf1,
+	       int len2, bigint_digit *buf2,
+	       bigint_digit *out)
+{
+  bigint_buf_mul_naive(len1, buf1, len2, buf2, out);
+}
+
+static void
+bigint_buf_sub_ip(int len1, bigint_digit *buf1, int len2, const bigint_digit *buf2) {
+  bigint_diff pcarry;
+  int j;
+
+  assert (len1 >= len2);
+  pcarry = 0;
+  for (j = 0; j < len1; ++j) {
+    pcarry += buf1[j];
+    if (j < len2) {
+      pcarry -= buf2[j];
+    }
+    buf1[j] = (bigint_digit)pcarry;
+    pcarry >>= bigint_shift;
+  }
+
+  assert (pcarry == 0);
+}
+
+
 static pic_value
 bigint_vec_add(pic_state *pic, const pic_value v1, const pic_value v2)
 {
@@ -169,6 +255,7 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
 {
   int len1, len2, i, j;
   pic_value ret;
+  bigint_digit *buf1, *buf2;
   bigint_digit *tmp;
   bigint_2digits carry;
   int trim;
@@ -181,32 +268,30 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
   if (len2 == 0) {
     return v2;
   }
+  buf1 = (bigint_digit *) malloc(len1 * sizeof(bigint_digit));
+  buf2 = (bigint_digit *) malloc(len2 * sizeof(bigint_digit));
   tmp = (bigint_digit *) malloc((len1 + len2) * sizeof(bigint_digit));
-  carry = 0;
 
+  for (i = 0; i < len1; ++i) {
+    buf1[i] = pic_int(pic, pic_vec_ref(pic, v1, i));
+  }
+  for (i = 0; i < len2; ++i) {
+    buf2[i] = pic_int(pic, pic_vec_ref(pic, v2, i));
+  }
   for (i = 0; i < len1 + len2; ++i) {
     tmp[i] = 0;
   }
 
-  for (i = 0; i < len1; ++i) {
-    bigint_digit d1 = pic_int(pic, pic_vec_ref(pic, v1, i));
-    carry = 0;
-    for (j = 0; j < len2; ++j) {
-      carry += tmp[i + j];
-      bigint_digit d2 = pic_int(pic, pic_vec_ref(pic, v2, j));
-      carry += (bigint_2digits) d1 * d2;
-      tmp[i + j] = carry & bigint_digit_max;
-      carry >>= bigint_shift;
-    }
-    tmp[i + len2] = carry;
-  }
-
+  bigint_buf_mul(len1, buf1, len2, buf2, tmp);
+  
   trim = tmp[len1 + len2 - 1] ? 0 : 1;
   ret = pic_make_vec(pic, len1 + len2 - trim, NULL);
   for (i = 0; i < len1 + len2 - trim; ++i) {
     pic_vec_set(pic, ret, i, pic_int_value(pic, tmp[i]));
   }
 
+  free(buf1);
+  free(buf2);
   free(tmp);
   return ret;
 }
@@ -214,63 +299,6 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
 static int
 bigint_vec_bit_length(pic_state *pic, const pic_value val);
 
-/**
- * This function assumes buf1[0, len1) and out[0, len1 + 1) are available
- */
-static void
-bigint_buf_mul(int len1, const bigint_digit *buf1, bigint_digit v2,
-	       bigint_digit *out)
-{
-  int j;
-  bigint_2digits carry = 0;
-
-  for (j = 0; j < len1 + 1; ++j) {
-    out[j] = 0;
-  }
-  for (j = 0; j < len1; ++j) {
-    carry += (bigint_2digits)buf1[j] * v2;
-    out[j] = (bigint_digit) carry;
-    carry >>= bigint_shift;
-  }
-  out[len1] = carry;
-}
-
-static void
-bigint_buf_sub_ip(int len1, bigint_digit *buf1, int len2, const bigint_digit *buf2) {
-  bigint_diff pcarry;
-  int j;
-
-  assert (len1 >= len2);
-  pcarry = 0;
-  for (j = 0; j < len1; ++j) {
-    pcarry += buf1[j];
-    if (j < len2) {
-      pcarry -= buf2[j];
-    }
-    buf1[j] = (bigint_digit)pcarry;
-    pcarry >>= bigint_shift;
-  }
-
-  assert (pcarry == 0);
-}
-static bool
-bigint_buf_lt(int len1, const bigint_digit *buf1, int len2, const bigint_digit *buf2) {
-  int j, len;
-
-  len = len1;
-  if (len < len2) {
-    len = len2;
-  }
-  for (j = len - 1; j >= 0; --j) {
-    bigint_digit d1 = j >= len1 ? 0 : buf1[j];
-    bigint_digit d2 = j >= len2 ? 0 : buf2[j];
-    if (d1 != d2) {
-      return d1 < d2;
-    }
-  }
-
-  return false;
-}
 
 /**
  * Computes v1 / v2 and stores the result to quo and rem.
@@ -352,7 +380,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     for (j = 0; j < len1 + 1; ++j) {
       mulbuf[j] = 0;
     }
-    bigint_buf_mul(len2, buf2, qq, mulbuf + i);
+    bigint_buf_mul_onedigit(len2, buf2, qq, mulbuf + i);
     bigint_buf_sub_ip(len1 + 1, buf1, len1 + 1, mulbuf);
     while (1) {
       bool lt = bigint_buf_lt(buf1_avail, buf1 + i, len2, buf2);
