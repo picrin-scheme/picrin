@@ -2,7 +2,11 @@ typedef unsigned bigint_digit;
 typedef unsigned long long bigint_2digits;
 typedef long long bigint_diff;
 #define bigint_shift 32
-#define bigint_digit_max 0xffffffffULL // : bigint_2digits
+#define bigint_digit_max 0xffffFFFFULL // : bigint_2digits
+
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define KARATSUBA_THRESHOLD 2
 
 static pic_value
 bigint_vec_clone(pic_state *pic, const pic_value v) {
@@ -95,51 +99,163 @@ bigint_buf_lt(int len1, const bigint_digit *buf1, int len2, const bigint_digit *
   return false;
 }
 
+static bigint_digit
+bigint_buf_add_ip_overflow(int len1, bigint_digit *buf1,
+			   int len2, const bigint_digit *buf2)
+{
+  bigint_2digits carry;
+  int j;
+
+  carry = 0;
+  for (j = 0; j < len1; ++j) {
+    carry += buf1[j];
+    if (j < len2) {
+      carry += buf2[j];
+    }
+    buf1[j] = (bigint_digit) (carry & bigint_digit_max);
+    carry >>= bigint_shift;
+  }
+
+  return carry;
+}
+static bigint_diff
+bigint_buf_sub_ip_overflow(int len1, bigint_digit *buf1,
+			   int len2, const bigint_digit *buf2)
+{
+  bigint_diff carry;
+  int j;
+
+  carry = 0;
+  for (j = 0; j < len1; ++j) {
+    carry += buf1[j];
+    if (j < len2) {
+      carry -= buf2[j];
+    }
+    buf1[j] = (bigint_digit)(carry & bigint_digit_max);
+    carry >>= bigint_shift;
+  }
+
+  return carry;
+}
 /**
- * This function assumes buf1[0, len1) and out[0, len1 + 1) are available
+ * This function assumes buf1[0, len1) and out[0, outlen) are available
  * out += v2 * buf1
  */
 static void
 bigint_buf_mul_onedigit(int len1, const bigint_digit *buf1, bigint_digit v2,
-	       bigint_digit *out)
+			int outlen, bigint_digit *out)
 {
   int j;
   bigint_2digits carry = 0;
 
-  for (j = 0; j < len1; ++j) {
-    carry += (bigint_2digits)buf1[j] * v2;
+  for (j = 0; j < outlen; ++j) {
+    if (j < len1) {
+      carry += (bigint_2digits)buf1[j] * v2;
+    } else {
+      if (carry == 0) {
+	break;
+      }
+    }
     carry += out[j];
-    out[j] = (bigint_digit) carry;
+    out[j] = (bigint_digit) (carry & bigint_digit_max);
     carry >>= bigint_shift;
   }
-  out[len1] = carry;
 }
 /**
- * This function assumes buf1[0, len1), buf2[0, len2)  and out[0, len1 + len2) are available
+ * This function assumes buf1[0, len1), buf2[0, len2)  and out[0, outlen) are available
  */
 static void
 bigint_buf_mul_naive(int len1, const bigint_digit *buf1,
-		     int len2, bigint_digit *buf2,
-		     bigint_digit *out)
+		     int len2, const bigint_digit *buf2,
+		     int outlen, bigint_digit *out)
 {
   int i;
 
   for (i = 0; i < len2; ++i) {
-    bigint_buf_mul_onedigit(len1, buf1, buf2[i], out + i);
+    bigint_buf_mul_onedigit(len1, buf1, buf2[i], max(0, outlen - i), out + i);
   }
 }
 
 /**
- * This function assumes buf1[0, len1), buf2[0, len2)  and out[0, len1 + len2) are available
+ * This function assumes buf1[0, len1), buf2[0, len2)  and out[0, outlen) are available
  * out += buf1 * buf2
  * if you want the result of multiplication, you need to zero-clear out before the call.
  */
 static void
 bigint_buf_mul(int len1, const bigint_digit *buf1,
-	       int len2, bigint_digit *buf2,
-	       bigint_digit *out)
+	       int len2, const bigint_digit *buf2,
+	       int outlen, bigint_digit *out)
 {
-  bigint_buf_mul_naive(len1, buf1, len2, buf2, out);
+#define DEBUG(len, buf) {int j; for (j = 0; j < len && 0; ++j) printf("[debug] " #buf "[%d] = %u\n", j, buf[j]); }
+  int len, half, i;
+  bigint_digit *m00, *m11;
+  bigint_digit *x0x1, *y1y0;
+  bool x0ltx1, y1lty0;
+
+  len = max(len1, len2);
+  if (len < KARATSUBA_THRESHOLD || len1 <= len2 / 2 || len2 <= len1 / 2) {  
+    bigint_buf_mul_naive(len1, buf1, len2, buf2, outlen, out);
+    return;
+  }
+
+  DEBUG(len1, buf1);
+  DEBUG(len2, buf2);
+  half = (len + 1) / 2;
+  assert (len1 >= half);
+  assert (len2 >= half);
+  m00 = (bigint_digit *) malloc(half * 2 * sizeof(bigint_digit));
+  m11 = (bigint_digit *) malloc(half * 2 * sizeof(bigint_digit));
+  x0x1 = (bigint_digit *) malloc(half  * sizeof(bigint_digit));
+  y1y0 = (bigint_digit *) malloc(half  * sizeof(bigint_digit));
+  for (i = 0; i < half * 2; ++i) {
+    m00[i] = 0;
+    m11[i] = 0;
+  }
+  for (i = 0; i < half; ++i) {
+    x0x1[i] = 0;
+    y1y0[i] = 0;
+  }
+  x0ltx1 = bigint_buf_lt(half, buf1, len1 - half, buf1 + half);
+  y1lty0 = bigint_buf_lt(len2 - half, buf2 + half, half, buf2);
+  bigint_buf_add_ip_overflow(half, x0x1, half, buf1);
+  bigint_buf_sub_ip_overflow(half, x0x1, len1 - half, buf1 + half);
+  bigint_buf_add_ip_overflow(half, y1y0, len2 - half, buf2 + half);
+  bigint_buf_sub_ip_overflow(half, y1y0, half, buf2);
+  DEBUG(half, x0x1);
+  DEBUG(half, y1y0);
+
+  bigint_buf_mul_naive(half, buf1, half, buf2, 2 * half, m00);
+  bigint_buf_mul_naive(len1 - half, buf1 + half, len2 - half, buf2 + half, 2 * half, m11);
+  bigint_buf_mul_naive(half, x0x1, half, y1y0, max(0, outlen - half), out + half);
+  if (x0ltx1) {
+    bigint_buf_sub_ip_overflow(max(0, outlen - 2 * half), out + 2 * half, half, y1y0);
+  }
+  if (y1lty0) {
+    bigint_buf_sub_ip_overflow(max(0, outlen - 2 * half), out + 2 * half, half, x0x1);
+  }
+  if (x0ltx1 && y1lty0) {
+    bigint_digit one = 1;
+    bigint_buf_add_ip_overflow(max(0, outlen - 3 * half), out + 3 * half, 1, &one);
+  }
+
+  DEBUG(2 * half, m00);
+  DEBUG(2 * half, m11);
+  DEBUG(outlen, out);
+  
+
+  bigint_buf_add_ip_overflow(outlen - half, out + half, 2 * half, m00);
+  bigint_buf_add_ip_overflow(outlen - half, out + half, 2 * half, m11);
+
+  bigint_buf_add_ip_overflow(max(0, outlen - 2 * half), out + 2 * half,
+			     2 * half, m11);
+  bigint_buf_add_ip_overflow(outlen, out,
+			     2 * half, m00);
+  DEBUG(len1 + len2, out);
+
+  free(m00);
+  free(m11);
+  free(x0x1);
+  free(y1y0);
 }
 
 static void
@@ -154,7 +270,7 @@ bigint_buf_sub_ip(int len1, bigint_digit *buf1, int len2, const bigint_digit *bu
     if (j < len2) {
       pcarry -= buf2[j];
     }
-    buf1[j] = (bigint_digit)pcarry;
+    buf1[j] = (bigint_digit)(pcarry & bigint_digit_max);
     pcarry >>= bigint_shift;
   }
 
@@ -253,11 +369,10 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh);
 static pic_value 
 bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
 {
-  int len1, len2, i, j;
+  int len1, len2, i;
   pic_value ret;
   bigint_digit *buf1, *buf2;
   bigint_digit *tmp;
-  bigint_2digits carry;
   int trim;
 
   len1 = pic_vec_len(pic, v1);
@@ -282,7 +397,7 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
     tmp[i] = 0;
   }
 
-  bigint_buf_mul(len1, buf1, len2, buf2, tmp);
+  bigint_buf_mul(len1, buf1, len2, buf2, len1 + len2, tmp);
   
   trim = tmp[len1 + len2 - 1] ? 0 : 1;
   ret = pic_make_vec(pic, len1 + len2 - trim, NULL);
@@ -293,7 +408,7 @@ bigint_vec_mul(pic_state *pic, const pic_value v1, const pic_value v2)
   free(buf1);
   free(buf2);
   free(tmp);
-  return ret;
+  return bigint_vec_compact(pic, ret);
 }
 
 static int
@@ -380,7 +495,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     for (j = 0; j < len1 + 1; ++j) {
       mulbuf[j] = 0;
     }
-    bigint_buf_mul_onedigit(len2, buf2, qq, mulbuf + i);
+    bigint_buf_mul_onedigit(len2, buf2, qq, len2 + 1, mulbuf + i);
     bigint_buf_sub_ip(len1 + 1, buf1, len1 + 1, mulbuf);
     while (1) {
       bool lt = bigint_buf_lt(buf1_avail, buf1 + i, len2, buf2);
@@ -480,7 +595,7 @@ bigint_vec_asl(pic_state *pic, const pic_value val, int sh)
   msb = pic_int(pic, pic_vec_ref(pic, val, len - 1));
   carry = 0;
 
-  if (bitsh == 0 || (msb >> (bigint_shift - bitsh)) == 0) {
+  if (bitsh == 0 || (msb >> (bigint_shift - bitsh) & bigint_digit_max) == 0) {
     append = 0;
   } else {
     append = 1; // an extra digit is needed
@@ -542,17 +657,17 @@ unsigned long genrand_int32(void); // in 30.random/src/mt19937ar.c
 
 
 static pic_value
-bigint_vec_rand(pic_state *pic, pic_value max)
+bigint_vec_rand(pic_state *pic, pic_value maxv)
 {
   int i, len;
   pic_value ret;
   bigint_digit msb;
   
-  len = pic_vec_len(pic, max);
+  len = pic_vec_len(pic, maxv);
   if (len == 0) {
-    return max; // 0
+    return maxv; // 0
   }
-  msb = pic_int(pic, pic_vec_ref(pic, max, len - 1));
+  msb = pic_int(pic, pic_vec_ref(pic, maxv, len - 1));
 
   while (1) {
     ret = pic_make_vec(pic, len, NULL);
@@ -562,7 +677,7 @@ bigint_vec_rand(pic_state *pic, pic_value max)
     }
     pic_vec_set(pic, ret, len - 1, pic_int_value(pic, msb == bigint_digit_max ? genrand_int32() : (genrand_int32() % (msb + 1))));
     ret = bigint_vec_compact(pic, ret);
-    if (bigint_vec_lt(pic, ret, max)) {
+    if (bigint_vec_lt(pic, ret, maxv)) {
       return ret;
     }
   }
