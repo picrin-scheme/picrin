@@ -291,7 +291,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   pic_value quov, remv;
   int i, j, len1, len2, k, init;
   bigint_digit msb2;
-  bigint_digit *buf1, *buf2, *quobuf = NULL, *mulbuf;
+  bigint_digit *buf1, *buf2, *mulbuf;
   assert (pic_vec_len(pic, v2) >= 1);
 
   {
@@ -336,7 +336,7 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   buf2 = (bigint_digit *) malloc(len2 * sizeof(bigint_digit));
   init = len1 - len2 + 1;
   if (quo) {
-    quobuf = (bigint_digit *) malloc(init * sizeof(bigint_digit));
+    quov = pic_make_vec(pic, init, NULL);
   }
   for (i = 0; i < len1; ++i) {
     buf1[i] = pic_int(pic, pic_vec_ref(pic, v1, i));
@@ -375,14 +375,10 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
     }
     assert (q - qq < 3);
     if (quo) {
-      quobuf[i] = q;
+      pic_vec_set(pic, quov, i, pic_int_value(pic, q));
     }
   }
   if (quo) {
-    quov = pic_make_vec(pic, init, NULL);
-    for (i = 0; i < init; ++i) {
-      pic_vec_set(pic, quov, i, pic_int_value(pic, quobuf[i]));
-    }
     *quo = bigint_vec_compact(pic, quov);
   }
   if (rem) {
@@ -404,7 +400,6 @@ bigint_vec_div(pic_state *pic, pic_value v1, pic_value v2,
   free(buf1);
   free(buf2);
   free(mulbuf);
-  free(quobuf);
 }
 static pic_value
 bigint_vec_rem(pic_state *pic, pic_value v1, pic_value v2)
