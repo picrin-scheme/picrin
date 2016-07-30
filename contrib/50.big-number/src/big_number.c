@@ -818,14 +818,6 @@ bigint_mul_i(pic_state *pic, struct pic_bigint_t *v1, struct pic_bigint_t *v2)
   return v1;
 }
 
-static bool
-bigint_less(pic_state *pic, struct pic_bigint_t *val1, struct pic_bigint_t *val2) {
-  if (val1->signum != val2->signum) { // signums differ
-    return val1->signum; // - < +, not + < -
-  }
-  return val1->signum ^ bigint_vec_lt(pic, val1->digits, val2->digits);
-}
-
 static struct pic_bigint_t *
 bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
 {
@@ -842,20 +834,6 @@ bigint_asl(pic_state *pic, struct pic_bigint_t *val, int sh)
   retbi->digits = bigint_vec_asl(pic, val->digits, sh);
   return retbi;
 }
-
-static bool
-bigint_bit_test(pic_state *pic, struct pic_bigint_t *val, int index)
-{
-  if (index < 0) {
-    pic_error(pic, "bigint-bit-test: index must be >= 0", 1, pic_int_value(pic, index));
-  }
-  if (val->signum) {
-    pic_error(pic, "bigint-bit-test does not support negative numbers", 0);
-  }
-
-  return bigint_vec_bit_test(pic, val->digits, index);
-}
-
 
 static double
 bigint_to_double(pic_state *pic, struct pic_bigint_t *bi)
@@ -1224,7 +1202,10 @@ pic_big_number_bigint_less_p(pic_state *pic)
   bi1 = take_bigint_or_int(pic, v1);
   bi2 = take_bigint_or_int(pic, v2);
 
-  return pic_bool_value(pic, bigint_less(pic, bi1, bi2));
+  if (bi1->signum != bi2->signum) { // signums differ
+    return pic_bool_value(pic, bi1->signum); // - < +, not + < -
+  }
+  return pic_bool_value(pic, bi1->signum ^ bigint_vec_lt(pic, bi1->digits, bi2->digits));
 }
 
 static pic_value
@@ -1243,10 +1224,19 @@ static pic_value
 pic_big_number_bigint_bit_test(pic_state *pic)
 {
   pic_value val;
+  struct pic_bigint_t *valbi;
   int index;
 
   pic_get_args(pic, "oi", &val, &index);
-  return pic_bool_value(pic, bigint_bit_test(pic, take_bigint_or_int(pic, val), index));
+  valbi = take_bigint_or_int(pic, val);
+  if (index < 0) {
+    pic_error(pic, "bigint-bit-test: index must be >= 0", 1, pic_int_value(pic, index));
+  }
+  if (valbi->signum) {
+    pic_error(pic, "bigint-bit-test does not support negative numbers", 0);
+  }
+
+  return pic_bool_value(pic, bigint_vec_bit_test(pic, valbi->digits, index));
 }
 
 /**
