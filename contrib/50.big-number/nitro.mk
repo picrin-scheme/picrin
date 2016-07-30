@@ -1,7 +1,7 @@
 CONTRIB_INITS += \
 	big_number
 CONTRIB_LIBS += $(wildcard contrib/50.big-number/big-number/*.scm)
-CONTRIB_SRCS += $(wildcard contrib/50.big-number/src/*.c)
+CONTRIB_SRCS += contrib/50.big-number/src/big_number.c
 CONTRIB_TESTS += test-big-number
 
 test-big-number: bin/picrin
