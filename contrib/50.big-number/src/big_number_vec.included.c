@@ -6,7 +6,7 @@ typedef long long bigint_diff;
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
-#define KARATSUBA_THRESHOLD 2
+#define KARATSUBA_THRESHOLD 32
 
 static pic_value
 bigint_vec_clone(pic_state *pic, const pic_value v) {
@@ -224,9 +224,9 @@ bigint_buf_mul(int len1, const bigint_digit *buf1,
   DEBUG(half, x0x1);
   DEBUG(half, y1y0);
 
-  bigint_buf_mul_naive(half, buf1, half, buf2, 2 * half, m00);
-  bigint_buf_mul_naive(len1 - half, buf1 + half, len2 - half, buf2 + half, 2 * half, m11);
-  bigint_buf_mul_naive(half, x0x1, half, y1y0, max(0, outlen - half), out + half);
+  bigint_buf_mul(half, buf1, half, buf2, 2 * half, m00);
+  bigint_buf_mul(len1 - half, buf1 + half, len2 - half, buf2 + half, 2 * half, m11);
+  bigint_buf_mul(half, x0x1, half, y1y0, max(0, outlen - half), out + half);
   if (x0ltx1) {
     bigint_buf_sub_ip_overflow(max(0, outlen - 2 * half), out + 2 * half, half, y1y0);
   }
