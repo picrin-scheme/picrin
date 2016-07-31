@@ -6,7 +6,7 @@ typedef long long bigint_diff;
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
-#define KARATSUBA_THRESHOLD 32
+#define KARATSUBA_THRESHOLD 40
 
 static pic_value
 bigint_vec_clone(pic_state *pic, const pic_value v) {
@@ -186,10 +186,8 @@ bigint_buf_mul(int len1, const bigint_digit *buf1,
 	       int len2, const bigint_digit *buf2,
 	       int outlen, bigint_digit *out)
 {
-#define DEBUG(len, buf) {int j; for (j = 0; j < len && 0; ++j) printf("[debug] " #buf "[%d] = %u\n", j, buf[j]); }
   int len, half, i;
-  bigint_digit *m00, *m11;
-  bigint_digit *x0x1, *y1y0;
+  bigint_digit *m00;
   bool x0ltx1, y1lty0;
 
   len = max(len1, len2);
@@ -198,64 +196,49 @@ bigint_buf_mul(int len1, const bigint_digit *buf1,
     return;
   }
 
-  DEBUG(len1, buf1);
-  DEBUG(len2, buf2);
   half = (len + 1) / 2;
   assert (len1 >= half);
   assert (len2 >= half);
   m00 = (bigint_digit *) malloc(half * 2 * sizeof(bigint_digit));
-  m11 = (bigint_digit *) malloc(half * 2 * sizeof(bigint_digit));
-  x0x1 = (bigint_digit *) malloc(half  * sizeof(bigint_digit));
-  y1y0 = (bigint_digit *) malloc(half  * sizeof(bigint_digit));
   for (i = 0; i < half * 2; ++i) {
     m00[i] = 0;
-    m11[i] = 0;
   }
-  for (i = 0; i < half; ++i) {
-    x0x1[i] = 0;
-    y1y0[i] = 0;
-  }
+  // use m00 as y1y0:x0x1
   x0ltx1 = bigint_buf_lt(half, buf1, len1 - half, buf1 + half);
   y1lty0 = bigint_buf_lt(len2 - half, buf2 + half, half, buf2);
-  bigint_buf_add_ip_overflow(half, x0x1, half, buf1);
-  bigint_buf_sub_ip_overflow(half, x0x1, len1 - half, buf1 + half);
-  bigint_buf_add_ip_overflow(half, y1y0, len2 - half, buf2 + half);
-  bigint_buf_sub_ip_overflow(half, y1y0, half, buf2);
-  DEBUG(half, x0x1);
-  DEBUG(half, y1y0);
+  bigint_buf_add_ip_overflow(half, m00, half, buf1);
+  bigint_buf_sub_ip_overflow(half, m00, len1 - half, buf1 + half);
+  bigint_buf_add_ip_overflow(half, m00 + half, len2 - half, buf2 + half);
+  bigint_buf_sub_ip_overflow(half, m00 + half, half, buf2);
 
-  bigint_buf_mul(half, buf1, half, buf2, 2 * half, m00);
-  bigint_buf_mul(len1 - half, buf1 + half, len2 - half, buf2 + half, 2 * half, m11);
-  bigint_buf_mul(half, x0x1, half, y1y0, max(0, outlen - half), out + half);
+  bigint_buf_mul(half, m00, half, m00 + half, max(0, outlen - half), out + half);
   if (x0ltx1) {
-    bigint_buf_sub_ip_overflow(max(0, outlen - 2 * half), out + 2 * half, half, y1y0);
+    bigint_buf_sub_ip_overflow(max(0, outlen - 2 * half), out + 2 * half, half, m00 + half);
   }
   if (y1lty0) {
-    bigint_buf_sub_ip_overflow(max(0, outlen - 2 * half), out + 2 * half, half, x0x1);
+    bigint_buf_sub_ip_overflow(max(0, outlen - 2 * half), out + 2 * half, half, m00);
   }
   if (x0ltx1 && y1lty0) {
     bigint_digit one = 1;
     bigint_buf_add_ip_overflow(max(0, outlen - 3 * half), out + 3 * half, 1, &one);
   }
 
-  DEBUG(2 * half, m00);
-  DEBUG(2 * half, m11);
-  DEBUG(outlen, out);
-  
-
+  for (i = 0; i < 2 * half; ++i) {
+    m00[i] = 0;
+  }
+  bigint_buf_mul(half, buf1, half, buf2, 2 * half, m00);
   bigint_buf_add_ip_overflow(outlen - half, out + half, 2 * half, m00);
-  bigint_buf_add_ip_overflow(outlen - half, out + half, 2 * half, m11);
-
-  bigint_buf_add_ip_overflow(max(0, outlen - 2 * half), out + 2 * half,
-			     2 * half, m11);
   bigint_buf_add_ip_overflow(outlen, out,
 			     2 * half, m00);
-  DEBUG(len1 + len2, out);
+  for (i = 0; i < 2 * half; ++i) {
+    m00[i] = 0;
+  }
+  bigint_buf_mul(len1 - half, buf1 + half, len2 - half, buf2 + half, 2 * half, m00);
+  bigint_buf_add_ip_overflow(outlen - half, out + half, 2 * half, m00);
+  bigint_buf_add_ip_overflow(max(0, outlen - 2 * half), out + 2 * half,
+			     2 * half, m00);
 
   free(m00);
-  free(m11);
-  free(x0x1);
-  free(y1y0);
 }
 
 static void
