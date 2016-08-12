@@ -7,8 +7,8 @@ ifeq ($(libedit_exists),0)
   LDFLAGS += `pkg-config libedit --libs`
 endif
 
-contrib/src/readline.o: contrib/src/readline.c
-	$(CC) $(CFLAGS) -o $@ $< `pkg-config libedit --cflags`
+contrib/30.readline/src/readline.o: contrib/30.readline/src/readline.c
+	$(CC) $(CFLAGS) -c -o $@ $< `pkg-config libedit --cflags`
 
 test-readline: bin/picrin
 	for test in `ls contrib/30.readline/t/*.scm`; do \
