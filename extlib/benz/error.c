@@ -155,7 +155,7 @@ pic_error(pic_state *pic, const char *msg, int n, ...)
 }
 
 static pic_value
-raise(pic_state *pic)
+raise_action(pic_state *pic)
 {
   pic_get_args(pic, "");
 
@@ -175,7 +175,7 @@ pic_raise(pic_state *pic, pic_value err)
     pic_panic(pic, "no exception handler");
   }
 
-  pic_dynamic_bind(pic, exc, pic_cdr(pic, stack), pic_lambda(pic, raise, 2, pic_car(pic, stack), err));
+  pic_dynamic_bind(pic, exc, pic_cdr(pic, stack), pic_lambda(pic, raise_action, 2, pic_car(pic, stack), err));
 
   PIC_UNREACHABLE();
 }

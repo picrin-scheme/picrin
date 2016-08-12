@@ -42,7 +42,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <ctype.h>  // used by emyg_strtod
-#include <math.h>   // scalb()
+#include <math.h>   // scalbn()
 
 #include "emyg_pow5.h"  // in separate file to support alternate implementations, and it's big
 
@@ -451,7 +451,7 @@ double atod_guts (uint64_t u64mant, int dpoint)
         if (m > BIGNUM_JUMBO_SIZE_UINT32) { n = 0; goto atod_fail; }
         mulbyu64(num, u64mant, pow5p, z); // num = pow5 * u64mant
         bex = bitLength(num, m) - doubleMantissaBits;
-        if (bex <= 0) return scalb(doubleValue(num), dpoint);
+        if (bex <= 0) return scalbn(doubleValue(num), dpoint);
         QUODBG(fprintf(stderr, "+ bex: %d z: %d m: %d\n", bex, z, m));
         n = (bex / 32) + 1; // 32-bit words needed to hold 1 << bex
         m = (bex + doubleMantissaBits + 31) / 32; // we may be able to shrink by a word
@@ -467,7 +467,7 @@ double atod_guts (uint64_t u64mant, int dpoint)
         QUODBG(print_bigint("num", num, m));
         QUODBG(print_bigint("scl", scl, n));
         QUODBG(print_bigint("quo", quo, m - n + 1));
-        return scalb(doubleValue(quo), bex + dpoint);
+        return scalbn(doubleValue(quo), bex + dpoint);
     }
     else
     {
@@ -541,7 +541,7 @@ double atod_guts (uint64_t u64mant, int dpoint)
             QUODBG(print_bigint("quo", quo, m - n + 1));
         }
 #endif
-        return scalb(doubleValue(quo), bex + dpoint);
+        return scalbn(doubleValue(quo), bex + dpoint);
    }
 atod_fail:
     QUODBG(fprintf(stderr, "atod_guts undersized bignum n: %d m: %d\n", n, m));
