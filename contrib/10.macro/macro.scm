@@ -62,7 +62,7 @@
           ((f (lambda (var)
                 (let loop ((free free))
                   (if (null? free)
-                      (wrap free)
+                      (wrap var)
                       (if (identifier=? var (car free))
                           var
                           (loop (cdr free))))))))
