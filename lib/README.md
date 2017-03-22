@@ -1,8 +1,8 @@
-# Benz
+# libpicrin
 
-Benz is a super tiny scheme interpreter intended to be embedded in other applications such as game engine and network server. It provides a subset language of R7RS with several useful extensions. By default, Benz just contains some C files and headers and this README file. In embedding, you only need to copy the files into the project and add `include` dir to the include path.
+libpicrin is a super tiny scheme interpreter intended to be embedded in other applications such as game engine and network server. It provides a subset language of R7RS with several useful extensions. By default, libpicrin just contains some C files and headers and this README file. In embedding, you only need to copy the files into the project and add `include` dir to the include path.
 
-Originally, Benz used to be the core component of [Picrin Scheme](https://github.com/picrin-scheme/picrin). They are currently maintained at separate repositories.
+Originally, libpicrin used to be the core component of [Picrin Scheme](https://github.com/picrin-scheme/picrin). They are currently maintained at separate repositories.
 
 ## Example
 
@@ -81,11 +81,11 @@ All procedures and syntaces are exported from a single library named `(picrin ba
 
 ### call/cc
 
-Full continuation has many problems in embbeding into applications. By default, Benz's call/cc operator does not support continuation that can handle re-entering (it only supports escape continuations). To remove this restriction, please use an add-on provided from [Picrin Scheme's repository](https://github.com/picrin-scheme/picrin/tree/master/contrib/03.callcc).
+Full continuation has many problems in embbeding into applications. By default, libpicrin's call/cc operator does not support continuation that can handle re-entering (it only supports escape continuations). To remove this restriction, please use an add-on provided from [Picrin Scheme's repository](https://github.com/picrin-scheme/picrin/tree/master/contrib/03.callcc).
 
 ### Strings
 
-Benz utilize rope data structure to implement string type. Thanks to the implementation, string-append is guaranteed to be done in a constant time (so do string-copy, when ascii-only mode is enabled). In return for that, strings in benz are immutable by default. It does not provide mutation API (string-set!, string-copy! and string-fill! in R7RS). This restriction can be also removed with an add-on in [Picrin Scheme's repository](https://github.com/picrin-scheme/picrin/tree/master/contrib/03.mutable-string).
+libpicrin utilize rope data structure to implement string type. Thanks to the implementation, string-append is guaranteed to be done in a constant time (so do string-copy, when ascii-only mode is enabled). In return for that, strings in libpicrin are immutable by default. It does not provide mutation API (string-set!, string-copy! and string-fill! in R7RS). This restriction can be also removed with an add-on in [Picrin Scheme's repository](https://github.com/picrin-scheme/picrin/tree/master/contrib/03.mutable-string).
 
 ### Dictionaries
 
@@ -93,11 +93,11 @@ Dictionary is a hash table object. Its equivalence is tested with equal? procedu
 
 ### Attribute
 
-Benz has an facility to get or set metadata to any heap object.
+libpicrin has an facility to get or set metadata to any heap object.
 
 ## Authors
 
-See https://github.com/picrin-scheme/benz and https://github.com/picrin-scheme/picrin for details.
+See https://github.com/picrin-scheme/picrin for details.
 
 ## LICENSE
 
