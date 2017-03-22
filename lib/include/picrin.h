@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2016 Picrin developers.
+ * Copyright (c) 2013-2017 Picrin developers.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
