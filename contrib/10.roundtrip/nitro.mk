@@ -5,5 +5,5 @@ CONTRIB_SRCS += contrib/10.roundtrip/emyg_dtoa.c \
 
 CONTRIB_TESTS += test-roundtrip
 
-test-roundtrip: bin/picrin
-	$(TEST_RUNNER) contrib/10.roundtrip/t/roundtrip.scm
+test-roundtrip: $(TEST_RUNNER)
+	./$(TEST_RUNNER) contrib/10.roundtrip/t/roundtrip.scm

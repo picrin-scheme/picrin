@@ -17,7 +17,7 @@ CONTRIB_SRCS += \
 	contrib/40.srfi/src/106.c
 CONTRIB_TESTS += test-srfi
 
-test-srfi: bin/picrin
+test-srfi: $(TEST_RUNNER)
 	for test in `ls contrib/40.srfi/t/*.scm`; do \
-	  $(TEST_RUNNER) "$$test"; \
+	  ./$(TEST_RUNNER) "$$test"; \
 	done

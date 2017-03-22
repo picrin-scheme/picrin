@@ -2,7 +2,7 @@ CONTRIB_LIBS += contrib/60.peg/picrin/parser.scm contrib/60.peg/picrin/parser/st
 
 CONTRIB_TESTS += test-peg
 
-test-peg: bin/picrin
+test-peg: $(TEST_RUNNER)
 	for test in `ls contrib/60.peg/t/*.scm`; do \
-	  $(TEST_RUNNER) "$$test"; \
+	  ./$(TEST_RUNNER) "$$test"; \
 	done

@@ -10,7 +10,7 @@ endif
 contrib/30.readline/src/readline.o: contrib/30.readline/src/readline.c
 	$(CC) $(CFLAGS) -c -o $@ $< `pkg-config libedit --cflags`
 
-test-readline: bin/picrin
+test-readline: $(TEST_RUNNER)
 	for test in `ls contrib/30.readline/t/*.scm`; do \
-	  $(TEST_RUNNER) $$test; \
+	  ./$(TEST_RUNNER) $$test; \
 	done

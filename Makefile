@@ -18,7 +18,7 @@ CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
 PICRIN_ISSUE_TESTS = $(wildcard t/issue/*.scm)
 REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
-TEST_RUNNER = bin/picrin
+TEST_RUNNER = picrin
 
 CFLAGS += -I./lib/include -Wall -Wextra
 LDFLAGS += -lm
@@ -26,15 +26,15 @@ LDFLAGS += -lm
 prefix ?= /usr/local
 
 all: CFLAGS += -O2 -DNDEBUG=1
-all: bin/picrin
+all: picrin
 
 debug: CFLAGS += -O0 -g
-debug: bin/picrin
+debug: picrin
 
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-bin/picrin: CFLAGS += $(CONTRIB_DEFS)
-bin/picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS)
+picrin: CFLAGS += $(CONTRIB_DEFS)
+picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS) $(LDFLAGS)
 
 src/load_piclib.c: $(CONTRIB_LIBS)
@@ -63,12 +63,12 @@ docs/contrib.rst: $(CONTRIB_DOCS)
 	echo "" >> $@
 	cat $(CONTRIB_DOCS) >> $@
 
-run: bin/picrin
-	bin/picrin
+run: picrin
+	./picrin
 
 test: test-contribs test-nostdlib test-issue
 
-test-contribs: bin/picrin $(CONTRIB_TESTS)
+test-contribs: picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
 	$(CC) -I lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
@@ -80,16 +80,16 @@ test-issue: test-picrin-issue test-repl-issue
 
 test-picrin-issue: $(TEST_RUNNER) $(PICRIN_ISSUE_TESTS)
 	for test in $(PICRIN_ISSUE_TESTS); do \
-	  $(TEST_RUNNER) "$$test"; \
+	  ./$(TEST_RUNNER) "$$test"; \
 	done
 
 test-repl-issue: $(REPL_ISSUE_TESTS)
 
 $(REPL_ISSUE_TESTS):
-	PICRIN=$(TEST_RUNNER) ./$@
+	PICRIN=./$(TEST_RUNNER) ./$@
 
 install: all
-	install -c bin/picrin $(prefix)/bin/picrin
+	install -c picrin $(prefix)/bin/picrin
 
 clean:
 	rm -f src/load_piclib.c src/init_contrib.c
