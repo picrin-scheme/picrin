@@ -89,6 +89,9 @@ test-repl-issue: $(REPL_ISSUE_TESTS)
 $(REPL_ISSUE_TESTS):
 	PICRIN=./$(TEST_RUNNER) ./$@
 
+push:
+	git subtree push --prefix=lib git@github.com:picrin-scheme/libpicrin.git master
+
 install: all
 	install -c picrin $(prefix)/bin/picrin
 
@@ -99,4 +102,4 @@ clean:
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
 
-.PHONY: all install clean run test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)
+.PHONY: all install clean push run test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)
