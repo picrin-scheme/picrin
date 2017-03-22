@@ -43,8 +43,9 @@ src/load_piclib.c: $(CONTRIB_LIBS)
 src/init_contrib.c:
 	perl etc/mkinit.pl $(CONTRIB_INITS) > $@
 
-lib/libpicrin.so: $(LIBPICRIN_OBJS)
-	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
+# FIXME: Undefined symbols error for _emyg_atod and _emyg_dtoa
+# libpicrin.so: $(LIBPICRIN_OBJS)
+# 	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
 
 lib/boot.o: lib/boot.c
 	cd lib; perl boot.c
@@ -71,10 +72,10 @@ test: test-contribs test-nostdlib test-issue
 test-contribs: picrin $(CONTRIB_TESTS)
 
 test-nostdlib:
-	$(CC) -I lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o lib/libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
-	strip lib/libpicrin-tiny.so
-	ls -lh lib/libpicrin-tiny.so
-	rm -f lib/libpicrin-tiny.so
+	$(CC) -I./lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
+	strip libpicrin-tiny.so
+	ls -lh libpicrin-tiny.so
+	rm -f libpicrin-tiny.so
 
 test-issue: test-picrin-issue test-repl-issue
 
@@ -93,7 +94,7 @@ install: all
 
 clean:
 	rm -f src/load_piclib.c src/init_contrib.c
-	rm -f lib/libpicrin.so
+	rm -f libpicrin.so libpicrin-tiny.so
 	rm -f $(LIBPICRIN_OBJS)
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
