@@ -38,18 +38,17 @@ picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS) $(LDFLAGS)
 
 src/load_piclib.c: $(CONTRIB_LIBS)
-	perl etc/mkloader.pl $(CONTRIB_LIBS) > $@
+	perl tools/mkloader.pl $(CONTRIB_LIBS) > $@
 
 src/init_contrib.c:
-	perl etc/mkinit.pl $(CONTRIB_INITS) > $@
+	perl tools/mkinit.pl $(CONTRIB_INITS) > $@
 
 # FIXME: Undefined symbols error for _emyg_atod and _emyg_dtoa
 # libpicrin.so: $(LIBPICRIN_OBJS)
 # 	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
 
-lib/boot.o: lib/boot.c
-	cd lib; perl boot.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+lib/boot.c: piclib/boot.scm
+	bin/picrin-bootstrap tools/mkboot.scm < piclib/boot.scm > lib/boot.c
 
 $(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h
 
@@ -63,9 +62,6 @@ docs/contrib.rst: $(CONTRIB_DOCS)
 	echo "================================" >> $@
 	echo "" >> $@
 	cat $(CONTRIB_DOCS) >> $@
-
-run: picrin
-	./picrin
 
 test: test-contribs test-nostdlib test-issue
 
@@ -96,10 +92,10 @@ install: all
 	install -c picrin $(prefix)/bin/picrin
 
 clean:
-	rm -f src/load_piclib.c src/init_contrib.c
+	rm -f src/load_piclib.c src/init_contrib.c lib/boot.c
 	rm -f libpicrin.so libpicrin-tiny.so
 	rm -f $(LIBPICRIN_OBJS)
 	rm -f $(PICRIN_OBJS)
 	rm -f $(CONTRIB_OBJS)
 
-.PHONY: all install clean push run test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)
+.PHONY: all install clean push test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)
