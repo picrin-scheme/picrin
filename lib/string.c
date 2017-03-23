@@ -80,22 +80,20 @@ make_rope_lit(pic_state *pic, const char *str, int len)
 static struct rope *
 make_rope_slice(pic_state *pic, struct rope *owner, int i, int j)
 {
-  struct rope *rope;
+  struct rope *rope, *real_owner;
 
   assert(owner->isleaf);
 
-  if (owner->u.leaf.owner != NULL) {
-    owner = owner->u.leaf.owner;
-  }
+  real_owner = owner->u.leaf.owner == NULL ? owner : owner->u.leaf.owner;
 
   rope = pic_malloc(pic, offsetof(struct rope, buf));
   rope->refcnt = 1;
   rope->weight = j - i;
   rope->isleaf = true;
-  rope->u.leaf.owner = owner;
+  rope->u.leaf.owner = real_owner;
   rope->u.leaf.str = owner->u.leaf.str + i;
 
-  pic_rope_incref(owner);
+  pic_rope_incref(real_owner);
 
   return rope;
 }
