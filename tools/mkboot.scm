@@ -1,4 +1,6 @@
-(import (picrin base))
+(import (scheme base)
+        (scheme read)
+        (scheme write))
 
 (define (with-output-to-string thunk)
   (let ((port (open-output-string)))

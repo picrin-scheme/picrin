@@ -480,6 +480,7 @@ double PIC_CSTRING_TO_DOUBLE(const char *);
 #endif
 
 #if __x86_64__ && (defined(__GNUC__) || defined(__clang__)) && ! defined(__STRICT_ANSI__)
+# include <stdint.h>
 # define PIC_NAN_BOXING 1
 #else
 # define PIC_NAN_BOXING 0
