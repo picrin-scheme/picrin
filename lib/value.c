@@ -3,7 +3,7 @@
  */
 
 #include "picrin.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 #if PIC_NAN_BOXING
 

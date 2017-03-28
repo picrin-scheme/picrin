@@ -3,7 +3,7 @@
  */
 
 #include "picrin.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 #if PIC_NAN_BOXING
 
@@ -226,7 +226,7 @@ pic_bool_not(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_false_p(pic, v) ? pic_true_value(pic) : pic_false_value(pic);
+  return pic_bool_value(pic, pic_false_p(pic, v));
 }
 
 static pic_value
@@ -236,7 +236,7 @@ pic_bool_boolean_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return (pic_true_p(pic, v) || pic_false_p(pic, v)) ? pic_true_value(pic) : pic_false_value(pic);
+  return pic_bool_value(pic, pic_bool_p(pic, v));
 }
 
 static pic_value
@@ -264,9 +264,7 @@ pic_init_bool(pic_state *pic)
   pic_defun(pic, "eq?", pic_bool_eq_p);
   pic_defun(pic, "eqv?", pic_bool_eqv_p);
   pic_defun(pic, "equal?", pic_bool_equal_p);
-
   pic_defun(pic, "not", pic_bool_not);
-
   pic_defun(pic, "boolean?", pic_bool_boolean_p);
   pic_defun(pic, "boolean=?", pic_bool_boolean_eq_p);
 }

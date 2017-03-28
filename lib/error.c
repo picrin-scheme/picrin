@@ -3,9 +3,8 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/object.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
 
 void
 pic_panic(pic_state *pic, const char *msg)
@@ -13,10 +12,6 @@ pic_panic(pic_state *pic, const char *msg)
   if (pic->panicf) {
     pic->panicf(pic, msg);
   }
-
-#if PIC_USE_STDIO
-  fprintf(stderr, "picrin panic!: %s\n", msg);
-#endif
 
   PIC_ABORT(pic);
 
@@ -296,7 +291,7 @@ pic_error_error_object_type(pic_state *pic)
 void
 pic_init_error(pic_state *pic)
 {
-  pic_defvar(pic, "current-exception-handlers", pic_nil_value(pic), pic_false_value(pic));
+  pic_defvar(pic, "current-exception-handlers", pic_nil_value(pic));
   pic_defun(pic, "with-exception-handler", pic_error_with_exception_handler);
   pic_defun(pic, "raise", pic_error_raise);
   pic_defun(pic, "raise-continuable", pic_error_raise_continuable);

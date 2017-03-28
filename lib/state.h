@@ -9,9 +9,8 @@
 extern "C" {
 #endif
 
-#include "picrin/private/khash.h"
-#include "picrin/private/vm.h"
-#include "picrin/private/gc.h"
+#include "khash.h"
+#include "vm.h"
 
 struct lib {
   struct string *name;
@@ -68,6 +67,9 @@ struct pic_state {
 
   pic_panicf panicf;
 };
+
+struct heap *pic_heap_open(pic_state *);
+void pic_heap_close(pic_state *, struct heap *);
 
 #if defined(__cplusplus)
 }

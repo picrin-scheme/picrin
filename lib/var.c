@@ -3,9 +3,8 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/object.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
 
 static pic_value
 var_conv(pic_state *pic, pic_value val, pic_value conv)

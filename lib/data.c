@@ -1,5 +1,9 @@
+/**
+ * See Copyright Notice in picrin.h
+ */
+
 #include "picrin.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 bool
 pic_data_p(pic_state *pic, pic_value obj, const pic_data_type *type)

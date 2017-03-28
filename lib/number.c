@@ -3,7 +3,6 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
 
 static pic_value
 pic_number_number_p(pic_state *pic)
@@ -334,33 +333,20 @@ pic_number_string_to_number(pic_state *pic)
 void
 pic_init_number(pic_state *pic)
 {
-  size_t ai = pic_enter(pic);
-
   pic_defun(pic, "number?", pic_number_number_p);
-  pic_leave(pic, ai);
-
   pic_defun(pic, "exact?", pic_number_exact_p);
   pic_defun(pic, "inexact?", pic_number_inexact_p);
-  pic_leave(pic, ai);
-
   pic_defun(pic, "inexact", pic_number_inexact);
   pic_defun(pic, "exact", pic_number_exact);
-  pic_leave(pic, ai);
-
   pic_defun(pic, "=", pic_number_eq);
   pic_defun(pic, "<", pic_number_lt);
   pic_defun(pic, ">", pic_number_gt);
   pic_defun(pic, "<=", pic_number_le);
   pic_defun(pic, ">=", pic_number_ge);
-  pic_leave(pic, ai);
-
   pic_defun(pic, "+", pic_number_add);
   pic_defun(pic, "-", pic_number_sub);
   pic_defun(pic, "*", pic_number_mul);
   pic_defun(pic, "/", pic_number_div);
-  pic_leave(pic, ai);
-
   pic_defun(pic, "number->string", pic_number_number_to_string);
   pic_defun(pic, "string->number", pic_number_string_to_number);
-  pic_leave(pic, ai);
 }

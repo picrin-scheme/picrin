@@ -4,7 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 struct writer_control {
   int mode;

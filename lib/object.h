@@ -9,15 +9,16 @@
 extern "C" {
 #endif
 
-#include "picrin/private/file.h"
-#include "picrin/private/khash.h"
-#include "picrin/private/gc.h"
+#include "khash.h"
 
-typedef struct identifier symbol;
-
-KHASH_DECLARE(env, struct identifier *, symbol *)
-KHASH_DECLARE(dict, symbol *, pic_value)
-KHASH_DECLARE(weak, struct object *, pic_value)
+#if PIC_BITMAP_GC
+# define OBJECT_HEADER                           \
+  unsigned char tt;
+#else
+# define OBJECT_HEADER                           \
+  unsigned char tt;                              \
+  char gc_mark;
+#endif
 
 struct object;              /* defined in gc.c */
 
@@ -33,6 +34,10 @@ struct identifier {
   } u;
   struct env *env;
 };
+
+typedef struct identifier symbol;
+
+KHASH_DECLARE(env, struct identifier *, symbol *)
 
 struct env {
   OBJECT_HEADER
@@ -58,10 +63,14 @@ struct string {
   struct rope *rope;
 };
 
+KHASH_DECLARE(dict, symbol *, pic_value)
+
 struct dict {
   OBJECT_HEADER
   khash_t(dict) hash;
 };
+
+KHASH_DECLARE(weak, struct object *, pic_value)
 
 struct weak {
   OBJECT_HEADER
@@ -118,9 +127,33 @@ struct error {
   struct string *stack;
 };
 
+enum {
+  FILE_READ  = 01,
+  FILE_WRITE = 02,
+  FILE_UNBUF = 04,
+  FILE_EOF   = 010,
+  FILE_ERR   = 020,
+  FILE_LNBUF = 040
+};
+
 struct port {
   OBJECT_HEADER
-  struct file file;
+  struct file {
+    /* buffer */
+    char buf[1];                  /* fallback buffer */
+    long cnt;                     /* characters left */
+    char *ptr;                    /* next character position */
+    char *base;                   /* location of the buffer */
+    /* operators */
+    struct {
+      void *cookie;
+      int (*read)(pic_state *, void *, char *, int);
+      int (*write)(pic_state *, void *, const char *, int);
+      long (*seek)(pic_state *, void *, long, int);
+      int (*close)(pic_state *, void *);
+    } vtable;
+    int flag;                     /* mode of the file access */
+  } file;
 };
 
 struct checkpoint {
@@ -189,7 +222,7 @@ pic_value pic_make_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct irep *, struct context *);
 pic_value pic_make_env(pic_state *, pic_value env);
-pic_value pic_make_rec(pic_state *, pic_value type, pic_value datum);
+pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 
 pic_value pic_add_identifier(pic_state *, pic_value id, pic_value env);
 void pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);

@@ -74,7 +74,7 @@ void pic_gc(pic_state *);
 int pic_get_args(pic_state *, const char *fmt, ...);
 
 void pic_defun(pic_state *, const char *name, pic_func_t f);
-void pic_defvar(pic_state *, const char *name, pic_value v, pic_value conv);
+void pic_defvar(pic_state *, const char *name, pic_value v);
 void pic_define(pic_state *, const char *lib, const char *name, pic_value v);
 pic_value pic_ref(pic_state *, const char *lib, const char *name);
 void pic_set(pic_state *, const char *lib, const char *name, pic_value v);
@@ -179,6 +179,7 @@ enum {
 #define pic_float_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FLOAT)
 #define pic_char_p(pic,v) (pic_type(pic,v) == PIC_TYPE_CHAR)
 #define pic_eof_p(pic, v) (pic_type(pic, v) == PIC_TYPE_EOF)
+#define pic_bool_p(pic,v) (pic_type(pic,v) == PIC_TYPE_TRUE || pic_type(pic,v) == PIC_TYPE_FALSE)
 #define pic_true_p(pic,v) (pic_type(pic,v) == PIC_TYPE_TRUE)
 #define pic_false_p(pic,v) (pic_type(pic,v) == PIC_TYPE_FALSE)
 #define pic_id_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ID || pic_type(pic, v) == PIC_TYPE_SYMBOL)
@@ -270,6 +271,10 @@ int pic_str_hash(pic_state *, pic_value str);
 #define PIC_SEEK_END 1
 #define PIC_SEEK_SET 2
 
+#define pic_stdin(pic) pic_funcall(pic, "picrin.base", "current-input-port", 0)
+#define pic_stdout(pic) pic_funcall(pic, "picrin.base", "current-output-port", 0)
+#define pic_stderr(pic) pic_funcall(pic, "picrin.base", "current-error-port", 0)
+
 pic_value pic_funopen(pic_state *, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *));
 size_t pic_fread(pic_state *, void *ptr, size_t size, size_t count, pic_value port);
 size_t pic_fwrite(pic_state *, const void *ptr, size_t size, size_t count, pic_value port);
@@ -290,6 +295,32 @@ int pic_fflush(pic_state *, pic_value port);
 int pic_printf(pic_state *, const char *fmt, ...);
 int pic_fprintf(pic_state *, pic_value port, const char *fmt, ...);
 int pic_vfprintf(pic_state *, pic_value port, const char *fmt, va_list ap);
+
+pic_value pic_fmemopen(pic_state *, const char *buf, int len, const char *mode); /* deprecated */
+int pic_fgetbuf(pic_state *, pic_value port, const char **buf, int *len); /* deprecated */
+
+
+/* debug */
+void pic_warnf(pic_state *, const char *, ...);
+pic_value pic_get_backtrace(pic_state *);
+
+
+
+/* utility macros */
+
+#define pic_for_each(var, list, it)                                     \
+  for (it = (list); ! pic_nil_p(pic, it); it = pic_cdr(pic, it))        \
+    if ((var = pic_car(pic, it)), true)
+
+#define pic_push(pic, item, place) (place = pic_cons(pic, item, place))
+#define pic_pop(pic, place) (place = pic_cdr(pic, place))
+
+#define pic_void(pic, exec) pic_void_(pic, PIC_GENSYM(ai), exec)
+#define pic_void_(pic,ai,exec) do {             \
+    size_t ai = pic_enter(pic);                 \
+    exec;                                       \
+    pic_leave(pic, ai);                         \
+  } while (0)
 
 
 #if defined(__cplusplus)

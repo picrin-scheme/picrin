@@ -3,10 +3,8 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/state.h"
-#include "picrin/private/object.h"
-#include "picrin/private/file.h"
+#include "object.h"
+#include "state.h"
 
 #ifndef EOF
 # define EOF (-1)
@@ -758,32 +756,18 @@ pic_port_flush(pic_state *pic)
   return pic_undef_value(pic);
 }
 
-static pic_value
-coerce_port(pic_state *pic)
-{
-  pic_value port;
-
-  pic_get_args(pic, "p", &port);
-
-  return port;
-}
-
-#if PIC_USE_STDIO
-# define DEFINE_PORT(pic, name, file, mode)                     \
-  pic_defvar(pic, name, pic_fopen(pic, file, mode), coerce)
-#else
-# define DEFINE_PORT(pic, name, file, mode)                     \
-  pic_defvar(pic, name, pic_fopen_null(pic, mode), coerce)
-#endif
-
 void
 pic_init_port(pic_state *pic)
 {
-  pic_value coerce = pic_lambda(pic, coerce_port, 0);
-
-  DEFINE_PORT(pic, "current-input-port", stdin, "r");
-  DEFINE_PORT(pic, "current-output-port", stdout, "w");
-  DEFINE_PORT(pic, "current-error-port", stderr, "w");
+#if PIC_USE_STDIO
+  pic_defvar(pic, "current-input-port", pic_fopen(pic, stdin, "r"));
+  pic_defvar(pic, "current-output-port", pic_fopen(pic, stdout, "w"));
+  pic_defvar(pic, "current-error-port", pic_fopen(pic, stdout, "w"));
+#else
+  pic_defvar(pic, "current-input-port", pic_fopen_null(pic, "r"));
+  pic_defvar(pic, "current-output-port", pic_fopen_null(pic, "w"));
+  pic_defvar(pic, "current-error-port", pic_fopen_null(pic, "w"));
+#endif
 
   pic_defun(pic, "port?", pic_port_port_p);
   pic_defun(pic, "input-port?", pic_port_input_port_p);

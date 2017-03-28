@@ -4,9 +4,9 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/private/object.h"
-#include "picrin/private/vm.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
+#include "vm.h"
 
 static pic_value pic_compile(pic_state *, pic_value);
 

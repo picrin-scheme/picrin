@@ -3,8 +3,8 @@
  */
 
 #include "picrin.h"
-#include "picrin/private/object.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
 
 #define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - offsetof(struct heap_page, basep)) / sizeof(union header))
 

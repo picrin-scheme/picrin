@@ -8,15 +8,11 @@ LIBPICRIN_SRCS = \
 	lib/debug.c\
 	lib/dict.c\
 	lib/error.c\
-	lib/eval.c\
 	lib/gc.c\
-	lib/lib.c\
-	lib/load.c\
 	lib/number.c\
 	lib/pair.c\
 	lib/port.c\
 	lib/proc.c\
-	lib/read.c\
 	lib/record.c\
 	lib/state.c\
 	lib/string.c\
@@ -25,7 +21,11 @@ LIBPICRIN_SRCS = \
 	lib/var.c\
 	lib/vector.c\
 	lib/weak.c\
-	lib/write.c
+	lib/ext/eval.c\
+	lib/ext/lib.c\
+	lib/ext/load.c\
+	lib/ext/read.c\
+	lib/ext/write.c
 LIBPICRIN_OBJS = $(LIBPICRIN_SRCS:.c=.o)
 
 PICRIN_SRCS = \
@@ -47,7 +47,7 @@ REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
 TEST_RUNNER = picrin
 
-CFLAGS += -I./lib/include -Wall -Wextra
+CFLAGS += -I./lib -I./lib/include -Wall -Wextra
 LDFLAGS += -lm
 
 prefix ?= /usr/local
@@ -77,7 +77,7 @@ src/init_contrib.c:
 lib/boot.c: piclib/boot.scm
 	bin/picrin-bootstrap tools/mkboot.scm < piclib/boot.scm > lib/boot.c
 
-$(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h
+$(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h lib/vm.h
 
 doc: docs/*.rst docs/contrib.rst
 	$(MAKE) -C docs html
@@ -94,8 +94,8 @@ test: test-contribs test-nostdlib test-issue
 
 test-contribs: picrin $(CONTRIB_TESTS)
 
-test-nostdlib:
-	$(CC) -I./lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
+test-nostdlib: lib/boot.c
+	$(CC) -I./lib -I./lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	strip libpicrin-tiny.so
 	ls -lh libpicrin-tiny.so
 	rm -f libpicrin-tiny.so

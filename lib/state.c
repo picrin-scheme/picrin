@@ -4,8 +4,8 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "picrin/private/object.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
 
 static pic_value
 pic_features(pic_state *pic)

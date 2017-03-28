@@ -3,8 +3,7 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 static pic_value
 pic_char_char_p(pic_state *pic)
@@ -13,7 +12,7 @@ pic_char_char_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_char_p(pic, v) ? pic_true_value(pic) : pic_false_value(pic);
+  return pic_bool_value(pic, pic_char_p(pic, v));
 }
 
 static pic_value

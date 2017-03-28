@@ -3,8 +3,8 @@
  */
 
 #include "picrin.h"
-#include "picrin/private/object.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
 
 struct cont {
   PIC_JMPBUF *jmp;

@@ -3,10 +3,9 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/object.h"
-#include "picrin/private/vm.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
+#include "vm.h"
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
@@ -827,9 +826,9 @@ pic_defun(pic_state *pic, const char *name, pic_func_t f)
 }
 
 void
-pic_defvar(pic_state *pic, const char *name, pic_value init, pic_value conv)
+pic_defvar(pic_state *pic, const char *name, pic_value init)
 {
-  pic_define(pic, pic_current_library(pic), name, pic_make_var(pic, init, conv));
+  pic_define(pic, pic_current_library(pic), name, pic_make_var(pic, init, pic_false_value(pic)));
   pic_export(pic, pic_intern_cstr(pic, name));
 }
 

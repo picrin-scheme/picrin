@@ -3,10 +3,10 @@
  */
 
 #include "picrin.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 pic_value
-pic_make_rec(pic_state *pic, pic_value type, pic_value datum)
+pic_make_record(pic_state *pic, pic_value type, pic_value datum)
 {
   struct record *rec;
 
@@ -24,7 +24,7 @@ pic_rec_make_record(pic_state *pic)
 
   pic_get_args(pic, "oo", &type, &datum);
 
-  return pic_make_rec(pic, type, datum);
+  return pic_make_record(pic, type, datum);
 }
 
 static pic_value

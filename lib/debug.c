@@ -3,9 +3,8 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/object.h"
-#include "picrin/private/state.h"
+#include "object.h"
+#include "state.h"
 
 pic_value
 pic_get_backtrace(pic_state *pic)

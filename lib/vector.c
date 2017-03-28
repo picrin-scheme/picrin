@@ -3,8 +3,7 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 pic_value
 pic_make_vec(pic_state *pic, int len, pic_value *argv)

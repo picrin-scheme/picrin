@@ -3,8 +3,7 @@
  */
 
 #include "picrin.h"
-#include "picrin/extra.h"
-#include "picrin/private/object.h"
+#include "object.h"
 
 KHASH_DEFINE(dict, symbol *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
 
