@@ -84,10 +84,10 @@ pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
     return uid;
   }
 
-  name = pic_str(pic, pic_id_name(pic, id));
+  name = pic_str(pic, pic_id_name(pic, id), NULL);
 
   if (pic_env_ptr(pic, env)->up == NULL && pic_sym_p(pic, id)) { /* toplevel & public */
-    lib = pic_str(pic, pic_obj_value(pic_env_ptr(pic, env)->lib));
+    lib = pic_str(pic, pic_obj_value(pic_env_ptr(pic, env)->lib), NULL);
     str = pic_strf_value(pic, "%s/%s", lib, name);
   } else {
     str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
@@ -168,7 +168,7 @@ pic_make_library(pic_state *pic, const char *lib)
   env = make_library_env(pic, name);
   exports = pic_make_dict(pic);
 
-  it = kh_put(ltable, h, pic_str(pic, name), &ret);
+  it = kh_put(ltable, h, pic_str(pic, name, NULL), &ret);
   if (ret == 0) {               /* if exists */
     pic_error(pic, "library name already in use", 1, pic_cstr_value(pic, lib));
   }

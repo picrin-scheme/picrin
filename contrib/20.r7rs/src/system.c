@@ -109,7 +109,7 @@ pic_system_getenvs(pic_state *pic)
       ;
 
     key = pic_str_value(pic, *envp, i);
-    val = pic_cstr_value(pic, getenv(pic_str(pic, key)));
+    val = pic_cstr_value(pic, getenv(pic_str(pic, key, NULL)));
 
     /* push */
     data = pic_cons(pic, pic_cons(pic, key, val), data);

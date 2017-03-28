@@ -106,7 +106,16 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     return pic_eq_p(pic, s1, s2);
   }
   case PIC_TYPE_STRING: {
-    return pic_str_cmp(pic, x, y) == 0;
+    int xlen, ylen;
+    const char *xstr, *ystr;
+
+    xstr = pic_str(pic, x, &xlen);
+    ystr = pic_str(pic, y, &ylen);
+
+    if (xlen != ylen) {
+      return false;
+    }
+    return strcmp(xstr, ystr) == 0;
   }
   case PIC_TYPE_BLOB: {
     int xlen, ylen;
@@ -118,10 +127,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     if (xlen != ylen) {
       return false;
     }
-    if (memcmp(xbuf, ybuf, xlen) != 0) {
-      return false;
-    }
-    return true;
+    return memcmp(xbuf, ybuf, xlen) == 0;
   }
   case PIC_TYPE_PAIR: {
     if (! internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, h))

@@ -13,6 +13,8 @@ static pic_value pic_compile(pic_state *, pic_value);
 #define EQ(sym, lit) (strcmp(pic_sym(pic, sym), lit) == 0)
 #define S(lit) (pic_intern_lit(pic, lit))
 
+#define pic_sym(pic,sym) pic_str(pic, pic_sym_name(pic, (sym)), NULL)
+
 static void
 define_macro(pic_state *pic, pic_value uid, pic_value mac)
 {

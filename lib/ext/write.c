@@ -270,10 +270,10 @@ static void
 write_str(pic_state *pic, pic_value str, pic_value port, struct writer_control *p)
 {
   int i;
-  const char *cstr = pic_str(pic, str);
+  const char *cstr = pic_str(pic, str, NULL);
 
   if (p->mode == DISPLAY_MODE) {
-    pic_fprintf(pic, port, "%s", pic_str(pic, str));
+    pic_fprintf(pic, port, "%s", pic_str(pic, str, NULL));
     return;
   }
   pic_fprintf(pic, port, "\"");
@@ -324,7 +324,8 @@ write_pair_help(pic_state *pic, pic_value pair, pic_value port, struct writer_co
   }
 }
 
-#define EQ(sym, lit) (strcmp(pic_sym(pic, sym), lit) == 0)
+#define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym), NULL), lit) == 0)
+#define pic_sym(pic,sym) pic_str(pic, pic_sym_name(pic, (sym)), NULL)
 
 static void
 write_pair(pic_state *pic, pic_value pair, pic_value port, struct writer_control *p)
@@ -439,7 +440,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     pic_fprintf(pic, port, "#f");
     break;
   case PIC_TYPE_ID:
-    pic_fprintf(pic, port, "#<identifier %s>", pic_str(pic, pic_id_name(pic, obj)));
+    pic_fprintf(pic, port, "#<identifier %s>", pic_str(pic, pic_id_name(pic, obj), NULL));
     break;
   case PIC_TYPE_EOF:
     pic_fprintf(pic, port, "#.(eof-object)");

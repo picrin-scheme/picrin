@@ -54,7 +54,7 @@ pic_print_error(pic_state *pic, pic_value port, pic_value err)
     pic_for_each (elem, e->irrs, it) { /* print error irritants */
       pic_fprintf(pic, port, " ~s", elem);
     }
-    pic_fprintf(pic, port, "\n%s", pic_str(pic, pic_obj_value(e->stack)));
+    pic_fprintf(pic, port, "\n%s", pic_str(pic, pic_obj_value(e->stack), NULL));
   }
 }
 

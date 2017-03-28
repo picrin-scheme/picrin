@@ -282,7 +282,7 @@ pic_str_sub(pic_state *pic, pic_value str, int s, int e)
 int
 pic_str_cmp(pic_state *pic, pic_value str1, pic_value str2)
 {
-  return strcmp(pic_str(pic, str1), pic_str(pic, str2));
+  return strcmp(pic_str(pic, str1, NULL), pic_str(pic, str2, NULL));
 }
 
 int
@@ -291,7 +291,7 @@ pic_str_hash(pic_state *pic, pic_value str)
   const char *s;
   int h = 0;
 
-  s = pic_str(pic, str);
+  s = pic_str(pic, str, NULL);
   while (*s) {
     h = (h << 5) - h + *s++;
   }
@@ -299,9 +299,13 @@ pic_str_hash(pic_state *pic, pic_value str)
 }
 
 const char *
-pic_str(pic_state *pic, pic_value str)
+pic_str(pic_state *pic, pic_value str, int *len)
 {
   struct rope *rope = pic_str_ptr(pic, str)->rope, *r;
+
+  if (len) {
+    *len = rope->weight;
+  }
 
   if (rope->isleaf && rope->u.leaf.str[rope->weight] == '\0') {
     return rope->u.leaf.str;
@@ -652,7 +656,7 @@ pic_str_string_to_list(pic_state *pic)
   }
   return pic_reverse(pic, list);
 }
- 
+
 void
 pic_init_str(pic_state *pic)
 {

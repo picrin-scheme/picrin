@@ -28,7 +28,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   err = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
 
-  pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_str(pic, err));
+  pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_str(pic, err, NULL));
 }
 
 static pic_value

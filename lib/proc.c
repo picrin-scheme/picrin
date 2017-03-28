@@ -14,7 +14,7 @@ arg_error(pic_state *pic, int actual, bool varg, int expected)
 {
   const char *msg;
 
-  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual, (varg ? "at least " : ""), expected));
+  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual, (varg ? "at least " : ""), expected), NULL);
 
   pic_error(pic, msg, 0);
 }
@@ -131,7 +131,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       else {
         const char *msg;
-        msg = pic_str(pic, pic_strf_value(pic, "pic_get_args: data type \"%s\" required", type->type_name));
+        msg = pic_str(pic, pic_strf_value(pic, "pic_get_args: data type \"%s\" required", type->type_name), NULL);
         pic_error(pic, msg, 1, v);
       }
       break;
@@ -200,7 +200,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
 
     VAL_CASE('c', char, char, pic_char(pic, v))
-    VAL_CASE('z', str, const char *, pic_str(pic, v))
+    VAL_CASE('z', str, const char *, pic_str(pic, v, NULL))
 
 #define OBJ_CASE(c, type) VAL_CASE(c, type, pic_value, v)
 
@@ -843,7 +843,7 @@ pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
 
   uid = pic_find_identifier(pic, sym, env);
   if (pic_weak_has(pic, pic->globals, uid)) {
-    pic_warnf(pic, "redefining variable: %s", pic_sym(pic, uid));
+    pic_warnf(pic, "redefining variable: %s", pic_str(pic, pic_sym_name(pic, uid), NULL));
   }
   pic_weak_set(pic, pic->globals, uid, val);
 }
