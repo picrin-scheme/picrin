@@ -178,47 +178,43 @@ pic_char_value(pic_state *PIC_UNUSED(pic), char c)
 /**
  * value representation by nan-boxing:
  *   float : FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF FFFFFFFFFFFFFFFF
- *   ptr   : 111111111111TTTT PPPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP
- *   int   : 111111111111TTTT 0000000000000000 IIIIIIIIIIIIIIII IIIIIIIIIIIIIIII
- *   char  : 111111111111TTTT 0000000000000000 CCCCCCCCCCCCCCCC CCCCCCCCCCCCCCCC
+ *   ptr   : 111111111111TTTT TTPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP PPPPPPPPPPPPPPPP
+ *   int   : 111111111111TTTT TT00000000000000 IIIIIIIIIIIIIIII IIIIIIIIIIIIIIII
+ *   char  : 111111111111TTTT TT00000000000000 CCCCCCCCCCCCCCCC CCCCCCCCCCCCCCCC
  */
 
 PIC_STATIC_INLINE pic_value
 make_value(int type)
 {
   pic_value v;
-  v.v = 0xfff0000000000000ul | ((uint64_t)(type) << 48);
+  v.v = 0xfff0000000000000ul | ((uint64_t)(type) << 46);
   return v;
 }
 
 PIC_STATIC_INLINE struct object *
 obj_ptr(pic_value v)
 {
-  return (struct object *)(0xfffffffffffful & v.v);
+  return (struct object *)((0x3ffffffffffful & v.v) << 2);
 }
 
 PIC_STATIC_INLINE bool
 obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
 {
-  return v.v > ((0xfff0ul + (0xf & PIC_IVAL_END)) << 48);
+  return v.v > ((0x3ffC0ul + (0x3f & PIC_IVAL_END)) << 46);
 }
 
 PIC_STATIC_INLINE pic_value
 obj_value(void *ptr)
 {
-  pic_value v = make_value(PIC_IVAL_END);
-  v.v |= 0xfffffffffffful & (uint64_t)ptr;
+  pic_value v = make_value(obj_tt(ptr));
+  v.v |= 0x3ffffffffffful & ((uint64_t)ptr >> 2);
   return v;
 }
 
 PIC_STATIC_INLINE int
 value_type(pic_state *PIC_UNUSED(pic), pic_value v)
 {
-  int tt = 0xfff0 >= (v.v >> 48) ? PIC_TYPE_FLOAT : ((v.v >> 48) & 0xf);
-  if (tt == PIC_IVAL_END) {
-    return obj_tt(obj_ptr(v));
-  }
-  return tt;
+  return 0xfff0000000000000ul >= v.v ? PIC_TYPE_FLOAT : ((v.v >> 46) & 0x3f);
 }
 
 INLINE int
