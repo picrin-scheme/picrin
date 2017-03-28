@@ -120,7 +120,7 @@ make_str(pic_state *pic, struct rope *rope)
   str = (struct string *)pic_obj_alloc(pic, sizeof(struct string), PIC_TYPE_STRING);
   str->rope = rope;             /* delegate ownership */
 
-  return obj_value(str);
+  return obj_value(pic, str);
 }
 
 static struct rope *

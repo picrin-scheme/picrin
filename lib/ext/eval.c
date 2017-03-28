@@ -984,7 +984,7 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     assert(obj_p(pic,obj));
     check_pool_size(pic, cxt);
     pidx = (int)cxt->plen++;
-    cxt->pool[pidx] = obj_ptr(obj);
+    cxt->pool[pidx] = obj_ptr(pic, obj);
     emit_i(pic, cxt, OP_PUSHCONST, pidx);
     break;
   }

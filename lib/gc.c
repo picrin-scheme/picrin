@@ -171,7 +171,7 @@ pic_protect(pic_state *pic, pic_value v)
   if (! obj_p(pic, v))
     return v;
 
-  gc_protect(pic, obj_ptr(v));
+  gc_protect(pic, obj_ptr(pic, v));
 
   return v;
 }
@@ -308,7 +308,7 @@ gc_mark(pic_state *pic, pic_value v)
   if (! obj_p(pic, v))
     return;
 
-  gc_mark_object(pic, obj_ptr(v));
+  gc_mark_object(pic, obj_ptr(pic, v));
 }
 
 static void
@@ -327,7 +327,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_PAIR: {
     gc_mark(pic, obj->u.pair.car);
     if (obj_p(pic, obj->u.pair.cdr)) {
-      LOOP(obj_ptr(obj->u.pair.cdr));
+      LOOP(obj_ptr(pic, obj->u.pair.cdr));
     }
     break;
   }
@@ -408,7 +408,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
     pic_value key, val;
     int it = 0;
 
-    while (pic_dict_next(pic, obj_value(&obj->u.dict), &it, &key, &val)) {
+    while (pic_dict_next(pic, obj_value(pic, &obj->u.dict), &it, &key, &val)) {
       gc_mark(pic, key);
       gc_mark(pic, val);
     }
@@ -417,7 +417,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_RECORD: {
     gc_mark(pic, obj->u.rec.type);
     if (obj_p(pic, obj->u.rec.datum)) {
-      LOOP(obj_ptr(obj->u.rec.datum));
+      LOOP(obj_ptr(pic, obj->u.rec.datum));
     }
     break;
   }
@@ -531,7 +531,7 @@ gc_mark_phase(pic_state *pic)
         key = kh_key(h, it);
         val = kh_val(h, it);
         if (is_marked(pic, key)) {
-          if (obj_p(pic, val) && ! is_marked(pic, obj_ptr(val))) {
+          if (obj_p(pic, val) && ! is_marked(pic, obj_ptr(pic, val))) {
             gc_mark(pic, val);
             ++j;
           }
@@ -587,7 +587,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_PORT: {
-    pic_fclose(pic, obj_value(obj)); /* FIXME */
+    pic_fclose(pic, obj_value(pic, obj)); /* FIXME */
     break;
   }
 

@@ -69,10 +69,10 @@ pic_wind(pic_state *pic, struct checkpoint *here, struct checkpoint *there)
 
   if (here->depth < there->depth) {
     pic_wind(pic, here, there->prev);
-    pic_call(pic, obj_value(there->in), 0);
+    pic_call(pic, obj_value(pic, there->in), 0);
   }
   else {
-    pic_call(pic, obj_value(here->out), 0);
+    pic_call(pic, obj_value(pic, here->out), 0);
     pic_wind(pic, here->prev, there);
   }
 }

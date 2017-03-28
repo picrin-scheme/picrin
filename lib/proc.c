@@ -437,15 +437,15 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_PUSHCONST) {
-      PUSH(obj_value(pic->ci->irep->pool[c.a]));
+      PUSH(obj_value(pic, pic->ci->irep->pool[c.a]));
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(pic_global_ref(pic, obj_value(pic->ci->irep->pool[c.a])));
+      PUSH(pic_global_ref(pic, obj_value(pic, pic->ci->irep->pool[c.a])));
       NEXT;
     }
     CASE(OP_GSET) {
-      pic_global_set(pic, obj_value(pic->ci->irep->pool[c.a]), POP());
+      pic_global_set(pic, obj_value(pic, pic->ci->irep->pool[c.a]), POP());
       PUSH(pic_undef_value(pic));
       NEXT;
     }
@@ -864,7 +864,7 @@ pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
   for (i = 0; i < n; ++i) {
     proc->locals[i] = env[i];
   }
-  return obj_value(proc);
+  return obj_value(pic, proc);
 }
 
 pic_value
@@ -876,7 +876,7 @@ pic_make_proc_irep(pic_state *pic, struct irep *irep, struct context *cxt)
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
   pic_irep_incref(pic, irep);
-  return obj_value(proc);
+  return obj_value(pic, proc);
 }
 
 static pic_value

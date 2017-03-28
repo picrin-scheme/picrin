@@ -33,7 +33,7 @@ pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
   case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
     return pic_type(pic, x) == pic_type(pic, y);
   default:
-    return obj_ptr(x) == obj_ptr(y);
+    return obj_ptr(pic, x) == obj_ptr(pic, y);
   }
 }
 
@@ -53,7 +53,7 @@ pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
   case PIC_TYPE_INT:
     return pic_int(pic, x) == pic_int(pic, y);
   default:
-    return obj_ptr(x) == obj_ptr(y);
+    return obj_ptr(pic, x) == obj_ptr(pic, y);
   }
 }
 
@@ -76,7 +76,7 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     }
     if (pic_pair_p(pic, x) || pic_vec_p(pic, x)) {
       int ret;
-      kh_put(m, h, obj_ptr(x), &ret);
+      kh_put(m, h, obj_ptr(pic, x), &ret);
       if (ret != 0) {
         return true;            /* `x' was seen already.  */
       }
@@ -100,8 +100,8 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     id1 = pic_id_ptr(pic, x);
     id2 = pic_id_ptr(pic, y);
 
-    s1 = pic_find_identifier(pic, obj_value(id1->u.id), obj_value(id1->env));
-    s2 = pic_find_identifier(pic, obj_value(id2->u.id), obj_value(id2->env));
+    s1 = pic_find_identifier(pic, obj_value(pic, id1->u.id), obj_value(pic, id1->env));
+    s2 = pic_find_identifier(pic, obj_value(pic, id2->u.id), obj_value(pic, id2->env));
 
     return pic_eq_p(pic, s1, s2);
   }

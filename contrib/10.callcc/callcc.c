@@ -55,10 +55,10 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
   /* checkpoint */
   for (cp = cont->cp; cp != NULL; cp = cp->prev) {
     if (cp->in) {
-      mark(pic, obj_value(cp->in));
+      mark(pic, obj_value(pic, cp->in));
     }
     if (cp->out) {
-      mark(pic, obj_value(cp->out));
+      mark(pic, obj_value(pic, cp->out));
     }
   }
 
@@ -70,13 +70,13 @@ cont_mark(pic_state *pic, void *data, void (*mark)(pic_state *, pic_value))
   /* callinfo */
   for (ci = cont->ci_ptr + cont->ci_offset; ci != cont->ci_ptr; --ci) {
     if (ci->cxt) {
-      mark(pic, obj_value(ci->cxt));
+      mark(pic, obj_value(pic, ci->cxt));
     }
   }
 
   /* arena */
   for (i = 0; i < cont->arena_idx; ++i) {
-    mark(pic, obj_value(cont->arena[i]));
+    mark(pic, obj_value(pic, cont->arena[i]));
   }
 }
 

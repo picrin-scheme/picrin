@@ -16,7 +16,7 @@ pic_make_weak(pic_state *pic)
   weak->prev = NULL;
   kh_init(weak, &weak->hash);
 
-  return obj_value(weak);
+  return obj_value(pic, weak);
 }
 
 pic_value
@@ -25,7 +25,7 @@ pic_weak_ref(pic_state *pic, pic_value weak, pic_value key)
   khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
   int it;
 
-  it = kh_get(weak, h, obj_ptr(key));
+  it = kh_get(weak, h, obj_ptr(pic, key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }
@@ -39,7 +39,7 @@ pic_weak_set(pic_state *pic, pic_value weak, pic_value key, pic_value val)
   int ret;
   int it;
 
-  it = kh_put(weak, h, obj_ptr(key), &ret);
+  it = kh_put(weak, h, obj_ptr(pic, key), &ret);
   kh_val(h, it) = val;
 }
 
@@ -48,7 +48,7 @@ pic_weak_has(pic_state *pic, pic_value weak, pic_value key)
 {
   khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
 
-  return kh_get(weak, h, obj_ptr(key)) != kh_end(h);
+  return kh_get(weak, h, obj_ptr(pic, key)) != kh_end(h);
 }
 
 void
@@ -57,7 +57,7 @@ pic_weak_del(pic_state *pic, pic_value weak, pic_value key)
   khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
   int it;
 
-  it = kh_get(weak, h, obj_ptr(key));
+  it = kh_get(weak, h, obj_ptr(pic, key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }

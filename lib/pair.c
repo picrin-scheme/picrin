@@ -14,7 +14,7 @@ pic_cons(pic_state *pic, pic_value car, pic_value cdr)
   pair->car = car;
   pair->cdr = cdr;
 
-  return obj_value(pair);
+  return obj_value(pic, pair);
 }
 
 pic_value

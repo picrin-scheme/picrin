@@ -29,5 +29,5 @@ pic_data_value(pic_state *pic, void *userdata, const pic_data_type *type)
   data->type = type;
   data->data = userdata;
 
-  return obj_value(data);
+  return obj_value(pic, data);
 }

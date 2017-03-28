@@ -188,14 +188,16 @@ struct checkpoint {
     if (tolen - at < e - s) pic_error(pic, "invalid range", 0);        \
   } while (0)
 
-PIC_STATIC_INLINE int obj_tt(void *ptr) {
+PIC_STATIC_INLINE int
+obj_tt(pic_state *PIC_UNUSED(pic), void *ptr)
+{
   return ((struct basic *)ptr)->tt;
 }
 
 #if !PIC_NAN_BOXING
 
 PIC_STATIC_INLINE struct object *
-obj_ptr(pic_value v)
+obj_ptr(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return (struct object *)(v.u.data);
 }
@@ -207,9 +209,9 @@ obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
 }
 
 PIC_STATIC_INLINE pic_value
-obj_value(void *ptr)
+obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
 {
-  pic_value v = pic_make_value(obj_tt(ptr));
+  pic_value v = pic_make_value(obj_tt(pic, ptr));
   v.u.data = ptr;
   return v;
 }
@@ -217,7 +219,7 @@ obj_value(void *ptr)
 #else  /* NAN_BOXING */
 
 PIC_STATIC_INLINE struct object *
-obj_ptr(pic_value v)
+obj_ptr(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return (struct object *)((0x3ffffffffffful & v.v) << 2);
 }
@@ -229,9 +231,9 @@ obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
 }
 
 PIC_STATIC_INLINE pic_value
-obj_value(void *ptr)
+obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
 {
-  pic_value v = pic_make_value(obj_tt(ptr));
+  pic_value v = pic_make_value(obj_tt(pic, ptr));
   v.v |= 0x3ffffffffffful & ((uint64_t)ptr >> 2);
   return v;
 }
@@ -240,7 +242,7 @@ obj_value(void *ptr)
 
 #define DEFPTR(name,type)                                               \
   PIC_STATIC_INLINE type *name(pic_state *PIC_UNUSED(pic), pic_value o) { \
-    return (type *) obj_ptr(o);                                         \
+    return (type *) obj_ptr(pic, o);                                    \
   }
 
 DEFPTR(pic_id_ptr, struct identifier)

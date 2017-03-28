@@ -95,7 +95,7 @@ pic_start_try(pic_state *pic, PIC_JMPBUF *jmp)
   pic->cp->in = pic_proc_ptr(pic, in);
   pic->cp->out = pic_proc_ptr(pic, out);
 
-  return pic_cons(pic, obj_value(here), out);
+  return pic_cons(pic, obj_value(pic, here), out);
 }
 
 void
@@ -131,7 +131,7 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
   e->irrs = irrs;
   e->stack = pic_str_ptr(pic, stack);
 
-  return obj_value(e);
+  return obj_value(pic, e);
 }
 
 pic_value pic_raise_continuable(pic_state *, pic_value err);
@@ -261,7 +261,7 @@ pic_error_error_object_message(pic_state *pic)
 
   TYPE_CHECK(pic, e, error);
 
-  return obj_value(pic_error_ptr(pic, e)->msg);
+  return obj_value(pic, pic_error_ptr(pic, e)->msg);
 }
 
 static pic_value
@@ -285,7 +285,7 @@ pic_error_error_object_type(pic_state *pic)
 
   TYPE_CHECK(pic, e, error);
 
-  return obj_value(pic_error_ptr(pic, e)->type);
+  return obj_value(pic, pic_error_ptr(pic, e)->type);
 }
 
 void

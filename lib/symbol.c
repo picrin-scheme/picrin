@@ -6,8 +6,8 @@
 #include "object.h"
 #include "state.h"
 
-#define kh_pic_str_hash(a) (pic_str_hash(pic, obj_value(a)))
-#define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, obj_value(a), obj_value(b)) == 0)
+#define kh_pic_str_hash(a) (pic_str_hash(pic, obj_value(pic, a)))
+#define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, obj_value(pic, a), obj_value(pic, b)) == 0)
 
 KHASH_DEFINE(oblist, struct string *, symbol *, kh_pic_str_hash, kh_pic_str_cmp)
 
@@ -22,8 +22,8 @@ pic_intern(pic_state *pic, pic_value str)
   it = kh_put(oblist, h, pic_str_ptr(pic, str), &ret);
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
-    pic_protect(pic, obj_value(sym));
-    return obj_value(sym);
+    pic_protect(pic, obj_value(pic, sym));
+    return obj_value(pic, sym);
   }
 
   kh_val(h, it) = NULL;         /* dummy */
@@ -32,7 +32,7 @@ pic_intern(pic_state *pic, pic_value str)
   sym->u.str = pic_str_ptr(pic, str);
   kh_val(h, it) = sym;
 
-  return obj_value(sym);
+  return obj_value(pic, sym);
 }
 
 pic_value
@@ -44,20 +44,20 @@ pic_make_identifier(pic_state *pic, pic_value base, pic_value env)
   id->u.id = pic_id_ptr(pic, base);
   id->env = pic_env_ptr(pic, env);
 
-  return obj_value(id);
+  return obj_value(pic, id);
 }
 
 pic_value
 pic_sym_name(pic_state *PIC_UNUSED(pic), pic_value sym)
 {
-  return obj_value(pic_sym_ptr(pic, sym)->u.str);
+  return obj_value(pic, pic_sym_ptr(pic, sym)->u.str);
 }
 
 pic_value
 pic_id_name(pic_state *pic, pic_value id)
 {
   while (! pic_sym_p(pic, id)) {
-    id = obj_value(pic_id_ptr(pic, id)->u.id);
+    id = obj_value(pic, pic_id_ptr(pic, id)->u.id);
   }
 
   return pic_sym_name(pic, id);
@@ -148,7 +148,7 @@ pic_symbol_identifier_base(pic_state *pic)
     pic_error(pic, "non-symbol identifier required", 1, id);
   }
 
-  return obj_value(pic_id_ptr(pic, id)->u.id);
+  return obj_value(pic, pic_id_ptr(pic, id)->u.id);
 }
 
 static pic_value
@@ -164,7 +164,7 @@ pic_symbol_identifier_environment(pic_state *pic)
     pic_error(pic, "non-symbol identifier required", 1, id);
   }
 
-  return obj_value(pic_id_ptr(pic, id)->env);
+  return obj_value(pic, pic_id_ptr(pic, id)->env);
 }
 
 static pic_value

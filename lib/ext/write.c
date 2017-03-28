@@ -532,7 +532,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     write_dict(pic, obj, port, p);
     break;
   default:
-    pic_fprintf(pic, port, "#<%s %p>", typename(pic, obj), obj_ptr(obj));
+    pic_fprintf(pic, port, "#<%s %p>", typename(pic, obj), obj_ptr(pic, obj));
     break;
   }
 
