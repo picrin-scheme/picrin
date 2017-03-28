@@ -1,6 +1,6 @@
 # libpicrin
 
-libpicrin is a super tiny scheme interpreter intended to be embedded in other applications such as game engine and network server. It provides a subset language of R7RS with several useful extensions. By default, libpicrin just contains some C files and headers and this README file. In embedding, you only need to copy the files into the project and add `include` dir to the include path.
+libpicrin is a super tiny scheme interpreter intended to be embedded in other applications such as game engine and network server. It provides a subset language of R7RS with several useful extensions. By default, libpicrin only contains some C files and headers and this README file. To embed, you only need to copy the files into the project and add `include` dir to the include path.
 
 Originally, libpicrin used to be the core component of [Picrin Scheme](https://github.com/picrin-scheme/picrin). They are currently maintained at separate repositories.
 
@@ -89,11 +89,7 @@ libpicrin utilize rope data structure to implement string type. Thanks to the im
 
 ### Dictionaries
 
-Dictionary is a hash table object. Its equivalence is tested with equal? procedure.
-
-### Attribute
-
-libpicrin has an facility to get or set metadata to any heap object.
+Dictionary is a hash table from symbol to object.
 
 ## Authors
 
@@ -101,7 +97,7 @@ See https://github.com/picrin-scheme/picrin for details.
 
 ## LICENSE
 
-Copyright (c) 2013-2014 Yuichi Nishiwaki and other picrin contributors
+Copyright (c) 2013-2017 Yuichi Nishiwaki and other picrin contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

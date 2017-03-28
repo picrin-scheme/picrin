@@ -26,10 +26,6 @@ Currently picrin is hosted on Github. You can freely send a bug report or pull-r
 
 https://github.com/picrin-scheme/picrin
 
-## IRC
-
-Our chat room is at #picrin channel, chat.freenode.org. IRC logs here: https://botbot.me/freenode/picrin/
-
 ## Build
 
 Just type `make` in the project root directory. You will find an executable binary newly created at bin/ directory.
