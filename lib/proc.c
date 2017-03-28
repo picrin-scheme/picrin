@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 #include "vm.h"
@@ -41,7 +42,6 @@ arg_error(pic_state *pic, int actual, bool varg, int expected)
   pic_error(pic, msg, 0);
 }
 
-#define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define GET_PROC(pic) (pic->ci->fp[0])
 #define GET_ARG(pic,n) (pic->ci->fp[(n)+1])
 
@@ -126,7 +126,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
     *proc = GET_PROC(pic);
     format++;                   /* skip '&' */
   }
-  for (i = 0; i < MIN(paramc + optc, argc); ++i) {
+  for (i = 0; i < argc && i < paramc + optc; ++i) {
 
     c = *format++;
     if (c == '|') {
@@ -189,7 +189,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         e = (c == c2 ? va_arg(ap, bool *) : &dummy);                    \
                                                                         \
         v = GET_ARG(pic, i);                                            \
-        switch (pic_type(pic, v)) {                                     \
+        switch (value_type(pic, v)) {                                   \
         case PIC_TYPE_FLOAT:                                            \
           *n = pic_float(pic, v);                                       \
           *e = false;                                                   \
@@ -233,7 +233,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
     OBJ_CASE('l', proc)
     OBJ_CASE('v', vec)
     OBJ_CASE('d', dict)
+#define pic_port_p(pic,v) pic_port_p(pic,v,NULL)
     OBJ_CASE('p', port)
+#undef pic_port_p
     OBJ_CASE('r', rec)
 
     default:

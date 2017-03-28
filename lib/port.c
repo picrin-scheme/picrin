@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 
@@ -10,20 +11,26 @@
 # define EOF (-1)
 #endif
 
+bool
+pic_port_p(pic_state *pic, pic_value obj, const pic_port_type *type)
+{
+  if (value_type(pic, obj) != PIC_TYPE_PORT) {
+    return false;
+  }
+  return type == NULL || pic_port_ptr(pic, obj)->file.vtable == type;
+}
+
 pic_value
-pic_funopen(pic_state *pic, void *cookie, int (*read)(pic_state *, void *, char *, int), int (*write)(pic_state *, void *, const char *, int), long (*seek)(pic_state *, void *, long, int), int (*close)(pic_state *, void *))
+pic_funopen(pic_state *pic, void *cookie, const pic_port_type *type)
 {
   struct port *port;
 
   port = (struct port *)pic_obj_alloc(pic, sizeof(struct port), PIC_TYPE_PORT);
   port->file.cnt = 0;
   port->file.base = NULL;
-  port->file.flag = read? FILE_READ : FILE_WRITE;
-  port->file.vtable.cookie = cookie;
-  port->file.vtable.read = read;
-  port->file.vtable.write = write;
-  port->file.vtable.seek = seek;
-  port->file.vtable.close = close;
+  port->file.flag = type->read ? FILE_READ : FILE_WRITE;
+  port->file.cookie = cookie;
+  port->file.vtable = type;
 
   return pic_obj_value(port);
 }
@@ -39,7 +46,7 @@ pic_fclose(pic_state *pic, pic_value port)
   fp->flag = 0;
   if (fp->base != fp->buf)
     pic_free(pic, fp->base);
-  return fp->vtable.close(pic, fp->vtable.cookie);
+  return fp->vtable->close(pic, fp->cookie);
 }
 
 void
@@ -88,7 +95,7 @@ fillbuf(pic_state *pic, struct file *fp)
   bufsize = (fp->flag & FILE_UNBUF) ? sizeof(fp->buf) : PIC_BUFSIZ;
 
   fp->ptr = fp->base;
-  fp->cnt = fp->vtable.read(pic, fp->vtable.cookie, fp->ptr, bufsize);
+  fp->cnt = fp->vtable->read(pic, fp->cookie, fp->ptr, bufsize);
 
   if (--fp->cnt < 0) {
     if (fp->cnt == -1)
@@ -126,7 +133,7 @@ flushbuf(pic_state *pic, int x, struct file *fp)
     fp->cnt = 0;
     if (x == EOF)
       return EOF;
-    num_written = fp->vtable.write(pic, fp->vtable.cookie, (const char *) &c, 1);
+    num_written = fp->vtable->write(pic, fp->cookie, (const char *) &c, 1);
     bufsize = 1;
   } else {
     /* buffered write */
@@ -137,7 +144,7 @@ flushbuf(pic_state *pic, int x, struct file *fp)
     bufsize = (int)(fp->ptr - fp->base);
     while(bufsize - num_written > 0) {
       int t;
-      t = fp->vtable.write(pic, fp->vtable.cookie, fp->base + num_written, bufsize - num_written);
+      t = fp->vtable->write(pic, fp->cookie, fp->base + num_written, bufsize - num_written);
       if (t < 0)
         break;
       num_written += t;
@@ -304,7 +311,7 @@ pic_fseek(pic_state *pic, pic_value port, long offset, int whence)
   fp->ptr = fp->base;
   fp->cnt = 0;
 
-  if ((s = fp->vtable.seek(pic, fp->vtable.cookie, offset, whence)) != 0)
+  if ((s = fp->vtable->seek(pic, fp->cookie, offset, whence)) != 0)
     return s;
   fp->flag &= ~FILE_EOF;
   return 0;
@@ -366,12 +373,19 @@ file_close(pic_state *PIC_UNUSED(pic), void *cookie) {
   return fclose(cookie);
 }
 
+static const pic_port_type file_rd = {
+  file_read, 0, file_seek, file_close
+};
+static const pic_port_type file_wr = {
+  0, file_write, file_seek, file_close
+};
+
 pic_value
 pic_fopen(pic_state *pic, FILE *fp, const char *mode) {
   if (*mode == 'r') {
-    return pic_funopen(pic, fp, file_read, 0, file_seek, file_close);
+    return pic_funopen(pic, fp, &file_rd);
   } else {
-    return pic_funopen(pic, fp, 0, file_write, file_seek, file_close);
+    return pic_funopen(pic, fp, &file_wr);
   }
 }
 
@@ -397,14 +411,22 @@ null_close(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie)) {
   return 0;
 }
 
+
+static const pic_port_type null_rd = {
+  null_read, 0, null_seek, null_close
+};
+static const pic_port_type null_wr = {
+  0, null_write, null_seek, null_close
+};
+
 static pic_value
 pic_fopen_null(pic_state *PIC_UNUSED(pic), const char *mode)
 {
   switch (*mode) {
   case 'r':
-    return pic_funopen(pic, 0, null_read, 0, null_seek, null_close);
+    return pic_funopen(pic, 0, &null_rd);
   default:
-    return pic_funopen(pic, 0, 0, null_write, null_seek, null_close);
+    return pic_funopen(pic, 0, &null_wr);
   }
 }
 
@@ -470,6 +492,13 @@ string_close(pic_state *pic, void *cookie)
   return 0;
 }
 
+static const pic_port_type string_rd = {
+  string_read, 0, string_seek, string_close
+};
+static const pic_port_type string_wr = {
+  0, string_write, string_seek, string_close
+};
+
 pic_value
 pic_fmemopen(pic_state *pic, const char *data, int size, const char *mode)
 {
@@ -483,9 +512,9 @@ pic_fmemopen(pic_state *pic, const char *data, int size, const char *mode)
 
   if (*mode == 'r') {
     memcpy(m->buf, data, size);
-    return pic_funopen(pic, m, string_read, NULL, string_seek, string_close);
+    return pic_funopen(pic, m, &string_rd);
   } else {
-    return pic_funopen(pic, m, NULL, string_write, string_seek, string_close);
+    return pic_funopen(pic, m, &string_wr);
   }
 }
 
@@ -497,10 +526,10 @@ pic_fgetbuf(pic_state *pic, pic_value port, const char **buf, int *len)
 
   pic_fflush(pic, port);
 
-  if (fp->vtable.write != string_write) {
+  if (fp->vtable->write != string_write) {
     return -1;
   }
-  s = fp->vtable.cookie;
+  s = fp->cookie;
   *len = s->end;
   *buf = s->buf;
   return 0;
@@ -513,7 +542,7 @@ pic_port_input_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(pic, v) && (pic_port_ptr(pic, v)->file.flag & FILE_READ) != 0) {
+  if (pic_port_p(pic, v, NULL) && (pic_port_ptr(pic, v)->file.flag & FILE_READ) != 0) {
     return pic_true_value(pic);
   } else {
     return pic_false_value(pic);
@@ -527,7 +556,7 @@ pic_port_output_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(pic, v) && (pic_port_ptr(pic, v)->file.flag & FILE_WRITE) != 0) {
+  if (pic_port_p(pic, v, NULL) && (pic_port_ptr(pic, v)->file.flag & FILE_WRITE) != 0) {
     return pic_true_value(pic);
   }
   else {
@@ -542,7 +571,7 @@ pic_port_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  return pic_bool_value(pic, pic_port_p(pic, v));
+  return pic_bool_value(pic, pic_port_p(pic, v, NULL));
 }
 
 static pic_value

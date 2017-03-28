@@ -145,13 +145,8 @@ struct port {
     char *ptr;                    /* next character position */
     char *base;                   /* location of the buffer */
     /* operators */
-    struct {
-      void *cookie;
-      int (*read)(pic_state *, void *, char *, int);
-      int (*write)(pic_state *, void *, const char *, int);
-      long (*seek)(pic_state *, void *, long, int);
-      int (*close)(pic_state *, void *);
-    } vtable;
+    void *cookie;
+    const pic_port_type *vtable;
     int flag;                     /* mode of the file access */
   } file;
 };
@@ -163,31 +158,6 @@ struct checkpoint {
   int depth;
   struct checkpoint *prev;
 };
-
-struct object *pic_obj_ptr(pic_value);
-
-#define pic_id_ptr(pic, o) (assert(pic_id_p(pic, o)), (struct identifier *)pic_obj_ptr(o))
-#define pic_sym_ptr(pic, o) (assert(pic_sym_p(pic, o)), (symbol *)pic_obj_ptr(o))
-#define pic_str_ptr(pic, o) (assert(pic_str_p(pic, o)), (struct string *)pic_obj_ptr(o))
-#define pic_blob_ptr(pic, o) (assert(pic_blob_p(pic, o)), (struct blob *)pic_obj_ptr(o))
-#define pic_pair_ptr(pic, o) (assert(pic_pair_p(pic, o)), (struct pair *)pic_obj_ptr(o))
-#define pic_vec_ptr(pic, o) (assert(pic_vec_p(pic, o)), (struct vector *)pic_obj_ptr(o))
-#define pic_dict_ptr(pic, o) (assert(pic_dict_p(pic, o)), (struct dict *)pic_obj_ptr(o))
-#define pic_weak_ptr(pic, o) (assert(pic_weak_p(pic, o)), (struct weak *)pic_obj_ptr(o))
-#define pic_data_ptr(pic, o) (assert(pic_data_p(pic, o, NULL)), (struct data *)pic_obj_ptr(o))
-#define pic_proc_ptr(pic, o) (assert(pic_proc_p(pic, o)), (struct proc *)pic_obj_ptr(o))
-#define pic_env_ptr(pic, o) (assert(pic_env_p(pic, o)), (struct env *)pic_obj_ptr(o))
-#define pic_port_ptr(pic, o) (assert(pic_port_p(pic, o)), (struct port *)pic_obj_ptr(o))
-#define pic_error_ptr(pic, o) (assert(pic_error_p(pic, o)), (struct error *)pic_obj_ptr(o))
-#define pic_rec_ptr(pic, o) (assert(pic_rec_p(pic, o)), (struct record *)pic_obj_ptr(o))
-
-#define pic_obj_p(pic,v) (pic_type(pic,v) > PIC_IVAL_END)
-#define pic_env_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ENV)
-#define pic_error_p(pic, v) (pic_type(pic, v) == PIC_TYPE_ERROR)
-#define pic_rec_p(pic, v) (pic_type(pic, v) == PIC_TYPE_RECORD)
-
-pic_value pic_obj_value(void *ptr);
-struct object *pic_obj_alloc(pic_state *, size_t, int type);
 
 #define TYPENAME_int   "integer"
 #define TYPENAME_blob  "bytevector"
@@ -218,6 +188,35 @@ struct object *pic_obj_alloc(pic_state *, size_t, int type);
     if (tolen - at < e - s) pic_error(pic, "invalid range", 0);        \
   } while (0)
 
+PIC_STATIC_INLINE struct object *obj_ptr(pic_value); /* defined in value.h */
+
+PIC_STATIC_INLINE int obj_tt(void *ptr) {
+  return ((struct basic *)ptr)->tt;
+}
+
+#define DEFPTR(name,type)                                               \
+  PIC_STATIC_INLINE type *name(pic_state *PIC_UNUSED(pic), pic_value o) { \
+    return (type *) obj_ptr(o);                                         \
+  }
+
+DEFPTR(pic_id_ptr, struct identifier)
+DEFPTR(pic_sym_ptr, symbol)
+DEFPTR(pic_str_ptr, struct string)
+DEFPTR(pic_blob_ptr, struct blob)
+DEFPTR(pic_pair_ptr, struct pair)
+DEFPTR(pic_vec_ptr, struct vector)
+DEFPTR(pic_dict_ptr, struct dict)
+DEFPTR(pic_weak_ptr, struct weak)
+DEFPTR(pic_data_ptr, struct data)
+DEFPTR(pic_proc_ptr, struct proc)
+DEFPTR(pic_env_ptr, struct env)
+DEFPTR(pic_port_ptr, struct port)
+DEFPTR(pic_error_ptr, struct error)
+DEFPTR(pic_rec_ptr, struct record)
+DEFPTR(pic_cp_ptr, struct checkpoint)
+
+struct object *pic_obj_alloc(pic_state *, size_t, int type);
+
 pic_value pic_make_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct irep *, struct context *);
@@ -231,9 +230,6 @@ pic_value pic_id_name(pic_state *, pic_value id);
 
 struct rope *pic_rope_incref(struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);
-
-#define pic_func_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_FUNC)
-#define pic_irep_p(pic, proc) (pic_type(pic, proc) == PIC_TYPE_IREP)
 
 struct cont *pic_alloca_cont(pic_state *);
 pic_value pic_make_cont(pic_state *, struct cont *);

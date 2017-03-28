@@ -201,7 +201,7 @@
 #define kh_ptr_hash_equal(a, b) ((a) == (b))
 #define kh_int_hash_func(key) (int)(key)
 #define kh_int_hash_equal(a, b) ((a) == (b))
-PIC_INLINE int kh_str_hash_func(const char *s) {
+PIC_STATIC_INLINE int kh_str_hash_func(const char *s) {
   int h = 0;
   while (*s) {
     h = (h << 5) - h + *s++;

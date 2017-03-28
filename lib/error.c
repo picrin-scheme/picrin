@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 
@@ -101,7 +102,7 @@ pic_start_try(pic_state *pic, PIC_JMPBUF *jmp)
 void
 pic_end_try(pic_state *pic, pic_value cookie)
 {
-  struct checkpoint *here = (struct checkpoint *)pic_obj_ptr(pic_car(pic, cookie));
+  struct checkpoint *here = pic_cp_ptr(pic, pic_car(pic, cookie));
   pic_value out = pic_cdr(pic, cookie);
 
   pic->cp = here;

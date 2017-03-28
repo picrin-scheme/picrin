@@ -117,12 +117,32 @@ typedef unsigned long uint32_t;
 # define PIC_NORETURN
 #endif
 
+/*
+ * normalize inline keyword; PIC_*_INLINE macros have the same semantics as c99
+ */
+
 #if __STDC_VERSION__ >= 199901L
-# define PIC_INLINE static inline
+# define PIC_STATIC_INLINE static inline
 #elif __GNUC__ || __clang__
-# define PIC_INLINE static __inline__
+# define PIC_STATIC_INLINE static __inline__
 #else
-# define PIC_INLINE static
+# define PIC_STATIC_INLINE static
+#endif
+
+#if defined __GNUC__ && !defined __GNUC_STDC_INLINE__ && !defined __GNUC_GNU_INLINE__
+# define __GNUC_GNU_INLINE__ 1
+#endif
+
+/* PIC_INLINE does not necessarily unify identical definitions */
+#if defined __GNUC_GNU_INLINE__
+# define PIC_EXTERN_INLINE inline
+# define PIC_INLINE        extern inline
+#elif __STDC_VERSION__ >= 199901L
+# define PIC_EXTERN_INLINE extern inline
+# define PIC_INLINE        inline
+#else
+# define PIC_EXTERN_INLINE
+# define PIC_INLINE        static
 #endif
 
 #if defined(__cplusplus)
@@ -173,25 +193,25 @@ typedef unsigned long uint32_t;
 
 # define assert(v) (void)0
 
-PIC_INLINE int
+PIC_STATIC_INLINE int
 isspace(int c)
 {
   return c == ' ' || c == '\t' || c == '\r' || c == '\v' || c == '\f' || c == '\n';
 }
 
-PIC_INLINE int
+PIC_STATIC_INLINE int
 tolower(int c)
 {
   return ('A' <= c && c <= 'Z') ? c - 'A' + 'a' : c;
 }
 
-PIC_INLINE int
+PIC_STATIC_INLINE int
 isdigit(int c)
 {
   return '0' <= c && c <= '9';
 }
 
-PIC_INLINE char *
+PIC_STATIC_INLINE char *
 strchr(const char *s, int c)
 {
   do {
@@ -201,7 +221,7 @@ strchr(const char *s, int c)
   return NULL;
 }
 
-PIC_INLINE size_t
+PIC_STATIC_INLINE size_t
 strlen(const char *s)
 {
   size_t l = 0;
@@ -212,7 +232,7 @@ strlen(const char *s)
   return l;
 }
 
-PIC_INLINE int
+PIC_STATIC_INLINE int
 strcmp(const char *s1, const char *s2)
 {
   while (*s1 && *s1 == *s2) {
@@ -222,7 +242,7 @@ strcmp(const char *s1, const char *s2)
   return (unsigned)*s1 - (unsigned)*s2;
 }
 
-PIC_INLINE long
+PIC_STATIC_INLINE long
 strtol(const char *nptr, char **endptr, int base)
 {
   long l = 0;
@@ -252,7 +272,7 @@ strtol(const char *nptr, char **endptr, int base)
   return l;
 }
 
-PIC_INLINE void *
+PIC_STATIC_INLINE void *
 memset(void *s, int n, size_t c)
 {
   char *p = s;
@@ -263,7 +283,7 @@ memset(void *s, int n, size_t c)
   return s;
 }
 
-PIC_INLINE void *
+PIC_STATIC_INLINE void *
 memcpy(void *dst, const void *src, size_t n)
 {
   const char *s = src;
@@ -275,7 +295,7 @@ memcpy(void *dst, const void *src, size_t n)
   return d;
 }
 
-PIC_INLINE void *
+PIC_STATIC_INLINE void *
 memmove(void *dst, const void *src, size_t n)
 {
   const char *s = src;
@@ -293,7 +313,7 @@ memmove(void *dst, const void *src, size_t n)
   return d;
 }
 
-PIC_INLINE int
+PIC_STATIC_INLINE int
 memcmp(const void *b1, const void *b2, size_t n)
 {
   const char *s1 = b1, *s2 = b2;
@@ -305,7 +325,7 @@ memcmp(const void *b1, const void *b2, size_t n)
   return (unsigned)*s1 - (unsigned)*s2;
 }
 
-PIC_INLINE char *
+PIC_STATIC_INLINE char *
 strcpy(char *dst, const char *src)
 {
   char *d = dst;
@@ -315,7 +335,7 @@ strcpy(char *dst, const char *src)
   return d;
 }
 
-PIC_INLINE double
+PIC_STATIC_INLINE double
 atof(const char *nptr)
 {
   int c;
@@ -384,7 +404,7 @@ atof(const char *nptr)
 #if PIC_USE_STDIO
 # include <stdio.h>
 
-PIC_INLINE void
+PIC_STATIC_INLINE void
 pic_dtoa(double dval, char *buf)
 {
   sprintf(buf, "%g", dval);
@@ -392,7 +412,7 @@ pic_dtoa(double dval, char *buf)
 
 #else
 
-PIC_INLINE void
+PIC_STATIC_INLINE void
 pic_dtoa(double dval, char *buf)
 {
 # define fabs(x) ((x) >= 0 ? (x) : -(x))

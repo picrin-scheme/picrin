@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
+#include "value.h"
 #include "object.h"
 
 struct writer_control {
@@ -169,7 +170,7 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
     return;
   }
 
-  switch (pic_type(pic, obj)) {
+  switch (value_type(pic, obj)) {
   case PIC_TYPE_PAIR:
   case PIC_TYPE_VECTOR:
   case PIC_TYPE_DICT: {
@@ -217,7 +218,7 @@ static bool
 is_shared_object(pic_state *pic, pic_value obj, struct writer_control *p) {
   pic_value shared = p->shared;
 
-  if (! pic_obj_p(pic, obj)) {
+  if (! obj_p(pic, obj)) {
     return false;
   }
   if (! pic_weak_has(pic, shared, obj)) {
@@ -409,6 +410,65 @@ write_dict(pic_state *pic, pic_value dict, pic_value port, struct writer_control
   pic_fprintf(pic, port, ")");
 }
 
+static const char *
+typename(pic_state *pic, pic_value obj)
+{
+  switch (value_type(pic, obj)) {
+  case PIC_TYPE_NIL:
+    return "null";
+  case PIC_TYPE_TRUE:
+  case PIC_TYPE_FALSE:
+    return "boolean";
+  case PIC_TYPE_FLOAT:
+    return "float";
+  case PIC_TYPE_INT:
+    return "int";
+  case PIC_TYPE_SYMBOL:
+    return "symbol";
+  case PIC_TYPE_CHAR:
+    return "char";
+  case PIC_TYPE_EOF:
+    return "eof-object";
+  case PIC_TYPE_UNDEF:
+    return "undefined";
+  case PIC_TYPE_INVALID:
+    return "invalid";
+  case PIC_TYPE_PAIR:
+    return "pair";
+  case PIC_TYPE_STRING:
+    return "string";
+  case PIC_TYPE_VECTOR:
+    return "vector";
+  case PIC_TYPE_BLOB:
+    return "bytevector";
+  case PIC_TYPE_PORT:
+    return "port";
+  case PIC_TYPE_ERROR:
+    return "error";
+  case PIC_TYPE_ID:
+    return "identifier";
+  case PIC_TYPE_CXT:
+    return "context";
+  case PIC_TYPE_FUNC:
+  case PIC_TYPE_IREP:
+    return "procedure";
+  case PIC_TYPE_ENV:
+    return "environment";
+  case PIC_TYPE_DATA:
+    return "data";
+  case PIC_TYPE_DICT:
+    return "dictionary";
+  case PIC_TYPE_WEAK:
+    return "ephemeron";
+  case PIC_TYPE_RECORD:
+    return "record";
+  case PIC_TYPE_CP:
+    return "checkpoint";
+  default:
+    pic_error(pic, "typename: invalid type given", 1, obj);
+  }
+}
+
 static void
 write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control *p)
 {
@@ -426,7 +486,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     pic_weak_set(pic, labels, obj, pic_int_value(pic, i));
   }
 
-  switch (pic_type(pic, obj)) {
+  switch (value_type(pic, obj)) {
   case PIC_TYPE_UNDEF:
     pic_fprintf(pic, port, "#undefined");
     break;
@@ -473,7 +533,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     write_dict(pic, obj, port, p);
     break;
   default:
-    pic_fprintf(pic, port, "#<%s %p>", pic_typename(pic, pic_type(pic, obj)), pic_obj_ptr(obj));
+    pic_fprintf(pic, port, "#<%s %p>", typename(pic, obj), obj_ptr(obj));
     break;
   }
 

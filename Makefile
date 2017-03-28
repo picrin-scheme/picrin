@@ -17,7 +17,6 @@ LIBPICRIN_SRCS = \
 	lib/state.c\
 	lib/string.c\
 	lib/symbol.c\
-	lib/value.c\
 	lib/var.c\
 	lib/vector.c\
 	lib/weak.c\
@@ -77,7 +76,7 @@ src/init_contrib.c:
 lib/boot.c: piclib/boot.scm
 	bin/picrin-bootstrap tools/mkboot.scm < piclib/boot.scm > lib/boot.c
 
-$(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h lib/vm.h
+$(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/value.h lib/object.h lib/state.h lib/vm.h
 
 doc: docs/*.rst docs/contrib.rst
 	$(MAKE) -C docs html

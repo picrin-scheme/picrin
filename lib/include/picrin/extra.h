@@ -27,32 +27,6 @@ void pic_load_cstr(pic_state *, const char *);
 pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 #endif
 
-#define pic_deflibrary(pic, lib) do {           \
-    if (! pic_find_library(pic, lib)) {         \
-      pic_make_library(pic, lib);               \
-    }                                           \
-    pic_in_library(pic, lib);                   \
-  } while (0)
-
-#define pic_try pic_try_(PIC_GENSYM(cont), PIC_GENSYM(jmp))
-#define pic_try_(cont, jmp)                                             \
-  do {                                                                  \
-    extern pic_value pic_start_try(pic_state *, PIC_JMPBUF *);          \
-    extern void pic_end_try(pic_state *, pic_value);                    \
-    extern pic_value pic_err(pic_state *);                              \
-    PIC_JMPBUF jmp;                                                     \
-    if (PIC_SETJMP(pic, jmp) == 0) {                                    \
-      pic_value pic_try_cookie_ = pic_start_try(pic, &jmp);
-#define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
-#define pic_catch_(e, label)                              \
-      pic_end_try(pic, pic_try_cookie_);                  \
-    } else {                                              \
-      e = pic_err(pic);                                   \
-      goto label;                                         \
-    }                                                     \
-  } while (0);                                            \
-  if (0)                                                  \
-  label:
 
 /* for debug */
 

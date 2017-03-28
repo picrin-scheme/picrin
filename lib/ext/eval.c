@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 #include "vm.h"
@@ -172,7 +173,7 @@ expand_defmacro(pic_state *pic, pic_value expr, pic_value env)
 static pic_value
 expand_node(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 {
-  switch (pic_type(pic, expr)) {
+  switch (value_type(pic, expr)) {
   case PIC_TYPE_ID:
   case PIC_TYPE_SYMBOL: {
     return expand_var(pic, expr, env, deferred);
@@ -497,7 +498,7 @@ analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj)
 static pic_value
 analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  switch (pic_type(pic, obj)) {
+  switch (value_type(pic, obj)) {
   case PIC_TYPE_SYMBOL: {
     return analyze_var(pic, scope, obj);
   }
@@ -946,7 +947,7 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   int pidx;
 
   obj = pic_list_ref(pic, obj, 1);
-  switch (pic_type(pic, obj)) {
+  switch (value_type(pic, obj)) {
   case PIC_TYPE_UNDEF:
     emit_n(pic, cxt, OP_PUSHUNDEF);
     break;
@@ -981,10 +982,10 @@ codegen_quote(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_i(pic, cxt, OP_PUSHCHAR, pidx);
     break;
   default:
-    assert(pic_obj_p(pic,obj));
+    assert(obj_p(pic,obj));
     check_pool_size(pic, cxt);
     pidx = (int)cxt->plen++;
-    cxt->pool[pidx] = pic_obj_ptr(obj);
+    cxt->pool[pidx] = obj_ptr(obj);
     emit_i(pic, cxt, OP_PUSHCONST, pidx);
     break;
   }

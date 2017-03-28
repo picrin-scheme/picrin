@@ -18,7 +18,7 @@ struct pic_socket_t {
   int fd;
 };
 
-PIC_INLINE void
+PIC_STATIC_INLINE void
 socket_close(struct pic_socket_t *sock)
 {
   if (sock != NULL && sock->fd != -1) {
@@ -27,7 +27,7 @@ socket_close(struct pic_socket_t *sock)
   }
 }
 
-PIC_INLINE void
+PIC_STATIC_INLINE void
 ensure_socket_is_open(pic_state *pic, struct pic_socket_t *sock)
 {
   if (sock != NULL && sock->fd == -1) {
@@ -297,10 +297,17 @@ xf_socket_close(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie))
 static pic_value
 make_socket_port(pic_state *pic, struct pic_socket_t *sock, const char *mode)
 {
+  static const pic_port_type xf_socket_rd = {
+    xf_socket_read, 0, xf_socket_seek, xf_socket_close
+  };
+  static const pic_port_type xf_socket_wr = {
+    0, xf_socket_write, xf_socket_seek, xf_socket_close
+  };
+
   if (*mode == 'r') {
-    return pic_funopen(pic, sock, xf_socket_read, 0, xf_socket_seek, xf_socket_close);
+    return pic_funopen(pic, sock, &xf_socket_rd);
   } else {
-    return pic_funopen(pic, sock, 0, xf_socket_write, xf_socket_seek, xf_socket_close);
+    return pic_funopen(pic, sock, &xf_socket_wr);
   }
 }
 

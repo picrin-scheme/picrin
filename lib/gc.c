@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 
@@ -168,10 +169,10 @@ gc_protect(pic_state *pic, struct object *obj)
 pic_value
 pic_protect(pic_state *pic, pic_value v)
 {
-  if (! pic_obj_p(pic, v))
+  if (! obj_p(pic, v))
     return v;
 
-  gc_protect(pic, pic_obj_ptr(v));
+  gc_protect(pic, obj_ptr(v));
 
   return v;
 }
@@ -305,10 +306,10 @@ static void gc_mark_object(pic_state *, struct object *);
 static void
 gc_mark(pic_state *pic, pic_value v)
 {
-  if (! pic_obj_p(pic, v))
+  if (! obj_p(pic, v))
     return;
 
-  gc_mark_object(pic, pic_obj_ptr(v));
+  gc_mark_object(pic, obj_ptr(v));
 }
 
 static void
@@ -326,8 +327,8 @@ gc_mark_object(pic_state *pic, struct object *obj)
   switch (obj->u.basic.tt) {
   case PIC_TYPE_PAIR: {
     gc_mark(pic, obj->u.pair.car);
-    if (pic_obj_p(pic, obj->u.pair.cdr)) {
-      LOOP(pic_obj_ptr(obj->u.pair.cdr));
+    if (obj_p(pic, obj->u.pair.cdr)) {
+      LOOP(obj_ptr(obj->u.pair.cdr));
     }
     break;
   }
@@ -416,8 +417,8 @@ gc_mark_object(pic_state *pic, struct object *obj)
   }
   case PIC_TYPE_RECORD: {
     gc_mark(pic, obj->u.rec.type);
-    if (pic_obj_p(pic, obj->u.rec.datum)) {
-      LOOP(pic_obj_ptr(obj->u.rec.datum));
+    if (obj_p(pic, obj->u.rec.datum)) {
+      LOOP(obj_ptr(obj->u.rec.datum));
     }
     break;
   }
@@ -531,7 +532,7 @@ gc_mark_phase(pic_state *pic)
         key = kh_key(h, it);
         val = kh_val(h, it);
         if (is_marked(pic, key)) {
-          if (pic_obj_p(pic, val) && ! is_marked(pic, pic_obj_ptr(val))) {
+          if (obj_p(pic, val) && ! is_marked(pic, obj_ptr(val))) {
             gc_mark(pic, val);
             ++j;
           }

@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 
 KHASH_DEFINE(weak, struct object *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
@@ -25,7 +26,7 @@ pic_weak_ref(pic_state *pic, pic_value weak, pic_value key)
   khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
   int it;
 
-  it = kh_get(weak, h, pic_obj_ptr(key));
+  it = kh_get(weak, h, obj_ptr(key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }
@@ -39,7 +40,7 @@ pic_weak_set(pic_state *pic, pic_value weak, pic_value key, pic_value val)
   int ret;
   int it;
 
-  it = kh_put(weak, h, pic_obj_ptr(key), &ret);
+  it = kh_put(weak, h, obj_ptr(key), &ret);
   kh_val(h, it) = val;
 }
 
@@ -48,7 +49,7 @@ pic_weak_has(pic_state *pic, pic_value weak, pic_value key)
 {
   khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
 
-  return kh_get(weak, h, pic_obj_ptr(key)) != kh_end(h);
+  return kh_get(weak, h, obj_ptr(key)) != kh_end(h);
 }
 
 void
@@ -57,7 +58,7 @@ pic_weak_del(pic_state *pic, pic_value weak, pic_value key)
   khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
   int it;
 
-  it = kh_get(weak, h, pic_obj_ptr(key));
+  it = kh_get(weak, h, obj_ptr(key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }
@@ -73,7 +74,7 @@ weak_call(pic_state *pic)
 
   n = pic_get_args(pic, "o|o", &key, &val);
 
-  if (! pic_obj_p(pic, key)) {
+  if (! obj_p(pic, key)) {
     pic_error(pic, "attempted to set a non-object key", 1, key);
   }
 
