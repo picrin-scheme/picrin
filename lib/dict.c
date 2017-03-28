@@ -15,7 +15,7 @@ pic_make_dict(pic_state *pic)
 
   dict = (struct dict *)pic_obj_alloc(pic, sizeof(struct dict), PIC_TYPE_DICT);
   kh_init(dict, &dict->hash);
-  return pic_obj_value(dict);
+  return obj_value(dict);
 }
 
 pic_value
@@ -77,7 +77,7 @@ pic_dict_next(pic_state *PIC_UNUSED(pic), pic_value dict, int *iter, pic_value *
 
   for (it = *iter; it != kh_end(h); ++it) {
     if (kh_exist(h, it)) {
-      if (key) *key = pic_obj_value(kh_key(h, it));
+      if (key) *key = obj_value(kh_key(h, it));
       if (val) *val = kh_val(h, it);
       *iter = ++it;
       return true;

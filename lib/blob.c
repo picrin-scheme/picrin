@@ -17,7 +17,7 @@ pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
   if (buf) {
     memcpy(bv->data, buf, len);
   }
-  return pic_obj_value(bv);
+  return obj_value(bv);
 }
 
 unsigned char *

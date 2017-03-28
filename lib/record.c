@@ -15,7 +15,7 @@ pic_make_record(pic_state *pic, pic_value type, pic_value datum)
   rec->type = type;
   rec->datum = datum;
 
-  return pic_obj_value(rec);
+  return obj_value(rec);
 }
 
 static pic_value

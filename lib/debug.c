@@ -47,15 +47,15 @@ pic_print_error(pic_state *pic, pic_value port, pic_value err)
     pic_value elem, it;
 
     e = pic_error_ptr(pic, err);
-    if (! pic_eq_p(pic, pic_obj_value(e->type), pic_intern_lit(pic, ""))) {
-      pic_fprintf(pic, port, "~s-", pic_obj_value(e->type));
+    if (! pic_eq_p(pic, obj_value(e->type), pic_intern_lit(pic, ""))) {
+      pic_fprintf(pic, port, "~s-", obj_value(e->type));
     }
-    pic_fprintf(pic, port, "error: ~s", pic_obj_value(e->msg));
+    pic_fprintf(pic, port, "error: ~s", obj_value(e->msg));
 
     pic_for_each (elem, e->irrs, it) { /* print error irritants */
       pic_fprintf(pic, port, " ~s", elem);
     }
-    pic_fprintf(pic, port, "\n%s", pic_str(pic, pic_obj_value(e->stack), NULL));
+    pic_fprintf(pic, port, "\n%s", pic_str(pic, obj_value(e->stack), NULL));
   }
 }
 

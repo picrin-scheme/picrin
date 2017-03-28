@@ -32,7 +32,7 @@ pic_funopen(pic_state *pic, void *cookie, const pic_port_type *type)
   port->file.cookie = cookie;
   port->file.vtable = type;
 
-  return pic_obj_value(port);
+  return obj_value(port);
 }
 
 int

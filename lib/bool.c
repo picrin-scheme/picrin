@@ -101,8 +101,8 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     id1 = pic_id_ptr(pic, x);
     id2 = pic_id_ptr(pic, y);
 
-    s1 = pic_find_identifier(pic, pic_obj_value(id1->u.id), pic_obj_value(id1->env));
-    s2 = pic_find_identifier(pic, pic_obj_value(id2->u.id), pic_obj_value(id2->env));
+    s1 = pic_find_identifier(pic, obj_value(id1->u.id), obj_value(id1->env));
+    s2 = pic_find_identifier(pic, obj_value(id2->u.id), obj_value(id2->env));
 
     return pic_eq_p(pic, s1, s2);
   }

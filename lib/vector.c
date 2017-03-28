@@ -22,7 +22,7 @@ pic_make_vec(pic_state *pic, int len, pic_value *argv)
   } else {
     memcpy(vec->data, argv, sizeof(pic_value) * len);
   }
-  return pic_obj_value(vec);
+  return obj_value(vec);
 }
 
 pic_value

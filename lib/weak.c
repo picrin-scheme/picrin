@@ -17,7 +17,7 @@ pic_make_weak(pic_state *pic)
   weak->prev = NULL;
   kh_init(weak, &weak->hash);
 
-  return pic_obj_value(weak);
+  return obj_value(weak);
 }
 
 pic_value

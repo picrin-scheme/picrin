@@ -409,7 +409,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
     pic_value key, val;
     int it = 0;
 
-    while (pic_dict_next(pic, pic_obj_value(&obj->u.dict), &it, &key, &val)) {
+    while (pic_dict_next(pic, obj_value(&obj->u.dict), &it, &key, &val)) {
       gc_mark(pic, key);
       gc_mark(pic, val);
     }
@@ -588,7 +588,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_PORT: {
-    pic_fclose(pic, pic_obj_value(obj)); /* FIXME */
+    pic_fclose(pic, obj_value(obj)); /* FIXME */
     break;
   }
 

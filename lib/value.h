@@ -9,13 +9,55 @@
 extern "C" {
 #endif
 
-#ifndef INLINE
-# if GENERATE_EXTERNAL_DEFINITION
-#  define INLINE
-# else
-#  define INLINE
-# endif
+#if 0
+#define pic_int pic_int_inline
+#define pic_float pic_float_inline
+#define pic_char pic_char_inline
+#define pic_int_value pic_int_value_inline
+#define pic_float_value pic_float_value_inline
+#define pic_char_value pic_char_value_inline
+#define obj_value obj_value_inline /* TODO */
+#define pic_nil_value pic_nil_value_inline
+#define pic_eof_object pic_eof_object_inline
+#define pic_true_value pic_true_value_inline
+#define pic_false_value pic_false_value_inline
+#define pic_undef_value pic_undef_value_inline
+#define pic_invalid_value pic_invalid_value_inline
+#define pic_bool_value pic_bool_value_inline
+#define pic_invalid_p pic_invalid_p_inline
+#define pic_float_p pic_float_p_inline
+#define pic_int_p pic_int_p_inline
+#define pic_char_p pic_char_p_inline
+#define pic_eof_p pic_eof_p_inline
+#define pic_undef_p pic_undef_p_inline
+#define pic_true_p pic_true_p_inline
+#define pic_nil_p pic_nil_p_inline
+#define pic_false_p pic_false_p_inline
+#define pic_bool_p pic_bool_p_inline
+#define pic_str_p pic_str_p_inline
+#define pic_vec_p pic_vec_p_inline
+#define pic_blob_p pic_blob_p_inline
+#define pic_error_p pic_error_p_inline
+#define pic_id_p pic_id_p_inline
+#define pic_dict_p pic_dict_p_inline
+#define pic_weak_p pic_weak_p_inline
+#define pic_env_p pic_env_p_inline
+#define pic_rec_p pic_rec_p_inline
+#define pic_sym_p pic_sym_p_inline
+#define pic_pair_p pic_pair_p_inline
+#define pic_cp_p pic_cp_p_inline
+#define pic_func_p pic_func_p_inline
+#define pic_irep_p pic_irep_p_inline
+#define pic_proc_p pic_proc_p_inline
 #endif
+
+/* #ifndef INLINE */
+/* # if GENERATE_EXTERNAL_DEFINITION */
+/* #  define INLINE PIC_EXTERN_INLINE */
+/* # else */
+/* #  define INLINE PIC_INLINE */
+/* # endif */
+/* #endif */
 
 #define INLINE PIC_STATIC_INLINE
 
@@ -76,7 +118,7 @@ obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
 }
 
 PIC_STATIC_INLINE pic_value
-pic_obj_value(void *ptr)
+obj_value(void *ptr)
 {
   pic_value v = make_value(obj_tt(ptr));
   v.u.data = ptr;
@@ -162,7 +204,7 @@ obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
 }
 
 PIC_STATIC_INLINE pic_value
-pic_obj_value(void *ptr)
+obj_value(void *ptr)
 {
   pic_value v = make_value(PIC_IVAL_END);
   v.v |= 0xfffffffffffful & (uint64_t)ptr;
