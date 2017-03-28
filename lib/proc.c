@@ -7,7 +7,29 @@
 #include "state.h"
 #include "vm.h"
 
-#define MIN(x,y) ((x) < (y) ? (x) : (y))
+pic_value
+pic_lambda(pic_state *pic, pic_func_t f, int n, ...)
+{
+  pic_value proc;
+  va_list ap;
+
+  va_start(ap, n);
+  proc = pic_vlambda(pic, f, n, ap);
+  va_end(ap);
+  return proc;
+}
+
+pic_value
+pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
+{
+  pic_value *env = pic_alloca(pic, sizeof(pic_value) * n);
+  int i;
+
+  for (i = 0; i < n; ++i) {
+    env[i] = va_arg(ap, pic_value);
+  }
+  return pic_make_proc(pic, f, n, env);
+}
 
 PIC_NORETURN static void
 arg_error(pic_state *pic, int actual, bool varg, int expected)
@@ -19,7 +41,9 @@ arg_error(pic_state *pic, int actual, bool varg, int expected)
   pic_error(pic, msg, 0);
 }
 
-#define GET_OPERAND(pic,n) ((pic)->ci->fp[(n)])
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#define GET_PROC(pic) (pic->ci->fp[0])
+#define GET_ARG(pic,n) (pic->ci->fp[(n)+1])
 
 /**
  * char type                    desc.
@@ -53,9 +77,9 @@ pic_get_args(pic_state *pic, const char *format, ...)
   char c;
   const char *p = format;
   int paramc = 0, optc = 0;
+  bool proc = 0, rest = 0, opt = 0;
   int i, argc = pic->ci->argc - 1;
   va_list ap;
-  bool proc = 0, rest = 0, opt = 0;
 
   /* parse format */
   if ((c = *p) != '\0') {
@@ -99,10 +123,10 @@ pic_get_args(pic_state *pic, const char *format, ...)
     pic_value *proc;
 
     proc = va_arg(ap, pic_value *);
-    *proc = GET_OPERAND(pic, 0);
+    *proc = GET_PROC(pic);
     format++;                   /* skip '&' */
   }
-  for (i = 1; i <= MIN(paramc + optc, argc); ++i) {
+  for (i = 0; i < MIN(paramc + optc, argc); ++i) {
 
     c = *format++;
     if (c == '|') {
@@ -114,7 +138,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       pic_value *p;
 
       p = va_arg(ap, pic_value*);
-      *p = GET_OPERAND(pic, i);
+      *p = GET_ARG(pic, i);
       break;
     }
 
@@ -125,7 +149,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       data = va_arg(ap, void **);
       type = va_arg(ap, const pic_data_type *);
-      v = GET_OPERAND(pic, i);
+      v = GET_ARG(pic, i);
       if (pic_data_p(pic, v, type)) {
         *data = pic_data(pic, v);
       }
@@ -144,7 +168,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
       buf = va_arg(ap, unsigned char **);
       len = va_arg(ap, int *);
-      v = GET_OPERAND(pic, i);
+      v = GET_ARG(pic, i);
       if (pic_blob_p(pic, v)) {
         unsigned char *tmp = pic_blob(pic, v, len);
         if (buf) *buf = tmp;
@@ -164,7 +188,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         n = va_arg(ap, ctype *);                                        \
         e = (c == c2 ? va_arg(ap, bool *) : &dummy);                    \
                                                                         \
-        v = GET_OPERAND(pic, i);                                        \
+        v = GET_ARG(pic, i);                                            \
         switch (pic_type(pic, v)) {                                     \
         case PIC_TYPE_FLOAT:                                            \
           *n = pic_float(pic, v);                                       \
@@ -189,7 +213,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         pic_value v;                                                    \
                                                                         \
         ptr = va_arg(ap, ctype *);                                      \
-        v = GET_OPERAND(pic, i);                                        \
+        v = GET_ARG(pic, i);                                            \
         if (pic_## type ##_p(pic, v)) {                                 \
           *ptr = conv;                                                  \
         }                                                               \
@@ -219,8 +243,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
     if (*format == '+') {
       pic_value *p;
       format++;
-      p = va_arg(ap, pic_value*);
-      *p = GET_OPERAND(pic, i);
+      p = va_arg(ap, pic_value *);
+      *p = GET_ARG(pic, i);
     }
   }
   if (rest) {
@@ -229,8 +253,8 @@ pic_get_args(pic_state *pic, const char *format, ...)
 
     n = va_arg(ap, int *);
     argv = va_arg(ap, pic_value **);
-    *n = argc - (i - 1);
-    *argv = &GET_OPERAND(pic, i);
+    *n = argc - i;
+    *argv = &GET_ARG(pic, i);
   }
 
   va_end(ap);
@@ -238,28 +262,30 @@ pic_get_args(pic_state *pic, const char *format, ...)
   return argc;
 }
 
-static pic_value
-global_ref(pic_state *pic, pic_value uid)
+pic_value
+pic_closure_ref(pic_state *pic, int n)
 {
-  pic_value val;
+  pic_value self = GET_PROC(pic);
 
-  if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_error(pic, "undefined variable", 1, uid);
+  assert(pic_func_p(pic, self));
+
+  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
+    pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  val = pic_weak_ref(pic, pic->globals, uid);;
-  if (pic_invalid_p(pic, val)) {
-    pic_error(pic, "uninitialized global variable", 1, uid);
-  }
-  return val;
+  return pic_proc_ptr(pic, self)->locals[n];
 }
 
-static void
-global_set(pic_state *pic, pic_value uid, pic_value value)
+void
+pic_closure_set(pic_state *pic, int n, pic_value v)
 {
-  if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_error(pic, "undefined variable", 1, uid);
+  pic_value self = GET_PROC(pic);
+
+  assert(pic_func_p(pic, self));
+
+  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
+    pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  pic_weak_set(pic, pic->globals, uid, value);
+  pic_proc_ptr(pic, self)->locals[n] = v;
 }
 
 static void
@@ -414,11 +440,11 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT;
     }
     CASE(OP_GREF) {
-      PUSH(global_ref(pic, pic_obj_value(pic->ci->irep->pool[c.a])));
+      PUSH(pic_global_ref(pic, pic_obj_value(pic->ci->irep->pool[c.a])));
       NEXT;
     }
     CASE(OP_GSET) {
-      global_set(pic, pic_obj_value(pic->ci->irep->pool[c.a]), POP());
+      pic_global_set(pic, pic_obj_value(pic->ci->irep->pool[c.a]), POP());
       PUSH(pic_undef_value(pic));
       NEXT;
     }
@@ -792,127 +818,6 @@ pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
     args[i] = va_arg(ap, pic_value);
   }
   return pic_apply(pic, proc, n, args);
-}
-
-pic_value
-pic_lambda(pic_state *pic, pic_func_t f, int n, ...)
-{
-  pic_value proc;
-  va_list ap;
-
-  va_start(ap, n);
-  proc = pic_vlambda(pic, f, n, ap);
-  va_end(ap);
-  return proc;
-}
-
-pic_value
-pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
-{
-  pic_value *env = pic_alloca(pic, sizeof(pic_value) * n);
-  int i;
-
-  for (i = 0; i < n; ++i) {
-    env[i] = va_arg(ap, pic_value);
-  }
-  return pic_make_proc(pic, f, n, env);
-}
-
-void
-pic_defun(pic_state *pic, const char *name, pic_func_t f)
-{
-  pic_define(pic, pic_current_library(pic), name, pic_make_proc(pic, f, 0, NULL));
-  pic_export(pic, pic_intern_cstr(pic, name));
-}
-
-void
-pic_defvar(pic_state *pic, const char *name, pic_value init)
-{
-  pic_define(pic, pic_current_library(pic), name, pic_make_var(pic, init, pic_false_value(pic)));
-  pic_export(pic, pic_intern_cstr(pic, name));
-}
-
-void
-pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
-{
-  pic_value sym, uid, env;
-
-  sym = pic_intern_cstr(pic, name);
-
-  env = pic_library_environment(pic, lib);
-
-  uid = pic_find_identifier(pic, sym, env);
-  if (pic_weak_has(pic, pic->globals, uid)) {
-    pic_warnf(pic, "redefining variable: %s", pic_str(pic, pic_sym_name(pic, uid), NULL));
-  }
-  pic_weak_set(pic, pic->globals, uid, val);
-}
-
-pic_value
-pic_ref(pic_state *pic, const char *lib, const char *name)
-{
-  pic_value sym, env;
-
-  sym = pic_intern_cstr(pic, name);
-
-  env = pic_library_environment(pic, lib);
-
-  return global_ref(pic, pic_find_identifier(pic, sym, env));
-}
-
-void
-pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
-{
-  pic_value sym, env;
-
-  sym = pic_intern_cstr(pic, name);
-
-  env = pic_library_environment(pic, lib);
-
-  global_set(pic, pic_find_identifier(pic, sym, env), val);
-}
-
-pic_value
-pic_closure_ref(pic_state *pic, int n)
-{
-  pic_value self = GET_OPERAND(pic, 0);
-
-  assert(pic_func_p(pic, self));
-
-  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
-    pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
-  }
-  return pic_proc_ptr(pic, self)->locals[n];
-}
-
-void
-pic_closure_set(pic_state *pic, int n, pic_value v)
-{
-  pic_value self = GET_OPERAND(pic, 0);
-
-  assert(pic_func_p(pic, self));
-
-  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
-    pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
-  }
-  pic_proc_ptr(pic, self)->locals[n] = v;
-}
-
-pic_value
-pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
-{
-  pic_value proc, r;
-  va_list ap;
-
-  proc = pic_ref(pic, lib, name);
-
-  TYPE_CHECK(pic, proc, proc);
-
-  va_start(ap, n);
-  r = pic_vcall(pic, proc, n, ap);
-  va_end(ap);
-
-  return r;
 }
 
 void

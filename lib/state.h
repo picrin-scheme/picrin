@@ -71,6 +71,9 @@ struct pic_state {
 struct heap *pic_heap_open(pic_state *);
 void pic_heap_close(pic_state *, struct heap *);
 
+pic_value pic_global_ref(pic_state *pic, pic_value uid);
+void pic_global_set(pic_state *pic, pic_value uid, pic_value value);
+
 #if defined(__cplusplus)
 }
 #endif

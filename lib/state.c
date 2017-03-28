@@ -310,3 +310,98 @@ pic_close(pic_state *pic)
 
   allocf(pic->userdata, pic, 0);
 }
+
+pic_value
+pic_global_ref(pic_state *pic, pic_value uid)
+{
+  pic_value val;
+
+  if (! pic_weak_has(pic, pic->globals, uid)) {
+    pic_error(pic, "undefined variable", 1, uid);
+  }
+  val = pic_weak_ref(pic, pic->globals, uid);;
+  if (pic_invalid_p(pic, val)) {
+    pic_error(pic, "uninitialized global variable", 1, uid);
+  }
+  return val;
+}
+
+void
+pic_global_set(pic_state *pic, pic_value uid, pic_value value)
+{
+  if (! pic_weak_has(pic, pic->globals, uid)) {
+    pic_error(pic, "undefined variable", 1, uid);
+  }
+  pic_weak_set(pic, pic->globals, uid, value);
+}
+
+pic_value
+pic_ref(pic_state *pic, const char *lib, const char *name)
+{
+  pic_value sym, env;
+
+  sym = pic_intern_cstr(pic, name);
+
+  env = pic_library_environment(pic, lib);
+
+  return pic_global_ref(pic, pic_find_identifier(pic, sym, env));
+}
+
+void
+pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
+{
+  pic_value sym, env;
+
+  sym = pic_intern_cstr(pic, name);
+
+  env = pic_library_environment(pic, lib);
+
+  pic_global_set(pic, pic_find_identifier(pic, sym, env), val);
+}
+
+void
+pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
+{
+  pic_value sym, uid, env;
+
+  sym = pic_intern_cstr(pic, name);
+
+  env = pic_library_environment(pic, lib);
+
+  uid = pic_find_identifier(pic, sym, env);
+  if (pic_weak_has(pic, pic->globals, uid)) {
+    pic_warnf(pic, "redefining variable: %s", pic_str(pic, pic_sym_name(pic, uid), NULL));
+  }
+  pic_weak_set(pic, pic->globals, uid, val);
+}
+
+void
+pic_defun(pic_state *pic, const char *name, pic_func_t f)
+{
+  pic_define(pic, pic_current_library(pic), name, pic_make_proc(pic, f, 0, NULL));
+  pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+void
+pic_defvar(pic_state *pic, const char *name, pic_value init)
+{
+  pic_define(pic, pic_current_library(pic), name, pic_make_var(pic, init, pic_false_value(pic)));
+  pic_export(pic, pic_intern_cstr(pic, name));
+}
+
+pic_value
+pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
+{
+  pic_value proc, r;
+  va_list ap;
+
+  proc = pic_ref(pic, lib, name);
+
+  TYPE_CHECK(pic, proc, proc);
+
+  va_start(ap, n);
+  r = pic_vcall(pic, proc, n, ap);
+  va_end(ap);
+
+  return r;
+}
