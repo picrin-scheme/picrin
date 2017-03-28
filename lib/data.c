@@ -3,13 +3,12 @@
  */
 
 #include "picrin.h"
-#include "value.h"
 #include "object.h"
 
 bool
 pic_data_p(pic_state *pic, pic_value obj, const pic_data_type *type)
 {
-  if (value_type(pic, obj) != PIC_TYPE_DATA) {
+  if (pic_type(pic, obj) != PIC_TYPE_DATA) {
     return false;
   }
   return type == NULL || pic_data_ptr(pic, obj)->type == type;

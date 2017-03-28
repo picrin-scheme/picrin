@@ -4,7 +4,6 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "value.h"
 #include "object.h"
 
 struct writer_control {
@@ -170,7 +169,7 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
     return;
   }
 
-  switch (value_type(pic, obj)) {
+  switch (pic_type(pic, obj)) {
   case PIC_TYPE_PAIR:
   case PIC_TYPE_VECTOR:
   case PIC_TYPE_DICT: {
@@ -413,7 +412,7 @@ write_dict(pic_state *pic, pic_value dict, pic_value port, struct writer_control
 static const char *
 typename(pic_state *pic, pic_value obj)
 {
-  switch (value_type(pic, obj)) {
+  switch (pic_type(pic, obj)) {
   case PIC_TYPE_NIL:
     return "null";
   case PIC_TYPE_TRUE:
@@ -486,7 +485,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     pic_weak_set(pic, labels, obj, pic_int_value(pic, i));
   }
 
-  switch (value_type(pic, obj)) {
+  switch (pic_type(pic, obj)) {
   case PIC_TYPE_UNDEF:
     pic_fprintf(pic, port, "#undefined");
     break;

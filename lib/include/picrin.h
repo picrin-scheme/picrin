@@ -89,23 +89,13 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
  * number, boolean, character, string, bytevector, and userdata
  */
 
+#include "picrin/value.h"       /* inline definitions */
+
 typedef struct {
   const char *type_name;
   void (*dtor)(pic_state *, void *);
   void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
 } pic_data_type;
-
-typedef struct {
-  int (*read)(pic_state *, void *, char *, int);
-  int (*write)(pic_state *, void *, const char *, int);
-  long (*seek)(pic_state *, void *, long, int);
-  int (*close)(pic_state *, void *);
-} pic_port_type;
-
-typedef pic_value (*pic_func_t)(pic_state *);
-
-#include "value.h"
-#include "object.h"
 
 bool pic_undef_p(pic_state *, pic_value); /* deprecated */
 bool pic_int_p(pic_state *, pic_value);
@@ -241,6 +231,7 @@ pic_value pic_sym_name(pic_state *, pic_value sym);
  * procedure
  */
 
+typedef pic_value (*pic_func_t)(pic_state *);
 bool pic_proc_p(pic_state *, pic_value);
 pic_value pic_lambda(pic_state *, pic_func_t f, int n, ...);
 pic_value pic_vlambda(pic_state *, pic_func_t f, int n, va_list);
@@ -256,6 +247,13 @@ pic_value pic_applyk(pic_state *, pic_value proc, int n, pic_value *argv);
 /*
  * port
  */
+
+typedef struct {
+  int (*read)(pic_state *, void *, char *, int);
+  int (*write)(pic_state *, void *, const char *, int);
+  long (*seek)(pic_state *, void *, long, int);
+  int (*close)(pic_state *, void *);
+} pic_port_type;
 
 #define PIC_SEEK_CUR 0
 #define PIC_SEEK_END 1
@@ -303,6 +301,7 @@ PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
 PIC_NORETURN void pic_raise(pic_state *, pic_value v);
 pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs); /* deprecated */
 pic_value pic_get_backtrace(pic_state *); /* deprecated */
+void pic_warnf(pic_state *pic, const char *fmt, ...); /* deprecated */
 #define pic_try pic_try_(PIC_GENSYM(cont), PIC_GENSYM(jmp))
 #define pic_try_(cont, jmp)                                             \
   do {                                                                  \

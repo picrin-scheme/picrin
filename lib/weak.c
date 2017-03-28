@@ -3,7 +3,6 @@
  */
 
 #include "picrin.h"
-#include "value.h"
 #include "object.h"
 
 KHASH_DEFINE(weak, struct object *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)

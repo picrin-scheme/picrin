@@ -3,7 +3,6 @@
  */
 
 #include "picrin.h"
-#include "value.h"
 #include "object.h"
 #include "state.h"
 #include "vm.h"
@@ -189,7 +188,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
         e = (c == c2 ? va_arg(ap, bool *) : &dummy);                    \
                                                                         \
         v = GET_ARG(pic, i);                                            \
-        switch (value_type(pic, v)) {                                   \
+        switch (pic_type(pic, v)) {                                     \
         case PIC_TYPE_FLOAT:                                            \
           *n = pic_float(pic, v);                                       \
           *e = false;                                                   \

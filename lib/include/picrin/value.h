@@ -9,58 +9,6 @@
 extern "C" {
 #endif
 
-#if 0
-#define pic_int pic_int_inline
-#define pic_float pic_float_inline
-#define pic_char pic_char_inline
-#define pic_int_value pic_int_value_inline
-#define pic_float_value pic_float_value_inline
-#define pic_char_value pic_char_value_inline
-#define obj_value obj_value_inline /* TODO */
-#define pic_nil_value pic_nil_value_inline
-#define pic_eof_object pic_eof_object_inline
-#define pic_true_value pic_true_value_inline
-#define pic_false_value pic_false_value_inline
-#define pic_undef_value pic_undef_value_inline
-#define pic_invalid_value pic_invalid_value_inline
-#define pic_bool_value pic_bool_value_inline
-#define pic_invalid_p pic_invalid_p_inline
-#define pic_float_p pic_float_p_inline
-#define pic_int_p pic_int_p_inline
-#define pic_char_p pic_char_p_inline
-#define pic_eof_p pic_eof_p_inline
-#define pic_undef_p pic_undef_p_inline
-#define pic_true_p pic_true_p_inline
-#define pic_nil_p pic_nil_p_inline
-#define pic_false_p pic_false_p_inline
-#define pic_bool_p pic_bool_p_inline
-#define pic_str_p pic_str_p_inline
-#define pic_vec_p pic_vec_p_inline
-#define pic_blob_p pic_blob_p_inline
-#define pic_error_p pic_error_p_inline
-#define pic_id_p pic_id_p_inline
-#define pic_dict_p pic_dict_p_inline
-#define pic_weak_p pic_weak_p_inline
-#define pic_env_p pic_env_p_inline
-#define pic_rec_p pic_rec_p_inline
-#define pic_sym_p pic_sym_p_inline
-#define pic_pair_p pic_pair_p_inline
-#define pic_cp_p pic_cp_p_inline
-#define pic_func_p pic_func_p_inline
-#define pic_irep_p pic_irep_p_inline
-#define pic_proc_p pic_proc_p_inline
-#endif
-
-/* #ifndef INLINE */
-/* # if GENERATE_EXTERNAL_DEFINITION */
-/* #  define INLINE PIC_EXTERN_INLINE */
-/* # else */
-/* #  define INLINE PIC_INLINE */
-/* # endif */
-/* #endif */
-
-#define INLINE PIC_STATIC_INLINE
-
 enum {
   PIC_TYPE_INVALID = 1,
   PIC_TYPE_FLOAT   = 2,
@@ -92,12 +40,10 @@ enum {
   PIC_TYPE_IREP    = 33
 };
 
-PIC_STATIC_INLINE int obj_tt(void *); /* defined in object.h */
-
 #if !PIC_NAN_BOXING
 
 PIC_STATIC_INLINE pic_value
-make_value(int type)
+pic_make_value(int type)
 {
   pic_value v;
   v.type = type;
@@ -105,70 +51,50 @@ make_value(int type)
   return v;
 }
 
-PIC_STATIC_INLINE struct object *
-obj_ptr(pic_value v)
-{
-  return (struct object *)(v.u.data);
-}
-
-PIC_STATIC_INLINE bool
-obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
-{
-  return v.type > PIC_IVAL_END;
-}
-
-PIC_STATIC_INLINE pic_value
-obj_value(void *ptr)
-{
-  pic_value v = make_value(obj_tt(ptr));
-  v.u.data = ptr;
-  return v;
-}
-
 PIC_STATIC_INLINE int
-value_type(pic_state *PIC_UNUSED(pic), pic_value v)
+pic_type(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return (int)(v.type);
 }
 
-INLINE int
+PIC_STATIC_INLINE int
 pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v.u.i;
 }
 
-INLINE double
+PIC_STATIC_INLINE double
 pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v.u.f;
 }
 
-INLINE char
+PIC_STATIC_INLINE char
 pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v.u.c;
 }
 
-INLINE pic_value
+PIC_STATIC_INLINE pic_value
 pic_int_value(pic_state *PIC_UNUSED(pic), int i)
 {
-  pic_value v = make_value(PIC_TYPE_INT);
+  pic_value v = pic_make_value(PIC_TYPE_INT);
   v.u.i = i;
   return v;
 }
 
-INLINE pic_value
+PIC_STATIC_INLINE pic_value
 pic_float_value(pic_state *PIC_UNUSED(pic), double f)
 {
-  pic_value v = make_value(PIC_TYPE_FLOAT);
+  pic_value v = pic_make_value(PIC_TYPE_FLOAT);
   v.u.f = f;
   return v;
 }
 
-INLINE pic_value
+PIC_STATIC_INLINE pic_value
 pic_char_value(pic_state *PIC_UNUSED(pic), char c)
 {
-  pic_value v = make_value(PIC_TYPE_CHAR);
+  pic_value v = pic_make_value(PIC_TYPE_CHAR);
   v.u.c = c;
   return v;
 }
@@ -184,40 +110,20 @@ pic_char_value(pic_state *PIC_UNUSED(pic), char c)
  */
 
 PIC_STATIC_INLINE pic_value
-make_value(int type)
+pic_make_value(int type)
 {
   pic_value v;
   v.v = 0xfff0000000000000ul | ((uint64_t)(type) << 46);
   return v;
 }
 
-PIC_STATIC_INLINE struct object *
-obj_ptr(pic_value v)
-{
-  return (struct object *)((0x3ffffffffffful & v.v) << 2);
-}
-
-PIC_STATIC_INLINE bool
-obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
-{
-  return v.v > ((0x3ffC0ul + (0x3f & PIC_IVAL_END)) << 46);
-}
-
-PIC_STATIC_INLINE pic_value
-obj_value(void *ptr)
-{
-  pic_value v = make_value(obj_tt(ptr));
-  v.v |= 0x3ffffffffffful & ((uint64_t)ptr >> 2);
-  return v;
-}
-
 PIC_STATIC_INLINE int
-value_type(pic_state *PIC_UNUSED(pic), pic_value v)
+pic_type(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return 0xfff0000000000000ul >= v.v ? PIC_TYPE_FLOAT : ((v.v >> 46) & 0x3f);
 }
 
-INLINE int
+PIC_STATIC_INLINE int
 pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   union { int i; unsigned u; } u;
@@ -225,7 +131,7 @@ pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
   return u.i;
 }
 
-INLINE double
+PIC_STATIC_INLINE double
 pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   union { double f; uint64_t i; } u;
@@ -233,21 +139,21 @@ pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
   return u.f;
 }
 
-INLINE char
+PIC_STATIC_INLINE char
 pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   return v.v & 0xfffffffful;
 }
 
-INLINE pic_value
+PIC_STATIC_INLINE pic_value
 pic_int_value(pic_state *PIC_UNUSED(pic), int i)
 {
-  pic_value v = make_value(PIC_TYPE_INT);
+  pic_value v = pic_make_value(PIC_TYPE_INT);
   v.v |= (unsigned)i;
   return v;
 }
 
-INLINE pic_value
+PIC_STATIC_INLINE pic_value
 pic_float_value(pic_state *PIC_UNUSED(pic), double f)
 {
   union { double f; uint64_t i; } u;
@@ -262,19 +168,19 @@ pic_float_value(pic_state *PIC_UNUSED(pic), double f)
   return v;
 }
 
-INLINE pic_value
+PIC_STATIC_INLINE pic_value
 pic_char_value(pic_state *PIC_UNUSED(pic), char c)
 {
-  pic_value v = make_value(PIC_TYPE_CHAR);
+  pic_value v = pic_make_value(PIC_TYPE_CHAR);
   v.v |= (unsigned char)c;
   return v;
 }
 
 #endif  /* NAN_BOXING end */
 
-#define DEFVAL(name, type)                              \
-  INLINE pic_value name(pic_state *PIC_UNUSED(pic)) {   \
-    return make_value(type);                            \
+#define DEFVAL(name, type)                                              \
+  PIC_STATIC_INLINE pic_value name(pic_state *PIC_UNUSED(pic)) {        \
+    return pic_make_value(type);                                        \
   }
 
 DEFVAL(pic_nil_value, PIC_TYPE_NIL)
@@ -284,15 +190,15 @@ DEFVAL(pic_false_value, PIC_TYPE_FALSE)
 DEFVAL(pic_undef_value, PIC_TYPE_UNDEF)
 DEFVAL(pic_invalid_value, PIC_TYPE_INVALID)
 
-INLINE pic_value
+PIC_STATIC_INLINE pic_value
 pic_bool_value(pic_state *PIC_UNUSED(pic), bool b)
 {
-  return make_value(b ? PIC_TYPE_TRUE : PIC_TYPE_FALSE);
+  return pic_make_value(b ? PIC_TYPE_TRUE : PIC_TYPE_FALSE);
 }
 
-#define DEFPRED(name, type)                             \
-  INLINE bool name(pic_state *pic, pic_value obj) {     \
-    return value_type(pic, obj) == type;                \
+#define DEFPRED(name, type)                                     \
+  PIC_STATIC_INLINE bool name(pic_state *pic, pic_value obj) {  \
+    return pic_type(pic, obj) == type;                          \
   }
 
 DEFPRED(pic_invalid_p, PIC_TYPE_INVALID)
@@ -318,22 +224,22 @@ DEFPRED(pic_cp_p, PIC_TYPE_CP)
 DEFPRED(pic_func_p, PIC_TYPE_FUNC)
 DEFPRED(pic_irep_p, PIC_TYPE_IREP)
 
-INLINE bool
+PIC_STATIC_INLINE bool
 pic_bool_p(pic_state *pic, pic_value obj)
 {
   return pic_true_p(pic, obj) || pic_false_p(pic, obj);
 }
 
-INLINE bool
+PIC_STATIC_INLINE bool
 pic_proc_p(pic_state *pic, pic_value o)
 {
   return pic_func_p(pic, o) || pic_irep_p(pic, o);
 }
 
-INLINE bool
+PIC_STATIC_INLINE bool
 pic_id_p(pic_state *pic, pic_value o)
 {
-  return value_type(pic, o) == PIC_TYPE_ID || pic_sym_p(pic, o);
+  return pic_type(pic, o) == PIC_TYPE_ID || pic_sym_p(pic, o);
 }
 
 #if defined(__cplusplus)

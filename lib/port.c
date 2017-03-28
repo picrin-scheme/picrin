@@ -3,7 +3,6 @@
  */
 
 #include "picrin.h"
-#include "value.h"
 #include "object.h"
 #include "state.h"
 
@@ -14,7 +13,7 @@
 bool
 pic_port_p(pic_state *pic, pic_value obj, const pic_port_type *type)
 {
-  if (value_type(pic, obj) != PIC_TYPE_PORT) {
+  if (pic_type(pic, obj) != PIC_TYPE_PORT) {
     return false;
   }
   return type == NULL || pic_port_ptr(pic, obj)->file.vtable == type;

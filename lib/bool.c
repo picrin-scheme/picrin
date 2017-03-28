@@ -3,7 +3,6 @@
  */
 
 #include "picrin.h"
-#include "value.h"
 #include "object.h"
 
 #if PIC_NAN_BOXING
@@ -25,14 +24,14 @@ pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 bool
 pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
-  if (value_type(pic, x) != value_type(pic, y))
+  if (pic_type(pic, x) != pic_type(pic, y))
     return false;
 
-  switch (value_type(pic, x)) {
+  switch (pic_type(pic, x)) {
   case PIC_TYPE_NIL:
     return true;
   case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
-    return value_type(pic, x) == value_type(pic, y);
+    return pic_type(pic, x) == pic_type(pic, y);
   default:
     return obj_ptr(x) == obj_ptr(y);
   }
@@ -41,14 +40,14 @@ pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 bool
 pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
-  if (value_type(pic, x) != value_type(pic, y))
+  if (pic_type(pic, x) != pic_type(pic, y))
     return false;
 
-  switch (value_type(pic, x)) {
+  switch (pic_type(pic, x)) {
   case PIC_TYPE_NIL:
     return true;
   case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
-    return value_type(pic, x) == value_type(pic, y);
+    return pic_type(pic, x) == pic_type(pic, y);
   case PIC_TYPE_FLOAT:
     return pic_float(pic, x) == pic_float(pic, y);
   case PIC_TYPE_INT:
@@ -89,11 +88,11 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
   if (pic_eqv_p(pic, x, y)) {
     return true;
   }
-  if (value_type(pic, x) != value_type(pic, y)) {
+  if (pic_type(pic, x) != pic_type(pic, y)) {
     return false;
   }
 
-  switch (value_type(pic, x)) {
+  switch (pic_type(pic, x)) {
   case PIC_TYPE_ID: {
     struct identifier *id1, *id2;
     pic_value s1, s2;

@@ -3,7 +3,6 @@
  */
 
 #include "picrin.h"
-#include "value.h"
 #include "object.h"
 
 pic_value
