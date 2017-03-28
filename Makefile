@@ -1,4 +1,31 @@
-LIBPICRIN_SRCS = $(wildcard lib/*.c)
+LIBPICRIN_SRCS = \
+	lib/blob.c\
+	lib/bool.c\
+	lib/boot.c\
+	lib/char.c\
+	lib/cont.c\
+	lib/data.c\
+	lib/debug.c\
+	lib/dict.c\
+	lib/error.c\
+	lib/eval.c\
+	lib/gc.c\
+	lib/lib.c\
+	lib/load.c\
+	lib/number.c\
+	lib/pair.c\
+	lib/port.c\
+	lib/proc.c\
+	lib/read.c\
+	lib/record.c\
+	lib/state.c\
+	lib/string.c\
+	lib/symbol.c\
+	lib/value.c\
+	lib/var.c\
+	lib/vector.c\
+	lib/weak.c\
+	lib/write.c
 LIBPICRIN_OBJS = $(LIBPICRIN_SRCS:.c=.o)
 
 PICRIN_SRCS = \
@@ -92,10 +119,11 @@ install: all
 	install -c picrin $(prefix)/bin/picrin
 
 clean:
-	rm -f src/load_piclib.c src/init_contrib.c lib/boot.c
-	rm -f libpicrin.so libpicrin-tiny.so
-	rm -f $(LIBPICRIN_OBJS)
-	rm -f $(PICRIN_OBJS)
-	rm -f $(CONTRIB_OBJS)
+	$(RM) picrin
+	$(RM) src/load_piclib.c src/init_contrib.c lib/boot.c
+	$(RM) libpicrin.so libpicrin-tiny.so
+	$(RM) $(LIBPICRIN_OBJS)
+	$(RM) $(PICRIN_OBJS)
+	$(RM) $(CONTRIB_OBJS)
 
 .PHONY: all install clean push test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)
