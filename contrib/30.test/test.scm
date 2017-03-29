@@ -33,12 +33,22 @@
     (if (= test-counter 0)
         (print-statistics)))
 
+  (define :error: ':error:) ; used to indicate an error is expected 
+  (define :raise: ':raise:) ; used to indicate a raise is expected
+
   (define-syntax test
     (syntax-rules ()
       ((test expected expr)
        (test expected expr equal?))
       ((test expected expr =)
-       (let ((res expr))
+       (let ((res (call/cc
+                   (lambda (k)
+                     (with-exception-handler
+                      (lambda (condition)
+                        (if (error-object? condition)
+                            (k (list :error: (error-object-message condition)))
+                            (k (list :raise: condition))))
+                      (lambda () expr))))))
          (display "case ")
          (write counter)
          (if (= res expected)
@@ -80,4 +90,4 @@
     (syntax-rules ()
       ((_) (syntax-error "invalid use of test-syntax-error"))))
 
-  (export test test-begin test-end test-values test-syntax-error))
+  (export test test-begin test-end test-values test-syntax-error :error: :raise:))
