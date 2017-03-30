@@ -5,21 +5,7 @@
 #include "picrin.h"
 #include "object.h"
 
-#if PIC_NAN_BOXING
-
-bool
-pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
-{
-  return x.v == y.v;
-}
-
-bool
-pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
-{
-  return x.v == y.v;
-}
-
-#else
+#if !PIC_NAN_BOXING
 
 bool
 pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)

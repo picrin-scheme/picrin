@@ -242,6 +242,22 @@ pic_id_p(pic_state *pic, pic_value o)
   return pic_type(pic, o) == PIC_TYPE_ID || pic_sym_p(pic, o);
 }
 
+#if PIC_NAN_BOXING
+
+PIC_STATIC_INLINE bool
+pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
+{
+  return x.v == y.v;
+}
+
+PIC_STATIC_INLINE bool
+pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
+{
+  return x.v == y.v;
+}
+
+#endif
+
 #if defined(__cplusplus)
 }
 #endif

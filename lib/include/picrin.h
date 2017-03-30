@@ -51,6 +51,9 @@ typedef struct {
 } pic_value;
 
 
+#include "picrin/value.h"       /* inline definitions */
+
+
 /*
  * state manipulation
  */
@@ -88,8 +91,6 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 /*
  * number, boolean, character, string, bytevector, and userdata
  */
-
-#include "picrin/value.h"       /* inline definitions */
 
 typedef struct {
   const char *type_name;
