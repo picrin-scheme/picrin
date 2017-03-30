@@ -145,13 +145,26 @@ pic_alloca_cont(pic_state *pic)
 }
 
 static pic_value
+values(pic_state *pic, int argc, pic_value *argv)
+{
+  int i;
+
+  for (i = 0; i < argc; ++i) {
+    pic->sp[i] = argv[i];
+  }
+  pic->ci->retc = argc;
+
+  return argc == 0 ? pic_undef_value(pic) : pic->sp[0];
+}
+
+static pic_value
 pic_callcc(pic_state *pic, pic_value proc)
 {
   PIC_JMPBUF jmp;
   volatile struct cont *cont = pic_alloca_cont(pic);
 
   if (PIC_SETJMP(pic, jmp)) {
-    return pic_valuesk(pic, cont->retc, cont->retv);
+    return values(pic, cont->retc, cont->retv);
   }
   else {
     pic_value val;
@@ -167,19 +180,19 @@ pic_callcc(pic_state *pic, pic_value proc)
 }
 
 pic_value
-pic_return(pic_state *pic, int n, ...)
+pic_values(pic_state *pic, int n, ...)
 {
   va_list ap;
   pic_value ret;
 
   va_start(ap, n);
-  ret = pic_vreturn(pic, n, ap);
+  ret = pic_vvalues(pic, n, ap);
   va_end(ap);
   return ret;
 }
 
 pic_value
-pic_vreturn(pic_state *pic, int n, va_list ap)
+pic_vvalues(pic_state *pic, int n, va_list ap)
 {
   pic_value *retv = pic_alloca(pic, sizeof(pic_value) * n);
   int i;
@@ -187,20 +200,7 @@ pic_vreturn(pic_state *pic, int n, va_list ap)
   for (i = 0; i < n; ++i) {
     retv[i] = va_arg(ap, pic_value);
   }
-  return pic_valuesk(pic, n, retv);
-}
-
-pic_value
-pic_valuesk(pic_state *pic, int argc, pic_value *argv)
-{
-  int i;
-
-  for (i = 0; i < argc; ++i) {
-    pic->sp[i] = argv[i];
-  }
-  pic->ci->retc = argc;
-
-  return argc == 0 ? pic_undef_value(pic) : pic->sp[0];
+  return values(pic, n, retv);
 }
 
 int
@@ -247,7 +247,7 @@ pic_cont_values(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  return pic_valuesk(pic, argc, argv);
+  return values(pic, argc, argv);
 }
 
 static pic_value
@@ -273,9 +273,7 @@ pic_init_cont(pic_state *pic)
 {
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
-  pic_defun(pic, "escape", pic_cont_callcc);
   pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
-
   pic_defun(pic, "values", pic_cont_values);
   pic_defun(pic, "call-with-values", pic_cont_call_with_values);
 }

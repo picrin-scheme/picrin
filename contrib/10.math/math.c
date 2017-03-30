@@ -18,13 +18,13 @@ pic_number_floor2(pic_state *pic)
       ? i / j
       : (i / j) - 1;
 
-    return pic_return(pic, 2, pic_int_value(pic, k), pic_int_value(pic, i - k * j));
+    return pic_values(pic, 2, pic_int_value(pic, k), pic_int_value(pic, i - k * j));
   } else {
     double q, r;
 
     q = floor((double)i/j);
     r = i - j * q;
-    return pic_return(pic, 2, pic_float_value(pic, q), pic_float_value(pic, r));
+    return pic_values(pic, 2, pic_float_value(pic, q), pic_float_value(pic, r));
   }
 }
 
@@ -37,14 +37,14 @@ pic_number_trunc2(pic_state *pic)
   pic_get_args(pic, "II", &i, &e1, &j, &e2);
 
   if (e1 && e2) {
-    return pic_return(pic, 2, pic_int_value(pic, i/j), pic_int_value(pic, i - (i/j) * j));
+    return pic_values(pic, 2, pic_int_value(pic, i/j), pic_int_value(pic, i - (i/j) * j));
   } else {
     double q, r;
 
     q = trunc((double)i/j);
     r = i - j * q;
 
-    return pic_return(pic, 2, pic_float_value(pic, q), pic_float_value(pic, r));
+    return pic_values(pic, 2, pic_float_value(pic, q), pic_float_value(pic, r));
   }
 }
 
