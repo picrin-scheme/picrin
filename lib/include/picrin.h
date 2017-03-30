@@ -208,11 +208,8 @@ bool pic_weak_has(pic_state *, pic_value weak, pic_value key);
  */
 
 int pic_str_len(pic_state *, pic_value str);
-char pic_str_ref(pic_state *, pic_value str, int i);
 pic_value pic_str_cat(pic_state *, pic_value str1, pic_value str2);
 pic_value pic_str_sub(pic_state *, pic_value str, int i, int j);
-int pic_str_cmp(pic_state *, pic_value str1, pic_value str2);
-int pic_str_hash(pic_state *, pic_value str);
 
 
 /*

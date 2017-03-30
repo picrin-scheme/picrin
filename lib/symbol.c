@@ -6,8 +6,9 @@
 #include "object.h"
 #include "state.h"
 
-#define kh_pic_str_hash(a) (pic_str_hash(pic, obj_value(pic, a)))
-#define kh_pic_str_cmp(a, b) (pic_str_cmp(pic, obj_value(pic, a), obj_value(pic, b)) == 0)
+#define to_cstr(a) (pic_str(pic, obj_value(pic, a), NULL))
+#define kh_pic_str_hash(a) (kh_str_hash_func(to_cstr(a)))
+#define kh_pic_str_cmp(a, b) (kh_str_cmp_func(to_cstr(a), to_cstr(b)))
 
 KHASH_DEFINE(oblist, struct string *, symbol *, kh_pic_str_hash, kh_pic_str_cmp)
 

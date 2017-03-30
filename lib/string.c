@@ -248,25 +248,6 @@ pic_str_len(pic_state *PIC_UNUSED(pic), pic_value str)
   return pic_str_ptr(pic, str)->rope->weight;
 }
 
-char
-pic_str_ref(pic_state *PIC_UNUSED(pic), pic_value str, int i)
-{
-  struct rope *rope = pic_str_ptr(pic, str)->rope;
-
-  while (i < rope->weight) {
-    if (rope->isleaf) {
-      return rope->u.leaf.str[i];
-    }
-    if (i < rope->u.node.left->weight) {
-      rope = rope->u.node.left;
-    } else {
-      i -= rope->u.node.left->weight;
-      rope = rope->u.node.right;
-    }
-  }
-  PIC_UNREACHABLE();
-}
-
 pic_value
 pic_str_cat(pic_state *pic, pic_value a, pic_value b)
 {
@@ -277,25 +258,6 @@ pic_value
 pic_str_sub(pic_state *pic, pic_value str, int s, int e)
 {
   return make_str(pic, slice(pic, pic_str_ptr(pic, str)->rope, s, e));
-}
-
-int
-pic_str_cmp(pic_state *pic, pic_value str1, pic_value str2)
-{
-  return strcmp(pic_str(pic, str1, NULL), pic_str(pic, str2, NULL));
-}
-
-int
-pic_str_hash(pic_state *pic, pic_value str)
-{
-  const char *s;
-  int h = 0;
-
-  s = pic_str(pic, str, NULL);
-  while (*s) {
-    h = (h << 5) - h + *s++;
-  }
-  return h;
 }
 
 const char *
@@ -387,7 +349,7 @@ pic_str_string_ref(pic_state *pic)
 
   VALID_INDEX(pic, pic_str_len(pic, str), k);
 
-  return pic_char_value(pic, pic_str_ref(pic, str, k));
+  return pic_char_value(pic, pic_str(pic, str, 0)[k]);
 }
 
 static pic_value
@@ -429,7 +391,7 @@ pic_str_string_set(pic_state *pic)
       if (! pic_str_p(pic, argv[i])) {                          \
         return pic_false_value(pic);                            \
       }                                                         \
-      if (! (pic_str_cmp(pic, argv[i-1], argv[i]) op 0)) {      \
+      if (! (strcmp(pic_str(pic, argv[i-1], NULL), pic_str(pic, argv[i], NULL)) op 0)) { \
         return pic_false_value(pic);                            \
       }                                                         \
     }                                                           \
@@ -567,7 +529,7 @@ pic_str_string_map(pic_state *pic)
   for (i = 0; i < len; ++i) {
     vals = pic_nil_value(pic);
     for (j = 0; j < argc; ++j) {
-      pic_push(pic, pic_char_value(pic, pic_str_ref(pic, argv[j], i)), vals);
+      pic_push(pic, pic_char_value(pic, pic_str(pic, argv[j], 0)[i]), vals);
     }
     vals = pic_reverse(pic, vals);
     val = pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
@@ -602,7 +564,7 @@ pic_str_string_for_each(pic_state *pic)
   for (i = 0; i < len; ++i) {
     vals = pic_nil_value(pic);
     for (j = 0; j < argc; ++j) {
-      pic_push(pic, pic_char_value(pic, pic_str_ref(pic, argv[j], i)), vals);
+      pic_push(pic, pic_char_value(pic, pic_str(pic, argv[j], 0)[i]), vals);
     }
     vals = pic_reverse(pic, vals);
     pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
@@ -652,7 +614,7 @@ pic_str_string_to_list(pic_state *pic)
 
   list = pic_nil_value(pic);
   for (i = start; i < end; ++i) {
-    pic_push(pic, pic_char_value(pic, pic_str_ref(pic, str, i)), list);
+    pic_push(pic, pic_char_value(pic, pic_str(pic, str, 0)[i]), list);
   }
   return pic_reverse(pic, list);
 }
