@@ -231,10 +231,6 @@ pic_open(pic_allocf allocf, void *userdata)
   kh_init(ltable, &pic->ltable);
   pic->lib = NULL;
 
-  /* ireps */
-  pic->ireps.next = &pic->ireps;
-  pic->ireps.prev = &pic->ireps;
-
   /* raised error object */
   pic->panicf = NULL;
   pic->err = pic_invalid_value(pic);

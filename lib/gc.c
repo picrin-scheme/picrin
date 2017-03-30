@@ -33,6 +33,7 @@ struct object {
     struct port port;
     struct error err;
     struct checkpoint cp;
+    struct irep irep;
   } u;
 };
 
@@ -342,16 +343,27 @@ gc_mark_object(pic_state *pic, struct object *obj)
     }
     break;
   }
-  case PIC_TYPE_FUNC: {
+  case PIC_TYPE_PROC_FUNC: {
     int i;
     for (i = 0; i < obj->u.proc.u.f.localc; ++i) {
       gc_mark(pic, obj->u.proc.locals[i]);
     }
     break;
   }
-  case PIC_TYPE_IREP: {
+  case PIC_TYPE_PROC_IREP: {
     if (obj->u.proc.u.i.cxt) {
-      LOOP(obj->u.proc.u.i.cxt);
+      gc_mark_object(pic, (struct object *)obj->u.proc.u.i.cxt);
+    }
+    LOOP(obj->u.proc.u.i.irep);
+    break;
+  }
+  case PIC_TYPE_IREP: {
+    size_t i;
+    for (i = 0; i < obj->u.irep.npool; ++i) {
+      gc_mark_object(pic, obj->u.irep.pool[i]);
+    }
+    for (i = 0; i < obj->u.irep.nirep; ++i) {
+      gc_mark_object(pic, (struct object *)obj->u.irep.irep[i]);
     }
     break;
   }
@@ -451,7 +463,6 @@ gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
   struct callinfo *ci;
-  struct list_head *list;
   int it;
   size_t j;
 
@@ -477,14 +488,6 @@ gc_mark_phase(pic_state *pic)
   /* arena */
   for (j = 0; j < pic->arena_idx; ++j) {
     gc_mark_object(pic, (struct object *)pic->arena[j]);
-  }
-
-  /* ireps */
-  for (list = pic->ireps.next; list != &pic->ireps; list = list->next) {
-    struct irep *irep = (struct irep *)list;
-    for (j = 0; j < irep->npool; ++j) {
-      gc_mark_object(pic, irep->pool[j]);
-    }
   }
 
   /* global variables */
@@ -580,7 +583,12 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_IREP: {
-    pic_irep_decref(pic, obj->u.proc.u.i.irep);
+    struct irep *irep = &obj->u.irep;
+    pic_free(pic, irep->code);
+    pic_free(pic, irep->ints);
+    pic_free(pic, irep->nums);
+    pic_free(pic, irep->pool);
+    pic_free(pic, irep->irep);
     break;
   }
   case PIC_TYPE_PORT: {
@@ -594,7 +602,8 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_ID:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_CP:
-  case PIC_TYPE_FUNC:
+  case PIC_TYPE_PROC_FUNC:
+  case PIC_TYPE_PROC_IREP:
     break;
 
   default:

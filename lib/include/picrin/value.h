@@ -10,34 +10,35 @@ extern "C" {
 #endif
 
 enum {
-  PIC_TYPE_INVALID = 1,
-  PIC_TYPE_FLOAT   = 2,
-  PIC_TYPE_INT     = 3,
-  PIC_TYPE_CHAR    = 4,
-  PIC_TYPE_EOF     = 5,
-  PIC_TYPE_UNDEF   = 6,
-  PIC_TYPE_TRUE    = 8,
-  PIC_TYPE_NIL     = 7,
-  PIC_TYPE_FALSE   = 9,
-  PIC_IVAL_END     = 10,
+  PIC_TYPE_INVALID   = 1,
+  PIC_TYPE_FLOAT     = 2,
+  PIC_TYPE_INT       = 3,
+  PIC_TYPE_CHAR      = 4,
+  PIC_TYPE_EOF       = 5,
+  PIC_TYPE_UNDEF     = 6,
+  PIC_TYPE_TRUE      = 8,
+  PIC_TYPE_NIL       = 7,
+  PIC_TYPE_FALSE     = 9,
+  PIC_IVAL_END       = 10,
 /* -------------------- */
-  PIC_TYPE_STRING  = 16,
-  PIC_TYPE_VECTOR  = 17,
-  PIC_TYPE_BLOB    = 18,
-  PIC_TYPE_PORT    = 20,
-  PIC_TYPE_ERROR   = 21,
-  PIC_TYPE_ID      = 22,
-  PIC_TYPE_ENV     = 23,
-  PIC_TYPE_DATA    = 24,
-  PIC_TYPE_DICT    = 25,
-  PIC_TYPE_WEAK    = 26,
-  PIC_TYPE_RECORD  = 27,
-  PIC_TYPE_SYMBOL  = 28,
-  PIC_TYPE_PAIR    = 29,
-  PIC_TYPE_CXT     = 30,
-  PIC_TYPE_CP      = 31,
-  PIC_TYPE_FUNC    = 32,
-  PIC_TYPE_IREP    = 33
+  PIC_TYPE_STRING    = 16,
+  PIC_TYPE_VECTOR    = 17,
+  PIC_TYPE_BLOB      = 18,
+  PIC_TYPE_PORT      = 20,
+  PIC_TYPE_ERROR     = 21,
+  PIC_TYPE_ID        = 22,
+  PIC_TYPE_ENV       = 23,
+  PIC_TYPE_DATA      = 24,
+  PIC_TYPE_DICT      = 25,
+  PIC_TYPE_WEAK      = 26,
+  PIC_TYPE_RECORD    = 27,
+  PIC_TYPE_SYMBOL    = 28,
+  PIC_TYPE_PAIR      = 29,
+  PIC_TYPE_CXT       = 30,
+  PIC_TYPE_CP        = 31,
+  PIC_TYPE_PROC_FUNC = 32,
+  PIC_TYPE_PROC_IREP = 33,
+  PIC_TYPE_IREP      = 34
 };
 
 #if !PIC_NAN_BOXING
@@ -221,7 +222,8 @@ DEFPRED(pic_rec_p, PIC_TYPE_RECORD)
 DEFPRED(pic_sym_p, PIC_TYPE_SYMBOL)
 DEFPRED(pic_pair_p, PIC_TYPE_PAIR)
 DEFPRED(pic_cp_p, PIC_TYPE_CP)
-DEFPRED(pic_func_p, PIC_TYPE_FUNC)
+DEFPRED(pic_proc_func_p, PIC_TYPE_PROC_FUNC)
+DEFPRED(pic_proc_irep_p, PIC_TYPE_PROC_IREP)
 DEFPRED(pic_irep_p, PIC_TYPE_IREP)
 
 PIC_STATIC_INLINE bool
@@ -233,7 +235,7 @@ pic_bool_p(pic_state *pic, pic_value obj)
 PIC_STATIC_INLINE bool
 pic_proc_p(pic_state *pic, pic_value o)
 {
-  return pic_func_p(pic, o) || pic_irep_p(pic, o);
+  return pic_proc_func_p(pic, o) || pic_proc_irep_p(pic, o);
 }
 
 PIC_STATIC_INLINE bool

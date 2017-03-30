@@ -56,7 +56,6 @@ struct pic_state {
   pic_value globals;            /* weak */
   pic_value macros;             /* weak */
   khash_t(ltable) ltable;
-  struct list_head ireps;
 
   bool gc_enable;
   struct heap *heap;

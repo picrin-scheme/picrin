@@ -268,8 +268,6 @@ pic_closure_ref(pic_state *pic, int n)
 {
   pic_value self = GET_PROC(pic);
 
-  assert(pic_func_p(pic, self));
-
   if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
@@ -280,8 +278,6 @@ void
 pic_closure_set(pic_state *pic, int n, pic_value v)
 {
   pic_value self = GET_PROC(pic);
-
-  assert(pic_func_p(pic, self));
 
   if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
@@ -542,7 +538,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       ci->fp = pic->sp - c.a;
       ci->irep = NULL;
       ci->cxt = NULL;
-      if (proc->tt == PIC_TYPE_FUNC) {
+      if (proc->tt == PIC_TYPE_PROC_FUNC) {
 
         /* invoke! */
         v = proc->u.f.func(pic);
@@ -821,44 +817,13 @@ pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
   return pic_apply(pic, proc, n, args);
 }
 
-void
-pic_irep_incref(pic_state *PIC_UNUSED(pic), struct irep *irep)
-{
-  irep->refc++;
-}
-
-void
-pic_irep_decref(pic_state *pic, struct irep *irep)
-{
-  size_t i;
-
-  if (--irep->refc == 0) {
-    pic_free(pic, irep->code);
-    pic_free(pic, irep->ints);
-    pic_free(pic, irep->nums);
-    pic_free(pic, irep->pool);
-
-    /* unchain before decref children ireps */
-    if (irep->list.prev) {      /* && irep->list.next */
-      irep->list.prev->next = irep->list.next;
-      irep->list.next->prev = irep->list.prev;
-    }
-
-    for (i = 0; i < irep->nirep; ++i) {
-      pic_irep_decref(pic, irep->irep[i]);
-    }
-    pic_free(pic, irep->irep);
-    pic_free(pic, irep);
-  }
-}
-
 pic_value
 pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
 {
   struct proc *proc;
   int i;
 
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_FUNC);
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC_FUNC);
   proc->u.f.func = func;
   proc->u.f.localc = n;
   for (i = 0; i < n; ++i) {
@@ -872,10 +837,9 @@ pic_make_proc_irep(pic_state *pic, struct irep *irep, struct context *cxt)
 {
   struct proc *proc;
 
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_IREP);
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_PROC_IREP);
   proc->u.i.irep = irep;
   proc->u.i.cxt = cxt;
-  pic_irep_incref(pic, irep);
   return obj_value(pic, proc);
 }
 

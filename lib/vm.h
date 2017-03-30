@@ -52,32 +52,6 @@ enum {
   OP_STOP
 };
 
-struct code {
-  int insn;
-  int a;
-  int b;
-};
-
-struct list_head {
-  struct list_head *prev, *next;
-};
-
-struct irep {
-  struct list_head list;
-  unsigned refc;
-  int argc, localc, capturec;
-  bool varg;
-  struct code *code;
-  struct irep **irep;
-  int *ints;
-  double *nums;
-  struct object **pool;
-  size_t ncode, nirep, nints, nnums, npool;
-};
-
-void pic_irep_incref(pic_state *, struct irep *);
-void pic_irep_decref(pic_state *, struct irep *);
-
 #if defined(__cplusplus)
 }
 #endif

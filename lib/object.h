@@ -90,6 +90,24 @@ struct data {
   void *data;
 };
 
+struct code {
+  int insn;
+  int a;
+  int b;
+};
+
+struct irep {
+  OBJECT_HEADER
+  int argc, localc, capturec;
+  bool varg;
+  struct code *code;
+  struct irep **irep;
+  int *ints;
+  double *nums;
+  struct object **pool;
+  size_t ncode, nirep, nints, nnums, npool;
+};
+
 struct context {
   OBJECT_HEADER
   pic_value *regs;
@@ -260,6 +278,7 @@ DEFPTR(pic_port_ptr, struct port)
 DEFPTR(pic_error_ptr, struct error)
 DEFPTR(pic_rec_ptr, struct record)
 DEFPTR(pic_cp_ptr, struct checkpoint)
+DEFPTR(pic_irep_ptr, struct irep)
 
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
 

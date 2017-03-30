@@ -448,8 +448,10 @@ typename(pic_state *pic, pic_value obj)
     return "identifier";
   case PIC_TYPE_CXT:
     return "context";
-  case PIC_TYPE_FUNC:
   case PIC_TYPE_IREP:
+    return "irep";
+  case PIC_TYPE_PROC_FUNC:
+  case PIC_TYPE_PROC_IREP:
     return "procedure";
   case PIC_TYPE_ENV:
     return "environment";

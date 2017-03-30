@@ -643,9 +643,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   struct irep *irep;
 
   /* create irep */
-  irep = pic_malloc(pic, sizeof(struct irep));
-  irep->list.next = irep->list.prev = 0;
-  irep->refc = 1;
+  irep = (struct irep *)pic_obj_alloc(pic, sizeof(struct irep), PIC_TYPE_IREP);
   irep->varg = pic_sym_p(pic, cxt->rest);
   irep->argc = pic_vec_len(pic, cxt->args) + 1;
   irep->localc = pic_vec_len(pic, cxt->locals);
@@ -660,13 +658,6 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   irep->nints = cxt->klen;
   irep->nnums = cxt->flen;
   irep->npool = cxt->plen;
-
-  if (irep->npool > 0) {
-    irep->list.next = pic->ireps.next;
-    irep->list.prev = &pic->ireps;
-    irep->list.next->prev = &irep->list;
-    irep->list.prev->next = &irep->list;
-  }
 
   return irep;
 }
@@ -1072,7 +1063,6 @@ static pic_value
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct irep *irep;
-  pic_value proc;
   size_t ai = pic_enter(pic);
 
 #if 0
@@ -1106,11 +1096,7 @@ pic_compile(pic_state *pic, pic_value obj)
   /* codegen */
   irep = pic_codegen(pic, obj);
 
-  proc = pic_make_proc_irep(pic, irep, NULL);
-
-  pic_irep_decref(pic, irep);
-
-  return proc;
+  return pic_make_proc_irep(pic, irep, NULL);
 }
 
 pic_value
