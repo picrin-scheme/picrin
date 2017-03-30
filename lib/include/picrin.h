@@ -94,7 +94,6 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 typedef struct {
   const char *type_name;
   void (*dtor)(pic_state *, void *);
-  void (*mark)(pic_state *, void *, void (*)(pic_state *, pic_value));
 } pic_data_type;
 
 bool pic_undef_p(pic_state *, pic_value); /* deprecated */

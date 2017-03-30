@@ -18,7 +18,7 @@ regexp_dtor(pic_state *pic, void *data)
   pic_free(pic, data);
 }
 
-static const pic_data_type regexp_type = { "regexp", regexp_dtor, NULL };
+static const pic_data_type regexp_type = { "regexp", regexp_dtor };
 
 static pic_value
 pic_regexp_regexp(pic_state *pic)

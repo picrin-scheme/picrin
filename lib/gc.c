@@ -191,7 +191,7 @@ pic_leave(pic_state *pic, size_t state)
 void *
 pic_alloca(pic_state *pic, size_t n)
 {
-  static const pic_data_type t = { "pic_alloca", pic_free, 0 };
+  static const pic_data_type t = { "pic_alloca", pic_free };
 
   return pic_data(pic, pic_data_value(pic, pic_malloc(pic, n), &t)); /* TODO optimize */
 }
@@ -399,9 +399,6 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_DATA: {
-    if (obj->u.data.type->mark) {
-      obj->u.data.type->mark(pic, obj->u.data.data, gc_mark);
-    }
     break;
   }
   case PIC_TYPE_DICT: {

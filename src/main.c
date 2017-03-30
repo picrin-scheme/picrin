@@ -19,12 +19,9 @@ int picrin_argc;
 char **picrin_argv;
 char **picrin_envp;
 
-extern char *picrin_native_stack_start; /* for call/cc */
-
 int
 main(int argc, char *argv[], char **envp)
 {
-  char t;
   pic_state *pic;
   pic_value e;
   int status;
@@ -34,8 +31,6 @@ main(int argc, char *argv[], char **envp)
   picrin_argc = argc;
   picrin_argv = argv;
   picrin_envp = envp;
-
-  picrin_native_stack_start = &t;
 
   pic_try {
     pic_init_picrin(pic);
