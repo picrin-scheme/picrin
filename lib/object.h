@@ -169,14 +169,6 @@ struct port {
   } file;
 };
 
-struct checkpoint {
-  OBJECT_HEADER
-  struct proc *in;
-  struct proc *out;
-  int depth;
-  struct checkpoint *prev;
-};
-
 #define TYPENAME_int   "integer"
 #define TYPENAME_blob  "bytevector"
 #define TYPENAME_char  "character"
@@ -277,7 +269,6 @@ DEFPTR(pic_env_ptr, struct env)
 DEFPTR(pic_port_ptr, struct port)
 DEFPTR(pic_error_ptr, struct error)
 DEFPTR(pic_rec_ptr, struct record)
-DEFPTR(pic_cp_ptr, struct checkpoint)
 DEFPTR(pic_irep_ptr, struct irep)
 
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
@@ -300,7 +291,6 @@ struct cont *pic_alloca_cont(pic_state *);
 pic_value pic_make_cont(pic_state *, struct cont *);
 void pic_save_point(pic_state *, struct cont *, PIC_JMPBUF *);
 void pic_exit_point(pic_state *);
-pic_value pic_dynamic_wind(pic_state *, pic_value in, pic_value thunk, pic_value out);
 
 pic_value pic_library_environment(pic_state *, const char *);
 

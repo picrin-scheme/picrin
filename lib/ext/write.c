@@ -463,8 +463,6 @@ typename(pic_state *pic, pic_value obj)
     return "ephemeron";
   case PIC_TYPE_RECORD:
     return "record";
-  case PIC_TYPE_CP:
-    return "checkpoint";
   default:
     pic_error(pic, "typename: invalid type given", 1, obj);
   }

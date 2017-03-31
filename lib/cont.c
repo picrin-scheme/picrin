@@ -9,7 +9,6 @@
 struct cont {
   PIC_JMPBUF *jmp;
 
-  struct checkpoint *cp;
   ptrdiff_t sp_offset;
   ptrdiff_t ci_offset;
   size_t arena_idx;
@@ -24,29 +23,12 @@ struct cont {
 
 static const pic_data_type cont_type = { "cont", NULL };
 
-static void
-do_wind(pic_state *pic, struct checkpoint *here, struct checkpoint *there)
-{
-  if (here == there)
-    return;
-
-  if (here->depth < there->depth) {
-    do_wind(pic, here, there->prev);
-    pic_call(pic, obj_value(pic, there->in), 0);
-  }
-  else {
-    pic_call(pic, obj_value(pic, here->out), 0);
-    do_wind(pic, here->prev, there);
-  }
-}
-
 void
 pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
 {
   cont->jmp = jmp;
 
   /* save runtime context */
-  cont->cp = pic->cp;
   cont->sp_offset = pic->sp - pic->stbase;
   cont->ci_offset = pic->ci - pic->cibase;
   cont->arena_idx = pic->arena_idx;
@@ -62,10 +44,7 @@ pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
 void
 pic_load_point(pic_state *pic, struct cont *cont)
 {
-  do_wind(pic, pic->cp, cont->cp);
-
   /* load runtime context */
-  pic->cp = cont->cp;
   pic->sp = pic->stbase + cont->sp_offset;
   pic->ci = pic->cibase + cont->ci_offset;
   pic->arena_idx = cont->arena_idx;
@@ -78,30 +57,6 @@ void
 pic_exit_point(pic_state *pic)
 {
   pic->cc = pic->cc->prev;
-}
-
-pic_value
-pic_dynamic_wind(pic_state *pic, pic_value in, pic_value thunk, pic_value out)
-{
-  struct checkpoint *here;
-  pic_value val;
-
-  pic_call(pic, in, 0);       /* enter */
-
-  here = pic->cp;
-  pic->cp = (struct checkpoint *)pic_obj_alloc(pic, sizeof(struct checkpoint), PIC_TYPE_CP);
-  pic->cp->prev = here;
-  pic->cp->depth = here->depth + 1;
-  pic->cp->in = pic_proc_ptr(pic, in);
-  pic->cp->out = pic_proc_ptr(pic, out);
-
-  val = pic_call(pic, thunk, 0);
-
-  pic->cp = here;
-
-  pic_call(pic, out, 0);      /* exit */
-
-  return val;
 }
 
 static pic_value
@@ -131,7 +86,6 @@ cont_call(pic_state *pic)
   pic_load_point(pic, cont);
 
   PIC_LONGJMP(pic, *cont->jmp, 1);
-
   PIC_UNREACHABLE();
 }
 
@@ -233,16 +187,6 @@ pic_cont_callcc(pic_state *pic)
 }
 
 static pic_value
-pic_cont_dynamic_wind(pic_state *pic)
-{
-  pic_value in, thunk, out;
-
-  pic_get_args(pic, "lll", &in, &thunk, &out);
-
-  return pic_dynamic_wind(pic, in, thunk, out);
-}
-
-static pic_value
 pic_cont_values(pic_state *pic)
 {
   int argc;
@@ -276,7 +220,6 @@ pic_init_cont(pic_state *pic)
 {
   pic_defun(pic, "call-with-current-continuation", pic_cont_callcc);
   pic_defun(pic, "call/cc", pic_cont_callcc);
-  pic_defun(pic, "dynamic-wind", pic_cont_dynamic_wind);
   pic_defun(pic, "values", pic_cont_values);
   pic_defun(pic, "call-with-values", pic_cont_call_with_values);
 }

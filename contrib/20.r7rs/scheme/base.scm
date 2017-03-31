@@ -739,6 +739,40 @@
 
   ;; 6.10. Control features
 
+  (define checkpoints '((0 #f . #f)))
+
+  (define (dynamic-wind in thunk out)
+    (in)
+    (set! checkpoints `((,(+ 1 (caar checkpoints)) ,in . ,out) . ,checkpoints))
+    (let ((ans (thunk)))
+      (set! checkpoints (cdr checkpoints))
+      (out)
+      ans))
+
+  (define (do-wind here there)
+    (unless (eq? here there)
+      (if (< (caar here) (caar there))
+          (begin
+            (do-wind here (cdr there))
+            ((cadr (car there))))
+          (begin
+            ((cddr (car here)))
+            (do-wind (cdr here) there)))))
+
+  (define scheme:call/cc
+    (let ((c call/cc))
+      (lambda (f)
+        (c (lambda (k)
+             (f (let ((save checkpoints))
+                  (lambda args
+                    (do-wind checkpoints save)
+                    (set! checkpoints save)
+                    (apply k args)))))))))
+
+  ;; call/cc and scheme:call/cc cannot coincide, so overwrite them
+  (set! call/cc scheme:call/cc)
+  (set! call-with-current-continuation scheme:call/cc)
+
   (export procedure?
           apply
           map

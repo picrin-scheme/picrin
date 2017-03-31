@@ -35,10 +35,10 @@ enum {
   PIC_TYPE_SYMBOL    = 28,
   PIC_TYPE_PAIR      = 29,
   PIC_TYPE_CXT       = 30,
-  PIC_TYPE_CP        = 31,
   PIC_TYPE_PROC_FUNC = 32,
   PIC_TYPE_PROC_IREP = 33,
-  PIC_TYPE_IREP      = 34
+  PIC_TYPE_IREP      = 34,
+  PIC_TYPE_MAX       = 63
 };
 
 #if !PIC_NAN_BOXING
@@ -221,7 +221,6 @@ DEFPRED(pic_env_p, PIC_TYPE_ENV)
 DEFPRED(pic_rec_p, PIC_TYPE_RECORD)
 DEFPRED(pic_sym_p, PIC_TYPE_SYMBOL)
 DEFPRED(pic_pair_p, PIC_TYPE_PAIR)
-DEFPRED(pic_cp_p, PIC_TYPE_CP)
 DEFPRED(pic_proc_func_p, PIC_TYPE_PROC_FUNC)
 DEFPRED(pic_proc_irep_p, PIC_TYPE_PROC_IREP)
 DEFPRED(pic_irep_p, PIC_TYPE_IREP)

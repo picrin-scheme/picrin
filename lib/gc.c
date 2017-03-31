@@ -32,7 +32,6 @@ struct object {
     struct context cxt;
     struct port port;
     struct error err;
-    struct checkpoint cp;
     struct irep irep;
   } u;
 };
@@ -441,18 +440,6 @@ gc_mark_object(pic_state *pic, struct object *obj)
     pic->heap->weaks = weak;
     break;
   }
-  case PIC_TYPE_CP: {
-    if (obj->u.cp.prev) {
-      gc_mark_object(pic, (struct object *)obj->u.cp.prev);
-    }
-    if (obj->u.cp.in) {
-      gc_mark_object(pic, (struct object *)obj->u.cp.in);
-    }
-    if (obj->u.cp.out) {
-      LOOP((struct object *)obj->u.cp.out);
-    }
-    break;
-  }
   default:
     PIC_UNREACHABLE();
   }
@@ -604,7 +591,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_ERROR:
   case PIC_TYPE_ID:
   case PIC_TYPE_RECORD:
-  case PIC_TYPE_CP:
   case PIC_TYPE_PROC_FUNC:
   case PIC_TYPE_PROC_IREP:
     break;

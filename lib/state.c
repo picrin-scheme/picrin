@@ -181,9 +181,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* continuation chain */
   pic->cc = NULL;
 
-  /* root block */
-  pic->cp = NULL;
-
   /* prepare VM stack */
   pic->stbase = pic->sp = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_value));
   pic->stend = pic->stbase + PIC_STACK_SIZE;
@@ -242,12 +239,6 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->globals = pic_make_weak(pic);
   pic->macros = pic_make_weak(pic);
   pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
-
-  /* root block */
-  pic->cp = (struct checkpoint *)pic_obj_alloc(pic, sizeof(struct checkpoint), PIC_TYPE_CP);
-  pic->cp->prev = NULL;
-  pic->cp->depth = 0;
-  pic->cp->in = pic->cp->out = NULL;
 
   /* user land */
   pic_deflibrary(pic, "picrin.user");
