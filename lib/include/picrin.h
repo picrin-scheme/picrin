@@ -294,23 +294,23 @@ int pic_fgetbuf(pic_state *, pic_value port, const char **buf, int *len); /* dep
 typedef void (*pic_panicf)(pic_state *, const char *msg);
 pic_panicf pic_atpanic(pic_state *, pic_panicf f);
 PIC_NORETURN void pic_panic(pic_state *, const char *msg);
-PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
+pic_value pic_raise_continuable(pic_state *pic, pic_value err);
 PIC_NORETURN void pic_raise(pic_state *, pic_value v);
-pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs); /* deprecated */
+PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
+pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 pic_value pic_get_backtrace(pic_state *); /* deprecated */
-void pic_warnf(pic_state *pic, const char *fmt, ...); /* deprecated */
 #define pic_try pic_try_(PIC_GENSYM(cont), PIC_GENSYM(jmp))
 #define pic_try_(cont, jmp)                                             \
   do {                                                                  \
-    extern pic_value pic_start_try(pic_state *, PIC_JMPBUF *);          \
-    extern void pic_end_try(pic_state *, pic_value);                    \
+    extern void pic_start_try(pic_state *, PIC_JMPBUF *);               \
+    extern void pic_end_try(pic_state *);                               \
     extern pic_value pic_err(pic_state *);                              \
     PIC_JMPBUF jmp;                                                     \
     if (PIC_SETJMP(pic, jmp) == 0) {                                    \
-      pic_value pic_try_cookie_ = pic_start_try(pic, &jmp);
+      pic_start_try(pic, &jmp);
 #define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
 #define pic_catch_(e, label)                              \
-      pic_end_try(pic, pic_try_cookie_);                  \
+      pic_end_try(pic);                                   \
     } else {                                              \
       e = pic_err(pic);                                   \
       goto label;                                         \

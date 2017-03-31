@@ -372,11 +372,9 @@
   (lambda (form env)
     (let ((formal (car (cdr form)))
           (body   (cdr (cdr form))))
-      (if (null? formal)
-          `(,the-begin ,@body)
-          (let ((bind (car formal)))
-            `(,(the 'dynamic-bind) ,(car bind) ,(cadr bind)
-              (,the-lambda () (,(the 'parameterize) ,(cdr formal) ,@body))))))))
+      `(,(the 'with-dynamic-environment)
+        (,(the 'list) ,@(map (lambda (x) `(,(the 'cons) ,(car x) ,(cadr x))) formal))
+        (,the-lambda () ,@body)))))
 
 (define-macro syntax-quote
   (lambda (form env)

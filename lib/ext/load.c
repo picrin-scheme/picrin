@@ -13,7 +13,6 @@ pic_load(pic_state *pic, pic_value port)
 
   while (! pic_eof_p(pic, form = pic_read(pic, port))) {
     pic_eval(pic, form, pic_current_library(pic));
-
     pic_leave(pic, ai);
   }
 }

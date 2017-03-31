@@ -227,6 +227,9 @@ pic_open(pic_allocf allocf, void *userdata)
   /* features */
   pic->features = pic_nil_value(pic);
 
+  /* dynamic environment */
+  pic->dyn_env = pic_invalid_value(pic);
+
   /* libraries */
   kh_init(ltable, &pic->ltable);
   pic->lib = NULL;
@@ -238,6 +241,7 @@ pic_open(pic_allocf allocf, void *userdata)
   /* root tables */
   pic->globals = pic_make_weak(pic);
   pic->macros = pic_make_weak(pic);
+  pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
 
   /* root block */
   pic->cp = (struct checkpoint *)pic_obj_alloc(pic, sizeof(struct checkpoint), PIC_TYPE_CP);
@@ -281,7 +285,8 @@ pic_close(pic_state *pic)
   pic->err = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
   pic->macros = pic_invalid_value(pic);
-  pic->features = pic_nil_value(pic);
+  pic->features = pic_invalid_value(pic);
+  pic->dyn_env = pic_invalid_value(pic);
 
   /* free all libraries */
   kh_clear(ltable, &pic->ltable);

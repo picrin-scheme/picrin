@@ -499,6 +499,9 @@ gc_mark_phase(pic_state *pic)
   /* error object */
   gc_mark(pic, pic->err);
 
+  /* dynamic environment */
+  gc_mark(pic, pic->dyn_env);
+
   /* features */
   gc_mark(pic, pic->features);
 

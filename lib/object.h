@@ -300,12 +300,11 @@ struct cont *pic_alloca_cont(pic_state *);
 pic_value pic_make_cont(pic_state *, struct cont *);
 void pic_save_point(pic_state *, struct cont *, PIC_JMPBUF *);
 void pic_exit_point(pic_state *);
-void pic_wind(pic_state *, struct checkpoint *, struct checkpoint *);
 pic_value pic_dynamic_wind(pic_state *, pic_value in, pic_value thunk, pic_value out);
 
-pic_value pic_dynamic_bind(pic_state *, pic_value var, pic_value val, pic_value thunk);
-
 pic_value pic_library_environment(pic_state *, const char *);
+
+void pic_warnf(pic_state *pic, const char *fmt, ...); /* deprecated */
 
 #if defined(__cplusplus)
 }

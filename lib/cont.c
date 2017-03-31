@@ -14,6 +14,7 @@ struct cont {
   ptrdiff_t ci_offset;
   size_t arena_idx;
   const struct code *ip;
+  pic_value dyn_env;
 
   int retc;
   pic_value *retv;
@@ -22,6 +23,22 @@ struct cont {
 };
 
 static const pic_data_type cont_type = { "cont", NULL };
+
+static void
+do_wind(pic_state *pic, struct checkpoint *here, struct checkpoint *there)
+{
+  if (here == there)
+    return;
+
+  if (here->depth < there->depth) {
+    do_wind(pic, here, there->prev);
+    pic_call(pic, obj_value(pic, there->in), 0);
+  }
+  else {
+    pic_call(pic, obj_value(pic, here->out), 0);
+    do_wind(pic, here->prev, there);
+  }
+}
 
 void
 pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
@@ -33,6 +50,7 @@ pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
   cont->sp_offset = pic->sp - pic->stbase;
   cont->ci_offset = pic->ci - pic->cibase;
   cont->arena_idx = pic->arena_idx;
+  cont->dyn_env = pic->dyn_env;
   cont->ip = pic->ip;
   cont->prev = pic->cc;
   cont->retc = 0;
@@ -44,13 +62,14 @@ pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
 void
 pic_load_point(pic_state *pic, struct cont *cont)
 {
-  pic_wind(pic, pic->cp, cont->cp);
+  do_wind(pic, pic->cp, cont->cp);
 
   /* load runtime context */
   pic->cp = cont->cp;
   pic->sp = pic->stbase + cont->sp_offset;
   pic->ci = pic->cibase + cont->ci_offset;
   pic->arena_idx = cont->arena_idx;
+  pic->dyn_env = cont->dyn_env;
   pic->ip = cont->ip;
   pic->cc = cont->prev;
 }
@@ -59,22 +78,6 @@ void
 pic_exit_point(pic_state *pic)
 {
   pic->cc = pic->cc->prev;
-}
-
-void
-pic_wind(pic_state *pic, struct checkpoint *here, struct checkpoint *there)
-{
-  if (here == there)
-    return;
-
-  if (here->depth < there->depth) {
-    pic_wind(pic, here, there->prev);
-    pic_call(pic, obj_value(pic, there->in), 0);
-  }
-  else {
-    pic_call(pic, obj_value(pic, here->out), 0);
-    pic_wind(pic, here->prev, there);
-  }
 }
 
 pic_value

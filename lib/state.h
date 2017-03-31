@@ -47,6 +47,8 @@ struct pic_state {
 
   const struct code *ip;
 
+  pic_value dyn_env;
+
   const char *lib;
 
   pic_value features;
