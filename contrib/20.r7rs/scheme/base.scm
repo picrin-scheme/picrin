@@ -359,7 +359,7 @@
       #`(call-with-current-environment
          (lambda (env)
            (letrec
-               ((#,'rename (let ((wm (make-ephemeron)))
+               ((#,'rename (let ((wm (make-ephemeron-table)))
                              (lambda (x)
                                (let ((y (wm x)))
                                  (if y

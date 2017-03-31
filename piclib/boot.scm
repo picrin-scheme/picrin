@@ -477,8 +477,8 @@
 
 (define (transformer f)
   (lambda (form env)
-    (let ((ephemeron1 (make-ephemeron))
-          (ephemeron2 (make-ephemeron)))
+    (let ((ephemeron1 (make-ephemeron-table))
+          (ephemeron2 (make-ephemeron-table)))
       (letrec
           ((wrap (lambda (var1)
                    (let ((var2 (ephemeron1 var1)))

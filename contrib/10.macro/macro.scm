@@ -40,7 +40,7 @@
 
   (define (make-syntactic-closure env free form)
     (letrec
-        ((wrap (let ((ephemeron (make-ephemeron)))
+        ((wrap (let ((ephemeron (make-ephemeron-table)))
                  (lambda (var)
                    (let ((id (ephemeron var)))
                      (if id
@@ -102,7 +102,7 @@
   (define (er-transformer f)
     (lambda (form use-env mac-env)
       (letrec
-          ((rename (let ((ephemeron (make-ephemeron)))
+          ((rename (let ((ephemeron (make-ephemeron-table)))
                      (lambda (var)
                        (let ((id (ephemeron var)))
                          (if id
@@ -118,8 +118,8 @@
 
   (define (ir-transformer f)
     (lambda (form use-env mac-env)
-      (let ((ephemeron1 (make-ephemeron))
-            (ephemeron2 (make-ephemeron)))
+      (let ((ephemeron1 (make-ephemeron-table))
+            (ephemeron2 (make-ephemeron-table)))
         (letrec
             ((inject (lambda (var1)
                        (let ((var2 (ephemeron1 var1)))
@@ -129,7 +129,7 @@
                                (ephemeron1 var1 var2)
                                (ephemeron2 var2 var1)
                                var2)))))
-             (rename (let ((ephemeron (make-ephemeron)))
+             (rename (let ((ephemeron (make-ephemeron-table)))
                        (lambda (var)
                          (let ((id (ephemeron var)))
                            (if id

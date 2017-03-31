@@ -97,7 +97,7 @@ weak_call(pic_state *pic)
 }
 
 static pic_value
-pic_weak_make_ephemeron(pic_state *pic)
+pic_weak_make_ephemeron_table(pic_state *pic)
 {
   pic_get_args(pic, "");
 
@@ -107,5 +107,5 @@ pic_weak_make_ephemeron(pic_state *pic)
 void
 pic_init_weak(pic_state *pic)
 {
-  pic_defun(pic, "make-ephemeron", pic_weak_make_ephemeron);
+  pic_defun(pic, "make-ephemeron-table", pic_weak_make_ephemeron_table);
 }

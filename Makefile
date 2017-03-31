@@ -1,7 +1,6 @@
 LIBPICRIN_SRCS = \
 	lib/blob.c\
 	lib/bool.c\
-	lib/boot.c\
 	lib/char.c\
 	lib/cont.c\
 	lib/data.c\
@@ -20,6 +19,7 @@ LIBPICRIN_SRCS = \
 	lib/var.c\
 	lib/vector.c\
 	lib/weak.c\
+	lib/ext/boot.c\
 	lib/ext/eval.c\
 	lib/ext/lib.c\
 	lib/ext/load.c\
@@ -73,8 +73,8 @@ src/init_contrib.c:
 # libpicrin.so: $(LIBPICRIN_OBJS)
 # 	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
 
-lib/boot.c: piclib/boot.scm
-	bin/picrin-bootstrap tools/mkboot.scm < piclib/boot.scm > lib/boot.c
+lib/ext/boot.c: piclib/boot.scm
+	bin/picrin-bootstrap tools/mkboot.scm < piclib/boot.scm > lib/ext/boot.c
 
 $(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h lib/vm.h
 
@@ -93,7 +93,7 @@ test: test-contribs test-nostdlib test-issue
 
 test-contribs: picrin $(CONTRIB_TESTS)
 
-test-nostdlib: lib/boot.c
+test-nostdlib: lib/ext/boot.c
 	$(CC) -I./lib -I./lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	strip libpicrin-tiny.so
 	ls -lh libpicrin-tiny.so
@@ -119,7 +119,7 @@ install: all
 
 clean:
 	$(RM) picrin
-	$(RM) src/load_piclib.c src/init_contrib.c lib/boot.c
+	$(RM) src/load_piclib.c src/init_contrib.c lib/ext/boot.c
 	$(RM) libpicrin.so libpicrin-tiny.so
 	$(RM) $(LIBPICRIN_OBJS)
 	$(RM) $(PICRIN_OBJS)
