@@ -64,17 +64,17 @@ picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS) $(LDFLAGS)
 
 src/load_piclib.c: $(CONTRIB_LIBS)
-	perl tools/mkloader.pl $(CONTRIB_LIBS) > $@
+	perl tools/mkloader.pl $(CONTRIB_LIBS) > $@ || (rm $@; false)
 
 src/init_contrib.c:
-	perl tools/mkinit.pl $(CONTRIB_INITS) > $@
+	perl tools/mkinit.pl $(CONTRIB_INITS) > $@ || (rm $@; false)
 
 # FIXME: Undefined symbols error for _emyg_atod and _emyg_dtoa
 # libpicrin.so: $(LIBPICRIN_OBJS)
 # 	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
 
 lib/boot.c: piclib/boot.scm
-	bin/picrin-bootstrap tools/mkboot.scm < piclib/boot.scm > lib/boot.c
+	bin/picrin-bootstrap tools/mkboot.scm < piclib/boot.scm > $@ || (rm $@; false)
 
 $(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h lib/vm.h
 
