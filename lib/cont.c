@@ -44,6 +44,8 @@ pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
 void
 pic_load_point(pic_state *pic, struct cont *cont)
 {
+  pic_vm_tear_off(pic);
+
   /* load runtime context */
   pic->sp = pic->stbase + cont->sp_offset;
   pic->ci = pic->cibase + cont->ci_offset;

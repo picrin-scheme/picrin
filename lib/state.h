@@ -74,6 +74,8 @@ void pic_heap_close(pic_state *, struct heap *);
 pic_value pic_global_ref(pic_state *pic, pic_value uid);
 void pic_global_set(pic_state *pic, pic_value uid, pic_value value);
 
+void pic_vm_tear_off(pic_state *pic);
+
 #if defined(__cplusplus)
 }
 #endif
