@@ -202,17 +202,17 @@ pic_cont_values(pic_state *pic)
 static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
-  pic_value producer, consumer, *retv;
+  pic_value producer, consumer, retv[256];
   int retc;
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
   pic_call(pic, producer, 0);
 
-  retc = pic_receive(pic, 0, NULL);
-  retv = pic_alloca(pic, sizeof(pic_value) * retc);
-
-  pic_receive(pic, retc, retv);
+  retc = pic_receive(pic, 256, retv);
+  if (retc > 256) {
+    pic_error(pic, "call-with-values: too many arguments", 1, pic_int_value(pic, retc));
+  }
 
   return pic_applyk(pic, consumer, retc, retv);
 }
