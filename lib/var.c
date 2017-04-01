@@ -40,10 +40,19 @@ var_call(pic_state *pic)
 pic_value
 pic_make_var(pic_state *pic, pic_value init, pic_value conv)
 {
-  pic_value var;
+  pic_value var, env = pic->dyn_env;
 
   var = pic_lambda(pic, var_call, 1, conv);
-  pic_call(pic, var, 1, init);
+  while (1) {
+    if (pic_nil_p(pic, pic_cdr(pic, env))) { /* top dyn env */
+      if (! pic_false_p(pic, conv)) {
+        init = pic_call(pic, conv, 1, init);
+      }
+      pic_weak_set(pic, pic_car(pic, env), var, init);
+      break;
+    }
+    env = pic_cdr(pic, env);
+  }
   return var;
 }
 
