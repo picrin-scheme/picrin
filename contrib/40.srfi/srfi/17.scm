@@ -16,9 +16,9 @@
   (define setter
     (letrec ((setter
               (lambda (proc)
-                (let ((setter (dictionary-ref (attribute proc) '@@setter)))
-                  (if setter
-                      (cdr setter)
+                (let ((attr (attribute proc)))
+                  (if (dictionary-has? attr '@@setter)
+                      (dictionary-ref attr '@@setter)
                       (error "no setter found")))))
              (set-setter!
               (lambda (proc setter)

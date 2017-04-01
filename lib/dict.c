@@ -122,16 +122,23 @@ pic_dict_dictionary_p(pic_state *pic)
 }
 
 static pic_value
+pic_dict_dictionary_has_p(pic_state *pic)
+{
+  pic_value dict, key;
+
+  pic_get_args(pic, "dm", &dict, &key);
+
+  return pic_bool_value(pic, pic_dict_has(pic, dict, key));
+}
+
+static pic_value
 pic_dict_dictionary_ref(pic_state *pic)
 {
   pic_value dict, key;
 
   pic_get_args(pic, "dm", &dict, &key);
 
-  if (! pic_dict_has(pic, dict, key)) {
-    return pic_false_value(pic);
-  }
-  return pic_cons(pic, key, pic_dict_ref(pic, dict, key));
+  return pic_dict_ref(pic, dict, key);
 }
 
 static pic_value
@@ -141,14 +148,18 @@ pic_dict_dictionary_set(pic_state *pic)
 
   pic_get_args(pic, "dmo", &dict, &key, &val);
 
-  if (pic_undef_p(pic, val)) {
-    if (pic_dict_has(pic, dict, key)) {
-      pic_dict_del(pic, dict, key);
-    }
-  }
-  else {
-    pic_dict_set(pic, dict, key, val);
-  }
+  pic_dict_set(pic, dict, key, val);
+  return pic_undef_value(pic);
+}
+
+static pic_value
+pic_dict_dictionary_delete(pic_state *pic)
+{
+  pic_value dict, key;
+
+  pic_get_args(pic, "dm", &dict, &key);
+
+  pic_dict_del(pic, dict, key);
   return pic_undef_value(pic);
 }
 
@@ -262,8 +273,10 @@ pic_init_dict(pic_state *pic)
   pic_defun(pic, "make-dictionary", pic_dict_make_dictionary);
   pic_defun(pic, "dictionary?", pic_dict_dictionary_p);
   pic_defun(pic, "dictionary", pic_dict_dictionary);
+  pic_defun(pic, "dictionary-has?", pic_dict_dictionary_has_p);
   pic_defun(pic, "dictionary-ref", pic_dict_dictionary_ref);
   pic_defun(pic, "dictionary-set!", pic_dict_dictionary_set);
+  pic_defun(pic, "dictionary-delete!", pic_dict_dictionary_delete);
   pic_defun(pic, "dictionary-size", pic_dict_dictionary_size);
   pic_defun(pic, "dictionary-map", pic_dict_dictionary_map);
   pic_defun(pic, "dictionary-for-each", pic_dict_dictionary_for_each);

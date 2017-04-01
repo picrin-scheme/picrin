@@ -97,7 +97,6 @@ typedef struct {
   void (*dtor)(pic_state *, void *);
 } pic_data_type;
 
-bool pic_undef_p(pic_state *, pic_value); /* deprecated */
 bool pic_int_p(pic_state *, pic_value);
 bool pic_float_p(pic_state *, pic_value);
 bool pic_char_p(pic_state *, pic_value);

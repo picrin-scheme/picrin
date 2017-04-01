@@ -272,7 +272,7 @@ optimize_beta(pic_state *pic, pic_value expr)
   pic_protect(pic, expr);
 
   functor = pic_list_ref(pic, expr, 0);
-  if (pic_pair_p(pic, functor) && EQ(pic_car(pic, functor), "lambda")) {
+  if (pic_pair_p(pic, functor) && pic_sym_p(pic, pic_car(pic, functor)) && EQ(pic_car(pic, functor), "lambda")) {
     formals = pic_list_ref(pic, functor, 1);
     if (! pic_list_p(pic, formals))
       goto exit;              /* TODO: support ((lambda args x) 1 2) */
