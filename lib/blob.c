@@ -20,7 +20,7 @@ pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
 }
 
 unsigned char *
-pic_blob(pic_state *PIC_UNUSED(pic), pic_value blob, int *len)
+pic_blob(pic_state *pic, pic_value blob, int *len)
 {
   if (len) {
     *len = pic_blob_ptr(pic, blob)->len;

@@ -41,6 +41,10 @@ enum {
   PIC_TYPE_MAX       = 63
 };
 
+PIC_STATIC_INLINE bool pic_int_p(pic_state *, pic_value);
+PIC_STATIC_INLINE bool pic_float_p(pic_state *, pic_value);
+PIC_STATIC_INLINE bool pic_char_p(pic_state *, pic_value);
+
 #if !PIC_NAN_BOXING
 
 PIC_STATIC_INLINE pic_value
@@ -61,18 +65,21 @@ pic_type(pic_state *PIC_UNUSED(pic), pic_value v)
 PIC_STATIC_INLINE int
 pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
 {
+  assert(pic_int_p(pic, v));
   return v.u.i;
 }
 
 PIC_STATIC_INLINE double
 pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 {
+  assert(pic_float_p(v));
   return v.u.f;
 }
 
 PIC_STATIC_INLINE char
 pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
 {
+  assert(pic_char_p(v));
   return v.u.c;
 }
 
@@ -128,6 +135,7 @@ PIC_STATIC_INLINE int
 pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   union { int i; unsigned u; } u;
+  assert(pic_int_p(pic, v));
   u.u = v.v & 0xfffffffful;
   return u.i;
 }
@@ -136,6 +144,7 @@ PIC_STATIC_INLINE double
 pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 {
   union { double f; uint64_t i; } u;
+  assert(pic_float_p(pic, v));
   u.i = v.v;
   return u.f;
 }
@@ -143,6 +152,7 @@ pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 PIC_STATIC_INLINE char
 pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
 {
+  assert(pic_char_p(pic, v));
   return v.v & 0xfffffffful;
 }
 

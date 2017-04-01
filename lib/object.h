@@ -251,25 +251,31 @@ obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
 #endif  /* NAN_BOXING */
 
 #define DEFPTR(name,type)                                               \
-  PIC_STATIC_INLINE type *name(pic_state *PIC_UNUSED(pic), pic_value o) { \
+  PIC_STATIC_INLINE type *                                              \
+  pic_##name##_ptr(pic_state *PIC_UNUSED(pic), pic_value o) {           \
+    assert(pic_##name##_p(pic,o));                                      \
     return (type *) obj_ptr(pic, o);                                    \
   }
 
-DEFPTR(pic_id_ptr, struct identifier)
-DEFPTR(pic_sym_ptr, symbol)
-DEFPTR(pic_str_ptr, struct string)
-DEFPTR(pic_blob_ptr, struct blob)
-DEFPTR(pic_pair_ptr, struct pair)
-DEFPTR(pic_vec_ptr, struct vector)
-DEFPTR(pic_dict_ptr, struct dict)
-DEFPTR(pic_weak_ptr, struct weak)
-DEFPTR(pic_data_ptr, struct data)
-DEFPTR(pic_proc_ptr, struct proc)
-DEFPTR(pic_env_ptr, struct env)
-DEFPTR(pic_port_ptr, struct port)
-DEFPTR(pic_error_ptr, struct error)
-DEFPTR(pic_rec_ptr, struct record)
-DEFPTR(pic_irep_ptr, struct irep)
+#define pic_data_p(pic,o) (pic_data_p(pic,o,NULL))
+#define pic_port_p(pic,o) (pic_port_p(pic,o,NULL))
+DEFPTR(id, struct identifier)
+DEFPTR(sym, symbol)
+DEFPTR(str, struct string)
+DEFPTR(blob, struct blob)
+DEFPTR(pair, struct pair)
+DEFPTR(vec, struct vector)
+DEFPTR(dict, struct dict)
+DEFPTR(weak, struct weak)
+DEFPTR(data, struct data)
+DEFPTR(proc, struct proc)
+DEFPTR(env, struct env)
+DEFPTR(port, struct port)
+DEFPTR(error, struct error)
+DEFPTR(rec, struct record)
+DEFPTR(irep, struct irep)
+#undef pic_data_p
+#undef pic_port_p
 
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
 
