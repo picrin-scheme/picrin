@@ -341,7 +341,7 @@ pic_vm_tear_off(pic_state *pic)
 # define VM_LOOP_END } }
 #endif
 
-#define PUSH(v) (*pic->sp++ = (v))
+#define PUSH(v) ((*pic->sp = (v)), pic->sp++)
 #define POP() (*--pic->sp)
 
 #define PUSHCI() (++pic->ci)

@@ -192,7 +192,7 @@ bool pic_dict_next(pic_state *, pic_value dict, int *iter, pic_value *key, pic_v
 
 
 /*
- * ephemeron
+ * ephemeron table
  */
 
 bool pic_weak_p(pic_state *, pic_value);
