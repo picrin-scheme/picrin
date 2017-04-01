@@ -730,6 +730,7 @@ pic_read(pic_state *pic, pic_value port)
   reader_init(pic, &p);
 
   pic_try {
+    size_t ai = pic_enter(pic);
     while ((c = skip(pic, port, next(pic, port))) != EOF) {
       val = read_nullable(pic, port, c, &p);
 
