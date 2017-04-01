@@ -455,11 +455,6 @@ gc_mark_phase(pic_state *pic)
 
   assert(pic->heap->weaks == NULL);
 
-  /* checkpoint */
-  if (pic->cp) {
-    gc_mark_object(pic, (struct object *)pic->cp);
-  }
-
   /* stack */
   for (stack = pic->stbase; stack != pic->sp; ++stack) {
     gc_mark(pic, *stack);

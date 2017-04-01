@@ -36,7 +36,6 @@ struct pic_state {
   pic_allocf allocf;
   void *userdata;
 
-  struct checkpoint *cp;
   struct cont *cc;
 
   pic_value *sp;
