@@ -77,12 +77,11 @@ pic_file_delete(pic_state *pic)
 void
 pic_init_file(pic_state *pic)
 {
-  pic_deflibrary(pic, "scheme.file");
-
-  pic_defun(pic, "open-input-file", pic_file_open_input_file);
-  pic_defun(pic, "open-binary-input-file", pic_file_open_input_file);
-  pic_defun(pic, "open-output-file", pic_file_open_output_file);
-  pic_defun(pic, "open-binary-output-file", pic_file_open_output_file);
-  pic_defun(pic, "file-exists?", pic_file_exists_p);
-  pic_defun(pic, "delete-file", pic_file_delete);
+  pic_defun(pic, "scheme.base:open-input-file", pic_file_open_input_file); /* for `include' */
+  pic_defun(pic, "scheme.file:open-input-file", pic_file_open_input_file);
+  pic_defun(pic, "scheme.file:open-binary-input-file", pic_file_open_input_file);
+  pic_defun(pic, "scheme.file:open-output-file", pic_file_open_output_file);
+  pic_defun(pic, "scheme.file:open-binary-output-file", pic_file_open_output_file);
+  pic_defun(pic, "scheme.file:file-exists?", pic_file_exists_p);
+  pic_defun(pic, "scheme.file:delete-file", pic_file_delete);
 }

@@ -34,7 +34,7 @@
               (scheme eval)
               (scheme r5rs)
               (picrin macro))
-     "picrin.user"))
+     '(picrin user)))
 
   (define (repeat x)
     (let ((p (list x)))
@@ -95,7 +95,7 @@
                       (lambda (port)
                         (let next ((expr (read port)))
                           (unless (eof-object? expr)
-                            (write (eval expr "picrin.user"))
+                            (write (eval expr))
                             (newline)
                             (set! str "")
                             (next (read port))))))))))

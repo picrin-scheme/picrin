@@ -214,6 +214,12 @@ pic_str_value(pic_state *pic, const char *str, int len)
 }
 
 pic_value
+pic_cstr_value(pic_state *pic, const char *cstr)
+{
+  return pic_str_value(pic, cstr, strlen(cstr));
+}
+
+pic_value
 pic_strf_value(pic_state *pic, const char *fmt, ...)
 {
   va_list ap;

@@ -115,7 +115,7 @@ pic_value pic_bool_value(pic_state *, bool);
 pic_value pic_true_value(pic_state *);
 pic_value pic_false_value(pic_state *);
 pic_value pic_str_value(pic_state *, const char *str, int len);
-#define pic_cstr_value(pic, cstr) pic_str_value(pic, (cstr), strlen(cstr))
+pic_value pic_cstr_value(pic_state *, const char *str);
 #define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
 pic_value pic_strf_value(pic_state *, const char *fmt, ...);
 pic_value pic_vstrf_value(pic_state *, const char *fmt, va_list ap);

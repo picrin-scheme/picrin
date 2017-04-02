@@ -245,29 +245,40 @@ pic_init_readline(pic_state *pic){
   using_history();
 
   pic_deflibrary(pic, "picrin.readline");
+  pic_in_library(pic, "picrin.readline");
+  pic_export(pic, 1, "readline");
 
-  pic_defun(pic, "readline", pic_rl_readline);
+  pic_defun(pic, "picrin.readline:readline", pic_rl_readline);
 
   pic_deflibrary(pic, "picrin.readline.history");
+  pic_in_library(pic, "picrin.readline.history");
+  pic_export(pic, 19,
+             "history-length", "add-history", "stifle-history",
+             "unstifle-history", "history-stifled?",
+             "where-history", "current-history", "history-get",
+             "clear-history", "remove-history", "history-set-pos",
+             "previous-history", "next-history", "history-search",
+             "history-search-prefix", "read-history",
+             "write-history", "truncate-file", "history-expand");
 
-  /* pic_defun(pic, "history-offset", pic_rl_history_offset); */
-  pic_defun(pic, "history-length", pic_rl_history_length);
-  pic_defun(pic, "add-history", pic_rl_add_history);
-  pic_defun(pic, "stifle-history", pic_rl_stifle_history);
-  pic_defun(pic, "unstifle-history", pic_rl_unstifle_history);
-  pic_defun(pic, "history-stifled?", pic_rl_history_is_stifled);
-  pic_defun(pic, "where-history", pic_rl_where_history);
-  pic_defun(pic, "current-history", pic_rl_current_history);
-  pic_defun(pic, "history-get", pic_rl_history_get);
-  pic_defun(pic, "clear-history", pic_rl_clear_history);
-  pic_defun(pic, "remove-history", pic_rl_remove_history);
-  pic_defun(pic, "history-set-pos", pic_rl_history_set_pos);
-  pic_defun(pic, "previous-history", pic_rl_previous_history);
-  pic_defun(pic, "next-history", pic_rl_next_history);
-  pic_defun(pic, "history-search", pic_rl_history_search);
-  pic_defun(pic, "history-search-prefix", pic_rl_history_search_prefix);
-  pic_defun(pic, "read-history", pic_rl_read_history);
-  pic_defun(pic, "write-history", pic_rl_write_history);
-  pic_defun(pic, "truncate-file", pic_rl_truncate_file);
-  pic_defun(pic, "history-expand", pic_rl_history_expand);
+  /* pic_defun(pic, "picrin.readline.history:history-offset", pic_rl_history_offset); */
+  pic_defun(pic, "picrin.readline.history:history-length", pic_rl_history_length);
+  pic_defun(pic, "picrin.readline.history:add-history", pic_rl_add_history);
+  pic_defun(pic, "picrin.readline.history:stifle-history", pic_rl_stifle_history);
+  pic_defun(pic, "picrin.readline.history:unstifle-history", pic_rl_unstifle_history);
+  pic_defun(pic, "picrin.readline.history:history-stifled?", pic_rl_history_is_stifled);
+  pic_defun(pic, "picrin.readline.history:where-history", pic_rl_where_history);
+  pic_defun(pic, "picrin.readline.history:current-history", pic_rl_current_history);
+  pic_defun(pic, "picrin.readline.history:history-get", pic_rl_history_get);
+  pic_defun(pic, "picrin.readline.history:clear-history", pic_rl_clear_history);
+  pic_defun(pic, "picrin.readline.history:remove-history", pic_rl_remove_history);
+  pic_defun(pic, "picrin.readline.history:history-set-pos", pic_rl_history_set_pos);
+  pic_defun(pic, "picrin.readline.history:previous-history", pic_rl_previous_history);
+  pic_defun(pic, "picrin.readline.history:next-history", pic_rl_next_history);
+  pic_defun(pic, "picrin.readline.history:history-search", pic_rl_history_search);
+  pic_defun(pic, "picrin.readline.history:history-search-prefix", pic_rl_history_search_prefix);
+  pic_defun(pic, "picrin.readline.history:read-history", pic_rl_read_history);
+  pic_defun(pic, "picrin.readline.history:write-history", pic_rl_write_history);
+  pic_defun(pic, "picrin.readline.history:truncate-file", pic_rl_truncate_file);
+  pic_defun(pic, "picrin.readline.history:history-expand", pic_rl_history_expand);
 }

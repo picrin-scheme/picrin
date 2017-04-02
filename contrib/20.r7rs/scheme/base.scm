@@ -12,8 +12,7 @@
                 sqrt
                 nan?
                 infinite?)
-          (picrin macro)
-          (scheme file))
+          (picrin macro))
 
   ;; 4.1.2. Literal expressions
 

@@ -15,6 +15,8 @@ void
 pic_init_random(pic_state *pic)
 {
   pic_deflibrary(pic, "srfi.27");
+  pic_in_library(pic, "srfi.27");
+  pic_export(pic, 1, "random-real");
 
-  pic_defun(pic, "random-real", pic_random_real);
+  pic_defun(pic, "srfi.27:random-real", pic_random_real);
 }

@@ -1220,6 +1220,43 @@ pic_compile(pic_state *pic, pic_value obj)
 }
 
 static pic_value
+pic_eval_make_environment(pic_state *pic)
+{
+  pic_value name;
+
+  pic_get_args(pic, "m", &name);
+
+  return pic_make_env(pic, pic_sym_name(pic, name));
+}
+
+static pic_value
+pic_eval_set_identifier(pic_state *pic)
+{
+  pic_value id, uid, env;
+
+  pic_get_args(pic, "omo", &id, &uid, &env);
+
+  TYPE_CHECK(pic, id, id);
+  TYPE_CHECK(pic, env, env);
+
+  pic_set_identifier(pic, id, uid, env);
+  return pic_undef_value(pic);
+}
+
+static pic_value
+pic_eval_find_identifier(pic_state *pic)
+{
+  pic_value id, env;
+
+  pic_get_args(pic, "oo", &id, &env);
+
+  TYPE_CHECK(pic, id, id);
+  TYPE_CHECK(pic, env, env);
+
+  return pic_find_identifier(pic, id, env);
+}
+
+static pic_value
 pic_eval_eval(pic_state *pic)
 {
   pic_value program, env = default_env(pic), r, e;
@@ -1253,5 +1290,8 @@ pic_init_eval(pic_state *pic)
   add_keyword("core#begin");
   add_keyword("core#define-macro");
   pic_define(pic, "default-environment", env);
+  pic_defun(pic, "make-environment", pic_eval_make_environment);
+  pic_defun(pic, "find-identifier", pic_eval_find_identifier);
+  pic_defun(pic, "set-identifier!", pic_eval_set_identifier);
   pic_defun(pic, "eval", pic_eval_eval);
 }

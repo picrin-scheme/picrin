@@ -274,7 +274,6 @@ pic_global_ref(pic_state *pic, pic_value sym)
   pic_value val;
 
   if (! pic_dict_has(pic, pic->globals, sym)) {
-    printf("%s\n", pic_str(pic, pic_sym_name(pic, sym), 0));
     pic_error(pic, "undefined variable", 1, sym);
   }
   val = pic_dict_ref(pic, pic->globals, sym);

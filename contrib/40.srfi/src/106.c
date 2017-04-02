@@ -355,123 +355,121 @@ pic_socket_call_with_socket(pic_state *pic)
 void
 pic_init_srfi_106(pic_state *pic)
 {
-  pic_deflibrary(pic, "srfi.106");
-
-  pic_defun(pic, "socket?", pic_socket_socket_p);
-  pic_defun(pic, "make-socket", pic_socket_make_socket);
-  pic_defun(pic, "socket-accept", pic_socket_socket_accept);
-  pic_defun(pic, "socket-send", pic_socket_socket_send);
-  pic_defun(pic, "socket-recv", pic_socket_socket_recv);
-  pic_defun(pic, "socket-shutdown", pic_socket_socket_shutdown);
-  pic_defun(pic, "socket-close", pic_socket_socket_close);
-  pic_defun(pic, "socket-input-port", pic_socket_socket_input_port);
-  pic_defun(pic, "socket-output-port", pic_socket_socket_output_port);
-  pic_defun(pic, "call-with-socket", pic_socket_call_with_socket);
+  pic_defun(pic, "srfi.106:socket?", pic_socket_socket_p);
+  pic_defun(pic, "srfi.106:make-socket", pic_socket_make_socket);
+  pic_defun(pic, "srfi.106:socket-accept", pic_socket_socket_accept);
+  pic_defun(pic, "srfi.106:socket-send", pic_socket_socket_send);
+  pic_defun(pic, "srfi.106:socket-recv", pic_socket_socket_recv);
+  pic_defun(pic, "srfi.106:socket-shutdown", pic_socket_socket_shutdown);
+  pic_defun(pic, "srfi.106:socket-close", pic_socket_socket_close);
+  pic_defun(pic, "srfi.106:socket-input-port", pic_socket_socket_input_port);
+  pic_defun(pic, "srfi.106:socket-output-port", pic_socket_socket_output_port);
+  pic_defun(pic, "srfi.106:call-with-socket", pic_socket_call_with_socket);
 
 #ifdef AF_INET
-  pic_define(pic, "*af-inet*", pic_int_value(pic, AF_INET));
+  pic_define(pic, "srfi.106:*af-inet*", pic_int_value(pic, AF_INET));
 #else
-  pic_define(pic, "*af-inet*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*af-inet*", pic_false_value(pic));
 #endif
 #ifdef AF_INET6
-  pic_define(pic, "*af-inet6*", pic_int_value(pic, AF_INET6));
+  pic_define(pic, "srfi.106:*af-inet6*", pic_int_value(pic, AF_INET6));
 #else
-  pic_define(pic, "*af-inet6*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*af-inet6*", pic_false_value(pic));
 #endif
 #ifdef AF_UNSPEC
-  pic_define(pic, "*af-unspec*", pic_int_value(pic, AF_UNSPEC));
+  pic_define(pic, "srfi.106:*af-unspec*", pic_int_value(pic, AF_UNSPEC));
 #else
-  pic_define(pic, "*af-unspec*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*af-unspec*", pic_false_value(pic));
 #endif
 
 #ifdef SOCK_STREAM
-  pic_define(pic, "*sock-stream*", pic_int_value(pic, SOCK_STREAM));
+  pic_define(pic, "srfi.106:*sock-stream*", pic_int_value(pic, SOCK_STREAM));
 #else
-  pic_define(pic, "*sock-stream*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*sock-stream*", pic_false_value(pic));
 #endif
 #ifdef SOCK_DGRAM
-  pic_define(pic, "*sock-dgram*", pic_int_value(pic, SOCK_DGRAM));
+  pic_define(pic, "srfi.106:*sock-dgram*", pic_int_value(pic, SOCK_DGRAM));
 #else
-  pic_define(pic, "*sock-dgram*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*sock-dgram*", pic_false_value(pic));
 #endif
 
 #ifdef AI_CANONNAME
-  pic_define(pic, "*ai-canonname*", pic_int_value(pic, AI_CANONNAME));
+  pic_define(pic, "srfi.106:*ai-canonname*", pic_int_value(pic, AI_CANONNAME));
 #else
-  pic_define(pic, "*ai-canonname*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ai-canonname*", pic_false_value(pic));
 #endif
 #ifdef AI_NUMERICHOST
-  pic_define(pic, "*ai-numerichost*", pic_int_value(pic, AI_NUMERICHOST));
+  pic_define(pic, "srfi.106:*ai-numerichost*", pic_int_value(pic, AI_NUMERICHOST));
 #else
-  pic_define(pic, "*ai-numerichost*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ai-numerichost*", pic_false_value(pic));
 #endif
   /* AI_V4MAPPED and AI_ALL are not supported by *BSDs, even though they are defined in netdb.h. */
 #if defined(AI_V4MAPPED) && !defined(BSD)
-  pic_define(pic, "*ai-v4mapped*", pic_int_value(pic, AI_V4MAPPED));
+  pic_define(pic, "srfi.106:*ai-v4mapped*", pic_int_value(pic, AI_V4MAPPED));
 #else
-  pic_define(pic, "*ai-v4mapped*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ai-v4mapped*", pic_false_value(pic));
 #endif
 #if defined(AI_ALL) && !defined(BSD)
-  pic_define(pic, "*ai-all*", pic_int_value(pic, AI_ALL));
+  pic_define(pic, "srfi.106:*ai-all*", pic_int_value(pic, AI_ALL));
 #else
-  pic_define(pic, "*ai-all*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ai-all*", pic_false_value(pic));
 #endif
 #ifdef AI_ADDRCONFIG
-  pic_define(pic, "*ai-addrconfig*", pic_int_value(pic, AI_ADDRCONFIG));
+  pic_define(pic, "srfi.106:*ai-addrconfig*", pic_int_value(pic, AI_ADDRCONFIG));
 #else
-  pic_define(pic, "*ai-addrconfig*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ai-addrconfig*", pic_false_value(pic));
 #endif
 #ifdef AI_PASSIVE
-  pic_define(pic, "*ai-passive*", pic_int_value(pic, AI_PASSIVE));
+  pic_define(pic, "srfi.106:*ai-passive*", pic_int_value(pic, AI_PASSIVE));
 #else
-  pic_define(pic, "*ai-passive*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ai-passive*", pic_false_value(pic));
 #endif
 
 #ifdef IPPROTO_IP
-  pic_define(pic, "*ipproto-ip*", pic_int_value(pic, IPPROTO_IP));
+  pic_define(pic, "srfi.106:*ipproto-ip*", pic_int_value(pic, IPPROTO_IP));
 #else
-  pic_define(pic, "*ipproto-ip*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ipproto-ip*", pic_false_value(pic));
 #endif
 #ifdef IPPROTO_TCP
-  pic_define(pic, "*ipproto-tcp*", pic_int_value(pic, IPPROTO_TCP));
+  pic_define(pic, "srfi.106:*ipproto-tcp*", pic_int_value(pic, IPPROTO_TCP));
 #else
-  pic_define(pic, "*ipproto-tcp*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ipproto-tcp*", pic_false_value(pic));
 #endif
 #ifdef IPPROTO_UDP
-  pic_define(pic, "*ipproto-udp*", pic_int_value(pic, IPPROTO_UDP));
+  pic_define(pic, "srfi.106:*ipproto-udp*", pic_int_value(pic, IPPROTO_UDP));
 #else
-  pic_define(pic, "*ipproto-udp*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*ipproto-udp*", pic_false_value(pic));
 #endif
 
 #ifdef MSG_PEEK
-  pic_define(pic, "*msg-peek*", pic_int_value(pic, MSG_PEEK));
+  pic_define(pic, "srfi.106:*msg-peek*", pic_int_value(pic, MSG_PEEK));
 #else
-  pic_define(pic, "*msg-peek*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*msg-peek*", pic_false_value(pic));
 #endif
 #ifdef MSG_OOB
-  pic_define(pic, "*msg-oob*", pic_int_value(pic, MSG_OOB));
+  pic_define(pic, "srfi.106:*msg-oob*", pic_int_value(pic, MSG_OOB));
 #else
-  pic_define(pic, "*msg-oob*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*msg-oob*", pic_false_value(pic));
 #endif
 #ifdef MSG_WAITALL
-  pic_define(pic, "*msg-waitall*", pic_int_value(pic, MSG_WAITALL));
+  pic_define(pic, "srfi.106:*msg-waitall*", pic_int_value(pic, MSG_WAITALL));
 #else
-  pic_define(pic, "*msg-waitall*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*msg-waitall*", pic_false_value(pic));
 #endif
 
 #ifdef SHUT_RD
-  pic_define(pic, "*shut-rd*", pic_int_value(pic, SHUT_RD));
+  pic_define(pic, "srfi.106:*shut-rd*", pic_int_value(pic, SHUT_RD));
 #else
-  pic_define(pic, "*shut-rd*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*shut-rd*", pic_false_value(pic));
 #endif
 #ifdef SHUT_WR
-  pic_define(pic, "*shut-wr*", pic_int_value(pic, SHUT_WR));
+  pic_define(pic, "srfi.106:*shut-wr*", pic_int_value(pic, SHUT_WR));
 #else
-  pic_define(pic, "*shut-wr*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*shut-wr*", pic_false_value(pic));
 #endif
 #ifdef SHUT_RDWR
-  pic_define(pic, "*shut-rdwr*", pic_int_value(pic, SHUT_RDWR));
+  pic_define(pic, "srfi.106:*shut-rdwr*", pic_int_value(pic, SHUT_RDWR));
 #else
-  pic_define(pic, "*shut-rdwr*", pic_false_value(pic));
+  pic_define(pic, "srfi.106:*shut-rdwr*", pic_false_value(pic));
 #endif
 }

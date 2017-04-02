@@ -114,11 +114,9 @@ pic_system_getenvs(pic_state *pic)
 void
 pic_init_system(pic_state *pic)
 {
-  pic_deflibrary(pic, "scheme.process-context");
-
-  pic_defun(pic, "command-line", pic_system_cmdline);
-  pic_defun(pic, "exit", pic_system_exit);
-  pic_defun(pic, "emergency-exit", pic_system_emergency_exit);
-  pic_defun(pic, "get-environment-variable", pic_system_getenv);
-  pic_defun(pic, "get-environment-variables", pic_system_getenvs);
+  pic_defun(pic, "scheme.process-context:command-line", pic_system_cmdline);
+  pic_defun(pic, "scheme.process-context:exit", pic_system_exit);
+  pic_defun(pic, "scheme.process-context:emergency-exit", pic_system_emergency_exit);
+  pic_defun(pic, "scheme.process-context:get-environment-variable", pic_system_getenv);
+  pic_defun(pic, "scheme.process-context:get-environment-variables", pic_system_getenvs);
 }

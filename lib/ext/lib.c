@@ -25,7 +25,7 @@ pic_in_library(pic_state *pic, const char *lib)
 }
 
 void
-export(pic_state *pic, int n, ...)
+pic_export(pic_state *pic, int n, ...)
 {
   size_t ai = pic_enter(pic);
   va_list ap;

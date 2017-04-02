@@ -7,10 +7,12 @@
     #`(set! #,n (+ #,n 1)))
 
   (define (environment . specs)
-    (let ((lib (string-append "picrin.@@my-environment." (number->string counter))))
+    (let ((lib (string->symbol
+                (string-append "picrin.@@my-environment." (number->string counter)))))
       (inc! counter)
       (make-library lib)
-      (eval `(import ,@specs) lib)
+      (parameterize ((current-library lib))
+        (eval `(import ,@specs) lib))
       lib))
 
   (export environment eval))
