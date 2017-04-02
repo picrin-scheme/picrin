@@ -45,7 +45,7 @@ struct pic_state {
 
   khash_t(oblist) oblist;       /* string to symbol */
   int ucnt;
-  pic_value globals;            /* weak */
+  pic_value globals;            /* dict */
   pic_value macros;             /* weak */
 
   bool gc_enable;

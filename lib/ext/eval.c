@@ -460,10 +460,10 @@ normalize(pic_state *pic, pic_value expr, pic_value locals, bool in)
       var = pic_list_ref(pic, expr, 1);
 
       if (! in) {               /* global */
-        if (pic_weak_has(pic, pic->globals, var)) {
+        if (pic_dict_has(pic, pic->globals, var)) {
           pic_warnf(pic, "redefining variable: %s", pic_sym(pic, var));
         }
-        pic_weak_set(pic, pic->globals, var, pic_invalid_value(pic));
+        pic_dict_set(pic, pic->globals, var, pic_invalid_value(pic));
       } else {                  /* local */
         bool found = false;
 

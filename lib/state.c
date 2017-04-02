@@ -211,7 +211,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->err = pic_invalid_value(pic);
 
   /* root tables */
-  pic->globals = pic_make_weak(pic);
+  pic->globals = pic_make_dict(pic);
   pic->macros = pic_make_weak(pic);
   pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
 
@@ -273,11 +273,11 @@ pic_global_ref(pic_state *pic, pic_value sym)
 {
   pic_value val;
 
-  if (! pic_weak_has(pic, pic->globals, sym)) {
+  if (! pic_dict_has(pic, pic->globals, sym)) {
     printf("%s\n", pic_str(pic, pic_sym_name(pic, sym), 0));
     pic_error(pic, "undefined variable", 1, sym);
   }
-  val = pic_weak_ref(pic, pic->globals, sym);;
+  val = pic_dict_ref(pic, pic->globals, sym);
   if (pic_invalid_p(pic, val)) {
     pic_error(pic, "uninitialized global variable", 1, sym);
   }
@@ -287,10 +287,10 @@ pic_global_ref(pic_state *pic, pic_value sym)
 void
 pic_global_set(pic_state *pic, pic_value sym, pic_value value)
 {
-  if (! pic_weak_has(pic, pic->globals, sym)) {
+  if (! pic_dict_has(pic, pic->globals, sym)) {
     pic_error(pic, "undefined variable", 1, sym);
   }
-  pic_weak_set(pic, pic->globals, sym, value);
+  pic_dict_set(pic, pic->globals, sym, value);
 }
 
 pic_value
@@ -310,10 +310,10 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 {
   pic_value sym = pic_intern_cstr(pic, name);
 
-  if (pic_weak_has(pic, pic->globals, sym)) {
+  if (pic_dict_has(pic, pic->globals, sym)) {
     pic_warnf(pic, "redefining variable: %s", pic_str(pic, pic_sym_name(pic, sym), NULL));
   }
-  pic_weak_set(pic, pic->globals, sym, val);
+  pic_dict_set(pic, pic->globals, sym, val);
 }
 
 void
