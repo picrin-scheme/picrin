@@ -12,12 +12,6 @@ extern "C" {
 #include "khash.h"
 #include "vm.h"
 
-struct lib {
-  struct string *name;
-  struct env *env;
-  struct dict *exports;
-};
-
 struct callinfo {
   int argc, retc;
   const struct code *ip;
@@ -30,7 +24,6 @@ struct callinfo {
 };
 
 KHASH_DECLARE(oblist, struct string *, struct identifier *)
-KHASH_DECLARE(ltable, const char *, struct lib)
 
 struct pic_state {
   pic_allocf allocf;
@@ -48,15 +41,12 @@ struct pic_state {
 
   pic_value dyn_env;
 
-  const char *lib;
-
   pic_value features;
 
   khash_t(oblist) oblist;       /* string to symbol */
   int ucnt;
   pic_value globals;            /* weak */
   pic_value macros;             /* weak */
-  khash_t(ltable) ltable;
 
   bool gc_enable;
   struct heap *heap;

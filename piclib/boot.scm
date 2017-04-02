@@ -1,52 +1,52 @@
-(builtin:define-macro call-with-current-environment
-  (builtin:lambda (form env)
+(core#define-macro call-with-current-environment
+  (core#lambda (form env)
     (list (cadr form) env)))
 
-(builtin:define here
+(core#define here
   (call-with-current-environment
-   (builtin:lambda (env)
+   (core#lambda (env)
      env)))
 
-(builtin:define the                     ; synonym for #'var
-  (builtin:lambda (var)
+(core#define the                     ; synonym for #'var
+  (core#lambda (var)
     (make-identifier var here)))
 
 
-(builtin:define the-builtin-define (the (builtin:quote builtin:define)))
-(builtin:define the-builtin-lambda (the (builtin:quote builtin:lambda)))
-(builtin:define the-builtin-begin (the (builtin:quote builtin:begin)))
-(builtin:define the-builtin-quote (the (builtin:quote builtin:quote)))
-(builtin:define the-builtin-set! (the (builtin:quote builtin:set!)))
-(builtin:define the-builtin-if (the (builtin:quote builtin:if)))
-(builtin:define the-builtin-define-macro (the (builtin:quote builtin:define-macro)))
+(core#define the-builtin-define (the (core#quote core#define)))
+(core#define the-builtin-lambda (the (core#quote core#lambda)))
+(core#define the-builtin-begin (the (core#quote core#begin)))
+(core#define the-builtin-quote (the (core#quote core#quote)))
+(core#define the-builtin-set! (the (core#quote core#set!)))
+(core#define the-builtin-if (the (core#quote core#if)))
+(core#define the-builtin-define-macro (the (core#quote core#define-macro)))
 
-(builtin:define the-define (the (builtin:quote define)))
-(builtin:define the-lambda (the (builtin:quote lambda)))
-(builtin:define the-begin (the (builtin:quote begin)))
-(builtin:define the-quote (the (builtin:quote quote)))
-(builtin:define the-set! (the (builtin:quote set!)))
-(builtin:define the-if (the (builtin:quote if)))
-(builtin:define the-define-macro (the (builtin:quote define-macro)))
+(core#define the-define (the (core#quote define)))
+(core#define the-lambda (the (core#quote lambda)))
+(core#define the-begin (the (core#quote begin)))
+(core#define the-quote (the (core#quote quote)))
+(core#define the-set! (the (core#quote set!)))
+(core#define the-if (the (core#quote if)))
+(core#define the-define-macro (the (core#quote define-macro)))
 
-(builtin:define-macro quote
-  (builtin:lambda (form env)
-    (builtin:if (= (length form) 2)
+(core#define-macro quote
+  (core#lambda (form env)
+    (core#if (= (length form) 2)
       (list the-builtin-quote (cadr form))
       (error "illegal quote form" form))))
 
-(builtin:define-macro if
-  (builtin:lambda (form env)
-    ((builtin:lambda (len)
-       (builtin:if (= len 4)
+(core#define-macro if
+  (core#lambda (form env)
+    ((core#lambda (len)
+       (core#if (= len 4)
            (cons the-builtin-if (cdr form))
-           (builtin:if (= len 3)
+           (core#if (= len 3)
                (list the-builtin-if (list-ref form 1) (list-ref form 2) #undefined)
                (error "illegal if form" form))))
      (length form))))
 
-(builtin:define-macro begin
-  (builtin:lambda (form env)
-    ((builtin:lambda (len)
+(core#define-macro begin
+  (core#lambda (form env)
+    ((core#lambda (len)
        (if (= len 1)
            #undefined
            (if (= len 2)
@@ -58,16 +58,16 @@
                          (cons the-begin (cddr form)))))))
      (length form))))
 
-(builtin:define-macro set!
-  (builtin:lambda (form env)
+(core#define-macro set!
+  (core#lambda (form env)
     (if (= (length form) 3)
         (if (identifier? (cadr form))
             (cons the-builtin-set! (cdr form))
             (error "illegal set! form" form))
         (error "illegal set! form" form))))
 
-(builtin:define check-formal
-  (builtin:lambda (formal)
+(core#define check-formal
+  (core#lambda (formal)
     (if (null? formal)
         #t
         (if (identifier? formal)
@@ -78,15 +78,15 @@
                     #f)
                 #f)))))
 
-(builtin:define-macro lambda
-  (builtin:lambda (form env)
+(core#define-macro lambda
+  (core#lambda (form env)
     (if (= (length form) 1)
         (error "illegal lambda form" form)
         (if (check-formal (cadr form))
             (list the-builtin-lambda (cadr form) (cons the-begin (cddr form)))
             (error "illegal lambda form" form)))))
 
-(builtin:define-macro define
+(core#define-macro define
   (lambda (form env)
     ((lambda (len)
        (if (= len 1)
@@ -102,7 +102,7 @@
                    (error "define: binding to non-varaible object" form)))))
      (length form))))
 
-(builtin:define-macro define-macro
+(core#define-macro define-macro
   (lambda (form env)
     (if (= (length form) 3)
         (if (identifier? (cadr form))
@@ -527,156 +527,3 @@
 (define-macro let-syntax
   (lambda (form env)
     `(,(the 'letrec-syntax) ,@(cdr form))))
-
-
-;;; library primitives
-
-(define (mangle name)
-  (when (null? name)
-    (error "library name should be a list of at least one symbols" name))
-
-  (define (->string n)
-    (cond
-     ((symbol? n)
-      (let ((str (symbol->string n)))
-        (string-for-each
-         (lambda (c)
-           (when (or (char=? c #\.) (char=? c #\/))
-             (error "elements of library name may not contain '.' or '/'" n)))
-         str)
-        str))
-     ((and (number? n) (exact? n))
-      (number->string n))
-     (else
-      (error "symbol or integer is required" n))))
-
-  (define (join strs delim)
-    (let loop ((res (car strs)) (strs (cdr strs)))
-      (if (null? strs)
-          res
-          (loop (string-append res delim (car strs)) (cdr strs)))))
-
-  (join (map ->string name) "."))
-
-(define-macro define-library
-  (lambda (form _)
-    (let ((lib (mangle (cadr form)))
-          (body (cddr form)))
-      (or (find-library lib) (make-library lib))
-      (for-each (lambda (expr) (eval expr lib)) body))))
-
-(define-macro cond-expand
-  (lambda (form _)
-    (letrec
-        ((test (lambda (form)
-                 (or
-                  (eq? form 'else)
-                  (and (symbol? form)
-                       (memq form (features)))
-                  (and (pair? form)
-                       (case (car form)
-                         ((library) (find-library (mangle (cadr form))))
-                         ((not) (not (test (cadr form))))
-                         ((and) (let loop ((form (cdr form)))
-                                  (or (null? form)
-                                      (and (test (car form)) (loop (cdr form))))))
-                         ((or) (let loop ((form (cdr form)))
-                                 (and (pair? form)
-                                      (or (test (car form)) (loop (cdr form))))))
-                         (else #f)))))))
-      (let loop ((clauses (cdr form)))
-        (if (null? clauses)
-            #undefined
-            (if (test (caar clauses))
-                `(,the-begin ,@(cdar clauses))
-                (loop (cdr clauses))))))))
-
-(define-macro import
-  (lambda (form _)
-    (let ((caddr
-           (lambda (x) (car (cdr (cdr x)))))
-          (prefix
-           (lambda (prefix symbol)
-             (string->symbol
-              (string-append
-               (symbol->string prefix)
-               (symbol->string symbol)))))
-          (getlib
-           (lambda (name)
-             (let ((lib (mangle name)))
-               (if (find-library lib)
-                   lib
-                   (error "library not found" name))))))
-      (letrec
-          ((extract
-            (lambda (spec)
-              (case (car spec)
-                ((only rename prefix except)
-                 (extract (cadr spec)))
-                (else
-                 (getlib spec)))))
-           (collect
-            (lambda (spec)
-              (case (car spec)
-                ((only)
-                 (let ((alist (collect (cadr spec))))
-                   (map (lambda (var) (assq var alist)) (cddr spec))))
-                ((rename)
-                 (let ((alist (collect (cadr spec)))
-                       (renames (map (lambda (x) `((car x) . (cadr x))) (cddr spec))))
-                   (map (lambda (s) (or (assq (car s) renames) s)) alist)))
-                ((prefix)
-                 (let ((alist (collect (cadr spec))))
-                   (map (lambda (s) (cons (prefix (caddr spec) (car s)) (cdr s))) alist)))
-                ((except)
-                 (let ((alist (collect (cadr spec))))
-                   (let loop ((alist alist))
-                     (if (null? alist)
-                         '()
-                         (if (memq (caar alist) (cddr spec))
-                             (loop (cdr alist))
-                             (cons (car alist) (loop (cdr alist))))))))
-                (else
-                 (map (lambda (x) (cons x x)) (library-exports (getlib spec))))))))
-        (letrec
-            ((import
-               (lambda (spec)
-                 (let ((lib (extract spec))
-                       (alist (collect spec)))
-                   (for-each
-                    (lambda (slot)
-                      (library-import lib (cdr slot) (car slot)))
-                    alist)))))
-          (for-each import (cdr form)))))))
-
-(define-macro export
-  (lambda (form _)
-    (letrec
-        ((collect
-          (lambda (spec)
-            (cond
-             ((symbol? spec)
-              `(,spec . ,spec))
-             ((and (list? spec) (= (length spec) 3) (eq? (car spec) 'rename))
-              `(,(list-ref spec 1) . ,(list-ref spec 2)))
-             (else
-              (error "malformed export")))))
-         (export
-           (lambda (spec)
-             (let ((slot (collect spec)))
-               (library-export (car slot) (cdr slot))))))
-      (for-each export (cdr form)))))
-
-(export define lambda quote set! if begin define-macro
-        let let* letrec letrec*
-        let-values let*-values define-values
-        quasiquote unquote unquote-splicing
-        and or
-        cond case else =>
-        do when unless
-        parameterize
-        define-syntax
-        syntax-quote syntax-unquote
-        syntax-quasiquote syntax-unquote-splicing
-        let-syntax letrec-syntax
-        syntax-error)

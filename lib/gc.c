@@ -406,6 +406,8 @@ gc_mark_object(pic_state *pic, struct object *obj)
     }
     if (obj->u.env.up) {
       LOOP(obj->u.env.up);
+    } else {
+      LOOP(obj->u.env.prefix);
     }
     break;
   }
@@ -450,7 +452,6 @@ gc_mark_phase(pic_state *pic)
 {
   pic_value *stack;
   struct callinfo *ci;
-  int it;
   size_t j;
 
   assert(pic->heap->weaks == NULL);
@@ -486,16 +487,6 @@ gc_mark_phase(pic_state *pic)
 
   /* features */
   gc_mark(pic, pic->features);
-
-  /* library table */
-  for (it = kh_begin(&pic->ltable); it != kh_end(&pic->ltable); ++it) {
-    if (! kh_exist(&pic->ltable, it)) {
-      continue;
-    }
-    gc_mark_object(pic, (struct object *)kh_val(&pic->ltable, it).name);
-    gc_mark_object(pic, (struct object *)kh_val(&pic->ltable, it).env);
-    gc_mark_object(pic, (struct object *)kh_val(&pic->ltable, it).exports);
-  }
 
   /* weak maps */
   do {

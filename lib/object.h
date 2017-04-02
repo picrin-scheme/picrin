@@ -43,7 +43,7 @@ struct env {
   OBJECT_HEADER
   khash_t(env) map;
   struct env *up;
-  struct string *lib;
+  struct string *prefix;
 };
 
 struct pair {
@@ -90,6 +90,12 @@ struct data {
   void *data;
 };
 
+struct record {
+  OBJECT_HEADER
+  pic_value type;
+  pic_value datum;
+};
+
 struct code {
   int insn;
   int a;
@@ -131,20 +137,6 @@ struct proc {
   pic_value locals[1];
 };
 
-struct record {
-  OBJECT_HEADER
-  pic_value type;
-  pic_value datum;
-};
-
-struct error {
-  OBJECT_HEADER
-  symbol *type;
-  struct string *msg;
-  pic_value irrs;
-  struct string *stack;
-};
-
 enum {
   FILE_READ  = 01,
   FILE_WRITE = 02,
@@ -167,6 +159,14 @@ struct port {
     const pic_port_type *vtable;
     int flag;                     /* mode of the file access */
   } file;
+};
+
+struct error {
+  OBJECT_HEADER
+  symbol *type;
+  struct string *msg;
+  pic_value irrs;
+  struct string *stack;
 };
 
 #define TYPENAME_int   "integer"
@@ -282,12 +282,12 @@ struct object *pic_obj_alloc(pic_state *, size_t, int type);
 pic_value pic_make_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct irep *, struct context *);
-pic_value pic_make_env(pic_state *, pic_value env);
+pic_value pic_make_env(pic_state *, pic_value prefix);
 pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 
 pic_value pic_add_identifier(pic_state *, pic_value id, pic_value env);
-void pic_put_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);
 pic_value pic_find_identifier(pic_state *, pic_value id, pic_value env);
+void pic_set_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);
 pic_value pic_id_name(pic_state *, pic_value id);
 
 struct rope *pic_rope_incref(struct rope *);
@@ -297,8 +297,6 @@ struct cont *pic_alloca_cont(pic_state *);
 pic_value pic_make_cont(pic_state *, struct cont *);
 void pic_save_point(pic_state *, struct cont *, PIC_JMPBUF *);
 void pic_exit_point(pic_state *);
-
-pic_value pic_library_environment(pic_state *, const char *);
 
 void pic_warnf(pic_state *pic, const char *fmt, ...); /* deprecated */
 

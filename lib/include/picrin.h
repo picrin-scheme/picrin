@@ -255,9 +255,9 @@ typedef struct {
 #define PIC_SEEK_END 1
 #define PIC_SEEK_SET 2
 
-#define pic_stdin(pic) pic_funcall(pic, "picrin.base", "current-input-port", 0)
-#define pic_stdout(pic) pic_funcall(pic, "picrin.base", "current-output-port", 0)
-#define pic_stderr(pic) pic_funcall(pic, "picrin.base", "current-error-port", 0)
+#define pic_stdin(pic) pic_funcall(pic, "current-input-port", 0)
+#define pic_stdout(pic) pic_funcall(pic, "current-output-port", 0)
+#define pic_stderr(pic) pic_funcall(pic, "current-error-port", 0)
 bool pic_eof_p(pic_state *, pic_value);
 pic_value pic_eof_object(pic_state *);
 bool pic_port_p(pic_state *, pic_value, const pic_port_type *type);
@@ -320,35 +320,17 @@ pic_value pic_get_backtrace(pic_state *); /* deprecated */
 
 
 /*
- * library
- */
-
-void pic_make_library(pic_state *, const char *lib);
-void pic_in_library(pic_state *, const char *lib);
-bool pic_find_library(pic_state *, const char *lib);
-const char *pic_current_library(pic_state *);
-void pic_import(pic_state *, const char *lib);
-void pic_export(pic_state *, pic_value sym);
-#define pic_deflibrary(pic, lib) do {           \
-    if (! pic_find_library(pic, lib)) {         \
-      pic_make_library(pic, lib);               \
-    }                                           \
-    pic_in_library(pic, lib);                   \
-  } while (0)
-
-
-/*
  * core language features
  */
 
 void pic_add_feature(pic_state *, const char *feature);
-void pic_define(pic_state *, const char *lib, const char *name, pic_value v);
-pic_value pic_ref(pic_state *, const char *lib, const char *name);
-void pic_set(pic_state *, const char *lib, const char *name, pic_value v);
+void pic_define(pic_state *, const char *name, pic_value v);
+pic_value pic_ref(pic_state *, const char *name);
+void pic_set(pic_state *, const char *name, pic_value v);
 pic_value pic_make_var(pic_state *, pic_value init, pic_value conv);
 void pic_defun(pic_state *, const char *name, pic_func_t f);
 void pic_defvar(pic_state *, const char *name, pic_value v);
-pic_value pic_funcall(pic_state *, const char *lib, const char *name, int n, ...);
+pic_value pic_funcall(pic_state *, const char *name, int n, ...);
 pic_value pic_values(pic_state *, int n, ...);
 pic_value pic_vvalues(pic_state *, int n, va_list);
 int pic_receive(pic_state *, int n, pic_value *retv);

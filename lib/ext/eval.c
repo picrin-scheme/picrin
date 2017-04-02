@@ -8,6 +8,126 @@
 #include "state.h"
 #include "vm.h"
 
+pic_value pic_expand(pic_state *pic, pic_value expr, pic_value env);
+
+KHASH_DEFINE(env, struct identifier *, symbol *, kh_ptr_hash_func, kh_ptr_hash_equal)
+
+pic_value
+pic_make_env(pic_state *pic, pic_value prefix)
+{
+  struct env *env;
+
+  env = (struct env *)pic_obj_alloc(pic, sizeof(struct env), PIC_TYPE_ENV);
+  env->up = NULL;
+  env->prefix = pic_str_ptr(pic, prefix);
+  kh_init(env, &env->map);
+
+  return obj_value(pic, env);
+}
+
+static pic_value
+default_env(pic_state *pic)
+{
+  return pic_ref(pic, "default-environment");
+}
+
+static pic_value
+extend_env(pic_state *pic, pic_value up)
+{
+  struct env *env;
+
+  env = (struct env *)pic_obj_alloc(pic, sizeof(struct env), PIC_TYPE_ENV);
+  env->up = pic_env_ptr(pic, up);
+  env->prefix = NULL;
+  kh_init(env, &env->map);
+
+  return obj_value(pic, env);
+}
+
+static bool
+search_scope(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
+{
+  int it;
+
+  it = kh_get(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id));
+  if (it == kh_end(&pic_env_ptr(pic, env)->map)) {
+    return false;
+  }
+  *uid = obj_value(pic, kh_val(&pic_env_ptr(pic, env)->map, it));
+  return true;
+}
+
+static bool
+search(pic_state *pic, pic_value id, pic_value env, pic_value *uid)
+{
+  struct env *e;
+
+  while (1) {
+    if (search_scope(pic, id, env, uid))
+      return true;
+    e = pic_env_ptr(pic, env)->up;
+    if (e == NULL)
+      break;
+    env = obj_value(pic, e);
+  }
+  return false;
+}
+
+pic_value
+pic_find_identifier(pic_state *pic, pic_value id, pic_value env)
+{
+  struct env *e;
+  pic_value uid;
+
+  while (! search(pic, id, env, &uid)) {
+    if (pic_sym_p(pic, id)) {
+      while (1) {
+        e = pic_env_ptr(pic, env);
+        if (e->up == NULL)
+          break;
+        env = obj_value(pic, e->up);
+      }
+      return pic_add_identifier(pic, id, env);
+    }
+    env = obj_value(pic, pic_id_ptr(pic, id)->env); /* do not overwrite id first */
+    id = obj_value(pic, pic_id_ptr(pic, id)->u.id);
+  }
+  return uid;
+}
+
+pic_value
+pic_add_identifier(pic_state *pic, pic_value id, pic_value env)
+{
+  const char *name, *prefix;
+  pic_value uid, str;
+
+  if (search_scope(pic, id, env, &uid)) {
+    return uid;
+  }
+
+  name = pic_str(pic, pic_id_name(pic, id), NULL);
+
+  if (pic_env_ptr(pic, env)->up == NULL && pic_sym_p(pic, id)) {
+    prefix = pic_str(pic, obj_value(pic, pic_env_ptr(pic, env)->prefix), NULL);
+    str = pic_strf_value(pic, "%s%s", prefix, name);
+  } else {
+    str = pic_strf_value(pic, ".%s.%d", name, pic->ucnt++);
+  }
+  uid = pic_intern(pic, str);
+
+  pic_set_identifier(pic, id, uid, env);
+
+  return uid;
+}
+
+void
+pic_set_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
+{
+  int it, ret;
+  it = kh_put(env, &pic_env_ptr(pic, env)->map, pic_id_ptr(pic, id), &ret);
+  kh_val(&pic_env_ptr(pic, env)->map, it) = pic_sym_ptr(pic, uid);
+}
+
 static pic_value pic_compile(pic_state *, pic_value);
 
 #define EQ(sym, lit) (strcmp(pic_sym(pic, sym), lit) == 0)
@@ -61,7 +181,7 @@ expand_var(pic_state *pic, pic_value id, pic_value env, pic_value deferred)
 static pic_value
 expand_quote(pic_state *pic, pic_value expr)
 {
-  return pic_cons(pic, S("quote"), pic_cdr(pic, expr));
+  return pic_cons(pic, S("core#quote"), pic_cdr(pic, expr));
 }
 
 static pic_value
@@ -119,7 +239,7 @@ expand_lambda(pic_state *pic, pic_value expr, pic_value env)
   pic_value in;
   pic_value a, deferred;
 
-  in = pic_make_env(pic, env);
+  in = extend_env(pic, env);
 
   for (a = pic_cadr(pic, expr); pic_pair_p(pic, a); a = pic_cdr(pic, a)) {
     pic_add_identifier(pic, pic_car(pic, a), in);
@@ -135,7 +255,7 @@ expand_lambda(pic_state *pic, pic_value expr, pic_value env)
 
   expand_deferred(pic, deferred, in);
 
-  return pic_list(pic, 3, S("lambda"), formal, body);
+  return pic_list(pic, 3, S("core#lambda"), formal, body);
 }
 
 static pic_value
@@ -149,7 +269,7 @@ expand_define(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 
   val = expand(pic, pic_list_ref(pic, expr, 2), env, deferred);
 
-  return pic_list(pic, 3, S("define"), uid, val);
+  return pic_list(pic, 3, S("core#define"), uid, val);
 }
 
 static pic_value
@@ -189,16 +309,16 @@ expand_node(pic_state *pic, pic_value expr, pic_value env, pic_value deferred)
 
       functor = pic_find_identifier(pic, pic_car(pic, expr), env);
 
-      if (EQ(functor, "define-macro")) {
+      if (EQ(functor, "core#define-macro")) {
         return expand_defmacro(pic, expr, env);
       }
-      else if (EQ(functor, "lambda")) {
+      else if (EQ(functor, "core#lambda")) {
         return expand_defer(pic, expr, deferred);
       }
-      else if (EQ(functor, "define")) {
+      else if (EQ(functor, "core#define")) {
         return expand_define(pic, expr, env, deferred);
       }
-      else if (EQ(functor, "quote")) {
+      else if (EQ(functor, "core#quote")) {
         return expand_quote(pic, expr);
       }
 
@@ -255,10 +375,10 @@ optimize_beta(pic_state *pic, pic_value expr)
   if (pic_sym_p(pic, pic_list_ref(pic, expr, 0))) {
     pic_value sym = pic_list_ref(pic, expr, 0);
 
-    if (EQ(sym, "quote")) {
+    if (EQ(sym, "core#quote")) {
       return expr;
-    } else if (EQ(sym, "lambda")) {
-      return pic_list(pic, 3, S("lambda"), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
+    } else if (EQ(sym, "core#lambda")) {
+      return pic_list(pic, 3, S("core#lambda"), pic_list_ref(pic, expr, 1), optimize_beta(pic, pic_list_ref(pic, expr, 2)));
     }
   }
 
@@ -272,7 +392,7 @@ optimize_beta(pic_state *pic, pic_value expr)
   pic_protect(pic, expr);
 
   functor = pic_list_ref(pic, expr, 0);
-  if (pic_pair_p(pic, functor) && pic_sym_p(pic, pic_car(pic, functor)) && EQ(pic_car(pic, functor), "lambda")) {
+  if (pic_pair_p(pic, functor) && pic_sym_p(pic, pic_car(pic, functor)) && EQ(pic_car(pic, functor), "core#lambda")) {
     formals = pic_list_ref(pic, functor, 1);
     if (! pic_list_p(pic, formals))
       goto exit;              /* TODO: support ((lambda args x) 1 2) */
@@ -281,12 +401,12 @@ optimize_beta(pic_state *pic, pic_value expr)
       goto exit;
     defs = pic_nil_value(pic);
     pic_for_each (val, args, it) {
-      pic_push(pic, pic_list(pic, 3, S("define"), pic_car(pic, formals), val), defs);
+      pic_push(pic, pic_list(pic, 3, S("core#define"), pic_car(pic, formals), val), defs);
       formals = pic_cdr(pic, formals);
     }
     expr = pic_list_ref(pic, functor, 2);
     pic_for_each (val, defs, it) {
-      expr = pic_list(pic, 3, S("begin"), val, expr);
+      expr = pic_list(pic, 3, S("core#begin"), val, expr);
     }
   }
  exit:
@@ -316,7 +436,7 @@ normalize_body(pic_state *pic, pic_value expr, bool in)
   if (! in) {
     return v;
   }
-  return pic_list(pic, 3, S("let"), pic_car(pic, locals), v);
+  return pic_list(pic, 3, S("core#let"), pic_car(pic, locals), v);
 }
 
 static pic_value
@@ -334,7 +454,7 @@ normalize(pic_state *pic, pic_value expr, pic_value locals, bool in)
   if (pic_sym_p(pic, proc)) {
     pic_value sym = proc;
 
-    if (EQ(sym, "define")) {
+    if (EQ(sym, "core#define")) {
       pic_value var, val;
 
       var = pic_list_ref(pic, expr, 1);
@@ -359,12 +479,12 @@ normalize(pic_state *pic, pic_value expr, pic_value locals, bool in)
         }
       }
       val = normalize(pic, pic_list_ref(pic, expr, 2), locals, in);
-      return pic_list(pic, 3, S("set!"), var, val);
+      return pic_list(pic, 3, S("core#set!"), var, val);
     }
-    else if (EQ(sym, "lambda")) {
-      return pic_list(pic, 3, S("lambda"), pic_list_ref(pic, expr, 1), normalize_body(pic, pic_list_ref(pic, expr, 2), true));
+    else if (EQ(sym, "core#lambda")) {
+      return pic_list(pic, 3, S("core#lambda"), pic_list_ref(pic, expr, 1), normalize_body(pic, pic_list_ref(pic, expr, 2), true));
     }
-    else if (EQ(sym, "quote")) {
+    else if (EQ(sym, "core#quote")) {
       return expr;
     }
   }
@@ -450,11 +570,11 @@ analyze_var(pic_state *pic, analyze_scope *scope, pic_value sym)
   depth = find_var(pic, scope, sym);
 
   if (depth == scope->depth) {
-    return pic_list(pic, 2, S("gref"), sym);
+    return pic_list(pic, 2, S("core#gref"), sym);
   } else if (depth == 0) {
-    return pic_list(pic, 2, S("lref"), sym);
+    return pic_list(pic, 2, S("core#lref"), sym);
   } else {
-    return pic_list(pic, 3, S("cref"), pic_int_value(pic, depth), sym);
+    return pic_list(pic, 3, S("core#cref"), pic_int_value(pic, depth), sym);
   }
 }
 
@@ -473,7 +593,7 @@ analyze_lambda(pic_state *pic, analyze_scope *up, pic_value form)
   /* analyze body */
   body = analyze(pic, scope, body);
 
-  return pic_list(pic, 5, S("lambda"), args, locals, scope->captures, body);
+  return pic_list(pic, 5, S("core#lambda"), args, locals, scope->captures, body);
 }
 
 static pic_value
@@ -491,7 +611,7 @@ analyze_list(pic_state *pic, analyze_scope *scope, pic_value obj)
 static pic_value
 analyze_call(pic_state *pic, analyze_scope *scope, pic_value obj)
 {
-  return pic_cons(pic, S("call"), analyze_list(pic, scope, obj));
+  return pic_cons(pic, S("core#call"), analyze_list(pic, scope, obj));
 }
 
 static pic_value
@@ -512,13 +632,13 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     if (pic_sym_p(pic, proc)) {
       pic_value sym = proc;
 
-      if (EQ(sym, "lambda")) {
+      if (EQ(sym, "core#lambda")) {
         return analyze_lambda(pic, scope, obj);
       }
-      else if (EQ(sym, "quote")) {
+      else if (EQ(sym, "core#quote")) {
         return obj;
       }
-      else if (EQ(sym, "begin") || EQ(sym, "set!") || EQ(sym, "if")) {
+      else if (EQ(sym, "core#begin") || EQ(sym, "core#set!") || EQ(sym, "core#if")) {
         return pic_cons(pic, pic_car(pic, obj), analyze_list(pic, scope, pic_cdr(pic, obj)));
       }
     }
@@ -526,7 +646,7 @@ analyze_node(pic_state *pic, analyze_scope *scope, pic_value obj)
     return analyze_call(pic, scope, obj);
   }
   default:
-    return pic_list(pic, 2, S("quote"), obj);
+    return pic_list(pic, 2, S("core#quote"), obj);
   }
 }
 
@@ -703,22 +823,22 @@ struct {
   int insn;
   int argc;
 } pic_vm_proc[] = {
-  { "picrin.base/cons", OP_CONS, 2 },
-  { "picrin.base/car", OP_CAR, 1 },
-  { "picrin.base/cdr", OP_CDR, 1 },
-  { "picrin.base/null?", OP_NILP, 1 },
-  { "picrin.base/symbol?", OP_SYMBOLP, 1 },
-  { "picrin.base/pair?", OP_PAIRP, 1 },
-  { "picrin.base/not", OP_NOT, 1 },
-  { "picrin.base/=", OP_EQ, 2 },
-  { "picrin.base/<", OP_LT, 2 },
-  { "picrin.base/<=", OP_LE, 2 },
-  { "picrin.base/>", OP_GT, 2 },
-  { "picrin.base/>=", OP_GE, 2 },
-  { "picrin.base/+", OP_ADD, 2 },
-  { "picrin.base/-", OP_SUB, 2 },
-  { "picrin.base/*", OP_MUL, 2 },
-  { "picrin.base//", OP_DIV, 2 }
+  { "cons", OP_CONS, 2 },
+  { "car", OP_CAR, 1 },
+  { "cdr", OP_CDR, 1 },
+  { "null?", OP_NILP, 1 },
+  { "symbol?", OP_SYMBOLP, 1 },
+  { "pair?", OP_PAIRP, 1 },
+  { "not", OP_NOT, 1 },
+  { "=", OP_EQ, 2 },
+  { "<", OP_LT, 2 },
+  { "<=", OP_LE, 2 },
+  { ">", OP_GT, 2 },
+  { ">=", OP_GE, 2 },
+  { "+", OP_ADD, 2 },
+  { "-", OP_SUB, 2 },
+  { "*", OP_MUL, 2 },
+  { "/", OP_DIV, 2 }
 };
 
 static int
@@ -794,14 +914,14 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   pic_value sym;
 
   sym = pic_car(pic, obj);
-  if (EQ(sym, "gref")) {
+  if (EQ(sym, "core#gref")) {
     pic_value name;
 
     name = pic_list_ref(pic, obj, 1);
     emit_i(pic, cxt, OP_GREF, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (EQ(sym, "cref")) {
+  else if (EQ(sym, "core#cref")) {
     pic_value name;
     int depth;
 
@@ -810,7 +930,7 @@ codegen_ref(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_r(pic, cxt, OP_CREF, depth, index_capture(pic, cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (EQ(sym, "lref")) {
+  else if (EQ(sym, "core#lref")) {
     pic_value name;
     int i;
 
@@ -836,7 +956,7 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
 
   var = pic_list_ref(pic, obj, 1);
   type = pic_list_ref(pic, var, 0);
-  if (EQ(type, "gref")) {
+  if (EQ(type, "core#gref")) {
     pic_value name;
     size_t i;
 
@@ -850,7 +970,7 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_i(pic, cxt, OP_GSET, index_global(pic, cxt, name));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (EQ(type, "cref")) {
+  else if (EQ(type, "core#cref")) {
     pic_value name;
     int depth;
 
@@ -859,7 +979,7 @@ codegen_set(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
     emit_r(pic, cxt, OP_CSET, depth, index_capture(pic, cxt, name, depth));
     emit_ret(pic, cxt, tailpos);
   }
-  else if (EQ(type, "lref")) {
+  else if (EQ(type, "core#lref")) {
     pic_value name;
     int i;
 
@@ -989,7 +1109,7 @@ codegen_call(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   pic_value elt, it, functor;
 
   functor = pic_list_ref(pic, obj, 1);
-  if (EQ(pic_list_ref(pic, functor, 0), "gref")) {
+  if (EQ(pic_list_ref(pic, functor, 0), "core#gref")) {
     pic_value sym;
     size_t i;
 
@@ -1019,25 +1139,25 @@ codegen(pic_state *pic, codegen_context *cxt, pic_value obj, bool tailpos)
   pic_value sym;
 
   sym = pic_car(pic, obj);
-  if (EQ(sym, "gref") || EQ(sym, "cref") || EQ(sym, "lref")) {
+  if (EQ(sym, "core#gref") || EQ(sym, "core#cref") || EQ(sym, "core#lref")) {
     codegen_ref(pic, cxt, obj, tailpos);
   }
-  else if (EQ(sym, "set!") || EQ(sym, "define")) {
+  else if (EQ(sym, "core#set!") || EQ(sym, "core#define")) {
     codegen_set(pic, cxt, obj, tailpos);
   }
-  else if (EQ(sym, "lambda")) {
+  else if (EQ(sym, "core#lambda")) {
     codegen_lambda(pic, cxt, obj, tailpos);
   }
-  else if (EQ(sym, "if")) {
+  else if (EQ(sym, "core#if")) {
     codegen_if(pic, cxt, obj, tailpos);
   }
-  else if (EQ(sym, "begin")) {
+  else if (EQ(sym, "core#begin")) {
     codegen_begin(pic, cxt, obj, tailpos);
   }
-  else if (EQ(sym, "quote")) {
+  else if (EQ(sym, "core#quote")) {
     codegen_quote(pic, cxt, obj, tailpos);
   }
-  else if (EQ(sym, "call")) {
+  else if (EQ(sym, "core#call")) {
     codegen_call(pic, cxt, obj, tailpos);
   }
   else {
@@ -1099,40 +1219,39 @@ pic_compile(pic_state *pic, pic_value obj)
   return pic_make_proc_irep(pic, irep, NULL);
 }
 
-pic_value
-pic_eval(pic_state *pic, pic_value program, const char *lib)
+static pic_value
+pic_eval_eval(pic_state *pic)
 {
-  const char *prev_lib = pic_current_library(pic);
-  pic_value env, r, e;
+  pic_value program, env = default_env(pic), r, e;
 
-  env = pic_library_environment(pic, lib);
+  pic_get_args(pic, "o|o", &program, &env);
 
-  pic_in_library(pic, lib);
   pic_try {
     r = pic_call(pic, pic_compile(pic, pic_expand(pic, program, env)), 0);
   }
   pic_catch(e) {
-    pic_in_library(pic, prev_lib);
     pic_raise(pic, e);
   }
-  pic_in_library(pic, prev_lib);
-
   return r;
 }
 
-static pic_value
-pic_eval_eval(pic_state *pic)
-{
-  pic_value program;
-  const char *str;
-
-  pic_get_args(pic, "oz", &program, &str);
-
-  return pic_eval(pic, program, str);
-}
+#define add_keyword(name) do {                  \
+    pic_value var;                              \
+    var = pic_intern_lit(pic, name);            \
+    pic_set_identifier(pic, var, var, env);     \
+  } while (0)
 
 void
 pic_init_eval(pic_state *pic)
 {
+  pic_value env = pic_make_env(pic, pic_lit_value(pic, ""));
+  add_keyword("core#define");
+  add_keyword("core#set!");
+  add_keyword("core#quote");
+  add_keyword("core#lambda");
+  add_keyword("core#if");
+  add_keyword("core#begin");
+  add_keyword("core#define-macro");
+  pic_define(pic, "default-environment", env);
   pic_defun(pic, "eval", pic_eval_eval);
 }

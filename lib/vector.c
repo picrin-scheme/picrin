@@ -249,7 +249,7 @@ pic_vec_vector_map(pic_state *pic)
       pic_push(pic, pic_vec_ref(pic, argv[j], i), vals);
     }
     vals = pic_reverse(pic, vals);
-    pic_vec_set(pic, vec, i, pic_funcall(pic, "picrin.base", "apply", 2, proc, vals));
+    pic_vec_set(pic, vec, i, pic_funcall(pic, "apply", 2, proc, vals));
   }
 
   return vec;
@@ -281,7 +281,7 @@ pic_vec_vector_for_each(pic_state *pic)
       pic_push(pic, pic_vec_ref(pic, argv[j], i), vals);
     }
     vals = pic_reverse(pic, vals);
-    pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
+    pic_funcall(pic, "apply", 2, proc, vals);
   }
 
   return pic_undef_value(pic);

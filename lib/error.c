@@ -28,6 +28,8 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
   pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_str(pic, err, NULL));
 }
 
+#define pic_exc(pic) pic_ref(pic, "current-exception-handlers")
+
 static pic_value
 native_exception_handler(pic_state *pic)
 {
@@ -57,7 +59,7 @@ pic_start_try(pic_state *pic, PIC_JMPBUF *jmp)
 
   /* with-exception-handler */
 
-  var = pic_ref(pic, "picrin.base", "current-exception-handlers");
+  var = pic_exc(pic);
   env = pic_make_weak(pic);
   pic_weak_set(pic, env, var, pic_cons(pic, handler, pic_call(pic, var, 0)));
   pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
@@ -97,9 +99,9 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
 static pic_value
 with_exception_handlers(pic_state *pic, pic_value handlers, pic_value thunk)
 {
-  pic_value alist, var = pic_ref(pic, "picrin.base", "current-exception-handlers");
+  pic_value alist, var = pic_exc(pic);
   alist = pic_list(pic, 1, pic_cons(pic, var, handlers));
-  return pic_funcall(pic, "picrin.base", "with-dynamic-environment", 2, alist, thunk);
+  return pic_funcall(pic, "with-dynamic-environment", 2, alist, thunk);
 }
 
 static pic_value
@@ -124,7 +126,7 @@ on_raise(pic_state *pic)
 pic_value
 pic_raise_continuable(pic_state *pic, pic_value err)
 {
-  pic_value handlers, var = pic_ref(pic, "picrin.base", "current-exception-handlers"), thunk;
+  pic_value handlers, var = pic_exc(pic), thunk;
 
   handlers = pic_call(pic, var, 0);
 
@@ -138,7 +140,7 @@ pic_raise_continuable(pic_state *pic, pic_value err)
 void
 pic_raise(pic_state *pic, pic_value err)
 {
-  pic_value handlers, var = pic_ref(pic, "picrin.base", "current-exception-handlers"), thunk;
+  pic_value handlers, var = pic_exc(pic), thunk;
 
   handlers = pic_call(pic, var, 0);
 
@@ -166,7 +168,7 @@ static pic_value
 pic_error_with_exception_handler(pic_state *pic)
 {
   pic_value handler, thunk;
-  pic_value handlers, exc = pic_ref(pic, "picrin.base", "current-exception-handlers");
+  pic_value handlers, exc = pic_exc(pic);
 
   pic_get_args(pic, "ll", &handler, &thunk);
 

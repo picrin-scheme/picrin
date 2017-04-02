@@ -2,7 +2,7 @@
  * See Copyright Notice in picrin.h
  */
 
-/** enable libc? */
+/** enable libc */
 /* #define PIC_USE_LIBC 1 */
 
 /** enable stdio */

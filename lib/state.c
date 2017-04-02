@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "picrin/extra.h"
 #include "object.h"
 #include "state.h"
 
@@ -80,13 +81,6 @@ pic_add_feature(pic_state *pic, const char *feature)
   pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
 }
 
-#define import_builtin_syntax(name) do {                \
-    pic_value nick, real;                               \
-    nick = pic_intern_lit(pic, "builtin:" name);        \
-    real = pic_intern_lit(pic, name);                   \
-    pic_put_identifier(pic, nick, real, env);           \
-  } while (0)
-
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -105,7 +99,6 @@ void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
 void pic_init_eval(pic_state *);
-void pic_init_lib(pic_state *);
 void pic_init_weak(pic_state *);
 
 void pic_boot(pic_state *);
@@ -116,19 +109,6 @@ static void
 pic_init_core(pic_state *pic)
 {
   size_t ai = pic_enter(pic);
-  pic_value env;
-
-  pic_deflibrary(pic, "picrin.base");
-
-  env = pic_library_environment(pic, pic->lib);
-
-  import_builtin_syntax("define");
-  import_builtin_syntax("set!");
-  import_builtin_syntax("quote");
-  import_builtin_syntax("lambda");
-  import_builtin_syntax("if");
-  import_builtin_syntax("begin");
-  import_builtin_syntax("define-macro");
 
   pic_init_features(pic); DONE;
   pic_init_bool(pic); DONE;
@@ -148,7 +128,6 @@ pic_init_core(pic_state *pic)
   pic_init_dict(pic); DONE;
   pic_init_record(pic); DONE;
   pic_init_eval(pic); DONE;
-  pic_init_lib(pic); DONE;
   pic_init_weak(pic); DONE;
 
 #if PIC_USE_WRITE
@@ -227,10 +206,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* dynamic environment */
   pic->dyn_env = pic_invalid_value(pic);
 
-  /* libraries */
-  kh_init(ltable, &pic->ltable);
-  pic->lib = NULL;
-
   /* raised error object */
   pic->panicf = NULL;
   pic->err = pic_invalid_value(pic);
@@ -240,15 +215,10 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->macros = pic_make_weak(pic);
   pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
 
-  /* user land */
-  pic_deflibrary(pic, "picrin.user");
-
   /* turn on GC */
   pic->gc_enable = true;
 
   pic_init_core(pic);
-
-  pic_in_library(pic, "picrin.user");
 
   pic_leave(pic, 0);            /* empty arena */
 
@@ -279,9 +249,6 @@ pic_close(pic_state *pic)
   pic->features = pic_invalid_value(pic);
   pic->dyn_env = pic_invalid_value(pic);
 
-  /* free all libraries */
-  kh_clear(ltable, &pic->ltable);
-
   /* free all heap objects */
   pic_gc(pic);
 
@@ -294,7 +261,6 @@ pic_close(pic_state *pic)
 
   /* free global stacks */
   kh_destroy(oblist, &pic->oblist);
-  kh_destroy(ltable, &pic->ltable);
 
   /* free GC arena */
   allocf(pic->userdata, pic->arena, 0);
@@ -303,90 +269,72 @@ pic_close(pic_state *pic)
 }
 
 pic_value
-pic_global_ref(pic_state *pic, pic_value uid)
+pic_global_ref(pic_state *pic, pic_value sym)
 {
   pic_value val;
 
-  if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_error(pic, "undefined variable", 1, uid);
+  if (! pic_weak_has(pic, pic->globals, sym)) {
+    printf("%s\n", pic_str(pic, pic_sym_name(pic, sym), 0));
+    pic_error(pic, "undefined variable", 1, sym);
   }
-  val = pic_weak_ref(pic, pic->globals, uid);;
+  val = pic_weak_ref(pic, pic->globals, sym);;
   if (pic_invalid_p(pic, val)) {
-    pic_error(pic, "uninitialized global variable", 1, uid);
+    pic_error(pic, "uninitialized global variable", 1, sym);
   }
   return val;
 }
 
 void
-pic_global_set(pic_state *pic, pic_value uid, pic_value value)
+pic_global_set(pic_state *pic, pic_value sym, pic_value value)
 {
-  if (! pic_weak_has(pic, pic->globals, uid)) {
-    pic_error(pic, "undefined variable", 1, uid);
+  if (! pic_weak_has(pic, pic->globals, sym)) {
+    pic_error(pic, "undefined variable", 1, sym);
   }
-  pic_weak_set(pic, pic->globals, uid, value);
+  pic_weak_set(pic, pic->globals, sym, value);
 }
 
 pic_value
-pic_ref(pic_state *pic, const char *lib, const char *name)
+pic_ref(pic_state *pic, const char *name)
 {
-  pic_value sym, env;
-
-  sym = pic_intern_cstr(pic, name);
-
-  env = pic_library_environment(pic, lib);
-
-  return pic_global_ref(pic, pic_find_identifier(pic, sym, env));
+  return pic_global_ref(pic, pic_intern_cstr(pic, name));
 }
 
 void
-pic_set(pic_state *pic, const char *lib, const char *name, pic_value val)
+pic_set(pic_state *pic, const char *name, pic_value val)
 {
-  pic_value sym, env;
-
-  sym = pic_intern_cstr(pic, name);
-
-  env = pic_library_environment(pic, lib);
-
-  pic_global_set(pic, pic_find_identifier(pic, sym, env), val);
+  pic_global_set(pic, pic_intern_cstr(pic, name), val);
 }
 
 void
-pic_define(pic_state *pic, const char *lib, const char *name, pic_value val)
+pic_define(pic_state *pic, const char *name, pic_value val)
 {
-  pic_value sym, uid, env;
+  pic_value sym = pic_intern_cstr(pic, name);
 
-  sym = pic_intern_cstr(pic, name);
-
-  env = pic_library_environment(pic, lib);
-
-  uid = pic_find_identifier(pic, sym, env);
-  if (pic_weak_has(pic, pic->globals, uid)) {
-    pic_warnf(pic, "redefining variable: %s", pic_str(pic, pic_sym_name(pic, uid), NULL));
+  if (pic_weak_has(pic, pic->globals, sym)) {
+    pic_warnf(pic, "redefining variable: %s", pic_str(pic, pic_sym_name(pic, sym), NULL));
   }
-  pic_weak_set(pic, pic->globals, uid, val);
+  pic_weak_set(pic, pic->globals, sym, val);
 }
 
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t f)
 {
-  pic_define(pic, pic_current_library(pic), name, pic_make_proc(pic, f, 0, NULL));
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_define(pic, name, pic_make_proc(pic, f, 0, NULL));
 }
 
 void
 pic_defvar(pic_state *pic, const char *name, pic_value init)
 {
-  pic_define(pic, pic_current_library(pic), name, pic_make_var(pic, init, pic_false_value(pic)));
-  pic_export(pic, pic_intern_cstr(pic, name));
+  pic_define(pic, name, pic_make_var(pic, init, pic_false_value(pic)));
 }
 
 pic_value
-pic_funcall(pic_state *pic, const char *lib, const char *name, int n, ...)
+pic_funcall(pic_state *pic, const char *name, int n, ...)
 {
   pic_value proc, r;
   va_list ap;
 
-  proc = pic_ref(pic, lib, name);
+  proc = pic_ref(pic, name);
 
   TYPE_CHECK(pic, proc, proc);
 

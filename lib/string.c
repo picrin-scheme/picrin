@@ -532,7 +532,7 @@ pic_str_string_map(pic_state *pic)
       pic_push(pic, pic_char_value(pic, pic_str(pic, argv[j], 0)[i]), vals);
     }
     vals = pic_reverse(pic, vals);
-    val = pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
+    val = pic_funcall(pic, "apply", 2, proc, vals);
 
     TYPE_CHECK(pic, val, char);
 
@@ -567,7 +567,7 @@ pic_str_string_for_each(pic_state *pic)
       pic_push(pic, pic_char_value(pic, pic_str(pic, argv[j], 0)[i]), vals);
     }
     vals = pic_reverse(pic, vals);
-    pic_funcall(pic, "picrin.base", "apply", 2, proc, vals);
+    pic_funcall(pic, "apply", 2, proc, vals);
   }
   return pic_undef_value(pic);
 }

@@ -12,7 +12,7 @@ pic_load(pic_state *pic, pic_value port)
   size_t ai = pic_enter(pic);
 
   while (! pic_eof_p(pic, form = pic_read(pic, port))) {
-    pic_eval(pic, form, pic_current_library(pic));
+    pic_funcall(pic, "eval", 1, form);
     pic_leave(pic, ai);
   }
 }
@@ -29,6 +29,5 @@ pic_load_cstr(pic_state *pic, const char *str)
     pic_fclose(pic, port);
     pic_raise(pic, e);
   }
-
   pic_fclose(pic, port);
 }

@@ -237,7 +237,7 @@ read_number(pic_state *pic, pic_value port, int c, struct reader_control *p)
 {
   pic_value str = read_atom(pic, port, c, p), num;
 
-  num = pic_funcall(pic, "picrin.base", "string->number", 1, str);
+  num = pic_funcall(pic, "string->number", 1, str);
   if (! pic_false_p(pic, num)) {
     return num;
   }

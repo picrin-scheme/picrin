@@ -35,7 +35,7 @@ main(int argc, char *argv[], char **envp)
   pic_try {
     pic_init_picrin(pic);
 
-    pic_funcall(pic, "picrin.main", "main", 0);
+    pic_funcall(pic, "picrin.main:main", 0);
 
     status = 0;
   }
