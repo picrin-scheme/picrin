@@ -212,7 +212,7 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* root tables */
   pic->globals = pic_make_dict(pic);
-  pic->macros = pic_make_weak(pic);
+  pic->macros = pic_make_dict(pic);
   pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
 
   /* turn on GC */
