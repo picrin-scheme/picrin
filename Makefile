@@ -46,7 +46,7 @@ REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
 TEST_RUNNER = picrin
 
-CFLAGS += -I./lib -I./lib/include -Wall -Wextra
+CFLAGS += -I./lib/include -Wall -Wextra
 LDFLAGS += -lm
 
 prefix ?= /usr/local

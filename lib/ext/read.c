@@ -4,7 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "object.h"
+#include "../object.h"
 
 #undef EOF
 #define EOF (-1)

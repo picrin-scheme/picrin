@@ -4,9 +4,9 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
-#include "object.h"
-#include "state.h"
-#include "vm.h"
+#include "../object.h"
+#include "../state.h"
+#include "../vm.h"
 
 pic_value pic_expand(pic_state *pic, pic_value expr, pic_value env);
 
