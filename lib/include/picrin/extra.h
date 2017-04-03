@@ -24,6 +24,8 @@ void pic_load_cstr(pic_state *, const char *);
 pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 #endif
 
+pic_value pic_compile(pic_state *, pic_value);
+
 
 /*
  * library

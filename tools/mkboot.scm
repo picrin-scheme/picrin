@@ -65,7 +65,7 @@
    "#include \"picrin/extra.h\""
    ""
    "static const char boot_rom[][80] = {"
-   ,(generate-rom "piclib/boot.scm")
+   ,(generate-rom "piclib/boot3.scm")
    "};"
    ""
    "#if PIC_USE_LIBRARY"
@@ -77,7 +77,7 @@
    "void"
    "pic_boot(pic_state *pic)"
    "{"
-   "  pic_load_cstr(pic, &boot_rom[0][0]);"
+   "  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_rom[0][0])), 0);"
    "#if PIC_USE_LIBRARY"
    "  pic_load_cstr(pic, &boot_library_rom[0][0]);"
    "#endif"

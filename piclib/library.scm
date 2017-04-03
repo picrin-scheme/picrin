@@ -105,7 +105,7 @@
         (if (null? clauses)
             #undefined
             (if (test (caar clauses))
-                `(,the-begin ,@(cdar clauses))
+                `(,(make-identifier 'begin default-environment) ,@(cdar clauses))
                 (loop (cdr clauses))))))))
 
 (define-macro import
@@ -256,7 +256,7 @@
        dictionary->alist alist->dictionary dictionary->plist plist->dictionary
        make-record record? record-type record-datum
        default-environment make-environment find-identifier set-identifier!
-       eval
+       eval compile add-macro!
        make-ephemeron-table
        write write-simple write-shared display))
     (export-keywords
