@@ -83,7 +83,7 @@ weak_call(pic_state *pic)
     if (! pic_weak_has(pic, weak, key)) {
       return pic_false_value(pic);
     }
-    return pic_cons(pic, key, pic_weak_ref(pic, weak, key));
+    return pic_weak_ref(pic, weak, key);
   } else {
     if (pic_false_p(pic, val)) {
       if (pic_weak_has(pic, weak, key)) {

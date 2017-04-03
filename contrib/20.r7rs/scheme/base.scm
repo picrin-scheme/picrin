@@ -360,12 +360,10 @@
            (letrec
                ((#,'rename (let ((wm (make-ephemeron-table)))
                              (lambda (x)
-                               (let ((y (wm x)))
-                                 (if y
-                                     (cdr y)
-                                     (let ((id (make-identifier x env)))
-                                       (wm x id)
-                                       id)))))))
+                               (or (wm x)
+                                   (let ((id (make-identifier x env)))
+                                     (wm x id)
+                                     id))))))
              (lambda #,'it
                #,(compile-rules rules))))))
 

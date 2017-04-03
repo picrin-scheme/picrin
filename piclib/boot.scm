@@ -6,26 +6,20 @@
             (ephemeron2 (make-ephemeron-table)))
         (letrec
             ((wrap (lambda (var1)
-                     (let ((var2 (ephemeron1 var1)))
-                       (if var2
-                           (cdr var2)
-                           (let ((var2 (make-identifier var1 env)))
-                             (ephemeron1 var1 var2)
-                             (ephemeron2 var2 var1)
-                             var2)))))
+                     (or (ephemeron1 var1)
+                         (let ((var2 (make-identifier var1 env)))
+                           (ephemeron1 var1 var2)
+                           (ephemeron2 var2 var1)
+                           var2))))
              (unwrap (lambda (var2)
-                       (let ((var1 (ephemeron2 var2)))
-                         (if var1
-                             (cdr var1)
-                             var2))))
+                       (or (ephemeron2 var2)
+                           var2)))
              (walk (lambda (f form)
                      (cond
                       ((identifier? form)
                        (f form))
                       ((pair? form)
                        (cons (walk f (car form)) (walk f (cdr form))))
-                      ((vector? form)
-                       (list->vector (walk f (vector->list form))))
                       (else
                        form)))))
           (let ((form (cdr form)))

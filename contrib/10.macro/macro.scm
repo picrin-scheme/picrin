@@ -42,12 +42,10 @@
     (letrec
         ((wrap (let ((ephemeron (make-ephemeron-table)))
                  (lambda (var)
-                   (let ((id (ephemeron var)))
-                     (if id
-                         (cdr id)
-                         (let ((id (make-identifier var env)))
-                           (ephemeron var id)
-                           id))))))
+                   (or (ephemeron var)
+                       (let ((id (make-identifier var env)))
+                         (ephemeron var id)
+                         id)))))
          (walk (lambda (f form)
                  (cond
                   ((identifier? form)
@@ -104,12 +102,10 @@
       (letrec
           ((rename (let ((ephemeron (make-ephemeron-table)))
                      (lambda (var)
-                       (let ((id (ephemeron var)))
-                         (if id
-                             (cdr id)
-                             (let ((id (make-identifier var mac-env)))
-                               (ephemeron var id)
-                               id))))))
+                       (or (ephemeron var)
+                           (let ((id (make-identifier var mac-env)))
+                             (ephemeron var id)
+                             id)))))
            (compare (lambda (x y)
                       (identifier=?
                        (make-identifier x use-env)
@@ -122,34 +118,26 @@
             (ephemeron2 (make-ephemeron-table)))
         (letrec
             ((inject (lambda (var1)
-                       (let ((var2 (ephemeron1 var1)))
-                         (if var2
-                             (cdr var2)
-                             (let ((var2 (make-identifier var1 use-env)))
-                               (ephemeron1 var1 var2)
-                               (ephemeron2 var2 var1)
-                               var2)))))
+                       (or (ephemeron1 var1)
+                           (let ((var2 (make-identifier var1 use-env)))
+                             (ephemeron1 var1 var2)
+                             (ephemeron2 var2 var1)
+                             var2))))
              (rename (let ((ephemeron (make-ephemeron-table)))
                        (lambda (var)
-                         (let ((id (ephemeron var)))
-                           (if id
-                               (cdr id)
-                               (let ((id (make-identifier var mac-env)))
-                                 (ephemeron var id)
-                                 id))))))
+                         (or (ephemeron var)
+                             (let ((id (make-identifier var mac-env)))
+                               (ephemeron var id)
+                               id)))))
              (flip (lambda (var2) ; unwrap if injected, wrap if not injected
-                     (let ((var1 (ephemeron2 var2)))
-                       (if var1
-                           (cdr var1)
-                           (rename var2)))))
+                     (or (ephemeron2 var2)
+                         (rename var2))))
              (walk (lambda (f form)
                      (cond
                       ((identifier? form)
                        (f form))
                       ((pair? form)
                        (cons (walk f (car form)) (walk f (cdr form))))
-                      ((vector? form)
-                       (list->vector (walk f (vector->list form))))
                       (else
                        form))))
              (compare (lambda (x y)
