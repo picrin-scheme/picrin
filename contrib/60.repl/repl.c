@@ -12,7 +12,7 @@ pic_repl_tty_p(pic_state *pic)
 }
 
 void
-pic_init_repl(pic_state *pic)
+pic_nitro_init_repl(pic_state *pic)
 {
   pic_defun(pic, "picrin.repl:tty?", pic_repl_tty_p);
 }

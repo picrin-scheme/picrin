@@ -14,6 +14,27 @@ print <<EOL;
 #include "picrin.h"
 #include "picrin/extra.h"
 
+void
+pic_eval_native(pic_state *pic, const char *str)
+{
+  pic_value port = pic_fmemopen(pic, str, strlen(str), "r"), e;
+
+  pic_try {
+    size_t ai = pic_enter(pic);
+    pic_value form;
+
+    while (! pic_eof_p(pic, form = pic_read(pic, port))) {
+      pic_funcall(pic, "eval", 1, form);
+      pic_leave(pic, ai);
+    }
+  }
+  pic_catch (e) {
+    pic_fclose(pic, port);
+    pic_raise(pic, e);
+  }
+  pic_fclose(pic, port);
+}
+
 EOL
 
 foreach my $file (@ARGV) {
@@ -50,7 +71,7 @@ EOL
     my $var = &escape_v($file);
     my $basename = basename($file);
     my $dirname = basename(dirname($file));
-    print "    pic_load_cstr(pic, &${var}[0][0]);\n";
+    print "    pic_eval_native(pic, &${var}[0][0]);\n";
     print<<EOL
   }
   pic_catch(e) {

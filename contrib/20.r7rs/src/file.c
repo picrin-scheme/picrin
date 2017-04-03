@@ -75,7 +75,7 @@ pic_file_delete(pic_state *pic)
 }
 
 void
-pic_init_file(pic_state *pic)
+pic_nitro_init_file(pic_state *pic)
 {
   pic_defun(pic, "scheme.base:open-input-file", pic_file_open_input_file); /* for `include' */
   pic_defun(pic, "scheme.file:open-input-file", pic_file_open_input_file);

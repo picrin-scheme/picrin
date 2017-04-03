@@ -32,7 +32,7 @@
         (string->symbol (join (map ->string name) "."))))
 
   (define current-library
-    (make-parameter '(picrin base) mangle))
+    (make-parameter '(picrin user) mangle))
 
   (define *libraries*
     (make-dictionary))

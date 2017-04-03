@@ -337,7 +337,7 @@ static const char boot_library_rom[][80] = {
 "ring-append .res.2459 .delim.2457 (car .strs.2460)) (cdr .strs.2460))))) (.loop.",
 "2458 (car .strs.2456) (cdr .strs.2456))))))) (core#if (symbol? .name.2448) .name",
 ".2448 (string->symbol (.join.2450 (map .->string.2449 .name.2448) \".\")))))))) (c",
-"ore#begin (core#define current-library (make-parameter (core#quote (picrin base)",
+"ore#begin (core#define current-library (make-parameter (core#quote (picrin user)",
 ") mangle)) (core#begin (core#define *libraries* (make-dictionary)) (core#begin (",
 "core#define find-library (core#lambda (.name.2461) (dictionary-has? *libraries* ",
 "(mangle .name.2461)))) (core#begin (core#define make-library (core#lambda (.name",
@@ -492,8 +492,8 @@ static const char boot_library_rom[][80] = {
 void
 pic_boot(pic_state *pic)
 {
-  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_rom[0][0])), 0);
+  pic_load_native(pic, &boot_rom[0][0]);
 #if PIC_USE_LIBRARY
-  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_library_rom[0][0])), 0);
+  pic_load_native(pic, &boot_library_rom[0][0]);
 #endif
 }

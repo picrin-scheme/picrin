@@ -283,7 +283,7 @@ pic_number_expt(pic_state *pic)
 }
 
 void
-pic_init_math(pic_state *pic)
+pic_nitro_init_math(pic_state *pic)
 {
   pic_deflibrary(pic, "picrin.math");
   pic_in_library(pic, "picrin.math");

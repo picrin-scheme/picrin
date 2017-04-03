@@ -10,7 +10,7 @@
 static pic_value
 pic_load_load(pic_state *pic)
 {
-  pic_value envid, port;
+  pic_value envid, port, e;
   char *fn;
   FILE *fp;
 
@@ -22,16 +22,26 @@ pic_load_load(pic_state *pic)
   }
 
   port = pic_fopen(pic, fp, "r");
+  pic_try {
+    pic_value form;
+    size_t ai = pic_enter(pic);
 
-  pic_load(pic, port);
-
+    while (! pic_eof_p(pic, form = pic_read(pic, port))) {
+      pic_funcall(pic, "eval", 1, form);
+      pic_leave(pic, ai);
+    }
+  }
+  pic_catch (e) {
+    pic_fclose(pic, port);
+    pic_raise(pic, e);
+  }
   pic_fclose(pic, port);
 
   return pic_undef_value(pic);
 }
 
 void
-pic_init_load(pic_state *pic)
+pic_nitro_init_load(pic_state *pic)
 {
   pic_defun(pic, "scheme.load:load", pic_load_load);
 }

@@ -12,7 +12,7 @@ pic_random_real(pic_state *pic)
 }
 
 void
-pic_init_random(pic_state *pic)
+pic_nitro_init_random(pic_state *pic)
 {
   pic_deflibrary(pic, "srfi.27");
   pic_in_library(pic, "srfi.27");

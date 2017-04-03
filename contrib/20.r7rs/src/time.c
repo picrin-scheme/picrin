@@ -40,7 +40,7 @@ pic_jiffies_per_second(pic_state *pic)
 }
 
 void
-pic_init_time(pic_state *pic)
+pic_nitro_init_time(pic_state *pic)
 {
   pic_defun(pic, "scheme.time:current-second", pic_current_second);
   pic_defun(pic, "scheme.time:current-jiffy", pic_current_jiffy);

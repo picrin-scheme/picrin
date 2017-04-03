@@ -18,13 +18,13 @@ pic_init_contrib(pic_state *pic)
 EOL
 
 foreach my $lib (@ARGV) {
-    print "  void pic_init_$lib(pic_state *);\n";
+    print "  void pic_nitro_init_$lib(pic_state *);\n";
 }
 
 print;
 
 foreach my $lib (@ARGV) {
-    print "  pic_init_$lib(pic);\n";
+    print "  pic_nitro_init_$lib(pic);\n";
 }
 
 print <<EOL;

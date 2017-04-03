@@ -353,7 +353,7 @@ pic_socket_call_with_socket(pic_state *pic)
 }
 
 void
-pic_init_srfi_106(pic_state *pic)
+pic_nitro_init_srfi_106(pic_state *pic)
 {
   pic_defun(pic, "srfi.106:socket?", pic_socket_socket_p);
   pic_defun(pic, "srfi.106:make-socket", pic_socket_make_socket);

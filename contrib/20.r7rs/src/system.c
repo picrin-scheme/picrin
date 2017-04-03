@@ -112,7 +112,7 @@ pic_system_getenvs(pic_state *pic)
 }
 
 void
-pic_init_system(pic_state *pic)
+pic_nitro_init_system(pic_state *pic)
 {
   pic_defun(pic, "scheme.process-context:command-line", pic_system_cmdline);
   pic_defun(pic, "scheme.process-context:exit", pic_system_exit);

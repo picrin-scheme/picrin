@@ -20,7 +20,7 @@ LIBPICRIN_SRCS = \
 	lib/vector.c\
 	lib/weak.c\
 	lib/ext/boot.c\
-	lib/ext/eval.c\
+	lib/ext/compile.c\
 	lib/ext/lib.c\
 	lib/ext/load.c\
 	lib/ext/read.c\

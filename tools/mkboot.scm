@@ -64,9 +64,9 @@
    "void"
    "pic_boot(pic_state *pic)"
    "{"
-   "  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_rom[0][0])), 0);"
+   "  pic_load_native(pic, &boot_rom[0][0]);"
    "#if PIC_USE_LIBRARY"
-   "  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_library_rom[0][0])), 0);"
+   "  pic_load_native(pic, &boot_library_rom[0][0]);"
    "#endif"
    "}"))
 

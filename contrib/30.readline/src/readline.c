@@ -241,7 +241,7 @@ pic_rl_history_expand(pic_state *pic)
 }
 
 void
-pic_init_readline(pic_state *pic){
+pic_nitro_init_readline(pic_state *pic){
   using_history();
 
   pic_deflibrary(pic, "picrin.readline");
