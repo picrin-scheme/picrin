@@ -57,6 +57,10 @@ all: picrin
 debug: CFLAGS += -O0 -g
 debug: picrin
 
+tiny-picrin: CFLAGS += -O0 -g -DPIC_USE_LIBRARY=0
+tiny-picrin: $(LIBPICRIN_OBJS) src/tiny-main.o
+	$(CC) $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) src/tiny-main.o $(LDFLAGS)
+
 include $(sort $(wildcard contrib/*/nitro.mk))
 
 picrin: CFLAGS += $(CONTRIB_DEFS)
@@ -74,7 +78,7 @@ src/init_contrib.c:
 # 	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
 
 lib/ext/boot.c: piclib/boot.scm piclib/library.scm
-	cat piclib/boot.scm piclib/library.scm | bin/picrin-bootstrap tools/mkboot.scm > lib/ext/boot.c
+	bin/picrin-bootstrap tools/mkboot.scm > lib/ext/boot.c
 
 $(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h lib/vm.h
 

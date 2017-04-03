@@ -29,9 +29,11 @@ pic_value pic_fopen(pic_state *, FILE *, const char *mode);
  * library
  */
 
+#if PIC_USE_LIBRARY
 void pic_deflibrary(pic_state *, const char *lib);
 void pic_in_library(pic_state *, const char *lib);
 void pic_export(pic_state *, int n, ...);
+#endif
 
 
 /* for debug */
