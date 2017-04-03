@@ -14,6 +14,9 @@ main()
 
   pic = pic_open(pic_default_allocf, NULL);
 
+  pic_printf(pic, "~s\n", pic_funcall(pic, "compile", 1, pic_read(pic, pic_stdin(pic))));
+  return 0;
+
   pic_try {
     while (1) {
       size_t ai = pic_enter(pic);

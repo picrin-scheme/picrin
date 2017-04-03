@@ -1,9 +1,9 @@
 (import (scheme base)
         (scheme read)
         (scheme write)
-        (scheme file))
+        (only (picrin base) compile))
 
-(define (generate-rom filename)
+(define (generate-rom)
 
   (define (with-output-to-string thunk)
     (let ((port (open-output-string)))
@@ -13,23 +13,10 @@
           (close-port port)
           s))))
 
-  (define exprs
-    (with-input-from-file filename
-      (lambda ()
-        (let loop ((acc '()))
-          (let ((e (read)))
-            (if (eof-object? e)
-                (reverse acc)
-                (loop (cons e acc))))))))
-
   (define text
     (with-output-to-string
       (lambda ()
-        (for-each
-         (lambda (e)
-           (write e)
-           (write-string " "))
-         exprs))))
+        (write (compile (read))))))
 
   (define (escape-string s)
     (with-output-to-string
@@ -65,12 +52,12 @@
    "#include \"picrin/extra.h\""
    ""
    "static const char boot_rom[][80] = {"
-   ,(generate-rom "piclib/boot3.scm")
+   ,(generate-rom)
    "};"
    ""
    "#if PIC_USE_LIBRARY"
    "static const char boot_library_rom[][80] = {"
-   ,(generate-rom "piclib/library.scm")
+   ,(generate-rom)
    "};"
    "#endif"
    ""
@@ -79,7 +66,7 @@
    "{"
    "  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_rom[0][0])), 0);"
    "#if PIC_USE_LIBRARY"
-   "  pic_load_cstr(pic, &boot_library_rom[0][0]);"
+   "  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_library_rom[0][0])), 0);"
    "#endif"
    "}"))
 
