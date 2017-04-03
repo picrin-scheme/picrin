@@ -178,11 +178,15 @@ pic_dict_dictionary_map(pic_state *pic)
 {
   pic_value dict, proc, key, ret = pic_nil_value(pic);
   int it = 0;
+  size_t ai;
 
   pic_get_args(pic, "ld", &proc, &dict);
 
+  ai = pic_enter(pic);
   while (pic_dict_next(pic, dict, &it, &key, NULL)) {
     pic_push(pic, pic_call(pic, proc, 1, key), ret);
+    pic_leave(pic, ai);
+    pic_protect(pic, ret);
   }
   return pic_reverse(pic, ret);
 }
@@ -191,12 +195,15 @@ static pic_value
 pic_dict_dictionary_for_each(pic_state *pic)
 {
   pic_value dict, proc, key;
-  int it;
+  int it = 0;
+  size_t ai;
 
   pic_get_args(pic, "ld", &proc, &dict);
 
+  ai = pic_enter(pic);
   while (pic_dict_next(pic, dict, &it, &key, NULL)) {
     pic_call(pic, proc, 1, key);
+    pic_leave(pic, ai);
   }
 
   return pic_undef_value(pic);

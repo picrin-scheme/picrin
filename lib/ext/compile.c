@@ -393,17 +393,11 @@ pic_compile_find_identifier(pic_state *pic)
 }
 
 static pic_value
-pic_compile_add_macro(pic_state *pic)
+pic_compile_macro_objects(pic_state *pic)
 {
-  pic_value id, mac, uid;
+  pic_get_args(pic, "");
 
-  pic_get_args(pic, "ol", &id, &mac);
-
-  TYPE_CHECK(pic, id, id);
-
-  uid = pic_find_identifier(pic, id, default_env(pic));
-  define_macro(pic, uid, mac);
-  return pic_undef_value(pic);
+  return pic->macros;
 }
 
 static pic_value
@@ -451,7 +445,7 @@ pic_init_compile(pic_state *pic)
   pic_defun(pic, "make-environment", pic_compile_make_environment);
   pic_defun(pic, "find-identifier", pic_compile_find_identifier);
   pic_defun(pic, "set-identifier!", pic_compile_set_identifier);
-  pic_defun(pic, "add-macro!", pic_compile_add_macro);
+  pic_defun(pic, "macro-objects", pic_compile_macro_objects);
   pic_defun(pic, "compile", pic_compile_compile);
   pic_defun(pic, "eval", pic_compile_eval);
 }

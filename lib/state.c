@@ -81,6 +81,14 @@ pic_add_feature(pic_state *pic, const char *feature)
   pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
 }
 
+static pic_value
+pic_global_objects(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic->globals;
+}
+
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -109,6 +117,8 @@ static void
 pic_init_core(pic_state *pic)
 {
   size_t ai = pic_enter(pic);
+
+  pic_defun(pic, "global-objects", pic_global_objects);
 
   pic_init_features(pic); DONE;
   pic_init_bool(pic); DONE;
