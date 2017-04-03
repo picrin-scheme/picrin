@@ -1,5 +1,5 @@
 (define-library (scheme base)
-  (import (picrin base)
+  (import (except (picrin base) compile)
           (only (picrin math)
                 abs
                 expt

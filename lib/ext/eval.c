@@ -128,7 +128,7 @@ pic_set_identifier(pic_state *pic, pic_value id, pic_value uid, pic_value env)
   kh_val(&pic_env_ptr(pic, env)->map, it) = pic_sym_ptr(pic, uid);
 }
 
-static pic_value pic_compile(pic_state *, pic_value);
+pic_value pic_compile(pic_state *, pic_value);
 
 #define EQ(sym, lit) (strcmp(pic_sym(pic, sym), lit) == 0)
 #define S(lit) (pic_intern_lit(pic, lit))
@@ -1179,7 +1179,7 @@ pic_codegen(pic_state *pic, pic_value obj)
 
 #define SAVE(pic, ai, obj) pic_leave(pic, ai); pic_protect(pic, obj)
 
-static pic_value
+pic_value
 pic_compile(pic_state *pic, pic_value obj)
 {
   struct irep *irep;
@@ -1257,6 +1257,32 @@ pic_eval_find_identifier(pic_state *pic)
 }
 
 static pic_value
+pic_eval_add_macro(pic_state *pic)
+{
+  pic_value id, mac, uid;
+
+  pic_get_args(pic, "ol", &id, &mac);
+
+  TYPE_CHECK(pic, id, id);
+
+  uid = pic_find_identifier(pic, id, default_env(pic));
+  define_macro(pic, uid, mac);
+  return pic_undef_value(pic);
+}
+
+static pic_value
+pic_eval_compile(pic_state *pic)
+{
+  pic_value program, env = default_env(pic);
+
+  pic_get_args(pic, "o|o", &program, &env);
+
+  TYPE_CHECK(pic, env, env);
+
+  return pic_expand(pic, program, env);
+}
+
+static pic_value
 pic_eval_eval(pic_state *pic)
 {
   pic_value program, env = default_env(pic), r, e;
@@ -1293,5 +1319,7 @@ pic_init_eval(pic_state *pic)
   pic_defun(pic, "make-environment", pic_eval_make_environment);
   pic_defun(pic, "find-identifier", pic_eval_find_identifier);
   pic_defun(pic, "set-identifier!", pic_eval_set_identifier);
+  pic_defun(pic, "add-macro!", pic_eval_add_macro);
+  pic_defun(pic, "compile", pic_eval_compile);
   pic_defun(pic, "eval", pic_eval_eval);
 }
