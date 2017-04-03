@@ -5,6 +5,8 @@
 #include "picrin.h"
 #include "picrin/extra.h"
 
+#if PIC_USE_LIBRARY
+
 void
 pic_deflibrary(pic_state *pic, const char *lib)
 {
@@ -38,3 +40,5 @@ pic_export(pic_state *pic, int n, ...)
   va_end(ap);
   pic_leave(pic, ai);
 }
+
+#endif

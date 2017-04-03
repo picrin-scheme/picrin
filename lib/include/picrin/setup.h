@@ -16,6 +16,10 @@
 # define PIC_USE_WRITE 1
 #endif
 
+#ifndef PIC_USE_LIBRARY
+# define PIC_USE_LIBRARY 1
+#endif
+
 #ifndef PIC_JMPBUF
 # include <setjmp.h>
 # define PIC_JMPBUF jmp_buf
