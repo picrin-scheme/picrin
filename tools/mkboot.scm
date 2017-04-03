@@ -47,26 +47,26 @@
 
 
 (for-each
- (lambda (s) (display s) (newline))
- `("#include \"picrin.h\""
-   "#include \"picrin/extra.h\""
-   ""
-   "static const char boot_rom[][80] = {"
+ display
+ `("#include \"picrin.h\"\n"
+   "#include \"picrin/extra.h\"\n"
+   "\n"
+   "static const char boot_rom[][80] = {\n"
    ,(generate-rom)
-   "};"
-   ""
-   "#if PIC_USE_LIBRARY"
-   "static const char boot_library_rom[][80] = {"
+   "};\n"
+   "\n"
+   "#if PIC_USE_LIBRARY\n"
+   "static const char boot_library_rom[][80] = {\n"
    ,(generate-rom)
-   "};"
-   "#endif"
-   ""
-   "void"
-   "pic_boot(pic_state *pic)"
-   "{"
-   "  pic_load_native(pic, &boot_rom[0][0]);"
-   "#if PIC_USE_LIBRARY"
-   "  pic_load_native(pic, &boot_library_rom[0][0]);"
-   "#endif"
-   "}"))
+   "};\n"
+   "#endif\n"
+   "\n"
+   "void\n"
+   "pic_boot(pic_state *pic)\n"
+   "{\n"
+   "  pic_load_native(pic, &boot_rom[0][0]);\n"
+   "#if PIC_USE_LIBRARY\n"
+   "  pic_load_native(pic, &boot_library_rom[0][0]);\n"
+   "#endif\n"
+   "}\n"))
 
