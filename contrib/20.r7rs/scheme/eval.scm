@@ -1,5 +1,6 @@
 (define-library (scheme eval)
-  (import (picrin base))
+  (import (picrin base)
+          (picrin macro))
 
   (define counter 0)
 

@@ -392,6 +392,10 @@
 
   ;; 4.3.3. Signaling errors in macro transformers
 
+  (define-macro syntax-error
+    (lambda (form _)
+      (apply error (cdr form))))
+
   (export syntax-error)
 
   ;; 5.3. Variable definitions

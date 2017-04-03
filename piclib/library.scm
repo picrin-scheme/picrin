@@ -210,12 +210,7 @@
           and or
           cond case else =>
           do when unless
-          parameterize
-          define-syntax
-          syntax-quote syntax-unquote
-          syntax-quasiquote syntax-unquote-splicing
-          let-syntax letrec-syntax
-          syntax-error))
+          parameterize))
       (export-keywords
        '(features
          eq? eqv? equal? not boolean? boolean=?

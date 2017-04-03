@@ -13,12 +13,13 @@
   ;; simple macro
 
   (export define-syntax
+          let-syntax letrec-syntax
           syntax-quote
           syntax-quasiquote
           syntax-unquote
           syntax-unquote-splicing)
 
-  ;; misc transformers
+  ;; other transformers
 
   (export call-with-current-environment
           make-syntactic-closure
@@ -30,9 +31,171 @@
           ir-macro-transformer)
 
 
+  ;; environment extraction
+
+
   (define-macro call-with-current-environment
     (lambda (form env)
       `(,(cadr form) ',env)))
+
+
+  ;; simple macro
+
+
+  (define-macro define-auxiliary-syntax
+    (lambda (form _)
+      `(define-macro ,(cadr form)
+         (lambda _
+           (error "invalid use of auxiliary syntax" ',(cadr form))))))
+
+  (define-auxiliary-syntax syntax-unquote)
+  (define-auxiliary-syntax syntax-unquote-splicing)
+
+  (define (transformer f)
+    (lambda (form env)
+      (let ((ephemeron1 (make-ephemeron-table))
+            (ephemeron2 (make-ephemeron-table)))
+        (letrec
+            ((wrap (lambda (var1)
+                     (or (ephemeron1 var1)
+                         (let ((var2 (make-identifier var1 env)))
+                           (ephemeron1 var1 var2)
+                           (ephemeron2 var2 var1)
+                           var2))))
+             (unwrap (lambda (var2)
+                       (or (ephemeron2 var2)
+                           var2)))
+             (walk (lambda (f form)
+                     (cond
+                      ((identifier? form)
+                       (f form))
+                      ((pair? form)
+                       (cons (walk f (car form)) (walk f (cdr form))))
+                      (else
+                       form)))))
+          (let ((form (cdr form)))
+            (walk unwrap (apply f (walk wrap form))))))))
+
+  (define (the var)
+    (call-with-current-environment
+     (lambda (env)
+       (make-identifier var env))))
+
+  (define-macro syntax-quote
+    (lambda (form env)
+      (let ((renames '()))
+        (letrec
+            ((rename (lambda (var)
+                       (let ((x (assq var renames)))
+                         (if x
+                             (cadr x)
+                             (begin
+                               (set! renames `((,var ,(make-identifier var env) (,(the 'make-identifier) ',var ',env)) . ,renames))
+                               (rename var))))))
+             (walk (lambda (f form)
+                     (cond
+                      ((identifier? form)
+                       (f form))
+                      ((pair? form)
+                       `(,(the 'cons) (walk f (car form)) (walk f (cdr form))))
+                      (else
+                       `(,(the 'quote) ,form))))))
+          (let ((form (walk rename (cadr form))))
+            `(,(the 'let)
+              ,(map cdr renames)
+              ,form))))))
+
+  (define-macro syntax-quasiquote
+    (lambda (form env)
+      (let ((renames '()))
+        (letrec
+            ((rename (lambda (var)
+                       (let ((x (assq var renames)))
+                         (if x
+                             (cadr x)
+                             (begin
+                               (set! renames `((,var ,(make-identifier var env) (,(the 'make-identifier) ',var ',env)) . ,renames))
+                               (rename var)))))))
+
+          (define (syntax-quasiquote? form)
+            (and (pair? form)
+                 (identifier? (car form))
+                 (identifier=? (the 'syntax-quasiquote) (make-identifier (car form) env))))
+
+          (define (syntax-unquote? form)
+            (and (pair? form)
+                 (identifier? (car form))
+                 (identifier=? (the 'syntax-unquote) (make-identifier (car form) env))))
+
+          (define (syntax-unquote-splicing? form)
+            (and (pair? form)
+                 (pair? (car form))
+                 (identifier? (caar form))
+                 (identifier=? (the 'syntax-unquote-splicing) (make-identifier (caar form) env))))
+
+          (define (qq depth expr)
+            (cond
+             ;; syntax-unquote
+             ((syntax-unquote? expr)
+              (if (= depth 1)
+                  (car (cdr expr))
+                  (list (the 'list)
+                        (list (the 'quote) (the 'syntax-unquote))
+                        (qq (- depth 1) (car (cdr expr))))))
+             ;; syntax-unquote-splicing
+             ((syntax-unquote-splicing? expr)
+              (if (= depth 1)
+                  (list (the 'append)
+                        (car (cdr (car expr)))
+                        (qq depth (cdr expr)))
+                  (list (the 'cons)
+                        (list (the 'list)
+                              (list (the 'quote) (the 'syntax-unquote-splicing))
+                              (qq (- depth 1) (car (cdr (car expr)))))
+                        (qq depth (cdr expr)))))
+             ;; syntax-quasiquote
+             ((syntax-quasiquote? expr)
+              (list (the 'list)
+                    (list (the 'quote) (the 'quasiquote))
+                    (qq (+ depth 1) (car (cdr expr)))))
+             ;; list
+             ((pair? expr)
+              (list (the 'cons)
+                    (qq depth (car expr))
+                    (qq depth (cdr expr))))
+             ;; identifier
+             ((identifier? expr)
+              (rename expr))
+             ;; simple datum
+             (else
+              (list (the 'quote) expr))))
+
+          (let ((body (qq 1 (cadr form))))
+            `(,(the 'let)
+              ,(map cdr renames)
+              ,body))))))
+
+  (define-macro define-syntax
+    (lambda (form env)
+      (let ((formal (car (cdr form)))
+            (body   (cdr (cdr form))))
+        (if (pair? formal)
+            `(,(the 'define-syntax) ,(car formal) (,(the 'lambda) ,(cdr formal) ,@body))
+            `(,(the 'define-macro) ,formal (,(the 'transformer) (,(the 'begin) ,@body)))))))
+
+  (define-macro letrec-syntax
+    (lambda (form env)
+      (let ((formal (car (cdr form)))
+            (body   (cdr (cdr form))))
+        `(let ()
+           ,@(map (lambda (x)
+                    `(,(the 'define-syntax) ,(car x) ,(cadr x)))
+                  formal)
+           ,@body))))
+
+  (define-macro let-syntax
+    (lambda (form env)
+      `(,(the 'letrec-syntax) ,@(cdr form))))
 
 
   ;; syntactic closure
