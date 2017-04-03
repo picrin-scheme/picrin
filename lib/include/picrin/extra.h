@@ -30,9 +30,11 @@ void pic_load_native(pic_state *pic, const char *);
  * library
  */
 
+#if PIC_USE_LIBRARY
 void pic_deflibrary(pic_state *, const char *lib);
 void pic_in_library(pic_state *, const char *lib);
 void pic_export(pic_state *, int n, ...);
+#endif
 
 
 /* for debug */
