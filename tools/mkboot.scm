@@ -55,6 +55,10 @@
    ,(generate-rom)
    "};\n"
    "\n"
+   "static const char boot_compile_rom[][80] = {\n"
+   ,(generate-rom)
+   "};\n"
+   "\n"
    "#if PIC_USE_LIBRARY\n"
    "static const char boot_library_rom[][80] = {\n"
    ,(generate-rom)
@@ -64,6 +68,7 @@
    "void\n"
    "pic_boot(pic_state *pic)\n"
    "{\n"
+   "  pic_load_native(pic, &boot_compile_rom[0][0]);\n"
    "  pic_load_native(pic, &boot_rom[0][0]);\n"
    "#if PIC_USE_LIBRARY\n"
    "  pic_load_native(pic, &boot_library_rom[0][0]);\n"

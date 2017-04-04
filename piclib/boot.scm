@@ -330,4 +330,33 @@
               (body   (cdr (cdr form))))
           `(,(the 'with-dynamic-environment)
             (,(the 'list) ,@(map (lambda (x) `(,(the 'cons) ,(car x) ,(cadr x))) formal))
-            (,the-lambda () ,@body)))))))
+            (,the-lambda () ,@body)))))
+
+    (define-transformer 'define-record-type
+      (lambda (form env)
+        (let ((type (car (cdr form)))
+              (ctor (car (cdr (cdr form))))
+              (pred (car (cdr (cdr (cdr form)))))
+              (fields (cdr (cdr (cdr (cdr form))))))
+          `(,the-begin
+            (,the-define ,ctor
+                         (,(the 'make-record) ',type
+                          (,(the 'vector) . ,(map (lambda (field) (if (memq (car field) (cdr ctor)) (car field) #undefined)) fields))))
+            (,the-define ,pred
+                         (,(the 'lambda) (obj)
+                          (,(the 'and) (,(the 'record?) obj) (,(the 'eq?) (,(the 'record-type) obj) ',type))))
+            . ,(let loop ((fields fields) (pos 0) (acc '()))
+                 (if (null? fields)
+                     acc
+                     (let ((field (car fields)))
+                       (let ((defs `((,the-define (,(cadr field) obj)
+                                                  (,the-if (,pred obj)
+                                                           (,(the 'vector-ref) (,(the 'record-datum) obj) ,pos)
+                                                           (,(the 'error) "record type mismatch" obj ',type)))
+                                     . ,(if (null? (cddr field))
+                                          '()
+                                          `((,the-define (,(car (cddr field)) obj value)
+                                                         (,the-if (,pred obj)
+                                                                  (,(the 'vector-set!) (,(the 'record-datum) obj) ,pos value)
+                                                                  (,(the 'error) "record type mismatch" obj ',type))))))))
+                         (loop (cdr fields) (+ pos 1) `(,@defs . ,acc))))))))))))

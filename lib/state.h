@@ -23,7 +23,7 @@ struct callinfo {
   struct context *up;
 };
 
-KHASH_DECLARE(oblist, struct string *, struct identifier *)
+KHASH_DECLARE(oblist, struct string *, struct symbol *)
 
 struct pic_state {
   pic_allocf allocf;
@@ -44,9 +44,7 @@ struct pic_state {
   pic_value features;
 
   khash_t(oblist) oblist;       /* string to symbol */
-  int ucnt;
   pic_value globals;            /* dict */
-  pic_value macros;             /* dict */
 
   bool gc_enable;
   struct heap *heap;

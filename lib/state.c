@@ -106,8 +106,8 @@ void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
-void pic_init_compile(pic_state *);
 void pic_init_weak(pic_state *);
+void pic_init_load(pic_state *);
 
 void pic_boot(pic_state *);
 
@@ -137,8 +137,8 @@ pic_init_core(pic_state *pic)
   pic_init_read(pic); DONE;
   pic_init_dict(pic); DONE;
   pic_init_record(pic); DONE;
-  pic_init_compile(pic); DONE;
   pic_init_weak(pic); DONE;
+  pic_init_load(pic); DONE;
 
 #if PIC_USE_WRITE
   pic_init_write(pic); DONE;
@@ -201,14 +201,8 @@ pic_open(pic_allocf allocf, void *userdata)
   /* symbol table */
   kh_init(oblist, &pic->oblist);
 
-  /* unique symbol count */
-  pic->ucnt = 0;
-
   /* global variables */
   pic->globals = pic_invalid_value(pic);
-
-  /* macros */
-  pic->macros = pic_invalid_value(pic);
 
   /* features */
   pic->features = pic_nil_value(pic);
@@ -222,7 +216,6 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* root tables */
   pic->globals = pic_make_dict(pic);
-  pic->macros = pic_make_dict(pic);
   pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
 
   /* turn on GC */
@@ -255,7 +248,6 @@ pic_close(pic_state *pic)
   pic->arena_idx = 0;
   pic->err = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
-  pic->macros = pic_invalid_value(pic);
   pic->features = pic_invalid_value(pic);
   pic->dyn_env = pic_invalid_value(pic);
 

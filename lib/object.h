@@ -26,24 +26,9 @@ struct basic {
   OBJECT_HEADER
 };
 
-struct identifier {
+struct symbol {
   OBJECT_HEADER
-  union {
-    struct string *str;
-    struct identifier *id;
-  } u;
-  struct env *env;
-};
-
-typedef struct identifier symbol;
-
-KHASH_DECLARE(env, struct identifier *, symbol *)
-
-struct env {
-  OBJECT_HEADER
-  khash_t(env) map;
-  struct env *up;
-  struct string *prefix;
+  struct string *str;
 };
 
 struct pair {
@@ -63,7 +48,7 @@ struct string {
   struct rope *rope;
 };
 
-KHASH_DECLARE(dict, symbol *, pic_value)
+KHASH_DECLARE(dict, struct symbol *, pic_value)
 
 struct dict {
   OBJECT_HEADER
@@ -163,7 +148,7 @@ struct port {
 
 struct error {
   OBJECT_HEADER
-  symbol *type;
+  struct symbol *type;
   struct string *msg;
   pic_value irrs;
   struct string *stack;
@@ -176,8 +161,6 @@ struct error {
 #define TYPENAME_error "error"
 #define TYPENAME_proc  "procedure"
 #define TYPENAME_str   "string"
-#define TYPENAME_id    "identifier"
-#define TYPENAME_env   "environment"
 #define TYPENAME_vec   "vector"
 
 #define TYPE_CHECK(pic, v, type) do {                           \
@@ -259,8 +242,7 @@ obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
 
 #define pic_data_p(pic,o) (pic_data_p(pic,o,NULL))
 #define pic_port_p(pic,o) (pic_port_p(pic,o,NULL))
-DEFPTR(id, struct identifier)
-DEFPTR(sym, symbol)
+DEFPTR(sym, struct symbol)
 DEFPTR(str, struct string)
 DEFPTR(blob, struct blob)
 DEFPTR(pair, struct pair)
@@ -269,7 +251,6 @@ DEFPTR(dict, struct dict)
 DEFPTR(weak, struct weak)
 DEFPTR(data, struct data)
 DEFPTR(proc, struct proc)
-DEFPTR(env, struct env)
 DEFPTR(port, struct port)
 DEFPTR(error, struct error)
 DEFPTR(rec, struct record)
@@ -279,16 +260,11 @@ DEFPTR(irep, struct irep)
 
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
 
-pic_value pic_make_identifier(pic_state *, pic_value id, pic_value env);
 pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct irep *, struct context *);
-pic_value pic_make_env(pic_state *, pic_value prefix);
 pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
-
-pic_value pic_add_identifier(pic_state *, pic_value id, pic_value env);
-pic_value pic_find_identifier(pic_state *, pic_value id, pic_value env);
-void pic_set_identifier(pic_state *, pic_value id, pic_value uid, pic_value env);
-pic_value pic_id_name(pic_state *, pic_value id);
+pic_value pic_record_type(pic_state *pic, pic_value record);
+pic_value pic_record_datum(pic_state *pic, pic_value record);
 
 struct rope *pic_rope_incref(struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);

@@ -20,7 +20,6 @@ LIBPICRIN_SRCS = \
 	lib/vector.c\
 	lib/weak.c\
 	lib/ext/boot.c\
-	lib/ext/compile.c\
 	lib/ext/lib.c\
 	lib/ext/load.c\
 	lib/ext/read.c\
@@ -77,8 +76,8 @@ src/init_contrib.c:
 # libpicrin.so: $(LIBPICRIN_OBJS)
 # 	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
 
-lib/ext/boot.c: piclib/boot.scm piclib/library.scm
-	cat piclib/boot.scm piclib/library.scm | bin/picrin-bootstrap tools/mkboot.scm > lib/ext/boot.c
+lib/ext/boot.c: piclib/boot.scm piclib/compile.scm piclib/library.scm
+	cat piclib/boot.scm piclib/compile.scm piclib/library.scm | bin/picrin-bootstrap tools/mkboot.scm > lib/ext/boot.c
 
 $(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h lib/vm.h
 

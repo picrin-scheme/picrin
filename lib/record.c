@@ -17,6 +17,18 @@ pic_make_record(pic_state *pic, pic_value type, pic_value datum)
   return obj_value(pic, rec);
 }
 
+pic_value
+pic_record_type(pic_state *pic, pic_value rec)
+{
+  return pic_rec_ptr(pic, rec)->type;
+}
+
+pic_value
+pic_record_datum(pic_state *pic, pic_value rec)
+{
+  return pic_rec_ptr(pic, rec)->datum;
+}
+
 static pic_value
 pic_rec_make_record(pic_state *pic)
 {
@@ -44,7 +56,7 @@ pic_rec_record_type(pic_state *pic)
 
   pic_get_args(pic, "r", &rec);
 
-  return pic_rec_ptr(pic, rec)->type;
+  return pic_record_type(pic, rec);
 }
 
 static pic_value
@@ -54,7 +66,7 @@ pic_rec_record_datum(pic_state *pic)
 
   pic_get_args(pic, "r", &rec);
 
-  return pic_rec_ptr(pic, rec)->datum;
+  return pic_record_datum(pic, rec);
 }
 
 void

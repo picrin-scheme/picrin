@@ -5,7 +5,6 @@
           (scheme process-context)
           (scheme load)
           (scheme eval)
-          (picrin base)
           (picrin repl))
 
   (define (print-help)
@@ -41,7 +40,7 @@
       (lambda (in)
         (let loop ((expr (read in)))
           (unless (eof-object? expr)
-            (eval expr (find-library "picrin.user"))
+            (eval expr '(picrin user))
             (loop (read in)))))))
 
   (define (main)

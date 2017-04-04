@@ -18,7 +18,7 @@ union header {
 struct object {
   union {
     struct basic basic;
-    struct identifier id;
+    struct symbol sym;
     struct string str;
     struct blob blob;
     struct pair pair;
@@ -27,7 +27,6 @@ struct object {
     struct weak weak;
     struct data data;
     struct record rec;
-    struct env env;
     struct proc proc;
     struct context cxt;
     struct port port;
@@ -389,28 +388,6 @@ gc_mark_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_BLOB: {
     break;
   }
-  case PIC_TYPE_ID: {
-    gc_mark_object(pic, (struct object *)obj->u.id.u.id);
-    LOOP(obj->u.id.env);
-    break;
-  }
-  case PIC_TYPE_ENV: {
-    khash_t(env) *h = &obj->u.env.map;
-    int it;
-
-    for (it = kh_begin(h); it != kh_end(h); ++it) {
-      if (kh_exist(h, it)) {
-        gc_mark_object(pic, (struct object *)kh_key(h, it));
-        gc_mark_object(pic, (struct object *)kh_val(h, it));
-      }
-    }
-    if (obj->u.env.up) {
-      LOOP(obj->u.env.up);
-    } else {
-      LOOP(obj->u.env.prefix);
-    }
-    break;
-  }
   case PIC_TYPE_DATA: {
     break;
   }
@@ -432,7 +409,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_SYMBOL: {
-    LOOP(obj->u.id.u.str);
+    LOOP(obj->u.sym.str);
     break;
   }
   case PIC_TYPE_WEAK: {
@@ -475,9 +452,6 @@ gc_mark_phase(pic_state *pic)
 
   /* global variables */
   gc_mark(pic, pic->globals);
-
-  /* macro objects */
-  gc_mark(pic, pic->macros);
 
   /* error object */
   gc_mark(pic, pic->err);
@@ -536,10 +510,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_rope_decref(pic, obj->u.str.rope);
     break;
   }
-  case PIC_TYPE_ENV: {
-    kh_destroy(env, &obj->u.env.map);
-    break;
-  }
   case PIC_TYPE_DATA: {
     if (obj->u.data.type->dtor) {
       obj->u.data.type->dtor(pic, obj->u.data.data);
@@ -575,7 +545,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_PAIR:
   case PIC_TYPE_CXT:
   case PIC_TYPE_ERROR:
-  case PIC_TYPE_ID:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_PROC_FUNC:
   case PIC_TYPE_PROC_IREP:
@@ -793,7 +762,7 @@ gc_sweep_phase(pic_state *pic)
   int it;
   khash_t(weak) *h;
   khash_t(oblist) *s = &pic->oblist;
-  symbol *sym;
+  struct symbol *sym;
   struct object *obj;
   size_t total = 0, inuse = 0;
 

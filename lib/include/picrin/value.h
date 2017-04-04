@@ -26,8 +26,6 @@ enum {
   PIC_TYPE_BLOB      = 18,
   PIC_TYPE_PORT      = 20,
   PIC_TYPE_ERROR     = 21,
-  PIC_TYPE_ID        = 22,
-  PIC_TYPE_ENV       = 23,
   PIC_TYPE_DATA      = 24,
   PIC_TYPE_DICT      = 25,
   PIC_TYPE_WEAK      = 26,
@@ -227,7 +225,6 @@ DEFPRED(pic_blob_p, PIC_TYPE_BLOB)
 DEFPRED(pic_error_p, PIC_TYPE_ERROR)
 DEFPRED(pic_dict_p, PIC_TYPE_DICT)
 DEFPRED(pic_weak_p, PIC_TYPE_WEAK)
-DEFPRED(pic_env_p, PIC_TYPE_ENV)
 DEFPRED(pic_rec_p, PIC_TYPE_RECORD)
 DEFPRED(pic_sym_p, PIC_TYPE_SYMBOL)
 DEFPRED(pic_pair_p, PIC_TYPE_PAIR)
@@ -245,12 +242,6 @@ PIC_STATIC_INLINE bool
 pic_proc_p(pic_state *pic, pic_value o)
 {
   return pic_proc_func_p(pic, o) || pic_proc_irep_p(pic, o);
-}
-
-PIC_STATIC_INLINE bool
-pic_id_p(pic_state *pic, pic_value o)
-{
-  return pic_type(pic, o) == PIC_TYPE_ID || pic_sym_p(pic, o);
 }
 
 #if PIC_NAN_BOXING

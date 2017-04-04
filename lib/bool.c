@@ -79,18 +79,6 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
   }
 
   switch (pic_type(pic, x)) {
-  case PIC_TYPE_ID: {
-    struct identifier *id1, *id2;
-    pic_value s1, s2;
-
-    id1 = pic_id_ptr(pic, x);
-    id2 = pic_id_ptr(pic, y);
-
-    s1 = pic_find_identifier(pic, obj_value(pic, id1->u.id), obj_value(pic, id1->env));
-    s2 = pic_find_identifier(pic, obj_value(pic, id2->u.id), obj_value(pic, id2->env));
-
-    return pic_eq_p(pic, s1, s2);
-  }
   case PIC_TYPE_STRING: {
     int xlen, ylen;
     const char *xstr, *ystr;

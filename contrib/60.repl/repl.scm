@@ -20,8 +20,10 @@
         #f))))
 
   (define (init-env)
+    (current-library '(picrin user))
     (eval
-     '(import (scheme base)
+     '(import (picrin base)
+              (scheme base)
               (scheme load)
               (scheme process-context)
               (scheme read)

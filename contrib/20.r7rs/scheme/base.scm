@@ -412,58 +412,6 @@
 
   ;; 5.5 Record-type definitions
 
-  (define (make-record-type name)
-    (vector name))                      ; TODO
-
-  (define-syntax (define-record-constructor type field-alist name . fields)
-    (let ((record #'record))
-      #`(define (#,name . #,fields)
-          (let ((#,record (make-record #,type (make-vector #,(length field-alist)))))
-            #,@(map
-                (lambda (field)
-                  #`(vector-set! (record-datum #,record) #,(cdr (assq field field-alist)) #,field)) 
-                fields)
-            #,record))))
-
-  (define-syntax (define-record-predicate type name)
-    #`(define (#,name obj)
-        (and (record? obj)
-             (eq? (record-type obj) #,type))))
-
-  (define-syntax (define-record-accessor pred field-alist field accessor)
-    #`(define (#,accessor record)
-        (if (#,pred record)
-            (vector-ref (record-datum record) #,(cdr (assq field field-alist)))
-            (error (string-append (symbol->string  '#,accessor) ": wrong record type") record))))
-
-  (define-syntax (define-record-modifier pred field-alist field modifier)
-    #`(define (#,modifier record val)
-        (if (#,pred record)
-            (vector-set! (record-datum record) #,(cdr (assq field field-alist)) val)
-            (error (string-append (symbol->string '#,modifier) ": wrong record type")  record))))
-
-  (define-syntax (define-record-field pred field-alist field accessor . modifier-opt)
-    (if (null? modifier-opt)
-        #`(define-record-accessor #,pred #,field-alist #,field #,accessor)
-        #`(begin
-            (define-record-accessor #,pred #,field-alist #,field #,accessor)
-            (define-record-modifier #,pred #,field-alist #,field #,(car modifier-opt)))))
-
-  (define-syntax (define-record-type name ctor pred . fields)
-    (let ((field-alist (let lp ((fds fields) (idx 0) (alst '()))
-                            (if (null? fds)
-                              alst
-                              (lp (cdr fds)
-                                  (+ idx 1)
-                                  (cons
-                                    (cons (if (pair? (car fds)) (car (car fds)) (car fds)) idx)
-                                    alst))))))
-      #`(begin
-          (define #,name (make-record-type '#,name))
-          (define-record-constructor #,name #,field-alist #,@ctor)
-          (define-record-predicate #,name #,pred)
-          #,@(map (lambda (field) #`(define-record-field #,pred #,field-alist #,@field)) fields))))
-
   (export define-record-type)
 
   ;; 6.1. Equivalence predicates

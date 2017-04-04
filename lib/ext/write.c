@@ -409,6 +409,16 @@ write_dict(pic_state *pic, pic_value dict, pic_value port, struct writer_control
   pic_fprintf(pic, port, ")");
 }
 
+static void
+write_record(pic_state *pic, pic_value obj, pic_value port, struct writer_control *p)
+{
+  pic_fprintf(pic, port, "#<");
+  write_core(pic, pic_record_type(pic, obj), port, p);
+  pic_fprintf(pic, port, " ");
+  write_core(pic, pic_record_datum(pic, obj), port, p);
+  pic_fprintf(pic, port, ">");
+}
+
 static const char *
 typename(pic_state *pic, pic_value obj)
 {
@@ -444,8 +454,6 @@ typename(pic_state *pic, pic_value obj)
     return "port";
   case PIC_TYPE_ERROR:
     return "error";
-  case PIC_TYPE_ID:
-    return "identifier";
   case PIC_TYPE_CXT:
     return "context";
   case PIC_TYPE_IREP:
@@ -453,8 +461,6 @@ typename(pic_state *pic, pic_value obj)
   case PIC_TYPE_PROC_FUNC:
   case PIC_TYPE_PROC_IREP:
     return "procedure";
-  case PIC_TYPE_ENV:
-    return "environment";
   case PIC_TYPE_DATA:
     return "data";
   case PIC_TYPE_DICT:
@@ -498,9 +504,6 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
   case PIC_TYPE_FALSE:
     pic_fprintf(pic, port, "#f");
     break;
-  case PIC_TYPE_ID:
-    pic_fprintf(pic, port, "#<identifier %s>", pic_str(pic, pic_id_name(pic, obj), NULL));
-    break;
   case PIC_TYPE_EOF:
     pic_fprintf(pic, port, "#.(eof-object)");
     break;
@@ -530,6 +533,9 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     break;
   case PIC_TYPE_DICT:
     write_dict(pic, obj, port, p);
+    break;
+  case PIC_TYPE_RECORD:
+    write_record(pic, obj, port, p);
     break;
   default:
     pic_fprintf(pic, port, "#<%s %p>", typename(pic, obj), obj_ptr(pic, obj));

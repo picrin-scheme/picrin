@@ -91,7 +91,7 @@
             (parameterize ((current-library name))
               (for-each
                (lambda (expr)
-                 (eval expr name)) ; TODO parse library declarations
+                 (eval expr name))   ; TODO parse library declarations
                body)))))
 
       (define-transformer 'cond-expand
@@ -215,14 +215,15 @@
                      and or
                      cond case else =>
                      do when unless
-                     parameterize))
+                     parameterize define-record-type))
         (export-keyword 'boolean?)
         (dictionary-for-each export-keyword (global-objects)))
       (set! eval
             (let ((e eval))
               (lambda (expr . lib)
                 (let ((lib (if (null? lib) (current-library) (car lib))))
-                  (e expr (library-environment lib))))))
+                  (parameterize ((current-library lib))
+                    (e expr (library-environment lib)))))))
       (make-library '(picrin user)))
 
     (values current-library

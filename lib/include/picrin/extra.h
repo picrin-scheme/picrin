@@ -21,7 +21,6 @@ pic_value pic_read_cstr(pic_state *, const char *);
 pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 #endif
 
-pic_value pic_compile(pic_state *, pic_value form, pic_value env);
 pic_value pic_load(pic_state *, pic_value irep);
 void pic_load_native(pic_state *pic, const char *);
 
