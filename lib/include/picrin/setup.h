@@ -16,6 +16,10 @@
 # define PIC_USE_WRITE 1
 #endif
 
+#ifndef PIC_USE_EVAL
+# define PIC_USE_EVAL 1
+#endif
+
 #ifndef PIC_USE_LIBRARY
 # define PIC_USE_LIBRARY 1
 #endif
