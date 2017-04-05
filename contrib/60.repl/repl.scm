@@ -35,6 +35,7 @@
               (scheme time)
               (scheme eval)
               (scheme r5rs)
+              (picrin pretty-print)
               (picrin macro))
      '(picrin user)))
 
