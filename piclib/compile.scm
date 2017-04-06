@@ -275,7 +275,12 @@
       (define-transformer 'quote
         (lambda (form env)
           (if (= (length form) 2)
-              `(,the-core-quote ,(cadr form))
+              (let ((obj (cadr form)))
+                (cond
+                 ((pair? obj) `(,(the 'cons) (,the-quote ,(car obj)) (,the-quote ,(cdr obj))))
+                 ((vector? obj) `(,(the 'vector) . ,(vector->list
+                                                     (vector-map (lambda (obj) `(,the-quote ,obj)) obj))))
+                 (else `(,the-core-quote ,obj))))
               (error "malformed quote" form))))
 
       (define-transformer 'if
