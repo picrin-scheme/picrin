@@ -20,13 +20,13 @@ pic_make_record(pic_state *pic, pic_value type, pic_value datum)
 pic_value
 pic_record_type(pic_state *pic, pic_value rec)
 {
-  return pic_rec_ptr(pic, rec)->type;
+  return rec_ptr(pic, rec)->type;
 }
 
 pic_value
 pic_record_datum(pic_state *pic, pic_value rec)
 {
-  return pic_rec_ptr(pic, rec)->datum;
+  return rec_ptr(pic, rec)->datum;
 }
 
 static pic_value

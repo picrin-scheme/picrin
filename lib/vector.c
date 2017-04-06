@@ -27,19 +27,19 @@ pic_make_vec(pic_state *pic, int len, pic_value *argv)
 pic_value
 pic_vec_ref(pic_state *PIC_UNUSED(pic), pic_value vec, int k)
 {
-  return pic_vec_ptr(pic, vec)->data[k];
+  return vec_ptr(pic, vec)->data[k];
 }
 
 void
 pic_vec_set(pic_state *PIC_UNUSED(pic), pic_value vec, int k, pic_value val)
 {
-  pic_vec_ptr(pic, vec)->data[k] = val;
+  vec_ptr(pic, vec)->data[k] = val;
 }
 
 int
 pic_vec_len(pic_state *PIC_UNUSED(pic), pic_value vec)
 {
-  return pic_vec_ptr(pic, vec)->len;
+  return vec_ptr(pic, vec)->len;
 }
 
 static pic_value
@@ -142,7 +142,7 @@ pic_vec_vector_copy_i(pic_state *pic)
 
   VALID_ATRANGE(pic, tolen, at, fromlen, start, end);
 
-  memmove(pic_vec_ptr(pic, to)->data + at, pic_vec_ptr(pic, from)->data + start, sizeof(pic_value) * (end - start));
+  memmove(vec_ptr(pic, to)->data + at, vec_ptr(pic, from)->data + start, sizeof(pic_value) * (end - start));
 
   return pic_undef_value(pic);
 }
@@ -166,7 +166,7 @@ pic_vec_vector_copy(pic_state *pic)
 
   VALID_RANGE(pic, fromlen, start, end);
 
-  return pic_make_vec(pic, end - start, pic_vec_ptr(pic, from)->data + start);
+  return pic_make_vec(pic, end - start, vec_ptr(pic, from)->data + start);
 }
 
 static pic_value
@@ -188,7 +188,7 @@ pic_vec_vector_append(pic_state *pic)
   len = 0;
   for (i = 0; i < argc; ++i) {
     int l = pic_vec_len(pic, argv[i]);
-    memcpy(pic_vec_ptr(pic, vec)->data + len, pic_vec_ptr(pic, argv[i])->data, sizeof(pic_value) * l);
+    memcpy(vec_ptr(pic, vec)->data + len, vec_ptr(pic, argv[i])->data, sizeof(pic_value) * l);
     len += l;
   }
 

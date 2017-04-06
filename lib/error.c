@@ -88,10 +88,10 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
   stack = pic_get_backtrace(pic);
 
   e = (struct error *)pic_obj_alloc(pic, sizeof(struct error), PIC_TYPE_ERROR);
-  e->type = pic_sym_ptr(pic, ty);
-  e->msg = pic_str_ptr(pic, pic_cstr_value(pic, msg));
+  e->type = sym_ptr(pic, ty);
+  e->msg = str_ptr(pic, pic_cstr_value(pic, msg));
   e->irrs = irrs;
-  e->stack = pic_str_ptr(pic, stack);
+  e->stack = str_ptr(pic, stack);
 
   return obj_value(pic, e);
 }
@@ -228,7 +228,7 @@ pic_error_error_object_message(pic_state *pic)
 
   TYPE_CHECK(pic, e, error);
 
-  return obj_value(pic, pic_error_ptr(pic, e)->msg);
+  return obj_value(pic, error_ptr(pic, e)->msg);
 }
 
 static pic_value
@@ -240,7 +240,7 @@ pic_error_error_object_irritants(pic_state *pic)
 
   TYPE_CHECK(pic, e, error);
 
-  return pic_error_ptr(pic, e)->irrs;
+  return error_ptr(pic, e)->irrs;
 }
 
 static pic_value
@@ -252,7 +252,7 @@ pic_error_error_object_type(pic_state *pic)
 
   TYPE_CHECK(pic, e, error);
 
-  return obj_value(pic, pic_error_ptr(pic, e)->type);
+  return obj_value(pic, error_ptr(pic, e)->type);
 }
 
 void

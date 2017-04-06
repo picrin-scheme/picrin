@@ -268,10 +268,10 @@ pic_closure_ref(pic_state *pic, int n)
 {
   pic_value self = GET_PROC(pic);
 
-  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
+  if (n < 0 || proc_ptr(pic, self)->u.f.localc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  return pic_proc_ptr(pic, self)->locals[n];
+  return proc_ptr(pic, self)->locals[n];
 }
 
 void
@@ -279,10 +279,10 @@ pic_closure_set(pic_state *pic, int n, pic_value v)
 {
   pic_value self = GET_PROC(pic);
 
-  if (n < 0 || pic_proc_ptr(pic, self)->u.f.localc <= n) {
+  if (n < 0 || proc_ptr(pic, self)->u.f.localc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  pic_proc_ptr(pic, self)->locals[n] = v;
+  proc_ptr(pic, self)->locals[n] = v;
 }
 
 static void
@@ -525,7 +525,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       if (! pic_proc_p(pic, x)) {
 	pic_error(pic, "invalid application", 1, x);
       }
-      proc = pic_proc_ptr(pic, x);
+      proc = proc_ptr(pic, x);
 
       if (pic->sp >= pic->stend) {
         pic_panic(pic, "VM stack overflow");

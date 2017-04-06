@@ -45,7 +45,7 @@ pic_print_error(pic_state *pic, pic_value port, pic_value err)
     struct error *e;
     pic_value elem, it;
 
-    e = pic_error_ptr(pic, err);
+    e = error_ptr(pic, err);
     if (! pic_eq_p(pic, obj_value(pic, e->type), pic_intern_lit(pic, ""))) {
       pic_fprintf(pic, port, "~s-", obj_value(pic, e->type));
     }

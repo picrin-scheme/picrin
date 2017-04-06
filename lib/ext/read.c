@@ -531,8 +531,8 @@ read_label_set(pic_state *pic, pic_value port, int i, struct reader_control *p)
       kh_val(h, it) = val = pic_cons(pic, pic_undef_value(pic), pic_undef_value(pic));
 
       tmp = read_value(pic, port, c, p);
-      pic_pair_ptr(pic, val)->car = pic_car(pic, tmp);
-      pic_pair_ptr(pic, val)->cdr = pic_cdr(pic, tmp);
+      pair_ptr(pic, val)->car = pic_car(pic, tmp);
+      pair_ptr(pic, val)->cdr = pic_cdr(pic, tmp);
 
       return val;
     }
@@ -552,8 +552,8 @@ read_label_set(pic_state *pic, pic_value port, int i, struct reader_control *p)
         kh_val(h, it) = val = pic_make_vec(pic, 0, NULL);
 
         tmp = read_value(pic, port, c, p);
-        PIC_SWAP(pic_value *, pic_vec_ptr(pic, tmp)->data, pic_vec_ptr(pic, val)->data);
-        PIC_SWAP(int, pic_vec_ptr(pic, tmp)->len, pic_vec_ptr(pic, val)->len);
+        PIC_SWAP(pic_value *, vec_ptr(pic, tmp)->data, vec_ptr(pic, val)->data);
+        PIC_SWAP(int, vec_ptr(pic, tmp)->len, vec_ptr(pic, val)->len);
 
         return val;
       }

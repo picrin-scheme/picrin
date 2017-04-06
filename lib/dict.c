@@ -20,10 +20,10 @@ pic_make_dict(pic_state *pic)
 pic_value
 pic_dict_ref(pic_state *pic, pic_value dict, pic_value key)
 {
-  khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
+  khash_t(dict) *h = &dict_ptr(pic, dict)->hash;
   int it;
 
-  it = kh_get(dict, h, pic_sym_ptr(pic, key));
+  it = kh_get(dict, h, sym_ptr(pic, key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }
@@ -33,35 +33,35 @@ pic_dict_ref(pic_state *pic, pic_value dict, pic_value key)
 void
 pic_dict_set(pic_state *pic, pic_value dict, pic_value key, pic_value val)
 {
-  khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
+  khash_t(dict) *h = &dict_ptr(pic, dict)->hash;
   int ret;
   int it;
 
-  it = kh_put(dict, h, pic_sym_ptr(pic, key), &ret);
+  it = kh_put(dict, h, sym_ptr(pic, key), &ret);
   kh_val(h, it) = val;
 }
 
 int
 pic_dict_size(pic_state *PIC_UNUSED(pic), pic_value dict)
 {
-  return kh_size(&pic_dict_ptr(pic, dict)->hash);
+  return kh_size(&dict_ptr(pic, dict)->hash);
 }
 
 bool
 pic_dict_has(pic_state *pic, pic_value dict, pic_value key)
 {
-  khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
+  khash_t(dict) *h = &dict_ptr(pic, dict)->hash;
 
-  return kh_get(dict, h, pic_sym_ptr(pic, key)) != kh_end(h);
+  return kh_get(dict, h, sym_ptr(pic, key)) != kh_end(h);
 }
 
 void
 pic_dict_del(pic_state *pic, pic_value dict, pic_value key)
 {
-  khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
+  khash_t(dict) *h = &dict_ptr(pic, dict)->hash;
   int it;
 
-  it = kh_get(dict, h, pic_sym_ptr(pic, key));
+  it = kh_get(dict, h, sym_ptr(pic, key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }
@@ -71,7 +71,7 @@ pic_dict_del(pic_state *pic, pic_value dict, pic_value key)
 bool
 pic_dict_next(pic_state *PIC_UNUSED(pic), pic_value dict, int *iter, pic_value *key, pic_value *val)
 {
-  khash_t(dict) *h = &pic_dict_ptr(pic, dict)->hash;
+  khash_t(dict) *h = &dict_ptr(pic, dict)->hash;
   int it = *iter;
 
   for (it = *iter; it != kh_end(h); ++it) {

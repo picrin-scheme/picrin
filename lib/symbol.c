@@ -20,7 +20,7 @@ pic_intern(pic_state *pic, pic_value str)
   int it;
   int ret;
 
-  it = kh_put(oblist, h, pic_str_ptr(pic, str), &ret);
+  it = kh_put(oblist, h, str_ptr(pic, str), &ret);
   if (ret == 0) {               /* if exists */
     sym = kh_val(h, it);
     pic_protect(pic, obj_value(pic, sym));
@@ -30,16 +30,16 @@ pic_intern(pic_state *pic, pic_value str)
   kh_val(h, it) = NULL;         /* dummy */
 
   sym = (struct symbol *)pic_obj_alloc(pic, sizeof(struct symbol), PIC_TYPE_SYMBOL);
-  sym->str = pic_str_ptr(pic, str);
+  sym->str = str_ptr(pic, str);
   kh_val(h, it) = sym;
 
   return obj_value(pic, sym);
 }
 
 pic_value
-pic_sym_name(pic_state *PIC_UNUSED(pic), pic_value sym)
+pic_sym_name(pic_state *pic, pic_value sym)
 {
-  return obj_value(pic, pic_sym_ptr(pic, sym)->str);
+  return obj_value(pic, sym_ptr(pic, sym)->str);
 }
 
 static pic_value

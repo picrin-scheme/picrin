@@ -233,11 +233,11 @@ obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
 
 #endif  /* NAN_BOXING */
 
-#define DEFPTR(name,type)                                               \
-  PIC_STATIC_INLINE type *                                              \
-  pic_##name##_ptr(pic_state *PIC_UNUSED(pic), pic_value o) {           \
-    assert(pic_##name##_p(pic,o));                                      \
-    return (type *) obj_ptr(pic, o);                                    \
+#define DEFPTR(name,type)                               \
+  PIC_STATIC_INLINE type *                              \
+  name##_ptr(pic_state *PIC_UNUSED(pic), pic_value o) { \
+    assert(pic_##name##_p(pic,o));                      \
+    return (type *) obj_ptr(pic, o);                    \
   }
 
 #define pic_data_p(pic,o) (pic_data_p(pic,o,NULL))

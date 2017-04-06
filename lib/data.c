@@ -11,13 +11,13 @@ pic_data_p(pic_state *pic, pic_value obj, const pic_data_type *type)
   if (pic_type(pic, obj) != PIC_TYPE_DATA) {
     return false;
   }
-  return type == NULL || pic_data_ptr(pic, obj)->type == type;
+  return type == NULL || data_ptr(pic, obj)->type == type;
 }
 
 void *
 pic_data(pic_state *PIC_UNUSED(pic), pic_value data)
 {
-  return pic_data_ptr(pic, data)->data;
+  return data_ptr(pic, data)->data;
 }
 
 pic_value

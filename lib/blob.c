@@ -22,10 +22,11 @@ pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
 unsigned char *
 pic_blob(pic_state *pic, pic_value blob, int *len)
 {
+  struct blob *bv = blob_ptr(pic, blob);
   if (len) {
-    *len = pic_blob_ptr(pic, blob)->len;
+    *len = bv->len;
   }
-  return pic_blob_ptr(pic, blob)->data;
+  return bv->data;
 }
 
 static pic_value

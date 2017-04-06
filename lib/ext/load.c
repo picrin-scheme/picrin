@@ -535,7 +535,7 @@ index_global(pic_state *pic, codegen_context *cxt, pic_value name)
 
   check_pool_size(pic, cxt);
   pidx = (int)cxt->plen++;
-  cxt->pool[pidx] = (struct object *)pic_sym_ptr(pic, name);
+  cxt->pool[pidx] = (struct object *)sym_ptr(pic, name);
 
   return pidx;
 }

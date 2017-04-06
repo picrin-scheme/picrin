@@ -22,7 +22,7 @@ pic_make_weak(pic_state *pic)
 pic_value
 pic_weak_ref(pic_state *pic, pic_value weak, pic_value key)
 {
-  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
+  khash_t(weak) *h = &weak_ptr(pic, weak)->hash;
   int it;
 
   it = kh_get(weak, h, obj_ptr(pic, key));
@@ -35,7 +35,7 @@ pic_weak_ref(pic_state *pic, pic_value weak, pic_value key)
 void
 pic_weak_set(pic_state *pic, pic_value weak, pic_value key, pic_value val)
 {
-  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
+  khash_t(weak) *h = &weak_ptr(pic, weak)->hash;
   int ret;
   int it;
 
@@ -46,7 +46,7 @@ pic_weak_set(pic_state *pic, pic_value weak, pic_value key, pic_value val)
 bool
 pic_weak_has(pic_state *pic, pic_value weak, pic_value key)
 {
-  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
+  khash_t(weak) *h = &weak_ptr(pic, weak)->hash;
 
   return kh_get(weak, h, obj_ptr(pic, key)) != kh_end(h);
 }
@@ -54,7 +54,7 @@ pic_weak_has(pic_state *pic, pic_value weak, pic_value key)
 void
 pic_weak_del(pic_state *pic, pic_value weak, pic_value key)
 {
-  khash_t(weak) *h = &pic_weak_ptr(pic, weak)->hash;
+  khash_t(weak) *h = &weak_ptr(pic, weak)->hash;
   int it;
 
   it = kh_get(weak, h, obj_ptr(pic, key));

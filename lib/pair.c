@@ -23,7 +23,7 @@ pic_car(pic_state *pic, pic_value obj)
   if (! pic_pair_p(pic, obj)) {
     pic_error(pic, "car: pair required", 1, obj);
   }
-  return pic_pair_ptr(pic, obj)->car;
+  return pair_ptr(pic, obj)->car;
 }
 
 pic_value
@@ -32,7 +32,7 @@ pic_cdr(pic_state *pic, pic_value obj)
   if (! pic_pair_p(pic, obj)) {
     pic_error(pic, "cdr: pair required", 1, obj);
   }
-  return pic_pair_ptr(pic, obj)->cdr;
+  return pair_ptr(pic, obj)->cdr;
 }
 
 void
@@ -41,7 +41,7 @@ pic_set_car(pic_state *pic, pic_value obj, pic_value val)
   if (! pic_pair_p(pic, obj)) {
     pic_error(pic, "pair required", 0);
   }
-  pic_pair_ptr(pic, obj)->car = val;
+  pair_ptr(pic, obj)->car = val;
 }
 
 void
@@ -50,7 +50,7 @@ pic_set_cdr(pic_state *pic, pic_value obj, pic_value val)
   if (! pic_pair_p(pic, obj)) {
     pic_error(pic, "pair required", 0);
   }
-  pic_pair_ptr(pic, obj)->cdr = val;
+  pair_ptr(pic, obj)->cdr = val;
 }
 
 pic_value
@@ -91,7 +91,7 @@ pic_list_p(pic_state *pic, pic_value obj)
     /* advance rapid fast-forward; runs 2x faster than local */
     for (i = 0; i < 2; ++i) {
       if (pic_pair_p(pic, rapid)) {
-        rapid = pic_pair_ptr(pic, rapid)->cdr;
+        rapid = pair_ptr(pic, rapid)->cdr;
       }
       else {
         return pic_nil_p(pic, rapid);
@@ -99,7 +99,7 @@ pic_list_p(pic_state *pic, pic_value obj)
     }
 
     /* advance local */
-    local = pic_pair_ptr(pic, local)->cdr;
+    local = pair_ptr(pic, local)->cdr;
 
     if (pic_eq_p(pic, local, rapid)) {
       return false;
@@ -153,7 +153,7 @@ pic_list_ref(pic_state *pic, pic_value list, int i)
 void
 pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
 {
-  pic_pair_ptr(pic, pic_list_tail(pic, list, i))->car = obj;
+  pair_ptr(pic, pic_list_tail(pic, list, i))->car = obj;
 }
 
 pic_value

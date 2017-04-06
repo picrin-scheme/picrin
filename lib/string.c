@@ -192,9 +192,9 @@ flatten(pic_state *pic, struct rope *rope, struct rope *owner, char *buf)
 static void
 str_update(pic_state *pic, pic_value dst, pic_value src)
 {
-  pic_rope_incref(pic_str_ptr(pic, src)->rope);
-  pic_rope_decref(pic, pic_str_ptr(pic, dst)->rope);
-  pic_str_ptr(pic, dst)->rope = pic_str_ptr(pic, src)->rope;
+  pic_rope_incref(str_ptr(pic, src)->rope);
+  pic_rope_decref(pic, str_ptr(pic, dst)->rope);
+  str_ptr(pic, dst)->rope = str_ptr(pic, src)->rope;
 }
 
 pic_value
@@ -251,25 +251,25 @@ pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 int
 pic_str_len(pic_state *PIC_UNUSED(pic), pic_value str)
 {
-  return pic_str_ptr(pic, str)->rope->weight;
+  return str_ptr(pic, str)->rope->weight;
 }
 
 pic_value
 pic_str_cat(pic_state *pic, pic_value a, pic_value b)
 {
-  return make_str(pic, merge(pic, pic_str_ptr(pic, a)->rope, pic_str_ptr(pic, b)->rope));
+  return make_str(pic, merge(pic, str_ptr(pic, a)->rope, str_ptr(pic, b)->rope));
 }
 
 pic_value
 pic_str_sub(pic_state *pic, pic_value str, int s, int e)
 {
-  return make_str(pic, slice(pic, pic_str_ptr(pic, str)->rope, s, e));
+  return make_str(pic, slice(pic, str_ptr(pic, str)->rope, s, e));
 }
 
 const char *
 pic_str(pic_state *pic, pic_value str, int *len)
 {
-  struct rope *rope = pic_str_ptr(pic, str)->rope, *r;
+  struct rope *rope = str_ptr(pic, str)->rope, *r;
 
   if (len) {
     *len = rope->weight;
