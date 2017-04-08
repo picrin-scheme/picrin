@@ -835,7 +835,7 @@
                         (unless (null? e)
                           (codegen-a (car e) i)
                           (loop (+ i 1) (cdr e))))
-                      (emit `(CALL ,(length e)))))))
+                      (emit `(CALL ,(- (length e) 1)))))))
 
           (define (codegen-a e i)
             (case (car e)
@@ -846,6 +846,7 @@
                          (cond ((eq? #t obj) (emit `(LOADT ,i)))
                                ((eq? #f obj) (emit `(LOADF ,i)))
                                ((null? obj) (emit `(LOADN ,i)))
+                               ((eq? #undefined obj) (emit `(LOADU ,i)))
                                ((and (integer? obj) (<= -128 obj 127)) (emit `(LOADI ,i ,obj)))
                                (else (let ((n (emit-obj obj)))
                                        (emit `(LOAD ,i ,n)))))))
@@ -860,7 +861,7 @@
                               (argc-varg
                                (let loop ((args (cadr e)) (c 0))
                                  (if (symbol? args)
-                                     (cons (+ 1 c) #t)
+                                     (cons c #t)
                                      (if (null? args)
                                          (cons c #f)
                                          (loop (cdr args) (+ 1 c)))))))
