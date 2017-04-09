@@ -16,8 +16,11 @@ extern "C" {
   unsigned char tt;
 #else
 # define OBJECT_HEADER                           \
-  unsigned char tt;                              \
-  char gc_mark;
+  unsigned char tt;
+#endif
+
+#if !PIC_BITMAP_GC
+# define GC_MARK 0x80
 #endif
 
 struct object;              /* defined in gc.c */
@@ -174,11 +177,23 @@ struct error {
     if (tolen - at < e - s) pic_error(pic, "invalid range", 0);        \
   } while (0)
 
+#if PIC_BITMAP_GC
+
 PIC_STATIC_INLINE int
-obj_tt(pic_state *PIC_UNUSED(pic), void *ptr)
+obj_type(pic_state *PIC_UNUSED(pic), void *ptr)
 {
   return ((struct basic *)ptr)->tt;
 }
+
+#else
+
+PIC_STATIC_INLINE int
+obj_type(pic_state *PIC_UNUSED(pic), void *ptr)
+{
+  return ((struct basic *)ptr)->tt & ~GC_MARK;
+}
+
+#endif
 
 #if !PIC_NAN_BOXING
 
@@ -197,7 +212,7 @@ obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
 PIC_STATIC_INLINE pic_value
 obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
 {
-  pic_value v = pic_make_value(obj_tt(pic, ptr));
+  pic_value v = pic_make_value(obj_type(pic, ptr));
   v.u.data = ptr;
   return v;
 }
@@ -219,7 +234,7 @@ obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
 PIC_STATIC_INLINE pic_value
 obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
 {
-  pic_value v = pic_make_value(obj_tt(pic, ptr));
+  pic_value v = pic_make_value(obj_type(pic, ptr));
   v.v |= 0x3ffffffffffful & ((uint64_t)ptr >> 2);
   return v;
 }

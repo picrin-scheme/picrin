@@ -70,14 +70,14 @@ pic_int(pic_state *PIC_UNUSED(pic), pic_value v)
 PIC_STATIC_INLINE double
 pic_float(pic_state *PIC_UNUSED(pic), pic_value v)
 {
-  assert(pic_float_p(v));
+  assert(pic_float_p(pic, v));
   return v.u.f;
 }
 
 PIC_STATIC_INLINE char
 pic_char(pic_state *PIC_UNUSED(pic), pic_value v)
 {
-  assert(pic_char_p(v));
+  assert(pic_char_p(pic, v));
   return v.u.c;
 }
 

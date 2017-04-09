@@ -202,13 +202,13 @@ pic_alloca(pic_state *pic, size_t n)
 static bool
 is_marked(pic_state *PIC_UNUSED(pic), struct object *obj)
 {
-  return obj->u.basic.gc_mark == 1;
+  return obj->u.basic.tt & GC_MARK;
 }
 
 static void
 mark(pic_state *PIC_UNUSED(pic), struct object *obj)
 {
-  obj->u.basic.gc_mark = 1;
+  obj->u.basic.tt |= GC_MARK;
 }
 
 #else
@@ -322,7 +322,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
 
 #define LOOP(o) obj = (struct object *)(o); goto loop
 
-  switch (obj->u.basic.tt) {
+  switch (obj_type(pic, obj)) {
   case PIC_TYPE_PAIR: {
     gc_mark(pic, obj->u.pair.car);
     if (obj_p(pic, obj->u.pair.cdr)) {
@@ -494,7 +494,7 @@ gc_mark_phase(pic_state *pic)
 static void
 gc_finalize_object(pic_state *pic, struct object *obj)
 {
-  switch (obj->u.basic.tt) {
+  switch (obj_type(pic, obj)) {
   case PIC_TYPE_VECTOR: {
     pic_free(pic, obj->u.vec.data);
     break;
@@ -651,8 +651,8 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
         goto escape;
       }
       obj = (struct object *)(p + 1);
-      if (obj->u.basic.gc_mark == 1) {
-        obj->u.basic.gc_mark = 0;
+      if (obj->u.basic.tt & GC_MARK) {
+        obj->u.basic.tt &= ~GC_MARK;
         alive += p->s.size;
       } else {
         if (head == NULL) {
@@ -849,9 +849,6 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
 	pic_panic(pic, "GC memory exhausted");
     }
   }
-#if !PIC_BITMAP_GC
-  obj->u.basic.gc_mark = 0;
-#endif
   obj->u.basic.tt = type;
 
   return obj;
