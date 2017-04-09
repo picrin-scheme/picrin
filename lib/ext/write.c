@@ -6,6 +6,8 @@
 #include "picrin/extra.h"
 #include "../object.h"
 
+#if PIC_USE_WRITE
+
 struct writer_control {
   int mode;
   int op;
@@ -20,135 +22,6 @@ struct writer_control {
 #define OP_WRITE 1
 #define OP_WRITE_SHARED 2
 #define OP_WRITE_SIMPLE 3
-
-#if PIC_USE_WRITE
-static void write_value(pic_state *pic, pic_value obj, pic_value port, int mode, int op);
-#endif
-
-static void
-print_int(pic_state *pic, pic_value port, long x, int base)
-{
-  static const char digits[] = "0123456789abcdef";
-  char buf[20];
-  int i, neg;
-
-  neg = 0;
-  if (x < 0) {
-    neg = 1;
-    x = -x;
-  }
-
-  i = 0;
-  do {
-    buf[i++] = digits[x % base];
-  } while ((x /= base) != 0);
-
-  if (neg) {
-    buf[i++] = '-';
-  }
-
-  while (i-- > 0) {
-    pic_fputc(pic, buf[i], port);
-  }
-}
-
-int
-pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
-{
-  const char *p;
-  char *sval;
-  int ival;
-  void *vp;
-  long start = pic_fseek(pic, port, 0, PIC_SEEK_CUR);
-
-  for (p = fmt; *p; p++) {
-
-#if PIC_USE_WRITE
-    if (*p == '~') {
-      switch (*++p) {
-      default:
-        pic_fputc(pic, *(p-1), port);
-        break;
-      case '%':
-        pic_fputc(pic, '\n', port);
-        break;
-      case 'a':
-        write_value(pic, va_arg(ap, pic_value), port, DISPLAY_MODE, OP_WRITE);
-        break;
-      case 's':
-        write_value(pic, va_arg(ap, pic_value), port, WRITE_MODE, OP_WRITE);
-        break;
-      }
-      continue;
-    }
-#endif
-
-    if (*p != '%') {
-      pic_fputc(pic, *p, port);
-      continue;
-    }
-    switch (*++p) {
-    case 'd':
-    case 'i':
-      ival = va_arg(ap, int);
-      print_int(pic, port, ival, 10);
-      break;
-    case 'f': {
-      char buf[64];
-      PIC_DOUBLE_TO_CSTRING(va_arg(ap, double), buf);
-      pic_fputs(pic, buf, port);
-      break;
-    }
-    case 'c':
-      ival = va_arg(ap, int);
-      pic_fputc(pic, ival, port);
-      break;
-    case 's':
-      sval = va_arg(ap, char*);
-      pic_fputs(pic, sval, port);
-      break;
-    case 'p':
-      vp = va_arg(ap, void*);
-      pic_fputs(pic, "0x", port);
-      print_int(pic, port, (long)vp, 16);
-      break;
-    case '%':
-      pic_fputc(pic, *(p-1), port);
-      break;
-    default:
-      pic_fputc(pic, '%', port);
-      pic_fputc(pic, *(p-1), port);
-      break;
-    }
-  }
-  return pic_fseek(pic, port, 0, PIC_SEEK_CUR) - start;
-}
-
-int
-pic_fprintf(pic_state *pic, pic_value port, const char *fmt, ...)
-{
-  va_list ap;
-  int n;
-
-  va_start(ap, fmt);
-  n = pic_vfprintf(pic, port, fmt, ap);
-  va_end(ap);
-  return n;
-}
-
-int
-pic_printf(pic_state *pic, const char *fmt, ...)
-{
-  va_list ap;
-  int n;
-
-  va_start(ap, fmt);
-  n = pic_vfprintf(pic, pic_stdout(pic), fmt, ap);
-  va_end(ap);
-  return n;
-}
-
-#if PIC_USE_WRITE
 
 static void
 writer_control_init(pic_state *pic, struct writer_control *p, int mode, int op)

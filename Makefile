@@ -37,7 +37,6 @@ PICRIN_OBJS = \
 CONTRIB_SRCS =
 CONTRIB_OBJS = $(CONTRIB_SRCS:.c=.o)
 CONTRIB_LIBS =
-CONTRIB_DEFS =
 CONTRIB_INITS =
 CONTRIB_TESTS =
 CONTRIB_DOCS = $(wildcard contrib/*/docs/*.rst)
@@ -63,7 +62,6 @@ tiny-picrin: $(LIBPICRIN_OBJS) src/tiny-main.o
 
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-picrin: CFLAGS += $(CONTRIB_DEFS)
 picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS) $(LDFLAGS)
 

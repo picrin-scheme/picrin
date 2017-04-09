@@ -307,6 +307,108 @@ pic_fseek(pic_state *pic, pic_value port, long offset, int whence)
   return 0;
 }
 
+int
+pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
+{
+  const char *p;
+  long start = pic_fseek(pic, port, 0, PIC_SEEK_CUR);
+
+  for (p = fmt; *p; p++) {
+    if (*p == '~') {
+      switch (*++p) {
+      default:
+        pic_fputc(pic, *(p-1), port);
+        break;
+      case '%':
+        pic_fputc(pic, '\n', port);
+        break;
+      case 'a':
+        pic_void(pic, pic_funcall(pic, "display", 2, va_arg(ap, pic_value), port));
+        break;
+      case 's':
+        pic_void(pic, pic_funcall(pic, "write", 2, va_arg(ap, pic_value), port));
+        break;
+      }
+      continue;
+    }
+    if (*p == '%') {
+      switch (*++p) {
+      case 'd':
+      case 'i': {
+        int ival = va_arg(ap, int);
+        pic_value str = pic_funcall(pic, "number->string", 1, pic_int_value(pic, ival));
+        pic_fputs(pic, pic_str(pic, str, 0), port);
+        break;
+      }
+      case 'f': {
+        double f = va_arg(ap, double);
+        pic_value str = pic_funcall(pic, "number->string", 1, pic_float_value(pic, f));
+        pic_fputs(pic, pic_str(pic, str, 0), port);
+        break;
+      }
+      case 'c': {
+        int ival = va_arg(ap, int);
+        pic_fputc(pic, ival, port);
+        break;
+      }
+      case 's': {
+        char *sval = va_arg(ap, char*);
+        pic_fputs(pic, sval, port);
+        break;
+      }
+      case 'p': {
+        static const char digits[] = "0123456789abcdef";
+        unsigned long vp = (unsigned long) va_arg(ap, void*);
+        char buf[sizeof vp * CHAR_BIT / 4 + 1];
+        size_t i;
+        for (i = 0; i < sizeof buf; ++i) {
+          buf[sizeof buf - i - 1] = digits[vp % 16];
+          vp /= 16;
+        }
+        buf[i] = '\0';
+        pic_fputs(pic, "0x", port);
+        pic_fputs(pic, buf, port);
+        break;
+      }
+      case '%':
+        pic_fputc(pic, *(p-1), port);
+        break;
+      default:
+        pic_fputc(pic, '%', port);
+        pic_fputc(pic, *(p-1), port);
+        break;
+      }
+      continue;
+    }
+    pic_fputc(pic, *p, port);
+  }
+  return pic_fseek(pic, port, 0, PIC_SEEK_CUR) - start;
+}
+
+int
+pic_fprintf(pic_state *pic, pic_value port, const char *fmt, ...)
+{
+  va_list ap;
+  int n;
+
+  va_start(ap, fmt);
+  n = pic_vfprintf(pic, port, fmt, ap);
+  va_end(ap);
+  return n;
+}
+
+int
+pic_printf(pic_state *pic, const char *fmt, ...)
+{
+  va_list ap;
+  int n;
+
+  va_start(ap, fmt);
+  n = pic_vfprintf(pic, pic_stdout(pic), fmt, ap);
+  va_end(ap);
+  return n;
+}
+
 typedef struct { char *buf; long pos, end, capa; } xbuf_t;
 
 static int

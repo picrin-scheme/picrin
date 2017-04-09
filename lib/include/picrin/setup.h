@@ -409,6 +409,12 @@ atof(const char *nptr)
 
 #endif
 
+PIC_STATIC_INLINE double
+pic_atod(const char *str)
+{
+  return atof(str);
+}
+
 #if PIC_USE_STDIO
 # include <stdio.h>
 
@@ -468,16 +474,6 @@ pic_dtoa(double dval, char *buf)
 }
 
 #endif
-
-#ifndef PIC_DOUBLE_TO_CSTRING
-#define PIC_DOUBLE_TO_CSTRING pic_dtoa
-#endif
-void PIC_DOUBLE_TO_CSTRING(double, char *);
-
-#ifndef PIC_CSTRING_TO_DOUBLE
-#define PIC_CSTRING_TO_DOUBLE atof
-#endif
-double PIC_CSTRING_TO_DOUBLE(const char *);
 
 /* optional features available? */
 

@@ -170,45 +170,34 @@ DEFINE_AOP(div, pic_div(pic, pic_int_value(pic, 1), argv[0]), do {
   } while (0))
 
 static int
-number_string_length(int val, int radix)
+int2str(long x, int base, char *buf)
 {
-  unsigned long v = val; /* in case val == INT_MIN */
-  int count = 0;
-  if (val == 0) {
-    return 1;
-  }
-  if (val < 0) {
-    v = -val;
-    count = 1;
-  }
-  while (v > 0) {
-    ++count;
-    v /= radix;
-  }
-  return count;
-}
+  static const char digits[36] = "0123456789abcdefghijklmnopqrstuvwxyz";
+  int i, neg, len;
 
-static void
-number_string(int val, int radix, int length, char *buffer) {
-  const char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
-  unsigned long v = val;
-  int i;
-  if (val == 0) {
-    buffer[0] = '0';
-    buffer[1] = '\0';
-    return;
-  }
-  if (val < 0) {
-    buffer[0] = '-';
-    v = -val;
+  neg = 0;
+  if (x < 0) {
+    neg = 1;
+    x = -x;
   }
 
-  for(i = length - 1; v > 0; --i) {
-    buffer[i] = digits[v % radix];
-    v /= radix;
+  i = 0;
+  do {
+    buf[i++] = digits[x % base];
+  } while ((x /= base) != 0);
+
+  if (neg) {
+    buf[i++] = '-';
   }
-  buffer[length] = '\0';
-  return;
+  buf[i] = '\0';
+  len = i;
+
+  for (i = 0; i < len / 2; ++i) {
+    char tmp = buf[i];
+    buf[i] = buf[len - i - 1];
+    buf[len - i - 1] = tmp;
+  }
+  return len;
 }
 
 static pic_value
@@ -217,35 +206,23 @@ pic_number_number_to_string(pic_state *pic)
   double f;
   bool e;
   int radix = 10;
-  pic_value str;
 
   pic_get_args(pic, "F|i", &f, &e, &radix);
 
   if (radix < 2 || radix > 36) {
-    pic_error(pic, "number->string: invalid radix (between 2 and 36, inclusive)", 1, pic_int_value(pic, radix));
+    pic_error(pic, "invalid radix (between 2 and 36, inclusive)", 1, pic_int_value(pic, radix));
   }
 
   if (e) {
-    int ival = (int) f;
-    int ilen = number_string_length(ival, radix);
-    char *buf = pic_alloca(pic, ilen + 1);
-
-    number_string(ival, radix, ilen, buf);
-
-    str = pic_str_value(pic, buf, ilen);
+    char buf[sizeof(int) * CHAR_BIT + 3];
+    int len = int2str((int) f, radix, buf);
+    return pic_str_value(pic, buf, len);
   }
   else {
-    pic_value port = pic_fmemopen(pic, NULL, 0, "w");
-    const char *buf;
-    int len;
-
-    pic_fprintf(pic, port, "%f", f);
-    pic_fgetbuf(pic, port, &buf, &len);
-    str = pic_str_value(pic, buf, len);
-    pic_fclose(pic, port);
+    char buf[64];
+    pic_dtoa(f, buf);
+    return pic_cstr_value(pic, buf);
   }
-
-  return str;
 }
 
 static bool
@@ -295,7 +272,7 @@ string_to_number(pic_state *pic, const char *str)
     return pic_false_value(pic);
   }
 
-  flt = PIC_CSTRING_TO_DOUBLE(str);
+  flt = pic_atod(str);
 
   if (isint && INT_MIN <= flt && flt <= INT_MAX) {
     return pic_int_value(pic, flt);
