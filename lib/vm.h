@@ -52,6 +52,12 @@ enum {
   OP_STOP      = 39
 };
 
+struct code {
+  int insn;
+  int a;
+  int b;
+};
+
 #if defined(__cplusplus)
 }
 #endif

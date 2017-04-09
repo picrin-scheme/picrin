@@ -28,7 +28,7 @@ struct object {
     struct data data;
     struct record rec;
     struct proc proc;
-    struct context cxt;
+    struct frame frame;
     struct port port;
     struct error err;
     struct irep irep;
@@ -330,14 +330,14 @@ gc_mark_object(pic_state *pic, struct object *obj)
     }
     break;
   }
-  case PIC_TYPE_CXT: {
+  case PIC_TYPE_FRAME: {
     int i;
 
-    for (i = 0; i < obj->u.cxt.regc; ++i) {
-      gc_mark(pic, obj->u.cxt.regs[i]);
+    for (i = 0; i < obj->u.frame.regc; ++i) {
+      gc_mark(pic, obj->u.frame.regs[i]);
     }
-    if (obj->u.cxt.up) {
-      LOOP(obj->u.cxt.up);
+    if (obj->u.frame.up) {
+      LOOP(obj->u.frame.up);
     }
     break;
   }
@@ -349,8 +349,8 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_PROC_IREP: {
-    if (obj->u.proc.u.i.cxt) {
-      gc_mark_object(pic, (struct object *)obj->u.proc.u.i.cxt);
+    if (obj->u.proc.u.i.fp) {
+      gc_mark_object(pic, (struct object *)obj->u.proc.u.i.fp);
     }
     LOOP(obj->u.proc.u.i.irep);
     break;
@@ -542,7 +542,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 
   case PIC_TYPE_PAIR:
-  case PIC_TYPE_CXT:
+  case PIC_TYPE_FRAME:
   case PIC_TYPE_ERROR:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_PROC_FUNC:

@@ -81,12 +81,6 @@ struct record {
   pic_value datum;
 };
 
-struct code {
-  int insn;
-  int a;
-  int b;
-};
-
 struct irep {
   OBJECT_HEADER
   int argc, localc, capturec;
@@ -99,11 +93,11 @@ struct irep {
   size_t ncode, nirep, nints, nnums, npool;
 };
 
-struct context {
+struct frame {
   OBJECT_HEADER
-  pic_value *regs;
   int regc;
-  struct context *up;
+  pic_value *regs;
+  struct frame *up;
   pic_value storage[1];
 };
 
@@ -116,7 +110,7 @@ struct proc {
     } f;
     struct {
       struct irep *irep;
-      struct context *cxt;
+      struct frame *fp;
     } i;
   } u;
   pic_value locals[1];
@@ -260,7 +254,7 @@ DEFPTR(irep, struct irep)
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
 
 pic_value pic_make_proc_func(pic_state *, pic_func_t, int, pic_value *);
-pic_value pic_make_proc_irep(pic_state *, struct irep *, struct context *);
+pic_value pic_make_proc_irep(pic_state *, struct irep *, struct frame *);
 pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 pic_value pic_record_type(pic_state *pic, pic_value record);
 pic_value pic_record_datum(pic_state *pic, pic_value record);

@@ -17,10 +17,10 @@ struct callinfo {
   const struct code *ip;
   pic_value *fp;
   struct irep *irep;
-  struct context *cxt;
+  struct frame *cxt;
   int regc;
   pic_value *regs;
-  struct context *up;
+  struct frame *up;
 };
 
 KHASH_DECLARE(oblist, struct string *, struct symbol *)

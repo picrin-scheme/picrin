@@ -47,13 +47,13 @@ pic_make_proc_func(pic_state *pic, pic_func_t func, int n, pic_value *env)
 }
 
 pic_value
-pic_make_proc_irep(pic_state *pic, struct irep *irep, struct context *cxt)
+pic_make_proc_irep(pic_state *pic, struct irep *irep, struct frame *fp)
 {
   struct proc *proc;
 
   proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_PROC_IREP);
   proc->u.i.irep = irep;
-  proc->u.i.cxt = cxt;
+  proc->u.i.fp = fp;
   return obj_value(pic, proc);
 }
 
@@ -340,7 +340,7 @@ vm_push_cxt(pic_state *pic)
 {
   struct callinfo *ci = pic->ci;
 
-  ci->cxt = (struct context *)pic_obj_alloc(pic, offsetof(struct context, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_CXT);
+  ci->cxt = (struct frame *)pic_obj_alloc(pic, offsetof(struct frame, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_FRAME);
   ci->cxt->up = ci->up;
   ci->cxt->regc = ci->regc;
   ci->cxt->regs = ci->regs;
@@ -349,7 +349,7 @@ vm_push_cxt(pic_state *pic)
 static void
 vm_tear_off(struct callinfo *ci)
 {
-  struct context *cxt;
+  struct frame *cxt;
   int i;
 
   assert(ci->cxt != NULL);
@@ -525,7 +525,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     }
     CASE(OP_CREF) {
       int depth = c.a;
-      struct context *cxt;
+      struct frame *cxt;
 
       cxt = pic->ci->up;
       while (--depth) {
@@ -536,7 +536,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     }
     CASE(OP_CSET) {
       int depth = c.a;
-      struct context *cxt;
+      struct frame *cxt;
 
       cxt = pic->ci->up;
       while (--depth) {
@@ -630,7 +630,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 	}
 
 	/* prepare cxt */
-        ci->up = proc->u.i.cxt;
+        ci->up = proc->u.i.fp;
         ci->regc = irep->capturec;
         ci->regs = ci->fp + irep->argc + irep->localc;
 

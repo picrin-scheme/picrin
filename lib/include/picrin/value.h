@@ -32,7 +32,7 @@ enum {
   PIC_TYPE_RECORD    = 27,
   PIC_TYPE_SYMBOL    = 28,
   PIC_TYPE_PAIR      = 29,
-  PIC_TYPE_CXT       = 30,
+  PIC_TYPE_FRAME     = 30,
   PIC_TYPE_PROC_FUNC = 32,
   PIC_TYPE_PROC_IREP = 33,
   PIC_TYPE_IREP      = 34,

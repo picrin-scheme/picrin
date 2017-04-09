@@ -454,8 +454,8 @@ typename(pic_state *pic, pic_value obj)
     return "port";
   case PIC_TYPE_ERROR:
     return "error";
-  case PIC_TYPE_CXT:
-    return "context";
+  case PIC_TYPE_FRAME:
+    return "frame";
   case PIC_TYPE_IREP:
     return "irep";
   case PIC_TYPE_PROC_FUNC:
