@@ -21,6 +21,7 @@ LIBPICRIN_SRCS = \
 	lib/weak.c\
 	lib/ext/boot.c\
 	lib/ext/lib.c\
+	lib/ext/file.c\
 	lib/ext/load.c\
 	lib/ext/read.c\
 	lib/ext/write.c

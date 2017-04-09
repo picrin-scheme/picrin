@@ -7,18 +7,33 @@
 #include "object.h"
 #include "state.h"
 
+void
+pic_add_feature(pic_state *pic, const char *feature)
+{
+  pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
+}
+
 static pic_value
-pic_features(pic_state *pic)
+pic_state_features(pic_state *pic)
 {
   pic_get_args(pic, "");
 
   return pic->features;
 }
 
-static void
-pic_init_features(pic_state *pic)
+static pic_value
+pic_state_global_objects(pic_state *pic)
 {
-  pic_defun(pic, "features", pic_features);
+  pic_get_args(pic, "");
+
+  return pic->globals;
+}
+
+static void
+pic_init_state(pic_state *pic)
+{
+  pic_defun(pic, "features", pic_state_features);
+  pic_defun(pic, "global-objects", pic_state_global_objects);
 
   pic_add_feature(pic, "picrin");
 
@@ -75,20 +90,6 @@ pic_init_features(pic_state *pic)
 #endif
 }
 
-void
-pic_add_feature(pic_state *pic, const char *feature)
-{
-  pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
-}
-
-static pic_value
-pic_global_objects(pic_state *pic)
-{
-  pic_get_args(pic, "");
-
-  return pic->globals;
-}
-
 void pic_init_bool(pic_state *);
 void pic_init_pair(pic_state *);
 void pic_init_port(pic_state *);
@@ -108,6 +109,8 @@ void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
 void pic_init_weak(pic_state *);
 void pic_init_load(pic_state *);
+void pic_init_file(pic_state *);
+void pic_init_state(pic_state *);
 
 void pic_boot(pic_state *);
 
@@ -118,9 +121,6 @@ pic_init_core(pic_state *pic)
 {
   size_t ai = pic_enter(pic);
 
-  pic_defun(pic, "global-objects", pic_global_objects);
-
-  pic_init_features(pic); DONE;
   pic_init_bool(pic); DONE;
   pic_init_pair(pic); DONE;
   pic_init_port(pic); DONE;
@@ -134,14 +134,18 @@ pic_init_core(pic_state *pic)
   pic_init_error(pic); DONE;
   pic_init_str(pic); DONE;
   pic_init_var(pic); DONE;
-  pic_init_read(pic); DONE;
   pic_init_dict(pic); DONE;
   pic_init_record(pic); DONE;
   pic_init_weak(pic); DONE;
+  pic_init_state(pic); DONE;
   pic_init_load(pic); DONE;
+  pic_init_read(pic); DONE;
 
 #if PIC_USE_WRITE
   pic_init_write(pic); DONE;
+#endif
+#if PIC_USE_LIBC
+  pic_init_file(pic); DONE;
 #endif
 
   pic_boot(pic); DONE;
