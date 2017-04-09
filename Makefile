@@ -50,7 +50,7 @@ LDFLAGS += -lm
 
 prefix ?= /usr/local
 
-all: CFLAGS += -O2 -DNDEBUG=1
+all: CFLAGS += -O2 -g -DNDEBUG=1
 all: picrin
 
 debug: CFLAGS += -O0 -g
