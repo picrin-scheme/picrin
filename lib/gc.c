@@ -401,10 +401,8 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_RECORD: {
-    gc_mark(pic, obj->u.rec.type);
-    if (obj_p(pic, obj->u.rec.datum)) {
-      LOOP(obj_ptr(pic, obj->u.rec.datum));
-    }
+    gc_mark(pic, obj->u.rec.datum);
+    LOOP(obj->u.rec.type);
     break;
   }
   case PIC_TYPE_SYMBOL: {

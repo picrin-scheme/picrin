@@ -77,7 +77,7 @@ struct data {
 
 struct record {
   OBJECT_HEADER
-  pic_value type;
+  struct symbol *type;
   pic_value datum;
 };
 

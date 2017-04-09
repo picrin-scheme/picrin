@@ -11,7 +11,7 @@ pic_make_record(pic_state *pic, pic_value type, pic_value datum)
   struct record *rec;
 
   rec = (struct record *)pic_obj_alloc(pic, sizeof(struct record), PIC_TYPE_RECORD);
-  rec->type = type;
+  rec->type = sym_ptr(pic, type);
   rec->datum = datum;
 
   return obj_value(pic, rec);
@@ -20,7 +20,7 @@ pic_make_record(pic_state *pic, pic_value type, pic_value datum)
 pic_value
 pic_record_type(pic_state *pic, pic_value rec)
 {
-  return rec_ptr(pic, rec)->type;
+  return obj_value(pic, rec_ptr(pic, rec)->type);
 }
 
 pic_value
@@ -34,7 +34,7 @@ pic_rec_make_record(pic_state *pic)
 {
   pic_value type, datum;
 
-  pic_get_args(pic, "oo", &type, &datum);
+  pic_get_args(pic, "mo", &type, &datum);
 
   return pic_make_record(pic, type, datum);
 }
