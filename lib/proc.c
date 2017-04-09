@@ -28,7 +28,33 @@ pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
   for (i = 0; i < n; ++i) {
     env[i] = va_arg(ap, pic_value);
   }
-  return pic_make_proc(pic, f, n, env);
+  return pic_make_proc_func(pic, f, n, env);
+}
+
+pic_value
+pic_make_proc_func(pic_state *pic, pic_func_t func, int n, pic_value *env)
+{
+  struct proc *proc;
+  int i;
+
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC_FUNC);
+  proc->u.f.func = func;
+  proc->u.f.localc = n;
+  for (i = 0; i < n; ++i) {
+    proc->locals[i] = env[i];
+  }
+  return obj_value(pic, proc);
+}
+
+pic_value
+pic_make_proc_irep(pic_state *pic, struct irep *irep, struct context *cxt)
+{
+  struct proc *proc;
+
+  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_PROC_IREP);
+  proc->u.i.irep = irep;
+  proc->u.i.cxt = cxt;
+  return obj_value(pic, proc);
 }
 
 PIC_NORETURN static void
@@ -285,6 +311,30 @@ pic_closure_set(pic_state *pic, int n, pic_value v)
   proc_ptr(pic, self)->locals[n] = v;
 }
 
+pic_value
+pic_call(pic_state *pic, pic_value proc, int n, ...)
+{
+  pic_value r;
+  va_list ap;
+
+  va_start(ap, n);
+  r = pic_vcall(pic, proc, n, ap);
+  va_end(ap);
+  return r;
+}
+
+pic_value
+pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
+{
+  pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
+  int i;
+
+  for (i = 0; i < n; ++i) {
+    args[i] = va_arg(ap, pic_value);
+  }
+  return pic_apply(pic, proc, n, args);
+}
+
 static void
 vm_push_cxt(pic_state *pic)
 {
@@ -327,26 +377,6 @@ pic_vm_tear_off(pic_state *pic)
   }
 }
 
-#if PIC_DIRECT_THREADED_VM
-# define VM_LOOP JUMP;
-# define CASE(x) L_##x:
-# define NEXT pic->ip++; JUMP;
-# define JUMP c = *pic->ip; goto *oplabels[c.insn];
-# define VM_LOOP_END
-#else
-# define VM_LOOP for (;;) { c = *pic->ip; switch (c.insn) {
-# define CASE(x) case x:
-# define NEXT pic->ip++; break
-# define JUMP break
-# define VM_LOOP_END } }
-#endif
-
-#define PUSH(v) ((*pic->sp = (v)), pic->sp++)
-#define POP() (*--pic->sp)
-
-#define PUSHCI() (++pic->ci)
-#define POPCI() (pic->ci--)
-
 /* for arithmetic instructions */
 pic_value pic_add(pic_state *, pic_value, pic_value);
 pic_value pic_sub(pic_state *, pic_value, pic_value);
@@ -366,6 +396,38 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
   struct code boot[2];
   int i;
 
+#define PUSH(v) ((*pic->sp = (v)), pic->sp++)
+#define POP() (*--pic->sp)
+
+#define PUSHCI() (++pic->ci)
+#define POPCI() (pic->ci--)
+
+  PUSH(proc);
+
+  for (i = 0; i < argc; ++i) {
+    PUSH(argv[i]);
+  }
+
+  /* boot! */
+  boot[0].insn = OP_CALL;
+  boot[0].a = argc + 1;
+  boot[1].insn = OP_STOP;
+  pic->ip = boot;
+
+#if PIC_DIRECT_THREADED_VM
+# define VM_LOOP JUMP;
+# define CASE(x) L_##x:
+# define NEXT pic->ip++; JUMP;
+# define JUMP c = *pic->ip; goto *oplabels[c.insn];
+# define VM_LOOP_END
+#else
+# define VM_LOOP for (;;) { c = *pic->ip; switch (c.insn) {
+# define CASE(x) case x:
+# define NEXT pic->ip++; break
+# define JUMP break
+# define VM_LOOP_END } }
+#endif
+
 #if PIC_DIRECT_THREADED_VM
   static const void *oplabels[] = {
     &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHUNDEF, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE,
@@ -379,18 +441,6 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
     &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_GT, &&L_OP_GE, &&L_OP_STOP
   };
 #endif
-
-  PUSH(proc);
-
-  for (i = 0; i < argc; ++i) {
-    PUSH(argv[i]);
-  }
-
-  /* boot! */
-  boot[0].insn = OP_CALL;
-  boot[0].a = argc + 1;
-  boot[1].insn = OP_STOP;
-  pic->ip = boot;
 
   VM_LOOP {
     CASE(OP_NOP) {
@@ -791,56 +841,6 @@ pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
   } else {
     return args[0];
   }
-}
-
-pic_value
-pic_call(pic_state *pic, pic_value proc, int n, ...)
-{
-  pic_value r;
-  va_list ap;
-
-  va_start(ap, n);
-  r = pic_vcall(pic, proc, n, ap);
-  va_end(ap);
-  return r;
-}
-
-pic_value
-pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
-{
-  pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
-  int i;
-
-  for (i = 0; i < n; ++i) {
-    args[i] = va_arg(ap, pic_value);
-  }
-  return pic_apply(pic, proc, n, args);
-}
-
-pic_value
-pic_make_proc(pic_state *pic, pic_func_t func, int n, pic_value *env)
-{
-  struct proc *proc;
-  int i;
-
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC_FUNC);
-  proc->u.f.func = func;
-  proc->u.f.localc = n;
-  for (i = 0; i < n; ++i) {
-    proc->locals[i] = env[i];
-  }
-  return obj_value(pic, proc);
-}
-
-pic_value
-pic_make_proc_irep(pic_state *pic, struct irep *irep, struct context *cxt)
-{
-  struct proc *proc;
-
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_PROC_IREP);
-  proc->u.i.irep = irep;
-  proc->u.i.cxt = cxt;
-  return obj_value(pic, proc);
 }
 
 static pic_value

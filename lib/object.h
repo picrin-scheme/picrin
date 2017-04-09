@@ -151,7 +151,6 @@ struct error {
   struct symbol *type;
   struct string *msg;
   pic_value irrs;
-  struct string *stack;
 };
 
 #define TYPENAME_int   "integer"
@@ -260,7 +259,7 @@ DEFPTR(irep, struct irep)
 
 struct object *pic_obj_alloc(pic_state *, size_t, int type);
 
-pic_value pic_make_proc(pic_state *, pic_func_t, int, pic_value *);
+pic_value pic_make_proc_func(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct irep *, struct context *);
 pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 pic_value pic_record_type(pic_state *pic, pic_value record);

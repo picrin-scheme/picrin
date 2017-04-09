@@ -370,9 +370,8 @@ gc_mark_object(pic_state *pic, struct object *obj)
   }
   case PIC_TYPE_ERROR: {
     gc_mark_object(pic, (struct object *)obj->u.err.type);
-    gc_mark_object(pic, (struct object *)obj->u.err.msg);
     gc_mark(pic, obj->u.err.irrs);
-    LOOP(obj->u.err.stack);
+    LOOP(obj->u.err.msg);
     break;
   }
   case PIC_TYPE_STRING: {

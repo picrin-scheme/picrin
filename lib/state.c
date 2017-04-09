@@ -164,9 +164,6 @@ pic_open(pic_allocf allocf, void *userdata)
   /* user data */
   pic->userdata = userdata;
 
-  /* turn off GC */
-  pic->gc_enable = false;
-
   /* continuation chain */
   pic->cc = NULL;
 
@@ -186,7 +183,7 @@ pic_open(pic_allocf allocf, void *userdata)
     goto EXIT_CI;
   }
 
-  /* GC arena */
+  /* arena */
   pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct object *));
   pic->arena_size = PIC_ARENA_SIZE;
   pic->arena_idx = 0;
@@ -195,6 +192,9 @@ pic_open(pic_allocf allocf, void *userdata)
     goto EXIT_ARENA;
   }
 
+  /* turn off GC */
+  pic->gc_enable = false;
+
   /* memory heap */
   pic->heap = pic_heap_open(pic);
 
@@ -202,21 +202,19 @@ pic_open(pic_allocf allocf, void *userdata)
   kh_init(oblist, &pic->oblist);
 
   /* global variables */
-  pic->globals = pic_invalid_value(pic);
+  pic->globals = pic_make_dict(pic);
 
   /* features */
   pic->features = pic_nil_value(pic);
 
   /* dynamic environment */
-  pic->dyn_env = pic_invalid_value(pic);
-
-  /* raised error object */
-  pic->panicf = NULL;
-  pic->err = pic_invalid_value(pic);
-
-  /* root tables */
-  pic->globals = pic_make_dict(pic);
   pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
+
+  /* panic handler */
+  pic->panicf = NULL;
+
+  /* error object */
+  pic->err = pic_invalid_value(pic);
 
   /* turn on GC */
   pic->gc_enable = true;
@@ -266,7 +264,6 @@ pic_close(pic_state *pic)
 
   /* free GC arena */
   allocf(pic->userdata, pic->arena, 0);
-
   allocf(pic->userdata, pic, 0);
 }
 
@@ -320,7 +317,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t f)
 {
-  pic_define(pic, name, pic_make_proc(pic, f, 0, NULL));
+  pic_define(pic, name, pic_make_proc_func(pic, f, 0, NULL));
 }
 
 void
