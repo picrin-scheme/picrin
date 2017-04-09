@@ -35,14 +35,22 @@ pic_value
 pic_make_proc_func(pic_state *pic, pic_func_t func, int n, pic_value *env)
 {
   struct proc *proc;
-  int i;
+  struct frame *fp = NULL;
 
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals) + sizeof(pic_value) * n, PIC_TYPE_PROC_FUNC);
-  proc->u.f.func = func;
-  proc->u.f.localc = n;
-  for (i = 0; i < n; ++i) {
-    proc->locals[i] = env[i];
+  if (n > 0) {
+    int i;
+    fp = (struct frame *)pic_obj_alloc(pic, offsetof(struct frame, storage) + sizeof(pic_value) * n, PIC_TYPE_FRAME);
+    fp->regc = n;
+    fp->regs = fp->storage;
+    fp->up = NULL;
+    for (i = 0; i < n; ++i) {
+      fp->regs[i] = env[i];
+    }
   }
+
+  proc = (struct proc *)pic_obj_alloc(pic, sizeof(struct proc), PIC_TYPE_PROC_FUNC);
+  proc->u.func = func;
+  proc->fp = fp;
   return obj_value(pic, proc);
 }
 
@@ -51,9 +59,9 @@ pic_make_proc_irep(pic_state *pic, struct irep *irep, struct frame *fp)
 {
   struct proc *proc;
 
-  proc = (struct proc *)pic_obj_alloc(pic, offsetof(struct proc, locals), PIC_TYPE_PROC_IREP);
-  proc->u.i.irep = irep;
-  proc->u.i.fp = fp;
+  proc = (struct proc *)pic_obj_alloc(pic, sizeof(struct proc), PIC_TYPE_PROC_IREP);
+  proc->u.irep = irep;
+  proc->fp = fp;
   return obj_value(pic, proc);
 }
 
@@ -292,23 +300,25 @@ pic_get_args(pic_state *pic, const char *format, ...)
 pic_value
 pic_closure_ref(pic_state *pic, int n)
 {
-  pic_value self = GET_PROC(pic);
+  struct proc *proc = proc_ptr(pic, GET_PROC(pic));
 
-  if (n < 0 || proc_ptr(pic, self)->u.f.localc <= n) {
+  assert(n >= 0);
+  if (proc->fp == NULL || proc->fp->regc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  return proc_ptr(pic, self)->locals[n];
+  return proc->fp->regs[n];
 }
 
 void
 pic_closure_set(pic_state *pic, int n, pic_value v)
 {
-  pic_value self = GET_PROC(pic);
+  struct proc *proc = proc_ptr(pic, GET_PROC(pic));
 
-  if (n < 0 || proc_ptr(pic, self)->u.f.localc <= n) {
+  assert(n >= 0);
+  if (proc->fp == NULL || proc->fp->regc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  proc_ptr(pic, self)->locals[n] = v;
+  proc->fp->regs[n] = v;
 }
 
 pic_value
@@ -591,7 +601,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       if (proc->tt == PIC_TYPE_PROC_FUNC) {
 
         /* invoke! */
-        v = proc->u.f.func(pic);
+        v = proc->u.func(pic);
         pic->sp[0] = v;
         pic->sp += pic->ci->retc;
 
@@ -599,7 +609,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
         goto L_RET;
       }
       else {
-        struct irep *irep = proc->u.i.irep;
+        struct irep *irep = proc->u.irep;
 	int i;
 	pic_value rest;
 
@@ -630,7 +640,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 	}
 
 	/* prepare cxt */
-        ci->up = proc->u.i.fp;
+        ci->up = proc->fp;
         ci->regc = irep->capturec;
         ci->regs = ci->fp + irep->argc + irep->localc;
 

@@ -342,17 +342,16 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_PROC_FUNC: {
-    int i;
-    for (i = 0; i < obj->u.proc.u.f.localc; ++i) {
-      gc_mark(pic, obj->u.proc.locals[i]);
+    if (obj->u.proc.fp) {
+      LOOP(obj->u.proc.fp);
     }
     break;
   }
   case PIC_TYPE_PROC_IREP: {
-    if (obj->u.proc.u.i.fp) {
-      gc_mark_object(pic, (struct object *)obj->u.proc.u.i.fp);
+    if (obj->u.proc.fp) {
+      gc_mark_object(pic, (struct object *)obj->u.proc.fp);
     }
-    LOOP(obj->u.proc.u.i.irep);
+    LOOP(obj->u.proc.u.irep);
     break;
   }
   case PIC_TYPE_IREP: {

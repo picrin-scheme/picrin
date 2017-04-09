@@ -107,16 +107,10 @@ struct frame {
 struct proc {
   OBJECT_HEADER
   union {
-    struct {
-      pic_func_t func;
-      int localc;
-    } f;
-    struct {
-      struct irep *irep;
-      struct frame *fp;
-    } i;
+    pic_func_t func;
+    struct irep *irep;
   } u;
-  pic_value locals[1];
+  struct frame *fp;
 };
 
 enum {
