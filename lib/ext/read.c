@@ -752,25 +752,6 @@ pic_read(pic_state *pic, pic_value port)
   return pic_protect(pic, val);
 }
 
-pic_value
-pic_read_cstr(pic_state *pic, const char *str)
-{
-  pic_value port = pic_fmemopen(pic, str, strlen(str), "r");
-  pic_value form, e;
-
-  pic_try {
-    form = pic_read(pic, port);
-  }
-  pic_catch(e) {
-    pic_fclose(pic, port);
-    pic_raise(pic, e);
-  }
-
-  pic_fclose(pic, port);
-
-  return form;
-}
-
 static pic_value
 pic_read_read(pic_state *pic)
 {

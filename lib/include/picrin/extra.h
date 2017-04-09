@@ -12,18 +12,13 @@ extern "C" {
 
 #if PIC_USE_LIBC
 void *pic_default_allocf(void *, void *, size_t);
-#endif
-
-pic_value pic_read(pic_state *, pic_value port);
-pic_value pic_read_cstr(pic_state *, const char *);
-
-#if PIC_USE_STDIO
 pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 #endif
 
+pic_value pic_read(pic_state *, pic_value port);
+
 pic_value pic_load(pic_state *, pic_value irep);
 void pic_load_native(pic_state *pic, const char *);
-
 
 /*
  * library

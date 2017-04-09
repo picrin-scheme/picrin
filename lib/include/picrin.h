@@ -194,7 +194,6 @@ bool pic_dict_next(pic_state *, pic_value dict, int *iter, pic_value *key, pic_v
  * ephemeron table
  */
 
-bool pic_weak_p(pic_state *, pic_value);
 pic_value pic_make_weak(pic_state *);
 pic_value pic_weak_ref(pic_state *, pic_value weak, pic_value key);
 void pic_weak_set(pic_state *, pic_value weak, pic_value key, pic_value val);
@@ -261,16 +260,17 @@ typedef struct {
 bool pic_eof_p(pic_state *, pic_value);
 pic_value pic_eof_object(pic_state *);
 bool pic_port_p(pic_state *, pic_value, const pic_port_type *type);
+/* basic methods */
 pic_value pic_funopen(pic_state *, void *cookie, const pic_port_type *type);
 size_t pic_fread(pic_state *, void *ptr, size_t size, size_t count, pic_value port);
 size_t pic_fwrite(pic_state *, const void *ptr, size_t size, size_t count, pic_value port);
 long pic_fseek(pic_state *, pic_value port, long offset, int whence);
 int pic_fclose(pic_state *, pic_value port);
-/* error */
+/* error handling */
 void pic_clearerr(pic_state *, pic_value port);
 int pic_feof(pic_state *, pic_value port);
 int pic_ferror(pic_state *, pic_value port);
-/* basic I/O */
+/* character I/O */
 int pic_fputc(pic_state *, int c, pic_value port);
 int pic_fgetc(pic_state *, pic_value port);
 int pic_fputs(pic_state *, const char *s, pic_value port);
