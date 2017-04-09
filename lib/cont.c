@@ -104,7 +104,7 @@ pic_alloca_cont(pic_state *pic)
 }
 
 static pic_value
-values(pic_state *pic, int argc, pic_value *argv)
+valuesk(pic_state *pic, int argc, pic_value *argv)
 {
   int i;
 
@@ -123,7 +123,7 @@ pic_callcc(pic_state *pic, pic_value proc)
   volatile struct cont *cont = pic_alloca_cont(pic);
 
   if (PIC_SETJMP(pic, jmp)) {
-    return values(pic, cont->retc, cont->retv);
+    return valuesk(pic, cont->retc, cont->retv);
   }
   else {
     pic_value val;
@@ -159,7 +159,7 @@ pic_vvalues(pic_state *pic, int n, va_list ap)
   for (i = 0; i < n; ++i) {
     retv[i] = va_arg(ap, pic_value);
   }
-  return values(pic, n, retv);
+  return valuesk(pic, n, retv);
 }
 
 int
@@ -196,7 +196,7 @@ pic_cont_values(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  return values(pic, argc, argv);
+  return valuesk(pic, argc, argv);
 }
 
 static pic_value
