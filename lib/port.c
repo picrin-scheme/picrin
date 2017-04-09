@@ -388,47 +388,6 @@ pic_fopen(pic_state *pic, FILE *fp, const char *mode) {
   }
 }
 
-#else
-
-static int
-null_read(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), char *PIC_UNUSED(ptr), int PIC_UNUSED(size)) {
-  return 0;
-}
-
-static int
-null_write(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), const char *PIC_UNUSED(ptr), int size) {
-  return size;
-}
-
-static long
-null_seek(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie), long PIC_UNUSED(pos), int PIC_UNUSED(whence)) {
-  return 0;
-}
-
-static int
-null_close(pic_state *PIC_UNUSED(pic), void *PIC_UNUSED(cookie)) {
-  return 0;
-}
-
-
-static const pic_port_type null_rd = {
-  null_read, 0, null_seek, null_close
-};
-static const pic_port_type null_wr = {
-  0, null_write, null_seek, null_close
-};
-
-static pic_value
-pic_fopen_null(pic_state *PIC_UNUSED(pic), const char *mode)
-{
-  switch (*mode) {
-  case 'r':
-    return pic_funopen(pic, 0, &null_rd);
-  default:
-    return pic_funopen(pic, 0, &null_wr);
-  }
-}
-
 #endif
 
 typedef struct { char *buf; long pos, end, capa; } xbuf_t;
@@ -791,10 +750,6 @@ pic_init_port(pic_state *pic)
   pic_defvar(pic, "current-input-port", pic_fopen(pic, stdin, "r"));
   pic_defvar(pic, "current-output-port", pic_fopen(pic, stdout, "w"));
   pic_defvar(pic, "current-error-port", pic_fopen(pic, stdout, "w"));
-#else
-  pic_defvar(pic, "current-input-port", pic_fopen_null(pic, "r"));
-  pic_defvar(pic, "current-output-port", pic_fopen_null(pic, "w"));
-  pic_defvar(pic, "current-error-port", pic_fopen_null(pic, "w"));
 #endif
 
   pic_defun(pic, "port?", pic_port_port_p);
