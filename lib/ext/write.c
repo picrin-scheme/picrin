@@ -172,7 +172,8 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
   switch (pic_type(pic, obj)) {
   case PIC_TYPE_PAIR:
   case PIC_TYPE_VECTOR:
-  case PIC_TYPE_DICT: {
+  case PIC_TYPE_DICT:
+  case PIC_TYPE_RECORD: {
 
     if (! pic_weak_has(pic, shared, obj)) {
       /* first time */
@@ -188,13 +189,16 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
         for (i = 0; i < len; ++i) {
           traverse(pic, pic_vec_ref(pic, obj, i), p);
         }
-      } else {
+      } else if (pic_dict_p(pic, obj)) {
         /* dictionary */
         int it = 0;
         pic_value val;
         while (pic_dict_next(pic, obj, &it, NULL, &val)) {
           traverse(pic, val, p);
         }
+      } else {
+        /* record */
+        traverse(pic, pic_record_datum(pic, obj), p);
       }
 
       if (p->op == OP_WRITE) {
