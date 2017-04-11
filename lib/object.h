@@ -11,17 +11,11 @@ extern "C" {
 
 #include "khash.h"
 
-#if PIC_BITMAP_GC
-# define OBJECT_HEADER                           \
+#define OBJECT_HEADER                           \
   unsigned char tt;
-#else
-# define OBJECT_HEADER                           \
-  unsigned char tt;
-#endif
 
-#if !PIC_BITMAP_GC
-# define GC_MARK 0x80
-#endif
+#define TYPE_MASK 0x7f
+#define GC_MARK 0x80
 
 struct object;              /* defined in gc.c */
 
@@ -171,23 +165,11 @@ struct error {
     if (tolen - at < e - s) pic_error(pic, "invalid range", 0);        \
   } while (0)
 
-#if PIC_BITMAP_GC
-
 PIC_STATIC_INLINE int
 obj_type(pic_state *PIC_UNUSED(pic), void *ptr)
 {
-  return ((struct basic *)ptr)->tt;
+  return ((struct basic *)ptr)->tt & TYPE_MASK;
 }
-
-#else
-
-PIC_STATIC_INLINE int
-obj_type(pic_state *PIC_UNUSED(pic), void *ptr)
-{
-  return ((struct basic *)ptr)->tt & ~GC_MARK;
-}
-
-#endif
 
 #if !PIC_NAN_BOXING
 

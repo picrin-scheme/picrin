@@ -489,9 +489,3 @@ pic_dtoa(double dval, char *buf)
 #else
 # define PIC_NAN_BOXING 0
 #endif
-
-#if PIC_USE_LIBC && (defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)))
-# include <unistd.h>
-# define PIC_MEMALIGN(pic, buf, alignment, size) posix_memalign(buf, alignment, size)
-# define PIC_BITMAP_GC 1
-#endif
