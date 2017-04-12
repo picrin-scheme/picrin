@@ -61,7 +61,7 @@ void abort(void);
 #endif
 
 #ifndef PIC_STACK_SIZE
-# define PIC_STACK_SIZE 2048
+# define PIC_STACK_SIZE 8192
 #endif
 
 #ifndef PIC_RESCUE_SIZE
