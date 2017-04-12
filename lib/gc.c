@@ -55,7 +55,7 @@ struct heap {
   struct weak *weaks;           /* weak map chain */
 };
 
-#define unitsof(type) (type2size(type) + sizeof(union header) - 1 / sizeof(union header) + 1)
+#define unitsof(type) (type2size(type) + sizeof(union header) - 1 / sizeof(union header))
 
 struct heap *
 pic_heap_open(pic_state *pic)
@@ -501,7 +501,7 @@ obj_alloc(pic_state *pic, int type)
   }
   pic->heap->freep = prevp;
 
-  obj = (struct object *)(p + 1);
+  obj = (struct object *) p;
   obj->u.basic.tt = type;
   return obj;
 }
@@ -560,18 +560,19 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
 {
   union header *bp, *p, *head = NULL, *tail = NULL;
   struct object *obj;
-  size_t alive = 0;
+  size_t alive = 0, nunits;
 
   for (bp = page->u.basep; ; bp = bp->s.ptr) {
     p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advnce */
-    for (; p != bp->s.ptr; p += p->s.size) {
+    while (p != bp->s.ptr) {
       if (p < page->u.basep || page->u.basep + PAGE_UNITS <= p) {
         goto escape;
       }
-      obj = (struct object *)(p + 1);
+      obj = (struct object *) p;
+      nunits = unitsof(obj_type(pic, obj));
       if (obj->u.basic.tt & GC_MARK) {
         obj->u.basic.tt &= ~GC_MARK;
-        alive += p->s.size;
+        alive += nunits;
       } else {
         gc_finalize_object(pic, obj);
         if (head == NULL) {
@@ -581,8 +582,10 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
           tail->s.ptr = p;
         }
         tail = p;
+        tail->s.size = nunits;
         tail->s.ptr = NULL; /* We can safely reuse ptr field of dead object */
       }
+      p += nunits;
     }
   }
  escape:
