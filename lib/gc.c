@@ -6,14 +6,10 @@
 #include "object.h"
 #include "state.h"
 
-#define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - offsetof(struct heap_page, basep)) / sizeof(union header))
+#define PAGE_UNITS ((PIC_HEAP_PAGE_SIZE - offsetof(struct heap_page, u)) / sizeof(union header))
 
-union header {
-  struct {
-    union header *ptr;
-    size_t size;
-  } s;
-};
+#define alignof(type) offsetof(struct { char c; type m; }, m)
+#define roundup(n,unit) (((n) + (unit) - 1) / (unit) * (unit))
 
 struct object {
   union {
@@ -35,16 +31,31 @@ struct object {
   } u;
 };
 
+struct free_region {
+  union header *ptr;
+  size_t size;
+};
+
+union header {
+  struct free_region s;
+  char alignment[roundup(sizeof(struct free_region), alignof(struct object))];
+};
+
+struct heap_page {
+  struct heap_page *next;
+  union {
+    union header basep[1];
+    struct object alignment;
+  } u;
+};
+
 struct heap {
   union header base, *freep;
   struct heap_page *pages;
   struct weak *weaks;           /* weak map chain */
 };
 
-struct heap_page {
-  struct heap_page *next;
-  union header basep[1];
-};
+#define unitsof(type) (type2size(type) + sizeof(union header) - 1 / sizeof(union header) + 1)
 
 struct heap *
 pic_heap_open(pic_state *pic)
@@ -469,7 +480,7 @@ obj_alloc(pic_state *pic, int type)
   struct object *obj;
   size_t nunits;
 
-  nunits = (type2size(type) + sizeof(union header) - 1) / sizeof(union header) + 1;
+  nunits = unitsof(type);
 
   prevp = pic->heap->freep;
   for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
@@ -533,11 +544,11 @@ heap_morecore(pic_state *pic)
   page = pic_malloc(pic, PIC_HEAP_PAGE_SIZE);
   page->next = pic->heap->pages;
 
-  bp = page->basep;
+  bp = page->u.basep;
   bp->s.size = 0;      /* bp is never used for allocation */
   free_chunk(pic, bp);
 
-  np = page->basep + 1;
+  np = page->u.basep + 1;
   np->s.size = PAGE_UNITS - 1;
   free_chunk(pic, np);
 
@@ -551,10 +562,10 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   struct object *obj;
   size_t alive = 0;
 
-  for (bp = page->basep; ; bp = bp->s.ptr) {
+  for (bp = page->u.basep; ; bp = bp->s.ptr) {
     p = bp + (bp->s.size ? bp->s.size : 1); /* first bp's size is 0, so force advnce */
     for (; p != bp->s.ptr; p += p->s.size) {
-      if (p < page->basep || page->basep + PAGE_UNITS <= p) {
+      if (p < page->u.basep || page->u.basep + PAGE_UNITS <= p) {
         goto escape;
       }
       obj = (struct object *)(p + 1);
@@ -562,7 +573,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
         obj->u.basic.tt &= ~GC_MARK;
         alive += p->s.size;
       } else {
-        gc_finalize_object(pic, (struct object *)(p + 1));
+        gc_finalize_object(pic, obj);
         if (head == NULL) {
           head = p;
         }
