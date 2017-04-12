@@ -496,13 +496,11 @@ obj_alloc(pic_state *pic, int type)
 }
 
 static void
-heap_free(pic_state *pic, void *ap)
+free_chunk(pic_state *pic, union header *bp)
 {
-  union header *bp, *p;
+  union header *p;
 
-  assert(ap != NULL);
-
-  bp = (union header *)ap - 1;
+  assert(bp != NULL);
 
   for (p = pic->heap->freep; ! (bp > p && bp < p->s.ptr); p = p->s.ptr) {
     if (p >= p->s.ptr && (bp > p || bp < p->s.ptr)) {
@@ -537,11 +535,11 @@ heap_morecore(pic_state *pic)
 
   bp = page->basep;
   bp->s.size = 0;      /* bp is never used for allocation */
-  heap_free(pic, bp + 1);
+  free_chunk(pic, bp);
 
   np = page->basep + 1;
   np->s.size = PAGE_UNITS - 1;
-  heap_free(pic, np + 1);
+  free_chunk(pic, np);
 
   pic->heap->pages = page;
 }
@@ -564,6 +562,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
         obj->u.basic.tt &= ~GC_MARK;
         alive += p->s.size;
       } else {
+        gc_finalize_object(pic, (struct object *)(p + 1));
         if (head == NULL) {
           head = p;
         }
@@ -581,8 +580,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
   while (head != NULL) {
     p = head;
     head = head->s.ptr;
-    gc_finalize_object(pic, (struct object *)(p + 1));
-    heap_free(pic, p + 1);
+    free_chunk(pic, p);
   }
 
   return alive;
