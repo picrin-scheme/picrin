@@ -39,7 +39,8 @@ pic_make_proc_func(pic_state *pic, pic_func_t func, int n, pic_value *env)
 
   if (n > 0) {
     int i;
-    fp = (struct frame *)pic_obj_alloc(pic, offsetof(struct frame, storage) + sizeof(pic_value) * n, PIC_TYPE_FRAME);
+    fp = (struct frame *)pic_obj_alloc(pic, sizeof(struct frame), PIC_TYPE_FRAME);
+    fp->storage = pic_malloc(pic, sizeof(pic_value) * n);
     fp->regc = n;
     fp->regs = fp->storage;
     fp->up = NULL;
@@ -350,7 +351,8 @@ vm_push_cxt(pic_state *pic)
 {
   struct callinfo *ci = pic->ci;
 
-  ci->cxt = (struct frame *)pic_obj_alloc(pic, offsetof(struct frame, storage) + sizeof(pic_value) * ci->regc, PIC_TYPE_FRAME);
+  ci->cxt = (struct frame *)pic_obj_alloc(pic, sizeof(struct frame), PIC_TYPE_FRAME);
+  ci->cxt->storage = pic_malloc(pic, sizeof(pic_value) * ci->regc);
   ci->cxt->up = ci->up;
   ci->cxt->regc = ci->regc;
   ci->cxt->regs = ci->regs;

@@ -422,9 +422,12 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_fclose(pic, obj_value(pic, obj)); /* FIXME */
     break;
   }
+  case PIC_TYPE_FRAME: {
+    pic_free(pic, obj->u.frame.storage);
+    break;
+  }
 
   case PIC_TYPE_PAIR:
-  case PIC_TYPE_FRAME:
   case PIC_TYPE_ERROR:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_PROC_FUNC:

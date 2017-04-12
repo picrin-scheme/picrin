@@ -95,7 +95,7 @@ struct frame {
   int regc;
   pic_value *regs;
   struct frame *up;
-  pic_value storage[1];
+  pic_value *storage;
 };
 
 struct proc {
