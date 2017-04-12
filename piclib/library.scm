@@ -91,7 +91,12 @@
             (parameterize ((current-library name))
               (for-each
                (lambda (expr)
-                 (eval expr name))   ; TODO parse library declarations
+                 (let ((exprs (if (and (pair? expr) (eq? (car expr) 'begin))
+                                  (cdr expr)
+                                  (list expr))))
+                   (for-each
+                    (lambda (e) (eval e name))
+                    exprs)))
                body)))))
 
       (define-transformer 'cond-expand
