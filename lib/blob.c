@@ -10,7 +10,7 @@ pic_blob_value(pic_state *pic, const unsigned char *buf, int len)
 {
   struct blob *bv;
 
-  bv = (struct blob *)pic_obj_alloc(pic, sizeof(struct blob), PIC_TYPE_BLOB);
+  bv = (struct blob *)pic_obj_alloc(pic, PIC_TYPE_BLOB);
   bv->data = pic_malloc(pic, len);
   bv->len = len;
   if (buf) {

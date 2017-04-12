@@ -416,7 +416,7 @@ codegen_context_destroy(pic_state *pic, codegen_context *cxt)
   struct irep *irep;
 
   /* create irep */
-  irep = (struct irep *)pic_obj_alloc(pic, sizeof(struct irep), PIC_TYPE_IREP);
+  irep = (struct irep *)pic_obj_alloc(pic, PIC_TYPE_IREP);
   irep->varg = pic_sym_p(pic, cxt->rest);
   irep->argc = pic_vec_len(pic, cxt->args) + 1;
   irep->localc = pic_vec_len(pic, cxt->locals);

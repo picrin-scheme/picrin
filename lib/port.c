@@ -15,7 +15,7 @@ pic_funopen(pic_state *pic, void *cookie, const pic_port_type *type)
 {
   struct port *port;
 
-  port = (struct port *)pic_obj_alloc(pic, sizeof(struct port), PIC_TYPE_PORT);
+  port = (struct port *)pic_obj_alloc(pic, PIC_TYPE_PORT);
   port->file.cnt = 0;
   port->file.base = NULL;
   port->file.flag = type->read ? FILE_READ : FILE_WRITE;

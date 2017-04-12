@@ -85,7 +85,7 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
   struct error *e;
   pic_value ty = pic_intern_cstr(pic, type);
 
-  e = (struct error *)pic_obj_alloc(pic, sizeof(struct error), PIC_TYPE_ERROR);
+  e = (struct error *)pic_obj_alloc(pic, PIC_TYPE_ERROR);
   e->type = sym_ptr(pic, ty);
   e->msg = str_ptr(pic, pic_cstr_value(pic, msg));
   e->irrs = irrs;

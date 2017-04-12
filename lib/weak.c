@@ -41,7 +41,7 @@ pic_make_weak(pic_state *pic)
 {
   struct weak *weak;
 
-  weak = (struct weak *)pic_obj_alloc(pic, sizeof(struct weak), PIC_TYPE_WEAK);
+  weak = (struct weak *)pic_obj_alloc(pic, PIC_TYPE_WEAK);
   weak->prev = NULL;
   kh_init(weak, &weak->hash);
   return pic_lambda(pic, weak_call, 1, obj_value(pic, weak));

@@ -439,15 +439,37 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 }
 
-static void *
-heap_alloc(pic_state *pic, size_t size)
+static size_t
+type2size(int type)
+{
+  switch (type) {
+  case PIC_TYPE_VECTOR: return sizeof(struct vector);
+  case PIC_TYPE_BLOB: return sizeof(struct blob);
+  case PIC_TYPE_STRING: return sizeof(struct string);
+  case PIC_TYPE_DATA: return sizeof(struct data);
+  case PIC_TYPE_DICT: return sizeof(struct dict);
+  case PIC_TYPE_SYMBOL: return sizeof(struct symbol);
+  case PIC_TYPE_WEAK: return sizeof(struct weak);
+  case PIC_TYPE_IREP: return sizeof(struct irep);
+  case PIC_TYPE_PORT: return sizeof(struct port);
+  case PIC_TYPE_PAIR: return sizeof(struct pair);
+  case PIC_TYPE_FRAME: return sizeof(struct frame);
+  case PIC_TYPE_ERROR: return sizeof(struct error);
+  case PIC_TYPE_RECORD: return sizeof(struct record);
+  case PIC_TYPE_PROC_FUNC: return sizeof(struct proc);
+  case PIC_TYPE_PROC_IREP: return sizeof(struct proc);
+  default: PIC_UNREACHABLE();
+  }
+}
+
+static struct object *
+obj_alloc(pic_state *pic, int type)
 {
   union header *p, *prevp;
+  struct object *obj;
   size_t nunits;
 
-  assert(size > 0);
-
-  nunits = (size + sizeof(union header) - 1) / sizeof(union header) + 1;
+  nunits = (type2size(type) + sizeof(union header) - 1) / sizeof(union header) + 1;
 
   prevp = pic->heap->freep;
   for (p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
@@ -468,7 +490,9 @@ heap_alloc(pic_state *pic, size_t size)
   }
   pic->heap->freep = prevp;
 
-  return (void *)(p + 1);
+  obj = (struct object *)(p + 1);
+  obj->u.basic.tt = type;
+  return obj;
 }
 
 static void
@@ -623,7 +647,7 @@ pic_gc(pic_state *pic)
 }
 
 struct object *
-pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
+pic_obj_alloc_unsafe(pic_state *pic, int type)
 {
   struct object *obj;
 
@@ -631,28 +655,27 @@ pic_obj_alloc_unsafe(pic_state *pic, size_t size, int type)
   pic_gc(pic);
 #endif
 
-  obj = (struct object *)heap_alloc(pic, size);
+  obj = obj_alloc(pic, type);
   if (obj == NULL) {
     pic_gc(pic);
-    obj = (struct object *)heap_alloc(pic, size);
+    obj = obj_alloc(pic, type);
     if (obj == NULL) {
       heap_morecore(pic);
-      obj = (struct object *)heap_alloc(pic, size);
+      obj = obj_alloc(pic, type);
       if (obj == NULL)
 	pic_panic(pic, "GC memory exhausted");
     }
   }
-  obj->u.basic.tt = type;
 
   return obj;
 }
 
 struct object *
-pic_obj_alloc(pic_state *pic, size_t size, int type)
+pic_obj_alloc(pic_state *pic, int type)
 {
   struct object *obj;
 
-  obj = pic_obj_alloc_unsafe(pic, size, type);
+  obj = pic_obj_alloc_unsafe(pic, type);
 
   gc_protect(pic, obj);
   return obj;

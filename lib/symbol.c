@@ -29,7 +29,7 @@ pic_intern(pic_state *pic, pic_value str)
 
   kh_val(h, it) = NULL;         /* dummy */
 
-  sym = (struct symbol *)pic_obj_alloc(pic, sizeof(struct symbol), PIC_TYPE_SYMBOL);
+  sym = (struct symbol *)pic_obj_alloc(pic, PIC_TYPE_SYMBOL);
   sym->str = str_ptr(pic, str);
   kh_val(h, it) = sym;
 

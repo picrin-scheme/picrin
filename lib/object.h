@@ -242,7 +242,7 @@ DEFPTR(irep, struct irep)
 #undef pic_data_p
 #undef pic_port_p
 
-struct object *pic_obj_alloc(pic_state *, size_t, int type);
+struct object *pic_obj_alloc(pic_state *, int type);
 
 pic_value pic_make_proc_func(pic_state *, pic_func_t, int, pic_value *);
 pic_value pic_make_proc_irep(pic_state *, struct irep *, struct frame *);

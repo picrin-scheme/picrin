@@ -12,7 +12,7 @@ pic_make_dict(pic_state *pic)
 {
   struct dict *dict;
 
-  dict = (struct dict *)pic_obj_alloc(pic, sizeof(struct dict), PIC_TYPE_DICT);
+  dict = (struct dict *)pic_obj_alloc(pic, PIC_TYPE_DICT);
   kh_init(dict, &dict->hash);
   return obj_value(pic, dict);
 }
