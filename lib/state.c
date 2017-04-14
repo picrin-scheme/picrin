@@ -279,26 +279,15 @@ pic_close(pic_state *pic)
 pic_value
 pic_global_ref(pic_state *pic, pic_value sym)
 {
-  pic_value val;
-
   if (! pic_dict_has(pic, pic->globals, sym)) {
     pic_error(pic, "undefined variable", 1, sym);
   }
-  val = pic_dict_ref(pic, pic->globals, sym);
-  /* FIXME */
-  /* if (pic_invalid_p(pic, val)) { */
-  /*   pic_error(pic, "uninitialized global variable", 1, sym); */
-  /* } */
-  return val;
+  return pic_dict_ref(pic, pic->globals, sym);
 }
 
 void
 pic_global_set(pic_state *pic, pic_value sym, pic_value value)
 {
-  /* FIXME */
-  /* if (! pic_dict_has(pic, pic->globals, sym)) { */
-  /*   pic_error(pic, "undefined variable", 1, sym); */
-  /* } */
   pic_dict_set(pic, pic->globals, sym, value);
 }
 

@@ -221,7 +221,6 @@
                      cond case else =>
                      do when unless
                      parameterize define-record-type))
-        (export-keyword 'boolean?)
         (dictionary-for-each export-keyword (global-objects)))
       (set! eval
             (let ((e eval))

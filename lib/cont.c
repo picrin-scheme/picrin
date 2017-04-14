@@ -112,9 +112,13 @@ pic_values(pic_state *pic, int n, ...)
 pic_value
 pic_vvalues(pic_state *pic, int n, va_list ap)
 {
-  pic_value *retv = pic_alloca(pic, sizeof(pic_value) * n);
+  pic_value *retv;
   int i;
 
+  if (n == 1) {
+    return va_arg(ap, pic_value);
+  }
+  retv = pic_alloca(pic, sizeof(pic_value) * n);
   for (i = 0; i < n; ++i) {
     retv[i] = va_arg(ap, pic_value);
   }
@@ -129,6 +133,9 @@ pic_cont_values(pic_state *pic)
 
   pic_get_args(pic, "*", &argc, &argv);
 
+  if (argc == 1) {
+    return argv[0];
+  }
   return valuesk(pic, argc, argv);
 }
 
