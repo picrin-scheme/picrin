@@ -181,15 +181,8 @@ pic_load_native(pic_state *pic, const char *str)
 
   pic_try {
     size_t ai = pic_enter(pic);
-
-    while (1) {
-      pic_value form = pic_read(pic, port);
-      if (pic_eof_p(pic, form)) {
-        break;
-      }
-      pic_load(pic, form);
-      pic_leave(pic, ai);
-    }
+    pic_load(pic, pic_funcall(pic, "read", 1, port));
+    pic_leave(pic, ai);
   }
   pic_catch(e) {
     pic_fclose(pic, port);

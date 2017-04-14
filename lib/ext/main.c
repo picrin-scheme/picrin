@@ -17,7 +17,7 @@ main(int argc, char *argv[])
     if (argc == 1) {            /* repl */
       while (1) {
         pic_printf(pic, "> ");
-        e = pic_read(pic, pic_stdin(pic));
+        e = pic_funcall(pic, "read", 0);
         if (pic_eof_p(pic, e))
           break;
         pic_printf(pic, "~s\n", pic_funcall(pic, "eval", 1, e));
@@ -30,7 +30,7 @@ main(int argc, char *argv[])
       }
       port = pic_fopen(pic, file, "r");
       while (1) {
-        e = pic_read(pic, port);
+        e = pic_funcall(pic, "read", 1, port);
         if (pic_eof_p(pic, e))
           break;
         pic_void(pic, pic_funcall(pic, "eval", 1, e));
@@ -46,7 +46,7 @@ main(int argc, char *argv[])
         }
         port = pic_fopen(pic, file, "r");
       }
-      pic_printf(pic, "~s\n", pic_funcall(pic, "compile", 1, pic_read(pic, port)));
+      pic_printf(pic, "~s\n", pic_funcall(pic, "compile", 1, pic_funcall(pic, "read", 1, port)));
     } else {
       fprintf(stderr, "usage: mini-picrin [-c] [file]\n");
       exit(1);

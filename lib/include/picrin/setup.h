@@ -8,8 +8,8 @@
 # define PIC_USE_LIBC 1
 #endif
 
-#ifndef PIC_USE_STDIO
-# define PIC_USE_STDIO 1
+#ifndef PIC_USE_READ
+# define PIC_USE_READ 1
 #endif
 
 #ifndef PIC_USE_WRITE
@@ -18,6 +18,17 @@
 
 #ifndef PIC_USE_EVAL
 # define PIC_USE_EVAL 1
+#endif
+
+#ifndef PIC_USE_FILE
+# define PIC_USE_FILE 1
+#endif
+
+#if !PIC_USE_READ && PIC_USE_EVAL
+# error PIC_USE_EVAL requires PIC_USE_READ
+#endif
+#if !PIC_USE_LIBC && PIC_USE_FILE
+# error PIC_USE_FILE requires PIC_USE_LIBC
 #endif
 
 #ifndef PIC_JMPBUF
@@ -383,8 +394,11 @@ pic_atod(const char *str)
   return atof(str);
 }
 
-#if PIC_USE_STDIO
+#if PIC_USE_FILE
 # include <stdio.h>
+#endif
+
+#if PIC_USE_LIBC
 
 PIC_STATIC_INLINE void
 pic_dtoa(double dval, char *buf)

@@ -136,14 +136,16 @@ pic_init_core(pic_state *pic)
   pic_init_dict(pic); DONE;
   pic_init_record(pic); DONE;
   pic_init_weak(pic); DONE;
-  pic_init_state(pic); DONE;
   pic_init_load(pic); DONE;
-  pic_init_read(pic); DONE;
+  pic_init_state(pic); DONE;
 
+#if PIC_USE_READ
+  pic_init_read(pic); DONE;
+#endif
 #if PIC_USE_WRITE
   pic_init_write(pic); DONE;
 #endif
-#if PIC_USE_LIBC
+#if PIC_USE_FILE
   pic_init_file(pic); DONE;
 #endif
 #if PIC_USE_EVAL

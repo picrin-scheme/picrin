@@ -6,7 +6,7 @@
 
 #include "picrin.h"
 
-#if PIC_USE_LIBC
+#if PIC_USE_FILE
 
 static int
 file_read(pic_state *PIC_UNUSED(pic), void *cookie, char *ptr, int size) {
@@ -75,13 +75,11 @@ pic_fopen(pic_state *pic, FILE *fp, const char *mode) {
 }
 
 void
-pic_init_file(pic_state *PIC_UNUSED(pic))
+pic_init_file(pic_state *pic)
 {
-#if PIC_USE_STDIO
   pic_defvar(pic, "current-input-port", pic_fopen(pic, stdin, "r"));
   pic_defvar(pic, "current-output-port", pic_fopen(pic, stdout, "w"));
   pic_defvar(pic, "current-error-port", pic_fopen(pic, stdout, "w"));
-#endif
 }
 
 #endif

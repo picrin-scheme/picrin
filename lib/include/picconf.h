@@ -5,12 +5,11 @@
 /** enable libc */
 /* #define PIC_USE_LIBC 1 */
 
-/** enable stdio */
-/* #define PIC_USE_STDIO 1 */
-
 /** enable specific features */
+/* #define PIC_USE_READ 1 */
 /* #define PIC_USE_WRITE 1 */
 /* #define PIC_USE_EVAL 1 */
+/* #define PIC_USE_FILE 1 */
 
 /** essential external functions */
 /* #define PIC_JMPBUF jmp_buf */
