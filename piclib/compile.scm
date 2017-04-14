@@ -198,7 +198,7 @@
 
           (define (expand-define-macro var transformer env)
             (let ((uid (add-identifier! var env)))
-              (let ((expander (load (expand transformer env))))
+              (let ((expander (load (compile (expand transformer env)))))
                 (add-macro! uid expander)
                 #undefined)))
 
@@ -891,5 +891,5 @@
   ;; eval
 
   (define (eval expr . env)
-    (load (expand expr (if (null? env) default-environment (car env))))))
+    (load (compile (expand expr (if (null? env) default-environment (car env)))))))
 
