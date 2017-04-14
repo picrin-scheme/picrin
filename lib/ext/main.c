@@ -46,7 +46,7 @@ main(int argc, char *argv[])
         }
         port = pic_fopen(pic, file, "r");
       }
-      pic_printf(pic, "~s\n", pic_funcall(pic, "compile", 1, pic_funcall(pic, "expand", 2, pic_read(pic, port), pic_ref(pic, "default-environment"))));
+      pic_printf(pic, "~s\n", pic_funcall(pic, "compile", 1, pic_read(pic, port)));
     } else {
       fprintf(stderr, "usage: mini-picrin [-c] [file]\n");
       exit(1);

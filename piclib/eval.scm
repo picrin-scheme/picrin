@@ -198,7 +198,7 @@
 
           (define (expand-define-macro var transformer env)
             (let ((uid (add-identifier! var env)))
-              (let ((expander (load (compile (expand transformer env)))))
+              (let ((expander (eval transformer env)))
                 (add-macro! uid expander)
                 #undefined)))
 
@@ -223,8 +223,8 @@
              (else
               (error "invalid expression" expr))))
 
-          (define (expand expr env)
-            (let ((x (expand-node expr env)))
+          (define (expand expr . env)
+            (let ((x (expand-node expr (if (null? env) default-environment (car env)))))
               (run-all)
               x))
 
@@ -884,12 +884,12 @@
               (codegen-e e)
               (car (reps))))))
 
-      (lambda (e)
-        (codegen (transform (normalize e))))))
+      (lambda (e . env)
+        (codegen (transform (normalize (apply expand e env)))))))
 
 
   ;; eval
 
   (define (eval expr . env)
-    (load (compile (expand expr (if (null? env) default-environment (car env)))))))
+    (load (apply compile expr env))))
 

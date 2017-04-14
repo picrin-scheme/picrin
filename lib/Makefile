@@ -37,7 +37,7 @@ LIBPICRIN_HEADERS = \
 	object.h\
 	state.h
 
-CFLAGS += -I./include -Wall -Wextra -O0 -g
+CFLAGS += -I./include -Wall -Wextra -g
 
 mini-picrin: libpicrin.so ext/main.o
 	$(CC) $(CFLAGS) -o $@ libpicrin.so ext/main.o
