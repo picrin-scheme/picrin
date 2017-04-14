@@ -361,8 +361,8 @@ pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
         unsigned long vp = (unsigned long) va_arg(ap, void*);
         char buf[sizeof vp * CHAR_BIT / 4 + 1];
         size_t i;
-        for (i = 0; i < sizeof buf; ++i) {
-          buf[sizeof buf - i - 1] = digits[vp % 16];
+        for (i = 0; i < sizeof buf - 1; ++i) {
+          buf[sizeof buf - i - 2] = digits[vp % 16];
           vp /= 16;
         }
         buf[i] = '\0';
