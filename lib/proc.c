@@ -81,7 +81,7 @@ arg_error(pic_state *pic, int actual, bool varg, int expected)
 {
   const char *msg;
 
-  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual - 1, (varg ? "at least " : ""), expected - 1), NULL);
+  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual, (varg ? "at least " : ""), expected), NULL);
 
   pic_error(pic, msg, 0);
 }
