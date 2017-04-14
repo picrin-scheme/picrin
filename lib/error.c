@@ -30,6 +30,23 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
 
 #define pic_exc(pic) pic_ref(pic, "current-exception-handlers")
 
+PIC_JMPBUF *
+pic_prepare_try(pic_state *pic)
+{
+  struct context *cxt = pic_alloca(pic, sizeof(struct context));
+
+  cxt->ai = pic->cxt->ai;
+  pic->cxt->ai--;               /* cxt should be freed after this try ends */
+  cxt->pc = NULL;
+  cxt->fp = NULL;
+  cxt->sp = NULL;
+  cxt->irep = NULL;
+
+  cxt->prev = pic->cxt;
+  pic->cxt = cxt;
+  return &cxt->jmp;
+}
+
 static pic_value
 native_exception_handler(pic_state *pic)
 {
@@ -37,28 +54,20 @@ native_exception_handler(pic_state *pic)
 
   pic_get_args(pic, "o", &err);
 
-  pic->err = err;
-
-  pic_call(pic, pic_closure_ref(pic, 0), 1, pic_false_value(pic));
-
+  pic_call(pic, pic_closure_ref(pic, 0), 1, err);
   PIC_UNREACHABLE();
 }
 
 void
-pic_start_try(pic_state *pic, PIC_JMPBUF *jmp)
+pic_enter_try(pic_state *pic)
 {
-  struct cont *cont;
-  pic_value handler;
+  pic_value cont, handler;
   pic_value var, env;
 
   /* call/cc */
-
-  cont = pic_alloca_cont(pic);
-  pic_save_point(pic, cont, jmp);
-  handler = pic_lambda(pic, native_exception_handler, 1, pic_make_cont(pic, cont));
-
+  cont = pic_make_cont(pic, pic->cxt, pic_invalid_value(pic));
+  handler = pic_lambda(pic, native_exception_handler, 1, cont);
   /* with-exception-handler */
-
   var = pic_exc(pic);
   env = pic_make_weak(pic);
   pic_weak_set(pic, env, var, pic_cons(pic, handler, pic_call(pic, var, 0)));
@@ -66,17 +75,20 @@ pic_start_try(pic_state *pic, PIC_JMPBUF *jmp)
 }
 
 void
-pic_end_try(pic_state *pic)
+pic_exit_try(pic_state *pic)
 {
   pic->dyn_env = pic_cdr(pic, pic->dyn_env);
-
-  pic_exit_point(pic);
+  pic->cxt = pic->cxt->prev;
 }
 
 pic_value
-pic_err(pic_state *pic)
+pic_abort_try(pic_state *pic)
 {
-  return pic->err;
+  pic_value err = pic->cxt->sp->regs[1];
+  pic->dyn_env = pic_cdr(pic, pic->dyn_env);
+  pic->cxt = pic->cxt->prev;
+  pic_protect(pic, err);
+  return err;
 }
 
 pic_value

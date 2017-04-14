@@ -60,34 +60,6 @@ void abort(void);
 # define PIC_PAGE_REQUEST_THRESHOLD(total) ((total) * 77 / 100)
 #endif
 
-#ifndef PIC_STACK_SIZE
-# define PIC_STACK_SIZE 8192
-#endif
-
-#ifndef PIC_RESCUE_SIZE
-# define PIC_RESCUE_SIZE 30
-#endif
-
-#ifndef PIC_SYM_POOL_SIZE
-# define PIC_SYM_POOL_SIZE (2 * 1024)
-#endif
-
-#ifndef PIC_IREP_SIZE
-# define PIC_IREP_SIZE 8
-#endif
-
-#ifndef PIC_POOL_SIZE
-# define PIC_POOL_SIZE 8
-#endif
-
-#ifndef PIC_SYMS_SIZE
-# define PIC_SYMS_SIZE 32
-#endif
-
-#ifndef PIC_ISEQ_SIZE
-# define PIC_ISEQ_SIZE 1024
-#endif
-
 /* check compatibility */
 
 #if __STDC_VERSION__ >= 199901L

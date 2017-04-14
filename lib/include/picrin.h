@@ -297,20 +297,22 @@ pic_value pic_raise_continuable(pic_state *pic, pic_value err);
 PIC_NORETURN void pic_raise(pic_state *, pic_value v);
 PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
 pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs);
+
 #define pic_try pic_try_(PIC_GENSYM(cont), PIC_GENSYM(jmp))
 #define pic_try_(cont, jmp)                                             \
   do {                                                                  \
-    extern void pic_start_try(pic_state *, PIC_JMPBUF *);               \
-    extern void pic_end_try(pic_state *);                               \
-    extern pic_value pic_err(pic_state *);                              \
-    PIC_JMPBUF jmp;                                                     \
-    if (PIC_SETJMP(pic, jmp) == 0) {                                    \
-      pic_start_try(pic, &jmp);
+    extern PIC_JMPBUF *pic_prepare_try(pic_state *);                    \
+    extern void pic_enter_try(pic_state *);                             \
+    extern void pic_exit_try(pic_state *);                              \
+    extern pic_value pic_abort_try(pic_state *);                        \
+    PIC_JMPBUF *jmp = pic_prepare_try(pic);                             \
+    if (PIC_SETJMP(pic, *jmp) == 0) {                                   \
+      pic_enter_try(pic);
 #define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
 #define pic_catch_(e, label)                              \
-      pic_end_try(pic);                                   \
+      pic_exit_try(pic);                                  \
     } else {                                              \
-      e = pic_err(pic);                                   \
+      e = pic_abort_try(pic);                             \
       goto label;                                         \
     }                                                     \
   } while (0);                                            \
@@ -332,7 +334,6 @@ void pic_defvar(pic_state *, const char *name, pic_value v);
 pic_value pic_funcall(pic_state *, const char *name, int n, ...);
 pic_value pic_values(pic_state *, int n, ...);
 pic_value pic_vvalues(pic_state *, int n, va_list);
-int pic_receive(pic_state *, int n, pic_value *retv);
 
 
 /*

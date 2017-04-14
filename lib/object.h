@@ -78,24 +78,44 @@ struct record {
   pic_value datum;
 };
 
+enum {
+  OP_HALT  = 0x00,        /* 0x00                 OP_HALT           */
+  OP_CALL  = 0x01,        /* 0x01 0x**            OP_CALL argc      */
+  OP_PROC  = 0x02,        /* 0x02 0x** 0x**       OP_PROC dest irep */
+  OP_LOAD  = 0x03,        /* 0x03 0x** 0x**       OP_LOAD dest i    */
+  OP_LREF  = 0x04,        /* 0x04 0x** 0x** 0x**  OP_LREF dest n i  */
+  OP_LSET  = 0x05,        /* 0x05 0x** 0x** 0x**  OP_LSET src n i   */
+  OP_GREF  = 0x06,        /* 0x06 0x** 0x**       OP_GREF dest i    */
+  OP_GSET  = 0x07,        /* 0x07 0x** 0x**       OP_GSET src i     */
+  OP_COND  = 0x08,        /* 0x08 0x** 0x** 0x**  OP_COND c offset  */
+  OP_LOADT = 0x09,        /* 0x09 0x**            OP_LOADT dest     */
+  OP_LOADF = 0x0A,        /* 0x0A 0x**            OP_LOADF dest     */
+  OP_LOADN = 0x0B,        /* 0x0B 0x**            OP_LOADN dest     */
+  OP_LOADU = 0x0C,        /* 0x0C 0x**            OP_LOADU dest     */
+  OP_LOADI = 0x0D,        /* 0x0D 0x** 0x**       OP_LOADI dest i   */
+};
+
+typedef unsigned char code_t;
+
+#define IREP_VARG 1
+#define IREP_CODE_STATIC 2
+
 struct irep {
   OBJECT_HEADER
-  int argc, localc, capturec;
-  bool varg;
-  struct code *code;
+  unsigned char argc;
+  unsigned char flags;
+  unsigned char frame_size;
+  unsigned char irepc, objc;
   struct irep **irep;
-  int *ints;
-  double *nums;
-  struct object **pool;
-  size_t ncode, nirep, nints, nnums, npool;
+  pic_value *obj;
+  const code_t *code;
 };
 
 struct frame {
   OBJECT_HEADER
-  int regc;
+  unsigned char regc;
   pic_value *regs;
   struct frame *up;
-  pic_value *storage;
 };
 
 struct proc {
@@ -104,7 +124,7 @@ struct proc {
     pic_func_t func;
     struct irep *irep;
   } u;
-  struct frame *fp;
+  struct frame *env;
 };
 
 enum {
@@ -243,20 +263,20 @@ DEFPTR(irep, struct irep)
 #undef pic_port_p
 
 struct object *pic_obj_alloc(pic_state *, int type);
+struct object *pic_obj_alloc_unsafe(pic_state *, int type);
 
-pic_value pic_make_proc_func(pic_state *, pic_func_t, int, pic_value *);
-pic_value pic_make_proc_irep(pic_state *, struct irep *, struct frame *);
+struct frame *pic_make_frame_unsafe(pic_state *, int n);
+pic_value pic_make_proc_irep_unsafe(pic_state *, struct irep *, struct frame *);
+pic_value pic_make_proc_func(pic_state *, pic_func_t);
 pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 pic_value pic_record_type(pic_state *pic, pic_value record);
 pic_value pic_record_datum(pic_state *pic, pic_value record);
+struct context;
+pic_value pic_make_cont(pic_state *pic, struct context *cxt, pic_value k);
 
 struct rope *pic_rope_incref(struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);
 
-struct cont *pic_alloca_cont(pic_state *);
-pic_value pic_make_cont(pic_state *, struct cont *);
-void pic_save_point(pic_state *, struct cont *, PIC_JMPBUF *);
-void pic_exit_point(pic_state *);
 
 void pic_warnf(pic_state *pic, const char *fmt, ...); /* deprecated */
 

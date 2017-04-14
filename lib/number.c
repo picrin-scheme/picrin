@@ -72,7 +72,7 @@ pic_number_exact(pic_state *pic)
     } else if (pic_float_p(pic, a) && pic_int_p(pic, b)) {              \
       return pic_float_value(pic, pic_float(pic, a) op pic_int(pic, b)); \
     } else {                                                            \
-      pic_error(pic, #name ": non-number operand given", 0);              \
+      pic_error(pic, #name ": non-number operand given", 2, a, b);      \
     }                                                                   \
     PIC_UNREACHABLE();                                                  \
   }
@@ -95,7 +95,7 @@ pic_define_aop(pic_div, /, f == (int)f)
     } else if (pic_float_p(pic, a) && pic_int_p(pic, b)) {              \
       return pic_float(pic, a) op pic_int(pic, b);                      \
     } else {                                                            \
-      pic_error(pic, #name ": non-number operand given", 0);              \
+      pic_error(pic, #name ": non-number operand given", 2, a, b);      \
     }                                                                   \
     PIC_UNREACHABLE();                                                  \
   }

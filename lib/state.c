@@ -168,29 +168,18 @@ pic_open(pic_allocf allocf, void *userdata)
   /* user data */
   pic->userdata = userdata;
 
-  /* continuation chain */
-  pic->cc = NULL;
-
-  /* prepare VM stack */
-  pic->stbase = pic->sp = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(pic_value));
-  pic->stend = pic->stbase + PIC_STACK_SIZE;
-
-  if (! pic->sp) {
-    goto EXIT_SP;
-  }
-
-  /* callinfo */
-  pic->cibase = pic->ci = allocf(userdata, NULL, PIC_STACK_SIZE * sizeof(struct callinfo));
-  pic->ciend = pic->cibase + PIC_STACK_SIZE;
-
-  if (! pic->ci) {
-    goto EXIT_CI;
-  }
+  /* context */
+  pic->default_cxt.ai = 0;
+  pic->default_cxt.pc = NULL;
+  pic->default_cxt.fp = NULL;
+  pic->default_cxt.sp = NULL;
+  pic->default_cxt.irep = NULL;
+  pic->default_cxt.prev = NULL;
+  pic->cxt = &pic->default_cxt;
 
   /* arena */
   pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct object *));
   pic->arena_size = PIC_ARENA_SIZE;
-  pic->arena_idx = 0;
 
   if (! pic->arena) {
     goto EXIT_ARENA;
@@ -214,11 +203,28 @@ pic_open(pic_allocf allocf, void *userdata)
   /* dynamic environment */
   pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
 
+  /* top continuation */
+  {
+    static const code_t halt_code[] = { 0x00, 0x01 };
+    struct irep *irep;
+    struct proc *proc;
+    irep = (struct irep *)pic_obj_alloc(pic, PIC_TYPE_IREP);
+    irep->argc = 1;
+    irep->flags = IREP_CODE_STATIC;
+    irep->frame_size = 1;
+    irep->irepc = 0;
+    irep->objc = 0;
+    irep->irep = NULL;
+    irep->obj = NULL;
+    irep->code = halt_code;
+    proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_IREP);
+    proc->u.irep = irep;
+    proc->env = NULL;
+    pic->halt = obj_value(pic, proc);
+  }
+
   /* panic handler */
   pic->panicf = NULL;
-
-  /* error object */
-  pic->err = pic_invalid_value(pic);
 
   /* turn on GC */
   pic->gc_enable = true;
@@ -230,10 +236,6 @@ pic_open(pic_allocf allocf, void *userdata)
   return pic;
 
  EXIT_ARENA:
-  allocf(userdata, pic->ci, 0);
- EXIT_CI:
-  allocf(userdata, pic->sp, 0);
- EXIT_SP:
   allocf(userdata, pic, 0);
  EXIT_PIC:
   return NULL;
@@ -245,23 +247,24 @@ pic_close(pic_state *pic)
   pic_allocf allocf = pic->allocf;
 
   /* clear out root objects */
-  pic->sp = pic->stbase;
-  pic->ci = pic->cibase;
-  pic->arena_idx = 0;
-  pic->err = pic_invalid_value(pic);
+  pic->cxt = &pic->default_cxt;
+  pic->cxt->ai = 0;
+  pic->halt = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
   pic->features = pic_invalid_value(pic);
   pic->dyn_env = pic_invalid_value(pic);
+
+  assert(pic->cxt->pc == NULL);
+  assert(pic->cxt->fp == NULL);
+  assert(pic->cxt->sp == NULL);
+  assert(pic->cxt->irep == NULL);
+  assert(pic->cxt->prev == NULL);
 
   /* free all heap objects */
   pic_gc(pic);
 
   /* free heaps */
   pic_heap_close(pic, pic->heap);
-
-  /* free runtime context */
-  allocf(pic->userdata, pic->stbase, 0);
-  allocf(pic->userdata, pic->cibase, 0);
 
   /* free global stacks */
   kh_destroy(oblist, &pic->oblist);
@@ -280,18 +283,20 @@ pic_global_ref(pic_state *pic, pic_value sym)
     pic_error(pic, "undefined variable", 1, sym);
   }
   val = pic_dict_ref(pic, pic->globals, sym);
-  if (pic_invalid_p(pic, val)) {
-    pic_error(pic, "uninitialized global variable", 1, sym);
-  }
+  /* FIXME */
+  /* if (pic_invalid_p(pic, val)) { */
+  /*   pic_error(pic, "uninitialized global variable", 1, sym); */
+  /* } */
   return val;
 }
 
 void
 pic_global_set(pic_state *pic, pic_value sym, pic_value value)
 {
-  if (! pic_dict_has(pic, pic->globals, sym)) {
-    pic_error(pic, "undefined variable", 1, sym);
-  }
+  /* FIXME */
+  /* if (! pic_dict_has(pic, pic->globals, sym)) { */
+  /*   pic_error(pic, "undefined variable", 1, sym); */
+  /* } */
   pic_dict_set(pic, pic->globals, sym, value);
 }
 
@@ -321,7 +326,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t f)
 {
-  pic_define(pic, name, pic_make_proc_func(pic, f, 0, NULL));
+  pic_define(pic, name, pic_make_proc_func(pic, f));
 }
 
 void

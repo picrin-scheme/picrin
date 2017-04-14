@@ -6,101 +6,22 @@
 #include "object.h"
 #include "state.h"
 
-struct cont {
-  PIC_JMPBUF *jmp;
-
-  ptrdiff_t sp_offset;
-  ptrdiff_t ci_offset;
-  size_t arena_idx;
-  const struct code *ip;
-  pic_value dyn_env;
-
-  int retc;
-  pic_value *retv;
-
-  struct cont *prev;
-};
-
-static const pic_data_type cont_type = { "cont", NULL };
-
-void
-pic_save_point(pic_state *pic, struct cont *cont, PIC_JMPBUF *jmp)
-{
-  cont->jmp = jmp;
-
-  /* save runtime context */
-  cont->sp_offset = pic->sp - pic->stbase;
-  cont->ci_offset = pic->ci - pic->cibase;
-  cont->arena_idx = pic->arena_idx;
-  cont->dyn_env = pic->dyn_env;
-  cont->ip = pic->ip;
-  cont->prev = pic->cc;
-  cont->retc = 0;
-  cont->retv = NULL;
-
-  pic->cc = cont;
-}
-
-void
-pic_load_point(pic_state *pic, struct cont *cont)
-{
-  pic_vm_tear_off(pic);
-
-  /* load runtime context */
-  pic->sp = pic->stbase + cont->sp_offset;
-  pic->ci = pic->cibase + cont->ci_offset;
-  pic->arena_idx = cont->arena_idx;
-  pic->dyn_env = cont->dyn_env;
-  pic->ip = cont->ip;
-  pic->cc = cont->prev;
-}
-
-void
-pic_exit_point(pic_state *pic)
-{
-  pic->cc = pic->cc->prev;
-}
-
 static pic_value
-cont_call(pic_state *pic)
+applyk(pic_state *pic, pic_value proc, pic_value cont, int argc, pic_value *argv)
 {
-  int argc;
-  pic_value *argv;
-  struct cont *cc, *cont;
+  int i;
 
-  pic_get_args(pic, "*", &argc, &argv);
+#define MKCALL(argc)                                                    \
+  (pic->cxt->tmpcode[0] = OP_CALL, pic->cxt->tmpcode[1] = (argc), pic->cxt->tmpcode)
 
-  cont = pic_data(pic, pic_closure_ref(pic, 0));
-
-  /* check if continuation is alive */
-  for (cc = pic->cc; cc != NULL; cc = cc->prev) {
-    if (cc == cont) {
-      break;
-    }
+  pic->cxt->pc = MKCALL(argc + 1);
+  pic->cxt->sp = pic_make_frame_unsafe(pic, argc + 3);
+  pic->cxt->sp->regs[0] = proc;
+  pic->cxt->sp->regs[1] = cont;
+  for (i = 0; i < argc; ++i) {
+    pic->cxt->sp->regs[i + 2] = argv[i];
   }
-  if (cc == NULL) {
-    pic_error(pic, "calling dead escape continuation", 0);
-  }
-
-  cont->retc = argc;
-  cont->retv = argv;
-
-  pic_load_point(pic, cont);
-
-  PIC_LONGJMP(pic, *cont->jmp, 1);
-  PIC_UNREACHABLE();
-}
-
-pic_value
-pic_make_cont(pic_state *pic, struct cont *cont)
-{
-  return pic_lambda(pic, cont_call, 1, pic_data_value(pic, cont, &cont_type));
-}
-
-struct cont *
-pic_alloca_cont(pic_state *pic)
-{
-  return pic_alloca(pic, sizeof(struct cont));
+  return pic_invalid_value(pic);
 }
 
 static pic_value
@@ -108,34 +29,13 @@ valuesk(pic_state *pic, int argc, pic_value *argv)
 {
   int i;
 
+  pic->cxt->pc = MKCALL(argc);
+  pic->cxt->sp = pic_make_frame_unsafe(pic, argc + 2);
+  pic->cxt->sp->regs[0] = pic->cxt->fp->regs[1];
   for (i = 0; i < argc; ++i) {
-    pic->sp[i] = argv[i];
+    pic->cxt->sp->regs[i + 1] = argv[i];
   }
-  pic->ci->retc = argc;
-
-  return argc == 0 ? pic_undef_value(pic) : pic->sp[0];
-}
-
-static pic_value
-pic_callcc(pic_state *pic, pic_value proc)
-{
-  PIC_JMPBUF jmp;
-  volatile struct cont *cont = pic_alloca_cont(pic);
-
-  if (PIC_SETJMP(pic, jmp)) {
-    return valuesk(pic, cont->retc, cont->retv);
-  }
-  else {
-    pic_value val;
-
-    pic_save_point(pic, (struct cont *)cont, &jmp);
-
-    val = pic_call(pic, proc, 1, pic_make_cont(pic, (struct cont *)cont));
-
-    pic_exit_point(pic);
-
-    return val;
-  }
+  return pic_invalid_value(pic);
 }
 
 pic_value
@@ -162,30 +62,59 @@ pic_vvalues(pic_state *pic, int n, va_list ap)
   return valuesk(pic, n, retv);
 }
 
-int
-pic_receive(pic_state *pic, int n, pic_value *argv)
+static pic_value
+cont_call(pic_state *pic)
 {
-  struct callinfo *ci;
-  int i, retc;
+  int argc;
+  pic_value *argv;
+  struct context *cxt, *c;
+  int i;
 
-  /* take info from discarded frame */
-  ci = pic->ci + 1;
-  retc = ci->retc;
+  pic_get_args(pic, "*", &argc, &argv);
 
-  for (i = 0; i < retc && i < n; ++i) {
-    argv[i] = ci->fp[i];
+  cxt = pic_data(pic, pic_closure_ref(pic, 0));
+
+  /* check if continuation is alive */
+  for (c = pic->cxt; c != NULL; c = c->prev) {
+    if (c == cxt) {
+      break;
+    }
   }
-  return retc;
+  if (c == NULL) {
+    pic_error(pic, "calling dead escape continuation", 0);
+  }
+
+#define MKCALLK(argc)                                                   \
+  (cxt->tmpcode[0] = OP_CALL, cxt->tmpcode[1] = (argc), cxt->tmpcode)
+
+  cxt->pc = MKCALLK(argc);
+  cxt->sp = pic_make_frame_unsafe(pic, argc + 2);
+  cxt->sp->regs[0] = pic_closure_ref(pic, 1); /* cont. */
+  for (i = 0; i < argc; ++i) {
+    cxt->sp->regs[i + 1] = argv[i];
+  }
+  pic->cxt = cxt;
+
+  PIC_LONGJMP(pic, cxt->jmp, 1);
+  PIC_UNREACHABLE();
+}
+
+pic_value
+pic_make_cont(pic_state *pic, struct context *cxt, pic_value k)
+{
+  static const pic_data_type cxt_type = { "cxt", NULL };
+  return pic_lambda(pic, cont_call, 2, pic_data_value(pic, cxt, &cxt_type), k);
 }
 
 static pic_value
 pic_cont_callcc(pic_state *pic)
 {
-  pic_value f;
+  pic_value f, args[1];
 
   pic_get_args(pic, "l", &f);
 
-  return pic_callcc(pic, f);
+  args[0] = pic_make_cont(pic, pic->cxt, pic->cxt->fp->regs[1]);
+  return pic_applyk(pic, f, 1, args);
 }
 
 static pic_value
@@ -200,21 +129,30 @@ pic_cont_values(pic_state *pic)
 }
 
 static pic_value
+receive_call(pic_state *pic)
+{
+  int argc = pic->cxt->pc[1];
+  pic_value *args = &pic->cxt->fp->regs[1], consumer, cont;
+
+  /* receive_call is an inhabitant in the continuation side.
+     You can not use pic_get_args since it implicitly consumes the first argument. */
+
+  consumer = pic_closure_ref(pic, 0);
+  cont = pic_closure_ref(pic, 1);
+
+  return applyk(pic, consumer, cont, argc, args);
+}
+
+static pic_value
 pic_cont_call_with_values(pic_state *pic)
 {
-  pic_value producer, consumer, retv[256];
-  int retc;
+  pic_value producer, consumer, k;
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
-  pic_call(pic, producer, 0);
+  k = pic_lambda(pic, receive_call, 2, consumer, pic->cxt->fp->regs[1]);
 
-  retc = pic_receive(pic, 256, retv);
-  if (retc > 256) {
-    pic_error(pic, "call-with-values: too many arguments", 1, pic_int_value(pic, retc));
-  }
-
-  return pic_applyk(pic, consumer, retc, retv);
+  return applyk(pic, producer, k, 0, NULL);
 }
 
 void

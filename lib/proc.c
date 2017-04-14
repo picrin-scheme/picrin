@@ -5,7 +5,22 @@
 #include "picrin.h"
 #include "object.h"
 #include "state.h"
-#include "vm.h"
+
+struct frame *
+pic_make_frame_unsafe(pic_state *pic, int n)
+{
+  struct frame *fp;
+  int i;
+
+  fp = (struct frame *)pic_obj_alloc_unsafe(pic, PIC_TYPE_FRAME);
+  fp->regs = n ? pic_malloc(pic, sizeof(pic_value) * n) : NULL;
+  fp->regc = n;
+  fp->up = NULL;
+  for (i = 0; i < n; ++i) {
+    fp->regs[i] = pic_invalid_value(pic);
+  }
+  return fp;
+}
 
 pic_value
 pic_lambda(pic_state *pic, pic_func_t f, int n, ...)
@@ -22,47 +37,42 @@ pic_lambda(pic_state *pic, pic_func_t f, int n, ...)
 pic_value
 pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
 {
-  pic_value *env = pic_alloca(pic, sizeof(pic_value) * n);
+  struct proc *proc;
   int i;
 
-  for (i = 0; i < n; ++i) {
-    env[i] = va_arg(ap, pic_value);
-  }
-  return pic_make_proc_func(pic, f, n, env);
-}
-
-pic_value
-pic_make_proc_func(pic_state *pic, pic_func_t func, int n, pic_value *env)
-{
-  struct proc *proc;
-  struct frame *fp = NULL;
-
-  if (n > 0) {
-    int i;
-    fp = (struct frame *)pic_obj_alloc(pic, PIC_TYPE_FRAME);
-    fp->storage = pic_malloc(pic, sizeof(pic_value) * n);
-    fp->regc = n;
-    fp->regs = fp->storage;
-    fp->up = NULL;
-    for (i = 0; i < n; ++i) {
-      fp->regs[i] = env[i];
-    }
-  }
+  assert(n >= 0);
 
   proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_FUNC);
-  proc->u.func = func;
-  proc->fp = fp;
+  proc->u.func = f;
+  proc->env = NULL;
+  if (n != 0) {
+    proc->env = pic_make_frame_unsafe(pic, n);
+  }
+  for (i = 0; i < n; ++i) {
+    proc->env->regs[i] = va_arg(ap, pic_value);
+  }
   return obj_value(pic, proc);
 }
 
 pic_value
-pic_make_proc_irep(pic_state *pic, struct irep *irep, struct frame *fp)
+pic_make_proc_func(pic_state *pic, pic_func_t func)
 {
   struct proc *proc;
 
-  proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_IREP);
+  proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_FUNC);
+  proc->u.func = func;
+  proc->env = NULL;
+  return obj_value(pic, proc);
+}
+
+pic_value
+pic_make_proc_irep_unsafe(pic_state *pic, struct irep *irep, struct frame *fp)
+{
+  struct proc *proc;
+
+  proc = (struct proc *)pic_obj_alloc_unsafe(pic, PIC_TYPE_PROC_IREP);
   proc->u.irep = irep;
-  proc->fp = fp;
+  proc->env = fp;
   return obj_value(pic, proc);
 }
 
@@ -71,13 +81,15 @@ arg_error(pic_state *pic, int actual, bool varg, int expected)
 {
   const char *msg;
 
-  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual, (varg ? "at least " : ""), expected), NULL);
+  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual - 1, (varg ? "at least " : ""), expected - 1), NULL);
 
   pic_error(pic, msg, 0);
 }
 
-#define GET_PROC(pic) (pic->ci->fp[0])
-#define GET_ARG(pic,n) (pic->ci->fp[(n)+1])
+#define GET_ARGC(pic) (pic->cxt->pc[1])
+#define GET_PROC(pic) (pic->cxt->fp->regs[0])
+#define GET_CONT(pic) (pic->cxt->fp->regs[1])
+#define GET_ARG(pic,n) (pic->cxt->fp->regs[(n)+2])
 
 /**
  * char type                    desc.
@@ -112,7 +124,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
   const char *p = format;
   int paramc = 0, optc = 0;
   bool proc = 0, rest = 0, opt = 0;
-  int i, argc = pic->ci->argc - 1;
+  int i, argc = GET_ARGC(pic) - 1; /* one for continuation */
   va_list ap;
 
   /* parse format */
@@ -301,25 +313,23 @@ pic_get_args(pic_state *pic, const char *format, ...)
 pic_value
 pic_closure_ref(pic_state *pic, int n)
 {
-  struct proc *proc = proc_ptr(pic, GET_PROC(pic));
-
+  struct frame *fp = pic->cxt->fp->up;
   assert(n >= 0);
-  if (proc->fp == NULL || proc->fp->regc <= n) {
+  if (fp == NULL || fp->regc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  return proc->fp->regs[n];
+  return fp->regs[n];
 }
 
 void
 pic_closure_set(pic_state *pic, int n, pic_value v)
 {
-  struct proc *proc = proc_ptr(pic, GET_PROC(pic));
-
+  struct frame *fp = pic->cxt->fp->up;
   assert(n >= 0);
-  if (proc->fp == NULL || proc->fp->regc <= n) {
+  if (fp == NULL || fp->regc <= n) {
     pic_error(pic, "pic_closure_ref: index out of range", 1, pic_int_value(pic, n));
   }
-  proc->fp->regs[n] = v;
+  fp->regs[n] = v;
 }
 
 pic_value
@@ -346,513 +356,200 @@ pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
   return pic_apply(pic, proc, n, args);
 }
 
-static void
-vm_push_cxt(pic_state *pic)
-{
-  struct callinfo *ci = pic->ci;
-
-  ci->cxt = (struct frame *)pic_obj_alloc(pic, PIC_TYPE_FRAME);
-  ci->cxt->storage = pic_malloc(pic, sizeof(pic_value) * ci->regc);
-  ci->cxt->up = ci->up;
-  ci->cxt->regc = ci->regc;
-  ci->cxt->regs = ci->regs;
-}
-
-static void
-vm_tear_off(struct callinfo *ci)
-{
-  struct frame *cxt;
-  int i;
-
-  assert(ci->cxt != NULL);
-
-  cxt = ci->cxt;
-
-  if (cxt->regs == cxt->storage) {
-    return;                     /* is torn off */
-  }
-  for (i = 0; i < cxt->regc; ++i) {
-    cxt->storage[i] = cxt->regs[i];
-  }
-  cxt->regs = cxt->storage;
-}
-
-void
-pic_vm_tear_off(pic_state *pic)
-{
-  struct callinfo *ci;
-
-  for (ci = pic->ci; ci > pic->cibase; ci--) {
-    if (ci->cxt != NULL) {
-      vm_tear_off(ci);
-    }
-  }
-}
-
-/* for arithmetic instructions */
-pic_value pic_add(pic_state *, pic_value, pic_value);
-pic_value pic_sub(pic_state *, pic_value, pic_value);
-pic_value pic_mul(pic_state *, pic_value, pic_value);
-pic_value pic_div(pic_state *, pic_value, pic_value);
-bool pic_eq(pic_state *, pic_value, pic_value);
-bool pic_lt(pic_state *, pic_value, pic_value);
-bool pic_le(pic_state *, pic_value, pic_value);
-bool pic_gt(pic_state *, pic_value, pic_value);
-bool pic_ge(pic_state *, pic_value, pic_value);
-
 pic_value
 pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
-  struct code c;
-  size_t ai = pic_enter(pic);
-  struct code boot[2];
-  int i;
+  struct context cxt;
+  size_t arena_base = pic->cxt->ai;
 
-#define PUSH(v) ((*pic->sp = (v)), pic->sp++)
-#define POP() (*--pic->sp)
+#define MKCALL(argc) (cxt.tmpcode[0] = OP_CALL, cxt.tmpcode[1] = (argc), cxt.tmpcode)
 
-#define PUSHCI() (++pic->ci)
-#define POPCI() (pic->ci--)
+  cxt.pc = MKCALL(argc + 1);
+  cxt.sp = pic_make_frame_unsafe(pic, argc + 3);
+  cxt.sp->regs[0] = proc;
+  cxt.sp->regs[1] = pic->halt;
+  if (argc != 0) {
+    int i;
+    for (i = 0; i < argc; ++i) {
+      cxt.sp->regs[i + 2] = argv[i];
+    }
+  }
+  cxt.fp = NULL;
+  cxt.irep = NULL;
+  cxt.ai = pic->cxt->ai;
+  cxt.prev = pic->cxt;
+  pic->cxt = &cxt;
 
-  PUSH(proc);
-
-  for (i = 0; i < argc; ++i) {
-    PUSH(argv[i]);
+  if (PIC_SETJMP(pic, cxt.jmp) != 0) {
+    /* pass */
   }
 
-  /* boot! */
-  boot[0].insn = OP_CALL;
-  boot[0].a = argc + 1;
-  boot[1].insn = OP_STOP;
-  pic->ip = boot;
+#define SAVE (cxt.ai = arena_base)
+
+#define A (cxt.pc[1])
+#define B (cxt.pc[2])
+#define C (cxt.pc[3])
+#define Bx ((C << 8) + B)
+#define REG(i) (cxt.sp->regs[i])
 
 #if PIC_DIRECT_THREADED_VM
 # define VM_LOOP JUMP;
 # define CASE(x) L_##x:
-# define NEXT pic->ip++; JUMP;
-# define JUMP c = *pic->ip; goto *oplabels[c.insn];
+# define NEXT(n) (cxt.pc += n); JUMP;
+# define JUMP goto *oplabels[*cxt.pc];
 # define VM_LOOP_END
 #else
-# define VM_LOOP for (;;) { c = *pic->ip; switch (c.insn) {
+# define VM_LOOP for (;;) { switch (*cxt.pc) {
 # define CASE(x) case x:
-# define NEXT pic->ip++; break
+# define NEXT(n) (cxt.pc += n); break
 # define JUMP break
 # define VM_LOOP_END } }
 #endif
 
 #if PIC_DIRECT_THREADED_VM
   static const void *oplabels[] = {
-    &&L_OP_NOP, &&L_OP_POP, &&L_OP_PUSHUNDEF, &&L_OP_PUSHNIL, &&L_OP_PUSHTRUE,
-    &&L_OP_PUSHFALSE, &&L_OP_PUSHINT, &&L_OP_PUSHFLOAT,
-    &&L_OP_PUSHCHAR, &&L_OP_PUSHEOF, &&L_OP_PUSHCONST,
-    &&L_OP_GREF, &&L_OP_GSET, &&L_OP_LREF, &&L_OP_LSET, &&L_OP_CREF, &&L_OP_CSET,
-    &&L_OP_JMP, &&L_OP_JMPIF, &&L_OP_NOT, &&L_OP_CALL, &&L_OP_TAILCALL, &&L_OP_RET,
-    &&L_OP_LAMBDA, &&L_OP_CONS, &&L_OP_CAR, &&L_OP_CDR, &&L_OP_NILP,
-    &&L_OP_SYMBOLP, &&L_OP_PAIRP,
-    &&L_OP_ADD, &&L_OP_SUB, &&L_OP_MUL, &&L_OP_DIV,
-    &&L_OP_EQ, &&L_OP_LT, &&L_OP_LE, &&L_OP_GT, &&L_OP_GE, &&L_OP_STOP
+    [OP_HALT] = &&L_OP_HALT, [OP_CALL] = &&L_OP_CALL, [OP_PROC] = &&L_OP_PROC,
+    [OP_LOAD] = &&L_OP_LOAD, [OP_LREF] = &&L_OP_LREF, [OP_LSET] = &&L_OP_LSET,
+    [OP_GREF] = &&L_OP_GREF, [OP_GSET] = &&L_OP_GSET, [OP_COND] = &&L_OP_COND,
+    [OP_LOADT] = &&L_OP_LOADT, [OP_LOADF] = &&L_OP_LOADF, [OP_LOADN] = &&L_OP_LOADN,
+    [OP_LOADU] = &&L_OP_LOADU, [OP_LOADI] = &&L_OP_LOADI
   };
 #endif
 
   VM_LOOP {
-    CASE(OP_NOP) {
-      NEXT;
-    }
-    CASE(OP_POP) {
-      (void)(POP());
-      NEXT;
-    }
-    CASE(OP_PUSHUNDEF) {
-      PUSH(pic_undef_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHNIL) {
-      PUSH(pic_nil_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHTRUE) {
-      PUSH(pic_true_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHFALSE) {
-      PUSH(pic_false_value(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHINT) {
-      PUSH(pic_int_value(pic, pic->ci->irep->ints[c.a]));
-      NEXT;
-    }
-    CASE(OP_PUSHFLOAT) {
-      PUSH(pic_float_value(pic, pic->ci->irep->nums[c.a]));
-      NEXT;
-    }
-    CASE(OP_PUSHCHAR) {
-      PUSH(pic_char_value(pic, pic->ci->irep->ints[c.a]));
-      NEXT;
-    }
-    CASE(OP_PUSHEOF) {
-      PUSH(pic_eof_object(pic));
-      NEXT;
-    }
-    CASE(OP_PUSHCONST) {
-      PUSH(obj_value(pic, pic->ci->irep->pool[c.a]));
-      NEXT;
-    }
-    CASE(OP_GREF) {
-      PUSH(pic_global_ref(pic, obj_value(pic, pic->ci->irep->pool[c.a])));
-      NEXT;
-    }
-    CASE(OP_GSET) {
-      pic_global_set(pic, obj_value(pic, pic->ci->irep->pool[c.a]), POP());
-      PUSH(pic_undef_value(pic));
-      NEXT;
-    }
-    CASE(OP_LREF) {
-      struct callinfo *ci = pic->ci;
-      struct irep *irep = ci->irep;
-
-      if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.a >= irep->argc + irep->localc) {
-          PUSH(ci->cxt->regs[c.a - (ci->regs - ci->fp)]);
-          NEXT;
-        }
-      }
-      PUSH(pic->ci->fp[c.a]);
-      NEXT;
-    }
-    CASE(OP_LSET) {
-      struct callinfo *ci = pic->ci;
-      struct irep *irep = ci->irep;
-
-      if (ci->cxt != NULL && ci->cxt->regs == ci->cxt->storage) {
-        if (c.a >= irep->argc + irep->localc) {
-          ci->cxt->regs[c.a - (ci->regs - ci->fp)] = POP();
-          PUSH(pic_undef_value(pic));
-          NEXT;
-        }
-      }
-      pic->ci->fp[c.a] = POP();
-      PUSH(pic_undef_value(pic));
-      NEXT;
-    }
-    CASE(OP_CREF) {
-      int depth = c.a;
-      struct frame *cxt;
-
-      cxt = pic->ci->up;
-      while (--depth) {
-	cxt = cxt->up;
-      }
-      PUSH(cxt->regs[c.b]);
-      NEXT;
-    }
-    CASE(OP_CSET) {
-      int depth = c.a;
-      struct frame *cxt;
-
-      cxt = pic->ci->up;
-      while (--depth) {
-	cxt = cxt->up;
-      }
-      cxt->regs[c.b] = POP();
-      PUSH(pic_undef_value(pic));
-      NEXT;
-    }
-    CASE(OP_JMP) {
-      pic->ip += c.a;
-      JUMP;
-    }
-    CASE(OP_JMPIF) {
-      pic_value v;
-
-      v = POP();
-      if (! pic_false_p(pic, v)) {
-	pic->ip += c.a;
-	JUMP;
-      }
-      NEXT;
+    CASE(OP_HALT) {
+      pic_value ret = cxt.fp->regs[1];
+      pic->cxt = pic->cxt->prev;
+      pic_protect(pic, ret);
+      return ret;
     }
     CASE(OP_CALL) {
-      pic_value x, v;
-      struct callinfo *ci;
       struct proc *proc;
-
-      if (c.a == -1) {
-        pic->sp += pic->ci[1].retc - 1;
-        c.a = pic->ci[1].retc + 1;
+      if (! pic_proc_p(pic, REG(0))) {
+        pic_error(pic, "invalid application", 1, REG(0));
       }
-
-    L_CALL:
-      x = pic->sp[-c.a];
-      if (! pic_proc_p(pic, x)) {
-	pic_error(pic, "invalid application", 1, x);
-      }
-      proc = proc_ptr(pic, x);
-
-      if (pic->sp >= pic->stend) {
-        pic_panic(pic, "VM stack overflow");
-      }
-
-      ci = PUSHCI();
-      ci->argc = c.a;
-      ci->retc = 1;
-      ci->ip = pic->ip;
-      ci->fp = pic->sp - c.a;
-      ci->irep = NULL;
-      ci->cxt = NULL;
+      proc = proc_ptr(pic, REG(0));
       if (proc->tt == PIC_TYPE_PROC_FUNC) {
-
-        /* invoke! */
+        pic_value v;
+        cxt.sp->up = proc->env; /* push static link */
+        cxt.fp = cxt.sp;
+        cxt.sp = NULL;
+        cxt.irep = NULL;
         v = proc->u.func(pic);
-        pic->sp[0] = v;
-        pic->sp += pic->ci->retc;
-
-        pic_leave(pic, ai);
-        goto L_RET;
-      }
-      else {
+        if (cxt.sp != NULL) {   /* tail call */
+          SAVE;
+          JUMP;
+        } else {
+          cxt.sp = pic_make_frame_unsafe(pic, 3);
+          cxt.sp->regs[0] = cxt.fp->regs[1]; /* cont. */
+          cxt.sp->regs[1] = v;
+          cxt.pc = MKCALL(1);
+          SAVE;
+          JUMP;
+        }
+      } else {
         struct irep *irep = proc->u.irep;
-	int i;
-	pic_value rest;
 
-        ci->irep = irep;
-	if (ci->argc != irep->argc) {
-	  if (! (irep->varg && ci->argc >= irep->argc)) {
-            arg_error(pic, ci->argc - 1, irep->varg, irep->argc - 1);
-	  }
-	}
-	/* prepare rest args */
-	if (irep->varg) {
-	  rest = pic_nil_value(pic);
-	  for (i = 0; i < ci->argc - irep->argc; ++i) {
-	    pic_protect(pic, v = POP());
-	    rest = pic_cons(pic, v, rest);
-	  }
-	  PUSH(rest);
-	}
-	/* prepare local variable area */
-	if (irep->localc > 0) {
-	  int l = irep->localc;
-	  if (irep->varg) {
-	    --l;
-	  }
-	  for (i = 0; i < l; ++i) {
-	    PUSH(pic_undef_value(pic));
-	  }
-	}
+        if (A != irep->argc) {
+          if (! ((irep->flags & IREP_VARG) != 0 && A >= irep->argc)) {
+            arg_error(pic, A, (irep->flags & IREP_VARG), irep->argc);
+          }
+        }
+        if (irep->flags & IREP_VARG) {
+          REG(irep->argc + 1) = pic_make_list(pic, A - irep->argc, &REG(irep->argc + 1));
+          SAVE;                 /* TODO: get rid of this */
+        }
 
-	/* prepare cxt */
-        ci->up = proc->fp;
-        ci->regc = irep->capturec;
-        ci->regs = ci->fp + irep->argc + irep->localc;
-
-	pic->ip = irep->code;
-	pic_leave(pic, ai);
-	JUMP;
+        cxt.sp->up = proc->env; /* push static link */
+        cxt.fp = cxt.sp;
+        cxt.sp = pic_make_frame_unsafe(pic, irep->frame_size);
+        cxt.pc = irep->code;
+        cxt.irep = irep;
+        JUMP;
       }
     }
-    CASE(OP_TAILCALL) {
-      int i, argc;
-      pic_value *argv;
-      struct callinfo *ci;
-
-      if (pic->ci->cxt != NULL) {
-        vm_tear_off(pic->ci);
+    CASE(OP_LREF) {
+      struct frame *f;
+      int depth = B;
+      for (f = cxt.fp; depth--; f = f->up);
+      REG(A) = f->regs[C];
+      NEXT(4);
+    }
+    CASE(OP_LSET) {
+      struct frame *f;
+      int depth = B;
+      for (f = cxt.fp; depth--; f = f->up);
+      f->regs[C] = REG(A);
+      NEXT(4);
+    }
+    CASE(OP_GREF) {
+      REG(A) = pic_global_ref(pic, cxt.irep->obj[B]);
+      NEXT(3);
+    }
+    CASE(OP_GSET) {
+      pic_global_set(pic, cxt.irep->obj[B], REG(A));
+      NEXT(3);
+    }
+    CASE(OP_COND) {
+      if (pic_false_p(pic, REG(A))) {
+        NEXT(Bx);
+      } else {
+        NEXT(4);
       }
-
-      if (c.a == -1) {
-        pic->sp += pic->ci[1].retc - 1;
-        c.a = pic->ci[1].retc + 1;
-      }
-
-      argc = c.a;
-      argv = pic->sp - argc;
-      for (i = 0; i < argc; ++i) {
-	pic->ci->fp[i] = argv[i];
-      }
-      ci = POPCI();
-      pic->sp = ci->fp + argc;
-      pic->ip = ci->ip;
-
-      /* c is not changed */
-      goto L_CALL;
     }
-    CASE(OP_RET) {
-      int i, retc;
-      pic_value *retv;
-      struct callinfo *ci;
-
-      if (pic->ci->cxt != NULL) {
-        vm_tear_off(pic->ci);
-      }
-
-      assert(pic->ci->retc == 1);
-
-    L_RET:
-      retc = pic->ci->retc;
-      retv = pic->sp - retc;
-      if (retc == 0) {
-        pic->ci->fp[0] = retv[0]; /* copy at least once */
-      }
-      for (i = 0; i < retc; ++i) {
-        pic->ci->fp[i] = retv[i];
-      }
-      ci = POPCI();
-      pic->sp = ci->fp + 1;     /* advance only one! */
-      pic->ip = ci->ip;
-
-      NEXT;
+    CASE(OP_PROC) {
+      REG(A) = pic_make_proc_irep_unsafe(pic, cxt.irep->irep[B], cxt.fp);
+      NEXT(3);
     }
-    CASE(OP_LAMBDA) {
-      if (pic->ci->cxt == NULL) {
-        vm_push_cxt(pic);
-      }
-
-      PUSH(pic_make_proc_irep(pic, pic->ci->irep->irep[c.a], pic->ci->cxt));
-      pic_leave(pic, ai);
-      NEXT;
+    CASE(OP_LOAD) {
+      REG(A) = cxt.irep->obj[B];
+      NEXT(3);
     }
-
-    CASE(OP_CONS) {
-      pic_value a, b;
-      pic_protect(pic, b = POP());
-      pic_protect(pic, a = POP());
-      PUSH(pic_cons(pic, a, b));
-      pic_leave(pic, ai);
-      NEXT;
+    CASE(OP_LOADU) {
+      REG(A) = pic_undef_value(pic);
+      NEXT(2);
     }
-    CASE(OP_CAR) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_car(pic, p));
-      NEXT;
+    CASE(OP_LOADT) {
+      REG(A) = pic_true_value(pic);
+      NEXT(2);
     }
-    CASE(OP_CDR) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_cdr(pic, p));
-      NEXT;
+    CASE(OP_LOADF) {
+      REG(A) = pic_false_value(pic);
+      NEXT(2);
     }
-    CASE(OP_NILP) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_bool_value(pic, pic_nil_p(pic, p)));
-      NEXT;
+    CASE(OP_LOADN) {
+      REG(A) = pic_nil_value(pic);
+      NEXT(2);
     }
-    CASE(OP_SYMBOLP) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_bool_value(pic, pic_sym_p(pic, p)));
-      NEXT;
+    CASE(OP_LOADI) {
+      REG(A) = pic_int_value(pic, (signed char) B);
+      NEXT(3);
     }
-    CASE(OP_PAIRP) {
-      pic_value p;
-      p = POP();
-      PUSH(pic_bool_value(pic, pic_pair_p(pic, p)));
-      NEXT;
-    }
-    CASE(OP_NOT) {
-      pic_value v;
-      v = pic_false_p(pic, POP()) ? pic_true_value(pic) : pic_false_value(pic);
-      PUSH(v);
-      NEXT;
-    }
-
-    CASE(OP_ADD) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_add(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_SUB) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_sub(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_MUL) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_mul(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_DIV) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_div(pic, a, b));
-      NEXT;
-    }
-    CASE(OP_EQ) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_eq(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_LE) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_le(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_LT) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_lt(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_GE) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_ge(pic, a, b)));
-      NEXT;
-    }
-    CASE(OP_GT) {
-      pic_value a, b;
-      b = POP();
-      a = POP();
-      PUSH(pic_bool_value(pic, pic_gt(pic, a, b)));
-      NEXT;
-    }
-
-    CASE(OP_STOP) {
-      return pic_protect(pic, POP());
-    }
-  } VM_LOOP_END;
+  } VM_LOOP_END
 }
 
 pic_value
 pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
 {
-  static const struct code iseq[2] = { { OP_NOP, 0, 0 }, { OP_TAILCALL, -1, 0 } };
-  pic_value *sp;
-  struct callinfo *ci;
-  int i;
+  const code_t *pc;
+  struct frame *sp;
 
-  *pic->sp++ = proc;
+#define MKCALLK(argc)                                                   \
+  (pic->cxt->tmpcode[0] = OP_CALL, pic->cxt->tmpcode[1] = (argc), pic->cxt->tmpcode)
 
-  sp = pic->sp;
-  for (i = 0; i < argc; ++i) {
-    *sp++ = args[i];
+  pc = MKCALLK(argc + 1);
+  sp = pic_make_frame_unsafe(pic, argc + 3);
+  sp->regs[0] = proc;
+  sp->regs[1] = GET_CONT(pic);
+  if (argc != 0) {
+    int i;
+    for (i = 0; i < argc; ++i) {
+      sp->regs[i + 2] = args[i];
+    }
   }
-
-  ci = PUSHCI();
-  ci->ip = iseq;
-  ci->fp = pic->sp;
-  ci->retc = (int)argc;
-
-  if (ci->retc == 0) {
-    return pic_undef_value(pic);
-  } else {
-    return args[0];
-  }
+  pic->cxt->pc = pc;
+  pic->cxt->sp = sp;
+  return pic_invalid_value(pic);
 }
 
 static pic_value

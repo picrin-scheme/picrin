@@ -144,11 +144,11 @@ pic_free(pic_state *pic, void *ptr)
 static void
 gc_protect(pic_state *pic, struct object *obj)
 {
-  if (pic->arena_idx >= pic->arena_size) {
+  if (pic->cxt->ai >= pic->arena_size) {
     pic->arena_size = pic->arena_size * 2 + 1;
     pic->arena = pic_realloc(pic, pic->arena, sizeof(struct object *) * pic->arena_size);
   }
-  pic->arena[pic->arena_idx++] = obj;
+  pic->arena[pic->cxt->ai++] = obj;
 }
 
 pic_value
@@ -165,13 +165,13 @@ pic_protect(pic_state *pic, pic_value v)
 size_t
 pic_enter(pic_state *pic)
 {
-  return pic->arena_idx;
+  return pic->cxt->ai;
 }
 
 void
 pic_leave(pic_state *pic, size_t state)
 {
-  pic->arena_idx = state;
+  pic->cxt->ai = state;
 }
 
 void *
@@ -238,24 +238,24 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_PROC_FUNC: {
-    if (obj->u.proc.fp) {
-      LOOP(obj->u.proc.fp);
+    if (obj->u.proc.env) {
+      LOOP(obj->u.proc.env);
     }
     break;
   }
   case PIC_TYPE_PROC_IREP: {
-    if (obj->u.proc.fp) {
-      gc_mark_object(pic, (struct object *)obj->u.proc.fp);
+    if (obj->u.proc.env) {
+      gc_mark_object(pic, (struct object *)obj->u.proc.env);
     }
     LOOP(obj->u.proc.u.irep);
     break;
   }
   case PIC_TYPE_IREP: {
     size_t i;
-    for (i = 0; i < obj->u.irep.npool; ++i) {
-      gc_mark_object(pic, obj->u.irep.pool[i]);
+    for (i = 0; i < obj->u.irep.objc; ++i) {
+      gc_mark(pic, obj->u.irep.obj[i]);
     }
-    for (i = 0; i < obj->u.irep.nirep; ++i) {
+    for (i = 0; i < obj->u.irep.irepc; ++i) {
       gc_mark_object(pic, (struct object *)obj->u.irep.irep[i]);
     }
     break;
@@ -319,37 +319,31 @@ gc_mark_object(pic_state *pic, struct object *obj)
 static void
 gc_mark_phase(pic_state *pic)
 {
-  pic_value *stack;
-  struct callinfo *ci;
+  struct context *cxt;
   size_t j;
 
   assert(pic->heap->weaks == NULL);
 
-  /* stack */
-  for (stack = pic->stbase; stack != pic->sp; ++stack) {
-    gc_mark(pic, *stack);
-  }
-
-  /* callinfo */
-  for (ci = pic->ci; ci != pic->cibase; --ci) {
-    if (ci->cxt) {
-      gc_mark_object(pic, (struct object *)ci->cxt);
-    }
+  /* context */
+  for (cxt = pic->cxt; cxt != NULL; cxt = cxt->prev) {
+    if (cxt->fp) gc_mark_object(pic, (struct object *)cxt->fp);
+    if (cxt->sp) gc_mark_object(pic, (struct object *)cxt->sp);
+    if (cxt->irep) gc_mark_object(pic, (struct object *)cxt->irep);
   }
 
   /* arena */
-  for (j = 0; j < pic->arena_idx; ++j) {
+  for (j = 0; j < pic->cxt->ai; ++j) {
     gc_mark_object(pic, (struct object *)pic->arena[j]);
   }
 
   /* global variables */
   gc_mark(pic, pic->globals);
 
-  /* error object */
-  gc_mark(pic, pic->err);
-
   /* dynamic environment */
   gc_mark(pic, pic->dyn_env);
+
+  /* top continuation */
+  gc_mark(pic, pic->halt);
 
   /* features */
   gc_mark(pic, pic->features);
@@ -422,10 +416,10 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
   case PIC_TYPE_IREP: {
     struct irep *irep = &obj->u.irep;
-    pic_free(pic, irep->code);
-    pic_free(pic, irep->ints);
-    pic_free(pic, irep->nums);
-    pic_free(pic, irep->pool);
+    if ((irep->flags & IREP_CODE_STATIC) == 0) {
+      pic_free(pic, irep->code);
+    }
+    pic_free(pic, irep->obj);
     pic_free(pic, irep->irep);
     break;
   }
@@ -434,7 +428,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_FRAME: {
-    pic_free(pic, obj->u.frame.storage);
+    pic_free(pic, obj->u.frame.regs);
     break;
   }
 

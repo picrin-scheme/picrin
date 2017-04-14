@@ -10,34 +10,30 @@ extern "C" {
 #endif
 
 #include "khash.h"
-#include "vm.h"
-
-struct callinfo {
-  int argc, retc;
-  const struct code *ip;
-  pic_value *fp;
-  struct irep *irep;
-  struct frame *cxt;
-  int regc;
-  pic_value *regs;
-  struct frame *up;
-};
+#include "object.h"
 
 KHASH_DECLARE(oblist, struct string *, struct symbol *)
+
+struct context {
+  PIC_JMPBUF jmp;
+  size_t ai;
+
+  /* vm */
+  const code_t *pc;
+  struct frame *sp;
+  struct frame *fp;
+  struct irep *irep;
+
+  code_t tmpcode[2];
+
+  struct context *prev;
+};
 
 struct pic_state {
   pic_allocf allocf;
   void *userdata;
 
-  struct cont *cc;
-
-  pic_value *sp;
-  pic_value *stbase, *stend;
-
-  struct callinfo *ci;
-  struct callinfo *cibase, *ciend;
-
-  const struct code *ip;
+  struct context *cxt, default_cxt;
 
   pic_value dyn_env;
 
@@ -48,9 +44,9 @@ struct pic_state {
   bool gc_enable;
   struct heap *heap;
   struct object **arena;
-  size_t arena_size, arena_idx;
+  size_t arena_size;
 
-  pic_value err;
+  pic_value halt;               /* top continuation */
 
   pic_panicf panicf;
 };

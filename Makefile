@@ -78,7 +78,7 @@ src/init_contrib.c:
 lib/ext/boot.c: piclib/compile.scm piclib/library.scm
 	cat piclib/compile.scm piclib/library.scm | bin/picrin-bootstrap tools/mkboot.scm > lib/ext/boot.c
 
-$(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h lib/vm.h
+$(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h
 
 doc: docs/*.rst docs/contrib.rst
 	$(MAKE) -C docs html

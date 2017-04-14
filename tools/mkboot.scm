@@ -1,7 +1,6 @@
 (import (scheme base)
         (scheme read)
-        (scheme write)
-        (only (picrin base) compile expand default-environment))
+        (scheme write))
 
 (define (generate-rom)
 
@@ -16,7 +15,7 @@
   (define text
     (with-output-to-string
       (lambda ()
-        (write (compile (expand (read) default-environment))))))
+        (write (read)))))
 
   (define (escape-string s)
     (with-output-to-string
