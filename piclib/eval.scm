@@ -112,7 +112,8 @@
              core#if
              core#begin
              core#define-macro))
-          env))
+          (lambda ()
+            env)))
 
       (define (extend-environment parent)
         (%make-environment parent #f (make-ephemeron-table)))
@@ -224,7 +225,7 @@
               (error "invalid expression" expr))))
 
           (define (expand expr . env)
-            (let ((x (expand-node expr (if (null? env) default-environment (car env)))))
+            (let ((x (expand-node expr (if (null? env) (default-environment) (car env)))))
               (run-all)
               x))
 
@@ -253,7 +254,7 @@
       (dictionary-set! (macro-objects) name transformer))
 
     (define (the var)
-      (make-identifier var default-environment))
+      (make-identifier var (default-environment)))
 
     (let
         ;; cache popular identifiers
