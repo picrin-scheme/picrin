@@ -51,25 +51,16 @@
    "#include \"picrin/extra.h\"\n"
    "\n"
    "#if PIC_USE_EVAL\n"
-   "static const char boot_compile_rom[][80] = {\n"
-   ,(generate-rom)
-   "};\n"
-   "#endif\n"
-   "\n"
-   "#if PIC_USE_LIBRARY\n"
-   "static const char boot_library_rom[][80] = {\n"
+   "static const char eval_rom[][80] = {\n"
    ,(generate-rom)
    "};\n"
    "#endif\n"
    "\n"
    "void\n"
-   "pic_boot(pic_state *PIC_UNUSED(pic))\n"
+   "pic_init_eval(pic_state *PIC_UNUSED(pic))\n"
    "{\n"
    "#if PIC_USE_EVAL\n"
-   "  pic_load_native(pic, &boot_compile_rom[0][0]);\n"
-   "#endif\n"
-   "#if PIC_USE_LIBRARY\n"
-   "  pic_load_native(pic, &boot_library_rom[0][0]);\n"
+   "  pic_load_native(pic, &eval_rom[0][0]);\n"
    "#endif\n"
    "}\n"))
 

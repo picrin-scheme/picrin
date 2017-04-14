@@ -17,20 +17,6 @@ pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 
 pic_value pic_read(pic_state *, pic_value port);
 
-pic_value pic_load(pic_state *, pic_value irep);
-void pic_load_native(pic_state *pic, const char *);
-
-/*
- * library
- */
-
-#if PIC_USE_LIBRARY
-void pic_deflibrary(pic_state *, const char *lib);
-void pic_in_library(pic_state *, const char *lib);
-void pic_export(pic_state *, int n, ...);
-#endif
-
-
 /* for debug */
 
 #if PIC_USE_WRITE

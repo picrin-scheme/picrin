@@ -111,8 +111,7 @@ void pic_init_weak(pic_state *);
 void pic_init_load(pic_state *);
 void pic_init_file(pic_state *);
 void pic_init_state(pic_state *);
-
-void pic_boot(pic_state *);
+void pic_init_eval(pic_state *);
 
 #define DONE pic_leave(pic, ai);
 
@@ -147,8 +146,9 @@ pic_init_core(pic_state *pic)
 #if PIC_USE_LIBC
   pic_init_file(pic); DONE;
 #endif
-
-  pic_boot(pic); DONE;
+#if PIC_USE_EVAL
+  pic_init_eval(pic); DONE;
+#endif
 }
 
 pic_state *

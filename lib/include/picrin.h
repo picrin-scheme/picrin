@@ -334,6 +334,8 @@ void pic_defvar(pic_state *, const char *name, pic_value v);
 pic_value pic_funcall(pic_state *, const char *name, int n, ...);
 pic_value pic_values(pic_state *, int n, ...);
 pic_value pic_vvalues(pic_state *, int n, va_list);
+pic_value pic_load(pic_state *, pic_value irep); /* TODO */
+void pic_load_native(pic_state *pic, const char *); /* TODO */
 
 
 /*

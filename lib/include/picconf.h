@@ -11,7 +11,6 @@
 /** enable specific features */
 /* #define PIC_USE_WRITE 1 */
 /* #define PIC_USE_EVAL 1 */
-/* #define PIC_USE_LIBRARY 1 */
 
 /** essential external functions */
 /* #define PIC_JMPBUF jmp_buf */
