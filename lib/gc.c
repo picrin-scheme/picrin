@@ -417,7 +417,7 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_IREP: {
     struct irep *irep = &obj->u.irep;
     if ((irep->flags & IREP_CODE_STATIC) == 0) {
-      pic_free(pic, irep->code);
+      pic_free(pic, (code_t *) irep->code);
     }
     pic_free(pic, irep->obj);
     pic_free(pic, irep->irep);
