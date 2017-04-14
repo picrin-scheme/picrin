@@ -2,20 +2,25 @@
  * See Copyright Notice in picrin.h
  */
 
-/** enable libc */
+/**
+ * enable libc
+ */
+
+/* When PIC_USE_LIBC=0, users must supply panicf which never returns. */
 /* #define PIC_USE_LIBC 1 */
 
-/** enable specific features */
+/**
+ * enable specific features
+ */
+
+/* #define PIC_USE_CALLCC 1 */
 /* #define PIC_USE_READ 1 */
 /* #define PIC_USE_WRITE 1 */
 /* #define PIC_USE_EVAL 1 */
 /* #define PIC_USE_FILE 1 */
 
-/** essential external functions */
-/* #define PIC_JMPBUF jmp_buf */
-/* #define PIC_SETJMP(pic, buf) setjmp(buf) */
-/* #define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val)) */
-/* #define PIC_ABORT(pic) abort() */
+/**
+ * I/O configuration
+ */
 
-/** I/O configuration */
 /* #define PIC_BUFSIZ 1024 */

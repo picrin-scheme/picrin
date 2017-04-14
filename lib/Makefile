@@ -45,9 +45,13 @@ mini-picrin: libpicrin.so ext/main.o
 libpicrin.so: $(LIBPICRIN_OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
 
+libpicrin.so.minimal: $(LIBPICRIN_SRCS)
+	$(CC) -I./include -Os -DPIC_USE_LIBC=0 -DPIC_USE_CALLCC=0 -DPIC_USE_FILE=0 -DPIC_USE_READ=0 -DPIC_USE_WRITE=0 -DPIC_USE_EVAL=0 -nostdlib -ffreestanding -fno-stack-protector -shared -o $@ $(LIBPICRIN_SRCS) $(LDFLAGS)
+	strip $@
+
 $(LIBPICRIN_OBJS): $(LIBPICRIN_HEADERS)
 
 clean:
-	$(RM) $(LIBPICRIN_OBJS) libpicrin.so
+	$(RM) $(LIBPICRIN_OBJS) libpicrin.so libpicrin.so.minimal
 
 .PHONY: clean

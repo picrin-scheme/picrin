@@ -380,7 +380,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
   cxt.prev = pic->cxt;
   pic->cxt = &cxt;
 
-  if (PIC_SETJMP(pic, cxt.jmp) != 0) {
+  if (PIC_SETJMP(cxt.jmp) != 0) {
     /* pass */
   }
 

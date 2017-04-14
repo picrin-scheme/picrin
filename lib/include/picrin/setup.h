@@ -8,6 +8,10 @@
 # define PIC_USE_LIBC 1
 #endif
 
+#ifndef PIC_USE_CALLCC
+# define PIC_USE_CALLCC 1
+#endif
+
 #ifndef PIC_USE_READ
 # define PIC_USE_READ 1
 #endif
@@ -30,20 +34,18 @@
 #if !PIC_USE_LIBC && PIC_USE_FILE
 # error PIC_USE_FILE requires PIC_USE_LIBC
 #endif
+#if !PIC_USE_LIBC && PIC_USE_CALLCC
+# error PIC_USE_CALLCC requires PIC_USE_LIBC
+#endif
 
-#ifndef PIC_JMPBUF
+#if PIC_USE_CALLCC
 # include <setjmp.h>
 # define PIC_JMPBUF jmp_buf
-#endif
-
-#ifndef PIC_SETJMP
-# include <setjmp.h>
-# define PIC_SETJMP(pic, buf) setjmp(buf)
-#endif
-
-#ifndef PIC_LONGJMP
-# include <setjmp.h>
-# define PIC_LONGJMP(pic, buf, val) longjmp((buf), (val))
+# define PIC_SETJMP(buf) setjmp(buf)
+# define PIC_LONGJMP(buf, val) longjmp((buf), (val))
+#else
+# define PIC_JMPBUF char
+# define PIC_SETJMP(buf) 0
 #endif
 
 #ifndef PIC_ABORT

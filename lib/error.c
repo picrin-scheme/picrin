@@ -12,7 +12,9 @@ pic_panic(pic_state *pic, const char *msg)
   if (pic->panicf) {
     pic->panicf(pic, msg);
   }
-  PIC_ABORT(pic);
+#if PIC_USE_LIBC
+  abort();
+#endif
   PIC_UNREACHABLE();
 }
 
@@ -29,6 +31,8 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
 }
 
 #define pic_exc(pic) pic_ref(pic, "current-exception-handlers")
+
+#if PIC_USE_CALLCC
 
 PIC_JMPBUF *
 pic_prepare_try(pic_state *pic)
@@ -90,6 +94,15 @@ pic_abort_try(pic_state *pic)
   pic_protect(pic, err);
   return err;
 }
+
+#else
+
+PIC_JMPBUF *pic_prepare_try(pic_state *PIC_UNUSED(pic)) { return NULL; }
+void pic_enter_try(pic_state *PIC_UNUSED(pic)) { }
+void pic_exit_try(pic_state *PIC_UNUSED(pic)) { }
+pic_value pic_abort_try(pic_state *PIC_UNUSED(pic)) { PIC_UNREACHABLE(); }
+
+#endif
 
 pic_value
 pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs)

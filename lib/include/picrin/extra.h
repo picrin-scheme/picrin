@@ -9,9 +9,11 @@
 extern "C" {
 #endif
 
-
 #if PIC_USE_LIBC
 void *pic_default_allocf(void *, void *, size_t);
+#endif
+
+#if PIC_USE_FILE
 pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 #endif
 

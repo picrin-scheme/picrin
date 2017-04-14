@@ -306,7 +306,7 @@ pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_val
     extern void pic_exit_try(pic_state *);                              \
     extern pic_value pic_abort_try(pic_state *);                        \
     PIC_JMPBUF *jmp = pic_prepare_try(pic);                             \
-    if (PIC_SETJMP(pic, *jmp) == 0) {                                   \
+    if (PIC_SETJMP(*jmp) == 0) {                                        \
       pic_enter_try(pic);
 #define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
 #define pic_catch_(e, label)                              \
