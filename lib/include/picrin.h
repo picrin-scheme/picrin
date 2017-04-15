@@ -296,7 +296,6 @@ PIC_NORETURN void pic_panic(pic_state *, const char *msg);
 pic_value pic_raise_continuable(pic_state *pic, pic_value err);
 PIC_NORETURN void pic_raise(pic_state *, pic_value v);
 PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
-pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 
 #define pic_try pic_try_(PIC_GENSYM(cont), PIC_GENSYM(jmp))
 #define pic_try_(cont, jmp)                                             \

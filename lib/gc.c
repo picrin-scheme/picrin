@@ -184,14 +184,14 @@ pic_alloca(pic_state *pic, size_t n)
 
 /* MARK */
 
-static bool
-is_marked(pic_state *PIC_UNUSED(pic), struct object *obj)
+PIC_STATIC_INLINE bool
+is_marked(struct object *obj)
 {
   return obj->u.basic.tt & GC_MARK;
 }
 
-static void
-mark(pic_state *PIC_UNUSED(pic), struct object *obj)
+PIC_STATIC_INLINE void
+mark(struct object *obj)
 {
   obj->u.basic.tt |= GC_MARK;
 }
@@ -211,10 +211,10 @@ gc_mark_object(pic_state *pic, struct object *obj)
 {
  loop:
 
-  if (is_marked(pic, obj))
+  if (is_marked(obj))
     return;
 
-  mark(pic, obj);
+  mark(obj);
 
 #define LOOP(o) obj = (struct object *)(o); goto loop
 
@@ -366,8 +366,8 @@ gc_mark_phase(pic_state *pic)
           continue;
         key = kh_key(h, it);
         val = kh_val(h, it);
-        if (is_marked(pic, key)) {
-          if (obj_p(pic, val) && ! is_marked(pic, obj_ptr(pic, val))) {
+        if (is_marked(key)) {
+          if (obj_p(pic, val) && ! is_marked(obj_ptr(pic, val))) {
             gc_mark(pic, val);
             ++j;
           }
@@ -612,7 +612,7 @@ gc_sweep_phase(pic_state *pic)
       if (! kh_exist(h, it))
         continue;
       obj = kh_key(h, it);
-      if (! is_marked(pic, obj)) {
+      if (! is_marked(obj)) {
         kh_del(weak, h, it);
       }
     }
@@ -624,7 +624,7 @@ gc_sweep_phase(pic_state *pic)
     if (! kh_exist(s, it))
       continue;
     sym = kh_val(s, it);
-    if (sym && ! is_marked(pic, (struct object *)sym)) {
+    if (sym && ! is_marked((struct object *)sym)) {
       kh_del(oblist, s, it);
     }
   }
