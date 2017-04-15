@@ -8,9 +8,11 @@
 void
 pic_init_picrin(pic_state *pic)
 {
+  void pic_init_lib(pic_state *);
   void pic_init_contrib(pic_state *);
   void pic_load_piclib(pic_state *);
 
+  pic_init_lib(pic);
   pic_init_contrib(pic);
   pic_load_piclib(pic);
 }

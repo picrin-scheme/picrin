@@ -4,7 +4,6 @@
 
 #include "picrin.h"
 
-void pic_nitro_init_file(pic_state *);
 void pic_nitro_init_load(pic_state *);
 void pic_nitro_init_system(pic_state *);
 void pic_nitro_init_time(pic_state *);
@@ -12,7 +11,6 @@ void pic_nitro_init_time(pic_state *);
 void
 pic_nitro_init_r7rs(pic_state *pic)
 {
-  pic_nitro_init_file(pic);
   pic_nitro_init_load(pic);
   pic_nitro_init_system(pic);
   pic_nitro_init_time(pic);

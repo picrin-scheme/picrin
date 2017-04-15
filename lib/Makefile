@@ -39,20 +39,15 @@ LIBPICRIN_HEADERS = \
 
 CFLAGS += -I./include -Wall -Wextra -g
 
-mini-picrin: $(LIBPICRIN_OBJS) ext/main.o
-	$(CC) $(CFLAGS) -o $@ ext/main.o $(LIBPICRIN_OBJS)
+mini-picrin: ext/main.o libpicrin.a
+	$(CC) $(CFLAGS) -o $@ ext/main.o libpicrin.a
 
-libpicrin.so: CFLAGS += -fPIC
-libpicrin.so: $(LIBPICRIN_OBJS)
-	$(CC) $(CFLAGS) -shared -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
-
-libpicrin.so.minimal: $(LIBPICRIN_SRCS)
-	$(CC) -I./include -Os -DPIC_USE_LIBC=0 -DPIC_USE_CALLCC=0 -DPIC_USE_FILE=0 -DPIC_USE_READ=0 -DPIC_USE_WRITE=0 -DPIC_USE_EVAL=0 -nostdlib -ffreestanding -fno-stack-protector -shared -o $@ $(LIBPICRIN_SRCS) $(LDFLAGS)
-	strip $@
+libpicrin.a: $(LIBPICRIN_OBJS)
+	$(AR) $(ARFLAGS) $@ $(LIBPICRIN_OBJS)
 
 $(LIBPICRIN_OBJS): $(LIBPICRIN_HEADERS)
 
 clean:
-	$(RM) $(LIBPICRIN_OBJS) ext/main.o mini-picrin libpicrin.so libpicrin.so.minimal
+	$(RM) $(LIBPICRIN_OBJS) ext/main.o mini-picrin libpicrin.a
 
 .PHONY: clean

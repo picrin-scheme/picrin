@@ -42,10 +42,9 @@
 # include <setjmp.h>
 # define PIC_JMPBUF jmp_buf
 # define PIC_SETJMP(buf) setjmp(buf)
-# define PIC_LONGJMP(buf, val) longjmp((buf), (val))
 #else
 # define PIC_JMPBUF char
-# define PIC_SETJMP(buf) 0
+# define PIC_SETJMP(buf) ((void)(buf), 0)
 #endif
 
 #ifndef PIC_ABORT

@@ -1,34 +1,7 @@
-LIBPICRIN_SRCS = \
-	lib/blob.c\
-	lib/bool.c\
-	lib/char.c\
-	lib/cont.c\
-	lib/data.c\
-	lib/debug.c\
-	lib/dict.c\
-	lib/error.c\
-	lib/gc.c\
-	lib/number.c\
-	lib/pair.c\
-	lib/port.c\
-	lib/proc.c\
-	lib/record.c\
-	lib/state.c\
-	lib/string.c\
-	lib/symbol.c\
-	lib/var.c\
-	lib/vector.c\
-	lib/weak.c\
-	lib/ext/boot.c\
-	lib/ext/lib.c\
-	lib/ext/file.c\
-	lib/ext/load.c\
-	lib/ext/read.c\
-	lib/ext/write.c
-LIBPICRIN_OBJS = $(LIBPICRIN_SRCS:.c=.o)
-
 PICRIN_SRCS = \
 	src/main.c\
+	src/init_lib.c\
+	src/lib.c\
 	src/load_piclib.c\
 	src/init_contrib.c
 PICRIN_OBJS = \
@@ -45,25 +18,40 @@ REPL_ISSUE_TESTS = $(wildcard t/issue/*.sh)
 
 TEST_RUNNER = picrin
 
-CFLAGS += -I./lib/include -Wall -Wextra
+CFLAGS += -I./lib/include -I./include -Wall -Wextra
 LDFLAGS += -lm
 
 prefix ?= /usr/local
 
-all: CFLAGS += -O2 -g -DNDEBUG=1
-all: picrin
-
-debug: CFLAGS += -O0 -g
-debug: picrin
-
-tiny-picrin: CFLAGS += -O0 -g -DPIC_USE_LIBRARY=0
-tiny-picrin: $(LIBPICRIN_OBJS) src/tiny-main.o
-	$(CC) $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) src/tiny-main.o $(LDFLAGS)
-
 include $(sort $(wildcard contrib/*/nitro.mk))
 
-picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS)
-	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) $(LIBPICRIN_OBJS) $(LDFLAGS)
+all: CFLAGS += -O2 -g -DNDEBUG=1
+all: bootstrap picrin
+
+debug: CFLAGS += -O0 -g
+debug: bootstrap picrin
+
+bootstrap: bin/picrin-bootstrap
+
+bin/picrin-bootstrap:
+	test -f bin/picrin-bootstrap || { $(MAKE) lib/mini-picrin && mv lib/mini-picrin bin/picrin-bootstrap; }
+
+lib/mini-picrin:
+	$(MAKE) -C lib mini-picrin
+
+lib/libpicrin.a:
+	$(MAKE) -C lib libpicrin.a
+
+ext: lib/ext/eval.c
+
+lib/ext/eval.c: piclib/eval.scm
+	bin/picrin-bootstrap -c piclib/eval.scm | bin/picrin-bootstrap tools/mkeval.scm > lib/ext/eval.c
+
+picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) ext lib/libpicrin.a
+	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libpicrin.a $(LDFLAGS)
+
+src/init_lib.c: piclib/library.scm
+	cat piclib/library.scm | bin/picrin-bootstrap tools/mklib.scm > src/init_lib.c
 
 src/load_piclib.c: $(CONTRIB_LIBS)
 	perl tools/mkloader.pl $(CONTRIB_LIBS) > $@
@@ -71,14 +59,7 @@ src/load_piclib.c: $(CONTRIB_LIBS)
 src/init_contrib.c:
 	perl tools/mkinit.pl $(CONTRIB_INITS) > $@
 
-# FIXME: Undefined symbols error for _emyg_atod and _emyg_dtoa
-# libpicrin.so: $(LIBPICRIN_OBJS)
-# 	$(CC) -shared $(CFLAGS) -o $@ $(LIBPICRIN_OBJS) $(LDFLAGS)
-
-lib/ext/boot.c: piclib/compile.scm piclib/library.scm
-	cat piclib/compile.scm piclib/library.scm | bin/picrin-bootstrap tools/mkboot.scm > lib/ext/boot.c
-
-$(LIBPICRIN_OBJS) $(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/picrin.h lib/include/picrin/*.h lib/khash.h lib/object.h lib/state.h
+$(PICRIN_OBJS) $(CONTRIB_OBJS): lib/include/*.h lib/include/picrin/*.h lib/*.h include/picrin/*.h
 
 doc: docs/*.rst docs/contrib.rst
 	$(MAKE) -C docs html
@@ -95,8 +76,8 @@ test: test-contribs test-nostdlib test-issue
 
 test-contribs: picrin $(CONTRIB_TESTS)
 
-test-nostdlib: lib/ext/boot.c
-	$(CC) -I./lib -I./lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -D'PIC_USE_LIBRARY=0' -D'PIC_USE_EVAL=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
+test-nostdlib: ext
+	$(CC) -I./lib/include -Os -DPIC_USE_LIBC=0 -DPIC_USE_CALLCC=0 -DPIC_USE_FILE=0 -DPIC_USE_READ=0 -DPIC_USE_WRITE=0 -DPIC_USE_EVAL=0 -nostdlib -ffreestanding -fno-stack-protector -shared -pedantic -std=c89 -Wall -Wextra -Werror -o libpicrin-tiny.so $(wildcard lib/*.c)
 	strip libpicrin-tiny.so
 	ls -lh libpicrin-tiny.so
 	rm -f libpicrin-tiny.so
@@ -120,11 +101,11 @@ install: all
 	install -c picrin $(prefix)/bin/picrin
 
 clean:
+	$(MAKE) -C lib clean
 	$(RM) picrin
-	$(RM) src/load_piclib.c src/init_contrib.c lib/ext/boot.c
-	$(RM) libpicrin.so libpicrin-tiny.so
-	$(RM) $(LIBPICRIN_OBJS)
+	$(RM) src/load_piclib.c src/init_contrib.c src/init_lib.c
+	$(RM) libpicrin-tiny.so
 	$(RM) $(PICRIN_OBJS)
 	$(RM) $(CONTRIB_OBJS)
 
-.PHONY: all install clean push test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)
+.PHONY: all bootstrap ext install clean push test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)

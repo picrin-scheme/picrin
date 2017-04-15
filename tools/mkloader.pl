@@ -21,9 +21,11 @@ pic_eval_native(pic_state *pic, const char *str)
 
   pic_try {
     size_t ai = pic_enter(pic);
-    pic_value form;
 
-    while (! pic_eof_p(pic, form = pic_read(pic, port))) {
+    while (1) {
+      pic_value form = pic_funcall(pic, "read", 1, port);
+      if (pic_eof_p(pic, form))
+        break;
       pic_funcall(pic, "eval", 1, form);
       pic_leave(pic, ai);
     }

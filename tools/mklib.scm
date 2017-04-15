@@ -1,8 +1,8 @@
-(import (scheme base)
-        (scheme read)
-        (scheme write))
-
 (define (generate-rom)
+
+  (define open-output-string open-output-bytevector)
+  (define (get-output-string port)
+    (list->string (map integer->char (bytevector->list (get-output-bytevector port)))))
 
   (define (with-output-to-string thunk)
     (let ((port (open-output-string)))
@@ -23,10 +23,10 @@
         (string-for-each
          (lambda (c)
            (case c
-             ((#\\) (write-string "\\\\"))
-             ((#\") (write-string "\\\""))
-             ((#\newline) (write-string "\\n"))
-             (else (write-char c))))
+             ((#\\) (display "\\\\"))
+             ((#\") (display "\\\""))
+             ((#\newline) (display "\\n"))
+             (else (display c))))
          s))))
 
   (define (group-string i s)
@@ -50,17 +50,15 @@
  `("#include \"picrin.h\"\n"
    "#include \"picrin/extra.h\"\n"
    "\n"
-   "#if PIC_USE_EVAL\n"
-   "static const char eval_rom[][80] = {\n"
+   "static const char lib_rom[][80] = {\n"
    ,(generate-rom)
    "};\n"
-   "#endif\n"
    "\n"
    "void\n"
-   "pic_init_eval(pic_state *PIC_UNUSED(pic))\n"
+   "pic_init_lib(pic_state *PIC_UNUSED(pic))\n"
    "{\n"
-   "#if PIC_USE_EVAL\n"
-   "  pic_load_native(pic, &eval_rom[0][0]);\n"
-   "#endif\n"
+   "  pic_value port;\n"
+   "  port = pic_fmemopen(pic, &lib_rom[0][0], strlen(&lib_rom[0][0]), \"r\");\n"
+   "  pic_funcall(pic, \"eval\", 1, pic_funcall(pic, \"read\", 1, port));\n"
    "}\n"))
 

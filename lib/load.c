@@ -56,9 +56,10 @@ assemble(pic_state *pic, pic_value as)
   i = 0;
   /* TODO: validate operands */
   pic_for_each (r, codes, it) {
+    pic_value op;
     if (! pic_pair_p(pic, r))
       continue;
-    pic_value op = pic_car(pic, r);
+    op = pic_car(pic, r);
     if (pic_eq_p(pic, op, pic_intern_lit(pic, "HALT"))) {
       code[i++] = OP_HALT;
     }

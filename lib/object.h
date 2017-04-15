@@ -92,7 +92,7 @@ enum {
   OP_LOADF = 0x0A,        /* 0x0A 0x**            OP_LOADF dest     */
   OP_LOADN = 0x0B,        /* 0x0B 0x**            OP_LOADN dest     */
   OP_LOADU = 0x0C,        /* 0x0C 0x**            OP_LOADU dest     */
-  OP_LOADI = 0x0D,        /* 0x0D 0x** 0x**       OP_LOADI dest i   */
+  OP_LOADI = 0x0D         /* 0x0D 0x** 0x**       OP_LOADI dest i   */
 };
 
 typedef unsigned char code_t;

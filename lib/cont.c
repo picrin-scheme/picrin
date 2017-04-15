@@ -41,7 +41,7 @@ cont_call(pic_state *pic)
   }
   pic->cxt = cxt;
 
-  PIC_LONGJMP(cxt->jmp, 1);
+  longjmp(cxt->jmp, 1);
   PIC_UNREACHABLE();
 }
 

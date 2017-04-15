@@ -93,9 +93,10 @@
                (lambda (expr)
                  (let ((exprs (if (and (pair? expr) (eq? (car expr) 'begin))
                                   (cdr expr)
-                                  (list expr))))
+                                  (list expr)))
+                       (env (library-environment name)))
                    (for-each
-                    (lambda (e) (eval e name))
+                    (lambda (e) (eval e env))
                     exprs)))
                body)))))
 
@@ -122,7 +123,7 @@
               (if (null? clauses)
                   #undefined
                   (if (test (caar clauses))
-                      `(,(make-identifier 'begin default-environment) ,@(cdar clauses))
+                      `(,(make-identifier 'begin (default-environment)) ,@(cdar clauses))
                       (loop (cdr clauses))))))))
 
       (define-transformer 'import
@@ -206,7 +207,7 @@
 
     (let ()
       (make-library '(picrin base))
-      (set-car! (dictionary-ref *libraries* (mangle '(picrin base))) default-environment)
+      (set-car! (dictionary-ref *libraries* (mangle '(picrin base))) (default-environment))
       (let* ((exports
               (library-exports '(picrin base)))
              (export-keyword
@@ -222,12 +223,6 @@
                      do when unless
                      parameterize define-record-type))
         (dictionary-for-each export-keyword (global-objects)))
-      (set! eval
-            (let ((e eval))
-              (lambda (expr . lib)
-                (let ((lib (if (null? lib) (current-library) (car lib))))
-                  (parameterize ((current-library lib))
-                    (e expr (library-environment lib)))))))
       (make-library '(picrin user)))
 
     (values current-library

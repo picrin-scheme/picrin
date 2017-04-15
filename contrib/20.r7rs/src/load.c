@@ -23,10 +23,12 @@ pic_load_load(pic_state *pic)
 
   port = pic_fopen(pic, fp, "r");
   pic_try {
-    pic_value form;
     size_t ai = pic_enter(pic);
 
-    while (! pic_eof_p(pic, form = pic_read(pic, port))) {
+    while (1) {
+      pic_value form = pic_funcall(pic, "read", 1, port);
+      if (pic_eof_p(pic, form))
+        break;
       pic_funcall(pic, "eval", 1, form);
       pic_leave(pic, ai);
     }

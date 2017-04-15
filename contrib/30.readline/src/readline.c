@@ -7,6 +7,7 @@ forget to use the C++ extern "C" to get it to compile.
 */
 #include "picrin.h"
 #include "picrin/extra.h"
+#include "picrin/lib.h"
 
 #include <editline/readline.h>
 
