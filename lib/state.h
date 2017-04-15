@@ -16,7 +16,6 @@ KHASH_DECLARE(oblist, struct string *, struct symbol *)
 
 struct context {
   PIC_JMPBUF jmp;
-  size_t ai;
 
   /* vm */
   const code_t *pc;
@@ -35,6 +34,7 @@ struct pic_state {
 
   struct context *cxt, default_cxt;
 
+  size_t ai;
   pic_value dyn_env;
 
   pic_value features;           /* list of symbols */

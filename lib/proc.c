@@ -360,7 +360,7 @@ pic_value
 pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
   struct context cxt;
-  size_t arena_base = pic->cxt->ai;
+  size_t arena_base = pic->ai;
 
 #define MKCALL(argc) (cxt.tmpcode[0] = OP_CALL, cxt.tmpcode[1] = (argc), cxt.tmpcode)
 
@@ -376,15 +376,14 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
   }
   cxt.fp = NULL;
   cxt.irep = NULL;
-  cxt.ai = pic->cxt->ai;
   cxt.prev = pic->cxt;
   pic->cxt = &cxt;
 
-  if (PIC_SETJMP(cxt.jmp) != 0) {
-    /* pass */
-  }
+#define SAVE (pic->ai = arena_base)
 
-#define SAVE (cxt.ai = arena_base)
+  if (PIC_SETJMP(cxt.jmp) != 0) {
+    SAVE;
+  }
 
 #define A (cxt.pc[1])
 #define B (cxt.pc[2])

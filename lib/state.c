@@ -171,7 +171,6 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->userdata = userdata;
 
   /* context */
-  pic->default_cxt.ai = 0;
   pic->default_cxt.pc = NULL;
   pic->default_cxt.fp = NULL;
   pic->default_cxt.sp = NULL;
@@ -182,6 +181,7 @@ pic_open(pic_allocf allocf, void *userdata)
   /* arena */
   pic->arena = allocf(userdata, NULL, PIC_ARENA_SIZE * sizeof(struct object *));
   pic->arena_size = PIC_ARENA_SIZE;
+  pic->ai = 0;
 
   if (! pic->arena) {
     goto EXIT_ARENA;
@@ -250,7 +250,7 @@ pic_close(pic_state *pic)
 
   /* clear out root objects */
   pic->cxt = &pic->default_cxt;
-  pic->cxt->ai = 0;
+  pic->ai = 0;
   pic->halt = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
   pic->features = pic_invalid_value(pic);

@@ -39,8 +39,6 @@ pic_prepare_try(pic_state *pic)
 {
   struct context *cxt = pic_alloca(pic, sizeof(struct context));
 
-  cxt->ai = pic->cxt->ai;
-  pic->cxt->ai--;               /* cxt should be freed after this try ends */
   cxt->pc = NULL;
   cxt->fp = NULL;
   cxt->sp = NULL;

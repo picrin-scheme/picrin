@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "picrin.h"
+#include "../object.h"
 
 #if PIC_USE_FILE
 

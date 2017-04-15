@@ -297,13 +297,14 @@ pic_value pic_raise_continuable(pic_state *pic, pic_value err);
 PIC_NORETURN void pic_raise(pic_state *, pic_value v);
 PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
 
-#define pic_try pic_try_(PIC_GENSYM(cont), PIC_GENSYM(jmp))
-#define pic_try_(cont, jmp)                                             \
+#define pic_try pic_try_(PIC_GENSYM(jmp))
+#define pic_try_(jmp)                                                   \
   do {                                                                  \
     extern PIC_JMPBUF *pic_prepare_try(pic_state *);                    \
     extern void pic_enter_try(pic_state *);                             \
     extern void pic_exit_try(pic_state *);                              \
     extern pic_value pic_abort_try(pic_state *);                        \
+    size_t pic_try_ai_ = pic_enter(pic);                                \
     PIC_JMPBUF *jmp = pic_prepare_try(pic);                             \
     if (PIC_SETJMP(*jmp) == 0) {                                        \
       pic_enter_try(pic);
@@ -312,6 +313,8 @@ PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
       pic_exit_try(pic);                                  \
     } else {                                              \
       e = pic_abort_try(pic);                             \
+      pic_leave(pic, pic_try_ai_);                        \
+      pic_protect(pic, e);                                \
       goto label;                                         \
     }                                                     \
   } while (0);                                            \

@@ -144,11 +144,11 @@ pic_free(pic_state *pic, void *ptr)
 static void
 gc_protect(pic_state *pic, struct object *obj)
 {
-  if (pic->cxt->ai >= pic->arena_size) {
+  if (pic->ai >= pic->arena_size) {
     pic->arena_size = pic->arena_size * 2 + 1;
     pic->arena = pic_realloc(pic, pic->arena, sizeof(struct object *) * pic->arena_size);
   }
-  pic->arena[pic->cxt->ai++] = obj;
+  pic->arena[pic->ai++] = obj;
 }
 
 pic_value
@@ -165,13 +165,13 @@ pic_protect(pic_state *pic, pic_value v)
 size_t
 pic_enter(pic_state *pic)
 {
-  return pic->cxt->ai;
+  return pic->ai;
 }
 
 void
 pic_leave(pic_state *pic, size_t state)
 {
-  pic->cxt->ai = state;
+  pic->ai = state;
 }
 
 void *
@@ -332,7 +332,7 @@ gc_mark_phase(pic_state *pic)
   }
 
   /* arena */
-  for (j = 0; j < pic->cxt->ai; ++j) {
+  for (j = 0; j < pic->ai; ++j) {
     gc_mark_object(pic, (struct object *)pic->arena[j]);
   }
 
