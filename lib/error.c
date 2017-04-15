@@ -89,8 +89,6 @@ pic_value
 pic_abort_try(pic_state *pic)
 {
   pic_value err = pic->cxt->sp->regs[1];
-  pic->dyn_env = pic_cdr(pic, pic->dyn_env);
-  pic->cxt = pic->cxt->prev;
   pic_protect(pic, err);
   return err;
 }
