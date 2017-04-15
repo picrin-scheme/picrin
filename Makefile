@@ -36,10 +36,10 @@ bootstrap: bin/picrin-bootstrap
 bin/picrin-bootstrap:
 	test -f bin/picrin-bootstrap || { $(MAKE) lib/mini-picrin && mv lib/mini-picrin bin/picrin-bootstrap; }
 
-lib/mini-picrin:
+lib/mini-picrin: FORCE
 	$(MAKE) -C lib mini-picrin
 
-lib/libpicrin.a:
+lib/libpicrin.a: FORCE
 	$(MAKE) -C lib libpicrin.a
 
 ext: lib/ext/eval.c
@@ -107,5 +107,7 @@ clean:
 	$(RM) libpicrin-tiny.so
 	$(RM) $(PICRIN_OBJS)
 	$(RM) $(CONTRIB_OBJS)
+
+FORCE:
 
 .PHONY: all bootstrap ext install clean push test test-r7rs test-contribs test-issue test-picrin-issue test-repl-issue doc $(CONTRIB_TESTS) $(REPL_ISSUE_TESTS)

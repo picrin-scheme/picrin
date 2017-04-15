@@ -47,11 +47,6 @@
 # define PIC_SETJMP(buf) ((void)(buf), 0)
 #endif
 
-#ifndef PIC_ABORT
-void abort(void);
-# define PIC_ABORT(pic) abort()
-#endif
-
 #ifndef PIC_BUFSIZ
 # define PIC_BUFSIZ 1024
 #endif
