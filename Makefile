@@ -23,13 +23,13 @@ LDFLAGS += -lm
 
 prefix ?= /usr/local
 
-include $(sort $(wildcard contrib/*/nitro.mk))
-
 all: CFLAGS += -O2 -g -DNDEBUG=1
 all: bootstrap picrin
 
 debug: CFLAGS += -O0 -g
 debug: bootstrap picrin
+
+include $(sort $(wildcard contrib/*/nitro.mk))
 
 bootstrap: bin/picrin-bootstrap
 
