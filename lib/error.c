@@ -69,7 +69,7 @@ pic_enter_try(pic_state *pic)
   pic_value var, env;
 
   /* call/cc */
-  cont = pic_make_cont(pic, pic->cxt, pic_invalid_value(pic));
+  cont = pic_make_cont(pic, pic->cxt, pic_invalid_value(pic), pic->dyn_env);
   handler = pic_lambda(pic, native_exception_handler, 1, cont);
   /* with-exception-handler */
   var = pic_exc(pic);

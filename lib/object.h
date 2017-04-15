@@ -272,7 +272,7 @@ pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 pic_value pic_record_type(pic_state *pic, pic_value record);
 pic_value pic_record_datum(pic_state *pic, pic_value record);
 struct context;
-pic_value pic_make_cont(pic_state *pic, struct context *cxt, pic_value k);
+pic_value pic_make_cont(pic_state *pic, struct context *cxt, pic_value k, pic_value dyn_env);
 
 struct rope *pic_rope_incref(struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);

@@ -12,7 +12,7 @@ static pic_value
 cont_call(pic_state *pic)
 {
   int argc;
-  pic_value *argv;
+  pic_value *argv, k, dyn_env;
   struct context *cxt, *c;
   int i;
 
@@ -30,26 +30,31 @@ cont_call(pic_state *pic)
     pic_error(pic, "calling dead escape continuation", 0);
   }
 
+  k = pic_closure_ref(pic, 1);
+  dyn_env = pic_closure_ref(pic, 2);
+
 #define MKCALLK(argc)                                                   \
   (cxt->tmpcode[0] = OP_CALL, cxt->tmpcode[1] = (argc), cxt->tmpcode)
 
   cxt->pc = MKCALLK(argc);
   cxt->sp = pic_make_frame_unsafe(pic, argc + 2);
-  cxt->sp->regs[0] = pic_closure_ref(pic, 1); /* cont. */
+  cxt->sp->regs[0] = k;
   for (i = 0; i < argc; ++i) {
     cxt->sp->regs[i + 1] = argv[i];
   }
   pic->cxt = cxt;
+
+  pic->dyn_env = dyn_env;
 
   longjmp(cxt->jmp, 1);
   PIC_UNREACHABLE();
 }
 
 pic_value
-pic_make_cont(pic_state *pic, struct context *cxt, pic_value k)
+pic_make_cont(pic_state *pic, struct context *cxt, pic_value k, pic_value dyn_env)
 {
   static const pic_data_type cxt_type = { "cxt", NULL };
-  return pic_lambda(pic, cont_call, 2, pic_data_value(pic, cxt, &cxt_type), k);
+  return pic_lambda(pic, cont_call, 3, pic_data_value(pic, cxt, &cxt_type), k, dyn_env);
 }
 
 static pic_value
@@ -59,7 +64,7 @@ pic_cont_callcc(pic_state *pic)
 
   pic_get_args(pic, "l", &f);
 
-  args[0] = pic_make_cont(pic, pic->cxt, pic->cxt->fp->regs[1]);
+  args[0] = pic_make_cont(pic, pic->cxt, pic->cxt->fp->regs[1], pic->dyn_env);
   return pic_applyk(pic, f, 1, args);
 }
 
