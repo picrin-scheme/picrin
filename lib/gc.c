@@ -55,7 +55,7 @@ struct heap {
   struct weak *weaks;           /* weak map chain */
 };
 
-#define unitsof(type) (type2size(type) + sizeof(union header) - 1 / sizeof(union header))
+#define unitsof(type) ((type2size(type) + sizeof(union header) - 1) / sizeof(union header))
 
 struct heap *
 pic_heap_open(pic_state *pic)
