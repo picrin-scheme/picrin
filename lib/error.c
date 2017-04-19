@@ -37,7 +37,7 @@ pic_warnf(pic_state *pic, const char *fmt, ...)
 PIC_JMPBUF *
 pic_prepare_try(pic_state *pic)
 {
-  struct context *cxt = pic_alloca(pic, sizeof(struct context));
+  struct context *cxt = pic_malloc(pic, sizeof(struct context));
 
   cxt->pc = NULL;
   cxt->fp = NULL;
@@ -65,6 +65,7 @@ pic_enter_try(pic_state *pic)
 {
   pic_value cont, handler;
   pic_value var, env;
+  size_t ai = pic_enter(pic);
 
   /* call/cc */
   cont = pic_make_cont(pic, pic->cxt, pic_invalid_value(pic), pic->dyn_env);
@@ -74,19 +75,26 @@ pic_enter_try(pic_state *pic)
   env = pic_make_weak(pic);
   pic_weak_set(pic, env, var, pic_cons(pic, handler, pic_call(pic, var, 0)));
   pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
+
+  pic_leave(pic, ai);
 }
 
 void
 pic_exit_try(pic_state *pic)
 {
+  struct context *cxt = pic->cxt;
   pic->dyn_env = pic_cdr(pic, pic->dyn_env);
-  pic->cxt = pic->cxt->prev;
+  pic->cxt = cxt->prev;
+  pic_free(pic, cxt);
 }
 
 pic_value
 pic_abort_try(pic_state *pic)
 {
-  pic_value err = pic->cxt->sp->regs[1];
+  struct context *cxt = pic->cxt;
+  pic_value err = cxt->sp->regs[1];
+  pic->cxt = pic->cxt->prev;
+  pic_free(pic, cxt);
   pic_protect(pic, err);
   return err;
 }

@@ -347,13 +347,17 @@ pic_call(pic_state *pic, pic_value proc, int n, ...)
 pic_value
 pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
 {
+  size_t ai = pic_enter(pic);
   pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
+  pic_value r;
   int i;
 
   for (i = 0; i < n; ++i) {
     args[i] = va_arg(ap, pic_value);
   }
-  return pic_apply(pic, proc, n, args);
+  r = pic_apply(pic, proc, n, args);
+  pic_leave(pic, ai);
+  return pic_protect(pic, r);
 }
 
 pic_value

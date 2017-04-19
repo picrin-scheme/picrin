@@ -17,6 +17,7 @@ print <<EOL;
 void
 pic_eval_native(pic_state *pic, const char *str)
 {
+  size_t ai = pic_enter(pic);
   pic_value port = pic_fmemopen(pic, str, strlen(str), "r"), e;
 
   pic_try {
@@ -35,6 +36,7 @@ pic_eval_native(pic_state *pic, const char *str)
     pic_raise(pic, e);
   }
   pic_fclose(pic, port);
+  pic_leave(pic, ai);
 }
 
 EOL

@@ -294,13 +294,18 @@ pic_global_set(pic_state *pic, pic_value sym, pic_value value)
 pic_value
 pic_ref(pic_state *pic, const char *name)
 {
-  return pic_global_ref(pic, pic_intern_cstr(pic, name));
+  size_t ai = pic_enter(pic);
+  pic_value r = pic_global_ref(pic, pic_intern_cstr(pic, name));
+  pic_leave(pic, ai);
+  return pic_protect(pic, r);
 }
 
 void
 pic_set(pic_state *pic, const char *name, pic_value val)
 {
+  size_t ai = pic_enter(pic);
   pic_global_set(pic, pic_intern_cstr(pic, name), val);
+  pic_leave(pic, ai);
 }
 
 void
@@ -329,6 +334,7 @@ pic_defvar(pic_state *pic, const char *name, pic_value init)
 pic_value
 pic_funcall(pic_state *pic, const char *name, int n, ...)
 {
+  size_t ai = pic_enter(pic);
   pic_value proc, r;
   va_list ap;
 
@@ -340,5 +346,6 @@ pic_funcall(pic_state *pic, const char *name, int n, ...)
   r = pic_vcall(pic, proc, n, ap);
   va_end(ap);
 
-  return r;
+  pic_leave(pic, ai);
+  return pic_protect(pic, r);
 }

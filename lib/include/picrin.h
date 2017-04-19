@@ -311,6 +311,7 @@ PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
 #define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
 #define pic_catch_(e, label)                              \
       pic_exit_try(pic);                                  \
+      /* don't rewind ai here */                          \
     } else {                                              \
       e = pic_abort_try(pic);                             \
       pic_leave(pic, pic_try_ai_);                        \

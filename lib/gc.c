@@ -185,7 +185,7 @@ pic_alloca(pic_state *pic, size_t n)
 /* MARK */
 
 PIC_STATIC_INLINE bool
-is_marked(struct object *obj)
+is_alive(struct object *obj)
 {
   return obj->u.basic.tt & GC_MARK;
 }
@@ -211,7 +211,7 @@ gc_mark_object(pic_state *pic, struct object *obj)
 {
  loop:
 
-  if (is_marked(obj))
+  if (is_alive(obj))
     return;
 
   mark(obj);
@@ -366,8 +366,8 @@ gc_mark_phase(pic_state *pic)
           continue;
         key = kh_key(h, it);
         val = kh_val(h, it);
-        if (is_marked(key)) {
-          if (obj_p(pic, val) && ! is_marked(obj_ptr(pic, val))) {
+        if (is_alive(key)) {
+          if (obj_p(pic, val) && ! is_alive(obj_ptr(pic, val))) {
             gc_mark(pic, val);
             ++j;
           }
@@ -612,7 +612,7 @@ gc_sweep_phase(pic_state *pic)
       if (! kh_exist(h, it))
         continue;
       obj = kh_key(h, it);
-      if (! is_marked(obj)) {
+      if (! is_alive(obj)) {
         kh_del(weak, h, it);
       }
     }
@@ -624,7 +624,7 @@ gc_sweep_phase(pic_state *pic)
     if (! kh_exist(s, it))
       continue;
     sym = kh_val(s, it);
-    if (sym && ! is_marked((struct object *)sym)) {
+    if (sym && ! is_alive((struct object *)sym)) {
       kh_del(oblist, s, it);
     }
   }
@@ -657,6 +657,10 @@ pic_obj_alloc_unsafe(pic_state *pic, int type)
 {
   struct object *obj;
 
+  if (pic->heap->pages == NULL) {
+    heap_morecore(pic);
+  }
+
 #if GC_STRESS
   pic_gc(pic);
 #endif
@@ -665,12 +669,8 @@ pic_obj_alloc_unsafe(pic_state *pic, int type)
   if (obj == NULL) {
     pic_gc(pic);
     obj = obj_alloc(pic, type);
-    if (obj == NULL) {
-      heap_morecore(pic);
-      obj = obj_alloc(pic, type);
-      if (obj == NULL)
-	pic_panic(pic, "GC memory exhausted");
-    }
+    if (obj == NULL)
+      pic_panic(pic, "GC memory exhausted");
   }
 
   return obj;
