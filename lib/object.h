@@ -271,8 +271,7 @@ pic_value pic_make_proc_func(pic_state *, pic_func_t);
 pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 pic_value pic_record_type(pic_state *pic, pic_value record);
 pic_value pic_record_datum(pic_state *pic, pic_value record);
-struct context;
-pic_value pic_make_cont(pic_state *pic, struct context *cxt, pic_value k, pic_value dyn_env);
+pic_value pic_make_cont(pic_state *pic, pic_value k);
 pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 
 struct rope *pic_rope_incref(struct rope *);

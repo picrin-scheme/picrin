@@ -51,10 +51,10 @@ cont_call(pic_state *pic)
 }
 
 pic_value
-pic_make_cont(pic_state *pic, struct context *cxt, pic_value k, pic_value dyn_env)
+pic_make_cont(pic_state *pic, pic_value k)
 {
   static const pic_data_type cxt_type = { "cxt", NULL };
-  return pic_lambda(pic, cont_call, 3, pic_data_value(pic, cxt, &cxt_type), k, dyn_env);
+  return pic_lambda(pic, cont_call, 3, pic_data_value(pic, pic->cxt, &cxt_type), k, pic->dyn_env);
 }
 
 static pic_value
@@ -64,7 +64,7 @@ pic_cont_callcc(pic_state *pic)
 
   pic_get_args(pic, "l", &f);
 
-  args[0] = pic_make_cont(pic, pic->cxt, pic->cxt->fp->regs[1], pic->dyn_env);
+  args[0] = pic_make_cont(pic, pic->cxt->fp->regs[1]);
   return pic_applyk(pic, f, 1, args);
 }
 
