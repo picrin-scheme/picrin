@@ -171,6 +171,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->userdata = userdata;
 
   /* context */
+  pic->default_cxt.ai = 0;
   pic->default_cxt.pc = NULL;
   pic->default_cxt.fp = NULL;
   pic->default_cxt.sp = NULL;
@@ -256,6 +257,7 @@ pic_close(pic_state *pic)
   pic->features = pic_invalid_value(pic);
   pic->dyn_env = pic_invalid_value(pic);
 
+  assert(pic->cxt->ai == 0);
   assert(pic->cxt->pc == NULL);
   assert(pic->cxt->fp == NULL);
   assert(pic->cxt->sp == NULL);

@@ -364,7 +364,6 @@ pic_value
 pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
   struct context cxt;
-  size_t arena_base = pic->ai;
 
 #define MKCALL(argc) (cxt.tmpcode[0] = OP_CALL, cxt.tmpcode[1] = (argc), cxt.tmpcode)
 
@@ -383,10 +382,10 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
   cxt.prev = pic->cxt;
   pic->cxt = &cxt;
 
-#define SAVE (pic->ai = arena_base)
+#define SAVE (pic->ai = cxt.ai)
 
-  if (PIC_SETJMP(cxt.jmp) != 0) {
-    SAVE;
+  if (PIC_SETJMP(cxt.jmp) == 0) {
+    cxt.ai = pic->ai;
   }
 
 #define A (cxt.pc[1])

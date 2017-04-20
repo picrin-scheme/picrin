@@ -304,18 +304,14 @@ PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
     extern void pic_enter_try(pic_state *);                             \
     extern void pic_exit_try(pic_state *);                              \
     extern pic_value pic_abort_try(pic_state *);                        \
-    size_t pic_try_ai_ = pic_enter(pic);                                \
     PIC_JMPBUF *jmp = pic_prepare_try(pic);                             \
     if (PIC_SETJMP(*jmp) == 0) {                                        \
       pic_enter_try(pic);
 #define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
 #define pic_catch_(e, label)                              \
       pic_exit_try(pic);                                  \
-      /* don't rewind ai here */                          \
     } else {                                              \
       e = pic_abort_try(pic);                             \
-      pic_leave(pic, pic_try_ai_);                        \
-      pic_protect(pic, e);                                \
       goto label;                                         \
     }                                                     \
   } while (0);                                            \

@@ -65,7 +65,8 @@ pic_enter_try(pic_state *pic)
 {
   pic_value cont, handler;
   pic_value var, env;
-  size_t ai = pic_enter(pic);
+
+  pic->cxt->ai = pic->ai;
 
   /* call/cc */
   cont = pic_make_cont(pic, pic->cxt, pic_invalid_value(pic), pic->dyn_env);
@@ -76,7 +77,7 @@ pic_enter_try(pic_state *pic)
   pic_weak_set(pic, env, var, pic_cons(pic, handler, pic_call(pic, var, 0)));
   pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
 
-  pic_leave(pic, ai);
+  pic_leave(pic, pic->cxt->ai);
 }
 
 void
@@ -86,6 +87,7 @@ pic_exit_try(pic_state *pic)
   pic->dyn_env = pic_cdr(pic, pic->dyn_env);
   pic->cxt = cxt->prev;
   pic_free(pic, cxt);
+  /* don't rewind ai here */
 }
 
 pic_value
@@ -93,7 +95,7 @@ pic_abort_try(pic_state *pic)
 {
   struct context *cxt = pic->cxt;
   pic_value err = cxt->sp->regs[1];
-  pic->cxt = pic->cxt->prev;
+  pic->cxt = cxt->prev;
   pic_free(pic, cxt);
   pic_protect(pic, err);
   return err;
