@@ -296,6 +296,33 @@ write_record(pic_state *pic, pic_value obj, pic_value port, struct writer_contro
   pic_fprintf(pic, port, ">");
 }
 
+static void
+write_error(pic_state *pic, pic_value err, pic_value port, struct writer_control *p)
+{
+  if (p->mode == WRITE_MODE) {
+    pic_fprintf(pic, port, "#<error %p>", obj_ptr(pic, err));
+    return;
+  }
+
+  if (! pic_error_p(pic, err)) {
+    pic_fprintf(pic, port, "raise: ~s", err);
+  } else {
+    struct error *e;
+    pic_value elem, it;
+
+    e = error_ptr(pic, err);
+    if (! pic_eq_p(pic, obj_value(pic, e->type), pic_intern_lit(pic, ""))) {
+      pic_fprintf(pic, port, "~s-", obj_value(pic, e->type));
+    }
+    pic_fprintf(pic, port, "error: \"~a\"", obj_value(pic, e->msg));
+
+    pic_for_each (elem, e->irrs, it) { /* print error irritants */
+      pic_fprintf(pic, port, " ~s", elem);
+    }
+    pic_fprintf(pic, port, "\n");
+  }
+}
+
 static const char *
 typename(pic_state *pic, pic_value obj)
 {
@@ -413,6 +440,9 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     break;
   case PIC_TYPE_RECORD:
     write_record(pic, obj, port, p);
+    break;
+  case PIC_TYPE_ERROR:
+    write_error(pic, obj, port, p);
     break;
   default:
     pic_fprintf(pic, port, "#<%s %p>", typename(pic, obj), obj_ptr(pic, obj));

@@ -42,7 +42,7 @@ main(int argc, char *argv[], char **envp)
     status = 0;
   }
   pic_catch(e) {
-    pic_print_error(pic, pic_stderr(pic), e);
+    pic_funcall(pic, "display", 2, e, pic_stderr(pic));
     status = 1;
   }
 

@@ -69,7 +69,7 @@ main(int argc, char *argv[])
     }
   }
   pic_catch(e) {
-    pic_print_error(pic, pic_stderr(pic), e);
+    pic_funcall(pic, "display", 2, e, pic_stderr(pic));
   }
 
   pic_close(pic);

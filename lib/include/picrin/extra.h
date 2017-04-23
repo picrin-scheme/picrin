@@ -17,12 +17,6 @@ void *pic_default_allocf(void *, void *, size_t);
 pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 #endif
 
-/* for debug */
-
-#if PIC_USE_WRITE
-void pic_print_error(pic_state *, pic_value port, pic_value err);
-#endif
-
 #if defined(__cplusplus)
 }
 #endif

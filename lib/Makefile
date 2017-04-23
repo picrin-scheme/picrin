@@ -4,7 +4,6 @@ LIBPICRIN_SRCS = \
 	char.c\
 	cont.c\
 	data.c\
-	debug.c\
 	dict.c\
 	error.c\
 	gc.c\
