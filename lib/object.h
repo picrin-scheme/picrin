@@ -106,6 +106,7 @@ struct irep {
   unsigned char flags;
   unsigned char frame_size;
   unsigned char irepc, objc;
+  size_t codec;
   struct irep **irep;
   pic_value *obj;
   const code_t *code;

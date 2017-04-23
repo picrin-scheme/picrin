@@ -20,6 +20,7 @@ LIBPICRIN_SRCS = \
 	var.c\
 	vector.c\
 	weak.c\
+	ext/serialize.c\
 	ext/eval.c\
 	ext/read.c\
 	ext/write.c\

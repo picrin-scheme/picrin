@@ -35,18 +35,19 @@ main(int argc, char *argv[])
           break;
         pic_void(pic, pic_funcall(pic, "eval", 1, e));
       }
-    } else if (argc >= 2 && strcmp(argv[1], "-c") == 0) { /* compile */
-      if (argc == 2) {
+    } else if (argc >= 3 && strcmp(argv[1], "-c") == 0) { /* compile */
+      const char *name = argv[2];
+      if (argc == 3) {
         port = pic_stdin(pic);
       } else {
-        FILE *file = fopen(argv[2], "r");
+        FILE *file = fopen(argv[3], "r");
         if (! file) {
-          fprintf(stderr, "could not open file %s\n", argv[2]);
+          fprintf(stderr, "could not open file %s\n", argv[3]);
           exit(1);
         }
         port = pic_fopen(pic, file, "r");
       }
-      pic_printf(pic, "~s\n", pic_funcall(pic, "compile", 1, pic_funcall(pic, "read", 1, port)));
+      pic_serialize(pic, name, pic_assemble(pic, pic_funcall(pic, "compile", 1, pic_funcall(pic, "read", 1, port))));
     } else {
       fprintf(stderr, "usage: mini-picrin [-c] [file]\n");
       exit(1);

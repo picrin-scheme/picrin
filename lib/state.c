@@ -208,7 +208,7 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* top continuation */
   {
-    static const code_t halt_code[] = { 0x00, 0x01 };
+    static const code_t halt_code[] = { 0x00 };
     struct irep *irep;
     struct proc *proc;
     irep = (struct irep *)pic_obj_alloc(pic, PIC_TYPE_IREP);
@@ -220,6 +220,7 @@ pic_open(pic_allocf allocf, void *userdata)
     irep->irep = NULL;
     irep->obj = NULL;
     irep->code = halt_code;
+    irep->codec = sizeof halt_code / sizeof halt_code[0];
     proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_IREP);
     proc->u.irep = irep;
     proc->env = NULL;
