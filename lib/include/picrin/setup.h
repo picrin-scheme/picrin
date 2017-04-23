@@ -28,9 +28,6 @@
 # define PIC_USE_FILE 1
 #endif
 
-#if !PIC_USE_READ && PIC_USE_EVAL
-# error PIC_USE_EVAL requires PIC_USE_READ
-#endif
 #if !PIC_USE_LIBC && PIC_USE_FILE
 # error PIC_USE_FILE requires PIC_USE_LIBC
 #endif

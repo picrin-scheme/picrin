@@ -34,7 +34,7 @@ include $(sort $(wildcard contrib/*/nitro.mk))
 bootstrap: bin/picrin-bootstrap
 
 bin/picrin-bootstrap:
-	test -f bin/picrin-bootstrap || { $(MAKE) -C lib lib/mini-picrin && mv lib/mini-picrin bin/picrin-bootstrap; }
+	test -f bin/picrin-bootstrap || { $(MAKE) -C lib mini-picrin && mv lib/mini-picrin bin/picrin-bootstrap; }
 
 lib/mini-picrin: FORCE
 	$(MAKE) -C lib mini-picrin
@@ -45,7 +45,7 @@ lib/libpicrin.a: FORCE
 ext: lib/ext/eval.c
 
 lib/ext/eval.c: piclib/eval.scm
-	bin/picrin-bootstrap -c piclib/eval.scm | bin/picrin-bootstrap tools/mkeval.scm > lib/ext/eval.c
+	bin/picrin-bootstrap -c eval_rom piclib/eval.scm | bin/picrin-bootstrap tools/mkeval.scm > lib/ext/eval.c
 
 picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) ext lib/libpicrin.a
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libpicrin.a $(LDFLAGS)

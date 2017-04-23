@@ -9,12 +9,16 @@
 
 static size_t offset = 0;
 
-#define DUMP(c) do { printf("0x%02x, ", c); if (++offset == 12) { puts(""); offset = 0; } } while (0)
-
 static void
 dump1(pic_state *pic, unsigned char c)
 {
-  DUMP(c);
+  printf("0x%02x,", c);
+  if (++offset == 12) {
+    puts("");
+    offset = 0;
+  } else {
+    putchar(' ');
+  }
 }
 
 static void
