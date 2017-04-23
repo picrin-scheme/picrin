@@ -37,6 +37,8 @@ main(int argc, char *argv[])
       }
     } else if (argc >= 3 && strcmp(argv[1], "-c") == 0) { /* compile */
       const char *name = argv[2];
+      const unsigned char *bin;
+      int len, i;
       if (argc == 3) {
         port = pic_stdin(pic);
       } else {
@@ -47,7 +49,20 @@ main(int argc, char *argv[])
         }
         port = pic_fopen(pic, file, "r");
       }
-      pic_serialize(pic, name, pic_assemble(pic, pic_funcall(pic, "compile", 1, pic_funcall(pic, "read", 1, port))));
+      bin = pic_blob(pic, pic_serialize(pic, pic_funcall(pic, "compile", 1, pic_funcall(pic, "read", 1, port))), &len);
+      printf("const unsigned char %s[] = {\n", name);
+      for (i = 0; i < len; ++i) {
+        printf("0x%02x,", bin[i]);
+        if ((i + 1) % 12 == 0) {
+          putchar('\n');
+        } else {
+          putchar(' ');
+        }
+      }
+      if (len != 0) {
+        puts("");
+      }
+      printf("};\n");
     } else {
       fprintf(stderr, "usage: mini-picrin [-c] [file]\n");
       exit(1);

@@ -129,6 +129,9 @@ char pic_char(pic_state *, pic_value c);
 const char *pic_str(pic_state *, pic_value str, int *len);
 unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
 void *pic_data(pic_state *, pic_value data);
+/* serialization */
+pic_value pic_serialize(pic_state *pic, pic_value obj);
+pic_value pic_deserialize(pic_state *pic, pic_value blob);
 
 
 /*

@@ -8,19 +8,18 @@ LIBPICRIN_SRCS = \
 	dict.c\
 	error.c\
 	gc.c\
-	load.c\
 	number.c\
 	pair.c\
 	port.c\
 	proc.c\
 	record.c\
+	serialize.c\
 	state.c\
 	string.c\
 	symbol.c\
 	var.c\
 	vector.c\
 	weak.c\
-	ext/serialize.c\
 	ext/eval.c\
 	ext/read.c\
 	ext/write.c\

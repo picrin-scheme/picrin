@@ -108,7 +108,6 @@ void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
 void pic_init_weak(pic_state *);
-void pic_init_load(pic_state *);
 void pic_init_file(pic_state *);
 void pic_init_state(pic_state *);
 void pic_init_eval(pic_state *);
@@ -136,7 +135,6 @@ pic_init_core(pic_state *pic)
   pic_init_dict(pic); DONE;
   pic_init_record(pic); DONE;
   pic_init_weak(pic); DONE;
-  pic_init_load(pic); DONE;
   pic_init_state(pic); DONE;
 
 #if PIC_USE_READ

@@ -3,7 +3,8 @@
  `("#include \"picrin.h\"\n"
    "#include \"picrin/extra.h\"\n"
    "\n"
-   "#if PIC_USE_EVAL\n"))
+   "#if PIC_USE_EVAL\n"
+   "static "))
 
 (let loop ()
   (let ((c (read-u8)))
@@ -19,6 +20,6 @@
    "pic_init_eval(pic_state *PIC_UNUSED(pic))\n"
    "{\n"
    "#if PIC_USE_EVAL\n"
-   "  pic_execute(pic, pic_deserialize(pic, eval_rom));\n"
+   "  pic_call(pic, pic_deserialize(pic, pic_blob_value(pic, eval_rom, sizeof eval_rom)), 0);\n"
    "#endif\n"
    "}\n"))

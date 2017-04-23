@@ -886,11 +886,11 @@
               (car (reps))))))
 
       (lambda (e . env)
-        (codegen (transform (normalize (apply expand e env)))))))
+        (make-procedure (codegen (transform (normalize (apply expand e env))))))))
 
 
   ;; eval
 
   (define (eval expr . env)
-    (load (apply compile expr env))))
+    ((apply compile expr env))))
 

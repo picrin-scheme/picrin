@@ -17,13 +17,6 @@ void *pic_default_allocf(void *, void *, size_t);
 pic_value pic_fopen(pic_state *, FILE *, const char *mode);
 #endif
 
-pic_value pic_load(pic_state *, pic_value irep); /* TODO */
-void pic_load_native(pic_state *pic, const char *); /* TODO */
-pic_value pic_assemble(pic_state *pic, pic_value as);
-pic_value pic_execute(pic_state *pic, pic_value irep);
-void pic_serialize(pic_state *pic, const char *name, pic_value irep);
-pic_value pic_deserialize(pic_state *pic, const unsigned char *bin);
-
 /* for debug */
 
 #if PIC_USE_WRITE

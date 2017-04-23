@@ -158,23 +158,6 @@ assemble(pic_state *pic, pic_value as)
   return ir;
 }
 
-pic_value
-pic_assemble(pic_state *pic, pic_value as)
-{
-  return obj_value(pic, assemble(pic, as));
-}
-
-pic_value
-pic_execute(pic_state *pic, pic_value irep)
-{
-  struct proc *proc;
-
-  proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_IREP);
-  proc->u.irep = irep_ptr(pic, irep);
-  proc->env = NULL;
-  return pic_apply(pic, obj_value(pic, proc), 0, NULL);
-}
-
 struct frame *
 pic_make_frame_unsafe(pic_state *pic, int n)
 {
@@ -724,6 +707,23 @@ pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
 }
 
 static pic_value
+pic_proc_make_procedure(pic_state *pic)
+{
+  pic_value as;
+  struct irep *irep;
+  struct proc *proc;
+
+  pic_get_args(pic, "o", &as);
+
+  irep = assemble(pic, as);
+
+  proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_IREP);
+  proc->u.irep = irep;
+  proc->env = NULL;
+  return obj_value(pic, proc);
+}
+
+static pic_value
 pic_proc_proc_p(pic_state *pic)
 {
   pic_value v;
@@ -761,6 +761,7 @@ pic_proc_apply(pic_state *pic)
 void
 pic_init_proc(pic_state *pic)
 {
+  pic_defun(pic, "make-procedure", pic_proc_make_procedure);
   pic_defun(pic, "procedure?", pic_proc_proc_p);
   pic_defun(pic, "apply", pic_proc_apply);
 }
