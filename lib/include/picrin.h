@@ -237,7 +237,9 @@ int pic_get_args(pic_state *, const char *fmt, ...);
 pic_value pic_closure_ref(pic_state *, int i);
 void pic_closure_set(pic_state *, int i, pic_value v);
 pic_value pic_call(pic_state *, pic_value proc, int, ...);
+pic_value pic_callk(pic_state *, pic_value proc, int, ...);
 pic_value pic_vcall(pic_state *, pic_value proc, int, va_list);
+pic_value pic_vcallk(pic_state *, pic_value proc, int, va_list);
 pic_value pic_apply(pic_state *, pic_value proc, int n, pic_value *argv);
 pic_value pic_applyk(pic_state *, pic_value proc, int n, pic_value *argv);
 

@@ -497,65 +497,101 @@ pic_call(pic_state *pic, pic_value proc, int n, ...)
 }
 
 pic_value
+pic_callk(pic_state *pic, pic_value proc, int n, ...)
+{
+  va_list ap;
+
+  va_start(ap, n);
+  pic_vcallk(pic, proc, n, ap);
+  va_end(ap);
+  return pic_invalid_value(pic);
+}
+
+pic_value
 pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
 {
-  size_t ai = pic_enter(pic);
-  pic_value *args = pic_alloca(pic, sizeof(pic_value) * n);
-  pic_value r;
-  int i;
+  struct context cxt;
+  CONTEXT_VINITK(pic, &cxt, proc, pic->halt, n, ap);
+  pic_vm(pic, &cxt);
+  return pic_protect(pic, cxt.fp->regs[1]);
+}
 
-  for (i = 0; i < n; ++i) {
-    args[i] = va_arg(ap, pic_value);
-  }
-  r = pic_apply(pic, proc, n, args);
-  pic_leave(pic, ai);
-  return pic_protect(pic, r);
+pic_value
+pic_vcallk(pic_state *pic, pic_value proc, int n, va_list ap)
+{
+  CONTEXT_VINITK(pic, pic->cxt, proc, GET_CONT(pic), n, ap);
+  return pic_invalid_value(pic);
 }
 
 pic_value
 pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
   struct context cxt;
+  CONTEXT_INITK(pic, &cxt, proc, pic->halt, argc, argv);
+  pic_vm(pic, &cxt);
+  return pic_protect(pic, cxt.fp->regs[1]);
+}
 
-#define MKCALL(argc) (cxt.tmpcode[0] = OP_CALL, cxt.tmpcode[1] = (argc), cxt.tmpcode)
+pic_value
+pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *argv)
+{
+  CONTEXT_INITK(pic, pic->cxt, proc, GET_CONT(pic), argc, argv);
+  return pic_invalid_value(pic);
+}
 
-  cxt.pc = MKCALL(argc + 1);
-  cxt.sp = pic_make_frame_unsafe(pic, argc + 3);
-  cxt.sp->regs[0] = proc;
-  cxt.sp->regs[1] = pic->halt;
-  if (argc != 0) {
-    int i;
-    for (i = 0; i < argc; ++i) {
-      cxt.sp->regs[i + 2] = argv[i];
-    }
+pic_value
+pic_values(pic_state *pic, int n, ...)
+{
+  va_list ap;
+  pic_value ret;
+
+  va_start(ap, n);
+  ret = pic_vvalues(pic, n, ap);
+  va_end(ap);
+  return ret;
+}
+
+pic_value
+pic_vvalues(pic_state *pic, int n, va_list ap)
+{
+  if (n == 1) {
+    return va_arg(ap, pic_value);
   }
-  cxt.fp = NULL;
-  cxt.irep = NULL;
-  cxt.prev = pic->cxt;
-  pic->cxt = &cxt;
+  CONTEXT_VINIT(pic, pic->cxt, GET_CONT(pic), n, ap);
+  return pic_invalid_value(pic);
+}
 
-#define SAVE (pic->ai = cxt.ai)
+void
+pic_vm(pic_state *pic, struct context *cxt)
+{
+  assert(cxt->fp == NULL);
+  assert(cxt->irep == NULL);
 
-  if (PIC_SETJMP(cxt.jmp) == 0) {
-    cxt.ai = pic->ai;
+  cxt->prev = pic->cxt;
+  pic->cxt = cxt;
+
+  if (PIC_SETJMP(cxt->jmp) == 0) {
+    cxt->ai = pic->ai;
   }
 
-#define A (cxt.pc[1])
-#define B (cxt.pc[2])
-#define C (cxt.pc[3])
+#define SAVE (pic->ai = cxt->ai)
+
+#define A (cxt->pc[1])
+#define B (cxt->pc[2])
+#define C (cxt->pc[3])
 #define Bx ((C << 8) + B)
-#define REG(i) (cxt.sp->regs[i])
+#define REG(i) (cxt->sp->regs[i])
 
 #if PIC_DIRECT_THREADED_VM
 # define VM_LOOP JUMP;
 # define CASE(x) L_##x:
-# define NEXT(n) (cxt.pc += n); JUMP;
-# define JUMP goto *oplabels[*cxt.pc];
+# define NEXT(n) (cxt->pc += n); JUMP;
+# define JUMP goto *oplabels[*cxt->pc];
 # define VM_LOOP_END
 #else
-# define VM_LOOP for (;;) { switch (*cxt.pc) {
+# define VM_LOOP for (;;) { switch (*cxt->pc) {
 # define CASE(x) case x:
-# define NEXT(n) (cxt.pc += n); break
+# define NEXT(n) (cxt->pc += n); break
 # define JUMP break
 # define VM_LOOP_END } }
 #endif
@@ -572,10 +608,8 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 
   VM_LOOP {
     CASE(OP_HALT) {
-      pic_value ret = cxt.fp->regs[1];
       pic->cxt = pic->cxt->prev;
-      pic_protect(pic, ret);
-      return ret;
+      return;
     }
     CASE(OP_CALL) {
       struct proc *proc;
@@ -585,19 +619,19 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       proc = proc_ptr(pic, REG(0));
       if (proc->tt == PIC_TYPE_PROC_FUNC) {
         pic_value v;
-        cxt.sp->up = proc->env; /* push static link */
-        cxt.fp = cxt.sp;
-        cxt.sp = NULL;
-        cxt.irep = NULL;
+        cxt->sp->up = proc->env; /* push static link */
+        cxt->fp = cxt->sp;
+        cxt->sp = NULL;
+        cxt->irep = NULL;
         v = proc->u.func(pic);
-        if (cxt.sp != NULL) {   /* tail call */
+        if (cxt->sp != NULL) {   /* tail call */
           SAVE;
           JUMP;
         } else {
-          cxt.sp = pic_make_frame_unsafe(pic, 3);
-          cxt.sp->regs[0] = cxt.fp->regs[1]; /* cont. */
-          cxt.sp->regs[1] = v;
-          cxt.pc = MKCALL(1);
+          cxt->sp = pic_make_frame_unsafe(pic, 3);
+          cxt->sp->regs[0] = cxt->fp->regs[1]; /* cont. */
+          cxt->sp->regs[1] = v;
+          cxt->pc = MKCALL(cxt, 1);
           SAVE;
           JUMP;
         }
@@ -614,34 +648,34 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
           SAVE;                 /* TODO: get rid of this */
         }
 
-        cxt.sp->up = proc->env; /* push static link */
-        cxt.fp = cxt.sp;
-        cxt.sp = pic_make_frame_unsafe(pic, irep->frame_size);
-        cxt.pc = irep->code;
-        cxt.irep = irep;
+        cxt->sp->up = proc->env; /* push static link */
+        cxt->fp = cxt->sp;
+        cxt->sp = pic_make_frame_unsafe(pic, irep->frame_size);
+        cxt->pc = irep->code;
+        cxt->irep = irep;
         JUMP;
       }
     }
     CASE(OP_LREF) {
       struct frame *f;
       int depth = B;
-      for (f = cxt.fp; depth--; f = f->up);
+      for (f = cxt->fp; depth--; f = f->up);
       REG(A) = f->regs[C];
       NEXT(4);
     }
     CASE(OP_LSET) {
       struct frame *f;
       int depth = B;
-      for (f = cxt.fp; depth--; f = f->up);
+      for (f = cxt->fp; depth--; f = f->up);
       f->regs[C] = REG(A);
       NEXT(4);
     }
     CASE(OP_GREF) {
-      REG(A) = pic_global_ref(pic, cxt.irep->obj[B]);
+      REG(A) = pic_global_ref(pic, cxt->irep->obj[B]);
       NEXT(3);
     }
     CASE(OP_GSET) {
-      pic_global_set(pic, cxt.irep->obj[B], REG(A));
+      pic_global_set(pic, cxt->irep->obj[B], REG(A));
       NEXT(3);
     }
     CASE(OP_COND) {
@@ -652,11 +686,11 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       }
     }
     CASE(OP_PROC) {
-      REG(A) = pic_make_proc_irep_unsafe(pic, cxt.irep->irep[B], cxt.fp);
+      REG(A) = pic_make_proc_irep_unsafe(pic, cxt->irep->irep[B], cxt->fp);
       NEXT(3);
     }
     CASE(OP_LOAD) {
-      REG(A) = cxt.irep->obj[B];
+      REG(A) = cxt->irep->obj[B];
       NEXT(3);
     }
     CASE(OP_LOADU) {
@@ -680,72 +714,6 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
       NEXT(3);
     }
   } VM_LOOP_END
-}
-
-static pic_value
-applyk(pic_state *pic, pic_value proc, pic_value cont, int argc, pic_value *argv)
-{
-  int i;
-
-#define MKCALLK(argc)                                                   \
-  (pic->cxt->tmpcode[0] = OP_CALL, pic->cxt->tmpcode[1] = (argc), pic->cxt->tmpcode)
-
-  pic->cxt->pc = MKCALLK(argc + 1);
-  pic->cxt->sp = pic_make_frame_unsafe(pic, argc + 3);
-  pic->cxt->sp->regs[0] = proc;
-  pic->cxt->sp->regs[1] = cont;
-  for (i = 0; i < argc; ++i) {
-    pic->cxt->sp->regs[i + 2] = argv[i];
-  }
-  return pic_invalid_value(pic);
-}
-
-pic_value
-pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
-{
-  return applyk(pic, proc, GET_CONT(pic), argc, args);
-}
-
-static pic_value
-valuesk(pic_state *pic, int argc, pic_value *argv)
-{
-  int i;
-
-  pic->cxt->pc = MKCALLK(argc);
-  pic->cxt->sp = pic_make_frame_unsafe(pic, argc + 2);
-  pic->cxt->sp->regs[0] = pic->cxt->fp->regs[1];
-  for (i = 0; i < argc; ++i) {
-    pic->cxt->sp->regs[i + 1] = argv[i];
-  }
-  return pic_invalid_value(pic);
-}
-
-pic_value
-pic_values(pic_state *pic, int n, ...)
-{
-  va_list ap;
-  pic_value ret;
-
-  va_start(ap, n);
-  ret = pic_vvalues(pic, n, ap);
-  va_end(ap);
-  return ret;
-}
-
-pic_value
-pic_vvalues(pic_state *pic, int n, va_list ap)
-{
-  pic_value *retv;
-  int i;
-
-  if (n == 1) {
-    return va_arg(ap, pic_value);
-  }
-  retv = pic_alloca(pic, sizeof(pic_value) * n);
-  for (i = 0; i < n; ++i) {
-    retv[i] = va_arg(ap, pic_value);
-  }
-  return valuesk(pic, n, retv);
 }
 
 static pic_value
@@ -811,34 +779,34 @@ pic_proc_values(pic_state *pic)
   if (argc == 1) {
     return argv[0];
   }
-  return valuesk(pic, argc, argv);
+  CONTEXT_INIT(pic, pic->cxt, GET_CONT(pic), argc, argv);
+  return pic_invalid_value(pic);
 }
 
 static pic_value
 receive_call(pic_state *pic)
 {
   int argc = pic->cxt->pc[1];
-  pic_value *args = &pic->cxt->fp->regs[1], consumer, cont;
+  pic_value *args = &pic->cxt->fp->regs[1];
 
   /* receive_call is an inhabitant in the continuation side.
      You can not use pic_get_args since it implicitly consumes the first argument. */
 
-  consumer = pic_closure_ref(pic, 0);
-  cont = pic_closure_ref(pic, 1);
+  CONTEXT_INITK(pic, pic->cxt, pic_closure_ref(pic, 0), pic_closure_ref(pic, 1), argc, args);
 
-  return applyk(pic, consumer, cont, argc, args);
+  return pic_invalid_value(pic);
 }
 
 static pic_value
 pic_proc_call_with_values(pic_state *pic)
 {
-  pic_value producer, consumer, k;
+  pic_value producer, consumer;
 
   pic_get_args(pic, "ll", &producer, &consumer);
 
-  k = pic_lambda(pic, receive_call, 2, consumer, pic->cxt->fp->regs[1]);
+  CONTEXT_INITK(pic, pic->cxt, producer, pic_lambda(pic, receive_call, 2, consumer, GET_CONT(pic)), 0, (pic_value *) NULL);
 
-  return applyk(pic, producer, k, 0, NULL);
+  return pic_invalid_value(pic);
 }
 
 void

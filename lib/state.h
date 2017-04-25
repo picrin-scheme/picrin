@@ -58,7 +58,60 @@ void pic_heap_close(pic_state *, struct heap *);
 pic_value pic_global_ref(pic_state *pic, pic_value uid);
 void pic_global_set(pic_state *pic, pic_value uid, pic_value value);
 
-void pic_vm_tear_off(pic_state *pic);
+#define MKCALL(cxt,argc)                                                \
+  ((cxt)->tmpcode[0] = OP_CALL, (cxt)->tmpcode[1] = (argc), (cxt)->tmpcode)
+
+#define CONTEXT_VINITK(pic,cxt,proc,k,n,ap) do {        \
+    int i;                                              \
+    (cxt)->pc = MKCALL((cxt), (n) + 1);                 \
+    (cxt)->sp = pic_make_frame_unsafe(pic, (n) + 3);    \
+    (cxt)->sp->regs[0] = (proc);                        \
+    (cxt)->sp->regs[1] = k;                             \
+    for (i = 0; i < (n); ++i) {                         \
+      (cxt)->sp->regs[i + 2] = va_arg(ap, pic_value);   \
+    }                                                   \
+    (cxt)->fp = NULL;                                   \
+    (cxt)->irep = NULL;                                 \
+  } while (0)
+
+#define CONTEXT_INITK(pic,cxt,proc,k,n,argv) do {       \
+    int i;                                              \
+    (cxt)->pc = MKCALL((cxt), (n) + 1);                 \
+    (cxt)->sp = pic_make_frame_unsafe(pic, (n) + 3);    \
+    (cxt)->sp->regs[0] = (proc);                        \
+    (cxt)->sp->regs[1] = k;                             \
+    for (i = 0; i < (n); ++i) {                         \
+      (cxt)->sp->regs[i + 2] = (argv)[i];               \
+    }                                                   \
+    (cxt)->fp = NULL;                                   \
+    (cxt)->irep = NULL;                                 \
+  } while (0)
+
+#define CONTEXT_VINIT(pic,cxt,proc,n,ap) do {           \
+    int i;                                              \
+    (cxt)->pc = MKCALL((cxt), (n));                     \
+    (cxt)->sp = pic_make_frame_unsafe(pic, (n) + 2);    \
+    (cxt)->sp->regs[0] = (proc);                        \
+    for (i = 0; i < (n); ++i) {                         \
+      (cxt)->sp->regs[i + 1] = va_arg(ap, pic_value);   \
+    }                                                   \
+    (cxt)->fp = NULL;                                   \
+    (cxt)->irep = NULL;                                 \
+  } while (0)
+
+#define CONTEXT_INIT(pic,cxt,proc,n,argv) do {          \
+    int i;                                              \
+    (cxt)->pc = MKCALL((cxt), (n));                     \
+    (cxt)->sp = pic_make_frame_unsafe(pic, (n) + 2);    \
+    (cxt)->sp->regs[0] = (proc);                        \
+    for (i = 0; i < (n); ++i) {                         \
+      (cxt)->sp->regs[i + 1] = (argv)[i];               \
+    }                                                   \
+    (cxt)->fp = NULL;                                   \
+    (cxt)->irep = NULL;                                 \
+  } while (0)
+
+void pic_vm(pic_state *pic, struct context *cxt);
 
 #if defined(__cplusplus)
 }
