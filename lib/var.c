@@ -67,25 +67,24 @@ pic_var_make_parameter(pic_state *pic)
 }
 
 static pic_value
-pic_var_with_dynamic_environment(pic_state *pic)
+pic_var_current_dynamic_environment(pic_state *pic)
 {
-  pic_value alist, thunk, env, it, elt, val;
+  pic_value dyn_env;
+  int n;
 
-  pic_get_args(pic, "ol", &alist, &thunk);
+  n = pic_get_args(pic, "|o", &dyn_env);
 
-  env = pic_make_weak(pic);
-  pic_for_each(elt, alist, it) {
-    pic_weak_set(pic, env, pic_car(pic, elt), pic_cdr(pic, elt));
+  if (n == 0) {
+    return pic->dyn_env;
+  } else {
+    pic->dyn_env = dyn_env;
+    return pic_undef_value(pic);
   }
-  pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
-  val = pic_call(pic, thunk, 0);
-  pic->dyn_env = pic_cdr(pic, pic->dyn_env);
-  return val;
 }
 
 void
 pic_init_var(pic_state *pic)
 {
   pic_defun(pic, "make-parameter", pic_var_make_parameter);
-  pic_defun(pic, "with-dynamic-environment", pic_var_with_dynamic_environment);
+  pic_defun(pic, "current-dynamic-environment", pic_var_current_dynamic_environment);
 }
