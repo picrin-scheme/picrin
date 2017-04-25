@@ -567,6 +567,7 @@ pic_vm(pic_state *pic, struct context *cxt)
   assert(cxt->fp == NULL);
   assert(cxt->irep == NULL);
 
+  cxt->conts = pic_nil_value(pic);
   cxt->prev = pic->cxt;
   pic->cxt = cxt;
 
@@ -608,6 +609,10 @@ pic_vm(pic_state *pic, struct context *cxt)
 
   VM_LOOP {
     CASE(OP_HALT) {
+      pic_value c, it;
+      pic_for_each (c, pic->cxt->conts, it) {
+        proc_ptr(pic, c)->env->regs[0] = pic_false_value(pic);
+      }
       pic->cxt = pic->cxt->prev;
       return;
     }

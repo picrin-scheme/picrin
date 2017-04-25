@@ -43,7 +43,7 @@ pic_prepare_try(pic_state *pic)
   cxt->fp = NULL;
   cxt->sp = NULL;
   cxt->irep = NULL;
-
+  cxt->conts = pic_nil_value(pic);
   cxt->prev = pic->cxt;
   pic->cxt = cxt;
   return &cxt->jmp;
@@ -84,7 +84,11 @@ void
 pic_exit_try(pic_state *pic)
 {
   struct context *cxt = pic->cxt;
+  pic_value c, it;
   pic->dyn_env = pic_cdr(pic, pic->dyn_env);
+  pic_for_each (c, cxt->conts, it) {
+    proc_ptr(pic, c)->env->regs[0] = pic_false_value(pic);
+  }
   pic->cxt = cxt->prev;
   pic_free(pic, cxt);
   /* don't rewind ai here */
@@ -94,7 +98,11 @@ pic_value
 pic_abort_try(pic_state *pic)
 {
   struct context *cxt = pic->cxt;
+  pic_value c, it;
   pic_value err = cxt->sp->regs[1];
+  pic_for_each (c, cxt->conts, it) {
+    proc_ptr(pic, c)->env->regs[0] = pic_false_value(pic);
+  }
   pic->cxt = cxt->prev;
   pic_free(pic, cxt);
   pic_protect(pic, err);

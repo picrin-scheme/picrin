@@ -25,6 +25,7 @@ struct context {
   struct irep *irep;
 
   code_t tmpcode[2];
+  pic_value conts;
 
   struct context *prev;
 };

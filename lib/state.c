@@ -177,6 +177,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->default_cxt.sp = NULL;
   pic->default_cxt.irep = NULL;
   pic->default_cxt.prev = NULL;
+  pic->default_cxt.conts = pic_nil_value(pic);
   pic->cxt = &pic->default_cxt;
 
   /* arena */

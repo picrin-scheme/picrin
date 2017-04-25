@@ -53,27 +53,27 @@ cont_call(pic_state *pic)
 {
   int argc;
   pic_value *argv, k, dyn_env;
-  struct context *cxt, *c;
+  struct context *cxt;
 
   pic_get_args(pic, "*", &argc, &argv);
 
-  cxt = pic_data(pic, pic_closure_ref(pic, 0));
-  k = pic_closure_ref(pic, 1);
-  dyn_env = pic_closure_ref(pic, 2);
-
-  /* check if continuation is alive */
-  for (c = pic->cxt; c != NULL; c = c->prev) {
-    if (c == cxt) {
-      break;
-    }
-  }
-  if (c == NULL) {
+  if (! pic_bool(pic, pic_closure_ref(pic, 0))) {
     pic_error(pic, "calling dead escape continuation", 0);
   }
 
+  cxt = pic_data(pic, pic_closure_ref(pic, 1));
+  k = pic_closure_ref(pic, 2);
+  dyn_env = pic_closure_ref(pic, 3);
+
   CONTEXT_INIT(pic, cxt, k, argc, argv);
 
-  pic->cxt = cxt;
+  while (pic->cxt != cxt) {
+    pic_value c, it;
+    pic_for_each (c, pic->cxt->conts, it) {
+      proc_ptr(pic, c)->env->regs[0] = pic_false_value(pic);
+    }
+    pic->cxt = pic->cxt->prev;
+  }
   pic->dyn_env = dyn_env;
 
   longjmp(cxt->jmp, 1);
@@ -84,7 +84,10 @@ pic_value
 pic_make_cont(pic_state *pic, pic_value k)
 {
   static const pic_data_type cxt_type = { "cxt", NULL };
-  return pic_lambda(pic, cont_call, 3, pic_data_value(pic, pic->cxt, &cxt_type), k, pic->dyn_env);
+  pic_value c;
+  c = pic_lambda(pic, cont_call, 4, pic_true_value(pic), pic_data_value(pic, pic->cxt, &cxt_type), k, pic->dyn_env);
+  pic->cxt->conts = pic_cons(pic, c, pic->cxt->conts);
+  return c;
 }
 
 static pic_value

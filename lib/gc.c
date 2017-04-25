@@ -329,6 +329,7 @@ gc_mark_phase(pic_state *pic)
     if (cxt->fp) gc_mark_object(pic, (struct object *)cxt->fp);
     if (cxt->sp) gc_mark_object(pic, (struct object *)cxt->sp);
     if (cxt->irep) gc_mark_object(pic, (struct object *)cxt->irep);
+    gc_mark(pic, cxt->conts);
   }
 
   /* arena */
