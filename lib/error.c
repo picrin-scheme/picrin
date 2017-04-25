@@ -127,9 +127,14 @@ pic_make_error(pic_state *pic, const char *type, const char *msg, pic_value irrs
 static pic_value
 with_exception_handlers(pic_state *pic, pic_value handlers, pic_value thunk)
 {
-  pic_value alist, var = pic_exc(pic);
-  alist = pic_list(pic, 1, pic_cons(pic, var, handlers));
-  return pic_funcall(pic, "with-dynamic-environment", 2, alist, thunk);
+  pic_value var, env, r;
+  var = pic_exc(pic);
+  env = pic_make_weak(pic);
+  pic_weak_set(pic, env, var, handlers);
+  pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
+  r = pic_call(pic, thunk, 0);
+  pic->dyn_env = pic_cdr(pic, pic->dyn_env);
+  return r;
 }
 
 static pic_value

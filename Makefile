@@ -34,7 +34,7 @@ include $(sort $(wildcard contrib/*/nitro.mk))
 bootstrap: bin/picrin-bootstrap
 
 bin/picrin-bootstrap:
-	test -f bin/picrin-bootstrap || { $(MAKE) -C lib mini-picrin && mv lib/mini-picrin bin/picrin-bootstrap; }
+	test -f bin/picrin-bootstrap || { $(MAKE) -C lib mini-picrin && cp lib/mini-picrin bin/picrin-bootstrap; }
 
 lib/mini-picrin: FORCE
 	$(MAKE) -C lib mini-picrin
