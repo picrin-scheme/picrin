@@ -2,7 +2,6 @@ LIBPICRIN_SRCS = \
 	blob.c\
 	bool.c\
 	char.c\
-	cont.c\
 	data.c\
 	dict.c\
 	error.c\
@@ -19,6 +18,7 @@ LIBPICRIN_SRCS = \
 	var.c\
 	vector.c\
 	weak.c\
+	ext/cont.c\
 	ext/eval.c\
 	ext/read.c\
 	ext/write.c\
@@ -36,7 +36,7 @@ LIBPICRIN_HEADERS = \
 	object.h\
 	state.h
 
-CFLAGS += -I./include -Wall -Wextra -g
+override CFLAGS += -I./include -Wall -Wextra -g
 
 mini-picrin: ext/main.o libpicrin.a
 	$(CC) $(CFLAGS) -o $@ ext/main.o libpicrin.a

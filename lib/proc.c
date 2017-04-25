@@ -682,28 +682,70 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
   } VM_LOOP_END
 }
 
-pic_value
-pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
+static pic_value
+applyk(pic_state *pic, pic_value proc, pic_value cont, int argc, pic_value *argv)
 {
-  const code_t *pc;
-  struct frame *sp;
+  int i;
 
 #define MKCALLK(argc)                                                   \
   (pic->cxt->tmpcode[0] = OP_CALL, pic->cxt->tmpcode[1] = (argc), pic->cxt->tmpcode)
 
-  pc = MKCALLK(argc + 1);
-  sp = pic_make_frame_unsafe(pic, argc + 3);
-  sp->regs[0] = proc;
-  sp->regs[1] = GET_CONT(pic);
-  if (argc != 0) {
-    int i;
-    for (i = 0; i < argc; ++i) {
-      sp->regs[i + 2] = args[i];
-    }
+  pic->cxt->pc = MKCALLK(argc + 1);
+  pic->cxt->sp = pic_make_frame_unsafe(pic, argc + 3);
+  pic->cxt->sp->regs[0] = proc;
+  pic->cxt->sp->regs[1] = cont;
+  for (i = 0; i < argc; ++i) {
+    pic->cxt->sp->regs[i + 2] = argv[i];
   }
-  pic->cxt->pc = pc;
-  pic->cxt->sp = sp;
   return pic_invalid_value(pic);
+}
+
+pic_value
+pic_applyk(pic_state *pic, pic_value proc, int argc, pic_value *args)
+{
+  return applyk(pic, proc, GET_CONT(pic), argc, args);
+}
+
+static pic_value
+valuesk(pic_state *pic, int argc, pic_value *argv)
+{
+  int i;
+
+  pic->cxt->pc = MKCALLK(argc);
+  pic->cxt->sp = pic_make_frame_unsafe(pic, argc + 2);
+  pic->cxt->sp->regs[0] = pic->cxt->fp->regs[1];
+  for (i = 0; i < argc; ++i) {
+    pic->cxt->sp->regs[i + 1] = argv[i];
+  }
+  return pic_invalid_value(pic);
+}
+
+pic_value
+pic_values(pic_state *pic, int n, ...)
+{
+  va_list ap;
+  pic_value ret;
+
+  va_start(ap, n);
+  ret = pic_vvalues(pic, n, ap);
+  va_end(ap);
+  return ret;
+}
+
+pic_value
+pic_vvalues(pic_state *pic, int n, va_list ap)
+{
+  pic_value *retv;
+  int i;
+
+  if (n == 1) {
+    return va_arg(ap, pic_value);
+  }
+  retv = pic_alloca(pic, sizeof(pic_value) * n);
+  for (i = 0; i < n; ++i) {
+    retv[i] = va_arg(ap, pic_value);
+  }
+  return valuesk(pic, n, retv);
 }
 
 static pic_value
@@ -758,10 +800,53 @@ pic_proc_apply(pic_state *pic)
   return pic_applyk(pic, proc, n, arg_list);
 }
 
+static pic_value
+pic_proc_values(pic_state *pic)
+{
+  int argc;
+  pic_value *argv;
+
+  pic_get_args(pic, "*", &argc, &argv);
+
+  if (argc == 1) {
+    return argv[0];
+  }
+  return valuesk(pic, argc, argv);
+}
+
+static pic_value
+receive_call(pic_state *pic)
+{
+  int argc = pic->cxt->pc[1];
+  pic_value *args = &pic->cxt->fp->regs[1], consumer, cont;
+
+  /* receive_call is an inhabitant in the continuation side.
+     You can not use pic_get_args since it implicitly consumes the first argument. */
+
+  consumer = pic_closure_ref(pic, 0);
+  cont = pic_closure_ref(pic, 1);
+
+  return applyk(pic, consumer, cont, argc, args);
+}
+
+static pic_value
+pic_proc_call_with_values(pic_state *pic)
+{
+  pic_value producer, consumer, k;
+
+  pic_get_args(pic, "ll", &producer, &consumer);
+
+  k = pic_lambda(pic, receive_call, 2, consumer, pic->cxt->fp->regs[1]);
+
+  return applyk(pic, producer, k, 0, NULL);
+}
+
 void
 pic_init_proc(pic_state *pic)
 {
   pic_defun(pic, "make-procedure", pic_proc_make_procedure);
   pic_defun(pic, "procedure?", pic_proc_proc_p);
   pic_defun(pic, "apply", pic_proc_apply);
+  pic_defun(pic, "values", pic_proc_values);
+  pic_defun(pic, "call-with-values", pic_proc_call_with_values);
 }

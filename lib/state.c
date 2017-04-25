@@ -127,7 +127,6 @@ pic_init_core(pic_state *pic)
   pic_init_symbol(pic); DONE;
   pic_init_vector(pic); DONE;
   pic_init_blob(pic); DONE;
-  pic_init_cont(pic); DONE;
   pic_init_char(pic); DONE;
   pic_init_error(pic); DONE;
   pic_init_str(pic); DONE;
@@ -137,6 +136,9 @@ pic_init_core(pic_state *pic)
   pic_init_weak(pic); DONE;
   pic_init_state(pic); DONE;
 
+#if PIC_USE_CALLCC
+  pic_init_cont(pic); DONE;
+#endif
 #if PIC_USE_READ
   pic_init_read(pic); DONE;
 #endif
