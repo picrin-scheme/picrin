@@ -80,6 +80,9 @@ dump_obj(pic_state *pic, pic_value obj, pic_value port)
     }
     dump1(pic, 0x03, port);
     dump_irep(pic, proc_ptr(pic, obj)->u.irep, port);
+  } else if (pic_char_p(pic, obj)) {
+    dump1(pic, 0x04, port);
+    dump1(pic, pic_char(pic, obj), port);
   } else {
     pic_error(pic, "dump: unsupported object", 1, obj);
   }
@@ -160,7 +163,7 @@ load_obj(pic_state *pic, pic_value port)
 {
   int type, len;
   pic_value obj;
-  char *buf;
+  char *buf, c;
   struct irep *irep;
   struct proc *proc;
   type = load1(pic, port);
@@ -187,6 +190,9 @@ load_obj(pic_state *pic, pic_value port)
     proc->u.irep = irep;
     proc->env = NULL;
     return obj_value(pic, proc);
+  case 0x04:
+    c = load1(pic, port);
+    return pic_char_value(pic, c);
   default:
     pic_error(pic, "load: unsupported object", 1, pic_int_value(pic, type));
   }

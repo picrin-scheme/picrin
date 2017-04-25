@@ -51,7 +51,7 @@ picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) ext lib/libpicrin.a
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libpicrin.a $(LDFLAGS)
 
 src/init_lib.c: piclib/library.scm
-	cat piclib/library.scm | bin/picrin-bootstrap tools/mklib.scm > src/init_lib.c
+	bin/picrin-bootstrap -c lib_rom piclib/library.scm | bin/picrin-bootstrap tools/mklib.scm > src/init_lib.c
 
 src/load_piclib.c: $(CONTRIB_LIBS)
 	perl tools/mkloader.pl $(CONTRIB_LIBS) > $@
