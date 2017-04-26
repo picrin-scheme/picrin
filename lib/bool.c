@@ -45,30 +45,9 @@ pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 
 #endif
 
-KHASH_DECLARE(m, void *, int)
-KHASH_DEFINE2(m, void *, int, 0, kh_ptr_hash_func, kh_ptr_hash_equal)
-
-static bool
-internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m) *h)
+bool
+pic_equal_p(pic_state *pic, pic_value x, pic_value y)
 {
-  pic_value localx = pic_nil_value(pic);
-  pic_value localy = pic_nil_value(pic);
-  int cx = 0;
-  int cy = 0;
-
-  if (depth > 10) {
-    if (depth > 200) {
-      pic_error(pic, "stack overflow in equal", 0);
-    }
-    if (pic_pair_p(pic, x) || pic_vec_p(pic, x)) {
-      int ret;
-      kh_put(m, h, obj_ptr(pic, x), &ret);
-      if (ret != 0) {
-        return true;            /* `x' was seen already.  */
-      }
-    }
-  }
-
  LOOP:
 
   if (pic_eqv_p(pic, x, y)) {
@@ -104,36 +83,11 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
     return memcmp(xbuf, ybuf, xlen) == 0;
   }
   case PIC_TYPE_PAIR: {
-    if (! internal_equal_p(pic, pic_car(pic, x), pic_car(pic, y), depth + 1, h))
+    if (! pic_equal_p(pic, pic_car(pic, x), pic_car(pic, y))) {
       return false;
-
-    /* Floyd's cycle-finding algorithm */
-    if (pic_nil_p(pic, localx)) {
-      localx = x;
     }
     x = pic_cdr(pic, x);
-    cx++;
-    if (pic_nil_p(pic, localy)) {
-      localy = y;
-    }
     y = pic_cdr(pic, y);
-    cy++;
-    if (cx == 2) {
-      cx = 0;
-      localx = pic_cdr(pic, localx);
-      if (pic_eq_p(pic, localx, x)) {
-        if (cy < 0 ) return true; /* both lists circular */
-        cx = INT_MIN; /* found a cycle on x */
-      }
-    }
-    if (cy == 2) {
-      cy = 0;
-      localy = pic_cdr(pic, localy);
-      if (pic_eq_p(pic, localy, y)) {
-        if (cx < 0 ) return true; /* both lists circular */
-        cy = INT_MIN; /* found a cycle on y */
-      }
-    }
     goto LOOP;                  /* tail-call optimization */
   }
   case PIC_TYPE_VECTOR: {
@@ -146,10 +100,33 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
       return false;
     }
     for (i = 0; i < xlen; ++i) {
-      if (! internal_equal_p(pic, pic_vec_ref(pic, x, i), pic_vec_ref(pic, y, i), depth + 1, h))
+      if (! pic_equal_p(pic, pic_vec_ref(pic, x, i), pic_vec_ref(pic, y, i)))
         return false;
     }
     return true;
+  }
+  case PIC_TYPE_DICT: {
+    int it = 0;
+    pic_value key, val;
+
+    if (pic_dict_size(pic, x) != pic_dict_size(pic, y)) {
+      return false;
+    }
+    while (pic_dict_next(pic, x, &it, &key, &val)) {
+      if (! pic_dict_has(pic, y, key))
+        return false;
+      if (! pic_equal_p(pic, val, pic_dict_ref(pic, y, key)))
+        return false;
+    }
+    return true;
+  }
+  case PIC_TYPE_RECORD: {
+    if (! pic_eq_p(pic, pic_record_type(pic, x), pic_record_type(pic, y))) {
+      return false;
+    }
+    x = pic_record_datum(pic, x);
+    y = pic_record_datum(pic, y);
+    goto LOOP;
   }
   case PIC_TYPE_DATA: {
     return pic_data(pic, x) == pic_data(pic, y);
@@ -157,16 +134,6 @@ internal_equal_p(pic_state *pic, pic_value x, pic_value y, int depth, khash_t(m)
   default:
     return false;
   }
-}
-
-bool
-pic_equal_p(pic_state *pic, pic_value x, pic_value y)
-{
-  khash_t(m) h;
-
-  kh_init(m, &h);
-
-  return internal_equal_p(pic, x, y, 0, &h);
 }
 
 static pic_value
