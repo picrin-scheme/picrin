@@ -221,7 +221,7 @@
                      and or
                      cond case else =>
                      do when unless
-                     parameterize define-record-type))
+                     parameterize define-record-type include))
         (dictionary-for-each export-keyword (global-objects)))
       (make-library '(picrin user)))
 

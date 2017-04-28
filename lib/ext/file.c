@@ -145,6 +145,8 @@ pic_init_file(pic_state *pic)
   pic_defvar(pic, "current-input-port", pic_fopen(pic, stdin, "r"));
   pic_defvar(pic, "current-output-port", pic_fopen(pic, stdout, "w"));
   pic_defvar(pic, "current-error-port", pic_fopen(pic, stdout, "w"));
+  pic_defun(pic, "open-input-file", pic_file_open_input_file);
+  pic_defun(pic, "open-output-file", pic_file_open_output_file);
   pic_defun(pic, "open-binary-input-file", pic_file_open_input_file);
   pic_defun(pic, "open-binary-output-file", pic_file_open_output_file);
   pic_defun(pic, "file-exists?", pic_file_exists_p);

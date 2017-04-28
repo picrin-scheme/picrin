@@ -769,6 +769,12 @@ pic_port_flush(pic_state *pic)
 void
 pic_init_port(pic_state *pic)
 {
+#if !PIC_USE_FILE
+  pic_defvar(pic, "current-input-port", pic_false_value(pic));
+  pic_defvar(pic, "current-output-port", pic_false_value(pic));
+  pic_defvar(pic, "current-error-port", pic_false_value(pic));
+#endif
+
   pic_defun(pic, "port?", pic_port_port_p);
   pic_defun(pic, "input-port?", pic_port_input_port_p);
   pic_defun(pic, "output-port?", pic_port_output_port_p);

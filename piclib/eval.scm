@@ -624,7 +624,22 @@
                                                              (,the-if (,pred obj)
                                                                       (,(the 'vector-set!) (,(the 'record-datum) obj) ,pos value)
                                                                       (,(the 'error) "record type mismatch" obj ',type))))))))
-                           (loop (cdr fields) (+ pos 1) `(,@defs . ,acc))))))))))))
+                           (loop (cdr fields) (+ pos 1) `(,@defs . ,acc))))))))))
+
+      (define-transformer 'include
+        (letrec ((read-file
+                  (lambda (filename)
+                    (let ((port (open-input-file filename)))
+                      (let loop ((expr (read port)) (exprs '()))
+                        (if (eof-object? expr)
+                            (begin
+                              (close-port port)
+                              (reverse exprs))
+                            (loop (read port) (cons expr exprs))))))))
+          (lambda (form env)
+            (let ((filenames (cdr form)))
+              (let ((exprs (apply append (map read-file filenames))))
+                `(,the-begin . ,exprs))))))))
 
   ;; compile
 
