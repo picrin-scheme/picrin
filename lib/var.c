@@ -20,8 +20,8 @@ var_call(pic_state *pic)
     pic_value env, it;
 
     pic_for_each(env, pic->dyn_env, it) {
-      if (pic_weak_has(pic, env, self)) {
-        return pic_weak_ref(pic, env, self);
+      if (pic_attr_has(pic, env, self)) {
+        return pic_attr_ref(pic, env, self);
       }
     }
     PIC_UNREACHABLE();          /* logic flaw */
@@ -32,7 +32,7 @@ var_call(pic_state *pic)
     if (! pic_false_p(pic, conv)) {
       val = pic_call(pic, conv, 1, val);
     }
-    pic_weak_set(pic, pic_car(pic, pic->dyn_env), self, val);
+    pic_attr_set(pic, pic_car(pic, pic->dyn_env), self, val);
     return pic_undef_value(pic);
   }
 }
@@ -48,7 +48,7 @@ pic_make_var(pic_state *pic, pic_value init, pic_value conv)
       if (! pic_false_p(pic, conv)) {
         init = pic_call(pic, conv, 1, init);
       }
-      pic_weak_set(pic, pic_car(pic, env), var, init);
+      pic_attr_set(pic, pic_car(pic, env), var, init);
       break;
     }
     env = pic_cdr(pic, env);

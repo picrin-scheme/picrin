@@ -20,7 +20,7 @@ struct object {
     struct pair pair;
     struct vector vec;
     struct dict dict;
-    struct weak weak;
+    struct attr attr;
     struct data data;
     struct record rec;
     struct proc proc;
@@ -52,7 +52,7 @@ struct heap_page {
 struct heap {
   union header base, *freep;
   struct heap_page *pages;
-  struct weak *weaks;           /* weak map chain */
+  struct attr *attrs;           /* weak map chain */
 };
 
 #define unitsof(type) ((type2size(type) + sizeof(union header) - 1) / sizeof(union header))
@@ -69,7 +69,7 @@ pic_heap_open(pic_state *pic)
   heap->freep = &heap->base;
 
   heap->pages = NULL;
-  heap->weaks = NULL;
+  heap->attrs = NULL;
 
   return heap;
 }
@@ -304,11 +304,11 @@ gc_mark_object(pic_state *pic, struct object *obj)
     LOOP(obj->u.sym.str);
     break;
   }
-  case PIC_TYPE_WEAK: {
-    struct weak *weak = (struct weak *)obj;
+  case PIC_TYPE_ATTR: {
+    struct attr *attr = (struct attr *)obj;
 
-    weak->prev = pic->heap->weaks;
-    pic->heap->weaks = weak;
+    attr->prev = pic->heap->attrs;
+    pic->heap->attrs = attr;
     break;
   }
   default:
@@ -322,7 +322,7 @@ gc_mark_phase(pic_state *pic)
   struct context *cxt;
   size_t j;
 
-  assert(pic->heap->weaks == NULL);
+  assert(pic->heap->attrs == NULL);
 
   /* context */
   for (cxt = pic->cxt; cxt != NULL; cxt = cxt->prev) {
@@ -354,14 +354,14 @@ gc_mark_phase(pic_state *pic)
     struct object *key;
     pic_value val;
     int it;
-    khash_t(weak) *h;
-    struct weak *weak;
+    khash_t(attr) *h;
+    struct attr *attr;
 
     j = 0;
-    weak = pic->heap->weaks;
+    attr = pic->heap->attrs;
 
-    while (weak != NULL) {
-      h = &weak->hash;
+    while (attr != NULL) {
+      h = &attr->hash;
       for (it = kh_begin(h); it != kh_end(h); ++it) {
         if (! kh_exist(h, it))
           continue;
@@ -374,7 +374,7 @@ gc_mark_phase(pic_state *pic)
           }
         }
       }
-      weak = weak->prev;
+      attr = attr->prev;
     }
   } while (j > 0);
 }
@@ -411,8 +411,8 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     /* TODO: remove this symbol's entry from pic->syms immediately */
     break;
   }
-  case PIC_TYPE_WEAK: {
-    kh_destroy(weak, &obj->u.weak.hash);
+  case PIC_TYPE_ATTR: {
+    kh_destroy(attr, &obj->u.attr.hash);
     break;
   }
   case PIC_TYPE_IREP: {
@@ -455,7 +455,7 @@ type2size(int type)
   case PIC_TYPE_DATA: return sizeof(struct data);
   case PIC_TYPE_DICT: return sizeof(struct dict);
   case PIC_TYPE_SYMBOL: return sizeof(struct symbol);
-  case PIC_TYPE_WEAK: return sizeof(struct weak);
+  case PIC_TYPE_ATTR: return sizeof(struct attr);
   case PIC_TYPE_IREP: return sizeof(struct irep);
   case PIC_TYPE_PORT: return sizeof(struct port);
   case PIC_TYPE_PAIR: return sizeof(struct pair);
@@ -600,24 +600,24 @@ gc_sweep_phase(pic_state *pic)
 {
   struct heap_page *page;
   int it;
-  khash_t(weak) *h;
+  khash_t(attr) *h;
   khash_t(oblist) *s = &pic->oblist;
   struct symbol *sym;
   struct object *obj;
   size_t total = 0, inuse = 0;
 
   /* weak maps */
-  while (pic->heap->weaks != NULL) {
-    h = &pic->heap->weaks->hash;
+  while (pic->heap->attrs != NULL) {
+    h = &pic->heap->attrs->hash;
     for (it = kh_begin(h); it != kh_end(h); ++it) {
       if (! kh_exist(h, it))
         continue;
       obj = kh_key(h, it);
       if (! is_alive(obj)) {
-        kh_del(weak, h, it);
+        kh_del(attr, h, it);
       }
     }
-    pic->heap->weaks = pic->heap->weaks->prev;
+    pic->heap->attrs = pic->heap->attrs->prev;
   }
 
   /* symbol table */

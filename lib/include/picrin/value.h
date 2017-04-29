@@ -29,7 +29,7 @@ enum {
   PIC_TYPE_VECTOR    = 21,
   PIC_TYPE_DICT      = 22,
   PIC_TYPE_RECORD    = 23,
-  PIC_TYPE_WEAK      = 24,
+  PIC_TYPE_ATTR      = 24,
   PIC_TYPE_PORT      = 25,
   PIC_TYPE_ERROR     = 26,
   PIC_TYPE_IREP      = 27,
@@ -224,7 +224,7 @@ DEFPRED(pic_vec_p, PIC_TYPE_VECTOR)
 DEFPRED(pic_blob_p, PIC_TYPE_BLOB)
 DEFPRED(pic_error_p, PIC_TYPE_ERROR)
 DEFPRED(pic_dict_p, PIC_TYPE_DICT)
-DEFPRED(pic_weak_p, PIC_TYPE_WEAK)
+DEFPRED(pic_attr_p, PIC_TYPE_ATTR)
 DEFPRED(pic_rec_p, PIC_TYPE_RECORD)
 DEFPRED(pic_sym_p, PIC_TYPE_SYMBOL)
 DEFPRED(pic_pair_p, PIC_TYPE_PAIR)

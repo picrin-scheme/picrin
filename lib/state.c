@@ -107,7 +107,7 @@ void pic_init_write(pic_state *);
 void pic_init_read(pic_state *);
 void pic_init_dict(pic_state *);
 void pic_init_record(pic_state *);
-void pic_init_weak(pic_state *);
+void pic_init_attr(pic_state *);
 void pic_init_file(pic_state *);
 void pic_init_state(pic_state *);
 void pic_init_eval(pic_state *);
@@ -133,7 +133,7 @@ pic_init_core(pic_state *pic)
   pic_init_var(pic); DONE;
   pic_init_dict(pic); DONE;
   pic_init_record(pic); DONE;
-  pic_init_weak(pic); DONE;
+  pic_init_attr(pic); DONE;
   pic_init_state(pic); DONE;
 
 #if PIC_USE_CALLCC
@@ -205,7 +205,7 @@ pic_open(pic_allocf allocf, void *userdata)
   pic->features = pic_nil_value(pic);
 
   /* dynamic environment */
-  pic->dyn_env = pic_list(pic, 1, pic_make_weak(pic));
+  pic->dyn_env = pic_list(pic, 1, pic_make_attr(pic));
 
   /* top continuation */
   {

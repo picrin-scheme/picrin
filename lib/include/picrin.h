@@ -194,14 +194,14 @@ bool pic_dict_next(pic_state *, pic_value dict, int *iter, pic_value *key, pic_v
 
 
 /*
- * ephemeron table
+ * attribute
  */
 
-pic_value pic_make_weak(pic_state *);
-pic_value pic_weak_ref(pic_state *, pic_value weak, pic_value key);
-void pic_weak_set(pic_state *, pic_value weak, pic_value key, pic_value val);
-void pic_weak_del(pic_state *, pic_value weak, pic_value key);
-bool pic_weak_has(pic_state *, pic_value weak, pic_value key);
+pic_value pic_make_attr(pic_state *);
+pic_value pic_attr_ref(pic_state *, pic_value attr, pic_value key);
+void pic_attr_set(pic_state *, pic_value attr, pic_value key, pic_value val);
+void pic_attr_del(pic_state *, pic_value attr, pic_value key);
+bool pic_attr_has(pic_state *, pic_value attr, pic_value key);
 
 
 /*

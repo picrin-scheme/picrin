@@ -99,7 +99,7 @@
         ((environment-binding env) id uid))
 
       (define (make-environment prefix)
-        (%make-environment #f (symbol->string prefix) (make-ephemeron-table)))
+        (%make-environment #f (symbol->string prefix) (make-attribute)))
 
       (define default-environment
         (let ((env (make-environment (string->symbol ""))))
@@ -116,7 +116,7 @@
             env)))
 
       (define (extend-environment parent)
-        (%make-environment parent #f (make-ephemeron-table)))
+        (%make-environment parent #f (make-attribute)))
 
 
       ;; macro
@@ -589,7 +589,7 @@
             (let ((table (the 'table))
                   (prev (the 'prev))
                   (it (the 'it)))
-              `(,(the 'let) ((,table (,(the 'make-ephemeron-table)))
+              `(,(the 'let) ((,table (,(the 'make-attribute)))
                              (,prev (,(the 'current-dynamic-environment))))
                 (,(the 'current-dynamic-environment) (,(the 'cons) ,table ,prev))
                 (,the-begin . ,formal)

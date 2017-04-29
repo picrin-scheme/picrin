@@ -52,12 +52,12 @@ struct dict {
   khash_t(dict) hash;
 };
 
-KHASH_DECLARE(weak, struct object *, pic_value)
+KHASH_DECLARE(attr, struct object *, pic_value)
 
-struct weak {
+struct attr {
   OBJECT_HEADER
-  khash_t(weak) hash;
-  struct weak *prev;         /* for GC */
+  khash_t(attr) hash;
+  struct attr *prev;         /* for GC */
 };
 
 struct vector {
@@ -253,7 +253,7 @@ DEFPTR(blob, struct blob)
 DEFPTR(pair, struct pair)
 DEFPTR(vec, struct vector)
 DEFPTR(dict, struct dict)
-DEFPTR(weak, struct weak)
+DEFPTR(attr, struct attr)
 DEFPTR(data, struct data)
 DEFPTR(proc, struct proc)
 DEFPTR(port, struct port)

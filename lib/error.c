@@ -73,8 +73,8 @@ pic_enter_try(pic_state *pic)
   handler = pic_lambda(pic, native_exception_handler, 1, cont);
   /* with-exception-handler */
   var = pic_exc(pic);
-  env = pic_make_weak(pic);
-  pic_weak_set(pic, env, var, pic_cons(pic, handler, pic_call(pic, var, 0)));
+  env = pic_make_attr(pic);
+  pic_attr_set(pic, env, var, pic_cons(pic, handler, pic_call(pic, var, 0)));
   pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
 
   pic_leave(pic, pic->cxt->ai);
@@ -137,8 +137,8 @@ with_exception_handlers(pic_state *pic, pic_value handlers, pic_value thunk)
 {
   pic_value var, env, r;
   var = pic_exc(pic);
-  env = pic_make_weak(pic);
-  pic_weak_set(pic, env, var, handlers);
+  env = pic_make_attr(pic);
+  pic_attr_set(pic, env, var, handlers);
   pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
   r = pic_call(pic, thunk, 0);
   pic->dyn_env = pic_cdr(pic, pic->dyn_env);

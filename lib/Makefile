@@ -1,4 +1,5 @@
 LIBPICRIN_SRCS = \
+	attr.c\
 	blob.c\
 	bool.c\
 	char.c\
@@ -17,7 +18,6 @@ LIBPICRIN_SRCS = \
 	symbol.c\
 	var.c\
 	vector.c\
-	weak.c\
 	ext/cont.c\
 	ext/eval.c\
 	ext/read.c\

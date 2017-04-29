@@ -29,8 +29,8 @@ writer_control_init(pic_state *pic, struct writer_control *p, int mode, int op)
   p->mode = mode;
   p->op = op;
   p->cnt = 0;
-  p->shared = pic_make_weak(pic);
-  p->labels = pic_make_weak(pic);
+  p->shared = pic_make_attr(pic);
+  p->labels = pic_make_attr(pic);
 }
 
 static void
@@ -48,9 +48,9 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
   case PIC_TYPE_DICT:
   case PIC_TYPE_RECORD: {
 
-    if (! pic_weak_has(pic, shared, obj)) {
+    if (! pic_attr_has(pic, shared, obj)) {
       /* first time */
-      pic_weak_set(pic, shared, obj, pic_int_value(pic, 0));
+      pic_attr_set(pic, shared, obj, pic_int_value(pic, 0));
 
       if (pic_pair_p(pic, obj)) {
         /* pair */
@@ -75,13 +75,13 @@ traverse(pic_state *pic, pic_value obj, struct writer_control *p)
       }
 
       if (p->op == OP_WRITE) {
-        if (pic_int(pic, pic_weak_ref(pic, shared, obj)) == 0) {
-          pic_weak_del(pic, shared, obj);
+        if (pic_int(pic, pic_attr_ref(pic, shared, obj)) == 0) {
+          pic_attr_del(pic, shared, obj);
         }
       }
     } else {
       /* second time */
-      pic_weak_set(pic, shared, obj, pic_int_value(pic, 1));
+      pic_attr_set(pic, shared, obj, pic_int_value(pic, 1));
     }
     break;
   }
@@ -97,10 +97,10 @@ is_shared_object(pic_state *pic, pic_value obj, struct writer_control *p) {
   if (! obj_p(pic, obj)) {
     return false;
   }
-  if (! pic_weak_has(pic, shared, obj)) {
+  if (! pic_attr_has(pic, shared, obj)) {
     return false;
   }
-  return pic_int(pic, pic_weak_ref(pic, shared, obj)) > 0;
+  return pic_int(pic, pic_attr_ref(pic, shared, obj)) > 0;
 }
 
 static void
@@ -369,8 +369,8 @@ typename(pic_state *pic, pic_value obj)
     return "data";
   case PIC_TYPE_DICT:
     return "dictionary";
-  case PIC_TYPE_WEAK:
-    return "ephemeron";
+  case PIC_TYPE_ATTR:
+    return "attribute";
   case PIC_TYPE_RECORD:
     return "record";
   default:
@@ -386,13 +386,13 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
 
   /* shared objects */
   if (is_shared_object(pic, obj, p)) {
-    if (pic_weak_has(pic, labels, obj)) {
-      pic_fprintf(pic, port, "#%d#", pic_int(pic, pic_weak_ref(pic, labels, obj)));
+    if (pic_attr_has(pic, labels, obj)) {
+      pic_fprintf(pic, port, "#%d#", pic_int(pic, pic_attr_ref(pic, labels, obj)));
       return;
     }
     i = p->cnt++;
     pic_fprintf(pic, port, "#%d=", i);
-    pic_weak_set(pic, labels, obj, pic_int_value(pic, i));
+    pic_attr_set(pic, labels, obj, pic_int_value(pic, i));
   }
 
   switch (pic_type(pic, obj)) {
@@ -451,7 +451,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
 
   if (p->op == OP_WRITE) {
     if (is_shared_object(pic, obj, p)) {
-      pic_weak_del(pic, labels, obj);
+      pic_attr_del(pic, labels, obj);
     }
   }
 }
