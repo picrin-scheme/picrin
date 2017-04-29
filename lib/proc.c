@@ -512,6 +512,7 @@ pic_vcall(pic_state *pic, pic_value proc, int n, va_list ap)
 {
   struct context cxt;
   CONTEXT_VINITK(pic, &cxt, proc, pic->halt, n, ap);
+  cxt.reset = 0;
   pic_vm(pic, &cxt);
   return pic_protect(pic, cxt.fp->regs[1]);
 }
@@ -528,6 +529,7 @@ pic_apply(pic_state *pic, pic_value proc, int argc, pic_value *argv)
 {
   struct context cxt;
   CONTEXT_INITK(pic, &cxt, proc, pic->halt, argc, argv);
+  cxt.reset = 0;
   pic_vm(pic, &cxt);
   return pic_protect(pic, cxt.fp->regs[1]);
 }

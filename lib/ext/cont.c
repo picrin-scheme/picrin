@@ -17,10 +17,14 @@ static pic_value
 pic_cont_reset(pic_state *pic)
 {
   pic_value thunk;
+  struct context cxt;
 
   pic_get_args(pic, "l", &thunk);
 
-  return pic_call(pic, thunk, 0);
+  CONTEXT_INITK(pic, &cxt, thunk, pic->halt, 0, (pic_value *) NULL);
+  cxt.reset = 1;
+  pic_vm(pic, &cxt);
+  return pic_protect(pic, cxt.fp->regs[1]);
 }
 
 static pic_value
@@ -32,6 +36,7 @@ shift_call(pic_state *pic)
   pic_get_args(pic, "o", &x);
 
   CONTEXT_INIT(pic, &cxt, pic_closure_ref(pic, 0), 1, &x);
+  cxt.reset = 1;
   pic_vm(pic, &cxt);
   return pic_protect(pic, cxt.fp->regs[1]);
 }
@@ -42,6 +47,10 @@ pic_cont_shift(pic_state *pic)
   pic_value f, k;
 
   pic_get_args(pic, "l", &f);
+
+  if (! pic->cxt->reset) {
+    pic_error(pic, "c function call interleaved in delimited continuation", 0);
+  }
 
   k = pic_lambda(pic, shift_call, 1, pic->cxt->fp->regs[1]);
   CONTEXT_INITK(pic, pic->cxt, f, pic->halt, 1, &k);

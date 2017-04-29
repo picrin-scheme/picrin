@@ -26,6 +26,7 @@ struct context {
 
   code_t tmpcode[2];
   pic_value conts;
+  bool reset;
 
   struct context *prev;
 };
