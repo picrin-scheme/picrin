@@ -61,7 +61,9 @@ pic_value pic_global_ref(pic_state *pic, pic_value uid);
 void pic_global_set(pic_state *pic, pic_value uid, pic_value value);
 
 #define MKCALL(cxt,argc)                                                \
-  ((cxt)->tmpcode[0] = OP_CALL, (cxt)->tmpcode[1] = (argc), (cxt)->tmpcode)
+  ((argc) < 256                                                         \
+   ? ((cxt)->tmpcode[0] = OP_CALL, (cxt)->tmpcode[1] = (argc), (cxt)->tmpcode) \
+   : (pic_error(pic, "too many arguments", 1, pic_int_value(pic, (argc))), NULL))
 
 #define CONTEXT_VINITK(pic,cxt,proc,k,n,ap) do {        \
     int i;                                              \
