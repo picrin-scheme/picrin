@@ -11,7 +11,7 @@ main(int argc, char *argv[])
   pic_state *pic;
   pic_value e, port;
 
-  pic = pic_open(pic_default_allocf, NULL);
+  pic = pic_open(pic_default_allocf, NULL, pic_default_panicf);
 
   pic_try {
     if (argc == 1) {            /* repl */

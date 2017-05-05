@@ -18,6 +18,7 @@
 /* #define PIC_USE_WRITE 1 */
 /* #define PIC_USE_EVAL 1 */
 /* #define PIC_USE_FILE 1 */
+/* #define PIC_USE_ERROR 1 */
 
 /**
  * I/O configuration

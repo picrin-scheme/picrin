@@ -28,7 +28,7 @@ main(int argc, char *argv[], char **envp)
   pic_value e;
   int status;
 
-  pic = pic_open(pic_default_allocf, NULL);
+  pic = pic_open(pic_default_allocf, NULL, pic_default_panicf);
 
   picrin_argc = argc;
   picrin_argv = argv;

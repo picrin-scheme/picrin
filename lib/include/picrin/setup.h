@@ -28,11 +28,18 @@
 # define PIC_USE_FILE 1
 #endif
 
+#ifndef PIC_USE_ERROR
+# define PIC_USE_ERROR 1
+#endif
+
 #if !PIC_USE_LIBC && PIC_USE_FILE
 # error PIC_USE_FILE requires PIC_USE_LIBC
 #endif
 #if !PIC_USE_LIBC && PIC_USE_CALLCC
 # error PIC_USE_CALLCC requires PIC_USE_LIBC
+#endif
+#if !PIC_USE_CALLCC && PIC_USE_ERROR
+# error PIC_USE_ERROR requires PIC_USE_CALLCC
 #endif
 
 #if PIC_USE_CALLCC

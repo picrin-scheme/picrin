@@ -75,13 +75,24 @@ pic_fopen(pic_state *pic, FILE *fp, const char *mode) {
   }
 }
 
+#if !PIC_USE_ERROR
+# define file_error pic_error
+#else
 PIC_NORETURN static void
-file_error(pic_state *pic, const char *msg, const char *fname)
+file_error(pic_state *pic, const char *msg, int n, ...)
 {
-  pic_value fn = pic_cstr_value(pic, fname);
+  va_list ap;
+  pic_value e, irrs;
 
-  pic_raise(pic, pic_make_error(pic, "file", msg, pic_list(pic, 1, fn)));
+  va_start(ap, n);
+  irrs = pic_vlist(pic, n, ap);
+  va_end(ap);
+
+  e = pic_funcall(pic, "make-error-object", 3, pic_intern_lit(pic, "file"), pic_cstr_value(pic, msg), irrs);
+  pic_funcall(pic, "raise", 1, e);
+  PIC_UNREACHABLE();
 }
+#endif
 
 pic_value
 pic_file_open_input_file(pic_state *pic)
@@ -92,7 +103,7 @@ pic_file_open_input_file(pic_state *pic)
   pic_get_args(pic, "z", &fname);
 
   if ((fp = fopen(fname, "r")) == NULL) {
-    file_error(pic, "could not open file", fname);
+    file_error(pic, "could not open file", 1, pic_cstr_value(pic, fname));
   }
   return pic_fopen(pic, fp, "r");
 }
@@ -106,7 +117,7 @@ pic_file_open_output_file(pic_state *pic)
   pic_get_args(pic, "z", &fname);
 
   if ((fp = fopen(fname, "w")) == NULL) {
-    file_error(pic, "could not open file", fname);
+    file_error(pic, "could not open file", 1, pic_cstr_value(pic, fname));
   }
   return pic_fopen(pic, fp, "w");
 }
@@ -134,7 +145,7 @@ pic_file_delete(pic_state *pic)
   pic_get_args(pic, "z", &fname);
 
   if (remove(fname) != 0) {
-    file_error(pic, "file cannot be deleted", fname);
+    file_error(pic, "file cannot be deleted", 1, pic_cstr_value(pic, fname));
   }
   return pic_undef_value(pic);
 }

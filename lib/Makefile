@@ -5,7 +5,6 @@ LIBPICRIN_SRCS = \
 	char.c\
 	data.c\
 	dict.c\
-	error.c\
 	gc.c\
 	number.c\
 	pair.c\
@@ -22,7 +21,8 @@ LIBPICRIN_SRCS = \
 	ext/eval.c\
 	ext/read.c\
 	ext/write.c\
-	ext/file.c
+	ext/file.c\
+	ext/error.c
 LIBPICRIN_OBJS = \
 	$(LIBPICRIN_SRCS:.c=.o)
 

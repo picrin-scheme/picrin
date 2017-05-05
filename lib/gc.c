@@ -26,7 +26,6 @@ struct object {
     struct proc proc;
     struct frame frame;
     struct port port;
-    struct error err;
     struct irep irep;
   } u;
 };
@@ -104,9 +103,11 @@ pic_malloc(pic_state *pic, size_t size)
 {
   void *ptr;
 
+ retry:
   ptr = pic->allocf(pic->userdata, NULL, size);
   if (ptr == NULL && size > 0) {
-    pic_panic(pic, "memory exhausted");
+    pic->panicf(pic, "out of memory", 0, NULL);
+    goto retry;
   }
   return ptr;
 }
@@ -114,9 +115,11 @@ pic_malloc(pic_state *pic, size_t size)
 void *
 pic_realloc(pic_state *pic, void *ptr, size_t size)
 {
+ retry:
   ptr = pic->allocf(pic->userdata, ptr, size);
   if (ptr == NULL && size > 0) {
-    pic_panic(pic, "memory exhausted");
+    pic->panicf(pic, "out of memory", 0, NULL);
+    goto retry;
   }
   return ptr;
 }
@@ -127,9 +130,11 @@ pic_calloc(pic_state *pic, size_t count, size_t size)
   void *ptr;
 
   size *= count;
+ retry:
   ptr = pic->allocf(pic->userdata, NULL, size);
   if (ptr == NULL && size > 0) {
-    pic_panic(pic, "memory exhausted");
+    pic->panicf(pic, "out of memory", 0, NULL);
+    goto retry;
   }
   memset(ptr, 0, size);
   return ptr;
@@ -261,12 +266,6 @@ gc_mark_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_PORT: {
-    break;
-  }
-  case PIC_TYPE_ERROR: {
-    gc_mark_object(pic, (struct object *)obj->u.err.type);
-    gc_mark(pic, obj->u.err.irrs);
-    LOOP(obj->u.err.msg);
     break;
   }
   case PIC_TYPE_STRING: {
@@ -434,7 +433,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   }
 
   case PIC_TYPE_PAIR:
-  case PIC_TYPE_ERROR:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_PROC_FUNC:
   case PIC_TYPE_PROC_IREP:
@@ -460,7 +458,6 @@ type2size(int type)
   case PIC_TYPE_PORT: return sizeof(struct port);
   case PIC_TYPE_PAIR: return sizeof(struct pair);
   case PIC_TYPE_FRAME: return sizeof(struct frame);
-  case PIC_TYPE_ERROR: return sizeof(struct error);
   case PIC_TYPE_RECORD: return sizeof(struct record);
   case PIC_TYPE_PROC_FUNC: return sizeof(struct proc);
   case PIC_TYPE_PROC_IREP: return sizeof(struct proc);
@@ -669,9 +666,12 @@ pic_obj_alloc_unsafe(pic_state *pic, int type)
   obj = obj_alloc(pic, type);
   if (obj == NULL) {
     pic_gc(pic);
+  retry:
     obj = obj_alloc(pic, type);
-    if (obj == NULL)
-      pic_panic(pic, "GC memory exhausted");
+    if (obj == NULL) {
+      pic->panicf(pic, "out of memory", 0, NULL);
+      goto retry;
+    }
   }
 
   return obj;

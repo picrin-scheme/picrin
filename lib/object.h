@@ -152,18 +152,10 @@ struct port {
   } file;
 };
 
-struct error {
-  OBJECT_HEADER
-  struct symbol *type;
-  struct string *msg;
-  pic_value irrs;
-};
-
 #define TYPENAME_int   "integer"
 #define TYPENAME_blob  "bytevector"
 #define TYPENAME_char  "character"
 #define TYPENAME_sym   "symbol"
-#define TYPENAME_error "error"
 #define TYPENAME_proc  "procedure"
 #define TYPENAME_str   "string"
 #define TYPENAME_vec   "vector"
@@ -257,7 +249,6 @@ DEFPTR(attr, struct attr)
 DEFPTR(data, struct data)
 DEFPTR(proc, struct proc)
 DEFPTR(port, struct port)
-DEFPTR(error, struct error)
 DEFPTR(rec, struct record)
 DEFPTR(irep, struct irep)
 #undef pic_data_p
@@ -273,7 +264,6 @@ pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 pic_value pic_record_type(pic_state *pic, pic_value record);
 pic_value pic_record_datum(pic_state *pic, pic_value record);
 pic_value pic_make_cont(pic_state *pic, pic_value k);
-pic_value pic_make_error(pic_state *, const char *type, const char *msg, pic_value irrs);
 
 struct rope *pic_rope_incref(struct rope *);
 void pic_rope_decref(pic_state *, struct rope *);

@@ -29,11 +29,25 @@ pic_state_global_objects(pic_state *pic)
   return pic->globals;
 }
 
+static pic_value
+pic_state_error(pic_state *pic)
+{
+  const char *msg;
+  int argc;
+  pic_value *args;
+
+  pic_get_args(pic, "z*", &msg, &argc, &args);
+
+  pic->panicf(pic, msg, argc, args);
+  PIC_UNREACHABLE();
+}
+
 static void
 pic_init_state(pic_state *pic)
 {
   pic_defun(pic, "features", pic_state_features);
   pic_defun(pic, "global-objects", pic_state_global_objects);
+  pic_defun(pic, "error", pic_state_error);
 
   pic_add_feature(pic, "picrin");
 
@@ -128,7 +142,6 @@ pic_init_core(pic_state *pic)
   pic_init_vector(pic); DONE;
   pic_init_blob(pic); DONE;
   pic_init_char(pic); DONE;
-  pic_init_error(pic); DONE;
   pic_init_str(pic); DONE;
   pic_init_var(pic); DONE;
   pic_init_dict(pic); DONE;
@@ -151,10 +164,13 @@ pic_init_core(pic_state *pic)
 #if PIC_USE_EVAL
   pic_init_eval(pic); DONE;
 #endif
+#if PIC_USE_ERROR
+  pic_init_error(pic); DONE;
+#endif
 }
 
 pic_state *
-pic_open(pic_allocf allocf, void *userdata)
+pic_open(pic_allocf allocf, void *userdata, pic_panicf panicf)
 {
   pic_state *pic;
 
@@ -169,6 +185,9 @@ pic_open(pic_allocf allocf, void *userdata)
 
   /* user data */
   pic->userdata = userdata;
+
+  /* panic handler */
+  pic->panicf = panicf;
 
   /* context */
   pic->default_cxt.ai = 0;
@@ -280,6 +299,20 @@ pic_close(pic_state *pic)
   allocf(pic->userdata, pic, 0);
 }
 
+void
+pic_warnf(pic_state *PIC_UNUSED(pic), const char *PIC_UNUSED(fmt), ...)
+{
+#if PIC_USE_FILE
+  va_list ap;
+  pic_value err;
+
+  va_start(ap, fmt);
+  err = pic_vstrf_value(pic, fmt, ap);
+  va_end(ap);
+  pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_str(pic, err, NULL));
+#endif
+}
+
 pic_value
 pic_global_ref(pic_state *pic, pic_value sym)
 {
@@ -352,4 +385,41 @@ pic_funcall(pic_state *pic, const char *name, int n, ...)
 
   pic_leave(pic, ai);
   return pic_protect(pic, r);
+}
+
+#if PIC_USE_LIBC
+void
+pic_default_panicf(pic_state *pic, const char *msg, int PIC_UNUSED(n), pic_value *PIC_UNUSED(args))
+{
+  fprintf(stderr, "panic!: %s\n", msg);
+  abort();
+}
+#endif
+
+void
+pic_error(pic_state *pic, const char *msg, int n, ...)
+{
+  va_list ap;
+
+  va_start(ap, n);
+  pic_verror(pic, msg, n, ap);
+  va_end(ap);
+  PIC_UNREACHABLE();
+}
+
+void
+pic_verror(pic_state *pic, const char *msg, int n, va_list ap)
+{
+  pic_value error = pic_ref(pic, "error");
+  int i;
+  pic_value *args;
+
+  args = pic_alloca(pic, sizeof(pic_value) * (n + 1));
+  args[0] = pic_cstr_value(pic, msg);
+  for (i = 0; i < n; ++i) {
+    args[i + 1] = va_arg(ap, pic_value);
+  }
+
+  pic_apply(pic, error, n + 1, args);
+  PIC_UNREACHABLE();
 }

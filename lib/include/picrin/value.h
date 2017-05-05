@@ -31,7 +31,6 @@ enum {
   PIC_TYPE_RECORD    = 23,
   PIC_TYPE_ATTR      = 24,
   PIC_TYPE_PORT      = 25,
-  PIC_TYPE_ERROR     = 26,
   PIC_TYPE_IREP      = 27,
   PIC_TYPE_FRAME     = 28,
   PIC_TYPE_PROC_FUNC = 29,
@@ -222,7 +221,6 @@ DEFPRED(pic_false_p, PIC_TYPE_FALSE)
 DEFPRED(pic_str_p, PIC_TYPE_STRING)
 DEFPRED(pic_vec_p, PIC_TYPE_VECTOR)
 DEFPRED(pic_blob_p, PIC_TYPE_BLOB)
-DEFPRED(pic_error_p, PIC_TYPE_ERROR)
 DEFPRED(pic_dict_p, PIC_TYPE_DICT)
 DEFPRED(pic_attr_p, PIC_TYPE_ATTR)
 DEFPRED(pic_rec_p, PIC_TYPE_RECORD)

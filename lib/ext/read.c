@@ -30,11 +30,24 @@ static pic_reader_t reader_dispatch[256];
 static pic_value read_core(pic_state *pic, pic_value port, int c, struct reader_control *p);
 static pic_value read_nullable(pic_state *pic, pic_value port, int c, struct reader_control *p);
 
+#if !PIC_USE_ERROR
+# define read_error pic_error
+#else
 PIC_NORETURN static void
-read_error(pic_state *pic, const char *msg, pic_value irritants)
+read_error(pic_state *pic, const char *msg, int n, ...)
 {
-  pic_raise(pic, pic_make_error(pic, "read", msg, irritants));
+  va_list ap;
+  pic_value e, irrs;
+
+  va_start(ap, n);
+  irrs = pic_vlist(pic, n, ap);
+  va_end(ap);
+
+  e = pic_funcall(pic, "make-error-object", 3, pic_intern_lit(pic, "read"), pic_cstr_value(pic, msg), irrs);
+  pic_funcall(pic, "raise", 1, e);
+  PIC_UNREACHABLE();
 }
+#endif
 
 static int
 skip(pic_state *pic, pic_value port, int c)
@@ -252,7 +265,7 @@ read_uinteger(pic_state *pic, pic_value port, int c, struct reader_control *PIC_
   unsigned u = 0;
 
   if (! isdigit(c)) {
-    read_error(pic, "expected one or more digits", pic_list(pic, 1, pic_char_value(pic, c)));
+    read_error(pic, "expected one or more digits", 1, pic_char_value(pic, c));
   }
 
   u = c - '0';
@@ -268,10 +281,10 @@ read_true(pic_state *pic, pic_value port, int c, struct reader_control *PIC_UNUS
 {
   if ((c = peek(pic, port)) == 'r') {
     if (! expect(pic, port, "rue")) {
-      read_error(pic, "unexpected character while reading #true", pic_nil_value(pic));
+      read_error(pic, "unexpected character while reading #true", 0);
     }
   } else if (! isdelim(c)) {
-    read_error(pic, "non-delimiter character given after #t", pic_list(pic, 1, pic_char_value(pic, c)));
+    read_error(pic, "non-delimiter character given after #t", 1, pic_char_value(pic, c));
   }
 
   return pic_true_value(pic);
@@ -282,10 +295,10 @@ read_false(pic_state *pic, pic_value port, int c, struct reader_control *PIC_UNU
 {
   if ((c = peek(pic, port)) == 'a') {
     if (! expect(pic, port, "alse")) {
-      read_error(pic, "unexpected character while reading #false", pic_nil_value(pic));
+      read_error(pic, "unexpected character while reading #false", 0);
     }
   } else if (! isdelim(c)) {
-    read_error(pic, "non-delimiter character given after #f", pic_list(pic, 1, pic_char_value(pic, c)));
+    read_error(pic, "non-delimiter character given after #f", 1, pic_char_value(pic, c));
   }
 
   return pic_false_value(pic);
@@ -298,7 +311,7 @@ read_char(pic_state *pic, pic_value port, int c, struct reader_control *PIC_UNUS
 
   if (! isdelim(peek(pic, port))) {
     switch (c) {
-    default: read_error(pic, "unexpected character after char literal", pic_list(pic, 1, pic_char_value(pic, c)));
+    default: read_error(pic, "unexpected character after char literal", 1, pic_char_value(pic, c));
     case 'a': c = '\a'; if (! expect(pic, port, "larm")) goto fail; break;
     case 'b': c = '\b'; if (! expect(pic, port, "ackspace")) goto fail; break;
     case 'd': c = 0x7F; if (! expect(pic, port, "elete")) goto fail; break;
@@ -323,7 +336,7 @@ read_char(pic_state *pic, pic_value port, int c, struct reader_control *PIC_UNUS
   return pic_char_value(pic, (char)c);
 
  fail:
-  read_error(pic, "unexpected character while reading character literal", pic_list(pic, 1, pic_char_value(pic, c)));
+  read_error(pic, "unexpected character while reading character literal", 1, pic_char_value(pic, c));
 }
 
 static pic_value
@@ -386,7 +399,7 @@ read_pipe(pic_state *pic, pic_value port, int c, struct reader_control *PIC_UNUS
         i = 0;
         while ((HEX_BUF[i++] = (char)next(pic, port)) != ';') {
           if (i >= sizeof HEX_BUF)
-            read_error(pic, "expected ';'", pic_list(pic, 1, pic_char_value(pic, HEX_BUF[sizeof(HEX_BUF) - 1])));
+            read_error(pic, "expected ';'", 1, pic_char_value(pic, HEX_BUF[sizeof(HEX_BUF) - 1]));
         }
         c = (char)strtol(HEX_BUF, NULL, 16);
         break;
@@ -420,11 +433,11 @@ read_blob(pic_state *pic, pic_value port, int c, struct reader_control *p)
   }
 
   if (nbits != 8) {
-    read_error(pic, "unsupported bytevector bit width", pic_list(pic, 1, pic_int_value(pic, nbits)));
+    read_error(pic, "unsupported bytevector bit width", 1, pic_int_value(pic, nbits));
   }
 
   if (c != '(') {
-    read_error(pic, "expected '(' character", pic_list(pic, 1, pic_char_value(pic, c)));
+    read_error(pic, "expected '(' character", 1, pic_char_value(pic, c));
   }
 
   len = 0;
@@ -433,7 +446,7 @@ read_blob(pic_state *pic, pic_value port, int c, struct reader_control *p)
   while ((c = skip(pic, port, c)) != ')') {
     n = read_uinteger(pic, port, c, p);
     if (n < 0 || (1 << nbits) <= n) {
-      read_error(pic, "invalid element in bytevector literal", pic_list(pic, 1, pic_int_value(pic, n)));
+      read_error(pic, "invalid element in bytevector literal", 1, pic_int_value(pic, n));
     }
     len += 1;
     dat = pic_realloc(pic, dat, len);
@@ -452,12 +465,12 @@ read_undef_or_blob(pic_state *pic, pic_value port, int c, struct reader_control 
 {
   if ((c = peek(pic, port)) == 'n') {
     if (! expect(pic, port, "ndefined")) {
-      read_error(pic, "unexpected character while reading #undefined", pic_nil_value(pic));
+      read_error(pic, "unexpected character while reading #undefined", 0);
     }
     return pic_undef_value(pic);
   }
   if (! isdigit(c)) {
-    read_error(pic, "expect #undefined or #u8(...), but illegal character given", pic_list(pic, 1, pic_char_value(pic, c)));
+    read_error(pic, "expect #undefined or #u8(...), but illegal character given", 1, pic_char_value(pic, c));
   }
   return read_blob(pic, port, 'u', p);
 }
@@ -483,7 +496,7 @@ read_pair(pic_state *pic, pic_value port, int c, struct reader_control *p)
       if (pic_invalid_p(pic, read_nullable(pic, port, c, p))) {
         goto closing;
       }
-      read_error(pic, "unmatched parenthesis", pic_nil_value(pic));
+      read_error(pic, "unmatched parenthesis", 0);
     }
     return cdr;
   }
@@ -579,7 +592,7 @@ read_label_ref(pic_state *pic, pic_value PIC_UNUSED(port), int i, struct reader_
 
   it = kh_get(read, h, i);
   if (it == kh_end(h)) {
-    read_error(pic, "label of given index not defined", pic_list(pic, 1, pic_int_value(pic, i)));
+    read_error(pic, "label of given index not defined", 1, pic_int_value(pic, i));
   }
   return kh_val(h, it);
 }
@@ -600,13 +613,13 @@ read_label(pic_state *pic, pic_value port, int c, struct reader_control *p)
   if (c == '#') {
     return read_label_ref(pic, port, i, p);
   }
-  read_error(pic, "broken label expression", pic_nil_value(pic));
+  read_error(pic, "broken label expression", 0);
 }
 
 static pic_value
 read_unmatch(pic_state *pic, pic_value PIC_UNUSED(port), int PIC_UNUSED(c), struct reader_control *PIC_UNUSED(p))
 {
-  read_error(pic, "unmatched parenthesis", pic_nil_value(pic));
+  read_error(pic, "unmatched parenthesis", 0);
 }
 
 static pic_value
@@ -615,11 +628,11 @@ read_dispatch(pic_state *pic, pic_value port, int c, struct reader_control *p)
   c = next(pic, port);
 
   if (c == EOF) {
-    read_error(pic, "unexpected EOF", pic_nil_value(pic));
+    read_error(pic, "unexpected EOF", 0);
   }
 
   if (reader_dispatch[c] == NULL) {
-    read_error(pic, "invalid character at the seeker head", pic_list(pic, 1, pic_char_value(pic, c)));
+    read_error(pic, "invalid character at the seeker head", 1, pic_char_value(pic, c));
   }
 
   return reader_dispatch[c](pic, port, c, p);
@@ -631,11 +644,11 @@ read_nullable(pic_state *pic, pic_value port, int c, struct reader_control *p)
   c = skip(pic, port, c);
 
   if (c == EOF) {
-    read_error(pic, "unexpected EOF", pic_nil_value(pic));
+    read_error(pic, "unexpected EOF", 0);
   }
 
   if (reader_table[c] == NULL) {
-    read_error(pic, "invalid character at the seeker head", pic_list(pic, 1, pic_char_value(pic, c)));
+    read_error(pic, "invalid character at the seeker head", 1, pic_char_value(pic, c));
   }
 
   return reader_table[c](pic, port, c, p);
@@ -708,46 +721,48 @@ reader_table_init(void)
 }
 
 static void
-reader_init(pic_state *PIC_UNUSED(pic), struct reader_control *p)
+destroy_reader_control(pic_state *pic, void *ptr)
 {
-  p->typecase = CASE_DEFAULT;
-  kh_init(read, &p->labels);
+  struct reader_control *p = ptr;
+
+  kh_destroy(read, &p->labels);
+  pic_free(pic, ptr);
 }
 
-static void
-reader_destroy(pic_state *pic, struct reader_control *p)
+static struct reader_control *
+make_reader_control(pic_state *pic)
 {
-  kh_destroy(read, &p->labels);
+  struct reader_control *p;
+  static const pic_data_type t = { "pic_reader_control", destroy_reader_control };
+
+  p = pic_malloc(pic, sizeof *p);
+  p->typecase = CASE_DEFAULT;
+  kh_init(read, &p->labels);
+
+  pic_data_value(pic, p, &t);
+
+  return p;
 }
 
 static pic_value
 read_value(pic_state *pic, pic_value port)
 {
-  struct reader_control p;
-  size_t ai = pic_enter(pic);
+  struct reader_control *p = make_reader_control(pic);
+  size_t ai;
   pic_value val;
   int c;
-  pic_value e;
 
-  reader_init(pic, &p);
+  ai = pic_enter(pic);
+  while ((c = skip(pic, port, next(pic, port))) != EOF) {
+    val = read_nullable(pic, port, c, p);
 
-  pic_try {
-    size_t ai = pic_enter(pic);
-    while ((c = skip(pic, port, next(pic, port))) != EOF) {
-      val = read_nullable(pic, port, c, &p);
-
-      if (! pic_invalid_p(pic, val)) {
-        break;
-      }
-      pic_leave(pic, ai);
+    if (! pic_invalid_p(pic, val)) {
+      break;
     }
-    if (c == EOF) {
-      val = pic_eof_object(pic);
-    }
+    pic_leave(pic, ai);
   }
-  pic_catch(e) {
-    reader_destroy(pic, &p);
-    pic_raise(pic, e);
+  if (c == EOF) {
+    val = pic_eof_object(pic);
   }
 
   pic_leave(pic, ai);

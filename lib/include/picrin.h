@@ -59,7 +59,8 @@ typedef struct {
  */
 
 typedef void *(*pic_allocf)(void *userdata, void *ptr, size_t n);
-pic_state *pic_open(pic_allocf f, void *userdata);
+typedef void (*pic_panicf)(pic_state *, const char *msg, int n, pic_value *args);
+pic_state *pic_open(pic_allocf allocf, void *userdata, pic_panicf panicf);
 void pic_close(pic_state *);
 
 
@@ -292,39 +293,6 @@ int pic_fgetbuf(pic_state *, pic_value port, const char **buf, int *len); /* dep
 
 
 /*
- * error handling
- */
-
-typedef void (*pic_panicf)(pic_state *, const char *msg);
-pic_panicf pic_atpanic(pic_state *, pic_panicf f);
-PIC_NORETURN void pic_panic(pic_state *, const char *msg);
-pic_value pic_raise_continuable(pic_state *pic, pic_value err);
-PIC_NORETURN void pic_raise(pic_state *, pic_value v);
-PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
-
-#define pic_try pic_try_(PIC_GENSYM(jmp))
-#define pic_try_(jmp)                                                   \
-  do {                                                                  \
-    extern PIC_JMPBUF *pic_prepare_try(pic_state *);                    \
-    extern void pic_enter_try(pic_state *);                             \
-    extern void pic_exit_try(pic_state *);                              \
-    extern pic_value pic_abort_try(pic_state *);                        \
-    PIC_JMPBUF *jmp = pic_prepare_try(pic);                             \
-    if (PIC_SETJMP(*jmp) == 0) {                                        \
-      pic_enter_try(pic);
-#define pic_catch(e) pic_catch_(e, PIC_GENSYM(label))
-#define pic_catch_(e, label)                              \
-      pic_exit_try(pic);                                  \
-    } else {                                              \
-      e = pic_abort_try(pic);                             \
-      goto label;                                         \
-    }                                                     \
-  } while (0);                                            \
-  if (0)                                                  \
-  label:
-
-
-/*
  * core language features
  */
 
@@ -338,6 +306,8 @@ void pic_defvar(pic_state *, const char *name, pic_value v);
 pic_value pic_funcall(pic_state *, const char *name, int n, ...);
 pic_value pic_values(pic_state *, int n, ...);
 pic_value pic_vvalues(pic_state *, int n, va_list);
+PIC_NORETURN void pic_error(pic_state *, const char *msg, int n, ...);
+PIC_NORETURN void pic_verror(pic_state *pic, const char *msg, int n, va_list ap);
 
 
 /*

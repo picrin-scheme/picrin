@@ -42,10 +42,13 @@ lib/mini-picrin: FORCE
 lib/libpicrin.a: FORCE
 	$(MAKE) -C lib libpicrin.a
 
-ext: lib/ext/eval.c
+ext: lib/ext/eval.c lib/ext/error.c
 
 lib/ext/eval.c: piclib/eval.scm
 	bin/picrin-bootstrap -c eval_rom piclib/eval.scm | bin/picrin-bootstrap tools/mkeval.scm > lib/ext/eval.c
+
+lib/ext/error.c: piclib/error.scm
+	bin/picrin-bootstrap -c error_rom piclib/error.scm | bin/picrin-bootstrap tools/mkerror.scm > lib/ext/error.c
 
 picrin: $(PICRIN_OBJS) $(CONTRIB_OBJS) ext lib/libpicrin.a
 	$(CC) $(CFLAGS) -o $@ $(PICRIN_OBJS) $(CONTRIB_OBJS) lib/libpicrin.a $(LDFLAGS)
