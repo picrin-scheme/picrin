@@ -17,7 +17,7 @@ pic_data_p(pic_state *pic, pic_value obj, const pic_data_type *type)
 }
 
 void *
-pic_data(pic_state *PIC_UNUSED(pic), pic_value data)
+pic_data(pic_state *pic, pic_value data)
 {
   return data_ptr(pic, data)->data;
 }

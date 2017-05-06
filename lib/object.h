@@ -190,11 +190,11 @@ obj_value(pic_state *pic, void *ptr)
   return pic_obj_value(pic, ptr, obj_type(ptr));
 }
 
-#define DEFPTR(name,type)                               \
-  PIC_STATIC_INLINE type *                              \
-  name##_ptr(pic_state *PIC_UNUSED(pic), pic_value o) { \
-    assert(pic_##name##_p(pic,o));                      \
-    return (type *) pic_ptr(pic, o);                    \
+#define DEFPTR(name,type)                       \
+  PIC_STATIC_INLINE type *                      \
+  name##_ptr(pic_state *pic, pic_value o) {     \
+    assert(pic_##name##_p(pic,o));              \
+    return (type *) pic_ptr(pic, o);            \
   }
 
 #define pic_data_p(pic,o) (pic_data_p(pic,o,NULL))

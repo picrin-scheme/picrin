@@ -250,7 +250,7 @@ pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 }
 
 int
-pic_str_len(pic_state *PIC_UNUSED(pic), pic_value str)
+pic_str_len(pic_state *pic, pic_value str)
 {
   return str_ptr(pic, str)->rope->weight;
 }
