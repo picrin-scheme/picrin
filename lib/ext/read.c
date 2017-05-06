@@ -547,8 +547,8 @@ read_label_set(pic_state *pic, pic_value port, int i, struct reader_control *p)
       kh_val(h, it) = val = pic_cons(pic, pic_undef_value(pic), pic_undef_value(pic));
 
       tmp = read_core(pic, port, c, p);
-      pair_ptr(pic, val)->car = pic_car(pic, tmp);
-      pair_ptr(pic, val)->cdr = pic_cdr(pic, tmp);
+      pic_set_car(pic, val, pic_car(pic, tmp));
+      pic_set_cdr(pic, val, pic_cdr(pic, tmp));
 
       return val;
     }

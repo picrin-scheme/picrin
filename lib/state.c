@@ -360,7 +360,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
 void
 pic_defun(pic_state *pic, const char *name, pic_func_t f)
 {
-  pic_define(pic, name, pic_make_proc_func(pic, f));
+  pic_define(pic, name, pic_lambda(pic, f, 0));
 }
 
 void

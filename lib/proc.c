@@ -208,17 +208,6 @@ pic_vlambda(pic_state *pic, pic_func_t f, int n, va_list ap)
 }
 
 pic_value
-pic_make_proc_func(pic_state *pic, pic_func_t func)
-{
-  struct proc *proc;
-
-  proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_FUNC);
-  proc->u.func = func;
-  proc->env = NULL;
-  return obj_value(pic, proc);
-}
-
-pic_value
 pic_make_proc_irep_unsafe(pic_state *pic, struct irep *irep, struct frame *fp)
 {
   struct proc *proc;

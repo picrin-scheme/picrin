@@ -219,7 +219,6 @@ struct object *pic_obj_alloc_unsafe(pic_state *, int type);
 
 struct frame *pic_make_frame_unsafe(pic_state *, int n);
 pic_value pic_make_proc_irep_unsafe(pic_state *, struct irep *, struct frame *);
-pic_value pic_make_proc_func(pic_state *, pic_func_t);
 pic_value pic_make_record(pic_state *, pic_value type, pic_value datum);
 pic_value pic_record_type(pic_state *pic, pic_value record);
 pic_value pic_record_datum(pic_state *pic, pic_value record);

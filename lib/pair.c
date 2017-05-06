@@ -92,7 +92,7 @@ pic_list_p(pic_state *pic, pic_value obj)
     /* advance rapid fast-forward; runs 2x faster than local */
     for (i = 0; i < 2; ++i) {
       if (pic_pair_p(pic, rapid)) {
-        rapid = pair_ptr(pic, rapid)->cdr;
+        rapid = pic_cdr(pic, rapid);
       }
       else {
         return pic_nil_p(pic, rapid);
@@ -100,7 +100,7 @@ pic_list_p(pic_state *pic, pic_value obj)
     }
 
     /* advance local */
-    local = pair_ptr(pic, local)->cdr;
+    local = pic_cdr(pic, local);
 
     if (pic_eq_p(pic, local, rapid)) {
       return false;
@@ -154,7 +154,7 @@ pic_list_ref(pic_state *pic, pic_value list, int i)
 void
 pic_list_set(pic_state *pic, pic_value list, int i, pic_value obj)
 {
-  pair_ptr(pic, pic_list_tail(pic, list, i))->car = obj;
+  pic_set_car(pic, pic_list_tail(pic, list, i), obj);
 }
 
 pic_value
