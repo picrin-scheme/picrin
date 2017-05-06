@@ -179,62 +179,22 @@ struct port {
   } while (0)
 
 PIC_STATIC_INLINE int
-obj_type(pic_state *PIC_UNUSED(pic), void *ptr)
+obj_type(void *ptr)
 {
-  return ((struct basic *)ptr)->tt & TYPE_MASK;
-}
-
-#if !PIC_NAN_BOXING
-
-PIC_STATIC_INLINE struct object *
-obj_ptr(pic_state *PIC_UNUSED(pic), pic_value v)
-{
-  return (struct object *)(v.u.data);
-}
-
-PIC_STATIC_INLINE bool
-obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
-{
-  return v.type > PIC_IVAL_END;
+  return ((struct basic *) ptr)->tt & TYPE_MASK;
 }
 
 PIC_STATIC_INLINE pic_value
-obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
+obj_value(pic_state *pic, void *ptr)
 {
-  pic_value v = pic_make_value(obj_type(pic, ptr));
-  v.u.data = ptr;
-  return v;
+  return pic_obj_value(pic, ptr, obj_type(ptr));
 }
-
-#else  /* NAN_BOXING */
-
-PIC_STATIC_INLINE struct object *
-obj_ptr(pic_state *PIC_UNUSED(pic), pic_value v)
-{
-  return (struct object *)((0x3ffffffffffful & v.v) << 2);
-}
-
-PIC_STATIC_INLINE bool
-obj_p(pic_state *PIC_UNUSED(pic), pic_value v)
-{
-  return v.v > ((0x3ffC0ul + (0x3f & PIC_IVAL_END)) << 46);
-}
-
-PIC_STATIC_INLINE pic_value
-obj_value(pic_state *PIC_UNUSED(pic), void *ptr)
-{
-  pic_value v = pic_make_value(obj_type(pic, ptr));
-  v.v |= 0x3ffffffffffful & ((uint64_t)ptr >> 2);
-  return v;
-}
-
-#endif  /* NAN_BOXING */
 
 #define DEFPTR(name,type)                               \
   PIC_STATIC_INLINE type *                              \
   name##_ptr(pic_state *PIC_UNUSED(pic), pic_value o) { \
     assert(pic_##name##_p(pic,o));                      \
-    return (type *) obj_ptr(pic, o);                    \
+    return (type *) pic_ptr(pic, o);                    \
   }
 
 #define pic_data_p(pic,o) (pic_data_p(pic,o,NULL))

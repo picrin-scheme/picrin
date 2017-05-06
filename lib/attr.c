@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 
 KHASH_DEFINE(attr, struct object *, pic_value, kh_ptr_hash_func, kh_ptr_hash_equal)
@@ -15,7 +16,7 @@ attr_call(pic_state *pic)
 
   n = pic_get_args(pic, "&o|o", &self, &key, &val);
 
-  if (! obj_p(pic, key)) {
+  if (! pic_obj_p(pic, key)) {
     pic_error(pic, "attempted to set a non-object key", 1, key);
   }
 
@@ -53,7 +54,7 @@ pic_attr_ref(pic_state *pic, pic_value attr, pic_value key)
   khash_t(attr) *h = &attr_ptr(pic, proc_ptr(pic, attr)->env->regs[0])->hash;
   int it;
 
-  it = kh_get(attr, h, obj_ptr(pic, key));
+  it = kh_get(attr, h, pic_ptr(pic, key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }
@@ -67,7 +68,7 @@ pic_attr_set(pic_state *pic, pic_value attr, pic_value key, pic_value val)
   int ret;
   int it;
 
-  it = kh_put(attr, h, obj_ptr(pic, key), &ret);
+  it = kh_put(attr, h, pic_ptr(pic, key), &ret);
   kh_val(h, it) = val;
 }
 
@@ -76,7 +77,7 @@ pic_attr_has(pic_state *pic, pic_value attr, pic_value key)
 {
   khash_t(attr) *h = &attr_ptr(pic, proc_ptr(pic, attr)->env->regs[0])->hash;
 
-  return kh_get(attr, h, obj_ptr(pic, key)) != kh_end(h);
+  return kh_get(attr, h, pic_ptr(pic, key)) != kh_end(h);
 }
 
 void
@@ -85,7 +86,7 @@ pic_attr_del(pic_state *pic, pic_value attr, pic_value key)
   khash_t(attr) *h = &attr_ptr(pic, proc_ptr(pic, attr)->env->regs[0])->hash;
   int it;
 
-  it = kh_get(attr, h, obj_ptr(pic, key));
+  it = kh_get(attr, h, pic_ptr(pic, key));
   if (it == kh_end(h)) {
     pic_error(pic, "element not found for given key", 1, key);
   }

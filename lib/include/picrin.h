@@ -36,7 +36,7 @@ extern "C" {
 
 typedef struct pic_state pic_state;
 
-typedef struct {
+typedef struct value {
 #if PIC_NAN_BOXING
   uint64_t v;
 #else
@@ -49,9 +49,6 @@ typedef struct {
   unsigned char type;
 #endif
 } pic_value;
-
-
-#include "picrin/value.h"       /* inline definitions */
 
 
 /*

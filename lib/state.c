@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 
@@ -389,7 +390,7 @@ pic_funcall(pic_state *pic, const char *name, int n, ...)
 
 #if PIC_USE_LIBC
 void
-pic_default_panicf(pic_state *pic, const char *msg, int PIC_UNUSED(n), pic_value *PIC_UNUSED(args))
+pic_default_panicf(pic_state *PIC_UNUSED(pic), const char *msg, int PIC_UNUSED(n), pic_value *PIC_UNUSED(args))
 {
   fprintf(stderr, "panic!: %s\n", msg);
   abort();

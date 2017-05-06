@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 
@@ -159,10 +160,10 @@ gc_protect(pic_state *pic, struct object *obj)
 pic_value
 pic_protect(pic_state *pic, pic_value v)
 {
-  if (! obj_p(pic, v))
+  if (! pic_obj_p(pic, v))
     return v;
 
-  gc_protect(pic, obj_ptr(pic, v));
+  gc_protect(pic, pic_ptr(pic, v));
 
   return v;
 }
@@ -205,10 +206,10 @@ static void gc_mark_object(pic_state *, struct object *);
 static void
 gc_mark(pic_state *pic, pic_value v)
 {
-  if (! obj_p(pic, v))
+  if (! pic_obj_p(pic, v))
     return;
 
-  gc_mark_object(pic, obj_ptr(pic, v));
+  gc_mark_object(pic, pic_ptr(pic, v));
 }
 
 static void
@@ -223,11 +224,11 @@ gc_mark_object(pic_state *pic, struct object *obj)
 
 #define LOOP(o) obj = (struct object *)(o); goto loop
 
-  switch (obj_type(pic, obj)) {
+  switch (obj_type(obj)) {
   case PIC_TYPE_PAIR: {
     gc_mark(pic, obj->u.pair.car);
-    if (obj_p(pic, obj->u.pair.cdr)) {
-      LOOP(obj_ptr(pic, obj->u.pair.cdr));
+    if (pic_obj_p(pic, obj->u.pair.cdr)) {
+      LOOP(pic_ptr(pic, obj->u.pair.cdr));
     }
     break;
   }
@@ -367,7 +368,7 @@ gc_mark_phase(pic_state *pic)
         key = kh_key(h, it);
         val = kh_val(h, it);
         if (is_alive(key)) {
-          if (obj_p(pic, val) && ! is_alive(obj_ptr(pic, val))) {
+          if (pic_obj_p(pic, val) && ! is_alive(pic_ptr(pic, val))) {
             gc_mark(pic, val);
             ++j;
           }
@@ -383,7 +384,7 @@ gc_mark_phase(pic_state *pic)
 static void
 gc_finalize_object(pic_state *pic, struct object *obj)
 {
-  switch (obj_type(pic, obj)) {
+  switch (obj_type(obj)) {
   case PIC_TYPE_VECTOR: {
     pic_free(pic, obj->u.vec.data);
     break;
@@ -561,7 +562,7 @@ gc_sweep_page(pic_state *pic, struct heap_page *page)
         goto escape;
       }
       obj = (struct object *) p;
-      nunits = unitsof(obj_type(pic, obj));
+      nunits = unitsof(obj_type(obj));
       if (obj->u.basic.tt & GC_MARK) {
         obj->u.basic.tt &= ~GC_MARK;
         alive += nunits;

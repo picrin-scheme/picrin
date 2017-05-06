@@ -3,7 +3,9 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
+#include "state.h"
 
 bool
 pic_data_p(pic_state *pic, pic_value obj, const pic_data_type *type)

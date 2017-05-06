@@ -4,6 +4,7 @@
 
 #include "picrin.h"
 #include "picrin/extra.h"
+#include "../value.h"
 #include "../object.h"
 
 #if PIC_USE_WRITE
@@ -94,7 +95,7 @@ static bool
 is_shared_object(pic_state *pic, pic_value obj, struct writer_control *p) {
   pic_value shared = p->shared;
 
-  if (! obj_p(pic, obj)) {
+  if (! pic_obj_p(pic, obj)) {
     return false;
   }
   if (! pic_attr_has(pic, shared, obj)) {
@@ -413,7 +414,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     write_record(pic, obj, port, p);
     break;
   default:
-    pic_fprintf(pic, port, "#<%s %p>", typename(pic, obj), obj_ptr(pic, obj));
+    pic_fprintf(pic, port, "#<%s %p>", typename(pic, obj), pic_ptr(pic, obj));
     break;
   }
 

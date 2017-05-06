@@ -3,47 +3,21 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
-
-#if !PIC_NAN_BOXING
+#include "state.h"
 
 bool
 pic_eq_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
-  if (pic_type(pic, x) != pic_type(pic, y))
-    return false;
-
-  switch (pic_type(pic, x)) {
-  case PIC_TYPE_NIL:
-    return true;
-  case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
-    return pic_type(pic, x) == pic_type(pic, y);
-  default:
-    return obj_ptr(pic, x) == obj_ptr(pic, y);
-  }
+  return value_eq_p(&x, &y);
 }
 
 bool
 pic_eqv_p(pic_state *PIC_UNUSED(pic), pic_value x, pic_value y)
 {
-  if (pic_type(pic, x) != pic_type(pic, y))
-    return false;
-
-  switch (pic_type(pic, x)) {
-  case PIC_TYPE_NIL:
-    return true;
-  case PIC_TYPE_TRUE: case PIC_TYPE_FALSE:
-    return pic_type(pic, x) == pic_type(pic, y);
-  case PIC_TYPE_FLOAT:
-    return pic_float(pic, x) == pic_float(pic, y);
-  case PIC_TYPE_INT:
-    return pic_int(pic, x) == pic_int(pic, y);
-  default:
-    return obj_ptr(pic, x) == obj_ptr(pic, y);
-  }
+  return value_eq_p(&x, &y);
 }
-
-#endif
 
 bool
 pic_equal_p(pic_state *pic, pic_value x, pic_value y)

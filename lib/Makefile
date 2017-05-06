@@ -15,6 +15,7 @@ LIBPICRIN_SRCS = \
 	state.c\
 	string.c\
 	symbol.c\
+	value.c\
 	var.c\
 	vector.c\
 	ext/cont.c\
@@ -31,9 +32,9 @@ LIBPICRIN_HEADERS = \
 	include/picconf.h\
 	include/picrin/extra.h\
 	include/picrin/setup.h\
-	include/picrin/value.h\
 	khash.h\
 	object.h\
+	value.h\
 	state.h
 
 override CFLAGS += -I./include -Wall -Wextra -g

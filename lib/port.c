@@ -3,6 +3,7 @@
  */
 
 #include "picrin.h"
+#include "value.h"
 #include "object.h"
 #include "state.h"
 
