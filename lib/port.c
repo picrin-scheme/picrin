@@ -338,13 +338,13 @@ pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
       case 'i': {
         int ival = va_arg(ap, int);
         pic_value str = pic_funcall(pic, "number->string", 1, pic_int_value(pic, ival));
-        pic_fputs(pic, pic_str(pic, str, 0), port);
+        pic_fputs(pic, pic_cstr(pic, str, 0), port);
         break;
       }
       case 'f': {
         double f = va_arg(ap, double);
         pic_value str = pic_funcall(pic, "number->string", 1, pic_float_value(pic, f));
-        pic_fputs(pic, pic_str(pic, str, 0), port);
+        pic_fputs(pic, pic_cstr(pic, str, 0), port);
         break;
       }
       case 'c': {

@@ -223,7 +223,7 @@ arg_error(pic_state *pic, int actual, bool varg, int expected)
 {
   const char *msg;
 
-  msg = pic_str(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual, (varg ? "at least " : ""), expected), NULL);
+  msg = pic_cstr(pic, pic_strf_value(pic, "wrong number of arguments (%d for %s%d)", actual, (varg ? "at least " : ""), expected), NULL);
 
   pic_error(pic, msg, 0);
 }
@@ -343,7 +343,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
       else {
         const char *msg;
-        msg = pic_str(pic, pic_strf_value(pic, "pic_get_args: data type \"%s\" required", type->type_name), NULL);
+        msg = pic_cstr(pic, pic_strf_value(pic, "pic_get_args: data type \"%s\" required", type->type_name), NULL);
         pic_error(pic, msg, 1, v);
       }
       break;
@@ -412,7 +412,7 @@ pic_get_args(pic_state *pic, const char *format, ...)
       }
 
     VAL_CASE('c', char, char, pic_char(pic, v))
-    VAL_CASE('z', str, const char *, pic_str(pic, v, NULL))
+    VAL_CASE('z', str, const char *, pic_cstr(pic, v, NULL))
 
 #define OBJ_CASE(c, type) VAL_CASE(c, type, pic_value, v)
 

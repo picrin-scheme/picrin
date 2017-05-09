@@ -125,6 +125,7 @@ double pic_float(pic_state *, pic_value f);
 char pic_char(pic_state *, pic_value c);
 #define pic_bool(pic,b) (! pic_false_p(pic, (b)))
 const char *pic_str(pic_state *, pic_value str, int *len);
+const char *pic_cstr(pic_state *, pic_value str, int *len);
 unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
 void *pic_data(pic_state *, pic_value data);
 /* serialization */

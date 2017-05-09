@@ -310,7 +310,7 @@ pic_warnf(pic_state *PIC_UNUSED(pic), const char *PIC_UNUSED(fmt), ...)
   va_start(ap, fmt);
   err = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
-  pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_str(pic, err, NULL));
+  pic_fprintf(pic, pic_stderr(pic), "warn: %s\n", pic_cstr(pic, err, NULL));
 #endif
 }
 
@@ -352,7 +352,7 @@ pic_define(pic_state *pic, const char *name, pic_value val)
   pic_value sym = pic_intern_cstr(pic, name);
 
   if (pic_dict_has(pic, pic->globals, sym)) {
-    pic_warnf(pic, "redefining variable: %s", pic_str(pic, pic_sym_name(pic, sym), NULL));
+    pic_warnf(pic, "redefining variable: %s", name);
   }
   pic_dict_set(pic, pic->globals, sym, val);
 }

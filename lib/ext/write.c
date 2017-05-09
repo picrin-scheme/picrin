@@ -105,6 +105,15 @@ is_shared_object(pic_state *pic, pic_value obj, struct writer_control *p) {
 }
 
 static void
+write_symbol(pic_state *pic, pic_value sym, pic_value port)
+{
+  int len;
+  const char *buf = pic_str(pic, pic_sym_name(pic, sym), &len);
+
+  pic_fwrite(pic, buf, len, 1, port);
+}
+
+static void
 write_blob(pic_state *pic, pic_value blob, pic_value port)
 {
   const unsigned char *buf;
@@ -147,21 +156,21 @@ write_char(pic_state *pic, pic_value ch, pic_value port, struct writer_control *
 static void
 write_str(pic_state *pic, pic_value str, pic_value port, struct writer_control *p)
 {
-  int i;
-  const char *cstr = pic_str(pic, str, NULL);
+  int i, len;
+  const char *buf = pic_str(pic, str, &len);
 
   if (p->mode == DISPLAY_MODE) {
-    pic_fprintf(pic, port, "%s", pic_str(pic, str, NULL));
+    pic_fwrite(pic, buf, len, 1, port);
     return;
   }
-  pic_fprintf(pic, port, "\"");
-  for (i = 0; i < pic_str_len(pic, str); ++i) {
-    if (cstr[i] == '"' || cstr[i] == '\\') {
+  pic_fputc(pic, '"', port);
+  for (i = 0; i < len; ++i) {
+    if (buf[i] == '"' || buf[i] == '\\') {
       pic_fputc(pic, '\\', port);
     }
-    pic_fputc(pic, cstr[i], port);
+    pic_fputc(pic, buf[i], port);
   }
-  pic_fprintf(pic, port, "\"");
+  pic_fputc(pic, '"', port);
 }
 
 static void
@@ -202,8 +211,7 @@ write_pair_help(pic_state *pic, pic_value pair, pic_value port, struct writer_co
   }
 }
 
-#define EQ(sym, lit) (strcmp(pic_str(pic, pic_sym_name(pic, sym), NULL), lit) == 0)
-#define pic_sym(pic,sym) pic_str(pic, pic_sym_name(pic, (sym)), NULL)
+#define EQ(sym, lit) (pic_eq_p(pic, sym, pic_intern_lit(pic, lit)))
 
 static void
 write_pair(pic_state *pic, pic_value pair, pic_value port, struct writer_control *p)
@@ -281,7 +289,9 @@ write_dict(pic_state *pic, pic_value dict, pic_value port, struct writer_control
 
   pic_fprintf(pic, port, "#.(dictionary");
   while (pic_dict_next(pic, dict, &it, &key, &val)) {
-    pic_fprintf(pic, port, " '%s ", pic_sym(pic, key));
+    pic_fputs(pic, " '", port);
+    write_symbol(pic, key, port);
+    pic_fputc(pic, ' ', port);
     write_core(pic, val, port, p);
   }
   pic_fprintf(pic, port, ")");
@@ -387,7 +397,7 @@ write_core(pic_state *pic, pic_value obj, pic_value port, struct writer_control 
     pic_fprintf(pic, port, "%d", pic_int(pic, obj));
     break;
   case PIC_TYPE_SYMBOL:
-    pic_fprintf(pic, port, "%s", pic_sym(pic, obj));
+    write_symbol(pic, obj, port);
     break;
   case PIC_TYPE_FLOAT:
     write_float(pic, obj, port);

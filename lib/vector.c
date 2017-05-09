@@ -369,11 +369,11 @@ pic_vec_string_to_vector(pic_state *pic)
 {
   pic_value str, vec;
   int n, start, end, len, i;
-  const char *cstr;
+  const char *buf;
 
   n = pic_get_args(pic, "s|ii", &str, &start, &end);
 
-  cstr = pic_str(pic, str, &len);
+  buf = pic_str(pic, str, &len);
 
   switch (n) {
   case 1:
@@ -387,7 +387,7 @@ pic_vec_string_to_vector(pic_state *pic)
   vec = pic_make_vec(pic, end - start, NULL);
 
   for (i = 0; i < end - start; ++i) {
-    pic_vec_set(pic, vec, i, pic_char_value(pic, cstr[i + start]));
+    pic_vec_set(pic, vec, i, pic_char_value(pic, buf[i + start]));
   }
   return vec;
 }

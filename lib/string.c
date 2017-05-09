@@ -267,6 +267,38 @@ pic_str_sub(pic_state *pic, pic_value str, int s, int e)
   return make_str(pic, slice(pic, str_ptr(pic, str)->rope, s, e));
 }
 
+int
+pic_str_hash(pic_state *pic, pic_value str)
+{
+  int len, h = 0;
+  const char *s;
+
+  s = pic_str(pic, str, &len);
+  while (len-- > 0) {
+    h = (h << 5) - h + *s++;
+  }
+  return h;
+}
+
+int
+pic_str_cmp(pic_state *pic, pic_value str1, pic_value str2)
+{
+  int len1, len2, r;
+  const char *buf1, *buf2;
+
+  buf1 = pic_str(pic, str1, &len1);
+  buf2 = pic_str(pic, str2, &len2);
+
+  if (len1 == len2) {
+    return memcmp(buf1, buf2, len1);
+  }
+  r = memcmp(buf1, buf2, (len1 < len2 ? len1 : len2));
+  if (r != 0) {
+    return r;
+  }
+  return len1 - len2;
+}
+
 const char *
 pic_str(pic_state *pic, pic_value str, int *len)
 {
@@ -285,6 +317,22 @@ pic_str(pic_state *pic, pic_value str, int *len)
   flatten(pic, rope, r, r->buf);
 
   return r->u.leaf.str;
+}
+
+const char *
+pic_cstr(pic_state *pic, pic_value str, int *len)
+{
+  const char *buf;
+  int l;
+
+  buf = pic_str(pic, str, &l);
+  if (strchr(buf, '\0') != buf + l) {
+    pic_error(pic, "casting scheme string containing null character to c string", 1, str);
+  }
+  if (len) {
+    *len = l;
+  }
+  return buf;
 }
 
 static pic_value
@@ -398,7 +446,7 @@ pic_str_string_set(pic_state *pic)
       if (! pic_str_p(pic, argv[i])) {                          \
         return pic_false_value(pic);                            \
       }                                                         \
-      if (! (strcmp(pic_str(pic, argv[i-1], NULL), pic_str(pic, argv[i], NULL)) op 0)) { \
+      if (! (pic_str_cmp(pic, argv[i-1], argv[i]) op 0)) {      \
         return pic_false_value(pic);                            \
       }                                                         \
     }                                                           \

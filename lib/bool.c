@@ -42,7 +42,7 @@ pic_equal_p(pic_state *pic, pic_value x, pic_value y)
     if (xlen != ylen) {
       return false;
     }
-    return strcmp(xstr, ystr) == 0;
+    return memcmp(xstr, ystr, xlen) == 0;
   }
   case PIC_TYPE_BLOB: {
     int xlen, ylen;
