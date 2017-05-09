@@ -49,4 +49,4 @@
                        (write x port))
                      (error-object-irritants x))
                     (d "\n" port))
-                  (apply d x port)))))))
+                  (d x port)))))))

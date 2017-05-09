@@ -7,6 +7,7 @@
 #include "object.h"
 #include "state.h"
 
+/* FIXME: arena is consumed every time hash/cmp is executed */
 #define to_cstr(a) (pic_str(pic, obj_value(pic, a), NULL))
 #define kh_pic_str_hash(a) (kh_str_hash_func(to_cstr(a)))
 #define kh_pic_str_cmp(a, b) (kh_str_cmp_func(to_cstr(a), to_cstr(b)))
