@@ -38,6 +38,7 @@ shift_call(pic_state *pic)
 
   CONTEXT_INIT(pic, &cxt, pic_closure_ref(pic, 0), 1, &x);
   cxt.reset = 1;
+  pic->dyn_env = pic_closure_ref(pic, 1);
   pic_vm(pic, &cxt);
   return pic_protect(pic, cxt.fp->regs[1]);
 }
@@ -53,7 +54,7 @@ pic_cont_shift(pic_state *pic)
     pic_error(pic, "c function call interleaved in delimited continuation", 0);
   }
 
-  k = pic_lambda(pic, shift_call, 1, pic->cxt->fp->regs[1]);
+  k = pic_lambda(pic, shift_call, 2, pic->cxt->fp->regs[1], pic->dyn_env);
   CONTEXT_INITK(pic, pic->cxt, f, pic->halt, 1, &k);
   return pic_invalid_value(pic);
 }
