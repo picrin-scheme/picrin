@@ -229,24 +229,67 @@ pic_strf_value(pic_state *pic, const char *fmt, ...)
   va_start(ap, fmt);
   str = pic_vstrf_value(pic, fmt, ap);
   va_end(ap);
-
   return str;
 }
 
 pic_value
 pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
 {
-  pic_value str, port;
-  const char *buf;
-  int len;
+  pic_value str, str2;
+  const char *p;
 
-  port = pic_fmemopen(pic, NULL, 0, "w");
-
-  pic_vfprintf(pic, port, fmt, ap);
-  pic_fgetbuf(pic, port, &buf, &len);
-  str = pic_str_value(pic, buf, len);
-  pic_fclose(pic, port);
-  return str;
+  for (p = fmt; *p; p++) {
+    if (*p == '%')
+      break;
+  }
+  str = pic_str_value(pic, fmt, p - fmt);
+  if (*p == 0) {
+    return str;
+  }
+  p++;                          /* skip '%' */
+  switch (*p++) {
+  case '\0':
+    return pic_str_value(pic, fmt, p - fmt - 1);
+  case 'd':
+  case 'i': {
+    int i = va_arg(ap, int);
+    str2 = pic_funcall(pic, "number->string", 1, pic_int_value(pic, i));
+    break;
+  }
+  case 'f': {
+    double f = va_arg(ap, double);
+    str2 = pic_funcall(pic, "number->string", 1, pic_float_value(pic, f));
+    break;
+  }
+  case 'c': {
+    char c = (char) va_arg(ap, int);
+    str2 = pic_str_value(pic, &c, 1);
+    break;
+  }
+  case 's': {
+    char *sval = va_arg(ap, char*);
+    str2 = pic_cstr_value(pic, sval);
+    break;
+  }
+  case 'p': {
+    static const char digits[] = "0123456789abcdef";
+    static const size_t bufsiz = sizeof(long) * CHAR_BIT / 4;
+    unsigned long vp = (unsigned long) va_arg(ap, void*);
+    char buf[2 + bufsiz + 1] = "0x", *p = buf + 2;
+    size_t i;
+    for (i = 0; i < bufsiz; ++i) {
+      p[bufsiz - i - 2] = digits[vp % 16];
+      vp /= 16;
+    }
+    p[i] = '\0';
+    str2 = pic_cstr_value(pic, buf);
+    break;
+  }
+  case '%':
+    str2 = pic_str_value(pic, &p[-1], 1);
+    break;
+  }
+  return pic_str_cat(pic, str, pic_str_cat(pic, str2, pic_vstrf_value(pic, p, ap)));
 }
 
 int

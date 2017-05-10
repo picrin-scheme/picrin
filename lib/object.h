@@ -129,12 +129,13 @@ struct proc {
 };
 
 enum {
-  FILE_READ  = 01,
-  FILE_WRITE = 02,
-  FILE_UNBUF = 04,
-  FILE_EOF   = 010,
-  FILE_ERR   = 020,
-  FILE_LNBUF = 040
+  FILE_READ   = 01,
+  FILE_WRITE  = 02,
+  FILE_UNBUF  = 04,
+  FILE_EOF    = 010,
+  FILE_ERR    = 020,
+  FILE_LNBUF  = 040,
+  FILE_SETBUF = 0100
 };
 
 struct port {

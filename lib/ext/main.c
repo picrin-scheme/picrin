@@ -17,10 +17,12 @@ main(int argc, char *argv[])
     if (argc == 1) {            /* repl */
       while (1) {
         pic_printf(pic, "> ");
+        pic_fflush(pic, pic_stdout(pic));
         e = pic_funcall(pic, "read", 0);
         if (pic_eof_p(pic, e))
           break;
-        pic_printf(pic, "~s\n", pic_funcall(pic, "eval", 1, e));
+        pic_funcall(pic, "write", 1, pic_funcall(pic, "eval", 1, e));
+        pic_printf(pic, "\n");
       }
     } else if (argc == 2) {     /* load file */
       FILE *file = fopen(argv[1], "r");

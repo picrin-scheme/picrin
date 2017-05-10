@@ -258,6 +258,10 @@ typedef struct {
 #define PIC_SEEK_END 1
 #define PIC_SEEK_SET 2
 
+#define PIC_IONBF 0
+#define PIC_IOLBF 1
+#define PIC_IOFBF 2
+
 #define pic_stdin(pic) pic_funcall(pic, "current-input-port", 0)
 #define pic_stdout(pic) pic_funcall(pic, "current-output-port", 0)
 #define pic_stderr(pic) pic_funcall(pic, "current-error-port", 0)
@@ -281,13 +285,11 @@ int pic_fputs(pic_state *, const char *s, pic_value port);
 char *pic_fgets(pic_state *, char *s, int size, pic_value port);
 int pic_ungetc(pic_state *, int c, pic_value port);
 int pic_fflush(pic_state *, pic_value port);
+int pic_setvbuf(pic_state *, pic_value port, char *buf, int mode, size_t size);
 /* formatted output */
 int pic_printf(pic_state *, const char *fmt, ...);
 int pic_fprintf(pic_state *, pic_value port, const char *fmt, ...);
 int pic_vfprintf(pic_state *, pic_value port, const char *fmt, va_list ap);
-/* string buffer */
-pic_value pic_fmemopen(pic_state *, const char *buf, int len, const char *mode); /* deprecated */
-int pic_fgetbuf(pic_state *, pic_value port, const char **buf, int *len); /* deprecated */
 
 
 /*

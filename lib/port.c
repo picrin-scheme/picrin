@@ -35,13 +35,13 @@ pic_fclose(pic_state *pic, pic_value port)
     return 0;
   pic_fflush(pic, port);
   fp->flag = 0;
-  if (fp->base != fp->buf)
+  if (fp->base != fp->buf && (fp->flag & FILE_SETBUF) == 0)
     pic_free(pic, fp->base);
   return fp->vtable->close(pic, fp->cookie);
 }
 
 void
-pic_clearerr(pic_state *PIC_UNUSED(pic), pic_value port)
+pic_clearerr(pic_state *pic, pic_value port)
 {
   struct file *fp = &port_ptr(pic, port)->file;
 
@@ -49,7 +49,7 @@ pic_clearerr(pic_state *PIC_UNUSED(pic), pic_value port)
 }
 
 int
-pic_feof(pic_state *PIC_UNUSED(pic), pic_value port)
+pic_feof(pic_state *pic, pic_value port)
 {
   struct file *fp = &port_ptr(pic, port)->file;
 
@@ -57,11 +57,34 @@ pic_feof(pic_state *PIC_UNUSED(pic), pic_value port)
 }
 
 int
-pic_ferror(pic_state *PIC_UNUSED(pic), pic_value port)
+pic_ferror(pic_state *pic, pic_value port)
 {
   struct file *fp = &port_ptr(pic, port)->file;
 
   return (fp->flag & FILE_ERR) != 0;
+}
+
+int
+pic_setvbuf(pic_state *pic, pic_value port, char *buf, int mode, size_t size)
+{
+  struct file *fp = &port_ptr(pic, port)->file;
+
+  fp->flag &= ~(FILE_UNBUF | FILE_LNBUF);
+  if (mode == PIC_IOLBF) {
+    fp->flag |= FILE_LNBUF;
+  } else if (mode == PIC_IONBF) {
+    fp->flag |= FILE_UNBUF;
+  }
+
+  if (buf == NULL) {
+    return 0;
+  }
+  if (size != PIC_BUFSIZ) {
+    return EOF;
+  }
+  fp->base = buf;
+  fp->flag |= FILE_SETBUF;
+  return 0;
 }
 
 static int
@@ -230,7 +253,7 @@ pic_fgets(pic_state *pic, char *s, int size, pic_value port)
 }
 
 int
-pic_ungetc(pic_state *PIC_UNUSED(pic), int c, pic_value port)
+pic_ungetc(pic_state *pic, int c, pic_value port)
 {
   struct file *fp = &port_ptr(pic, port)->file;
   unsigned char uc = c;
@@ -311,79 +334,7 @@ pic_fseek(pic_state *pic, pic_value port, long offset, int whence)
 int
 pic_vfprintf(pic_state *pic, pic_value port, const char *fmt, va_list ap)
 {
-  const char *p;
-  long start = pic_fseek(pic, port, 0, PIC_SEEK_CUR);
-
-  for (p = fmt; *p; p++) {
-    if (*p == '~') {
-      switch (*++p) {
-      default:
-        pic_fputc(pic, *(p-1), port);
-        break;
-      case '%':
-        pic_fputc(pic, '\n', port);
-        break;
-      case 'a':
-        pic_void(pic, pic_funcall(pic, "display", 2, va_arg(ap, pic_value), port));
-        break;
-      case 's':
-        pic_void(pic, pic_funcall(pic, "write", 2, va_arg(ap, pic_value), port));
-        break;
-      }
-      continue;
-    }
-    if (*p == '%') {
-      switch (*++p) {
-      case 'd':
-      case 'i': {
-        int ival = va_arg(ap, int);
-        pic_value str = pic_funcall(pic, "number->string", 1, pic_int_value(pic, ival));
-        pic_fputs(pic, pic_cstr(pic, str, 0), port);
-        break;
-      }
-      case 'f': {
-        double f = va_arg(ap, double);
-        pic_value str = pic_funcall(pic, "number->string", 1, pic_float_value(pic, f));
-        pic_fputs(pic, pic_cstr(pic, str, 0), port);
-        break;
-      }
-      case 'c': {
-        int ival = va_arg(ap, int);
-        pic_fputc(pic, ival, port);
-        break;
-      }
-      case 's': {
-        char *sval = va_arg(ap, char*);
-        pic_fputs(pic, sval, port);
-        break;
-      }
-      case 'p': {
-        static const char digits[] = "0123456789abcdef";
-        unsigned long vp = (unsigned long) va_arg(ap, void*);
-        char buf[sizeof vp * CHAR_BIT / 4 + 1];
-        size_t i;
-        for (i = 0; i < sizeof buf - 1; ++i) {
-          buf[sizeof buf - i - 2] = digits[vp % 16];
-          vp /= 16;
-        }
-        buf[i] = '\0';
-        pic_fputs(pic, "0x", port);
-        pic_fputs(pic, buf, port);
-        break;
-      }
-      case '%':
-        pic_fputc(pic, *(p-1), port);
-        break;
-      default:
-        pic_fputc(pic, '%', port);
-        pic_fputc(pic, *(p-1), port);
-        break;
-      }
-      continue;
-    }
-    pic_fputc(pic, *p, port);
-  }
-  return pic_fseek(pic, port, 0, PIC_SEEK_CUR) - start;
+  return pic_fputs(pic, pic_cstr(pic, pic_vstrf_value(pic, fmt, ap), NULL), port);
 }
 
 int

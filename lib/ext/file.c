@@ -124,6 +124,34 @@ pic_file_open_output_file(pic_state *pic)
 }
 
 pic_value
+pic_file_open_binary_input_file(pic_state *pic)
+{
+  const char *fname;
+  FILE *fp;
+
+  pic_get_args(pic, "z", &fname);
+
+  if ((fp = fopen(fname, "rb")) == NULL) {
+    file_error(pic, "could not open file", 1, pic_cstr_value(pic, fname));
+  }
+  return pic_fopen(pic, fp, "rb");
+}
+
+pic_value
+pic_file_open_binary_output_file(pic_state *pic)
+{
+  const char *fname;
+  FILE *fp;
+
+  pic_get_args(pic, "z", &fname);
+
+  if ((fp = fopen(fname, "wb")) == NULL) {
+    file_error(pic, "could not open file", 1, pic_cstr_value(pic, fname));
+  }
+  return pic_fopen(pic, fp, "wb");
+}
+
+pic_value
 pic_file_exists_p(pic_state *pic)
 {
   const char *fname;
@@ -154,13 +182,21 @@ pic_file_delete(pic_state *pic)
 void
 pic_init_file(pic_state *pic)
 {
-  pic_defvar(pic, "current-input-port", pic_fopen(pic, stdin, "r"));
-  pic_defvar(pic, "current-output-port", pic_fopen(pic, stdout, "w"));
-  pic_defvar(pic, "current-error-port", pic_fopen(pic, stdout, "w"));
+  pic_value i, o, e;
+
+  i = pic_fopen(pic, stdin, "r");
+  o = pic_fopen(pic, stdout, "w");
+  e = pic_fopen(pic, stderr, "w");
+  pic_setvbuf(pic, i, NULL, PIC_IOLBF, 0);
+  pic_setvbuf(pic, o, NULL, PIC_IOLBF, 0);
+  pic_defvar(pic, "current-input-port", i);
+  pic_defvar(pic, "current-output-port", o);
+  pic_defvar(pic, "current-error-port", e);
+
   pic_defun(pic, "open-input-file", pic_file_open_input_file);
   pic_defun(pic, "open-output-file", pic_file_open_output_file);
-  pic_defun(pic, "open-binary-input-file", pic_file_open_input_file);
-  pic_defun(pic, "open-binary-output-file", pic_file_open_output_file);
+  pic_defun(pic, "open-binary-input-file", pic_file_open_binary_input_file);
+  pic_defun(pic, "open-binary-output-file", pic_file_open_binary_output_file);
   pic_defun(pic, "file-exists?", pic_file_exists_p);
   pic_defun(pic, "delete-file", pic_file_delete);
 }
