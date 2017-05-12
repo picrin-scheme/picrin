@@ -273,12 +273,12 @@ pic_vstrf_value(pic_state *pic, const char *fmt, va_list ap)
   }
   case 'p': {
     static const char digits[] = "0123456789abcdef";
-    static const size_t bufsiz = sizeof(long) * CHAR_BIT / 4;
+#define MAXLEN (sizeof(long) * CHAR_BIT / 4)
     unsigned long vp = (unsigned long) va_arg(ap, void*);
-    char buf[2 + bufsiz + 1] = "0x", *p = buf + 2;
+    char buf[2 + MAXLEN + 1] = "0x", *p = buf + 2;
     size_t i;
-    for (i = 0; i < bufsiz; ++i) {
-      p[bufsiz - i - 2] = digits[vp % 16];
+    for (i = 0; i < MAXLEN; ++i) {
+      p[MAXLEN - i - 2] = digits[vp % 16];
       vp /= 16;
     }
     p[i] = '\0';

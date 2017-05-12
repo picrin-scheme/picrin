@@ -41,7 +41,7 @@ typedef struct value {
   uint64_t v;
 #else
   union {
-    void *data;
+    void *p;
     double f;
     int i;
     char c;

@@ -42,7 +42,7 @@ enum {
 PIC_STATIC_INLINE void
 make_value(struct value *v, int type)
 {
-  static const struct value zero = { 0 };
+  static const struct value zero = { {0}, 0 };
   *v = zero;
   v->type = type;
 }
@@ -61,7 +61,7 @@ make_float_value(struct value *v, double f)
   v->u.f = f;
 }
 
-PIC_STATIC_INLINE struct value
+PIC_STATIC_INLINE void
 make_char_value(struct value *v, char c)
 {
   make_value(v, PIC_TYPE_CHAR);

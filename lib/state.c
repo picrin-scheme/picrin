@@ -52,7 +52,6 @@ pic_init_core(pic_state *pic)
 
   pic_init_bool(pic); DONE;
   pic_init_pair(pic); DONE;
-  pic_init_port(pic); DONE;
   pic_init_number(pic); DONE;
   pic_init_proc(pic); DONE;
   pic_init_symbol(pic); DONE;
@@ -68,6 +67,9 @@ pic_init_core(pic_state *pic)
 
 #if PIC_USE_CONT
   pic_init_cont(pic); DONE;
+#endif
+#if PIC_USE_PORT
+  pic_init_port(pic); DONE;
 #endif
 #if PIC_USE_READ
   pic_init_read(pic); DONE;
@@ -160,9 +162,6 @@ pic_open(pic_allocf allocf, void *userdata, pic_panicf panicf)
     proc->env = NULL;
     pic->halt = obj_value(pic, proc);
   }
-
-  /* panic handler */
-  pic->panicf = NULL;
 
   /* turn on GC */
   pic->gc_enable = true;
