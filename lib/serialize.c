@@ -100,29 +100,32 @@ pic_serialize(pic_state *pic, pic_value obj)
   return blob;
 }
 
-static unsigned char load1(const unsigned char *buf, int *len) {
-  char c = buf[*len];
-  *len = *len + 1;
+static void loadn(pic_state *pic, unsigned char *dst, size_t size, const unsigned char **buf, const unsigned char *end) {
+  if (*buf + size > end) {
+    pic_error(pic, "malformed bytevector", 0);
+  }
+  memcpy(dst, *buf, size);
+  *buf = *buf + size;
+}
+
+static unsigned char load1(pic_state *pic, const unsigned char **buf, const unsigned char *end) {
+  unsigned char c;
+  loadn(pic, &c, 1, buf, end);
   return c;
 }
 
-static unsigned long load4(const unsigned char *buf, int *len) {
-  unsigned long x = load1(buf, len);
-  x += load1(buf, len) << 8;
-  x += load1(buf, len) << 16;
-  x += load1(buf, len) << 24;
+static unsigned long load4(pic_state *pic, const unsigned char **buf, const unsigned char *end) {
+  unsigned long x = load1(pic, buf, end);
+  x += load1(pic, buf, end) << 8;
+  x += load1(pic, buf, end) << 16;
+  x += load1(pic, buf, end) << 24;
   return x;
 }
 
-static void loadn(unsigned char *dst, size_t size, const unsigned char *buf, int *len) {
-  memcpy(dst, buf + *len, size);
-  *len = *len + size;
-}
-
-static pic_value load_obj(pic_state *pic, const unsigned char *buf, int *len);
+static pic_value load_obj(pic_state *pic, const unsigned char **buf, const unsigned char *end);
 
 static struct irep *
-load_irep(pic_state *pic, const unsigned char *buf, int *len)
+load_irep(pic_state *pic, const unsigned char **buf, const unsigned char *end)
 {
   unsigned char argc, flags, frame_size, irepc, objc;
   size_t codec, i;
@@ -131,21 +134,21 @@ load_irep(pic_state *pic, const unsigned char *buf, int *len)
   struct irep **irep, *ir;
   size_t ai = pic_enter(pic);
 
-  argc = load1(buf, len);
-  flags = load1(buf, len);
-  frame_size = load1(buf, len);
-  irepc = load1(buf, len);
-  objc = load1(buf, len);
-  codec = load4(buf, len);
+  argc = load1(pic, buf, end);
+  flags = load1(pic, buf, end);
+  frame_size = load1(pic, buf, end);
+  irepc = load1(pic, buf, end);
+  objc = load1(pic, buf, end);
+  codec = load4(pic, buf, end);
   obj = pic_malloc(pic, sizeof(pic_value) * objc);
   for (i = 0; i < objc; ++i) {
-    obj[i] = load_obj(pic, buf, len);
+    obj[i] = load_obj(pic, buf, end);
   }
   code = pic_malloc(pic, codec); /* TODO */
-  loadn(code, codec, buf, len);
+  loadn(pic, code, codec, buf, end);
   irep = pic_malloc(pic, sizeof(struct irep *) * irepc);
   for (i = 0; i < irepc; ++i) {
-    irep[i] = load_irep(pic, buf, len);
+    irep[i] = load_irep(pic, buf, end);
   }
   ir = (struct irep *) pic_obj_alloc(pic, PIC_TYPE_IREP);
   ir->argc = argc;
@@ -163,39 +166,39 @@ load_irep(pic_state *pic, const unsigned char *buf, int *len)
 }
 
 static pic_value
-load_obj(pic_state *pic, const unsigned char *buf, int *len)
+load_obj(pic_state *pic, const unsigned char **buf, const unsigned char *end)
 {
   int type, l;
   pic_value obj;
   char *dat, c;
   struct irep *irep;
   struct proc *proc;
-  type = load1(buf, len);
+  type = load1(pic, buf, end);
   switch (type) {
   case 0x00:
-    return pic_int_value(pic, load4(buf, len));
+    return pic_int_value(pic, load4(pic, buf, end));
   case 0x01:
-    l = load4(buf, len);
+    l = load4(pic, buf, end);
     dat = pic_malloc(pic, l + 1); /* TODO */
-    loadn((unsigned char *) dat, l + 1, buf, len);
+    loadn(pic, (unsigned char *) dat, l + 1, buf, end);
     obj = pic_str_value(pic, dat, l);
     pic_free(pic, dat);
     return obj;
   case 0x02:
-    l = load4(buf, len);
+    l = load4(pic, buf, end);
     dat = pic_malloc(pic, l + 1); /* TODO */
-    loadn((unsigned char *) dat, l + 1, buf, len);
+    loadn(pic, (unsigned char *) dat, l + 1, buf, end);
     obj = pic_intern_str(pic, dat, l);
     pic_free(pic, dat);
     return obj;
   case 0x03:
-    irep = load_irep(pic, buf, len);
+    irep = load_irep(pic, buf, end);
     proc = (struct proc *)pic_obj_alloc(pic, PIC_TYPE_PROC_IREP);
     proc->u.irep = irep;
     proc->env = NULL;
     return obj_value(pic, proc);
   case 0x04:
-    c = load1(buf, len);
+    c = load1(pic, buf, end);
     return pic_char_value(pic, c);
   default:
     pic_error(pic, "load: unsupported object", 1, pic_int_value(pic, type));
@@ -205,6 +208,7 @@ load_obj(pic_state *pic, const unsigned char *buf, int *len)
 pic_value
 pic_deserialize(pic_state *pic, pic_value blob)
 {
-  int len = 0;
-  return load_obj(pic, pic_blob(pic, blob, NULL), &len);
+  int len;
+  const unsigned char *buf = pic_blob(pic, blob, &len);
+  return load_obj(pic, &buf, buf + len);
 }
