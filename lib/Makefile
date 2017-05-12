@@ -8,7 +8,6 @@ LIBPICRIN_SRCS = \
 	gc.c\
 	number.c\
 	pair.c\
-	port.c\
 	proc.c\
 	record.c\
 	serialize.c\
@@ -20,6 +19,7 @@ LIBPICRIN_SRCS = \
 	vector.c\
 	ext/cont.c\
 	ext/eval.c\
+	ext/port.c\
 	ext/read.c\
 	ext/write.c\
 	ext/file.c\

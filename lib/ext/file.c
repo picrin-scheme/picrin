@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "picrin.h"
+#include "picrin/extra.h"
 #include "../value.h"
 #include "../object.h"
 

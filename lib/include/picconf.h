@@ -14,6 +14,7 @@
  */
 
 /* #define PIC_USE_CALLCC 1 */
+/* #define PIC_USE_PORT 1 */
 /* #define PIC_USE_READ 1 */
 /* #define PIC_USE_WRITE 1 */
 /* #define PIC_USE_EVAL 1 */

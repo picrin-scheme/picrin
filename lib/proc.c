@@ -249,7 +249,6 @@ arg_error(pic_state *pic, int actual, bool varg, int expected)
  *  v   pic_value *             vector
  *  s   pic_value *             string
  *  l   pic_value *             lambda
- *  p   pic_value *             port
  *  d   pic_value *             dictionary
  *  r   pic_value *             record
  *
@@ -421,9 +420,6 @@ pic_get_args(pic_state *pic, const char *format, ...)
     OBJ_CASE('l', proc)
     OBJ_CASE('v', vec)
     OBJ_CASE('d', dict)
-#define pic_port_p(pic,v) pic_port_p(pic,v,NULL)
-    OBJ_CASE('p', port)
-#undef pic_port_p
     OBJ_CASE('r', rec)
 
     default:

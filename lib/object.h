@@ -128,31 +128,6 @@ struct proc {
   struct frame *env;
 };
 
-enum {
-  FILE_READ   = 01,
-  FILE_WRITE  = 02,
-  FILE_UNBUF  = 04,
-  FILE_EOF    = 010,
-  FILE_ERR    = 020,
-  FILE_LNBUF  = 040,
-  FILE_SETBUF = 0100
-};
-
-struct port {
-  OBJECT_HEADER
-  struct file {
-    /* buffer */
-    char buf[1];                  /* fallback buffer */
-    long cnt;                     /* characters left */
-    char *ptr;                    /* next character position */
-    char *base;                   /* location of the buffer */
-    /* operators */
-    void *cookie;
-    const pic_port_type *vtable;
-    int flag;                     /* mode of the file access */
-  } file;
-};
-
 #define TYPENAME_int   "integer"
 #define TYPENAME_blob  "bytevector"
 #define TYPENAME_char  "character"
@@ -199,7 +174,6 @@ obj_value(pic_state *pic, void *ptr)
   }
 
 #define pic_data_p(pic,o) (pic_data_p(pic,o,NULL))
-#define pic_port_p(pic,o) (pic_port_p(pic,o,NULL))
 DEFPTR(sym, struct symbol)
 DEFPTR(str, struct string)
 DEFPTR(blob, struct blob)
@@ -209,11 +183,9 @@ DEFPTR(dict, struct dict)
 DEFPTR(attr, struct attr)
 DEFPTR(data, struct data)
 DEFPTR(proc, struct proc)
-DEFPTR(port, struct port)
 DEFPTR(rec, struct record)
 DEFPTR(irep, struct irep)
 #undef pic_data_p
-#undef pic_port_p
 
 struct object *pic_obj_alloc(pic_state *, int type);
 struct object *pic_obj_alloc_unsafe(pic_state *, int type);

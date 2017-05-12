@@ -3,47 +3,95 @@
  */
 
 #include "picrin.h"
-#include "value.h"
-#include "object.h"
-#include "state.h"
+#include "picrin/extra.h"
 
-#ifndef EOF
-# define EOF (-1)
-#endif
+#if PIC_USE_PORT
+
+enum {
+  FILE_READ   = 01,
+  FILE_WRITE  = 02,
+  FILE_UNBUF  = 04,
+  FILE_EOF    = 010,
+  FILE_ERR    = 020,
+  FILE_LNBUF  = 040,
+  FILE_SETBUF = 0100
+};
+
+struct port {
+  /* buffer */
+  char buf[1];                  /* fallback buffer */
+  long cnt;                     /* characters left */
+  char *ptr;                    /* next character position */
+  char *base;                   /* location of the buffer */
+  /* operators */
+  void *cookie;
+  const pic_port_type *vtable;
+  int flag;                     /* mode of the file access */
+};
+
+#define port_ptr(pic,obj) ((struct port *) pic_data(pic, (obj)))
+
+#define VALID_RANGE(pic, len, s, e) do {                                \
+    if (s < 0 || len < s)                                               \
+      pic_error(pic, "invalid start index", 1, pic_int_value(pic, s));  \
+    if (e < s || len < e)                                               \
+      pic_error(pic, "invalid end index", 1, pic_int_value(pic, e));    \
+  } while (0)
+
+static int flushbuf(pic_state *, int, struct port *);
+
+static void
+port_dtor(pic_state *pic, void *port)
+{
+  struct port *fp = port;
+  if (fp->flag == 0)
+    return;
+  if ((fp->flag & FILE_WRITE) != 0 && fp->base != NULL)
+    flushbuf(pic, EOF, fp);
+  if (fp->base != fp->buf && (fp->flag & FILE_SETBUF) == 0)
+    pic_free(pic, fp->base);
+  fp->vtable->close(pic, fp->cookie);
+  pic_free(pic, port);
+}
+
+static const pic_data_type port_type = { "port", port_dtor };
 
 pic_value
 pic_funopen(pic_state *pic, void *cookie, const pic_port_type *type)
 {
   struct port *port;
 
-  port = (struct port *)pic_obj_alloc(pic, PIC_TYPE_PORT);
-  port->file.cnt = 0;
-  port->file.base = NULL;
-  port->file.flag = type->read ? FILE_READ : FILE_WRITE;
-  port->file.cookie = cookie;
-  port->file.vtable = type;
+  port = pic_malloc(pic, sizeof(*port));
+  port->cnt = 0;
+  port->base = NULL;
+  port->flag = type->read ? FILE_READ : FILE_WRITE;
+  port->cookie = cookie;
+  port->vtable = type;
 
-  return obj_value(pic, port);
+  return pic_data_value(pic, port, &port_type);
 }
 
 int
 pic_fclose(pic_state *pic, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
+  int r;
 
-  if (fp->flag == 0)
+  if (fp->flag == 0)            /* already closed */
     return 0;
   pic_fflush(pic, port);
-  fp->flag = 0;
   if (fp->base != fp->buf && (fp->flag & FILE_SETBUF) == 0)
     pic_free(pic, fp->base);
-  return fp->vtable->close(pic, fp->cookie);
+  if ((r = fp->vtable->close(pic, fp->cookie)) < 0)
+    return r;
+  fp->flag = 0;
+  return r;
 }
 
 void
 pic_clearerr(pic_state *pic, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
 
   fp->flag &= ~(FILE_EOF | FILE_ERR);
 }
@@ -51,7 +99,7 @@ pic_clearerr(pic_state *pic, pic_value port)
 int
 pic_feof(pic_state *pic, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
 
   return (fp->flag & FILE_EOF) != 0;
 }
@@ -59,7 +107,7 @@ pic_feof(pic_state *pic, pic_value port)
 int
 pic_ferror(pic_state *pic, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
 
   return (fp->flag & FILE_ERR) != 0;
 }
@@ -67,7 +115,7 @@ pic_ferror(pic_state *pic, pic_value port)
 int
 pic_setvbuf(pic_state *pic, pic_value port, char *buf, int mode, size_t size)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
 
   fp->flag &= ~(FILE_UNBUF | FILE_LNBUF);
   if (mode == PIC_IOLBF) {
@@ -79,7 +127,7 @@ pic_setvbuf(pic_state *pic, pic_value port, char *buf, int mode, size_t size)
   if (buf == NULL) {
     return 0;
   }
-  if (size != PIC_BUFSIZ) {
+  if (size < PIC_BUFSIZ) {
     return EOF;
   }
   fp->base = buf;
@@ -88,7 +136,7 @@ pic_setvbuf(pic_state *pic, pic_value port, char *buf, int mode, size_t size)
 }
 
 static int
-fillbuf(pic_state *pic, struct file *fp)
+fillbuf(pic_state *pic, struct port *fp)
 {
   int bufsize;
 
@@ -124,7 +172,7 @@ fillbuf(pic_state *pic, struct file *fp)
 }
 
 static int
-flushbuf(pic_state *pic, int x, struct file *fp)
+flushbuf(pic_state *pic, int x, struct port *fp)
 {
   int num_written=0, bufsize=0;
   char c = x;
@@ -179,7 +227,7 @@ flushbuf(pic_state *pic, int x, struct file *fp)
 int
 pic_fflush(pic_state *pic, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
   int retval;
 
   retval = 0;
@@ -203,7 +251,7 @@ pic_fflush(pic_state *pic, pic_value port)
 int
 pic_fputc(pic_state *pic, int x, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
 
   return putc_(pic, x, fp);
 }
@@ -211,7 +259,7 @@ pic_fputc(pic_state *pic, int x, pic_value port)
 int
 pic_fgetc(pic_state *pic, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
 
   return getc_(pic, fp);
 }
@@ -219,7 +267,7 @@ pic_fgetc(pic_state *pic, pic_value port)
 int
 pic_fputs(pic_state *pic, const char *s, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
 
   const char *ptr = s;
   while(*ptr != '\0') {
@@ -233,7 +281,7 @@ pic_fputs(pic_state *pic, const char *s, pic_value port)
 char *
 pic_fgets(pic_state *pic, char *s, int size, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
   int c = 0;
   char *buf;
 
@@ -255,7 +303,7 @@ pic_fgets(pic_state *pic, char *s, int size, pic_value port)
 int
 pic_ungetc(pic_state *pic, int c, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
   unsigned char uc = c;
 
   if (c == EOF || fp->base == fp->ptr) {
@@ -268,7 +316,7 @@ pic_ungetc(pic_state *pic, int c, pic_value port)
 size_t
 pic_fread(pic_state *pic, void *ptr, size_t size, size_t count, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
   char *bptr = ptr;
   long nbytes;
   int c;
@@ -294,7 +342,7 @@ pic_fread(pic_state *pic, void *ptr, size_t size, size_t count, pic_value port)
 size_t
 pic_fwrite(pic_state *pic, const void *ptr, size_t size, size_t count, pic_value port)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
   const char *bptr = ptr;
   long nbytes;
 
@@ -317,7 +365,7 @@ pic_fwrite(pic_state *pic, const void *ptr, size_t size, size_t count, pic_value
 long
 pic_fseek(pic_state *pic, pic_value port, long offset, int whence)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
   long s;
 
   pic_fflush(pic, port);
@@ -421,7 +469,7 @@ string_close(pic_state *pic, void *cookie)
   return 0;
 }
 
-pic_value
+static pic_value
 pic_fmemopen(pic_state *pic, const char *data, int size, const char *mode)
 {
   static const pic_port_type string_rd = { string_read, 0, string_seek, string_close };
@@ -442,10 +490,10 @@ pic_fmemopen(pic_state *pic, const char *data, int size, const char *mode)
   }
 }
 
-int
+static int
 pic_fgetbuf(pic_state *pic, pic_value port, const char **buf, int *len)
 {
-  struct file *fp = &port_ptr(pic, port)->file;
+  struct port *fp = pic_data(pic, port);
   xbuf_t *s;
 
   pic_fflush(pic, port);
@@ -462,10 +510,10 @@ pic_fgetbuf(pic_state *pic, pic_value port, const char **buf, int *len)
 bool
 pic_port_p(pic_state *pic, pic_value obj, const pic_port_type *type)
 {
-  if (pic_type(pic, obj) != PIC_TYPE_PORT) {
+  if (! pic_data_p(pic, obj, &port_type)) {
     return false;
   }
-  return type == NULL || port_ptr(pic, obj)->file.vtable == type;
+  return type == NULL || port_ptr(pic, obj)->vtable == type;
 }
 
 static pic_value
@@ -475,7 +523,7 @@ pic_port_input_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(pic, v, NULL) && (port_ptr(pic, v)->file.flag & FILE_READ) != 0) {
+  if (pic_port_p(pic, v, NULL) && (port_ptr(pic, v)->flag & FILE_READ) != 0) {
     return pic_true_value(pic);
   } else {
     return pic_false_value(pic);
@@ -489,7 +537,7 @@ pic_port_output_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(pic, v, NULL) && (port_ptr(pic, v)->file.flag & FILE_WRITE) != 0) {
+  if (pic_port_p(pic, v, NULL) && (port_ptr(pic, v)->flag & FILE_WRITE) != 0) {
     return pic_true_value(pic);
   }
   else {
@@ -532,7 +580,7 @@ pic_port_port_open_p(pic_state *pic)
 
   pic_get_args(pic, "p", &port);
 
-  return pic_bool_value(pic, port_ptr(pic, port)->file.flag != 0);
+  return pic_bool_value(pic, port_ptr(pic, port)->flag != 0);
 }
 
 static pic_value
@@ -548,7 +596,7 @@ pic_port_close_port(pic_state *pic)
 }
 
 #define assert_port_profile(port, flags, caller) do {           \
-    int flag = port_ptr(pic, port)->file.flag;                  \
+    int flag = port_ptr(pic, port)->flag;                       \
     if ((flag & (flags)) != (flags)) {                          \
       switch (flags) {                                          \
       case FILE_WRITE:                                          \
@@ -751,3 +799,5 @@ pic_init_port(pic_state *pic)
   pic_defun(pic, "open-output-bytevector", pic_port_open_output_bytevector);
   pic_defun(pic, "get-output-bytevector", pic_port_get_output_bytevector);
 }
+
+#endif

@@ -775,7 +775,7 @@ pic_read_read(pic_state *pic)
 {
   pic_value port = pic_stdin(pic);
 
-  pic_get_args(pic, "|p", &port);
+  pic_get_args(pic, "|o", &port);
 
   return read_value(pic, port);
 }

@@ -8,6 +8,10 @@
 # define PIC_USE_LIBC 1
 #endif
 
+#ifndef PIC_USE_PORT
+# define PIC_USE_PORT 1
+#endif
+
 #ifndef PIC_USE_CALLCC
 # define PIC_USE_CALLCC 1
 #endif
@@ -32,6 +36,15 @@
 # define PIC_USE_ERROR 1
 #endif
 
+#if !PIC_USE_PORT && PIC_USE_READ
+# error PIC_USE_READ requires PIC_USE_PORT
+#endif
+#if !PIC_USE_PORT && PIC_USE_WRITE
+# error PIC_USE_WRITE requires PIC_USE_PORT
+#endif
+#if !PIC_USE_PORT && PIC_USE_FILE
+# error PIC_USE_FILE requires PIC_USE_PORT
+#endif
 #if !PIC_USE_LIBC && PIC_USE_FILE
 # error PIC_USE_FILE requires PIC_USE_LIBC
 #endif

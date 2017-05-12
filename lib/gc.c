@@ -26,7 +26,6 @@ struct object {
     struct record rec;
     struct proc proc;
     struct frame frame;
-    struct port port;
     struct irep irep;
   } u;
 };
@@ -266,9 +265,6 @@ gc_mark_object(pic_state *pic, struct object *obj)
     }
     break;
   }
-  case PIC_TYPE_PORT: {
-    break;
-  }
   case PIC_TYPE_STRING: {
     break;
   }
@@ -424,10 +420,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_free(pic, irep->irep);
     break;
   }
-  case PIC_TYPE_PORT: {
-    pic_fclose(pic, obj_value(pic, obj)); /* FIXME */
-    break;
-  }
   case PIC_TYPE_FRAME: {
     pic_free(pic, obj->u.frame.regs);
     break;
@@ -456,7 +448,6 @@ type2size(int type)
   case PIC_TYPE_SYMBOL: return sizeof(struct symbol);
   case PIC_TYPE_ATTR: return sizeof(struct attr);
   case PIC_TYPE_IREP: return sizeof(struct irep);
-  case PIC_TYPE_PORT: return sizeof(struct port);
   case PIC_TYPE_PAIR: return sizeof(struct pair);
   case PIC_TYPE_FRAME: return sizeof(struct frame);
   case PIC_TYPE_RECORD: return sizeof(struct record);

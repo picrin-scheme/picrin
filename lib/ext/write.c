@@ -338,8 +338,6 @@ typename(pic_state *pic, pic_value obj)
     return "vector";
   case PIC_TYPE_BLOB:
     return "bytevector";
-  case PIC_TYPE_PORT:
-    return "port";
   case PIC_TYPE_FRAME:
     return "frame";
   case PIC_TYPE_IREP:
@@ -452,7 +450,7 @@ pic_write_write(pic_state *pic)
 {
   pic_value v, port = pic_stdout(pic);
 
-  pic_get_args(pic, "o|p", &v, &port);
+  pic_get_args(pic, "o|o", &v, &port);
   write_value(pic, v, port, WRITE_MODE, OP_WRITE);
   return pic_undef_value(pic);
 }
@@ -462,7 +460,7 @@ pic_write_write_simple(pic_state *pic)
 {
   pic_value v, port = pic_stdout(pic);
 
-  pic_get_args(pic, "o|p", &v, &port);
+  pic_get_args(pic, "o|o", &v, &port);
   write_value(pic, v, port, WRITE_MODE, OP_WRITE_SIMPLE);
   return pic_undef_value(pic);
 }
@@ -472,7 +470,7 @@ pic_write_write_shared(pic_state *pic)
 {
   pic_value v, port = pic_stdout(pic);
 
-  pic_get_args(pic, "o|p", &v, &port);
+  pic_get_args(pic, "o|o", &v, &port);
   write_value(pic, v, port, WRITE_MODE, OP_WRITE_SHARED);
   return pic_undef_value(pic);
 }
@@ -482,7 +480,7 @@ pic_write_display(pic_state *pic)
 {
   pic_value v, port = pic_stdout(pic);
 
-  pic_get_args(pic, "o|p", &v, &port);
+  pic_get_args(pic, "o|o", &v, &port);
   write_value(pic, v, port, DISPLAY_MODE, OP_WRITE);
   return pic_undef_value(pic);
 }
