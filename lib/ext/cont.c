@@ -17,7 +17,7 @@
 static pic_value
 pic_cont_reset(pic_state *pic)
 {
-  pic_value thunk;
+  pic_value thunk, prev = pic_ref(pic, "__picrin_dynenv__");
   struct context cxt;
 
   pic_get_args(pic, "l", &thunk);
@@ -25,21 +25,23 @@ pic_cont_reset(pic_state *pic)
   CONTEXT_INITK(pic, &cxt, thunk, pic->halt, 0, (pic_value *) NULL);
   cxt.reset = 1;
   pic_vm(pic, &cxt);
+  pic_set(pic, "__picrin_dynenv__", prev);
   return pic_protect(pic, cxt.fp->regs[1]);
 }
 
 static pic_value
 shift_call(pic_state *pic)
 {
-  pic_value x;
+  pic_value x, prev = pic_ref(pic, "__picrin_dynenv__");
   struct context cxt;
 
   pic_get_args(pic, "o", &x);
 
   CONTEXT_INIT(pic, &cxt, pic_closure_ref(pic, 0), 1, &x);
   cxt.reset = 1;
-  pic->dyn_env = pic_closure_ref(pic, 1);
+  pic_set(pic, "__picrin_dynenv__", pic_closure_ref(pic, 1));
   pic_vm(pic, &cxt);
+  pic_set(pic, "__picrin_dynenv__", prev);
   return pic_protect(pic, cxt.fp->regs[1]);
 }
 
@@ -54,7 +56,7 @@ pic_cont_shift(pic_state *pic)
     pic_error(pic, "c function call interleaved in delimited continuation", 0);
   }
 
-  k = pic_lambda(pic, shift_call, 2, pic->cxt->fp->regs[1], pic->dyn_env);
+  k = pic_lambda(pic, shift_call, 2, pic->cxt->fp->regs[1], pic_ref(pic, "__picrin_dynenv__"));
   CONTEXT_INITK(pic, pic->cxt, f, pic->halt, 1, &k);
   return pic_invalid_value(pic);
 }
@@ -85,7 +87,7 @@ cont_call(pic_state *pic)
     }
     pic->cxt = pic->cxt->prev;
   }
-  pic->dyn_env = dyn_env;
+  pic_set(pic, "__picrin_dynenv__", dyn_env);
 
   longjmp(cxt->jmp, 1);
   PIC_UNREACHABLE();
@@ -96,7 +98,7 @@ pic_make_cont(pic_state *pic, pic_value k)
 {
   static const pic_data_type cxt_type = { "cxt", NULL };
   pic_value c;
-  c = pic_lambda(pic, cont_call, 4, pic_true_value(pic), pic_data_value(pic, pic->cxt, &cxt_type), k, pic->dyn_env);
+  c = pic_lambda(pic, cont_call, 4, pic_true_value(pic), pic_data_value(pic, pic->cxt, &cxt_type), k, pic_ref(pic, "__picrin_dynenv__"));
   pic->cxt->conts = pic_cons(pic, c, pic->cxt->conts);
   return c;
 }

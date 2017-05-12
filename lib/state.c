@@ -48,6 +48,8 @@ pic_init_core(pic_state *pic)
   size_t ai = pic_enter(pic);
 
   pic_define(pic, "__picrin_features__", pic_nil_value(pic));
+  pic_define(pic, "__picrin_dynenv__", pic_list(pic, 1, pic_make_attr(pic)));
+
   pic_init_bool(pic); DONE;
   pic_init_pair(pic); DONE;
   pic_init_number(pic); DONE;
@@ -137,9 +139,6 @@ pic_open(pic_allocf allocf, void *userdata, pic_panicf panicf)
   /* global variables */
   pic->globals = pic_make_dict(pic);
 
-  /* dynamic environment */
-  pic->dyn_env = pic_list(pic, 1, pic_make_attr(pic));
-
   /* top continuation */
   {
     static const code_t halt_code[] = { 0x00 };
@@ -186,7 +185,6 @@ pic_close(pic_state *pic)
   pic->ai = 0;
   pic->halt = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
-  pic->dyn_env = pic_invalid_value(pic);
 
   assert(pic->cxt->ai == 0);
   assert(pic->cxt->pc == NULL);

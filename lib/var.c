@@ -20,7 +20,7 @@ var_call(pic_state *pic)
   if (n == 0) {
     pic_value env, it;
 
-    pic_for_each(env, pic->dyn_env, it) {
+    pic_for_each(env, pic_ref(pic, "__picrin_dynenv__"), it) {
       if (pic_attr_has(pic, env, self)) {
         return pic_attr_ref(pic, env, self);
       }
@@ -33,7 +33,7 @@ var_call(pic_state *pic)
     if (! pic_false_p(pic, conv)) {
       val = pic_call(pic, conv, 1, val);
     }
-    pic_attr_set(pic, pic_car(pic, pic->dyn_env), self, val);
+    pic_attr_set(pic, pic_car(pic, pic_ref(pic, "__picrin_dynenv__")), self, val);
     return pic_undef_value(pic);
   }
 }
@@ -41,7 +41,7 @@ var_call(pic_state *pic)
 pic_value
 pic_make_var(pic_state *pic, pic_value init, pic_value conv)
 {
-  pic_value var, env = pic->dyn_env;
+  pic_value var, env = pic_ref(pic, "__picrin_dynenv__");
 
   var = pic_lambda(pic, var_call, 1, conv);
   while (1) {
@@ -76,9 +76,9 @@ pic_var_current_dynamic_environment(pic_state *pic)
   n = pic_get_args(pic, "|o", &dyn_env);
 
   if (n == 0) {
-    return pic->dyn_env;
+    return pic_ref(pic, "__picrin_dynenv__");
   } else {
-    pic->dyn_env = dyn_env;
+    pic_set(pic, "__picrin_dynenv__", dyn_env);
     return pic_undef_value(pic);
   }
 }

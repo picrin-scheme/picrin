@@ -336,9 +336,6 @@ gc_mark_phase(pic_state *pic)
   /* global variables */
   gc_mark(pic, pic->globals);
 
-  /* dynamic environment */
-  gc_mark(pic, pic->dyn_env);
-
   /* top continuation */
   gc_mark(pic, pic->halt);
 

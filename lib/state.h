@@ -38,7 +38,6 @@ struct pic_state {
   struct context *cxt, default_cxt;
 
   size_t ai;
-  pic_value dyn_env;
 
   khash_t(oblist) oblist;       /* string to symbol */
   pic_value globals;            /* dict */
