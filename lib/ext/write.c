@@ -2,8 +2,8 @@
  * See Copyright Notice in picrin.h
  */
 
-#include "picrin.h"
-#include "picrin/extra.h"
+#include <picrin.h>
+#include <picrin/extra.h>
 #include "../value.h"
 #include "../object.h"
 

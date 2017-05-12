@@ -1,5 +1,5 @@
-#include "picrin.h"
-#include "picrin/extra.h"
+#include <picrin.h>
+#include <picrin/extra.h>
 
 #if PIC_USE_EVAL
 static const unsigned char eval_rom[] = {

@@ -32,7 +32,7 @@ extern "C" {
 #include <limits.h>
 #include <stdarg.h>
 
-#include "picrin/setup.h"
+#include <picrin/setup.h>
 
 typedef struct pic_state pic_state;
 
