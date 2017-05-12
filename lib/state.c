@@ -66,7 +66,7 @@ pic_init_core(pic_state *pic)
   pic_init_attr(pic); DONE;
   pic_init_state(pic); DONE;
 
-#if PIC_USE_CALLCC
+#if PIC_USE_CONT
   pic_init_cont(pic); DONE;
 #endif
 #if PIC_USE_READ

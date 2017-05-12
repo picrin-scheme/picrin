@@ -7,7 +7,7 @@
 #include "../object.h"
 #include "../state.h"
 
-#if PIC_USE_CALLCC
+#if PIC_USE_CONT
 
 /*
  * [(reset e)]k = k ([e] halt ())

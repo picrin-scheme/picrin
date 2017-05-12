@@ -12,8 +12,8 @@
 # define PIC_USE_PORT 1
 #endif
 
-#ifndef PIC_USE_CALLCC
-# define PIC_USE_CALLCC 1
+#ifndef PIC_USE_CONT
+# define PIC_USE_CONT 1
 #endif
 
 #ifndef PIC_USE_READ
@@ -48,14 +48,14 @@
 #if !PIC_USE_LIBC && PIC_USE_FILE
 # error PIC_USE_FILE requires PIC_USE_LIBC
 #endif
-#if !PIC_USE_LIBC && PIC_USE_CALLCC
-# error PIC_USE_CALLCC requires PIC_USE_LIBC
+#if !PIC_USE_LIBC && PIC_USE_CONT
+# error PIC_USE_CONT requires PIC_USE_LIBC
 #endif
-#if !PIC_USE_CALLCC && PIC_USE_ERROR
-# error PIC_USE_ERROR requires PIC_USE_CALLCC
+#if !PIC_USE_CONT && PIC_USE_ERROR
+# error PIC_USE_ERROR requires PIC_USE_CONT
 #endif
 
-#if PIC_USE_CALLCC
+#if PIC_USE_CONT
 # include <setjmp.h>
 # define PIC_JMPBUF jmp_buf
 # define PIC_SETJMP(buf) setjmp(buf)
