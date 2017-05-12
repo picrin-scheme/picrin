@@ -23,6 +23,17 @@ struct basic {
   OBJECT_HEADER
 };
 
+struct blob {
+  OBJECT_HEADER
+  unsigned char *data;
+  int len;
+};
+
+struct string {
+  OBJECT_HEADER
+  struct rope *rope;
+};
+
 struct symbol {
   OBJECT_HEADER
   struct string *str;
@@ -34,15 +45,10 @@ struct pair {
   pic_value cdr;
 };
 
-struct blob {
+struct vector {
   OBJECT_HEADER
-  unsigned char *data;
+  pic_value *data;
   int len;
-};
-
-struct string {
-  OBJECT_HEADER
-  struct rope *rope;
 };
 
 KHASH_DECLARE(dict, struct symbol *, pic_value)
@@ -58,12 +64,6 @@ struct attr {
   OBJECT_HEADER
   khash_t(attr) hash;
   struct attr *prev;         /* for GC */
-};
-
-struct vector {
-  OBJECT_HEADER
-  pic_value *data;
-  int len;
 };
 
 struct data {

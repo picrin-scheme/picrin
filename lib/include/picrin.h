@@ -87,7 +87,7 @@ bool pic_equal_p(pic_state *, pic_value, pic_value);
 
 
 /*
- * number, boolean, character, string, bytevector, and userdata
+ * number, boolean, character, and userdata
  */
 
 typedef struct {
@@ -101,10 +101,7 @@ bool pic_char_p(pic_state *, pic_value);
 bool pic_true_p(pic_state *, pic_value);
 bool pic_false_p(pic_state *, pic_value);
 bool pic_bool_p(pic_state *, pic_value);
-bool pic_str_p(pic_state *, pic_value);
-bool pic_blob_p(pic_state *, pic_value);
 bool pic_data_p(pic_state *, pic_value, const pic_data_type *);
-/* constructors */
 pic_value pic_undef_value(pic_state *);
 pic_value pic_int_value(pic_state *, int);
 pic_value pic_float_value(pic_state *, double);
@@ -112,25 +109,52 @@ pic_value pic_char_value(pic_state *, char);
 pic_value pic_bool_value(pic_state *, bool);
 pic_value pic_true_value(pic_state *);
 pic_value pic_false_value(pic_state *);
+pic_value pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
+int pic_int(pic_state *, pic_value i);
+double pic_float(pic_state *, pic_value f);
+char pic_char(pic_state *, pic_value c);
+#define pic_bool(pic,b) (! pic_false_p(pic, (b)))
+void *pic_data(pic_state *, pic_value data);
+
+
+/*
+ * bytevector
+ */
+
+bool pic_blob_p(pic_state *, pic_value);
+pic_value pic_blob_value(pic_state *, const unsigned char *buf, int len);
+unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
+pic_value pic_serialize(pic_state *pic, pic_value obj);
+pic_value pic_deserialize(pic_state *pic, pic_value blob);
+
+
+/*
+ * string
+ */
+
+bool pic_str_p(pic_state *, pic_value);
 pic_value pic_str_value(pic_state *, const char *str, int len);
 pic_value pic_cstr_value(pic_state *, const char *str);
 #define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
 pic_value pic_strf_value(pic_state *, const char *fmt, ...);
 pic_value pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
-pic_value pic_blob_value(pic_state *, const unsigned char *buf, int len);
-pic_value pic_data_value(pic_state *, void *ptr, const pic_data_type *type);
-/* destructors */
-int pic_int(pic_state *, pic_value i);
-double pic_float(pic_state *, pic_value f);
-char pic_char(pic_state *, pic_value c);
-#define pic_bool(pic,b) (! pic_false_p(pic, (b)))
 const char *pic_str(pic_state *, pic_value str, int *len);
 const char *pic_cstr(pic_state *, pic_value str, int *len);
-unsigned char *pic_blob(pic_state *, pic_value blob, int *len);
-void *pic_data(pic_state *, pic_value data);
-/* serialization */
-pic_value pic_serialize(pic_state *pic, pic_value obj);
-pic_value pic_deserialize(pic_state *pic, pic_value blob);
+int pic_str_len(pic_state *, pic_value str);
+pic_value pic_str_cat(pic_state *, pic_value str1, pic_value str2);
+pic_value pic_str_sub(pic_state *, pic_value str, int i, int j);
+
+
+/*
+ * symbol
+ */
+
+bool pic_sym_p(pic_state *, pic_value);
+pic_value pic_intern(pic_state *, pic_value str);
+#define pic_intern_str(pic,s,i) pic_intern(pic, pic_str_value(pic, (s), (i)))
+#define pic_intern_cstr(pic,s) pic_intern(pic, pic_cstr_value(pic, (s)))
+#define pic_intern_lit(pic,lit) pic_intern(pic, pic_lit_value(pic, lit))
+pic_value pic_sym_name(pic_state *, pic_value sym);
 
 
 /*
@@ -201,27 +225,6 @@ pic_value pic_attr_ref(pic_state *, pic_value attr, pic_value key);
 void pic_attr_set(pic_state *, pic_value attr, pic_value key, pic_value val);
 void pic_attr_del(pic_state *, pic_value attr, pic_value key);
 bool pic_attr_has(pic_state *, pic_value attr, pic_value key);
-
-
-/*
- * string
- */
-
-int pic_str_len(pic_state *, pic_value str);
-pic_value pic_str_cat(pic_state *, pic_value str1, pic_value str2);
-pic_value pic_str_sub(pic_state *, pic_value str, int i, int j);
-
-
-/*
- * symbol
- */
-
-bool pic_sym_p(pic_state *, pic_value);
-pic_value pic_intern(pic_state *, pic_value str);
-#define pic_intern_str(pic,s,i) pic_intern(pic, pic_str_value(pic, (s), (i)))
-#define pic_intern_cstr(pic,s) pic_intern(pic, pic_cstr_value(pic, (s)))
-#define pic_intern_lit(pic,lit) pic_intern(pic, pic_lit_value(pic, lit))
-pic_value pic_sym_name(pic_state *, pic_value sym);
 
 
 /*
