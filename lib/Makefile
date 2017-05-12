@@ -10,7 +10,6 @@ LIBPICRIN_SRCS = \
 	pair.c\
 	proc.c\
 	record.c\
-	serialize.c\
 	state.c\
 	string.c\
 	symbol.c\
