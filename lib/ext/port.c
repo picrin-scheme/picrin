@@ -656,6 +656,45 @@ pic_port_get_output_bytevector(pic_state *pic)
 }
 
 static pic_value
+pic_port_open_input_string(pic_state *pic)
+{
+  pic_value str;
+  const char *buf;
+  int len;
+
+  pic_get_args(pic, "s", &str);
+
+  buf = pic_str(pic, str, &len);
+
+  return pic_fmemopen(pic, buf, len, "r");
+}
+
+static pic_value
+pic_port_open_output_string(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic_fmemopen(pic, NULL, 0, "w");
+}
+
+static pic_value
+pic_port_get_output_string(pic_state *pic)
+{
+  pic_value port = pic_stdout(pic);
+  const char *buf;
+  int len;
+
+  pic_get_args(pic, "|o", &port);
+
+  check_port_type(pic, port, FILE_WRITE);
+
+  if (pic_fgetbuf(pic, port, &buf, &len) < 0) {
+    pic_error(pic, "port was not created by open-output-string", 0);
+  }
+  return pic_str_value(pic, buf, len);
+}
+
+static pic_value
 pic_port_read_u8(pic_state *pic)
 {
   pic_value port = pic_stdin(pic);
@@ -690,6 +729,40 @@ pic_port_peek_u8(pic_state *pic)
 }
 
 static pic_value
+pic_port_read_char(pic_state *pic)
+{
+  pic_value port = pic_stdin(pic);
+  int c;
+
+  pic_get_args(pic, "|o", &port);
+
+  check_port_type(pic, port, FILE_READ);
+
+  if ((c = pic_fgetc(pic, port)) == EOF) {
+    return pic_eof_object(pic);
+  }
+  return pic_char_value(pic, c);
+}
+
+static pic_value
+pic_port_peek_char(pic_state *pic)
+{
+  int c;
+  pic_value port = pic_stdin(pic);
+
+  pic_get_args(pic, "|o", &port);
+
+  check_port_type(pic, port, FILE_READ);
+
+  c = pic_fgetc(pic, port);
+  if (c == EOF) {
+    return pic_eof_object(pic);
+  }
+  pic_ungetc(pic, c, port);
+  return pic_char_value(pic, c);
+}
+
+static pic_value
 pic_port_read_bytevector_ip(pic_state *pic)
 {
   pic_value port;
@@ -719,6 +792,78 @@ pic_port_read_bytevector_ip(pic_state *pic)
 }
 
 static pic_value
+pic_port_read_bytevector(pic_state *pic)
+{
+  pic_value port = pic_stdin(pic), blob;
+  int n, k, i;
+  unsigned char *buf;
+
+  n = pic_get_args(pic, "i|o", &k, &port);
+
+  check_port_type(pic, port, FILE_READ);
+
+  buf = pic_malloc(pic, k);
+
+  i = pic_fread(pic, buf, 1, k, port);
+  if (i == 0) {
+    pic_free(pic, buf);
+    return pic_eof_object(pic);
+  }
+  blob = pic_blob_value(pic, buf, i);
+  pic_free(pic, buf);
+  return blob;
+}
+
+static pic_value
+pic_port_read_string(pic_state *pic)
+{
+  pic_value port = pic_stdin(pic), blob;
+  int n, k, i;
+  char *buf;
+
+  n = pic_get_args(pic, "i|o", &k, &port);
+
+  check_port_type(pic, port, FILE_READ);
+
+  buf = pic_malloc(pic, k);
+
+  i = pic_fread(pic, buf, 1, k, port);
+  if (i == 0) {
+    pic_free(pic, buf);
+    return pic_eof_object(pic);
+  }
+  blob = pic_str_value(pic, buf, i);
+  pic_free(pic, buf);
+  return blob;
+}
+
+static pic_value
+pic_port_read_line(pic_state *pic)
+{
+  pic_value port = pic_stdin(pic), str;
+  int c;
+  char s[1];
+
+  pic_get_args(pic, "|o", &port);
+
+  check_port_type(pic, port, FILE_READ);
+
+  if ((c = pic_fgetc(pic, port)) == EOF) {
+    return pic_eof_object(pic);
+  }
+  s[0] = c;
+  str = pic_str_value(pic, s, 1);
+
+  while ((c = pic_fgetc(pic, port)) != EOF) {
+    if (c == '\n')
+      break;
+    s[0] = c;
+    str = pic_str_cat(pic, str, pic_str_value(pic, s, 1));
+  }
+  return str;
+}
+
+static pic_value
 pic_port_write_u8(pic_state *pic)
 {
   int i;
@@ -733,6 +878,33 @@ pic_port_write_u8(pic_state *pic)
 }
 
 static pic_value
+pic_port_write_char(pic_state *pic)
+{
+  char c;
+  pic_value port = pic_stdout(pic);
+
+  pic_get_args(pic, "c|o", &c, &port);
+
+  check_port_type(pic, port, FILE_WRITE);
+
+  pic_fputc(pic, c, port);
+  return pic_undef_value(pic);
+}
+
+static pic_value
+pic_port_newline(pic_state *pic)
+{
+  pic_value port = pic_stdout(pic);
+
+  pic_get_args(pic, "|o", &port);
+
+  check_port_type(pic, port, FILE_WRITE);
+
+  pic_fputc(pic, '\n', port);
+  return pic_undef_value(pic);
+}
+
+static pic_value
 pic_port_write_bytevector(pic_state *pic)
 {
   pic_value port;
@@ -740,6 +912,38 @@ pic_port_write_bytevector(pic_state *pic)
   int n, start, end, len, done;
 
   n = pic_get_args(pic, "b|oii", &buf, &len, &port, &start, &end);
+
+  switch (n) {
+  case 1:
+    port = pic_stdout(pic);
+  case 2:
+    start = 0;
+  case 3:
+    end = len;
+  }
+
+  VALID_RANGE(pic, len, start, end);
+
+  check_port_type(pic, port, FILE_WRITE);
+
+  done = 0;
+  while (done < end - start) {
+    done += pic_fwrite(pic, buf + start + done, 1, end - start - done, port);
+    /* FIXME: error check... */
+  }
+  return pic_undef_value(pic);
+}
+
+static pic_value
+pic_port_write_string(pic_state *pic)
+{
+  pic_value str, port;
+  int n, start, end, len, done;
+  const char *buf;
+
+  n = pic_get_args(pic, "s|oii", &str, &port, &start, &end);
+
+  buf = pic_str(pic, str, &len);
 
   switch (n) {
   case 1:
@@ -796,17 +1000,28 @@ pic_init_port(pic_state *pic)
   /* input */
   pic_defun(pic, "read-u8", pic_port_read_u8);
   pic_defun(pic, "peek-u8", pic_port_peek_u8);
+  pic_defun(pic, "read-char", pic_port_read_char);
+  pic_defun(pic, "peek-char", pic_port_peek_char);
   pic_defun(pic, "read-bytevector!", pic_port_read_bytevector_ip);
+  pic_defun(pic, "read-bytevector", pic_port_read_bytevector);
+  pic_defun(pic, "read-string", pic_port_read_string);
+  pic_defun(pic, "read-line", pic_port_read_line);
 
   /* output */
   pic_defun(pic, "write-u8", pic_port_write_u8);
+  pic_defun(pic, "write-char", pic_port_write_char);
+  pic_defun(pic, "newline", pic_port_newline);
   pic_defun(pic, "write-bytevector", pic_port_write_bytevector);
+  pic_defun(pic, "write-string", pic_port_write_string);
   pic_defun(pic, "flush-output-port", pic_port_flush);
 
   /* string I/O */
   pic_defun(pic, "open-input-bytevector", pic_port_open_input_bytevector);
   pic_defun(pic, "open-output-bytevector", pic_port_open_output_bytevector);
   pic_defun(pic, "get-output-bytevector", pic_port_get_output_bytevector);
+  pic_defun(pic, "open-input-string", pic_port_open_input_string);
+  pic_defun(pic, "open-output-string", pic_port_open_output_string);
+  pic_defun(pic, "get-output-string", pic_port_get_output_string);
 }
 
 #endif
