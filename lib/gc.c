@@ -342,9 +342,6 @@ gc_mark_phase(pic_state *pic)
   /* top continuation */
   gc_mark(pic, pic->halt);
 
-  /* features */
-  gc_mark(pic, pic->features);
-
   /* weak maps */
   do {
     struct object *key;

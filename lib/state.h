@@ -40,7 +40,6 @@ struct pic_state {
   size_t ai;
   pic_value dyn_env;
 
-  pic_value features;           /* list of symbols */
   khash_t(oblist) oblist;       /* string to symbol */
   pic_value globals;            /* dict */
 

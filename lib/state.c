@@ -8,101 +8,17 @@
 #include "object.h"
 #include "state.h"
 
+static pic_value pic_state_features(pic_state *);
+
 void
 pic_add_feature(pic_state *pic, const char *feature)
 {
-  pic_push(pic, pic_intern_cstr(pic, feature), pic->features);
-}
+  pic_value f = pic_ref(pic, "features");
 
-static pic_value
-pic_state_features(pic_state *pic)
-{
-  pic_get_args(pic, "");
-
-  return pic->features;
-}
-
-static pic_value
-pic_state_global_objects(pic_state *pic)
-{
-  pic_get_args(pic, "");
-
-  return pic->globals;
-}
-
-static pic_value
-pic_state_error(pic_state *pic)
-{
-  const char *msg;
-  int argc;
-  pic_value *args;
-
-  pic_get_args(pic, "z*", &msg, &argc, &args);
-
-  pic->panicf(pic, msg, argc, args);
-  PIC_UNREACHABLE();
-}
-
-static void
-pic_init_state(pic_state *pic)
-{
-  pic_defun(pic, "features", pic_state_features);
-  pic_defun(pic, "global-objects", pic_state_global_objects);
-  pic_defun(pic, "error", pic_state_error);
-
-  pic_add_feature(pic, "picrin");
-
-#if __STDC_IEC_559__
-  pic_add_feature(pic, "ieee-float");
-#endif
-
-#if _POSIX_SOURCE
-  pic_add_feature(pic, "posix");
-#endif
-
-#if _WIN32
-  pic_add_feature(pic, "windows");
-#endif
-
-#if __unix__
-  pic_add_feature(pic, "unix");
-#endif
-#if __gnu_linux__
-  pic_add_feature(pic, "gnu-linux");
-#endif
-#if __FreeBSD__
-  pic_add_feature(pic, "freebsd");
-#endif
-
-#if __i386__
-  pic_add_feature(pic, "i386");
-#elif __x86_64__
-  pic_add_feature(pic, "x86-64");
-#elif __ppc__
-  pic_add_feature(pic, "ppc");
-#elif __sparc__
-  pic_add_feature(pic, "sparc");
-#endif
-
-#if __ILP32__
-  pic_add_feature(pic, "ilp32");
-#elif __LP64__
-  pic_add_feature(pic, "lp64");
-#endif
-
-#if defined(__BYTE_ORDER__)
-# if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-  pic_add_feature(pic, "little-endian");
-# elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-  pic_add_feature(pic, "big-endian");
-# endif
-#else
-# if __LITTLE_ENDIAN__
-  pic_add_feature(pic, "little-endian");
-# elif __BIG_ENDIAN__
-  pic_add_feature(pic, "big-endian");
-# endif
-#endif
+  if (! (pic_proc_func_p(pic, f) && proc_ptr(pic, f)->u.func == pic_state_features)) {
+    pic_error(pic, "the features procedure is overwritten", 0);
+  }
+  pic_push(pic, pic_intern_cstr(pic, feature), proc_ptr(pic, f)->env->regs[0]);
 }
 
 void pic_init_bool(pic_state *);
@@ -221,9 +137,6 @@ pic_open(pic_allocf allocf, void *userdata, pic_panicf panicf)
   /* global variables */
   pic->globals = pic_make_dict(pic);
 
-  /* features */
-  pic->features = pic_nil_value(pic);
-
   /* dynamic environment */
   pic->dyn_env = pic_list(pic, 1, pic_make_attr(pic));
 
@@ -276,7 +189,6 @@ pic_close(pic_state *pic)
   pic->ai = 0;
   pic->halt = pic_invalid_value(pic);
   pic->globals = pic_invalid_value(pic);
-  pic->features = pic_invalid_value(pic);
   pic->dyn_env = pic_invalid_value(pic);
 
   assert(pic->cxt->ai == 0);
@@ -423,4 +335,95 @@ pic_verror(pic_state *pic, const char *msg, int n, va_list ap)
 
   pic_apply(pic, error, n + 1, args);
   PIC_UNREACHABLE();
+}
+
+static pic_value
+pic_state_features(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic_closure_ref(pic, 0);
+}
+
+static pic_value
+pic_state_global_objects(pic_state *pic)
+{
+  pic_get_args(pic, "");
+
+  return pic->globals;
+}
+
+static pic_value
+pic_state_error(pic_state *pic)
+{
+  const char *msg;
+  int argc;
+  pic_value *args;
+
+  pic_get_args(pic, "z*", &msg, &argc, &args);
+
+  pic->panicf(pic, msg, argc, args);
+  PIC_UNREACHABLE();
+}
+
+void
+pic_init_state(pic_state *pic)
+{
+  pic_define(pic, "features", pic_lambda(pic, pic_state_features, 1, pic_nil_value(pic)));
+  pic_defun(pic, "global-objects", pic_state_global_objects);
+  pic_defun(pic, "error", pic_state_error);
+
+  pic_add_feature(pic, "picrin");
+
+#if __STDC_IEC_559__
+  pic_add_feature(pic, "ieee-float");
+#endif
+
+#if _POSIX_SOURCE
+  pic_add_feature(pic, "posix");
+#endif
+
+#if _WIN32
+  pic_add_feature(pic, "windows");
+#endif
+
+#if __unix__
+  pic_add_feature(pic, "unix");
+#endif
+#if __gnu_linux__
+  pic_add_feature(pic, "gnu-linux");
+#endif
+#if __FreeBSD__
+  pic_add_feature(pic, "freebsd");
+#endif
+
+#if __i386__
+  pic_add_feature(pic, "i386");
+#elif __x86_64__
+  pic_add_feature(pic, "x86-64");
+#elif __ppc__
+  pic_add_feature(pic, "ppc");
+#elif __sparc__
+  pic_add_feature(pic, "sparc");
+#endif
+
+#if __ILP32__
+  pic_add_feature(pic, "ilp32");
+#elif __LP64__
+  pic_add_feature(pic, "lp64");
+#endif
+
+#if defined(__BYTE_ORDER__)
+# if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+  pic_add_feature(pic, "little-endian");
+# elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  pic_add_feature(pic, "big-endian");
+# endif
+#else
+# if __LITTLE_ENDIAN__
+  pic_add_feature(pic, "little-endian");
+# elif __BIG_ENDIAN__
+  pic_add_feature(pic, "big-endian");
+# endif
+#endif
 }
