@@ -29,8 +29,6 @@ struct port {
   int flag;                     /* mode of the file access */
 };
 
-#define port_ptr(pic,obj) ((struct port *) pic_data(pic, (obj)))
-
 #define VALID_RANGE(pic, len, s, e) do {                                \
     if (s < 0 || len < s)                                               \
       pic_error(pic, "invalid start index", 1, pic_int_value(pic, s));  \
@@ -510,10 +508,13 @@ pic_fgetbuf(pic_state *pic, pic_value port, const char **buf, int *len)
 bool
 pic_port_p(pic_state *pic, pic_value obj, const pic_port_type *type)
 {
+  struct port *port;
+
   if (! pic_data_p(pic, obj, &port_type)) {
     return false;
   }
-  return type == NULL || port_ptr(pic, obj)->vtable == type;
+  port = pic_data(pic, obj);
+  return type == NULL || port->vtable == type;
 }
 
 static pic_value
@@ -523,8 +524,9 @@ pic_port_input_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(pic, v, NULL) && (port_ptr(pic, v)->flag & FILE_READ) != 0) {
-    return pic_true_value(pic);
+  if (pic_port_p(pic, v, NULL)) {
+    struct port *port = pic_data(pic, v);
+    return pic_bool_value(pic, (port->flag & FILE_READ) != 0);
   } else {
     return pic_false_value(pic);
   }
@@ -537,10 +539,10 @@ pic_port_output_port_p(pic_state *pic)
 
   pic_get_args(pic, "o", &v);
 
-  if (pic_port_p(pic, v, NULL) && (port_ptr(pic, v)->flag & FILE_WRITE) != 0) {
-    return pic_true_value(pic);
-  }
-  else {
+  if (pic_port_p(pic, v, NULL)) {
+    struct port *port = pic_data(pic, v);
+    return pic_bool_value(pic, (port->flag & FILE_WRITE) != 0);
+  } else {
     return pic_false_value(pic);
   }
 }
@@ -576,39 +578,46 @@ pic_port_eof_object(pic_state *pic)
 static pic_value
 pic_port_port_open_p(pic_state *pic)
 {
-  pic_value port;
+  struct port *port;
 
-  pic_get_args(pic, "p", &port);
+  pic_get_args(pic, "u", &port, &port_type);
 
-  return pic_bool_value(pic, port_ptr(pic, port)->flag != 0);
+  return pic_bool_value(pic, port->flag != 0);
 }
 
 static pic_value
 pic_port_close_port(pic_state *pic)
 {
+  void *isport;
   pic_value port;
 
-  pic_get_args(pic, "p", &port);
+  pic_get_args(pic, "u+", &isport, &port_type, &port);
 
   pic_fclose(pic, port);
 
   return pic_undef_value(pic);
 }
 
-#define assert_port_profile(port, flags, caller) do {           \
-    int flag = port_ptr(pic, port)->flag;                       \
-    if ((flag & (flags)) != (flags)) {                          \
-      switch (flags) {                                          \
-      case FILE_WRITE:                                          \
-        pic_error(pic, caller ": output port required", 0);     \
-      case FILE_READ:                                           \
-        pic_error(pic, caller ": input port required", 0);      \
-      }                                                         \
-    }                                                           \
-    if (flag == 0) {                                            \
-      pic_error(pic, caller ": open port required", 0);         \
-    }                                                           \
-  } while (0)
+static void
+check_port_type(pic_state *pic, pic_value obj, int flags)
+{
+  struct port *port;
+  if (! pic_data_p(pic, obj, &port_type)) {
+    pic_error(pic, "port required", 0);
+  }
+  port = pic_data(pic, obj);
+  if (port->flag == 0) {
+    pic_error(pic, "open port required", 0);
+  }
+  if ((port->flag & flags) != flags) {
+    switch (flags) {
+    case FILE_WRITE:
+      pic_error(pic, "output port required", 0);
+    case FILE_READ:
+      pic_error(pic, "input port required", 0);
+    }
+  }
+}
 
 static pic_value
 pic_port_open_input_bytevector(pic_state *pic)
@@ -636,9 +645,9 @@ pic_port_get_output_bytevector(pic_state *pic)
   const char *buf;
   int len;
 
-  pic_get_args(pic, "|p", &port);
+  pic_get_args(pic, "|o", &port);
 
-  assert_port_profile(port, FILE_WRITE, "get-output-bytevector");
+  check_port_type(pic, port, FILE_WRITE);
 
   if (pic_fgetbuf(pic, port, &buf, &len) < 0) {
     pic_error(pic, "port was not created by open-output-bytevector", 0);
@@ -652,13 +661,13 @@ pic_port_read_u8(pic_state *pic)
   pic_value port = pic_stdin(pic);
   int c;
 
-  pic_get_args(pic, "|p", &port);
+  pic_get_args(pic, "|o", &port);
 
-  assert_port_profile(port, FILE_READ, "read-u8");
+  check_port_type(pic, port, FILE_READ);
+
   if ((c = pic_fgetc(pic, port)) == EOF) {
     return pic_eof_object(pic);
   }
-
   return pic_int_value(pic, c);
 }
 
@@ -668,18 +677,16 @@ pic_port_peek_u8(pic_state *pic)
   int c;
   pic_value port = pic_stdin(pic);
 
-  pic_get_args(pic, "|p", &port);
+  pic_get_args(pic, "|o", &port);
 
-  assert_port_profile(port, FILE_READ, "peek-u8");
+  check_port_type(pic, port, FILE_READ);
 
   c = pic_fgetc(pic, port);
   if (c == EOF) {
     return pic_eof_object(pic);
   }
-  else {
-    pic_ungetc(pic, c, port);
-    return pic_int_value(pic, c);
-  }
+  pic_ungetc(pic, c, port);
+  return pic_int_value(pic, c);
 }
 
 static pic_value
@@ -689,7 +696,7 @@ pic_port_read_bytevector_ip(pic_state *pic)
   unsigned char *buf;
   int n, start, end, i, len;
 
-  n = pic_get_args(pic, "b|pii", &buf, &len, &port, &start, &end);
+  n = pic_get_args(pic, "b|oii", &buf, &len, &port, &start, &end);
 
   switch (n) {
   case 1:
@@ -701,7 +708,8 @@ pic_port_read_bytevector_ip(pic_state *pic)
   }
 
   VALID_RANGE(pic, len, start, end);
-  assert_port_profile(port, FILE_READ, "read-bytevector!");
+
+  check_port_type(pic, port, FILE_READ);
 
   i = pic_fread(pic, buf + start, 1, end - start, port);
   if (i == 0) {
@@ -716,9 +724,9 @@ pic_port_write_u8(pic_state *pic)
   int i;
   pic_value port = pic_stdout(pic);
 
-  pic_get_args(pic, "i|p", &i, &port);
+  pic_get_args(pic, "i|o", &i, &port);
 
-  assert_port_profile(port, FILE_WRITE, "write-u8");
+  check_port_type(pic, port, FILE_WRITE);
 
   pic_fputc(pic, i, port);
   return pic_undef_value(pic);
@@ -731,7 +739,7 @@ pic_port_write_bytevector(pic_state *pic)
   unsigned char *buf;
   int n, start, end, len, done;
 
-  n = pic_get_args(pic, "b|pii", &buf, &len, &port, &start, &end);
+  n = pic_get_args(pic, "b|oii", &buf, &len, &port, &start, &end);
 
   switch (n) {
   case 1:
@@ -743,7 +751,8 @@ pic_port_write_bytevector(pic_state *pic)
   }
 
   VALID_RANGE(pic, len, start, end);
-  assert_port_profile(port, FILE_WRITE, "write-bytevector");
+
+  check_port_type(pic, port, FILE_WRITE);
 
   done = 0;
   while (done < end - start) {
@@ -758,9 +767,9 @@ pic_port_flush(pic_state *pic)
 {
   pic_value port = pic_stdout(pic);
 
-  pic_get_args(pic, "|p", &port);
+  pic_get_args(pic, "|o", &port);
 
-  assert_port_profile(port, FILE_WRITE, "flush-output-port");
+  check_port_type(pic, port, FILE_WRITE);
 
   pic_fflush(pic, port);
   return pic_undef_value(pic);
