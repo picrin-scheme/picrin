@@ -13,12 +13,9 @@ static pic_value pic_state_features(pic_state *);
 void
 pic_add_feature(pic_state *pic, const char *feature)
 {
-  pic_value f = pic_ref(pic, "features");
+  pic_value f = pic_ref(pic, "__picrin_features__");
 
-  if (! (pic_proc_func_p(pic, f) && proc_ptr(pic, f)->u.func == pic_state_features)) {
-    pic_error(pic, "the features procedure is overwritten", 0);
-  }
-  pic_push(pic, pic_intern_cstr(pic, feature), proc_ptr(pic, f)->env->regs[0]);
+  pic_set(pic, "__picrin_features__", pic_cons(pic, pic_intern_cstr(pic, feature), f));
 }
 
 void pic_init_bool(pic_state *);
@@ -50,6 +47,7 @@ pic_init_core(pic_state *pic)
 {
   size_t ai = pic_enter(pic);
 
+  pic_define(pic, "__picrin_features__", pic_nil_value(pic));
   pic_init_bool(pic); DONE;
   pic_init_pair(pic); DONE;
   pic_init_number(pic); DONE;
@@ -341,7 +339,7 @@ pic_state_features(pic_state *pic)
 {
   pic_get_args(pic, "");
 
-  return pic_closure_ref(pic, 0);
+  return pic_ref(pic, "__picrin_features__");
 }
 
 static pic_value
@@ -368,10 +366,6 @@ pic_state_error(pic_state *pic)
 void
 pic_init_state(pic_state *pic)
 {
-  pic_define(pic, "features", pic_lambda(pic, pic_state_features, 1, pic_nil_value(pic)));
-  pic_defun(pic, "global-objects", pic_state_global_objects);
-  pic_defun(pic, "error", pic_state_error);
-
   pic_add_feature(pic, "picrin");
 
 #if __STDC_IEC_559__
@@ -425,4 +419,8 @@ pic_init_state(pic_state *pic)
   pic_add_feature(pic, "big-endian");
 # endif
 #endif
+
+  pic_defun(pic, "features", pic_state_features);
+  pic_defun(pic, "global-objects", pic_state_global_objects);
+  pic_defun(pic, "error", pic_state_error);
 }
