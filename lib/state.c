@@ -130,8 +130,10 @@ pic_open(pic_allocf allocf, void *userdata, pic_panicf panicf)
   /* turn off GC */
   pic->gc_enable = false;
 
-  /* memory heap */
-  pic->heap = pic_heap_open(pic);
+  /* gc */
+  pic->gc_head.next = (struct object *) &pic->gc_head;
+  pic->gc_attrs = NULL;
+  pic->gc_count = 0;
 
   /* symbol table */
   kh_init(oblist, &pic->oblist);
@@ -196,8 +198,7 @@ pic_close(pic_state *pic)
   /* free all heap objects */
   pic_gc(pic);
 
-  /* free heaps */
-  pic_heap_close(pic, pic->heap);
+  assert(pic->gc_head.next == (struct object *) &pic->gc_head);
 
   /* free global stacks */
   kh_destroy(oblist, &pic->oblist);

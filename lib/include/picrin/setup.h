@@ -72,12 +72,8 @@
 # define PIC_ARENA_SIZE (8 * 1024)
 #endif
 
-#ifndef PIC_HEAP_PAGE_SIZE
-# define PIC_HEAP_PAGE_SIZE (4 * 1024 * 1024)
-#endif
-
-#ifndef PIC_PAGE_REQUEST_THRESHOLD
-# define PIC_PAGE_REQUEST_THRESHOLD(total) ((total) * 77 / 100)
+#ifndef PIC_GC_PERIOD
+# define PIC_GC_PERIOD (8 * 1024 * 1024)
 #endif
 
 /* check compatibility */

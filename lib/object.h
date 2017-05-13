@@ -12,6 +12,7 @@ extern "C" {
 #include "khash.h"
 
 #define OBJECT_HEADER                           \
+  struct object *next;                          \
   unsigned char tt;
 
 #define TYPE_MASK 0x7f

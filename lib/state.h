@@ -36,24 +36,23 @@ struct pic_state {
   void *userdata;
 
   struct context *cxt, default_cxt;
-
   size_t ai;
 
   khash_t(oblist) oblist;       /* string to symbol */
   pic_value globals;            /* dict */
 
-  bool gc_enable;
-  struct heap *heap;
   struct object **arena;
   size_t arena_size;
+
+  bool gc_enable;
+  struct basic gc_head;
+  struct attr *gc_attrs;
+  size_t gc_count;
 
   pic_value halt;               /* top continuation */
 
   pic_panicf panicf;
 };
-
-struct heap *pic_heap_open(pic_state *);
-void pic_heap_close(pic_state *, struct heap *);
 
 pic_value pic_global_ref(pic_state *pic, pic_value uid);
 void pic_global_set(pic_state *pic, pic_value uid, pic_value value);
