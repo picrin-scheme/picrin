@@ -45,7 +45,7 @@ struct pic_state {
   size_t arena_size;
 
   bool gc_enable;
-  struct basic gc_head;
+  struct object gc_head;
   struct attr *gc_attrs;
   size_t gc_count;
 

@@ -7,24 +7,6 @@
 #include "object.h"
 #include "state.h"
 
-struct object {
-  union {
-    struct basic basic;
-    struct symbol sym;
-    struct string str;
-    struct blob blob;
-    struct pair pair;
-    struct vector vec;
-    struct dict dict;
-    struct attr attr;
-    struct data data;
-    struct record rec;
-    struct proc proc;
-    struct frame frame;
-    struct irep irep;
-  } u;
-};
-
 #if PIC_USE_LIBC
 void *
 pic_default_allocf(void *PIC_UNUSED(userdata), void *ptr, size_t size)
@@ -107,9 +89,9 @@ pic_alloca(pic_state *pic, size_t n)
 
 /* GC */
 
-#define is_alive(obj) ((obj)->u.basic.tt & GC_MARK)
-#define mark(obj) ((obj)->u.basic.tt |= GC_MARK)
-#define unmark(obj) ((obj)->u.basic.tt &= ~GC_MARK)
+#define is_alive(obj) ((obj)->tt & GC_MARK)
+#define mark(obj) ((obj)->tt |= GC_MARK)
+#define unmark(obj) ((obj)->tt &= ~GC_MARK)
 
 static void gc_mark_object(pic_state *, struct object *);
 
@@ -136,75 +118,83 @@ gc_mark_object(pic_state *pic, struct object *obj)
 
   switch (obj_type(obj)) {
   case PIC_TYPE_PAIR: {
-    gc_mark(pic, obj->u.pair.car);
-    if (pic_obj_p(pic, obj->u.pair.cdr)) {
-      LOOP(pic_ptr(pic, obj->u.pair.cdr));
+    struct pair *pair = (struct pair *) obj;
+    gc_mark(pic, pair->car);
+    if (pic_obj_p(pic, pair->cdr)) {
+      LOOP(pic_ptr(pic, pair->cdr));
     }
     break;
   }
   case PIC_TYPE_FRAME: {
+    struct frame *frame = (struct frame *) obj;
     int i;
-
-    for (i = 0; i < obj->u.frame.regc; ++i) {
-      gc_mark(pic, obj->u.frame.regs[i]);
+    for (i = 0; i < frame->regc; ++i) {
+      gc_mark(pic, frame->regs[i]);
     }
-    if (obj->u.frame.up) {
-      LOOP(obj->u.frame.up);
+    if (frame->up) {
+      LOOP(frame->up);
     }
     break;
   }
   case PIC_TYPE_PROC_FUNC: {
-    if (obj->u.proc.env) {
-      LOOP(obj->u.proc.env);
+    struct proc *proc = (struct proc *) obj;
+    if (proc->env) {
+      LOOP(proc->env);
     }
     break;
   }
   case PIC_TYPE_PROC_IREP: {
-    if (obj->u.proc.env) {
-      gc_mark_object(pic, (struct object *)obj->u.proc.env);
+    struct proc *proc = (struct proc *) obj;
+    if (proc->env) {
+      gc_mark_object(pic, (struct object *) proc->env);
     }
-    LOOP(obj->u.proc.u.irep);
+    LOOP(proc->u.irep);
     break;
   }
   case PIC_TYPE_IREP: {
+    struct irep *irep = (struct irep *) obj;
     size_t i;
-    for (i = 0; i < obj->u.irep.objc; ++i) {
-      gc_mark(pic, obj->u.irep.obj[i]);
+    for (i = 0; i < irep->objc; ++i) {
+      gc_mark(pic, irep->obj[i]);
     }
-    for (i = 0; i < obj->u.irep.irepc; ++i) {
-      gc_mark_object(pic, (struct object *)obj->u.irep.irep[i]);
+    for (i = 0; i < irep->irepc; ++i) {
+      gc_mark_object(pic, (struct object *) irep->irep[i]);
     }
     break;
   }
   case PIC_TYPE_VECTOR: {
+    struct vector *vec = (struct vector *) obj;
     int i;
-    for (i = 0; i < obj->u.vec.len; ++i) {
-      gc_mark(pic, obj->u.vec.data[i]);
+    for (i = 0; i < vec->len; ++i) {
+      gc_mark(pic, vec->data[i]);
     }
     break;
   }
   case PIC_TYPE_DICT: {
-    pic_value key, val;
-    int it = 0;
-
-    while (pic_dict_next(pic, obj_value(pic, &obj->u.dict), &it, &key, &val)) {
-      gc_mark(pic, key);
-      gc_mark(pic, val);
+    struct dict *dict = (struct dict *) obj;
+    khash_t(dict) *h = &dict->hash;
+    int it;
+    for (it = 0; it != kh_end(h); ++it) {
+      if (kh_exist(h, it)) {
+        gc_mark_object(pic, (struct object *) kh_key(h, it));
+        gc_mark(pic, kh_val(h, it));
+      }
     }
     break;
   }
   case PIC_TYPE_RECORD: {
-    gc_mark(pic, obj->u.rec.datum);
-    LOOP(obj->u.rec.type);
+    struct record *rec = (struct record *) obj;
+    gc_mark(pic, rec->datum);
+    LOOP(rec->type);
     break;
   }
   case PIC_TYPE_SYMBOL: {
-    LOOP(obj->u.sym.str);
+    struct symbol *sym = (struct symbol *) obj;
+    LOOP(sym->str);
     break;
   }
   case PIC_TYPE_ATTR: {
-    struct attr *attr = (struct attr *)obj;
-
+    struct attr *attr = (struct attr *) obj;
     attr->prev = pic->gc_attrs;
     pic->gc_attrs = attr;
     break;
@@ -225,25 +215,30 @@ gc_finalize_object(pic_state *pic, struct object *obj)
 {
   switch (obj_type(obj)) {
   case PIC_TYPE_VECTOR: {
-    pic_free(pic, obj->u.vec.data);
+    struct vector *vec = (struct vector *) obj;
+    pic_free(pic, vec->data);
     break;
   }
   case PIC_TYPE_BLOB: {
-    pic_free(pic, obj->u.blob.data);
+    struct blob *blob = (struct blob *) obj;
+    pic_free(pic, blob->data);
     break;
   }
   case PIC_TYPE_STRING: {
-    pic_rope_decref(pic, obj->u.str.rope);
+    struct string *str = (struct string *) obj;
+    pic_rope_decref(pic, str->rope);
     break;
   }
   case PIC_TYPE_DATA: {
-    if (obj->u.data.type->dtor) {
-      obj->u.data.type->dtor(pic, obj->u.data.data);
+    struct data *data = (struct data *) obj;
+    if (data->type->dtor) {
+      data->type->dtor(pic, data->data);
     }
     break;
   }
   case PIC_TYPE_DICT: {
-    kh_destroy(dict, &obj->u.dict.hash);
+    struct dict *dict = (struct dict *) obj;
+    kh_destroy(dict, &dict->hash);
     break;
   }
   case PIC_TYPE_SYMBOL: {
@@ -251,11 +246,12 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_ATTR: {
-    kh_destroy(attr, &obj->u.attr.hash);
+    struct attr *attr = (struct attr *) obj;
+    kh_destroy(attr, &attr->hash);
     break;
   }
   case PIC_TYPE_IREP: {
-    struct irep *irep = &obj->u.irep;
+    struct irep *irep = (struct irep *) obj;
     if ((irep->flags & IREP_CODE_STATIC) == 0) {
       pic_free(pic, (code_t *) irep->code);
     }
@@ -264,7 +260,8 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     break;
   }
   case PIC_TYPE_FRAME: {
-    pic_free(pic, obj->u.frame.regs);
+    struct frame *frame = (struct frame *) obj;
+    pic_free(pic, frame->regs);
     break;
   }
 
@@ -367,14 +364,14 @@ pic_gc(pic_state *pic)
 
   /* reclaim dead objects */
 
-  for (prev = (struct object *) &pic->gc_head, obj = prev->u.basic.next; obj != (struct object *) &pic->gc_head; prev = obj, obj = next) {
-    next = obj->u.basic.next;
+  for (prev = &pic->gc_head, obj = prev->next; obj != &pic->gc_head; prev = obj, obj = next) {
+    next = obj->next;
     if (is_alive(obj)) {
       unmark(obj);
     } else {
       gc_finalize_object(pic, obj);
       pic_free(pic, obj);
-      prev->u.basic.next = next;
+      prev->next = next;
       obj = prev;
     }
   }
@@ -413,8 +410,8 @@ pic_obj_alloc_unsafe(pic_state *pic, int type)
   }
 
   obj = pic_malloc(pic, size);
-  obj->u.basic.tt = type;
-  obj->u.basic.next = pic->gc_head.next;
+  obj->tt = type;
+  obj->next = pic->gc_head.next;
   pic->gc_head.next = obj;
 
   pic->gc_count += size;

@@ -18,9 +18,7 @@ extern "C" {
 #define TYPE_MASK 0x7f
 #define GC_MARK 0x80
 
-struct object;              /* defined in gc.c */
-
-struct basic {
+struct object {
   OBJECT_HEADER
 };
 
@@ -158,7 +156,7 @@ struct proc {
 PIC_STATIC_INLINE int
 obj_type(void *ptr)
 {
-  return ((struct basic *) ptr)->tt & TYPE_MASK;
+  return ((struct object *) ptr)->tt & TYPE_MASK;
 }
 
 PIC_STATIC_INLINE pic_value
