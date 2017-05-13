@@ -242,39 +242,6 @@ pic_dict_alist_to_dictionary(pic_state *pic)
   return dict;
 }
 
-static pic_value
-pic_dict_dictionary_to_plist(pic_state *pic)
-{
-  pic_value dict, key, val, plist = pic_nil_value(pic);
-  int it = 0;
-
-  pic_get_args(pic, "d", &dict);
-
-  while (pic_dict_next(pic, dict, &it, &key, &val)) {
-    pic_push(pic, val, plist);
-    pic_push(pic, key, plist);
-  }
-
-  return plist;
-}
-
-static pic_value
-pic_dict_plist_to_dictionary(pic_state *pic)
-{
-  pic_value dict, plist, e;
-
-  pic_get_args(pic, "o", &plist);
-
-  dict = pic_make_dict(pic);
-
-  for (e = pic_reverse(pic, plist); ! pic_nil_p(pic, e); e = pic_cddr(pic, e)) {
-    TYPE_CHECK(pic, pic_cadr(pic, e), sym);
-    pic_dict_set(pic, dict, pic_cadr(pic, e), pic_car(pic, e));
-  }
-
-  return dict;
-}
-
 void
 pic_init_dict(pic_state *pic)
 {
@@ -290,6 +257,4 @@ pic_init_dict(pic_state *pic)
   pic_defun(pic, "dictionary-for-each", pic_dict_dictionary_for_each);
   pic_defun(pic, "dictionary->alist", pic_dict_dictionary_to_alist);
   pic_defun(pic, "alist->dictionary", pic_dict_alist_to_dictionary);
-  pic_defun(pic, "dictionary->plist", pic_dict_dictionary_to_plist);
-  pic_defun(pic, "plist->dictionary", pic_dict_plist_to_dictionary);
 }
