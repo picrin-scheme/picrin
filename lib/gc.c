@@ -199,8 +199,19 @@ gc_mark_object(pic_state *pic, struct object *obj)
     pic->gc_attrs = attr;
     break;
   }
+  case PIC_TYPE_STRING: {
+    struct string *str = (struct string *) obj;
+    LOOP(str->rope);
+    break;
+  }
+  case PIC_TYPE_ROPE_NODE: {
+    struct rope_node *node = (struct rope_node *) obj;
+    gc_mark_object(pic, (struct object *) node->s1);
+    LOOP(node->s2);
+    break;
+  }
 
-  case PIC_TYPE_STRING:
+  case PIC_TYPE_ROPE_LEAF:
   case PIC_TYPE_BLOB:
   case PIC_TYPE_DATA:
     break;
@@ -222,11 +233,6 @@ gc_finalize_object(pic_state *pic, struct object *obj)
   case PIC_TYPE_BLOB: {
     struct blob *blob = (struct blob *) obj;
     pic_free(pic, blob->data);
-    break;
-  }
-  case PIC_TYPE_STRING: {
-    struct string *str = (struct string *) obj;
-    pic_rope_decref(pic, str->rope);
     break;
   }
   case PIC_TYPE_DATA: {
@@ -264,7 +270,14 @@ gc_finalize_object(pic_state *pic, struct object *obj)
     pic_free(pic, frame->regs);
     break;
   }
+  case PIC_TYPE_ROPE_LEAF: {
+    struct rope_leaf *leaf = (struct rope_leaf *) obj;
+    pic_free(pic, (char *) leaf->str);
+    break;
+  }
 
+  case PIC_TYPE_STRING:
+  case PIC_TYPE_ROPE_NODE:
   case PIC_TYPE_PAIR:
   case PIC_TYPE_RECORD:
   case PIC_TYPE_PROC_FUNC:
@@ -394,6 +407,8 @@ type2size(int type)
     case PIC_TYPE_RECORD: return sizeof(struct record);
     case PIC_TYPE_PROC_FUNC: return sizeof(struct proc);
     case PIC_TYPE_PROC_IREP: return sizeof(struct proc);
+    case PIC_TYPE_ROPE_LEAF: return sizeof(struct rope_leaf);
+    case PIC_TYPE_ROPE_NODE: return sizeof(struct rope_node);
     default: PIC_UNREACHABLE();
   }
 }

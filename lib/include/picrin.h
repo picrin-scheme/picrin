@@ -135,7 +135,7 @@ pic_value pic_deserialize(pic_state *pic, pic_value blob);
 bool pic_str_p(pic_state *, pic_value);
 pic_value pic_str_value(pic_state *, const char *str, int len);
 pic_value pic_cstr_value(pic_state *, const char *str);
-#define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, -((int)sizeof lit - 1))
+#define pic_lit_value(pic, lit) pic_str_value(pic, "" lit, sizeof lit - 1)
 pic_value pic_strf_value(pic_state *, const char *fmt, ...);
 pic_value pic_vstrf_value(pic_state *, const char *fmt, va_list ap);
 const char *pic_str(pic_state *, pic_value str, int *len);
