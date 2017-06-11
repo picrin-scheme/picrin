@@ -1,6 +1,10 @@
 *.o
-src/load_piclib.c
+bin/
+lib/libpicrin.a
+lib/mini-picrin
 src/init_contrib.c
+src/init_lib.c
+src/load_piclib.c
 docs/contrib.rst
 .dir-locals.el
 GPATH
