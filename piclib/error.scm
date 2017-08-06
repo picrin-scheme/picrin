@@ -34,9 +34,8 @@
   (set! display
         (let ((d display))
           (lambda (x . port)
-            (let ((port (if (null? port) (current-error-port) (car port))))
               (if (error-object? x)
-                  (let ()
+                (let ((port (if (null? port) (current-error-port) (car port))))
                     (when (error-object-type x)
                       (d (error-object-type x) port)
                       (d "-" port))
@@ -49,4 +48,4 @@
                        (write x port))
                      (error-object-irritants x))
                     (d "\n" port))
-                  (d x port)))))))
+                (d x (if (null? port) (current-output-port) (car port))))))))

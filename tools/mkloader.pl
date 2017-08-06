@@ -33,7 +33,7 @@ pic_eval_native(pic_state *pic, const char *str)
   }
   pic_catch (e) {
     pic_fclose(pic, port);
-    pic_raise(pic, e);
+    pic_funcall(pic, "raise", 1, e);
   }
   pic_fclose(pic, port);
   pic_leave(pic, ai);
@@ -81,7 +81,7 @@ EOL
   pic_catch(e) {
     /* error! */
     pic_fputs(pic, "fatal error: failure in loading $dirname/$basename\\n", pic_stderr(pic));
-    pic_raise(pic, e);
+    pic_funcall(pic, "raise", 1, e);
   }
 EOL
 }

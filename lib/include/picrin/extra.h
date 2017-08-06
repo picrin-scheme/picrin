@@ -42,6 +42,7 @@ pic_value pic_eof_object(pic_state *);
 bool pic_port_p(pic_state *, pic_value, const pic_port_type *type);
 /* basic methods */
 pic_value pic_funopen(pic_state *, void *cookie, const pic_port_type *type);
+pic_value pic_fmemopen(pic_state *pic, const char *data, int size, const char *mode);
 size_t pic_fread(pic_state *, void *ptr, size_t size, size_t count, pic_value port);
 size_t pic_fwrite(pic_state *, const void *ptr, size_t size, size_t count, pic_value port);
 long pic_fseek(pic_state *, pic_value port, long offset, int whence);

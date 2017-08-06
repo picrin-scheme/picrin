@@ -198,7 +198,9 @@ flushbuf(pic_state *pic, int x, struct port *fp)
   } else {
     /* buffered write */
     assert(fp->ptr);
-    if (x != EOF) {
+    if (x == EOF) {
+      x = 0; // return 0 when successful, below
+    } else {
       *fp->ptr++ = (unsigned char) c;
     }
     bufsize = (int)(fp->ptr - fp->base);
@@ -467,7 +469,7 @@ string_close(pic_state *pic, void *cookie)
   return 0;
 }
 
-static pic_value
+pic_value
 pic_fmemopen(pic_state *pic, const char *data, int size, const char *mode)
 {
   static const pic_port_type string_rd = { string_read, 0, string_seek, string_close };
