@@ -52,7 +52,7 @@ pic_enter_try(pic_state *pic)
   var = pic_exc(pic);
   env = pic_make_attr(pic);
   pic_attr_set(pic, env, var, pic_cons(pic, handler, pic_call(pic, var, 0)));
-  pic->dyn_env = pic_cons(pic, env, pic->dyn_env);
+  pic_set(pic, "__picrin_dynenv__", pic_cons(pic, env, pic_ref(pic, "__picrin_dynenv__")));
 
   pic_leave(pic, pic->cxt->ai);
 }
@@ -62,7 +62,7 @@ pic_exit_try(pic_state *pic)
 {
   struct context *cxt = pic->cxt;
   pic_value c, it;
-  pic->dyn_env = pic_cdr(pic, pic->dyn_env);
+  pic_set(pic, "__picrin_dynenv__", pic_cdr(pic, pic_ref(pic, "__picrin_dynenv__")));
   pic_for_each (c, cxt->conts, it) {
     proc_ptr(pic, c)->env->regs[0] = pic_false_value(pic);
   }

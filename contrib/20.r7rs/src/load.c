@@ -35,7 +35,7 @@ pic_load_load(pic_state *pic)
   }
   pic_catch (e) {
     pic_fclose(pic, port);
-    pic_raise(pic, e);
+    pic_funcall(pic, "raise", 1, e);
   }
   pic_fclose(pic, port);
 
