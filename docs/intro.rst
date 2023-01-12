@@ -26,11 +26,6 @@ Documentation
 
 See http://picrin.readthedocs.org/
 
-IRC
----
-
-There is a chat room on chat.freenode.org, channel #picrin. IRC logs here: https://botbot.me/freenode/picrin/
-
 LICENSE
 -------
 
