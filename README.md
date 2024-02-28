@@ -1,5 +1,7 @@
 <img width="500" src="https://raw.githubusercontent.com/picrin-scheme/picrin/master/etc/picrin-logo-fin01-02.png"></img>
 
+# The project is in hiatus and being archived soon...
+
 [![Build Status](https://travis-ci.org/picrin-scheme/picrin.png?branch=master)](https://travis-ci.org/picrin-scheme/picrin)
 [![Docs Status](https://readthedocs.org/projects/picrin/badge/?version=latest)](https://picrin.readthedocs.org/)
 
