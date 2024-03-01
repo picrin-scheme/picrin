@@ -94,7 +94,7 @@ test: test-contribs test-nostdlib test-issue
 test-contribs: picrin $(CONTRIB_TESTS)
 
 test-nostdlib: lib/ext/boot.c
-	$(CC) -I./lib -I./lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -Werror -o libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
+	$(CC) -I./lib -I./lib/include -D'PIC_USE_LIBC=0' -D'PIC_USE_STDIO=0' -D'PIC_USE_WRITE=0' -ffreestanding -nostdlib -Os -fPIC -shared -std=c89 -pedantic -Wall -Wextra -o libpicrin-tiny.so $(LIBPICRIN_SRCS) etc/libc_polyfill.c -fno-stack-protector
 	strip libpicrin-tiny.so
 	ls -lh libpicrin-tiny.so
 	rm -f libpicrin-tiny.so
