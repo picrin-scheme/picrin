@@ -363,7 +363,9 @@ static const char boot_rom[][80] = {
 "       (lambda (expr . lib)\n            (let ((lib (if (null? lib) (current-libr",
 "ary) (car lib))))\n              (e expr (library-environment lib))))))\n  (make-l",
 "ibrary '(picrin user))\n  (current-library '(picrin user)))\n\n",
+"",
 };
+
 
 void
 pic_boot(pic_state *pic)
