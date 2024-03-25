@@ -236,7 +236,9 @@ static const char boot_rom[][80] = {
 "        ,@(map (lambda (x)\n                  `(,(the 'define-syntax) ,(car x) ,(",
 "cadr x)))\n                formal)\n         ,@body))))\n\n(define-macro let-syntax\n",
 "  (lambda (form env)\n    `(,(the 'letrec-syntax) ,@(cdr form))))\n",
+"",
 };
+
 
 #if PIC_USE_LIBRARY
 static const char boot_library_rom[][80] = {
@@ -367,7 +369,9 @@ static const char boot_library_rom[][80] = {
 " ((e eval))\n          (lambda (expr . lib)\n            (let ((lib (if (null? lib",
 ") (current-library) (car lib))))\n              (e expr (library-environment lib)",
 ")))))\n  (make-library '(picrin user))\n  (current-library '(picrin user)))\n\n",
+"",
 };
+
 #endif
 
 void

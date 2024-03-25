@@ -3,6 +3,21 @@
 use strict;
 use File::Basename qw/basename dirname/;
 
+sub constant($$) {
+    # The maximum length of a string literal is 509 characters in C89.
+    # That is why src is split into short strings.
+    my ($var, $src) = @_;
+    print "static const char ${var}[][80] = {\n";
+    my @lines = $src =~ /.{0,80}/gs;
+    foreach (@lines) {
+        s/\\/\\\\/g;
+        s/"/\\"/g;
+        s/\n/\\n/g;
+        print "\"$_\",\n";
+    }
+    print "};\n\n";
+}
+
 print <<EOL;
 /**
  *                                !!NOTICE!!
@@ -18,21 +33,13 @@ EOL
 
 foreach my $file (@ARGV) {
     my $var = &escape_v($file);
-    print "static const char ${var}[][80] = {\n";
 
     open IN, $file;
     local $/ = undef;
     my $src = <IN>;
     close IN;
 
-    my @lines = $src =~ /.{0,80}/gs;
-    foreach (@lines) {
-        s/\\/\\\\/g;
-        s/"/\\"/g;
-        s/\n/\\n/g;
-        print "\"$_\",\n";
-    }
-    print "};\n\n";
+    constant($var, $src);
 }
 
 print <<EOL;
