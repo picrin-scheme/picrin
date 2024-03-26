@@ -25,7 +25,7 @@ static const char boot_rom[][$chunk] = {
 EOL
 print "\"";
 my $len = 0;
-open(IN, "piclib/boot3.scm");
+open(IN, "piclib/boot.scm");
 while (read(IN, my $c, 1)) {
     if ($len && ($len % $chunk == 0)) { print "\",\n\""; }
     print_escape_char($c);
@@ -58,7 +58,7 @@ print <<EOL;
 void
 pic_boot(pic_state *pic)
 {
-  pic_call(pic, pic_compile(pic, pic_read_cstr(pic, &boot_rom[0][0])), 0);
+  pic_load_cstr(pic, &boot_rom[0][0]);
 #if PIC_USE_LIBRARY
   pic_load_cstr(pic, &boot_library_rom[0][0]);
 #endif
